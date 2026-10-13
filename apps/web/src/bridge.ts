@@ -5,8 +5,8 @@
  * GitHub credential here at all.
  */
 import {
-  BUNDLE_MAX_BYTES, bundleFileName, innerPath, isReadOnlyPath, makeBundle, parseBundle, planImport, sourceOf, UnlockError,
-  type AppStateFile, type InstanceBridge, type NoteSummary, type PlatformBridge, type VaultStatus,
+  BUNDLE_MAX_BYTES, bundleFileName, formatWorkspaceFile, innerPath, isReadOnlyPath, makeBundle, parseBundle, planImport, readWorkspaceFormat, sourceOf, UnlockError,
+  WORKSPACE_FORMAT, type AppStateFile, type InstanceBridge, type NoteSummary, type PlatformBridge, type VaultStatus, type WorkspaceBridge,
 } from "@focus-notes/core";
 import { SealError, SiteReader, type OpenVault, type SiteFetch } from "@focus-notes/seal";
 import { openTextFile, saveTextFile } from "@focus-notes/ui/files";
@@ -24,6 +24,8 @@ This note lives in this browser, and so does everything you write here. It's sav
 /** A key this browser remembers for the vault (PKG-10): non-extractable, with the salt it was made for. */
 interface RememberedKey { key: CryptoKey; salt: string }
 const REMEMBERED = "vaultUnlockKey";
+/** The format of the notes in this browser (DST-05), as the text of a workspace.json. */
+const FORMAT = "workspaceFormat";
 /** What earlier versions stored for browser sync (D-81, D-82), removed on open (D-90). */
 const RETIRED_META = ["token", "vaultKey", "connection", "login"];
 
@@ -112,11 +114,51 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
   };
 
   const localNotes = async () => (await db.allNotes()).filter((n) => !n.deleted);
+  /** A newer app may have written this browser's notes: this one then never writes them (DST-05). */
+  const assertWritable = async () => {
+    if (readWorkspaceFormat(await db.getMeta<string>(FORMAT)).access !== "write") throw new Error("Read-only: these notes were saved by a newer Focus Notes");
+  };
+
+  // This browser's notes and the instance's read-only ones, as one workspace (D-90, WP-2.3).
+  const workspace: WorkspaceBridge = {
+    async info() {
+      let format = await db.getMeta<string>(FORMAT);
+      if (format === undefined) await db.setMeta(FORMAT, (format = formatWorkspaceFile({ formatVersion: WORKSPACE_FORMAT })));
+      return { folder: "", format };
+    },
+    async scan() {
+      const mine = await localNotes();
+      const i = await info;
+      await ready;
+      return {
+        folder: "",
+        roots: [
+          { id: "local", path: "", readOnly: false },
+          ...(i ? [{ id: "public" as const, path: "public:", readOnly: true }] : []),
+          ...(i?.manifest.vault ? [{ id: "private" as const, path: "private:", readOnly: true }] : []),
+        ],
+        entries: [
+          ...mine.map((n) => ({ path: n.path, kind: "note" as const })),
+          ...(i?.publicNotes ?? []).map((n) => ({ path: `public:${n.path}`, kind: "note" as const, published: true })),
+          ...(open?.notes ?? []).map((n) => ({ path: `private:${n.path}`, kind: "note" as const, published: true })),
+        ],
+      };
+    },
+    writeFormat: (text) => db.setMeta(FORMAT, text),
+    async renameNote(from, to) {
+      if (isReadOnlyPath(from) || isReadOnlyPath(to)) throw new Error("Read-only note");
+      await assertWritable();
+      const taken = await db.getNote(to);
+      if (taken && !taken.deleted && from.toLowerCase() !== to.toLowerCase()) throw new Error("That name is taken");
+      await db.moveNote(from, to, Date.now());
+    },
+  };
 
   const bridge: WebBridge = {
     platform: "web",
     db,
     instance,
+    workspace,
     async readNote(path) {
       const source = sourceOf(path);
       if (source === "public") return reader.readPublic(innerPath(path));
@@ -132,6 +174,7 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
     async writeNote(path, text) {
       // The instance's notes are read-only here (D-90).
       if (isReadOnlyPath(path)) throw new Error("Read-only note");
+      await assertWritable();
       const old = await db.getNote(path);
       if (old && old.text === text && !old.deleted) return;
       await db.putNote({ path, text, updated: Date.now() });
@@ -185,6 +228,7 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
     async importNotes() {
       const text = await openTextFile(".json,application/json", BUNDLE_MAX_BYTES);
       if (text === undefined) return undefined;
+      await assertWritable();
       const bundle = parseBundle(text);
       const existing = new Map((await localNotes()).map((n) => [n.path, n.text]));
       const plan = planImport(bundle, existing);

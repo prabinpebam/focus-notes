@@ -49,6 +49,19 @@ export class WebDb {
   async putNote(note: NoteRecord): Promise<void> {
     await req(this.#store("notes", "readwrite").put(note));
   }
+  /** Moves a note to a new path in one transaction, so it's never in both places or neither. */
+  async moveNote(from: string, to: string, updated: number): Promise<void> {
+    const tx = this.#db.transaction("notes", "readwrite");
+    const store = tx.objectStore("notes");
+    const note = await req(store.get(from) as IDBRequest<NoteRecord | undefined>);
+    if (!note) throw new Error(`No note at ${from}`);
+    store.delete(from);
+    store.put({ ...note, path: to, updated });
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = tx.onabort = () => reject(tx.error);
+    });
+  }
   async removeNote(path: string): Promise<void> {
     await req(this.#store("notes", "readwrite").delete(path));
   }
