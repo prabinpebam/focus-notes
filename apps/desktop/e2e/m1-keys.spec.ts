@@ -46,7 +46,7 @@ test("Mod+Shift+/ opens a searchable cheat sheet; Esc clears, then closes, and t
   await expect(sheet.getByText("Focus mode", { exact: true })).toBeHidden();
   await expect(sheet.getByText("Save", { exact: true })).toBeVisible();
   await sheet.getByRole("radiogroup", { name: "Show keys for" }).getByText(mac ? "Windows and Linux" : "macOS", { exact: true }).click();
-  await expect(sheet.getByText(mac ? "Control S" : "Command S")).toBeAttached();
+  await expect(sheet.getByText(mac ? "Control S" : "Command S", { exact: true })).toBeAttached();
 
   // Esc clears a search first, then closes; focus goes back to the note.
   await search.fill("bold");
@@ -92,8 +92,8 @@ test("Basic and Writer editor keys follow the documented keymap and save as Mark
   await page.waitForTimeout(300);
 
   // Strikethrough is Mod+Shift+X (not Tiptap's Mod+Shift+S).
-  await page.keyboard.press(mac ? "Meta+ArrowLeft" : "Home");
-  await page.keyboard.press("Shift+End");
+  // Mod+A selects the note (one paragraph here); Home/End mean different things on macOS.
+  await page.keyboard.press(`${mod}+a`);
   await page.keyboard.press(`${mod}+Shift+S`);
   await expect(editor.locator("s")).toHaveCount(0);
   await page.keyboard.press(`${mod}+Shift+X`);
@@ -111,7 +111,7 @@ test("Basic and Writer editor keys follow the documented keymap and save as Mark
   await expect(editor.locator("h2")).toHaveCount(0);
 
   // A task list, checked with Mod+Enter; Shift+Enter is a line break, Mod+Enter isn't.
-  await page.keyboard.press("End");
+  await page.keyboard.press("ArrowRight");
   await page.keyboard.press(`${mod}+Shift+9`);
   await expect(editor.locator("ul[data-type=taskList]")).toHaveCount(1);
   await page.keyboard.press(`${mod}+Enter`);
