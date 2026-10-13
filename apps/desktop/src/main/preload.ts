@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     scan: () => ipcRenderer.invoke("workspace:scan"),
     writeFormat: (text: string) => ipcRenderer.invoke("workspace:writeFormat", text),
     renameNote: (from: string, to: string) => ipcRenderer.invoke("workspace:rename", from, to),
+    apply: (ops: unknown[]) => ipcRenderer.invoke("workspace:apply", ops),
     onChange: (listener: (changes: unknown[]) => void) => {
       const handler = (_e: unknown, changes: unknown[]) => listener(changes);
       ipcRenderer.on("workspace:changed", handler);

@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./workspace-format": "./src/workspace-format.ts" },
+  "exports": { ".": "./src/index.ts", "./workspace-format": "./src/workspace-format.ts", "./workspace": "./src/workspace.ts" },
   "scripts": { "typecheck": "tsc -p tsconfig.json" },
   "dependencies": { "@focus-notes/tokens": "workspace:*", "intl-messageformat": "12.1.3" }
 }

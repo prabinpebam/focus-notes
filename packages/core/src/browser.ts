@@ -82,7 +82,9 @@ export function registerBrowserFeatures(ctx: BrowserContext): { start(): Promise
     return s.notes.filter((n) => !q || titleFor(n).toLowerCase().includes(q) || innerPath(n.path).toLowerCase().includes(q)).slice(0, 200);
   };
   commands.register({
-    id: "picker.open", title: "command.note.open",
+    // Quick open (FIL-04 arrives with Spotlight in M4): the shell's own notes by name, Mod+P (D-94).
+    id: "picker.open", title: "command.picker.open",
+    ...(bridge.listNotes ? { shortcut: { default: "Mod+P" }, layer: "power" as const, group: "files" as const } : {}),
     run: async () => {
       const notes = ((await bridge.listNotes?.()) ?? []).sort((a, b) => b.updated - a.updated);
       store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, picker: { open: true, query: "", activeId: notes[0]?.path ?? "", notes, focus: s.ui.picker.focus + 1 } } }));

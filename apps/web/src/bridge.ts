@@ -5,7 +5,7 @@
  * GitHub credential here at all.
  */
 import {
-  BUNDLE_MAX_BYTES, bundleFileName, formatWorkspaceFile, innerPath, isReadOnlyPath, makeBundle, parseBundle, planImport, readWorkspaceFormat, sourceOf, UnlockError,
+  BUNDLE_MAX_BYTES, bundleFileName, formatWorkspaceFile, innerPath, isReadOnlyPath, makeBundle, OpError, parseBundle, planFlatOps, planImport, readWorkspaceFormat, sourceOf, titleOfMarkdown, UnlockError,
   WORKSPACE_FORMAT, type AppStateFile, type InstanceBridge, type NoteSummary, type PlatformBridge, type VaultStatus, type WorkspaceBridge,
 } from "@focus-notes/core";
 import { SealError, SiteReader, type OpenVault, type SiteFetch } from "@focus-notes/seal";
@@ -26,8 +26,12 @@ interface RememberedKey { key: CryptoKey; salt: string }
 const REMEMBERED = "vaultUnlockKey";
 /** The format of the notes in this browser (DST-05), as the text of a workspace.json. */
 const FORMAT = "workspaceFormat";
+/** Folders made in the Files panel, which may be empty (D-94). Written only once there is one. */
+const FOLDERS = "folders";
 /** What earlier versions stored for browser sync (D-81, D-82), removed on open (D-90). */
 const RETIRED_META = ["token", "vaultKey", "connection", "login"];
+
+const titled = (title: string | undefined) => (title ? { title } : {});
 
 export interface WebBridge extends PlatformBridge {
   db: WebDb;
@@ -128,6 +132,7 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
     },
     async scan() {
       const mine = await localNotes();
+      const folders = (await db.getMeta<string[]>(FOLDERS)) ?? [];
       const i = await info;
       await ready;
       return {
@@ -138,9 +143,10 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
           ...(i?.manifest.vault ? [{ id: "private" as const, path: "private:", readOnly: true }] : []),
         ],
         entries: [
-          ...mine.map((n) => ({ path: n.path, kind: "note" as const })),
-          ...(i?.publicNotes ?? []).map((n) => ({ path: `public:${n.path}`, kind: "note" as const, published: true })),
-          ...(open?.notes ?? []).map((n) => ({ path: `private:${n.path}`, kind: "note" as const, published: true })),
+          ...folders.map((path) => ({ path, kind: "folder" as const })),
+          ...mine.map((n) => ({ path: n.path, kind: "note" as const, ...titled(titleOfMarkdown(n.text)) })),
+          ...(i?.publicNotes ?? []).map((n) => ({ path: `public:${n.path}`, kind: "note" as const, published: true, ...titled(n.title) })),
+          ...(open?.notes ?? []).map((n) => ({ path: `private:${n.path}`, kind: "note" as const, published: true, ...titled(n.title) })),
         ],
       };
     },
@@ -151,6 +157,14 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
       const taken = await db.getNote(to);
       if (taken && !taken.deleted && from.toLowerCase() !== to.toLowerCase()) throw new Error("That name is taken");
       await db.moveNote(from, to, Date.now());
+    },
+    // A Files panel batch: checked whole, then written in one transaction (D-94).
+    async apply(ops) {
+      await assertWritable().catch(() => { throw new OpError("readOnly"); });
+      const stored = await db.getMeta<string[]>(FOLDERS);
+      const plan = planFlatOps(await db.allNotes(), stored ?? [], ops, Date.now());
+      const changed = JSON.stringify(plan.folders) !== JSON.stringify(stored ?? []);
+      await db.applyBatch(plan.put, plan.remove, changed ? { key: FOLDERS, value: plan.folders } : undefined);
     },
   };
 
