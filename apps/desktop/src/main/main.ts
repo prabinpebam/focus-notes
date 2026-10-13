@@ -30,10 +30,22 @@ function notePath(p: unknown): string {
   return abs;
 }
 
+/** Writes to one path run one after another, so an older write can never land after a newer one. */
+const writeQueues = new Map<string, Promise<void>>();
+let tmpCounter = 0;
+
 /** Atomic write: a temporary file next to the note, then rename (Performance and quality → Reliability). */
-async function atomicWrite(path: string, content: string): Promise<void> {
+function atomicWrite(path: string, content: string): Promise<void> {
+  const previous = writeQueues.get(path) ?? Promise.resolve();
+  const next = previous.catch(() => {}).then(() => writeNow(path, content));
+  writeQueues.set(path, next);
+  void next.finally(() => { if (writeQueues.get(path) === next) writeQueues.delete(path); }).catch(() => {});
+  return next;
+}
+
+async function writeNow(path: string, content: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
-  const tmp = `${path}.${process.pid}.${Date.now()}.tmp`;
+  const tmp = `${path}.${process.pid}.${Date.now()}.${tmpCounter++}.tmp`;
   await writeFile(tmp, content, "utf8");
   // On Windows, sync clients and antivirus briefly lock files; retry before reporting a failure.
   for (let attempt = 0; ; attempt++) {
@@ -230,3 +242,9 @@ app.whenReady().then(async () => {
   });
 });
 app.on("window-all-closed", () => app.quit());
+// Quitting waits for writes already under way, so a preference saved just before closing is kept.
+app.on("will-quit", (e) => {
+  if (writeQueues.size === 0) return;
+  e.preventDefault();
+  void Promise.allSettled([...writeQueues.values()]).then(() => app.quit());
+});

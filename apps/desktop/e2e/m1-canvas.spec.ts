@@ -33,8 +33,9 @@ test("UI-10: the trigger sits 40 px down, its dot grows on hover, and it morphs 
   await expect(async () => {
     await page.mouse.move(10, 400);
     await trigger.hover();
-    expect(Math.round(await dot())).toBe(28);
-  }).toPass({ timeout: 5000 });
+    // The dot grows over motion.grow, so it waits for the end of the transition.
+    await expect.poll(async () => Math.round(await dot()), { timeout: 1000 }).toBe(28);
+  }).toPass({ timeout: 8000 });
   await page.screenshot({ path: "../../test-results/screens/trigger-hover.png", clip: { x: ring.x - 40, y: 0, width: ring.width + 80, height: 110 } });
   await page.mouse.move(10, 400);
   await expect.poll(async () => Math.round(await dot())).toBe(10);

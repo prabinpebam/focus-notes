@@ -51,8 +51,8 @@ test("light and dark themes are chosen separately, switch with the appearance, a
   await expect.poll(() => attr(page, "data-theme")).toBe("dusk");
   expect(await canvas(page)).toBe("rgb(29, 24, 20)");
   // The window behind the page matches, so resizing never flashes another color.
-  const bg = await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.getBackgroundColor());
-  expect(bg.toLowerCase()).toBe("#1d1814");
+  // It's set over IPC after the theme changes, so it may land a moment later.
+  await expect.poll(async () => (await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.getBackgroundColor())).toLowerCase()).toBe("#1d1814");
   await quit(l);
 
   const state = JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8"));
