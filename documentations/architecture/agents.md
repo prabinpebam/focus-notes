@@ -53,8 +53,8 @@ The [Model Context Protocol](https://modelcontextprotocol.io) server ships with 
 | Permission | Default | Effect |
 | --- | --- | --- |
 | Agents can connect | Off until the writer turns it on or copies a connection snippet | Without it the server refuses to start |
-| Read public notes | On (once connected) | Read tools see `content/` |
-| Read private and shared notes | **Off** | Read tools also see `private/` |
+| Read public notes | On (once connected) | Read tools see `notes/` |
+| Read private and shared notes | **Off** | Read tools also see `private/notes/` |
 | Create and edit notes | **Off** | Enables the write tools |
 | Limit to folders | All | Restricts every tool to chosen folders |
 | Create public notes | **Off** | Otherwise `create_note` always makes private notes |
@@ -96,10 +96,10 @@ Deep links never write content, delete, or change visibility, and they only work
 
 ## Files and schemas for agents
 
-- **`AGENTS.md`** at the root of every workspace (from the template) explains the layout, front matter, link style, that `private/` must be pulled on its own, that `access.json` mustn't be edited by hand, and the commit message style. The product repository has its own `AGENTS.md` for contributors.
-- **JSON Schemas** (JSON Schema 2020-12) for note front matter, `.focus-notes/workspace.json`, `settings.json`, theme files, `keybindings.json`, `access.json`, and `access-message.json`. They live in the product repository's `schemas/` folder and are published on the product site with stable `$id` URLs (AGT-08).
+- **`AGENTS.md`** at the root of every instance (from the template) explains the layout, front matter, link style, that `private/` must be pulled on its own, that `access.json` mustn't be edited by hand, and the commit message style. The project repository has its own `AGENTS.md` for contributors.
+- **JSON Schemas** (JSON Schema 2020-12) for note front matter, `.focus-notes/workspace.json`, `settings.json`, theme files, `keybindings.json`, `access.json`, and `access-message.json`. They live in the project repository's `schemas/` folder and are published on the project's own Pages site, beside these docs, with stable `$id` URLs (AGT-08).
 - **The design system's vocabulary**: component contracts, the UI schema, token names, and fragments, published as JSON (DSY-13). Agents contributing to Focus Notes write views as data and get precise errors from `ui:check` ([Views as data](../design/system/views-as-data.md)).
-- **`llms.txt`** at the product site root lists these docs for language models, following the emerging `llms.txt` convention.
+- **`llms.txt`** at the root of the project's own Pages site lists these docs for language models, following the emerging `llms.txt` convention.
 
 ## Risks specific to agents
 

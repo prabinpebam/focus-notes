@@ -1,17 +1,17 @@
 # Distribution and release
 
-How this repository becomes the product people install: the repository layout, what gets built, how releases are made, signed, and delivered, and how users' workspaces stay in step, all without hosting anything beyond GitHub.
+How this repository becomes what people use: the repository layout, what gets built, how releases are made, signed, and delivered, and how users' instances stay in step, with nothing hosted beyond GitHub Pages and GitHub Releases.
 
 > [!NOTE]
-> **TL;DR.** This repository (`focus-notes`) becomes a **monorepo**: desktop app, web app, shared core, publishing tools, MCP server and command-line tool, the workspace template's source, JSON Schemas, and these docs. A tagged release builds **signed installers** (Windows, macOS, Linux), the **web app**, the **reader bundle** used by users' publish workflows, **checksums**, an **SBOM**, and **attestations**, then publishes them to **GitHub Releases**. The **product site** on GitHub Pages hosts the Get started page, the web app (`/app/`), these docs (`/docs/`), and the schemas. The **workspace template** repository is updated from the same release. Users get updates through the app's updater, and publish-workflow updates as pull requests they approve (D-48). The layout and toolchain are D-49; channels and signing are D-51.
+> **TL;DR.** This repository (`focus-notes`) is a **monorepo**: desktop app, web app, shared core, publishing tools, MCP server and command-line tool, the template's source, JSON Schemas, and these docs. It's also **the owner's own instance**: its *Deploy app* workflow builds the web app from source and publishes it, the owner's public notes, and these docs to its own GitHub Pages (D-87). People who want to improve Focus Notes fork it. People who just want to use it copy the small **template repository** (not this one) to make their instance; its *Deploy app* workflow deploys the released **web app bundle** at a pinned version, checked by checksum and attestation, so they never build the app themselves (D-48, DST-06). They can also download the **desktop app** from **GitHub Releases**, winget, or Homebrew (D-51). A tagged release builds the desktop installers, the web app bundle, **checksums**, an **SBOM**, and **attestations** into a GitHub Release, and regenerates the template repository. Desktop apps update themselves; instances get pull requests that move the pinned version. The layout and toolchain are D-49.
 
 ## Repositories
 
 | Repository | Visibility | Purpose |
 | --- | --- | --- |
-| `prabinpebam/focus-notes` (this one) | Public, MIT | Source, docs, releases, reusable publish workflow, product site |
-| `prabinpebam/focus-notes-workspace` | Public, marked as a **template** | Starting layout for users' notes repositories. Generated from `templates/workspace/` in this repository by the release workflow. |
-| A user's notes and private repositories | In the user's account | Their instance (see [Who owns what](../architecture/repository-and-publishing.html#who-owns-what)) |
+| `prabinpebam/focus-notes` (this one) | Public, MIT | Source, docs, releases, and the template's source (`templates/workspace/`). Also the owner's own instance: public notes in `notes/`, the owner's private repository at `private/`, and a *Deploy app* workflow that builds the app from source. Fork it to improve Focus Notes. |
+| `prabinpebam/focus-notes-workspace` | Public, marked as a **template** | The template repository people copy (*Use this template*) to make their instance: `notes/`, the `private/` link, `.focus-notes/workspace.json`, `AGENTS.md`, a README, and the *Deploy app* workflow that deploys the released web app bundle. Generated from `templates/workspace/` in this repository at each release (DST-06). |
+| A user's instance and private repositories | In the user's account | Their instance (see [Who owns what](../architecture/repository-and-publishing.html#who-owns-what)) |
 
 ## Layout of this repository
 
@@ -19,8 +19,7 @@ How this repository becomes the product people install: the repository layout, w
 focus-notes/
 ├─ apps/
 │  ├─ desktop/        # Electron main process, preload bridge, window management, installers
-│  ├─ web/            # Static web app, deployed by each user's copy to their own Pages (MW, D-80)
-│  └─ site/           # Product site: Get started, download page, privacy statement, schema hosting
+│  └─ web/            # Static web app, deployed to each instance's own Pages (MW, D-80)
 ├─ packages/
 │  ├─ core/           # Commands, keybindings, focus mode, themes, Spotlight index, workspace model
 │  ├─ tokens/         # Design tokens (DTCG source) and the generated CSS, types, and schema
@@ -31,19 +30,21 @@ focus-notes/
 │  ├─ markdown/       # Markdown bridge and round-trip corpus
 │  ├─ git/            # Local Git adapter (desktop)
 │  ├─ github/         # GitHub API adapter and setup engine (shared by desktop and web setup)
-│  ├─ publish/        # Static renderer, sealer, leak check (used by the reusable workflow)
+│  ├─ publish/        # Static renderer, sealer, leak check (run by the Deploy app workflow)
 │  ├─ mcp/            # MCP server
 │  └─ cli/            # focus-notes command-line tool
-├─ templates/workspace/   # Source of the workspace template (AGENTS.md, workflow, .gitattributes)
+├─ templates/workspace/   # Source of the template repository (AGENTS.md, README, Deploy app workflow, .gitattributes)
+├─ notes/                 # The owner's public notes (this repository is the owner's instance, D-87)
+├─ private/               # The owner's private repository (submodule)
 ├─ schemas/               # JSON Schemas (front matter, settings, themes, keybindings, access)
 ├─ tools/                 # Repository checks (plan, chain, boundaries, licenses) and the benchmark, tools/bench/ with its budgets file
-├─ .github/workflows/     # ci.yml, release.yml, publish.yml (reusable), site.yml
+├─ .github/workflows/     # ci.yml, codeql.yml, release.yml, pages.yml (Deploy app: builds from source)
 ├─ documentations/        # This Slate documentation host
 ├─ slate/                 # Slate (submodule)
 ├─ AGENTS.md  SECURITY.md  LICENSE  README.md
 ```
 
-Today the repository holds the documentation only. Code arrives milestone by milestone ([Roadmap](roadmap.md)).
+Parts not built yet arrive stage by stage ([Roadmap](roadmap.md)).
 
 ## Toolchain (all permissively licensed)
 
@@ -69,8 +70,7 @@ CI installs from lockfiles with frozen versions.
 | macOS app | Universal `.dmg` and `.zip` (for updates), notarized | GitHub Releases, Homebrew cask (P1) |
 | Linux app | AppImage and `.deb` (x64, arm64) | GitHub Releases, Flathub (later) |
 | Update metadata | `latest*.yml` files | GitHub Releases (read by electron-updater) |
-| Reader bundle | `reader-<version>.tgz`: static renderer, sealer, and reader assets | GitHub Releases (downloaded by users' publish workflows) |
-| Web app | Static files | Each user's own GitHub Pages site, built from their copy of this repository (MW, D-80) |
+| Web app bundle | The static web app plus its publish tools (renderer, sealer, leak check, reader assets) | GitHub Releases. Template instances' *Deploy app* workflows download it at their pinned version, check its SHA-256 and attestation, and deploy it to their own Pages (D-48, SEC-05). The project repository builds the same app from source (MW, D-80). |
 | Command-line tool and MCP server | Inside the desktop app. Also `@focus-notes/cli` on npm (P1). | Installers, npm |
 | Integrity | `SHA256SUMS`, CycloneDX SBOM, GitHub artifact attestations | GitHub Releases |
 
@@ -95,11 +95,11 @@ CI installs from lockfiles with frozen versions.
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Publish</p>
-<p>The release goes public. Workflows then update the template repository, record the new reusable-workflow commit SHA and reader-bundle checksum, deploy the product site, and open winget and Homebrew update pull requests (P1).</p>
+<p>The release goes public. Workflows then regenerate the template repository from <code>templates/workspace/</code> with the new version and the web app bundle's checksum, and open winget and Homebrew update pull requests (P1).</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Reach users</p>
-<p>Desktop apps update on quit. Workspaces receive a pull request to move their publish workflow to the new SHA (Dependabot, or <em>Update publishing</em> in Settings → Workspace). Nothing changes in a user's repository until they merge it.</p>
+<p>Desktop apps update on quit, from GitHub Releases on their channel. Instances made from the template receive a pull request that moves their <em>Deploy app</em> workflow to the new version and checksum (Dependabot, or <em>Update publishing</em> in Settings → Workspace); merging it redeploys. Nothing changes in a user's repository until they merge it (DST-06).</p>
 </li>
 </ol>
 
@@ -107,7 +107,7 @@ CI installs from lockfiles with frozen versions.
 
 - **App:** SemVer. A major version may change behavior, but never the user's files without a migration.
 - **Workspace format:** `.focus-notes/workspace.json` holds `formatVersion` (an integer) and the template version it came from. A newer app migrates older workspaces in one commit, after asking. An older app refuses to write to a newer workspace format and offers to update itself (DST-05).
-- **Publishing:** the reusable workflow and the reader bundle share the app's version. Within a major version, newer publish tools read every older workspace format.
+- **Publishing:** the template's *Deploy app* workflow and the web app bundle share the app's version. Within a major version, newer publish tools read every older workspace format.
 - **Channels:** *Stable* by default, and *Beta* (GitHub pre-releases) can be chosen in Settings → About (DST-07).
 
 ## Signing
@@ -120,15 +120,14 @@ CI installs from lockfiles with frozen versions.
 
 Signing secrets live only in the release workflow's protected environment, which requires approval to run.
 
-## The product site
+<h2 id="the-product-site">The project's own site</h2>
 
-The product's own GitHub Pages site (D-40, D-54):
+There's no separate product site (D-54 is superseded). The project repository's GitHub Pages site is the owner's own instance (D-87), with these docs beside it (D-40):
 
 | Path | Serves |
 | --- | --- |
-| `/` | [Get started](../design/views/get-started.md): downloads, how it works, privacy |
-| `/` | The web app (on every copy of the repository, including the project's own, D-80) |
-| `/docs/` | This documentation |
+| `/` | The owner's Focus Notes. Visitors see only the owner's public notes, read-only, and [Use this app for yourself](../design/views/get-started.md) (DST-01). |
+| `/documentations/` | This documentation |
 | `/schemas/` | The JSON Schemas, at stable `$id` URLs |
 | `/llms.txt` | A map of these docs for language models |
 | `/privacy/` | The privacy statement (no data collected) |

@@ -179,10 +179,10 @@ Work packages off this path run in parallel when their dependencies are Done and
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
 | WP-5.1 | **Static renderer and public pages**. Public pages rendered from the reader views and block components, deployed by the user's workflow, with font preloading and lab-measured Core Web Vitals. | SHR-03, SHR-06, PKG-02, PRV-04, PRF-06, PRF-12 | WP-3.4, WP-1.1 | code, design-system, accessibility, security |
-| WP-5.2 | **Sealing, leak check, and pinned workflow**. Per-build sealing, keyrings, the leak check, and the reusable workflow pinned by SHA with verification. | SHR-04, SHR-11, SEC-05, SEC-06 | WP-5.1 | code, security |
+| WP-5.2 | **Sealing, leak check, and the pinned bundle**. Per-build sealing, keyrings, the leak check, and instances deploying the released web app bundle at a pinned version, verified by checksum and attestation. | SHR-04, SHR-11, SEC-05, SEC-06 | WP-5.1 | code, security |
 | WP-5.3 | **Audiences, passcodes, and invites**. The Share popover, audiences, generated and custom passcodes, expiry, withdrawal, and the invite. | SHR-05, SHR-07 to SHR-09 | WP-5.2 | code, design-system, accessibility, security |
 | WP-5.4 | **Share reader**. The reader with magic links, name and passcode, and the page weight budget. | SHR-10, PRF-05 | WP-5.2 | code, design-system, accessibility, security |
-| WP-5.5 | **Release pipeline and template releases**. Draft releases with installers, the reader bundle, checksums, SBOM, attestations, and template updates. | DST-03 | WP-0.9, WP-5.1 | code, security |
+| WP-5.5 | **Release pipeline**. Draft releases with the desktop installers, the web app bundle, checksums, SBOM, and attestations. | DST-03 | WP-0.9, WP-5.1 | code, security |
 | WP-5.6 | **Instance template and update pull requests**. The template repository generated from templates/workspace/ at each release, its pinned Deploy app workflow, and update pull requests. | DST-06 | WP-5.5 | code, design-system, accessibility |
 | WP-5.7 | **Diagnostics and release qualification**. Local diagnostics, Report a problem, and the full support-matrix pass for 1.0. | QLT-02, QLT-04 | WP-5.3, WP-5.4, WP-5.6 | code, design-system, accessibility, security |
 

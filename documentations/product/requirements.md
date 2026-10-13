@@ -3,13 +3,13 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 195 requirements in 25 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 195 requirements in 25 areas. **P0** means the first usable release of its channel (the web app, then the desktop app), **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
 | Priority | Meaning |
 | --- | --- |
-| **P0** | Needed for the first usable release (see [Roadmap](../plan/roadmap.md) M0 to M5). |
+| **P0** | Needed for the first usable release of its channel: the web app's 1.0 (stages M0, M1, MW, M4, and M5) or the desktop app's first release (M2 and M3) (see [Roadmap](../plan/roadmap.md), D-85). |
 | **P1** | Needed for the full vision. Ships after P0. |
 | **Later** | Extension point. The architecture must allow it, but it isn't built yet. |
 
@@ -162,9 +162,9 @@ Seed: *"managed as a github repo… hosted in github pages… web or an electron
 | PKG-02 | Each instance's *Deploy app* workflow publishes the app and the instance's public notes to its own GitHub Pages. The project repository builds the app from source; instances made from the template deploy the released web app bundle at a pinned version, so their owners never build anything (D-87). | P0 |
 | PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access, for people who want a dedicated desktop experience (D-80). | P0 |
 | PKG-04 | The product repository builds and tests without any user workspace, credentials, or secrets. | P0 |
-| PKG-05 | The web app is the primary way to use Focus Notes: each user's copy of the Focus Notes repository builds and deploys it to their own GitHub Pages site, and it runs in any modern browser with nothing to download (D-80). | P0 |
+| PKG-05 | The web app is the primary way to use Focus Notes: each instance's *Deploy app* workflow publishes it to the instance's own GitHub Pages site (template instances deploy the released bundle; the project repository builds from source), and it runs in any modern browser with nothing to download (D-80, D-87). | P0 |
 | PKG-06 | Nothing hosted or registered by the project: no OAuth app, client ID, server, or telemetry. Each user's instance needs only their own GitHub account plus the public release files on GitHub (D-21, D-87). | P0 |
-| PKG-07 | Local first in the browser: notes, settings, and the queue of unsynced changes live in IndexedDB, survive reloads, work offline, and need no account to start writing. The app asks the browser to keep its storage (`navigator.storage.persist`) (D-82). | P0 |
+| PKG-07 | Local first in the owner's browser: notes, settings, and the queue of unsynced changes live in IndexedDB, survive reloads, and work offline. The app asks the browser to keep its storage (`navigator.storage.persist`). On an instance's site, writing starts once the owner connects (D-82, D-88). | P0 |
 | PKG-08 | Sync from the browser: public notes are committed to the instance repository and private notes to its private repository, through the GitHub REST API, several files in one commit per repository, and pulled on open, on focus, and every few minutes. A note changed in both places keeps both versions, so no text is ever lost (D-82, D-84). | P0 |
 | PKG-09 | Visitor mode: someone who opens an instance without its owner's token sees only its public notes, read-only, with the note list. Private notes, editing, and syncing need the owner's token. Visitors also see **Use this app for yourself** (DST-01) (D-87). | P0 |
 
@@ -197,7 +197,7 @@ Owner: *"We need a sign in and setup flow for the electron app… device sign in
 | FRE-06 | Workspace: create a new one (FRE-08), clone an existing one from GitHub (with the private submodule when the account can reach it), or open a local clone. | P0 |
 | FRE-07 | Settings → Account: switch account, sign out (optionally removing Git's saved credential), and run setup again. | P0 |
 | FRE-08 | *Set up my instance* (desktop): in the user's own GitHub account, make the repository from the Focus Notes template, the private repository, the submodule link, the read-only deploy key and Actions secret for share links, and GitHub Pages, each step retryable on its own (D-84). | P0 |
-| FRE-09 | Web first run: the app knows its repository from its own Pages address. *Start writing* at once (notes stay in this browser), or *Connect GitHub*: make the private repository from a pre-filled GitHub page, make one fine-grained token for both repositories from a pre-filled GitHub link, paste it, and the app checks it and links `private/` if it isn't linked yet. Resumable, skippable, and reversible from Settings (sign out removes the token) (D-81, D-84). | P0 |
+| FRE-09 | Web first run: the app knows its instance from its own Pages address. A browser that hasn't connected opens in visitor mode, with **I own this site: Connect GitHub** and **Use this app for yourself**. Connecting: make the private repository from a pre-filled GitHub page, make one fine-grained token for both repositories from a pre-filled GitHub link, paste it, and the app checks that it can write to this instance and links `private/` if it isn't linked yet. Resumable and reversible from Settings (sign out removes the token) (D-81, D-84, D-88). | P0 |
 
 ## Keyboard shortcuts (KEY)
 
@@ -360,7 +360,7 @@ Owner: *"Make sure we are extremely strict about Design system. Purely driven by
 | DSY-03 | Tokens resolve by mode: color scheme, contrast, forced colors, reduced motion, reduced transparency, pointer, platform, and UI scale. Components never check modes themselves. | P0 |
 | DSY-04 | Only primitive and layout components in `packages/ui` render DOM elements or declare styles. Compound components compose primitives, layouts, and other compounds only. | P0 |
 | DSY-05 | Every component has a closed, machine-readable contract (typed props, enumerated variants, events, slots, states, tokens, and accessibility pattern with a required accessible name). No `className`, `style`, or attribute pass-through. | P0 |
-| DSY-06 | All app UI is defined as JSON view documents rendered by the UI runtime: every IA view, the published reader and share pages, and the Get started page. Application code contains no markup or styles. | P0 |
+| DSY-06 | All app UI is defined as JSON view documents rendered by the UI runtime: every IA view, the published reader and share pages, and the *Use this app for yourself* dialog. Application code contains no markup or styles. | P0 |
 | DSY-07 | View documents contain only component and fragment references, registry-checked literals, message keys, reads and bindings to view models, local state, and the environment, a restricted expression subset, and actions that run commands or set local state. | P0 |
 | DSY-08 | `ui:check` validates every view and fragment (schema, references, binding types, accessibility rules, design rules) on every build, and any failure blocks it. | P0 |
 | DSY-09 | Every component variant and state, and every view with each of its view-model fixtures, is in the gallery and covered by visual regression, keyboard, and axe tests in light, dark, high contrast, compact, and reduced transparency. | P0 |
@@ -371,7 +371,7 @@ Owner: *"Make sure we are extremely strict about Design system. Purely driven by
 
 ## Distribution (DST)
 
-Owner: *"How do we package and distribute this?… It would be ideal if people can start this from the web also, from a static page… simpler if the user downloads the electron app."* Detailed in [Distribution and release](../plan/distribution.md) and [Get started](../design/views/get-started.md).
+Owner: *"How do we package and distribute this?… It would be ideal if people can start this from the web also, from a static page… simpler if the user downloads the electron app."* Detailed in [Distribution and release](../plan/distribution.md), [Web app](../architecture/web-app.md), and [Use this app for yourself](../design/views/get-started.md).
 
 | ID | Requirement | Priority |
 | --- | --- | --- |

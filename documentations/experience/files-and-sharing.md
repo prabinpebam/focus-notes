@@ -3,7 +3,7 @@
 This page covers the main workflows besides writing: managing notes and folders, choosing who can see a note, and sharing it with a link.
 
 > [!NOTE]
-> **TL;DR.** The **Files** panel (*Open* in the trigger toolbar, <kbd>Ctrl/⌘</kbd>+<kbd>O</kbd>) is a tree of folders and notes with create, rename, move, and delete. [Spotlight](spotlight.html) quick open (<kbd>Ctrl/⌘</kbd>+<kbd>P</kbd>) finds any note by name. Every operation is a Git commit, so nothing is lost for good. On the desktop those commits are made and pushed with the user's own `git`. Each note is **public** or **private**. Public notes get a stable read-only URL on GitHub Pages. Private notes live in the private submodule repository, are never published in plaintext, and can be shared with one person through an expiring, revocable link. Covers FIL-* and SHR-* in the [requirements](../product/requirements.md).
+> **TL;DR.** The **Files** panel (*Open* in the trigger toolbar, <kbd>Ctrl/⌘</kbd>+<kbd>O</kbd>) is a tree of folders and notes with create, rename, move, and delete. [Spotlight](spotlight.html) quick open (<kbd>Ctrl/⌘</kbd>+<kbd>P</kbd>) finds any note by name. Every operation is a Git commit, so nothing is lost for good. In the browser those commits are made through the GitHub API after connecting; on the desktop they're made and pushed with the user's own `git`. Each note is **public** or **private**. Public notes live in `notes/` of the instance repository and are published with the app on its GitHub Pages site, where visitors can read them, and from M5 each gets a stable read-only URL. Private notes live in the private submodule repository, are never published in plaintext, and can be shared with one person through an expiring, revocable link. Covers FIL-* and SHR-* in the [requirements](../product/requirements.md).
 
 ## The Files panel
 
@@ -37,7 +37,7 @@ Seed: *"The content can be made public or private. Private content are hosted in
 
 | | Public note | Shared note | Private note |
 | --- | --- | --- | --- |
-| Stored in | The notes repository, `content/` | The private repository, `private/` | The private repository, `private/` |
+| Stored in | The instance repository, `notes/` | The private repository, `private/notes/` | The private repository, `private/notes/` |
 | Published on GitHub Pages | Yes, as a read-only page | Only as sealed (encrypted) files | Never |
 | Who can read it | Anyone with the URL | Named audiences, with a magic link or their name and passcode | Only you |
 | Default for new notes | No | No | **Yes** (SHR-01, safe by default) |

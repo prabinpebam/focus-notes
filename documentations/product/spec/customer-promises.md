@@ -117,10 +117,10 @@ The eleven promises Focus Notes makes. Every scenario, capability, screen, and d
 
 | Field | Value |
 | --- | --- |
-| Customer promise | From install to writing in a few minutes, with one sign-in that also sets up Git. |
+| Customer promise | From first visit to writing in a few minutes: in the browser with nothing to install, or in the desktop app with one sign-in that also sets up Git. |
 | Why it matters | Git-backed tools usually ask for setup expertise. The first five minutes decide whether people stay. |
-| Breaks when | Setup asks for things the computer already knows, needs the terminal, or leaves Git half-configured. |
-| Signals | Time from install to first note. Setup steps skipped because they were detected. |
+| Breaks when | Setup asks for things the browser or computer already knows, needs the terminal or a build, or leaves the instance or Git half-configured. |
+| Signals | Time from first visit or install to first note. Setup steps skipped because they were detected. |
 | Scenarios | SC-SETUP-01 to SC-SETUP-03, SC-SETUP-05 |
 
 ### CP-AGENT-01 — Agents on your terms

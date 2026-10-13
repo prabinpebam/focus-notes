@@ -24,7 +24,7 @@
       "order": 110,
       "icon": "flag",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Product"
     },
     {
@@ -42,7 +42,7 @@
       "order": 130,
       "icon": "handshake",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Product/Spec chain"
     },
     {
@@ -51,7 +51,7 @@
       "order": 140,
       "icon": "auto_stories",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Product/Spec chain"
     },
     {
@@ -132,7 +132,7 @@
       "order": 260,
       "icon": "folder_shared",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Experience"
     },
     {
@@ -159,7 +159,7 @@
       "order": 290,
       "icon": "login",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Experience"
     },
     {
@@ -168,7 +168,7 @@
       "order": 300,
       "icon": "lan",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Design"
     },
     {
@@ -249,16 +249,16 @@
       "order": 341,
       "icon": "group",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Design/Views"
     },
     {
       "path": "design/views/get-started.md",
-      "title": "Get started page",
+      "title": "Use this app for yourself",
       "order": 342,
       "icon": "rocket_launch",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Design/Views"
     },
     {
@@ -303,7 +303,7 @@
       "order": 410,
       "icon": "data_object",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Architecture"
     },
     {
@@ -330,7 +330,7 @@
       "order": 430,
       "icon": "terminal",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Architecture"
     },
     {
@@ -339,7 +339,7 @@
       "order": 440,
       "icon": "publish",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Architecture"
     },
     {
@@ -348,7 +348,7 @@
       "order": 450,
       "icon": "smart_toy",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Architecture"
     },
     {
@@ -357,7 +357,7 @@
       "order": 460,
       "icon": "shield_lock",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Architecture"
     },
     {
@@ -366,7 +366,7 @@
       "order": 470,
       "icon": "speed",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Architecture"
     },
     {
@@ -375,7 +375,7 @@
       "order": 480,
       "icon": "verified",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Architecture"
     },
     {
@@ -429,7 +429,7 @@
       "order": 520,
       "icon": "package_2",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Plan"
     },
     {

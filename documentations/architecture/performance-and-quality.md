@@ -132,7 +132,7 @@ Measure before fixing anything. Guesses about what's slow are usually wrong: in 
 
 ## Accessibility
 
-- **Target: WCAG 2.2 Level AA** for the app, users' public and shared pages, and the product site (A11Y-01).
+- **Target: WCAG 2.2 Level AA** for the app (including what visitors see), public and shared pages, and these docs (A11Y-01).
 - **Patterns:** the ARIA Authoring Practices Guide (combobox, menu, tree, grid, toolbar, dialog, tabs) for every custom widget.
 - **Windows contrast themes:** the app respects `forced-colors`. The trigger, focus band, selection, and find highlights switch to system colors and stay visible (A11Y-02).
 - **Zoom and reflow:** usable at 200% interface size and at a 320 px wide viewport.
@@ -149,4 +149,4 @@ Measure before fixing anything. Guesses about what's slow are usually wrong: in 
 
 - Logs live in the app's data folder, redacted (no tokens, passcodes, or note text), rotated, and kept for 7 days.
 - **Settings → About → Copy diagnostic report** puts the versions, settings summary, recent errors, Git status, and a summary of recent timings (each measure's name, count, p50, and p95, with no paths or note text) on the clipboard.
-- **Report a problem** opens a GitHub issue form on the product repository, with the report pasted for the user to review. There's no automatic sending (QLT-04).
+- **Report a problem** opens a GitHub issue form on the project repository, with the report pasted for the user to review. There's no automatic sending (QLT-04).

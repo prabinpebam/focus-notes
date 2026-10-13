@@ -3,7 +3,7 @@
 How the Electron app is put together: processes, security, signing in through Git's own sign-in tools, creating a user's workspace, and saving notes as commits and pushes with the user's own `git`.
 
 > [!NOTE]
-> **TL;DR.** The **main process** owns windows, the file system, Git, and setup. The **renderer** runs the same web app core as the browser build, and it reaches the main process only through a small, typed **preload bridge** that offers intent-level operations (such as `workspace.save`), never raw shell or Git. **Focus Notes has no OAuth app, no client ID, and no server** (D-21). Sign-in is done by tools the user already owns: **Git Credential Manager** or the **GitHub CLI**, both with a device-code option, or a **fine-grained token** the user creates on GitHub. Whatever signs Git in also gives the app its GitHub API access, so the app stores no credential of its own. A new user's whole setup (workspace repository, private repository, GitHub Pages, share-link keys) is created **in their own GitHub account** by the app on their computer. Edits are written to disk within 1 s, and a **commit and push** happens on <kbd>Mod</kbd>+<kbd>S</kbd>, on switching or closing a note, on quit, or after 60 s of no typing (D-23). Git runs as separate processes, which are slow on Windows, so the app asks each repository what changed with **one cached `git status`**, never makes a view wait for it, and shows structural changes on screen **before** they're committed (PRF-07, PRF-09, D-66, D-68).
+> **TL;DR.** The **main process** owns windows, the file system, Git, and setup. The **renderer** runs the same web app core as the browser build, and it reaches the main process only through a small, typed **preload bridge** that offers intent-level operations (such as `workspace.save`), never raw shell or Git. **Focus Notes has no OAuth app, no client ID, and no server** (D-21). Sign-in is done by tools the user already owns: **Git Credential Manager** or the **GitHub CLI**, both with a device-code option, or a **fine-grained token** the user creates on GitHub. Whatever signs Git in also gives the app its GitHub API access, so the app stores no credential of its own. A new user's whole instance (instance repository from the template, private repository, GitHub Pages, share-link keys) is created **in their own GitHub account** by the app on their computer, or found and cloned if they made it in the browser first. Edits are written to disk within 1 s, and a **commit and push** happens on <kbd>Mod</kbd>+<kbd>S</kbd>, on switching or closing a note, on quit, or after 60 s of no typing (D-23). Git runs as separate processes, which are slow on Windows, so the app asks each repository what changed with **one cached `git status`**, never makes a view wait for it, and shows structural changes on screen **before** they're committed (PRF-07, PRF-09, D-66, D-68).
 
 ## Processes and security
 
@@ -61,16 +61,16 @@ The app needs the GitHub REST API for a few things: listing and creating reposit
 
 ## Creating a workspace
 
-A new user gets an isolated, self-owned setup in their own account (FRE-08). Everything below runs in the app on their computer, using their credential.
+A new user gets an isolated, self-owned instance in their own account (FRE-08). Everything below runs in the app on their computer, using their credential. People who already made their instance in the browser skip this: the app finds that repository and clones it with its `private/` submodule.
 
 <ol class="slate-steps">
 <li class="slate-step">
-<p class="slate-step__title">Workspace repository</p>
-<p>Created from the public <strong>workspace template</strong> repository with GitHub's "generate from template" API, named by the user (default <code>notes</code>). It's public, because GitHub Pages on free accounts needs a public repository. It contains <code>content/</code>, <code>.focus-notes/</code>, and a publish workflow.</p>
+<p class="slate-step__title">Instance repository</p>
+<p>Copied from the public <strong>template repository</strong> with GitHub's "generate from template" API, named by the user (default <code>notes</code>). It's public, because GitHub Pages on free accounts needs a public repository. It contains <code>notes/</code>, <code>.focus-notes/workspace.json</code>, and the <em>Deploy app</em> workflow, which deploys the released web app at a pinned version (D-87).</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Private repository</p>
-<p>Created empty and private (default <code>notes-private</code>), with a starter <code>README.md</code> and <code>access.json</code>.</p>
+<p>Created empty and private (default <code>notes-private</code>), with a starter <code>README.md</code>, <code>notes/</code>, <code>.focus-notes/</code>, and <code>access.json</code>.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Link them</p>
@@ -78,11 +78,11 @@ A new user gets an isolated, self-owned setup in their own account (FRE-08). Eve
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Share-link key</p>
-<p>The app generates an SSH key pair locally, adds the public key to the private repository as a <strong>read-only deploy key</strong>, and stores the private key as the workspace repository's <code>PRIVATE_CONTENT_KEY</code> Actions secret. The secret is encrypted with the repository's public key (libsodium sealed box, as GitHub requires), then the local copy is deleted.</p>
+<p>The app generates an SSH key pair locally, adds the public key to the private repository as a <strong>read-only deploy key</strong>, and stores the private key as the instance repository's <code>PRIVATE_CONTENT_KEY</code> Actions secret. The secret is encrypted with the repository's public key (libsodium sealed box, as GitHub requires), then the local copy is deleted.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Publishing</p>
-<p>Turns on GitHub Pages for the workspace repository with GitHub Actions as the source, and runs the first publish. The public site is <code>https://&lt;user&gt;.github.io/&lt;workspace&gt;/</code>.</p>
+<p>Turns on GitHub Pages for the instance repository with GitHub Actions as the source, and runs the <em>Deploy app</em> workflow. The instance's site, <code>https://&lt;user&gt;.github.io/&lt;repository&gt;/</code>, then serves the web app and the public notes, so the user can also write in the browser.</p>
 </li>
 </ol>
 

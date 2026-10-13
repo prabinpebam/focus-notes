@@ -11,7 +11,7 @@ Who can read a note, and how to give specific people access with a magic link or
 | --- | --- | --- | --- |
 | **Private** | Only you (and anyone with access to your private repository) | Private repository | Not at all |
 | **Shared** | You, plus the audiences you name | Private repository | Sealed: encrypted pages that only an audience's link or passcode opens |
-| **Public** | Anyone | Notes repository (`content/`) | As a normal page on your GitHub Pages site |
+| **Public** | Anyone | Instance repository (`notes/`) | With the app on your GitHub Pages site, where visitors read it, and from M5 as a normal page |
 
 New notes are **Private** (D-05). Moving between Private and Shared changes nothing on disk except the grant records. Moving to or from Public moves the file between repositories, and always asks first ([confirmation](../components/feedback-and-dialogs.md#confirmation-dialog)).
 

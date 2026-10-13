@@ -1,12 +1,12 @@
 <header class="slate-hero">
   <p class="slate-hero__eyebrow">Architecture</p>
   <h1 class="slate-hero__title">Repository and publishing</h1>
-  <p class="slate-hero__summary">Each user owns their whole setup: a public notes repository, a private submodule, and their own GitHub Pages build that never publishes private plaintext.</p>
+  <p class="slate-hero__summary">Each user owns their whole instance: one repository with their public notes, a private submodule, and a Deploy app workflow that publishes the app to their own GitHub Pages and never publishes private plaintext.</p>
 </header>
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Every user's Focus Notes is <strong>their own, isolated instance</strong> in their own GitHub account (D-38). Their public <strong>notes repository</strong> (created from the Focus Notes template) holds public notes and the publish workflow. Their private notes live in a separate <strong>private repository mounted as a Git submodule</strong> at <code>private/</code>, the same pattern as the <code>personal-site</code> project. The <strong>product repository</strong> only provides the app's source, its releases, and the template. Nothing is hosted for users. GitHub Actions in the user's repository checks out both of their repositories (the private one with a read-only deploy key), builds the app and public note pages, <strong>seals</strong> any privately shared notes with AES-256-GCM, checks that no plaintext leaked, and deploys to <em>their</em> GitHub Pages site. Readers of shared private notes decrypt them in their own browser using the key in the link's <code>#fragment</code>.</p>
+  <p>Every user's Focus Notes is <strong>their own, isolated instance</strong> in their own GitHub account (D-38, D-84, D-87). An instance is <strong>one repository</strong> (the <strong>notes repository</strong>): public notes in <code>notes/</code>, a <strong>private repository linked at <code>private/</code></strong> as a Git submodule (private notes in its <code>notes/</code>, synced settings in <code>.focus-notes/</code>), the same pattern as the <code>personal-site</code> project, and a <em>Deploy app</em> workflow. People who just want to use Focus Notes copy the small <strong>template repository</strong> (not the source repository) to make their instance; its workflow deploys the released web app bundle at a pinned version, checked by SHA-256 and attestation (D-48), so they never build the app themselves. The <strong>project repository</strong> is the owner's own instance and builds the app from source; people who want to improve Focus Notes fork it. On each push, the workflow checks out both repositories (the private one with a read-only deploy key), deploys the app and public notes, <strong>seals</strong> any privately shared notes with AES-256-GCM, checks that no plaintext leaked, and deploys to <em>that instance's own</em> GitHub Pages site. Nothing runs on a server. Readers of shared private notes decrypt them in their own browser using the key in the link's <code>#fragment</code>.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -14,11 +14,11 @@
        aria-labelledby="pub-title pub-desc" preserveAspectRatio="xMidYMid meet"
        data-slate-svg-motion="viewport">
     <title id="pub-title">Publishing pipeline from two repositories to GitHub Pages</title>
-    <desc id="pub-desc">The user's public notes repository and their private repository, fetched with a read-only deploy key, both feed a GitHub Actions workflow. The workflow builds the public pages from a pinned Focus Notes release, seals privately shared notes, and verifies there are no plaintext leaks before deploying to the user's GitHub Pages site, which serves public pages plus ciphertext only.</desc>
+    <desc id="pub-desc">The user's instance repository, with public notes and the Deploy app workflow, and their private repository, fetched with a read-only deploy key, both feed a GitHub Actions workflow. The workflow puts together the app (the pinned released bundle, or built from source in the project repository) and the public notes, seals privately shared notes, and verifies there are no plaintext leaks before deploying to the instance's own GitHub Pages site, which serves the app, public notes, and ciphertext only.</desc>
     <g id="pub-inputs" data-slate-svg-step="0" data-slate-svg-effect="fade-rise">
       <rect id="pub-public" x="40" y="60" width="220" height="80" rx="14" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="1.5"/>
-      <text x="150" y="94" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="20" font-weight="700">Notes repo</text>
-      <text x="150" y="122" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="17">content/, workflow</text>
+      <text x="150" y="94" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="20" font-weight="700">Instance repo</text>
+      <text x="150" y="122" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="17">notes/, Deploy app</text>
       <rect id="pub-private" x="40" y="220" width="220" height="80" rx="14" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5"/>
       <text x="150" y="254" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="20" font-weight="700">Private repo</text>
       <text x="150" y="282" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="17">private/, access.json</text>
@@ -32,7 +32,7 @@
       <rect x="310" y="40" width="380" height="300" rx="18" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="2"/>
       <text x="334" y="74" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="20" font-weight="700">GitHub Actions</text>
       <rect id="pub-step-build" x="334" y="92" width="332" height="66" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5"/>
-      <text x="500" y="131" text-anchor="middle" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="18" data-slate-fit-target="pub-step-build" data-slate-fit-padding="12">1. Build app + public pages</text>
+      <text x="500" y="131" text-anchor="middle" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="18" data-slate-fit-target="pub-step-build" data-slate-fit-padding="12">1. App + public notes</text>
       <rect id="pub-step-seal" x="334" y="174" width="332" height="66" rx="12" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5"/>
       <text x="500" y="213" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="18" data-slate-fit-target="pub-step-seal" data-slate-fit-padding="12">2. Seal shared private notes</text>
       <rect id="pub-step-verify" x="334" y="256" width="332" height="66" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5"/>
@@ -45,7 +45,7 @@
       <rect x="740" y="150" width="180" height="80" rx="14" fill="var(--color-brand-bg)"/>
       <text x="830" y="184" text-anchor="middle" fill="var(--color-on-brand)" font-family="var(--font-family-base)" font-size="20" font-weight="700">GitHub Pages</text>
       <text x="830" y="210" text-anchor="middle" fill="var(--color-on-brand)" font-family="var(--font-family-base)" font-size="17">static site</text>
-      <text x="830" y="262" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="16">public pages +</text>
+      <text x="830" y="262" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="16">app, public notes +</text>
       <text x="830" y="288" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="16">ciphertext only</text>
     </g>
   </svg>
@@ -56,8 +56,8 @@
   <table>
     <thead><tr><th>Stage</th><th>Input</th><th>Output</th></tr></thead>
     <tbody>
-      <tr><td>Checkout</td><td>The user's notes repo; their private repo through a read-only deploy key</td><td>Full workspace on the CI runner</td></tr>
-      <tr><td>1. Build</td><td>Pinned Focus Notes release bundle, <code>content/</code></td><td>Public note pages</td></tr>
+      <tr><td>Checkout</td><td>The user's instance repository; their private repository through a read-only deploy key</td><td>The whole instance on the CI runner</td></tr>
+      <tr><td>1. App and public notes</td><td>The released web app bundle at the pinned version (template instances), or the app's source (the project repository); <code>notes/</code></td><td>The app and public note pages</td></tr>
       <tr><td>2. Seal</td><td>Notes with active grants in <code>access.json</code></td><td>AES-256-GCM ciphertext and keyrings</td></tr>
       <tr><td>3. Verify</td><td>Build output</td><td>Pass, or fail the deploy if any private plaintext is found</td></tr>
       <tr><td>Deploy</td><td>Verified output</td><td>GitHub Pages site</td></tr>
@@ -69,18 +69,18 @@
 <table>
   <thead><tr><th>Repository</th><th>Owner</th><th>Holds</th></tr></thead>
   <tbody>
-    <tr><td><strong>Product repository</strong> (<code>focus-notes</code>, this repository)</td><td>The project</td><td>App source, documentation (<code>documentations/</code>, <code>slate/</code>), desktop installers on GitHub Releases, the reusable publish workflow, and the static reader bundle attached to each release. The project's own GitHub Pages site can host these docs and a download page. Nothing in it is needed at run time except the public release files GitHub serves.</td></tr>
-    <tr><td><strong>Workspace template</strong> (<code>focus-notes-workspace</code>, a GitHub template repository)</td><td>The project</td><td>The starting layout for a notes repository: <code>content/</code>, <code>.focus-notes/</code>, the publish workflow that calls the reusable workflow, and a README.</td></tr>
-    <tr><td><strong>Notes repository</strong> (default <code>notes</code>, public)</td><td>Each user</td><td>Public notes in <code>content/</code>, custom themes and synced settings in <code>.focus-notes/</code>, the publish workflow, the <code>PRIVATE_CONTENT_KEY</code> secret, and a <strong>pointer</strong> (gitlink) to their private repository, plus <code>.gitmodules</code>.</td></tr>
-    <tr><td><strong>Private repository</strong> (default <code>notes-private</code>, private, submodule at <code>private/</code>)</td><td>Each user</td><td>Private notes and their <code>assets/</code>, <code>access.json</code> (share grants, whose secrets live only here), and optional <code>access-message.json</code>. Must never be made public.</td></tr>
+    <tr><td><strong>Project repository</strong> (<code>focus-notes</code>, this repository)</td><td>The project (the owner)</td><td>App source, documentation (<code>documentations/</code>, <code>slate/</code>), the template's source (<code>templates/workspace/</code>), and GitHub Releases: the desktop installers and the web app bundle. It's also <strong>the owner's own instance</strong>: the owner's public notes in <code>notes/</code>, the owner's private repository at <code>private/</code>, and a <em>Deploy app</em> workflow that builds the app from source and publishes it, with these docs, to the owner's Pages (D-40, D-87). People who want to improve Focus Notes fork it.</td></tr>
+    <tr><td><strong>Template repository</strong> (<code>focus-notes-workspace</code>, a GitHub template repository)</td><td>The project</td><td>What people who just want to use Focus Notes copy (<em>Use this template</em>) to make their instance: an empty <code>notes/</code>, <code>.focus-notes/workspace.json</code>, <code>AGENTS.md</code>, a README, and the <em>Deploy app</em> workflow, which deploys the released web app bundle at a pinned version. No app source, so they never build the app themselves. Generated from <code>templates/workspace/</code> at each release (DST-06).</td></tr>
+    <tr><td><strong>Instance repository</strong>, the notes repository (default <code>notes</code>, public)</td><td>Each user</td><td>Public notes in <code>notes/</code>, the <em>Deploy app</em> workflow, the <code>PRIVATE_CONTENT_KEY</code> secret, and a <strong>pointer</strong> (gitlink) to their private repository, plus <code>.gitmodules</code>. Public because GitHub Pages on free plans needs it.</td></tr>
+    <tr><td><strong>Private repository</strong> (default <code>notes-private</code>, private, submodule at <code>private/</code>)</td><td>Each user</td><td>Private notes in <code>notes/</code> and their <code>assets/</code>, custom themes and synced settings in <code>.focus-notes/</code> (D-46), <code>access.json</code> (share grants, whose secrets live only here), and optional <code>access-message.json</code>. Never deployed, and must never be made public.</td></tr>
   </tbody>
 </table>
 
-<p>A user's notes repository tracks only the submodule <em>pointer</em>, never the private files. This follows the <code>personal-site</code> setup, where <code>.gitmodules</code> declares the private repository with <code>branch = main</code>. Both user repositories are created by the app on the user's computer during <a href="../experience/first-run.md#step-5-workspace">first run</a> (see <a href="desktop-and-git.md#creating-a-workspace">Creating a workspace</a>). The project never sees them.</p>
+<p>A user's instance repository tracks only the submodule <em>pointer</em>, never the private files. This follows the <code>personal-site</code> setup, where <code>.gitmodules</code> declares the private repository with <code>branch = main</code>. In the browser, the user copies the template themselves and the app's <a href="web-app.md#connecting-github">Connect GitHub</a> step makes the private repository from a pre-filled GitHub page and links it (FRE-09). The desktop app's <em>Set up my instance</em> does the same steps for them (FRE-08, <a href="desktop-and-git.md#creating-a-workspace">Creating a workspace</a>). The project never sees either repository.</p>
 
 <div class="slate-callout slate-callout--info" role="note">
   <p class="slate-callout__title">Nothing hosted, nothing registered</p>
-  <p>Each instance runs on the user's GitHub account alone: their repositories, their Actions, their Pages site, and their own credentials in Git's credential helper. There's no OAuth app, client ID, server, or telemetry run by the project (D-21). The only shared things are public files on GitHub: the template, the reusable workflow, and the release downloads.</p>
+  <p>Each instance runs on the user's GitHub account alone: their repositories, their Actions, their Pages site, and their own credentials. There's no OAuth app, client ID, server, or telemetry run by the project (D-21). The only hosting is GitHub Pages (each instance's own site) and GitHub Releases. The owner's Pages site is the owner's own app: anyone else who opens it is a visitor who sees only public notes and <a href="../design/views/get-started.md">Use this app for yourself</a> (D-87).</p>
 </div>
 
 <h2>Working with the submodule</h2>
@@ -120,8 +120,8 @@
   <dt>Private checkout</dt>
   <dd>The Actions secret <code>PRIVATE_CONTENT_KEY</code> holds an SSH deploy key whose public half is installed <strong>read-only</strong> on the private repository. The workflow rewrites the submodule URL to SSH, runs <code>git submodule update --init --depth 1 private</code>, checks that <code>private/access.json</code> exists (refusing to deploy a half-configured site), then deletes the key from the runner.</dd>
   <dd>Build logs that could reveal private note names are sent to a runner-local file instead of the public Actions log.</dd>
-  <dt>Build</dt>
-  <dd>Calls the Focus Notes <strong>reusable publish workflow</strong>, pinned by <strong>full commit SHA</strong> (not a movable tag), as GitHub's security hardening guide recommends, because the workflow runs with the user's <code>PRIVATE_CONTENT_KEY</code>. It downloads the matching release's static reader bundle from GitHub Releases, checks it against a SHA-256 recorded in the workflow file and against the release's GitHub artifact attestation, and renders every note in <code>content/</code> to a static page at <code>/n/&lt;path&gt;/</code>. Updates reach users only as a pull request in their own repository (Dependabot, or the app's <em>Update publishing</em> button) that they merge themselves (D-48).</dd>
+  <dt>App and public notes</dt>
+  <dd>In an instance made from the template, the <em>Deploy app</em> workflow downloads the released <strong>web app bundle</strong> (the app plus its publish tools) at the version it pins, and checks it against a SHA-256 recorded in the workflow file and against the release's GitHub artifact attestation before using it. Every action in the workflow is pinned by <strong>full commit SHA</strong> (not a movable tag), as GitHub's security hardening guide recommends, because the workflow runs with the user's <code>PRIVATE_CONTENT_KEY</code> (D-48, SEC-05). The project repository builds the same app from source instead. Either way the app goes at the site's root and every note in <code>notes/</code> is published with it (and, from M5, rendered to a static page at <code>/n/&lt;path&gt;/</code>). Updates reach users only as a pull request in their own repository that moves the pinned version (Dependabot, or the app's <em>Update publishing</em> button), which they merge themselves (DST-06).</dd>
   <dt>Seal</dt>
   <dd>For each active grant, encrypts the granted notes and their media into <code>_sealed/&lt;build&gt;/</code> and writes the grant keyrings into <code>_access/&lt;build&gt;/</code>.</dd>
   <dt>Verify</dt>
@@ -204,8 +204,9 @@
 <table>
   <thead><tr><th>Path</th><th>Serves</th></tr></thead>
   <tbody>
-    <tr><td><code>/</code></td><td>The user's public home page: a list of their public notes</td></tr>
-    <tr><td><code>/n/&lt;path&gt;/</code></td><td>Read-only public note pages</td></tr>
+    <tr><td><code>/</code></td><td>The app. The owner writes here after connecting; visitors see the public notes, read-only, and <em>Use this app for yourself</em> (PKG-09, DST-01)</td></tr>
+    <tr><td><code>/notes/</code></td><td>The public notes and an index, read by the app for visitors without calling GitHub's API</td></tr>
+    <tr><td><code>/n/&lt;path&gt;/</code></td><td>Read-only public note pages (M5)</td></tr>
     <tr><td><code>/s/&lt;token&gt;/</code></td><td>Private share-link reader (decrypts in the browser)</td></tr>
   </tbody>
 </table>

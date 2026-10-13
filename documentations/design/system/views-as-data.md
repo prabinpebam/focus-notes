@@ -57,7 +57,7 @@ Nothing here says how anything looks. Spacing is a step name, the row arrangemen
 | `params`, `slots` | Fragments only | The fragment's parameters (typed like props) and named slots |
 | `root` | Yes | One node |
 
-Files live next to their owners: `packages/views/` for the app (shared by desktop and web), `packages/publish/views/` for published pages, and `apps/site/views/` for the Get started page. Each IA view is one document. Large views split into sub-views that their parent includes by ID, such as the eight Settings categories.
+Files live next to their owners: `packages/views/` for the app (shared by desktop and web, including visitor mode and the *Use this app for yourself* dialog) and `packages/publish/views/` for published pages. Each IA view is one document. Large views split into sub-views that their parent includes by ID, such as the eight Settings categories.
 
 <h2 data-reader-personas="engineering">Nodes</h2>
 
@@ -159,14 +159,13 @@ A fragment is a reusable arrangement written in the same format, with typed `par
 
 | Fragment | Used by |
 | --- | --- |
-| `fragment.dialogLayout` | Settings, Shortcuts, Move to, confirmations: title, body, and footer actions |
+| `fragment.dialogLayout` | Settings, Shortcuts, Move to, confirmations, *Use this app for yourself*: title, body, and footer actions |
 | `fragment.sheetLayout` | Files, Theme manager, Note history: header, toolbar, scrolling body |
 | `fragment.settingsRow` | Every settings control |
 | `fragment.emptyState` | Empty Files, no search results, no audiences |
 | `fragment.formSection` | Grouped fields with a heading |
 | `fragment.stepLayout` | Each first-run step |
 | `fragment.readerLayout` | Public notes and the share reader |
-| `fragment.siteSection` | Sections of the Get started page |
 
 Fragments are expanded at build time, so they cost nothing at run time.
 
@@ -233,7 +232,7 @@ The M0 runtime spike measures these before any view is built ([Roadmap](../../pl
 
 <h2 data-reader-personas="product engineering">For agents and tools</h2>
 
-The component contracts, the UI schema, the token names, and the fragment list are published as JSON on the product site (DSY-13), next to the other schemas ([Agents → Files and schemas](../../architecture/agents.md#files-and-schemas-for-agents)). A coding agent working on Focus Notes can read the exact vocabulary, write a view, and have `ui:check` tell it precisely what's wrong, the same way a person would.
+The component contracts, the UI schema, the token names, and the fragment list are published as JSON on the project's own Pages site, beside these docs (DSY-13), next to the other schemas ([Agents → Files and schemas](../../architecture/agents.md#files-and-schemas-for-agents)). A coding agent working on Focus Notes can read the exact vocabulary, write a view, and have `ui:check` tell it precisely what's wrong, the same way a person would.
 
 <h2 data-reader-personas="product design engineering">Design decisions</h2>
 

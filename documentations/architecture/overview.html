@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Focus Notes is a client-side app with no server of its own. The <strong>same web build</strong> runs from each user's own <strong>GitHub Pages</strong> site in the browser, the primary way to use it (D-80), and inside an <strong>Electron</strong> desktop shell for a dedicated desktop experience. A shared core (Tiptap editor and block registry, focus mode, theme engine, command and keybinding service, Spotlight index, workspace) talks to storage through one <strong>workspace adapter</strong> interface. The desktop runs the user's own <code>git</code> on a local clone, signed in once through Git's own sign-in helper (Git Credential Manager or the GitHub CLI, with a device code) or a token the user creates. The web build keeps notes in IndexedDB and syncs them through the GitHub REST API ([Web app](web-app.md)). All of a user's content lives in <em>their</em> two GitHub repositories, a public notes repository and a private one mounted as a submodule, and publishes to <em>their</em> GitHub Pages. The project registers no OAuth app and runs no server (D-21, D-38). Everything is MIT-licensed or uses a compatible license.</p>
+  <p>Focus Notes is a client-side app with no server of its own. The <strong>same web build</strong> runs from each user's own <strong>GitHub Pages</strong> site in the browser, the primary way to use it (D-80), and inside an <strong>Electron</strong> desktop shell for a dedicated desktop experience. A shared core (Tiptap editor and block registry, focus mode, theme engine, command and keybinding service, Spotlight index, workspace) talks to storage through one <strong>workspace adapter</strong> interface. The desktop runs the user's own <code>git</code> on a local clone, signed in once through Git's own sign-in helper (Git Credential Manager or the GitHub CLI, with a device code) or a token the user creates. The web build keeps notes in IndexedDB and syncs them through the GitHub REST API ([Web app](web-app.md)). All of a user's content lives in <em>their</em> instance: one public repository (the notes repository, with public notes and the <em>Deploy app</em> workflow) and a private repository mounted at <code>private/</code> as a submodule. The app itself is served from <em>that instance's own</em> GitHub Pages site: instances made from the template deploy the released web app bundle, and the project repository, the owner's own instance, builds it from source (D-84, D-87). The desktop app comes from GitHub Releases. The project registers no OAuth app and runs no server (D-21). Everything is MIT-licensed or uses a compatible license.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -14,7 +14,7 @@
        aria-labelledby="arch-title arch-desc" preserveAspectRatio="xMidYMid meet"
        data-slate-svg-motion="viewport">
     <title id="arch-title">Focus Notes system layers</title>
-    <desc id="arch-desc">Two shells, a web app on GitHub Pages and an Electron desktop app, both run one shared app core made of the editor engine with its block registry, focus mode, the theme engine and the workspace service. The core reaches storage through either a GitHub API adapter on the web or a local Git adapter in Electron. Both adapters read and write GitHub, where a public repository holds the app, docs and public notes, and a private repository, linked as a submodule, holds private notes and share grants.</desc>
+    <desc id="arch-desc">Two shells, a web app on GitHub Pages and an Electron desktop app, both run one shared app core made of the editor engine with its block registry, focus mode, the theme engine and the workspace service. The core reaches storage through either a GitHub API adapter on the web or a local Git adapter in Electron. Both adapters read and write GitHub, where the user's public instance repository holds public notes and the Deploy app workflow, and a private repository, linked as a submodule, holds private notes and share grants.</desc>
     <g id="arch-links" data-slate-svg-step="4" data-slate-svg-effect="draw" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
       <path d="M280 112 V146"/><path d="M272 138 L280 146 L288 138"/>
       <path d="M680 112 V146"/><path d="M672 138 L680 146 L688 138"/>
@@ -63,8 +63,8 @@
       <rect x="60" y="466" width="840" height="146" rx="18" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="2"/>
       <text x="84" y="500" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="20" font-weight="700">GitHub</text>
       <rect id="arch-public" x="100" y="516" width="320" height="76" rx="12" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="1.5"/>
-      <text x="260" y="546" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="19" font-weight="700">Notes repository</text>
-      <text x="260" y="574" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="17">public notes, workflow</text>
+      <text x="260" y="546" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="19" font-weight="700">Instance repository</text>
+      <text x="260" y="574" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="17">public notes, Deploy app</text>
       <rect id="arch-private" x="540" y="516" width="320" height="76" rx="12" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5"/>
       <text x="700" y="546" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="19" font-weight="700">Private repository</text>
       <text x="700" y="574" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="17">private notes, grants</text>
@@ -82,7 +82,7 @@
       <tr><td>Shells</td><td>Web app on GitHub Pages; Electron desktop app wrapping the same build</td></tr>
       <tr><td>Shared core</td><td>Editor engine and block registry; focus mode; theme engine; workspace (files, visibility, sharing)</td></tr>
       <tr><td>Storage adapters</td><td>GitHub API adapter (web); local Git adapter (Electron)</td></tr>
-      <tr><td>GitHub (the user's account)</td><td>Notes repository (public notes, publish workflow); private repository as a submodule (private notes, share grants)</td></tr>
+      <tr><td>GitHub (the user's account)</td><td>Instance repository (public notes, Deploy app workflow, served on its own Pages); private repository as a submodule (private notes, settings, share grants)</td></tr>
     </tbody>
   </table>
 </details>
@@ -111,15 +111,15 @@
 
 <h2>Desktop and web compared</h2>
 <table>
-  <thead><tr><th>Concern</th><th>Desktop (Electron, primary, P0)</th><th>Web (GitHub Pages)</th></tr></thead>
+  <thead><tr><th>Concern</th><th>Web (GitHub Pages, primary)</th><th>Desktop (Electron, second)</th></tr></thead>
   <tbody>
-    <tr><td>Role</td><td>Writing and managing notes</td><td>The primary client: writing and syncing from each user's own Pages site (MW, D-80)</td></tr>
-    <tr><td>Delivery</td><td>Signed installers for Windows, macOS, and Linux, wrapping the same build</td><td>Static files built and deployed by GitHub Actions</td></tr>
-    <tr><td>Storage</td><td>Local clone with the private submodule. Commits, pushes, and pulls with the user's own <code>git</code></td><td>GitHub REST API (contents, git trees and commits)</td></tr>
-    <tr><td>Sign-in</td><td>Through Git's credential helper, owned by the user: Git Credential Manager or the GitHub CLI (device code or browser), or a fine-grained token they create. One credential serves the app and the terminal (D-21)</td><td>A fine-grained token the user creates for their two repositories, kept in the browser (D-13)</td></tr>
-    <tr><td>Offline</td><td>Fully offline. Commits pile up and push later</td><td>Local edit queue in IndexedDB that syncs when back online</td></tr>
-    <tr><td>Full-text search</td><td>Files on disk (ripgrep) plus the Spotlight index</td><td>The Spotlight index over cached notes</td></tr>
-    <tr><td>Visitors without an account</td><td>Not applicable</td><td>Read-only public pages and private share links</td></tr>
+  <tr><td>Role</td><td>The primary way to use Focus Notes: writing and syncing from the instance's own Pages site (MW, D-80)</td><td>A dedicated desktop experience on the same instance (M2, M3)</td></tr>
+  <tr><td>Delivery</td><td>Static files deployed to each instance's own Pages by its <em>Deploy app</em> workflow: the released bundle at a pinned version, or built from source in the project repository (D-87)</td><td>Installers for Windows, macOS, and Linux from GitHub Releases (later winget and Homebrew), signed when certificates allow (D-51)</td></tr>
+  <tr><td>Storage</td><td>IndexedDB, synced through the GitHub REST API (git trees and commits)</td><td>Local clone with the private submodule. Commits, pushes, and pulls with the user's own <code>git</code></td></tr>
+  <tr><td>Sign-in</td><td>A fine-grained token the user creates for their two repositories, kept in the browser (D-13, D-81)</td><td>Through Git's credential helper, owned by the user: Git Credential Manager or the GitHub CLI (device code or browser), or a fine-grained token they create. One credential serves the app and the terminal (D-21)</td></tr>
+  <tr><td>Offline</td><td>Local edit queue in IndexedDB that syncs when back online</td><td>Fully offline. Commits pile up and push later</td></tr>
+  <tr><td>Full-text search</td><td>The Spotlight index over cached notes</td><td>Files on disk (ripgrep) plus the Spotlight index</td></tr>
+  <tr><td>Visitors without the owner's token</td><td>Public notes only, read-only, plus <em>Use this app for yourself</em> (PKG-09, DST-01); private share links</td><td>Not applicable</td></tr>
   </tbody>
 </table>
 
@@ -144,7 +144,7 @@
     <tr><td>Local cache (web)</td><td>IndexedDB</td><td>Not applicable</td><td>Proposed</td></tr>
     <tr><td>CI/CD</td><td>GitHub Actions to GitHub Pages and GitHub Releases, with a license check</td><td>Not applicable</td><td>Required by the seed spec</td></tr>
     <tr><td>App license</td><td>MIT</td><td>MIT</td><td><strong>Decided</strong> (D-20)</td></tr>
-    <tr><td>Hosting</td><td>None run by the project. Each user's GitHub account (repositories, Actions, Pages). Releases on GitHub.</td><td>Not applicable</td><td><strong>Decided</strong> (D-21, D-38)</td></tr>
+    <tr><td>Hosting</td><td>None run by the project. Each instance's own GitHub account (repositories, Actions, Pages). Desktop installers and the web app bundle on GitHub Releases.</td><td>Not applicable</td><td><strong>Decided</strong> (D-21, D-87)</td></tr>
   </tbody>
 </table>
 
@@ -153,6 +153,6 @@
   <li>The interface is rendered only from validated view documents through a closed component registry. No code path sets <code>innerHTML</code>.</li>
   <li>A strict Content Security Policy: no inline scripts, and connections only to <code>api.github.com</code> and the app's own origin.</li>
   <li>Markdown is sanitized when rendered, both in the editor and on published pages. Raw HTML in notes is shown as text, not run.</li>
-  <li>Access tokens never go into the repository, URLs, process arguments, or logs. In Electron they go in the OS's secure storage and git's credential helper (never the plaintext <code>store</code> helper). On the web they are held in memory, with an optional encrypted local copy.</li>
+  <li>Access tokens never go into the repository, URLs, process arguments, or logs. In Electron they go in the OS's secure storage and git's credential helper (never the plaintext <code>store</code> helper). On the web the token is kept in IndexedDB, encrypted with a non-extractable WebCrypto key, and sent only to <code>api.github.com</code> (D-81).</li>
   <li>Private note content only reaches the GitHub Pages artifact in sealed (encrypted) form (see <a href="repository-and-publishing.html#threat-model">threat model</a>).</li>
 </ul>

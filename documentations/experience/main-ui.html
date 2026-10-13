@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>The window shows only the note and the <strong>trigger</strong>: a red dot 10 px across inside a frosted circle 30 px across, at the top center, 40 px below the window's top edge (owner decisions D-03 and D-78). Pointing at it grows the dot to fill the circle. Activating it opens a minimal <strong>toolbar</strong> that shows <strong>at most six actions</strong> (New, Open, Search, Save, Focus, Theme). Everything else goes into a <strong>⋯</strong> menu in the seventh slot. Formatting controls appear only in context, and <a href="spotlight.html">Spotlight</a> (<kbd>Ctrl/⌘</kbd>+<kbd>/</kbd>) reaches every command. Covers UI-01 to UI-09 in the <a href="../product/requirements.md">requirements</a>.</p>
+  <p>The window shows only the note and the <strong>trigger</strong>: a red dot 10 px across inside a frosted circle 30 px across, at the top center, 40 px below the window's top edge (owner decisions D-03 and D-78). Pointing at it grows the dot to fill the circle. Activating it opens a minimal <strong>toolbar</strong> that shows <strong>at most six actions</strong> (New, Open, Search, Save, Focus, Theme). Everything else goes into a <strong>⋯</strong> menu in the seventh slot; in the browser it has a <strong>GitHub</strong> group for the owner (Connect GitHub…, Sync now, Sign out of GitHub). <strong>Visitors</strong>, who don't have the owner's token, read public notes only and see <strong>Use this app for yourself</strong> instead of the actions that write. Formatting controls appear only in context, and <a href="spotlight.html">Spotlight</a> (<kbd>Ctrl/⌘</kbd>+<kbd>/</kbd>) reaches every command. Covers UI-01 to UI-09 in the <a href="../product/requirements.md">requirements</a>.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -149,9 +149,13 @@
     <tr><td>Edit</td><td>Find (<kbd>Mod</kbd>+<kbd>F</kbd>) · Find and replace (<kbd>⌥⌘F</kbd> / <kbd>Ctrl+H</kbd>) · Find in all notes (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>)</td></tr>
     <tr><td>Note</td><td>Share and visibility… · Copy public link · Rename · Move to… · Show in Files (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd>) · Show in Finder / Explorer (desktop) · Print · Delete</td></tr>
     <tr><td>App</td><td>Settings (<kbd>Mod</kbd>+<kbd>,</kbd>) · Keyboard shortcuts (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd>) · Help and docs · About</td></tr>
+    <tr><td>GitHub (the owner, in the browser)</td><td>Connect GitHub… before connecting. After connecting: Sync now · Sign out of GitHub (deletes the token from this browser; notes stay), and Renew token when it's about to expire (<a href="../architecture/web-app.md#connecting-github">Web app → Connecting GitHub</a>). The desktop app signs in through Git instead (<a href="first-run.md">First run</a>).</td></tr>
   </tbody>
 </table>
 <p>Items that toggle show their current state, for example a check next to the active theme. Choosing an item closes the menu, and the caret goes back to the note. The menu also shows each shortcut, so it doubles as a way to learn them.</p>
+
+<h3 id="visitors">Visitors</h3>
+<p>Someone who opens an instance's site without its owner's token is a visitor (PKG-09). They read the public notes, read-only: Open lists the public notes, and Focus, Theme, and the ⋯ menu's View items work as usual. Actions that write (New, Save, and the Note group's editing items) and the GitHub group aren't shown. Instead the toolbar has <strong>Use this app for yourself</strong>, which opens <a href="../design/views/get-started.md">a dialog</a> explaining how to get your own instance or download the desktop app (DST-01).</p>
 
 <h3>Behavior</h3>
 <ol class="slate-steps">

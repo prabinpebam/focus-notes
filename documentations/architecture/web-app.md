@@ -3,7 +3,7 @@
 How Focus Notes runs from your own GitHub Pages site: one repository is your whole instance, the app writes locally first in the browser, public and private notes sync to your repository and its private submodule, and visitors see only your public notes. Nothing runs on a server.
 
 > [!NOTE]
-> **TL;DR.** One repository is a whole instance ([D-84](../plan/decisions.md), [D-87](../plan/decisions.md)): **public notes in `notes/`**, a **private repository linked at `private/`** as a submodule (as in the owner's personal-site), and a *Deploy app* workflow that publishes the app to **its own GitHub Pages site**. People who just want to use Focus Notes copy the small **template repository** (not the source repository) to make their instance; its workflow deploys the released app, so they never build it or download the desktop app from GitHub Releases; people who want to improve it fork the project repository, which is also the owner's own instance. Anyone without the owner's token is a **visitor**: they see only public notes, plus **Use this app for yourself**. The app knows its repository from its own address. You can write at once: notes live in your browser's **IndexedDB** and work offline. **Connect GitHub** once: make the private repository and one **fine-grained token** for both repositories from pre-filled GitHub pages, and paste the token ([D-81](../plan/decisions.md)). The app then commits public notes to your repository and private notes to the private one through the **GitHub REST API**, and pulls changes made elsewhere; a note changed in two places keeps both versions ([D-82](../plan/decisions.md)). Covers PKG-05, PKG-07, PKG-08, DST-02, and FRE-09.
+> **TL;DR.** One repository is a whole instance ([D-84](../plan/decisions.md), [D-87](../plan/decisions.md)): **public notes in `notes/`**, a **private repository linked at `private/`** as a submodule (as in the owner's personal-site), and a *Deploy app* workflow that publishes the app to **its own GitHub Pages site**. People who just want to use Focus Notes copy the small **template repository** (not the source repository) to make their instance; its workflow deploys the released app, so they never build it or download the desktop app from GitHub Releases; people who want to improve it fork the project repository, which is also the owner's own instance. Anyone without the owner's token is a **visitor**: they see only public notes, plus **Use this app for yourself**. The app knows its repository from its own address. The owner connects once, and from then on notes live in that browser's **IndexedDB** and work offline. **Connect GitHub**: make the private repository and one **fine-grained token** for both repositories from pre-filled GitHub pages, and paste the token ([D-81](../plan/decisions.md)). The app then commits public notes to your repository and private notes to the private one through the **GitHub REST API**, and pulls changes made elsewhere; a note changed in two places keeps both versions ([D-82](../plan/decisions.md)). Covers PKG-05, PKG-07, PKG-08, DST-02, and FRE-09.
 
 ## The picture
 
@@ -27,12 +27,13 @@ Prefer the desktop app? Download it from the latest GitHub Release instead (or a
 
 ## Connecting GitHub
 
-The app reads its repository from its address: on `https://you.github.io/notes/` it's `you/notes`. The first run offers two ways to start (FRE-09):
+The app reads its repository from its address: on `https://you.github.io/notes/` it's `you/notes`. A browser that hasn't connected opens in **visitor mode** (D-88), so the first screen is the same for the owner and for anyone else (FRE-09):
 
 | Choice | What happens |
 | --- | --- |
-| **Start writing** | Opens the canvas at once. Notes stay in this browser until you connect. |
-| **Connect GitHub** | Three short steps, each opening a pre-filled GitHub page in a new tab and coming back. |
+| **I own this site: Connect GitHub** | Three short steps, each opening a pre-filled GitHub page in a new tab and coming back. Once the token can write to this repository, this browser is the owner's, and writing starts. |
+| **Use this app for yourself** | Explains how Focus Notes works and how to get your own instance or the desktop app (DST-01). |
+| *Close* | Keeps reading the public notes, read-only. |
 
 1. **Your private repository.** Opens `github.com/new` pre-filled: `<repository>-private`, private. Already have one? Type its name instead.
 2. **Your token.** Opens `github.com/settings/personal-access-tokens/new` pre-filled: name *Focus Notes*, a description, **Contents: read and write**, and a one-year expiry. GitHub's form can't pre-select repositories, so the step says: choose **Only select repositories**, then your instance repository and your private repository.
@@ -54,7 +55,7 @@ The **owner** is whoever has connected with a token that can write to the instan
 
 ## Public and private notes
 
-Every note is private or public (SHR-01, SHR-02); new notes are private. A private note is stored as `notes/<path>` in the private repository; a public note as `notes/<path>` in your repository. Changing a note's visibility moves it between the two in one sync (FIL-06). The Files panel shows one tree, with a mark on public notes. Before connecting, notes keep their visibility in the browser and go to the right repository on the first sync.
+Every note is private or public (SHR-01, SHR-02); new notes are private. A private note is stored as `notes/<path>` in the private repository; a public note as `notes/<path>` in your repository. Changing a note's visibility moves it between the two in one sync (FIL-06). The Files panel shows one tree, with a mark on public notes. Outside an instance's Pages site (desktop, local development), notes written before connecting keep their visibility and go to the right repository on the first sync.
 
 ## Storage and sync
 
@@ -83,4 +84,4 @@ Unsynced changes are the notes marked as changed, plus deletion markers. The app
 
 ## What the desktop app adds
 
-The desktop app ([Desktop and Git](desktop-and-git.md)) is the second way to use your instance: it clones the same repository with its `private/` submodule, runs real Git, signs in through Git's own helpers, and has its own window. You build it from your copy (DST-03, DST-04). Both work on the same repositories, so you can use either.
+The desktop app ([Desktop and Git](desktop-and-git.md)) is the second way to use your instance: you download it from the latest GitHub Release (or build it, if you've forked the source). It clones the same repository with its `private/` submodule, runs real Git, signs in through Git's own helpers, and has its own window. Both work on the same repositories, so you can use either. Outside an instance's Pages site (the desktop app, or the app served locally while developing), there are no visitors, and you can write at once and connect later.

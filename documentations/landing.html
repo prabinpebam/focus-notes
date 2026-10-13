@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Notion/Loop-style editing (built on Tiptap) that saves plain Markdown to your own GitHub repository. You write in an MIT-licensed desktop app with an invisible title bar (20 px rounded on Windows and Linux, native on macOS). Sign-in goes through Git's own tools, so it covers the app and the terminal, and every user's Focus Notes lives entirely in their own GitHub account, with nothing hosted by the project. <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> opens Spotlight to find anything and act on it, and the keymap copies the apps people already use. Notes are private by default. They can be published on the user's own GitHub Pages site, or shared with named audiences through a magic link or a passcode. Agents can help through MCP and a command-line tool, within permissions the writer grants, and there is no telemetry. People start from a Get started page on GitHub Pages that leads to the download. Every pixel comes from a strict design system, and the interface itself is data: JSON views built only from the system's components, with no HTML or CSS in the app. This site turns the human-written <a href="seed-specs.md">seed spec</a> and the owner's later decisions into product, experience, architecture, and delivery documentation. It is documentation only; no code has been written yet. The plan is ready to build: ten stages that each leave a usable app, each with a demo and a definition of done.</p>
+  <p>Notion/Loop-style editing (built on Tiptap) that saves plain Markdown to your own GitHub repository. You write first in the browser: the web app runs from your own instance's GitHub Pages site, works offline, and syncs to your repositories once you connect with a token. A desktop app (MIT-licensed Electron, with an invisible title bar, 20 px rounded on Windows and Linux, native on macOS) is the second way, downloaded from GitHub Releases. Every user's Focus Notes is their own instance in their own GitHub account: one repository with public notes, a private submodule, and a workflow that deploys the app to its own Pages, with nothing hosted by the project and no server. People who just want to use it copy the template repository (not the source repository) to make their instance; people who want to improve it fork the project repository. Visitors to anyone's site see only public notes and <em>Use this app for yourself</em>. <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> opens Spotlight to find anything and act on it, and the keymap copies the apps people already use. Notes are private by default. They can be published on the user's own GitHub Pages site, or shared with named audiences through a magic link or a passcode. Agents can help through MCP and a command-line tool, within permissions the writer grants, and there is no telemetry. Every pixel comes from a strict design system, and the interface itself is data: JSON views built only from the system's components, with no HTML or CSS in the app. This site turns the human-written <a href="seed-specs.md">seed spec</a> and the owner's later decisions into product, experience, architecture, and delivery documentation, and it's kept in step with the build. The plan has ten stages that each leave a usable app, each with a demo and a definition of done.</p>
 </aside>
 
 <div class="slate-metrics">
@@ -65,7 +65,7 @@
   <article class="slate-card slate-card--interactive">
     <a href="experience/first-run.md">
       <h3 class="slate-card__title">First run and sign-in</h3>
-      <p class="slate-card__body">Seven calm steps. Sign in through Git's own tools, and get your own workspace created in your GitHub account.</p>
+      <p class="slate-card__body">In the browser, start writing at once or connect GitHub with a token from a pre-filled link. On the desktop, sign in through Git's own tools.</p>
     </a>
   </article>
   <article class="slate-card slate-card--interactive">
@@ -94,8 +94,8 @@
   </article>
   <article class="slate-card slate-card--interactive">
     <a href="design/views/get-started.md">
-      <h3 class="slate-card__title">Get started</h3>
-      <p class="slate-card__body">A static page on GitHub Pages: download the app, and it sets up your own workspace. A browser path follows later.</p>
+      <h3 class="slate-card__title">Use this app for yourself</h3>
+      <p class="slate-card__body">What visitors to anyone's site see: how Focus Notes works, the steps to make your own instance from the template, and the desktop download.</p>
     </a>
   </article>
 </div>
@@ -108,15 +108,15 @@
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Experience</p>
-    <p><a href="experience/main-ui.html">Main UI and trigger</a>, <a href="experience/focus-mode.md">Focus mode</a>, <a href="experience/editing.md">Editing</a>, <a href="experience/find-and-replace.md">Find and replace</a>, <a href="experience/spotlight.html">Spotlight</a>, <a href="experience/keyboard-shortcuts.md">Keyboard shortcuts</a>, <a href="experience/files-and-sharing.md">Files and sharing</a>, <a href="experience/theming.md">Theming</a>, <a href="experience/desktop-app.html">Desktop app</a>, <a href="experience/first-run.md">First run and sign-in</a>.</p>
+    <p><a href="experience/main-ui.html">Main UI and trigger</a>, <a href="experience/focus-mode.md">Focus mode</a>, <a href="experience/editing.md">Editing</a>, <a href="experience/find-and-replace.md">Find and replace</a>, <a href="experience/spotlight.html">Spotlight</a>, <a href="experience/keyboard-shortcuts.md">Keyboard shortcuts</a>, <a href="experience/files-and-sharing.md">Files and sharing</a>, <a href="experience/theming.md">Theming</a>, <a href="experience/first-run.md">First run and sign-in</a>, <a href="experience/desktop-app.html">Desktop app</a>.</p>
   </li>
       <li class="slate-step">
         <p class="slate-step__title">Design</p>
-        <p><a href="design/information-architecture.html">Information architecture</a>, the design system (<a href="design/system/overview.html">overview</a>, <a href="design/system/tokens.md">Tokens</a>, <a href="design/foundations.md">Foundations</a>, <a href="design/system/components.md">Component catalog</a>, <a href="design/system/views-as-data.md">Views as data</a>), views (<a href="design/views/files.html">Files panel</a>, <a href="design/views/theme-manager.html">Theme manager</a>, <a href="design/views/secondary-views.md">Secondary views</a>, <a href="design/views/sharing.md">Sharing and visibility</a>, <a href="design/views/get-started.md">Get started page</a>) and components (<a href="design/components/text-formatting.html">Text formatting</a>, <a href="design/components/tables.html">Tables</a>, <a href="design/components/feedback-and-dialogs.md">Feedback and dialogs</a>).</p>
+        <p><a href="design/information-architecture.html">Information architecture</a>, the design system (<a href="design/system/overview.html">overview</a>, <a href="design/system/tokens.md">Tokens</a>, <a href="design/foundations.md">Foundations</a>, <a href="design/system/components.md">Component catalog</a>, <a href="design/system/views-as-data.md">Views as data</a>), views (<a href="design/views/files.html">Files panel</a>, <a href="design/views/theme-manager.html">Theme manager</a>, <a href="design/views/secondary-views.md">Secondary views</a>, <a href="design/views/sharing.md">Sharing and visibility</a>, <a href="design/views/get-started.md">Use this app for yourself</a>) and components (<a href="design/components/text-formatting.html">Text formatting</a>, <a href="design/components/tables.html">Tables</a>, <a href="design/components/feedback-and-dialogs.md">Feedback and dialogs</a>).</p>
       </li>
   <li class="slate-step">
     <p class="slate-step__title">Architecture</p>
-    <p><a href="architecture/overview.html">Overview</a>, <a href="architecture/content-model.md">Content model</a>, <a href="architecture/editor-engine.md">Editor engine</a>, <a href="architecture/desktop-and-git.md">Desktop and Git</a>, <a href="architecture/repository-and-publishing.html">Repository and publishing</a>, <a href="architecture/agents.md">Agents and automation</a>, <a href="architecture/security-and-privacy.md">Security and privacy</a>, <a href="architecture/performance-and-quality.md">Performance and quality</a>, <a href="architecture/standards.md">Standards</a>.</p>
+    <p><a href="architecture/overview.html">Overview</a>, <a href="architecture/web-app.md">Web app</a>, <a href="architecture/content-model.md">Content model</a>, <a href="architecture/editor-engine.md">Editor engine</a>, <a href="architecture/desktop-and-git.md">Desktop and Git</a>, <a href="architecture/repository-and-publishing.html">Repository and publishing</a>, <a href="architecture/agents.md">Agents and automation</a>, <a href="architecture/security-and-privacy.md">Security and privacy</a>, <a href="architecture/performance-and-quality.md">Performance and quality</a>, <a href="architecture/standards.md">Standards</a>.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Plan</p>
@@ -129,8 +129,8 @@
   <thead><tr><th>Source</th><th>Used for</th></tr></thead>
   <tbody>
     <tr><td><a href="seed-specs.md">Seed spec</a></td><td>The original requirements. Written by a person; never edited by tooling or agents.</td></tr>
-    <tr><td><a href="plan/decisions.md">Owner decisions, 2026-10-13</a></td><td>Trigger size, Tiptap and MIT, device sign-in, the desktop window, toolbar cap, keyboard strategy, find, Spotlight, the articulation chain, Loop-style tables, the contextual toolbar, and theme management.</td></tr>
-    <tr><td><a href="plan/decisions.md#owner-decisions">Owner decisions, 2026-10-14</a></td><td>Sharing with named audiences through magic links and passcodes (following the access model of the owner's personal site), private sharing in the first release, download-first getting started, and agent-friendly interfaces.</td></tr>
+    <tr><td><a href="plan/decisions.md">Owner decisions, 2026-10-13</a></td><td>Trigger size, Tiptap and MIT, device sign-in, the desktop window, toolbar cap, keyboard strategy, find, Spotlight, the articulation chain, Loop-style tables, the contextual toolbar, theme management, and web first: one repository per instance on its own GitHub Pages, the template for people who just want to use it, and visitor mode (D-80 to D-87).</td></tr>
+    <tr><td><a href="plan/decisions.md#owner-decisions">Owner decisions, 2026-10-14</a></td><td>Sharing with named audiences through magic links and passcodes (following the access model of the owner's personal site), private sharing in the first release, download-first getting started (since superseded by web first, D-80), and agent-friendly interfaces.</td></tr>
     <tr><td><a href="https://github.com/prabinpebam/markdown-focus-editor">markdown-focus-editor</a></td><td>Focus mode only: the visual-row unit and the mask technique.</td></tr>
     <tr><td><code>personal-site</code> (local project)</td><td>Private content as a submodule, sealed publishing, and share links.</td></tr>
     <tr><td><a href="https://www.electronjs.org/docs/latest/tutorial/custom-window-styles">Electron: custom window styles</a></td><td>What transparent windows can't do, which drives the 20 px corner design.</td></tr>

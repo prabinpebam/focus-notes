@@ -21,14 +21,14 @@ The established standards, specifications, and conventions Focus Notes follows, 
 | Application security | OWASP ASVS 4.0 Level 2, Electron security checklist, OWASP Cheat Sheets | [Security and privacy](security-and-privacy.md) |
 | Agent security | OWASP Top 10 for LLM Applications (prompt injection) | [Agents](agents.md#risks-specific-to-agents) |
 | Cryptography | Web Crypto API: AES-256-GCM (NIST SP 800-38D), HKDF (RFC 5869), PBKDF2 (RFC 8018) at OWASP's 600,000 iterations for SHA-256 | [Sealing and share links](repository-and-publishing.html#sealing-and-share-links) |
-| CI security | GitHub's security hardening for Actions (actions pinned to SHAs, least-privilege `permissions:`) | Product CI and users' publish workflows |
+| CI security | GitHub's security hardening for Actions (actions pinned to SHAs, least-privilege `permissions:`) | The project's CI and every instance's *Deploy app* workflow |
 | Supply chain | SLSA build provenance (GitHub artifact attestations), CycloneDX SBOM, OpenSSF Scorecard | Releases |
-| Versioning | Semantic Versioning 2.0 | App, reusable workflow, and reader bundle versions |
-| Commits and changelog | Conventional Commits, Changesets, Keep a Changelog | Product repository |
+| Versioning | Semantic Versioning 2.0 | App, desktop installers, and web app bundle versions |
+| Commits and changelog | Conventional Commits, Changesets, Keep a Changelog | Project repository |
 | Licensing | SPDX license identifiers, REUSE-style notices | The license check and `THIRD_PARTY_NOTICES` |
 | Agents | Model Context Protocol, `AGENTS.md`, `llms.txt` | [Agents and automation](agents.md) |
 | Web feeds | RSS 2.0, sitemaps.org, Open Graph | Public notes site (P1) |
-| Security reports | `SECURITY.md` with GitHub private vulnerability reporting | Product repository |
+| Security reports | `SECURITY.md` with GitHub private vulnerability reporting | Project repository |
 
 ## Conventions this project defines
 
