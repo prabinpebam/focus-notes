@@ -1,0 +1,20 @@
+{ "cmp": { "searchField": {
+  "height": { "$type": "dimension", "$value": "{size.controlL}" },
+  "radius": { "$type": "dimension", "$value": "{radius.control}" },
+  "background": { "$type": "color", "$value": "{color.surfaceSunken}" },
+  "border": { "$type": "color", "$value": "{color.border}" },
+  "borderFocus": { "$type": "color", "$value": "{color.focusRing}" },
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
+  "text": { "$type": "color", "$value": "{color.text}" },
+  "placeholder": { "$type": "color", "$value": "{color.textPlaceholder}" },
+  "icon": { "$type": "color", "$value": "{color.textMuted}" },
+  "iconSize": { "$type": "dimension", "$value": "{size.iconM}" },
+  "paddingInline": { "$type": "dimension", "$value": "{space.m}" },
+  "gap": { "$type": "dimension", "$value": "{space.s}" },
+  "font": { "$type": "fontFamily", "$value": "{font.ui}" },
+  "fontSize": { "$type": "dimension", "$value": "{font.uiBody}" },
+  "clearSize": { "$type": "dimension", "$value": "{size.controlS}" },
+  "clearRadius": { "$type": "dimension", "$value": "{radius.small}" },
+  "hover": { "$type": "color", "$value": "{color.hover}" }
+} } }

@@ -10,6 +10,18 @@ export interface CommandItem {
   reason?: string;
 }
 
+/** One choice in a segmented control or filter. */
+export interface Option {
+  id: string;
+  label: string;
+}
+
+/** An editor key binding from the command registry: a chord ("Mod+B") and the command it runs. */
+export interface KeyBinding {
+  id: string;
+  chord: string;
+}
+
 export interface MenuSection {
   id: string;
   label?: string;

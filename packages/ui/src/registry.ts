@@ -20,11 +20,16 @@ import { PopoverPanel } from "./primitives/PopoverPanel/PopoverPanel.tsx";
 import { MenuButton } from "./primitives/MenuButton/MenuButton.tsx";
 import { ToolbarRow } from "./layouts/ToolbarRow/ToolbarRow.tsx";
 import { Toolbar } from "./compounds/Toolbar/Toolbar.tsx";
+import { Shortcut } from "./primitives/Shortcut/Shortcut.tsx";
+import { SearchField } from "./primitives/SearchField/SearchField.tsx";
+import { SegmentedControl } from "./primitives/SegmentedControl/SegmentedControl.tsx";
+import { DialogPanel } from "./primitives/DialogPanel/DialogPanel.tsx";
+import { Dialog } from "./compounds/Dialog/Dialog.tsx";
 
 /** The closed registry: the renderer can create these and nothing else (DSY-06). */
 export const registry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel,
   Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow,
   EditorSurface,
-  Trigger, Toolbar,
+  Trigger, Toolbar, Dialog,
 });

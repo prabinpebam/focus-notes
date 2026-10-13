@@ -11,6 +11,7 @@ export const contract = defineContract({
     placeholder: { kind: "message" },
     readOnly: { kind: "boolean", default: false },
     focusMode: { kind: "boolean", default: false },
+    keymap: { kind: "list", of: "keyBindings", description: "Editor key bindings from the command registry." },
   },
   events: { change: { payload: { value: "text" } }, ready: {} },
   slots: {},

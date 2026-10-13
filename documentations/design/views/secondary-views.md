@@ -56,8 +56,8 @@ The views people open now and then: Settings, Share and visibility, the keyboard
 
 **IA-VIEW-SHORTCUTS.** Serves UC-KEY-01. It opens with <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> (<kbd>⌘?</kbd> / <kbd>Ctrl+?</kbd>), ⋯ → Keyboard shortcuts, or Spotlight.
 
-- **Layout:** a centered dialog, 760 px wide. A search field (focused on open) and filter chips: All, Basic, Writer, Power, Pro. Groups follow [Keyboard shortcuts](../../experience/keyboard-shortcuts.md): App and window, Editing, Formatting, Blocks, Tables, Find, Spotlight, Files.
-- **Rows:** the action name on the left, key caps on the right (12 px, `radius.small`) in the current platform's symbols. A platform switch ("Show keys for: macOS | Windows and Linux") helps people who use both.
+- **Layout:** a centered dialog, 760 px wide. A search field (focused on open), a layer filter (a segmented control: All, Basic, Writer, Power, Pro), and a live count ("33 shortcuts", or "No shortcuts match …" with a hint) stay put above the scrolling list. Groups follow [Keyboard shortcuts](../../experience/keyboard-shortcuts.md): App and window, Editing, Formatting, Blocks, Tables, Find, Spotlight, Files.
+- **Rows:** the action name on the left, key caps on the right (12 px, `radius.small`) in the current platform's symbols, with alternates joined by "or" (<kbd>Ctrl+Shift+D</kbd> or <kbd>F8</kbd>). Screen readers hear the keys in words ("Control Shift D"). Rows follow the order of the tables in [Keyboard shortcuts](../../experience/keyboard-shortcuts.md). A platform switch ("Show keys for: macOS | Windows and Linux") helps people who use both. Commands planned for later milestones (Spotlight) aren't listed until they work.
 - **Search** matches action names, synonyms, and keys (typing "⌘/" or "ctrl /" finds what uses those keys).
 - **Customized bindings** (P1) are marked with a dot and "Changed". [Customize…] opens Settings → Keyboard.
 - <kbd>Esc</kbd> closes it. Rows aren't actionable, because this is a reference. Spotlight is where commands are run.

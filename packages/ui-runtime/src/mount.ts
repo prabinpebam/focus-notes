@@ -2,7 +2,7 @@
 import { createElement, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { App } from "@focus-notes/core";
-import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT } from "@focus-notes/ui";
+import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT } from "@focus-notes/ui";
 import { ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
 
 export interface MountOptions {
@@ -21,14 +21,23 @@ export function mountApp(el: Element, { app, views, view = "canvas" }: MountOpti
       createElement(ViewBoundary, { fallback, onError: (e: unknown) => console.error(e), children: createElement(ViewHost, { viewId: view, deps }) })),
   );
 
-  // Keys run commands (KEY-01). Editor-owned keys are handled by the editor first.
+  // Keys run commands (KEY-01). App keys are resolved first, in the capture phase, so a key does the
+  // same thing wherever focus is (on a German layout Ctrl+Shift+7 types "/", which is the cheat
+  // sheet, not the numbered list). Editor keys aren't app keys, so they reach the editor.
   window.addEventListener("keydown", (e) => {
-    if (e.defaultPrevented || e.isComposing) return;
-    const id = app.commands.match(e);
+    // keyCode 229 is the IME's own keydown on some platforms, before isComposing is set (KEY-06).
+    if (e.defaultPrevented || e.isComposing || e.keyCode === 229) return;
+    const id = app.commands.match({
+      key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey,
+      altGraph: e.getModifierState?.("AltGraph") ?? false,
+    });
     if (!id) return;
     e.preventDefault();
+    e.stopPropagation();
     void app.commands.run(id);
-  });
+  }, true);
+  // Editor commands run from menus and Spotlight reach the editor surface through a window event.
+  app.onEditorAction((id) => window.dispatchEvent(new CustomEvent(EDITOR_ACTION_EVENT, { detail: { id } })));
   // A file dropped outside the editor must never navigate the window away from the app.
   const stopNavigation = (e: DragEvent) => {
     if (e.dataTransfer?.types.includes("Files")) e.preventDefault();
@@ -36,11 +45,16 @@ export function mountApp(el: Element, { app, views, view = "canvas" }: MountOpti
   window.addEventListener("dragover", stopNavigation);
   window.addEventListener("drop", stopNavigation);
   // When the toolbar closes, the caret goes back to the note.
+  // The same when a dialog closes: its saved focus target may be gone (opened from the ⋯ menu).
   let toolbarWasOpen = app.store.state.ui.toolbarOpen;
+  let sheetWasOpen = app.store.state.ui.shortcuts.open;
   app.store.subscribe(() => {
-    const open = app.store.state.ui.toolbarOpen;
-    if (toolbarWasOpen && !open) setTimeout(() => window.dispatchEvent(new Event(REFOCUS_EVENT)), 0);
-    toolbarWasOpen = open;
+    const { toolbarOpen, shortcuts } = app.store.state.ui;
+    if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open) || (sheetWasOpen && !shortcuts.open)) {
+      setTimeout(() => window.dispatchEvent(new Event(REFOCUS_EVENT)), 0);
+    }
+    toolbarWasOpen = toolbarOpen;
+    sheetWasOpen = shortcuts.open;
   });
   return root;
 }

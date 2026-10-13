@@ -2,37 +2,90 @@
   "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
   "id": "canvas",
   "ia": "IA-VIEW-CANVAS",
-  "viewModels": ["vm.app", "vm.canvas", "vm.toolbar"],
+  "viewModels": [
+    "vm.app",
+    "vm.canvas",
+    "vm.toolbar",
+    "vm.shortcuts"
+  ],
   "focus": "editor",
   "root": {
     "type": "AppRoot",
     "props": {
-      "scheme": { "get": "vm.app.scheme" },
-      "platform": { "get": "vm.app.platform" },
-      "contentSize": { "get": "vm.app.fontSize" },
-      "focusMode": { "get": "vm.app.focusMode" }
+      "scheme": {
+        "get": "vm.app.scheme"
+      },
+      "platform": {
+        "get": "vm.app.platform"
+      },
+      "contentSize": {
+        "get": "vm.app.fontSize"
+      },
+      "focusMode": {
+        "get": "vm.app.focusMode"
+      }
     },
     "children": [
       {
         "type": "Layer",
-        "props": { "layer": "trigger", "position": "topBand", "dragBand": true, "landmark": "banner", "label": { "t": "canvas.bandLabel" } },
+        "props": {
+          "layer": "trigger",
+          "position": "topBand",
+          "dragBand": true,
+          "landmark": "banner",
+          "label": {
+            "t": "canvas.bandLabel"
+          }
+        },
         "children": [
           {
             "type": "Trigger",
             "props": {
-              "label": { "t": "trigger.label" },
-              "problemLabel": { "t": "trigger.saveProblem" },
-              "problem": { "get": "vm.canvas.saveProblem" },
-              "shortcut": { "get": "vm.toolbar.triggerShortcut" },
-              "open": { "get": "vm.toolbar.open" },
-              "toolbarLabel": { "t": "toolbar.label" },
-              "items": { "get": "vm.toolbar.items" },
-              "more": { "get": "vm.toolbar.more" },
-              "moreLabel": { "t": "toolbar.more" }
+              "label": {
+                "t": "trigger.label"
+              },
+              "problemLabel": {
+                "t": "trigger.saveProblem"
+              },
+              "problem": {
+                "get": "vm.canvas.saveProblem"
+              },
+              "shortcut": {
+                "get": "vm.toolbar.triggerShortcut"
+              },
+              "open": {
+                "get": "vm.toolbar.open"
+              },
+              "toolbarLabel": {
+                "t": "toolbar.label"
+              },
+              "items": {
+                "get": "vm.toolbar.items"
+              },
+              "more": {
+                "get": "vm.toolbar.more"
+              },
+              "moreLabel": {
+                "t": "toolbar.more"
+              }
             },
             "on": {
-              "openChange": { "run": "toolbar.setOpen", "args": { "open": { "get": "event.open" } } },
-              "action": { "run": "command.run", "args": { "id": { "get": "event.id" } } }
+              "openChange": {
+                "run": "toolbar.setOpen",
+                "args": {
+                  "open": {
+                    "get": "event.open"
+                  }
+                }
+              },
+              "action": {
+                "run": "command.run",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              }
             }
           }
         ]
@@ -40,18 +93,296 @@
       {
         "type": "EditorSurface",
         "id": "editor",
-        "when": { "expr": { "==": [{ "get": "vm.canvas.status" }, "ready"] } },
+        "when": {
+          "expr": {
+            "==": [
+              {
+                "get": "vm.canvas.status"
+              },
+              "ready"
+            ]
+          }
+        },
         "props": {
-          "documentKey": { "get": "vm.canvas.noteKey" },
-          "initialValue": { "get": "vm.canvas.initialMarkdown" },
-          "label": { "t": "canvas.editorLabel" },
-          "focusMode": { "get": "vm.app.focusMode" },
-          "placeholder": { "t": "canvas.placeholder", "args": { "platform": { "get": "vm.app.platform" } } }
+          "documentKey": {
+            "get": "vm.canvas.noteKey"
+          },
+          "initialValue": {
+            "get": "vm.canvas.initialMarkdown"
+          },
+          "label": {
+            "t": "canvas.editorLabel"
+          },
+          "focusMode": {
+            "get": "vm.app.focusMode"
+          },
+          "placeholder": {
+            "t": "canvas.placeholder",
+            "args": {
+              "platform": {
+                "get": "vm.app.platform"
+              }
+            }
+          },
+          "keymap": {
+            "get": "vm.app.editorKeymap"
+          }
         },
         "on": {
-          "change": { "run": "note.setContent", "args": { "value": { "get": "event.value" } } },
-          "ready": { "run": "app.ready" }
+          "change": {
+            "run": "note.setContent",
+            "args": {
+              "value": {
+                "get": "event.value"
+              }
+            }
+          },
+          "ready": {
+            "run": "app.ready"
+          }
         }
+      },
+      {
+        "type": "Dialog",
+        "id": "shortcuts",
+        "props": {
+          "title": {
+            "t": "shortcuts.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.shortcuts.open"
+          },
+          "size": "l"
+        },
+        "on": {
+          "openChange": {
+            "run": "shortcuts.setOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "slots": {
+          "toolbar": [
+            {
+              "type": "Stack",
+              "props": {
+                "gap": "m"
+              },
+              "children": [
+                {
+                  "type": "SearchField",
+                  "props": {
+                    "label": {
+                      "t": "shortcuts.search"
+                    },
+                    "placeholder": {
+                      "t": "shortcuts.searchPlaceholder"
+                    },
+                    "clearLabel": {
+                      "t": "field.clear"
+                    },
+                    "autoFocus": true,
+                    "value": {
+                      "bind": "vm.shortcuts.query"
+                    }
+                  }
+                },
+                {
+                  "type": "Inline",
+                  "props": {
+                    "justify": "between",
+                    "gap": "m",
+                    "wrap": true
+                  },
+                  "children": [
+                    {
+                      "type": "SegmentedControl",
+                      "props": {
+                        "label": {
+                          "t": "shortcuts.layer"
+                        },
+                        "options": {
+                          "get": "vm.shortcuts.layers"
+                        },
+                        "value": {
+                          "bind": "vm.shortcuts.layer"
+                        }
+                      }
+                    },
+                    {
+                      "type": "SegmentedControl",
+                      "props": {
+                        "label": {
+                          "t": "shortcuts.platform"
+                        },
+                        "options": {
+                          "get": "vm.shortcuts.platforms"
+                        },
+                        "value": {
+                          "bind": "vm.shortcuts.platform"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "get": "vm.shortcuts.summary"
+                    },
+                    "role": "caption",
+                    "tone": "muted",
+                    "announce": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "xl"
+            },
+            "children": [
+              {
+                "each": {
+                  "get": "vm.shortcuts.groups"
+                },
+                "as": "group",
+                "key": "group.id",
+                "render": {
+                  "type": "Stack",
+                  "props": {
+                    "gap": "s"
+                  },
+                  "children": [
+                    {
+                      "type": "Heading",
+                      "props": {
+                        "level": "3",
+                        "value": {
+                          "get": "group.label"
+                        }
+                      }
+                    },
+                    {
+                      "each": {
+                        "get": "group.rows"
+                      },
+                      "as": "row",
+                      "key": "row.id",
+                      "render": {
+                        "type": "Inline",
+                        "props": {
+                          "justify": "between",
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "row.label"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "each": {
+                                  "get": "row.chords"
+                                },
+                                "as": "chord",
+                                "key": "chord.id",
+                                "render": {
+                                  "type": "Inline",
+                                  "props": {
+                                    "gap": "s"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Text",
+                                      "when": {
+                                        "expr": {
+                                          "!": {
+                                            "get": "chord.first"
+                                          }
+                                        }
+                                      },
+                                      "props": {
+                                        "value": {
+                                          "t": "shortcuts.or"
+                                        },
+                                        "role": "caption",
+                                        "tone": "muted"
+                                      }
+                                    },
+                                    {
+                                      "type": "Shortcut",
+                                      "props": {
+                                        "keys": {
+                                          "get": "chord.keys"
+                                        },
+                                        "label": {
+                                          "get": "chord.spoken"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                "empty": {
+                                  "type": "Text",
+                                  "props": {
+                                    "value": {
+                                      "t": "shortcuts.noKeys"
+                                    },
+                                    "tone": "muted"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "empty": {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "shortcuts.noKeys"
+                          },
+                          "tone": "muted"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "empty": {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "shortcuts.emptyHint"
+                    },
+                    "tone": "muted"
+                  }
+                }
+              }
+            ]
+          }
+        ]
       }
     ]
   }

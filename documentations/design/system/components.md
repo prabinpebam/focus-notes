@@ -3,7 +3,7 @@
 The complete catalog of design-system components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every view in Focus Notes is assembled from this list and nothing else.
 
 > [!NOTE]
-> **TL;DR.** **30 primitives** (Text, Icon, Button, TriggerButton, TextField, Switch, Slider, and so on), plus **5 host components** that wrap imperative DOM (the editor surface, the focus mask, the window frame, the color area, and a virtual list). **13 layouts** (AppRoot, Stack, Inline, Grid, Surface, Layer, Positioner, and so on). **9 block components** that render note content in the editor and on published pages, with image and gallery to come. **38 compound components** (some in pairs, like Menu and MenuItem) that compose them, from Toolbar and Menu to CommandPalette, FileTree, and ConflictResolver, each mapped to the IA components it delivers. Every component has a machine-readable **contract**, and the view schema is generated from those contracts (DSY-05).
+> **TL;DR.** **31 primitives** (Text, Icon, Button, TriggerButton, TextField, Switch, Slider, and so on), plus **5 host components** that wrap imperative DOM (the editor surface, the focus mask, the window frame, the color area, and a virtual list). **13 layouts** (AppRoot, Stack, Inline, Grid, Surface, Layer, Positioner, and so on). **9 block components** that render note content in the editor and on published pages, with image and gallery to come. **38 compound components** (some in pairs, like Menu and MenuItem) that compose them, from Toolbar and Menu to CommandPalette, FileTree, and ConflictResolver, each mapped to the IA components it delivers. Every component has a machine-readable **contract**, and the view schema is generated from those contracts (DSY-05).
 
 <h2 id="contracts" data-reader-personas="engineering">Contracts</h2>
 
@@ -49,7 +49,7 @@ Each component declares a contract in `packages/ui`. The build turns contracts i
 | **Text** | `role`: caption, secondary, body, emphasis, title, label. `tone`: default, muted, accent, danger, warning, success. `lines` (truncate), `value` (message or binding) | Text | Everywhere |
 | **Heading** | `level` 1 to 3 (interface headings, not note headings), `value` | Heading | Sheets, dialogs, settings |
 | **Icon** | `name` (Fluent registry), `size` s/m/l, `filled` | Image, or hidden when decorative | Everywhere |
-| **Shortcut** | `command` (renders that command's current key chord, per platform), or `chord` | Text, with an accessible name that says the keys in words | Menus, tooltips, Spotlight, cheat sheet |
+| **Shortcut** | `keys` (key caps in the platform's symbols, from a view model, which takes them from the command registry) and `label` (the chord in words). Caps are hidden from screen readers, which read the words instead | Text, with an accessible name that says the keys in words | Menus, tooltips, Spotlight, cheat sheet |
 | **Button** | `variant` primary, secondary, subtle, danger. `size`, `icon`, `busy`, `disabledReason` | Button | Dialogs, forms, banners |
 | **IconButton** | `icon`, `label` (required), `variant` subtle or frost, `toggle` with `pressed` | Button, or toggle button | Toolbar, window controls, find bar |
 | **Link** | `label`, `command` (internal) or `url` (opened through the `link.open` command) | Link | Help text, About |
@@ -58,19 +58,20 @@ Each component declares a contract in `packages/ui`. The build turns contracts i
 | **Switch** | `label`, `description`, `checked` (bindable) | Switch | Settings |
 | **TextField** | `label`, `description`, `error`, `value` (bindable), `placeholder`, `icon`, `type` text, email, or url | Text box | Forms, rename |
 | **TextArea** | As TextField, plus `rows` | Text box, multi-line | Invite message |
-| **SearchField** | `label`, `value`, `shortcut` hint, `clearable` | Search box | Spotlight, Files, Settings |
+| **SearchField** | `label`, `value` (bindable), `placeholder`, `clearLabel`, `autoFocus`. <kbd>Esc</kbd> clears it, or passes on to close the dialog when it's already empty | Search box | Spotlight, Files, Settings |
 | **SecretField** | `label`, `value`, `reveal` toggle, `strength` (bound) | Text box, with a reveal button | Passcodes, tokens |
 | **NumberStepper** | `label`, `value`, `min`, `max`, `step`, `format` | Spin button | Font size row |
 | **Select** | `label`, `options`, `value` (bindable) | Select (list box popup) | Settings |
 | **Combobox** | `label`, `options` (bound, filtered by a view model), `value` | Combobox | Move to, audience names |
 | **Slider** | `label`, `value`, `min`, `max`, `step`, `format` | Slider | Reading width, focus dim |
-| **SegmentedControl** | `label`, `options` (2 to 5), `value` | Radio group, drawn as segments | Appearance, find options |
+| **SegmentedControl** | `label` (visible), `options` (2 to 5, from a view model), `value` (bindable). Arrow keys move and select | Radio group, drawn as segments | Appearance, find options, cheat sheet filters |
 | **Badge** | `tone`, `value` | Text | Visibility, agent changes, status |
 | **Tag** | `value`, `removable` | Button, when removable | Audiences, filters |
 | **Swatch** | `color` (a token or a theme's value), `selected`, `label` | Radio or button | Theme gallery, color editor |
 | **SignalDot** | `tone` red, warning, danger (size from `cmp.signalDot.size`) | Decorative, with status in its parent's name | Trigger, save state |
 | **TriggerButton** | `label` (required), `tone`, `expanded`, `shortcut`. A 30 px frosted circle holding a SignalDot, with a 32 px (44 px touch) hit area | Menu button | Trigger |
 | **PopoverPanel** | `label` (required), `open`, `placement`; slots `trigger` and `content`; event `openChange`. Frosted, anchored, closes on Esc (in one press, even over a tooltip) and outside click, and moves focus to its first action | Dialog (non-modal popover) | Trigger's toolbar, Share, link editor |
+| **DialogPanel** | `label` (required), `open`, `size` s or l; slots `header`, `fixed`, and the scrolling body; event `openChange`. The scrim, the raised panel, focus kept inside and returned on close, <kbd>Esc</kbd> and scrim click to close. The body takes focus so it can be scrolled from the keyboard, and uses the minimal scrollbar | Dialog (modal) | Dialog, and through it Settings, the cheat sheet, and confirmations |
 | **MenuButton** | `icon`, `label` (required), `sections` (command items from a view model), event `action`. Checkable items use `menuitemcheckbox`; each item shows its shortcut | Menu button | ⋯ menu, block menu |
 | **Spinner** | `size`, `label` | Progress bar, indeterminate | Busy buttons, saving rows in Files, "Checking changes…" ([Waits](../components/feedback-and-dialogs.md#waits)) |
 | **ProgressBar** | `value` (omit for an indeterminate line), `max`, `label` | Progress bar | Setup, publishing, a view opening, a region being updated |
@@ -140,7 +141,7 @@ Compounds compose primitives, layouts, and other compounds. They hold behavior (
 | **ContextMenu** | Menu, Positioner | IA-CMP-CONTEXTMENU | Opens at the pointer, or at the focused element with <kbd>Shift</kbd>+<kbd>F10</kbd>. |
 | **Popover** | Layer, Positioner, Surface, Stack, Heading | IA-VIEW-SHARE, IA-CMP-LINK | A titled, anchored panel. |
 | **HoverCard** | Popover | IA-CMP-LINK | Opens on hover or focus after a delay, never on its own. |
-| **Dialog** | Layer (scrim), Surface (raised), Stack, Heading, Inline, Button | IA-VIEW-SETTINGS, IA-VIEW-SHORTCUTS | `title` is required. `size` s or l. Full-screen in the compact size class. |
+| **Dialog** | DialogPanel, Heading, IconButton (close), Inline | IA-VIEW-SETTINGS, IA-VIEW-SHORTCUTS | `title` and `closeLabel` are required. `size` s or l. A `toolbar` slot holds controls that stay put above the scrolling body. Full-screen in the compact size class. |
 | **ConfirmDialog** | Dialog | IA-CMP-DIALOG | Takes the object's name and a verb. The confirm button names the action (Foundations → Words). |
 | **Sheet** | Layer, Surface, Stack, Heading, IconButton | IA-VIEW-FILES, IA-VIEW-THEME, IA-VIEW-HISTORY | `side` start or end. `width` is a `layout.sheet.*` token. |
 | **CommandPalette** | Layer, Surface, SearchField, ResultList, Inline, Shortcut | IA-VIEW-SPOTLIGHT | Modes and prefixes come from a view model. Results use ResultItem. |

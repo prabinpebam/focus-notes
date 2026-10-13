@@ -69,6 +69,16 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     { id: "view", label: "View", items: [item("g.smaller", "Smaller text", "font", { shortcut: "Ctrl+-" }), item("g.larger", "Larger text", "font", { shortcut: "Ctrl+=", disabled: true })] },
     { id: "theme", label: "Theme", items: [item("g.system", "System", "color", { checked: true }), item("g.light", "Light", "lightTheme", { checked: false })] },
   ];
+  const extras = {
+    options: [{ id: "all", label: "All" }, { id: "basic", label: "Basic" }, { id: "writer", label: "Writer" }, { id: "power", label: "Power" }],
+    optionFirst: "all",
+    optionLast: "power",
+    query: "bold",
+    keysMac: ["⇧", "⌘", "L"],
+    keysMacSpoken: "Shift Command L",
+    keysPc: ["Ctrl", "Shift", "L"],
+    keysPcSpoken: "Control Shift L",
+  };
   const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, icon: { type: "string" as const }, shortcut: { type: "string" as const }, checked: { type: "boolean" as const }, disabled: { type: "boolean" as const }, reason: { type: "string" as const } } };
   app.viewModels.register({
     id: "vm.gallery",
@@ -78,9 +88,17 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         fixtures: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" } } } },
         toolbar: { type: "array", items: ITEM },
         menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
+        options: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" } } } },
+        optionFirst: { type: "string" },
+        optionLast: { type: "string" },
+        query: { type: "string" },
+        keysMac: { type: "array", items: { type: "string" } },
+        keysMacSpoken: { type: "string" },
+        keysPc: { type: "array", items: { type: "string" } },
+        keysPcSpoken: { type: "string" },
       },
     },
-    select: () => ({ fixtures, toolbar, menu }),
+    select: () => ({ fixtures, toolbar, menu, ...extras }),
   });
   app.commands.register<{ id: string }>({ id: "gallery.open", title: "gallery.title", run: ({ id }) => navigate(String(id)) });
 }

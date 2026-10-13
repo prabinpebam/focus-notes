@@ -5,3 +5,4 @@ export * from "./messages.ts";
 export * from "./bridge.ts";
 export * from "./app.ts";
 export * from "./text.ts";
+export * from "./keymap.ts";

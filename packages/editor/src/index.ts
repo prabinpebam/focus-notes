@@ -3,8 +3,10 @@
  * and the Markdown session that keeps files byte-identical where untouched (EDT-10).
  * Rendering lives in packages/ui (block components and the EditorSurface host).
  */
-import { Extension, Node, mergeAttributes, type AnyExtension } from "@tiptap/core";
+import { Extension, Node, mergeAttributes, type AnyExtension, type Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
+import Strike from "@tiptap/extension-strike";
+import HardBreak from "@tiptap/extension-hard-break";
 import Link from "@tiptap/extension-link";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
 import { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
@@ -104,10 +106,91 @@ export const AutoDirection = Extension.create({
   },
 });
 
+/**
+ * Editor commands by ID (KEY-01, KEY-02). The keys come from the command registry; these say what
+ * each command does to the document. Each returns whether it applied.
+ */
+export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor) => boolean>> = {
+  "edit.undo": (e) => e.commands.undo(),
+  "edit.redo": (e) => e.commands.redo(),
+  "format.bold": (e) => e.commands.toggleBold(),
+  "format.italic": (e) => e.commands.toggleItalic(),
+  "format.strike": (e) => e.commands.toggleStrike(),
+  "format.code": (e) => e.commands.toggleCode(),
+  "format.clear": (e) => e.commands.unsetAllMarks(),
+  "block.paragraph": (e) => e.commands.setParagraph(),
+  "block.heading1": (e) => e.commands.toggleHeading({ level: 1 }),
+  "block.heading2": (e) => e.commands.toggleHeading({ level: 2 }),
+  "block.heading3": (e) => e.commands.toggleHeading({ level: 3 }),
+  "block.bulletList": (e) => e.commands.toggleBulletList(),
+  "block.orderedList": (e) => e.commands.toggleOrderedList(),
+  "block.taskList": (e) => e.commands.toggleTaskList(),
+  "block.quote": (e) => e.commands.toggleBlockquote(),
+  "block.codeBlock": (e) => e.commands.toggleCodeBlock(),
+  "task.toggle": (e) => {
+    const { $from } = e.state.selection;
+    for (let d = $from.depth; d > 0; d--) {
+      const node = $from.node(d);
+      if (node.type.name !== "taskItem") continue;
+      const pos = $from.before(d);
+      e.view.dispatch(e.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, checked: !node.attrs.checked }));
+      return true;
+    }
+    return false;
+  },
+};
+
+/** A registry chord ("Mod+Shift+X") as a ProseMirror key name ("Mod-Shift-x"). */
+export function toKeyName(chord: string): string {
+  const parts = chord.split("+");
+  const key = parts.pop()!;
+  const name = key === "Plus" ? "+" : key.length === 1 ? key.toLowerCase() : key;
+  return [...parts, name].join("-");
+}
+
+export interface KeyBinding {
+  id: string;
+  chord: string;
+}
+
+/**
+ * Runs editor commands from the registry's key bindings while typing (KEY-02). Keys that don't
+ * apply where the caret is (Mod+Enter outside a task) fall through to the app.
+ */
+export const CommandKeymap = Extension.create<{ bindings: KeyBinding[] }>({
+  name: "commandKeymap",
+  priority: 900,
+  addOptions() {
+    return { bindings: [] };
+  },
+  addKeyboardShortcuts() {
+    const map: Record<string, () => boolean> = {};
+    for (const { id, chord } of this.options.bindings) {
+      const action = EDITOR_ACTIONS[id];
+      if (!action) continue;
+      map[toKeyName(chord)] = () => {
+        // Input events outrank selectionchange in Chromium, so a key pressed right after moving the
+        // selection (fast typists, macros) can arrive before ProseMirror has read it. Read it first.
+        (this.editor.view as unknown as { domObserver?: { flush?: () => void } }).domObserver?.flush?.();
+        return action(this.editor);
+      };
+    }
+    return map;
+  },
+});
+
 /** The schema shared by the editor surface, tests, and (later) the publisher. */
-export function coreExtensions(): AnyExtension[] {
+export function coreExtensions(bindings: KeyBinding[] = []): AnyExtension[] {
   return [
-    StarterKit.configure({ underline: false, link: false, trailingNode: false }),
+    // Strike and line-break keys follow the app keymap (KEY-02), not Tiptap's defaults.
+    StarterKit.configure({ underline: false, link: false, trailingNode: false, strike: false, hardBreak: false }),
+    Strike.extend({ addKeyboardShortcuts: () => ({}) }),
+    HardBreak.extend({
+      addKeyboardShortcuts() {
+        return { "Shift-Enter": () => this.editor.commands.setHardBreak() };
+      },
+    }),
+    CommandKeymap.configure({ bindings }),
     MarkdownLink,
     TaskList,
     TaskItem.configure({ nested: true }),

@@ -1,8 +1,10 @@
 import { Store } from "./store.ts";
-import { CommandRegistry, formatChord } from "./commands.ts";
+import { CommandRegistry, chordsFor, formatChord, KEY_LAYERS, type Binding } from "./commands.ts";
+import { cheatSheet, displayPlatform, EDITOR_COMMANDS, NATIVE_KEYS, type CheatSheetLayer, type CheatSheetPlatform } from "./keymap.ts";
 import { ViewModelRegistry } from "./view-models.ts";
 import { MessageCatalog, type Messages } from "./messages.ts";
 import type { PlatformBridge, AppStateFile } from "./bridge.ts";
+import type { Platform } from "./commands.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -19,7 +21,11 @@ export interface AppState {
   };
   appearance: { mode: "system" | "light" | "dark"; system: Scheme; fontSize: number };
   focusMode: boolean;
-  ui: { toolbarOpen: boolean };
+  ui: {
+    toolbarOpen: boolean;
+    /** The keyboard shortcut cheat sheet (IA-VIEW-SHORTCUTS). */
+    shortcuts: { open: boolean; query: string; layer: CheatSheetLayer; platform: CheatSheetPlatform };
+  };
 }
 
 export const SAVE_DELAY_MS = 400;
@@ -33,6 +39,7 @@ export const DEFAULT_TOOLBAR = ["note.new", "note.open", "spotlight.open", "note
 export const MORE_MENU: { id: string; label: string; items: string[] }[] = [
   { id: "view", label: "menu.view", items: ["font.smaller", "font.larger", "font.reset", "window.fullScreen"] },
   { id: "theme", label: "menu.theme", items: ["appearance.system", "appearance.light", "appearance.dark"] },
+  { id: "help", label: "menu.help", items: ["shortcuts.open"] },
 ];
 
 export interface App {
@@ -44,6 +51,8 @@ export interface App {
   start(): Promise<void>;
   /** Writes any pending or failed change now. Resolves to false if the note couldn't be saved. */
   flush(): Promise<boolean>;
+  /** Editor commands are delivered to the editor surface through this. */
+  onEditorAction(listener: (id: string) => void): () => void;
 }
 
 export const resolvedScheme = (s: AppState): Scheme =>
@@ -54,7 +63,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     note: { key: "none", initialMarkdown: "", markdown: "", status: "loading", saveState: "saved" },
     appearance: { mode: "system", system: bridge.systemScheme(), fontSize: DEFAULT_FONT_SIZE },
     focusMode: false,
-    ui: { toolbarOpen: false },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" } },
   });
   const commands = new CommandRegistry<AppState>(() => store.state, (r) => store.update(r), bridge.platform);
   const viewModels = new ViewModelRegistry<AppState>();
@@ -119,6 +128,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     title: "command.note.open",
     icon: "open",
     shortcut: { default: "Mod+O" },
+    layer: "basic", group: "app",
     run: async () => {
       const path = await bridge.chooseNote();
       if (path) await load(path);
@@ -129,6 +139,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     title: "command.note.save",
     icon: "save",
     shortcut: { default: "Mod+S" },
+    layer: "basic", group: "app",
     run: async () => {
       if (store.state.note.saveState !== "saved") {
         clearTimeout(saveTimer);
@@ -151,6 +162,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     title: "command.appearance.toggle",
     icon: "darkTheme",
     shortcut: { default: "Mod+Shift+L" },
+    layer: "writer", group: "app",
     checked: (s) => resolvedScheme(s) === "dark",
     run: async ({}, ctx) => {
       const mode = resolvedScheme(ctx.state) === "dark" ? "light" : "dark";
@@ -180,19 +192,19 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
   commands.register({
     id: "font.larger", title: "command.font.larger", icon: "font",
-    shortcut: { default: "Mod+=", alternates: { default: ["Mod+Plus", "Mod+Shift+Plus"] } },
+    shortcut: { default: "Mod+=", quiet: ["Mod+Plus", "Mod+Shift+Plus"] }, layer: "writer", group: "app",
     enabled: (s) => s.appearance.fontSize < FONT_STEPS[FONT_STEPS.length - 1]!,
     run: () => setFontSize(step(1)),
   });
   commands.register({
-    id: "font.smaller", title: "command.font.smaller", icon: "font", shortcut: { default: "Mod+-" },
+    id: "font.smaller", title: "command.font.smaller", icon: "font", shortcut: { default: "Mod+-" }, layer: "writer", group: "app",
     enabled: (s) => s.appearance.fontSize > FONT_STEPS[0],
     run: () => setFontSize(step(-1)),
   });
-  commands.register({ id: "font.reset", title: "command.font.reset", shortcut: { default: "Mod+0" }, run: () => setFontSize(DEFAULT_FONT_SIZE) });
+  commands.register({ id: "font.reset", title: "command.font.reset", shortcut: { default: "Mod+0" }, layer: "writer", group: "app", run: () => setFontSize(DEFAULT_FONT_SIZE) });
   commands.register({
     id: "focus.toggle", title: "command.focus.toggle", icon: "focus",
-    shortcut: { default: "Mod+Shift+D", alternates: { default: ["F8"] } },
+    shortcut: { default: "Mod+Shift+D", alternates: { default: ["F8"] } }, layer: "writer", group: "app",
     checked: (s) => s.focusMode,
     run: async (_a, ctx) => {
       const on = !ctx.state.focusMode;
@@ -201,7 +213,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
   });
   commands.register({
-    id: "note.new", title: "command.note.new", icon: "newNote", shortcut: { default: "Mod+N" },
+    id: "note.new", title: "command.note.new", icon: "newNote", shortcut: { default: "Mod+N", web: "Ctrl+Alt+N" }, layer: "basic", group: "app",
     run: async () => {
       const path = await bridge.newNotePath(store.state.note.path);
       if (!(await flush())) return;
@@ -211,7 +223,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   commands.register({
     id: "spotlight.open", title: "command.spotlight.open", icon: "search",
-    shortcut: { default: "Mod+/", alternates: { default: ["Mod+Shift+P"] } },
+    shortcut: { default: "Mod+/", alternates: { default: ["Mod+Shift+P"] } }, layer: "power", group: "spotlight", planned: true,
     // Spotlight arrives in M4; until then the command says so instead of doing nothing.
     enabled: () => false,
     disabledReason: "command.spotlight.open.reason",
@@ -219,7 +231,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   commands.register({
     id: "window.fullScreen", title: "command.window.fullScreen", icon: "fullScreen",
-    shortcut: { macos: "Ctrl+Mod+F", default: "F11" },
+    shortcut: { macos: "Ctrl+Mod+F", default: "F11", web: null }, layer: "writer", group: "app",
     enabled: () => Boolean(bridge.toggleFullScreen),
     run: () => bridge.toggleFullScreen?.(),
   });
@@ -229,7 +241,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   commands.register({
     id: "toolbar.toggle", title: "command.toolbar.toggle",
-    shortcut: { default: "Mod+.", alternates: { windows: ["F10"], linux: ["F10"] } },
+    shortcut: { default: "Mod+.", alternates: { windows: ["F10"], linux: ["F10"] } }, layer: "writer", group: "app",
     run: () => store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: !s.ui.toolbarOpen } })),
   });
   commands.register<{ id: string }>({
@@ -241,6 +253,44 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       await ctx.run(id);
     },
   });
+  // Editor commands: the editor's keymap runs their keys; menus and Spotlight run them through here.
+  const editorListeners = new Set<(id: string) => void>();
+  for (const spec of EDITOR_COMMANDS) {
+    commands.register({
+      ...spec,
+      enabled: (s) => s.note.status === "ready",
+      run: () => { for (const l of editorListeners) l(spec.id); },
+    });
+  }
+
+  const setShortcuts = (patch: Partial<AppState["ui"]["shortcuts"]>) =>
+    store.update((s) => ({ ...s, ui: { ...s.ui, shortcuts: { ...s.ui.shortcuts, ...patch } } }));
+  commands.register({
+    id: "shortcuts.open", title: "command.shortcuts.open", icon: "keyboard",
+    shortcut: { default: "Mod+Shift+/" }, layer: "writer", group: "app",
+    run: () => store.update((s) => ({
+      ...s,
+      ui: { ...s.ui, toolbarOpen: false, shortcuts: { open: true, query: "", layer: "all", platform: s.ui.shortcuts.platform } },
+    })),
+  });
+  commands.register<{ open: boolean }>({
+    id: "shortcuts.setOpen", title: "command.shortcuts.open",
+    // Opening goes through shortcuts.open, which resets the search; this only closes.
+    run: ({ open }) => { if (!open) setShortcuts({ open: false }); },
+  });
+  commands.register<{ value: string }>({
+    id: "shortcuts.setQuery", title: "command.shortcuts.setQuery",
+    run: ({ value }) => setShortcuts({ query: typeof value === "string" ? value : "" }),
+  });
+  commands.register<{ value: string }>({
+    id: "shortcuts.setLayer", title: "command.shortcuts.setLayer",
+    run: ({ value }) => { if (value === "all" || (KEY_LAYERS as readonly string[]).includes(value)) setShortcuts({ layer: value as CheatSheetLayer }); },
+  });
+  commands.register<{ value: string }>({
+    id: "shortcuts.setPlatform", title: "command.shortcuts.setPlatform",
+    run: ({ value }) => { if (value === "mac" || value === "pc") setShortcuts({ platform: value }); },
+  });
+
   commands.register({
     id: "app.ready",
     title: "command.app.ready",
@@ -284,6 +334,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       triggerShortcut: formatChord("Mod+.", bridge.platform),
     }),
   });
+  // The editor's keymap comes from the registry, so keys are defined once (KEY-02).
+  const editorKeymap = commands.bindings().filter((b) => b.handledBy === "editor").flatMap((b) => b.chords.map((chord) => ({ id: b.id, chord })));
   viewModels.register({
     id: "vm.app",
     schema: {
@@ -293,9 +345,62 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         platform: { type: "string", enum: ["macos", "windows", "linux", "web"] },
         fontSize: { type: "number" },
         focusMode: { type: "boolean" },
+        editorKeymap: { type: "array", items: { type: "object", properties: { id: { type: "string" }, chord: { type: "string" } } } },
       },
     },
-    select: (s) => ({ scheme: resolvedScheme(s), platform: bridge.platform, fontSize: s.appearance.fontSize, focusMode: s.focusMode }),
+    select: (s) => ({ scheme: resolvedScheme(s), platform: bridge.platform, fontSize: s.appearance.fontSize, focusMode: s.focusMode, editorKeymap }),
+  });
+
+  const allBindings = (platform: Platform): Binding[] => {
+    const natives = NATIVE_KEYS.map((k) => ({ id: k.id, title: k.title, layer: k.layer, group: k.group, chords: chordsFor(k.shortcut, platform) }));
+    return [...commands.bindings(platform), ...natives].filter((b) => b.chords.length);
+  };
+  const option = (id: string, label: string) => ({ id, label: catalog.format(label) });
+  const CLOSED = { open: false, query: "", layer: "all", platform: "pc", layers: [], platforms: [], groups: [], count: 0, summary: "" };
+  let sheetMemo: { key: AppState["ui"]["shortcuts"]; value: Record<string, unknown> } | undefined;
+  const KEY_SCHEMA = { type: "object" as const, properties: { id: { type: "string" as const }, text: { type: "string" as const }, spoken: { type: "string" as const }, keys: { type: "array" as const, items: { type: "string" as const } }, first: { type: "boolean" as const } } };
+  const OPTION_SCHEMA = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const } } };
+  viewModels.register({
+    id: "vm.shortcuts",
+    schema: {
+      type: "object",
+      properties: {
+        open: { type: "boolean" },
+        query: { type: "string" },
+        layer: { type: "string", enum: ["all", ...KEY_LAYERS] },
+        platform: { type: "string", enum: ["mac", "pc"] },
+        layers: { type: "array", items: OPTION_SCHEMA },
+        platforms: { type: "array", items: OPTION_SCHEMA },
+        groups: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" }, label: { type: "string" },
+              rows: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, layer: { type: "string" }, chords: { type: "array", items: KEY_SCHEMA } } } },
+            },
+          },
+        },
+        count: { type: "number" },
+        summary: { type: "string" },
+      },
+    },
+    setters: { query: "shortcuts.setQuery", layer: "shortcuts.setLayer", platform: "shortcuts.setPlatform" },
+    // Re-selected on every keystroke in the note, so it's cheap while closed and memoized while open.
+    select: (s) => {
+      const sh = s.ui.shortcuts;
+      if (!sh.open) return CLOSED;
+      if (sheetMemo?.key === sh) return sheetMemo.value;
+      const platform = displayPlatform(sh.platform, bridge.platform);
+      const groups = cheatSheet(allBindings(platform), catalog, { query: sh.query, layer: sh.layer, platform });
+      const count = groups.reduce((n, g) => n + g.rows.length, 0);
+      const summary = count ? catalog.format("shortcuts.count", { count }) : catalog.format("shortcuts.empty", { query: sh.query.trim() });
+      const layers = ["all", ...KEY_LAYERS].map((l) => option(l, `shortcuts.layer.${l}`));
+      const platforms = [option("mac", "shortcuts.platform.mac"), option("pc", "shortcuts.platform.pc")];
+      const value = { ...sh, layers, platforms, groups, count, summary };
+      sheetMemo = { key: sh, value };
+      return value;
+    },
   });
   viewModels.register({
     id: "vm.canvas",
@@ -320,6 +425,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
 
   return {
     store, commands, viewModels, messages: catalog, bridge, flush,
+    onEditorAction(listener) {
+      editorListeners.add(listener);
+      return () => editorListeners.delete(listener);
+    },
     async start() {
       appState = await bridge.loadAppState().catch(() => ({ version: 1 as const }));
       store.update((s) => ({

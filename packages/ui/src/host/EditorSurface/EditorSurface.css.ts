@@ -1,5 +1,6 @@
 import { createVar, globalStyle, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
+import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.editorSurface;
 
@@ -13,23 +14,8 @@ export const scroller = style({
   scrollbarGutter: "stable",
 });
 
-// The minimal scrollbar (D-73, UI-09): no arrow buttons, hidden at rest, shown while scrolling
-// or with the pointer over its edge. Only ::-webkit-scrollbar is used: setting the standard
-// scrollbar-width or scrollbar-color would make Chromium ignore these styles.
-globalStyle(`${scroller}::-webkit-scrollbar`, { width: t.scrollbarSize, height: t.scrollbarSize, backgroundColor: t.scrollbarTrack });
-globalStyle(`${scroller}::-webkit-scrollbar-button`, { display: "none", width: 0, height: 0 });
-globalStyle(`${scroller}::-webkit-scrollbar-track`, { backgroundColor: t.scrollbarTrack });
-globalStyle(`${scroller}::-webkit-scrollbar-corner`, { backgroundColor: t.scrollbarTrack });
-globalStyle(`${scroller}::-webkit-scrollbar-thumb`, {
-  backgroundColor: t.scrollbarTrack,
-  borderRadius: t.scrollbarSize,
-  borderStyle: "solid",
-  borderWidth: t.scrollbarInset,
-  borderColor: t.scrollbarTrack,
-  backgroundClip: "padding-box",
-});
-globalStyle(`${scroller}[data-scrolling]::-webkit-scrollbar-thumb, ${scroller}[data-scrollbar-hover]::-webkit-scrollbar-thumb`, { backgroundColor: t.scrollbarThumb });
-globalStyle(`${scroller}[data-scrollbar-hover]::-webkit-scrollbar-thumb:hover, ${scroller}::-webkit-scrollbar-thumb:active`, { backgroundColor: t.scrollbarThumbHover });
+// The minimal scrollbar (D-73, UI-09).
+minimalScrollbar(scroller, t);
 
 export const column = style({
   position: "relative",

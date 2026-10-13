@@ -23,10 +23,10 @@ test("UI-09: the scrollbar hides at rest, shows while scrolling and on hover, an
   expect(rest.button).toBe("none"); // no arrows
   expect(rest.thumb).toBe("rgba(0, 0, 0, 0)"); // hidden at rest
 
-  await scroller.hover();
-  await page.mouse.wheel(0, 600);
+  // Any scroll shows it: wheel, keys, or the caret. A programmatic scroll keeps the test deterministic.
+  await scroller.evaluate((el) => el.scrollBy(0, 600));
+  await expect.poll(async () => (await state()).scrolling).toBe(true);
   const scrolling = await state();
-  expect(scrolling.scrolling).toBe(true);
   expect(scrolling.thumb).not.toBe("rgba(0, 0, 0, 0)");
   expect(scrolling.contentLeft).toBe(rest.contentLeft); // nothing moved
   await page.screenshot({ path: "../../test-results/screens/scrollbar-scrolling.png" });

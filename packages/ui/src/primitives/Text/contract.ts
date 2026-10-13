@@ -9,6 +9,7 @@ export const contract = defineContract({
     role: { kind: "enum", values: ["caption", "secondary", "body", "label", "emphasis", "title"], default: "body" },
     tone: { kind: "enum", values: ["default", "muted", "accent", "danger", "warning", "success"], default: "default" },
     lines: { kind: "enum", values: ["none", "one", "two", "three"], default: "none" },
+    announce: { kind: "boolean", default: false, description: "A polite live region, for counts and results." },
   },
   events: {},
   slots: {},

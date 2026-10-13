@@ -50,6 +50,9 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 
 - **Layout-aware.** Letters match the character the key produces (`event.key`), so <kbd>Mod</kbd>+<kbd>Z</kbd> follows the Z on AZERTY and Dvorak keyboards. On non-Latin layouts (for example Cyrillic or Greek), letters fall back to the physical key (`event.code`). Shortcuts tied to key position, like <kbd>Mod</kbd>+<kbd>[</kbd>, use the physical key.
 - **Safe while composing.** No shortcut runs during IME composition (`isComposing`), so Japanese, Chinese, and Korean input is never interrupted.
+- **Physical keys for punctuation and digits.** <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> types `?` on a US keyboard, so keys whose character changes with <kbd>Shift</kbd> or the layout also match by position. The character always wins first, and <kbd>Ctrl</kbd>+<kbd>Alt</kbd> never falls back to position on Windows and Linux (AltGr).
+- **Fast sequences.** A shortcut pressed right after moving the selection acts on the new selection, even from macros and text expanders: the editor reads the selection before running the command.
+- **Defined once, resolved once.** Keys live in the command registry. The editor's keymap, menus, tooltips, and the cheat sheet all read them from there, so they can't disagree. App keys are resolved before the editor sees the key, so a key does the same thing wherever focus is: on a German layout <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>7</kbd> types `/`, so it opens the cheat sheet everywhere rather than making a numbered list only inside the note.
 - **No single-character shortcuts while typing.** Single letters work as shortcuts only in list contexts (Files panel type-ahead), which follows WCAG 2.1.4 (character key shortcuts).
 
 ## App and window

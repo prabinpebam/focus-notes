@@ -8,12 +8,12 @@ const EDGE_SLACK_PX = 6;
 /**
  * The minimal scrollbar (D-73, UI-09): hidden at rest, shown while scrolling and while the pointer
  * is over the scrollbar's edge. Space for it is always reserved (scrollbar-gutter: stable), so
- * nothing moves when it appears.
+ * nothing moves when it appears. Pass `active` for scrollers that mount later, such as a dialog body.
  */
-export function useAutoHideScrollbar(ref: RefObject<HTMLElement | null>): void {
+export function useAutoHideScrollbar(ref: RefObject<HTMLElement | null>, active = true): void {
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || !active) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const onScroll = () => {
       el.dataset.scrolling = "";
@@ -37,5 +37,5 @@ export function useAutoHideScrollbar(ref: RefObject<HTMLElement | null>): void {
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerleave", onLeave);
     };
-  }, [ref]);
+  }, [ref, active]);
 }

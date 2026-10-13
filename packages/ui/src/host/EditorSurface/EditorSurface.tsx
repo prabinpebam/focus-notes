@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
-import { coreExtensions, MarkdownSession, type PMNode } from "@focus-notes/editor";
+import { coreExtensions, EDITOR_ACTIONS, MarkdownSession, type PMNode } from "@focus-notes/editor";
+import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import * as s from "./EditorSurface.css.ts";
@@ -15,6 +16,8 @@ export interface EditorSurfaceProps {
   readOnly?: boolean;
   /** Focus mode: only the caret's visual row at full strength (FOC-01). */
   focusMode?: boolean;
+  /** Editor key bindings from the command registry (KEY-02). Read when a note opens. */
+  keymap?: KeyBinding[];
   id?: string;
   onChange?: (payload: { value: string }) => void;
   onReady?: () => void;
@@ -26,9 +29,11 @@ const SERIALIZE_DELAY_MS = 150;
 export const FLUSH_EVENT = "focus-notes:flush";
 /** Dispatched when a panel closes: the caret goes back exactly where it was (Main UI → Dismiss). */
 export const REFOCUS_EVENT = "focus-notes:refocus";
+/** Dispatched on window with `detail.id` to run an editor command from a menu or Spotlight. */
+export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
-export function EditorSurface({ documentKey, initialValue, label, placeholder, readOnly, focusMode, id, onChange, onReady }: EditorSurfaceProps) {
+export function EditorSurface({ documentKey, initialValue, label, placeholder, readOnly, focusMode, keymap, id, onChange, onReady }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
   useAutoHideScrollbar(scrollerRef);
@@ -40,7 +45,7 @@ export function EditorSurface({ documentKey, initialValue, label, placeholder, r
 
   const editor = useEditor(
     {
-      extensions: [...coreExtensions(), Placeholder.configure({ placeholder: placeholder ?? "" })],
+      extensions: [...coreExtensions(keymap ?? []), Placeholder.configure({ placeholder: placeholder ?? "" })],
       content: session.doc as object,
       editable: !readOnly,
       autofocus: "end",
@@ -111,9 +116,17 @@ export function EditorSurface({ documentKey, initialValue, label, placeholder, r
       if (editor && !editor.isDestroyed) editor.commands.focus();
     });
     window.addEventListener(REFOCUS_EVENT, refocus);
+    const runAction = (e: Event) => {
+      const action = EDITOR_ACTIONS[String((e as CustomEvent<{ id?: string }>).detail?.id)];
+      if (!action || !editor || editor.isDestroyed || !editor.isEditable) return;
+      editor.commands.focus();
+      action(editor);
+    };
+    window.addEventListener(EDITOR_ACTION_EVENT, runAction);
     return () => {
       window.removeEventListener(FLUSH_EVENT, flush);
       window.removeEventListener(REFOCUS_EVENT, refocus);
+      window.removeEventListener(EDITOR_ACTION_EVENT, runAction);
     };
   }, [editor, session]);
 
