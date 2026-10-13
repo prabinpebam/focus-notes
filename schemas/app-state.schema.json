@@ -36,6 +36,43 @@
     },
     "focusMode": {
       "type": "boolean"
+    },
+    "lightTheme": {
+      "enum": [
+        "paper",
+        "sepia",
+        "harbor-light",
+        "forest-light",
+        "contrast-light"
+      ]
+    },
+    "darkTheme": {
+      "enum": [
+        "ink",
+        "dusk",
+        "harbor-dark",
+        "forest-dark",
+        "contrast-dark"
+      ]
+    },
+    "contentFont": {
+      "enum": [
+        "sans",
+        "serif",
+        "mono",
+        "hyperlegible",
+        "dyslexic",
+        "system"
+      ]
+    },
+    "uiScale": {
+      "enum": [
+        0.9,
+        1,
+        1.1,
+        1.25,
+        1.5
+      ]
     }
   },
   "additionalProperties": false

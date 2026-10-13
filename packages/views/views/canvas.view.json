@@ -23,6 +23,15 @@
       },
       "focusMode": {
         "get": "vm.app.focusMode"
+      },
+      "theme": {
+        "get": "vm.app.theme"
+      },
+      "contentFont": {
+        "get": "vm.app.contentFont"
+      },
+      "uiScale": {
+        "get": "vm.app.uiScale"
       }
     },
     "children": [

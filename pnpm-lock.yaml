@@ -156,6 +156,21 @@ importers:
       '@focus-notes/tokens':
         specifier: workspace:*
         version: link:../tokens
+      '@fontsource/atkinson-hyperlegible':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/inter':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/jetbrains-mono':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/opendyslexic':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/source-serif-4':
+        specifier: 5.3.0
+        version: 5.3.0
       '@tiptap/extension-placeholder':
         specifier: 3.31.4
         version: 3.31.4(@tiptap/extensions@3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))(@tiptap/pm@3.31.4))
@@ -523,6 +538,21 @@ packages:
     resolution: {integrity: sha512-pvEVFOUrrtmIglqdfhDVX6XT80a5z9kX+Tso6NAzgmkko8nlURhOzNwvZZlsCK4yQseH/4NQdYoN8ijO7IHdNw==, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fluentui/react-icons/-/react-icons-2.0.344.tgz}
     peerDependencies:
       react: '>=16.8.0 <20.0.0'
+
+  '@fontsource/atkinson-hyperlegible@5.3.0':
+    resolution: {integrity: sha1-pAo4u39D/xmk0uSVrO8DmwL69mw=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/atkinson-hyperlegible/-/atkinson-hyperlegible-5.3.0.tgz}
+
+  '@fontsource/inter@5.3.0':
+    resolution: {integrity: sha1-hmJ43CNXZZ+L4XVci2fynTaXtEA=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/inter/-/inter-5.3.0.tgz}
+
+  '@fontsource/jetbrains-mono@5.3.0':
+    resolution: {integrity: sha1-h7/YSfJLU27XLom1auDUIiNpf3Q=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/jetbrains-mono/-/jetbrains-mono-5.3.0.tgz}
+
+  '@fontsource/opendyslexic@5.3.0':
+    resolution: {integrity: sha512-BVYIW/ghc1U2iAghhYTN+GFWiZ3lnCy8Jf2KkZC23aHQHBNcMqKT718zckfqVxRx4qsXJmIMPWvczirRuhmtsg==, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/opendyslexic/-/opendyslexic-5.3.0.tgz}
+
+  '@fontsource/source-serif-4@5.3.0':
+    resolution: {integrity: sha1-iCSkoxNpwAcEVbF6rJ09B/FJjes=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/source-serif-4/-/source-serif-4-5.3.0.tgz}
 
   '@formatjs/fast-memoize@3.1.7':
     resolution: {integrity: sha1-X3mzdW5Ly1+u5Hs6LwEhbhISyeQ=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@formatjs/fast-memoize/-/fast-memoize-3.1.7.tgz}
@@ -3331,6 +3361,16 @@ snapshots:
       '@griffel/react': 1.7.8(react@19.2.8)
       react: 19.2.8
       tslib: 2.8.1
+
+  '@fontsource/atkinson-hyperlegible@5.3.0': {}
+
+  '@fontsource/inter@5.3.0': {}
+
+  '@fontsource/jetbrains-mono@5.3.0': {}
+
+  '@fontsource/opendyslexic@5.3.0': {}
+
+  '@fontsource/source-serif-4@5.3.0': {}
 
   '@formatjs/fast-memoize@3.1.7': {}
 

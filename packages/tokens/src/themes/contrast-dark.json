@@ -1,0 +1,128 @@
+{
+  "color": {
+    "$type": "color",
+    "canvas": {
+      "$value": "{ref.color.hcDark.0}"
+    },
+    "surface": {
+      "$value": "{ref.color.hcDark.0}"
+    },
+    "surfaceRaised": {
+      "$value": "{ref.color.hcDark.100}"
+    },
+    "surfaceSunken": {
+      "$value": "{ref.color.hcDark.0}"
+    },
+    "scrim": {
+      "$value": "{ref.color.ink.a55}"
+    },
+    "border": {
+      "$value": "{ref.color.hcDark.border}"
+    },
+    "borderStrong": {
+      "$value": "{ref.color.hcDark.text}"
+    },
+    "text": {
+      "$value": "{ref.color.hcDark.text}"
+    },
+    "textMuted": {
+      "$value": "{ref.color.hcDark.muted}"
+    },
+    "textPlaceholder": {
+      "$value": "{ref.color.hcDark.placeholder}"
+    },
+    "textDisabled": {
+      "$value": "{ref.color.hcDark.placeholder}"
+    },
+    "textInverse": {
+      "$value": "{ref.color.hcDark.0}"
+    },
+    "hover": {
+      "$value": "{ref.color.hcDark.a06}"
+    },
+    "pressed": {
+      "$value": "{ref.color.hcDark.a10}"
+    },
+    "scrollbar": {
+      "$value": "{ref.color.hcDark.a30}"
+    },
+    "scrollbarHover": {
+      "$value": "{ref.color.hcDark.a50}"
+    },
+    "link": {
+      "$value": "{ref.color.hcDark.accent}"
+    },
+    "accent": {
+      "$value": "{ref.color.hcDark.accent}"
+    },
+    "focusRing": {
+      "$value": "{ref.color.hcDark.accent}"
+    },
+    "onAccent": {
+      "$value": "{ref.color.hcDark.0}"
+    },
+    "accentMuted": {
+      "$value": "{ref.color.blue.a30}"
+    },
+    "selection": {
+      "$value": "{ref.color.blue.a30}"
+    },
+    "danger": {
+      "$value": "{ref.color.hcDark.danger}"
+    },
+    "onDanger": {
+      "$value": "{ref.color.hcDark.0}"
+    },
+    "warning": {
+      "$value": "{ref.color.hcDark.warning}"
+    },
+    "success": {
+      "$value": "{ref.color.hcDark.success}"
+    },
+    "info": {
+      "$value": "{ref.color.hcDark.accent}"
+    }
+  },
+  "trigger": {
+    "dot": {
+      "$type": "color",
+      "$value": "{ref.color.red.300}"
+    },
+    "ring": {
+      "$type": "color",
+      "$value": "{ref.color.hcDark.0}"
+    },
+    "ringBorder": {
+      "$type": "color",
+      "$value": "{ref.color.hcDark.text}"
+    }
+  },
+  "code": {
+    "background": {
+      "$type": "color",
+      "$value": "{ref.color.hcDark.100}"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "{ref.color.hcDark.text}"
+    }
+  },
+  "shadow": {
+    "$type": "shadow",
+    "1": {
+      "$value": "{ref.shadow.dark1}"
+    },
+    "2": {
+      "$value": "{ref.shadow.dark2}"
+    },
+    "3": {
+      "$value": "{ref.shadow.dark3}"
+    }
+  },
+  "focus": {
+    "dimOpacity": {
+      "$type": "number",
+      "$value": 0.55
+    }
+  }
+}

@@ -33,4 +33,9 @@ export interface AppStateFile {
   appearance?: "system" | "light" | "dark";
   fontSize?: number;
   focusMode?: boolean;
+  /** The chosen light and dark themes (THM-08). */
+  lightTheme?: string;
+  darkTheme?: string;
+  contentFont?: string;
+  uiScale?: number;
 }

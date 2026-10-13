@@ -29,4 +29,6 @@ export function minimalScrollbar(scroller: string, t: ScrollbarTokens): void {
   });
   globalStyle(`${scroller}[data-scrolling]::-webkit-scrollbar-thumb, ${scroller}[data-scrollbar-hover]::-webkit-scrollbar-thumb`, { backgroundColor: t.scrollbarThumb });
   globalStyle(`${scroller}[data-scrollbar-hover]::-webkit-scrollbar-thumb:hover, ${scroller}::-webkit-scrollbar-thumb:active`, { backgroundColor: t.scrollbarThumbHover });
+  // In Windows contrast themes the thumb never hides, so it's always findable (Foundations → Scrollbars).
+  globalStyle(`${scroller}::-webkit-scrollbar-thumb`, { "@media": { "(forced-colors: active)": { backgroundColor: t.scrollbarThumb } } });
 }

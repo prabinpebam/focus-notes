@@ -1,0 +1,88 @@
+{
+  "color": {
+    "$type": "color",
+    "canvas": {
+      "$value": "{ref.color.forestLight.50}"
+    },
+    "surface": {
+      "$value": "{ref.color.forestLight.0}"
+    },
+    "surfaceRaised": {
+      "$value": "{ref.color.forestLight.0}"
+    },
+    "surfaceSunken": {
+      "$value": "{ref.color.forestLight.100}"
+    },
+    "scrim": {
+      "$value": "{ref.color.forestLight.a40}"
+    },
+    "border": {
+      "$value": "{ref.color.forestLight.200}"
+    },
+    "borderStrong": {
+      "$value": "{ref.color.forestLight.300}"
+    },
+    "text": {
+      "$value": "{ref.color.forestLight.900}"
+    },
+    "textMuted": {
+      "$value": "{ref.color.forestLight.600}"
+    },
+    "textPlaceholder": {
+      "$value": "{ref.color.forestLight.500}"
+    },
+    "textDisabled": {
+      "$value": "{ref.color.forestLight.500}"
+    },
+    "textInverse": {
+      "$value": "{ref.color.forestLight.50}"
+    },
+    "hover": {
+      "$value": "{ref.color.forestLight.a06}"
+    },
+    "pressed": {
+      "$value": "{ref.color.forestLight.a10}"
+    },
+    "scrollbar": {
+      "$value": "{ref.color.forestLight.a30}"
+    },
+    "scrollbarHover": {
+      "$value": "{ref.color.forestLight.a55}"
+    },
+    "link": {
+      "$value": "{ref.color.green.800}"
+    },
+    "accent": {
+      "$value": "{ref.color.green.800}"
+    },
+    "focusRing": {
+      "$value": "{ref.color.green.800}"
+    },
+    "selection": {
+      "$value": "{ref.color.green.a15}"
+    },
+    "accentMuted": {
+      "$value": "{ref.color.green.a15}"
+    }
+  },
+  "trigger": {
+    "ring": {
+      "$type": "color",
+      "$value": "{ref.color.forestLight.0}"
+    },
+    "ringBorder": {
+      "$type": "color",
+      "$value": "{ref.color.forestLight.200}"
+    }
+  },
+  "code": {
+    "background": {
+      "$type": "color",
+      "$value": "{ref.color.forestLight.100}"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "{ref.color.forestLight.900}"
+    }
+  }
+}

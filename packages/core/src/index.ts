@@ -6,3 +6,5 @@ export * from "./bridge.ts";
 export * from "./app.ts";
 export * from "./text.ts";
 export * from "./keymap.ts";
+export * from "./themes.ts";
+export * from "./contrast.ts";

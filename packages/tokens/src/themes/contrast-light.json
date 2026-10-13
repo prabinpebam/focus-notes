@@ -1,0 +1,100 @@
+{
+  "color": {
+    "$type": "color",
+    "canvas": {
+      "$value": "{ref.color.hcLight.0}"
+    },
+    "surface": {
+      "$value": "{ref.color.hcLight.0}"
+    },
+    "surfaceRaised": {
+      "$value": "{ref.color.hcLight.0}"
+    },
+    "surfaceSunken": {
+      "$value": "{ref.color.hcLight.100}"
+    },
+    "scrim": {
+      "$value": "{ref.color.hcLight.a40}"
+    },
+    "border": {
+      "$value": "{ref.color.hcLight.border}"
+    },
+    "borderStrong": {
+      "$value": "{ref.color.hcLight.text}"
+    },
+    "text": {
+      "$value": "{ref.color.hcLight.900}"
+    },
+    "textMuted": {
+      "$value": "{ref.color.hcLight.muted}"
+    },
+    "textPlaceholder": {
+      "$value": "{ref.color.hcLight.placeholder}"
+    },
+    "textDisabled": {
+      "$value": "{ref.color.hcLight.placeholder}"
+    },
+    "textInverse": {
+      "$value": "{ref.color.hcLight.0}"
+    },
+    "hover": {
+      "$value": "{ref.color.hcLight.a06}"
+    },
+    "pressed": {
+      "$value": "{ref.color.hcLight.a10}"
+    },
+    "scrollbar": {
+      "$value": "{ref.color.hcLight.a30}"
+    },
+    "scrollbarHover": {
+      "$value": "{ref.color.hcLight.a55}"
+    },
+    "link": {
+      "$value": "{ref.color.hcLight.accent}"
+    },
+    "accent": {
+      "$value": "{ref.color.hcLight.accent}"
+    },
+    "focusRing": {
+      "$value": "{ref.color.hcLight.accent}"
+    },
+    "danger": {
+      "$value": "{ref.color.hcLight.danger}"
+    },
+    "warning": {
+      "$value": "{ref.color.hcLight.warning}"
+    },
+    "success": {
+      "$value": "{ref.color.hcLight.success}"
+    },
+    "info": {
+      "$value": "{ref.color.hcLight.accent}"
+    }
+  },
+  "trigger": {
+    "ring": {
+      "$type": "color",
+      "$value": "{ref.color.hcLight.0}"
+    },
+    "ringBorder": {
+      "$type": "color",
+      "$value": "{ref.color.hcLight.text}"
+    }
+  },
+  "code": {
+    "background": {
+      "$type": "color",
+      "$value": "{ref.color.hcLight.100}"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "{ref.color.hcLight.text}"
+    }
+  },
+  "focus": {
+    "dimOpacity": {
+      "$type": "number",
+      "$value": 0.55
+    }
+  }
+}

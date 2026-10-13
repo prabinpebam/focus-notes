@@ -1,5 +1,6 @@
 import { Store } from "./store.ts";
 import { CommandRegistry, chordsFor, formatChord, KEY_LAYERS, type Binding } from "./commands.ts";
+import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, UI_SCALES, themeById, type ContentFont } from "./themes.ts";
 import { cheatSheet, displayPlatform, EDITOR_COMMANDS, NATIVE_KEYS, type CheatSheetLayer, type CheatSheetPlatform } from "./keymap.ts";
 import { ViewModelRegistry } from "./view-models.ts";
 import { MessageCatalog, type Messages } from "./messages.ts";
@@ -19,7 +20,15 @@ export interface AppState {
     status: "loading" | "ready" | "error";
     saveState: SaveState;
   };
-  appearance: { mode: "system" | "light" | "dark"; system: Scheme; fontSize: number };
+  appearance: {
+    mode: "system" | "light" | "dark";
+    system: Scheme;
+    fontSize: number;
+    lightTheme: string;
+    darkTheme: string;
+    contentFont: ContentFont;
+    uiScale: number;
+  };
   focusMode: boolean;
   ui: {
     toolbarOpen: boolean;
@@ -35,10 +44,22 @@ export const DEFAULT_FONT_SIZE = 18;
 
 /** The six default toolbar actions, in order (UI-07, D-18). */
 export const DEFAULT_TOOLBAR = ["note.new", "note.open", "spotlight.open", "note.save", "focus.toggle", "appearance.toggle"] as const;
+/** A ⋯ menu entry: a command, or a submenu of commands. */
+export type MenuEntry = string | { submenu: string; label: string; items: string[] };
 /** The ⋯ menu groups available so far (Main UI → The ⋯ menu). */
-export const MORE_MENU: { id: string; label: string; items: string[] }[] = [
-  { id: "view", label: "menu.view", items: ["font.smaller", "font.larger", "font.reset", "window.fullScreen"] },
-  { id: "theme", label: "menu.theme", items: ["appearance.system", "appearance.light", "appearance.dark"] },
+export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
+  {
+    id: "view", label: "menu.view",
+    items: ["font.smaller", "font.larger", "font.reset", { submenu: "font.content", label: "menu.contentFont", items: CONTENT_FONTS.map((f) => `font.content.${f}`) }, "window.fullScreen"],
+  },
+  {
+    id: "theme", label: "menu.theme",
+    items: [
+      "appearance.system", "appearance.light", "appearance.dark",
+      { submenu: "theme.light", label: "menu.lightTheme", items: BUILT_IN_THEMES.filter((t) => t.kind === "light").map((t) => `theme.light.${t.id}`) },
+      { submenu: "theme.dark", label: "menu.darkTheme", items: BUILT_IN_THEMES.filter((t) => t.kind === "dark").map((t) => `theme.dark.${t.id}`) },
+    ],
+  },
   { id: "help", label: "menu.help", items: ["shortcuts.open"] },
 ];
 
@@ -57,11 +78,17 @@ export interface App {
 
 export const resolvedScheme = (s: AppState): Scheme =>
   s.appearance.mode === "system" ? s.appearance.system : s.appearance.mode;
+/** The theme showing now: the chosen light or dark theme for the resolved scheme (THM-08). */
+export const resolvedTheme = (s: AppState): string =>
+  resolvedScheme(s) === "dark" ? s.appearance.darkTheme : s.appearance.lightTheme;
 
 export function createApp(bridge: PlatformBridge, messages: Messages, locale = "en"): App {
   const store = new Store<AppState>({
     note: { key: "none", initialMarkdown: "", markdown: "", status: "loading", saveState: "saved" },
-    appearance: { mode: "system", system: bridge.systemScheme(), fontSize: DEFAULT_FONT_SIZE },
+    appearance: {
+      mode: "system", system: bridge.systemScheme(), fontSize: DEFAULT_FONT_SIZE,
+      lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "sans", uiScale: 1,
+    },
     focusMode: false,
     ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" } },
   });
@@ -201,6 +228,34 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     enabled: (s) => s.appearance.fontSize > FONT_STEPS[0],
     run: () => setFontSize(step(-1)),
   });
+  // Theme choices (THM-08) and content fonts (THM-03): one command each, so menus, Spotlight, and agents can run them.
+  const setAppearance = async (patch: Partial<AppState["appearance"]>) => {
+    store.update((s) => ({ ...s, appearance: { ...s.appearance, ...patch } }));
+    const { lightTheme, darkTheme, contentFont, uiScale } = store.state.appearance;
+    await persistAppState({ lightTheme, darkTheme, contentFont, uiScale });
+  };
+  for (const t of BUILT_IN_THEMES) {
+    const key = t.kind === "light" ? "lightTheme" : "darkTheme";
+    commands.register({
+      id: `theme.${t.kind}.${t.id}`, title: t.title,
+      checked: (s) => s.appearance[key] === t.id,
+      run: () => setAppearance({ [key]: t.id }),
+    });
+  }
+  for (const f of CONTENT_FONTS) {
+    commands.register({
+      id: `font.content.${f}`, title: `font.${f}`,
+      checked: (s) => s.appearance.contentFont === f,
+      run: () => setAppearance({ contentFont: f }),
+    });
+  }
+  const scaleStep = (dir: 1 | -1) => {
+    const i = UI_SCALES.indexOf(store.state.appearance.uiScale as (typeof UI_SCALES)[number]);
+    return UI_SCALES[Math.min(UI_SCALES.length - 1, Math.max(0, (i < 0 ? 1 : i) + dir))]!;
+  };
+  commands.register({ id: "ui.scaleUp", title: "command.ui.scaleUp", enabled: (s) => s.appearance.uiScale < UI_SCALES[UI_SCALES.length - 1]!, run: () => setAppearance({ uiScale: scaleStep(1) }) });
+  commands.register({ id: "ui.scaleDown", title: "command.ui.scaleDown", enabled: (s) => s.appearance.uiScale > UI_SCALES[0], run: () => setAppearance({ uiScale: scaleStep(-1) }) });
+  commands.register({ id: "ui.scaleReset", title: "command.ui.scaleReset", run: () => setAppearance({ uiScale: 1 }) });
   commands.register({ id: "font.reset", title: "command.font.reset", shortcut: { default: "Mod+0" }, layer: "writer", group: "app", run: () => setFontSize(DEFAULT_FONT_SIZE) });
   commands.register({
     id: "focus.toggle", title: "command.focus.toggle", icon: "focus",
@@ -323,14 +378,17 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       properties: {
         open: { type: "boolean" },
         items: { type: "array", items: ITEM_SCHEMA },
-        more: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM_SCHEMA } } } },
+        more: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: { ...ITEM_SCHEMA, properties: { ...ITEM_SCHEMA.properties, items: { type: "array", items: ITEM_SCHEMA } } } } } } },
         triggerShortcut: { type: "string" },
       },
     },
     select: (s) => ({
       open: s.ui.toolbarOpen,
       items: DEFAULT_TOOLBAR.map(describeItem),
-      more: MORE_MENU.map((g) => ({ id: g.id, label: catalog.format(g.label), items: g.items.map(describeItem) })),
+      more: MORE_MENU.map((g) => ({
+        id: g.id, label: catalog.format(g.label),
+        items: g.items.map((e) => (typeof e === "string" ? describeItem(e) : { id: e.submenu, label: catalog.format(e.label), items: e.items.map(describeItem) })),
+      })),
       triggerShortcut: formatChord("Mod+.", bridge.platform),
     }),
   });
@@ -345,10 +403,16 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         platform: { type: "string", enum: ["macos", "windows", "linux", "web"] },
         fontSize: { type: "number" },
         focusMode: { type: "boolean" },
+        theme: { type: "string", enum: BUILT_IN_THEMES.map((t) => t.id) },
+        contentFont: { type: "string", enum: [...CONTENT_FONTS] },
+        uiScale: { type: "number" },
         editorKeymap: { type: "array", items: { type: "object", properties: { id: { type: "string" }, chord: { type: "string" } } } },
       },
     },
-    select: (s) => ({ scheme: resolvedScheme(s), platform: bridge.platform, fontSize: s.appearance.fontSize, focusMode: s.focusMode, editorKeymap }),
+    select: (s) => ({
+      scheme: resolvedScheme(s), theme: resolvedTheme(s), platform: bridge.platform, fontSize: s.appearance.fontSize, focusMode: s.focusMode,
+      contentFont: s.appearance.contentFont, uiScale: s.appearance.uiScale, editorKeymap,
+    }),
   });
 
   const allBindings = (platform: Platform): Binding[] => {
@@ -433,7 +497,16 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       appState = await bridge.loadAppState().catch(() => ({ version: 1 as const }));
       store.update((s) => ({
         ...s,
-        appearance: { ...s.appearance, ...(appState.appearance ? { mode: appState.appearance } : {}), ...(appState.fontSize ? { fontSize: appState.fontSize } : {}) },
+        appearance: {
+          ...s.appearance,
+          ...(appState.appearance ? { mode: appState.appearance } : {}),
+          ...(appState.fontSize ? { fontSize: appState.fontSize } : {}),
+          // Unknown or removed themes fall back to the defaults rather than failing.
+          ...(themeById(appState.lightTheme)?.kind === "light" ? { lightTheme: appState.lightTheme! } : {}),
+          ...(themeById(appState.darkTheme)?.kind === "dark" ? { darkTheme: appState.darkTheme! } : {}),
+          ...((CONTENT_FONTS as readonly string[]).includes(appState.contentFont ?? "") ? { contentFont: appState.contentFont as ContentFont } : {}),
+          ...((UI_SCALES as readonly number[]).includes(appState.uiScale ?? 0) ? { uiScale: appState.uiScale! } : {}),
+        },
         // Focus mode is on for new installs: it's a signature feature (D-04).
         focusMode: appState.focusMode ?? true,
       }));

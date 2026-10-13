@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     return () => ipcRenderer.removeListener("scheme:changed", handler);
   },
   markReady: () => ipcRenderer.send("app:ready"),
-  setWindowScheme: (s: "light" | "dark") => ipcRenderer.send("window:scheme", s),
+  setWindowScheme: (s: "light" | "dark", canvas?: string) => ipcRenderer.send("window:scheme", s, canvas),
   onFlushRequest: (listener: () => Promise<boolean>) => {
     ipcRenderer.on("app:flush", () => {
       void listener()

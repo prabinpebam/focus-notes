@@ -197,9 +197,11 @@ function createWindow(): BrowserWindow {
     const d = nativeTheme.shouldUseDarkColors;
     win.webContents.send("scheme:changed", d ? "dark" : "light");
   });
-  ipcMain.on("window:scheme", (_e, scheme: "light" | "dark") => {
+  ipcMain.on("window:scheme", (e, scheme: unknown, canvas: unknown) => {
+    if (!fromApp(e) || (scheme !== "light" && scheme !== "dark")) return;
     if (platform !== "macos" && !customWindow) win.setTitleBarOverlay?.({ color: "#00000000", symbolColor: scheme === "dark" ? "#eceae6" : "#1f1d1a", height: 44 });
-    win.setBackgroundColor(customWindow ? "#00000000" : scheme === "dark" ? "#1a1a1c" : "#fbfaf7");
+    const color = typeof canvas === "string" && /^#[0-9a-f]{6}$/i.test(canvas) ? canvas : scheme === "dark" ? "#1a1a1c" : "#fbfaf7";
+    win.setBackgroundColor(customWindow ? "#00000000" : color);
   });
   return win;
 }

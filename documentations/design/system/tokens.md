@@ -70,7 +70,8 @@ A mode switches a set of token values without changing any name. Components neve
 | **Transparency** | frost, solid | `prefers-reduced-transparency` and the OS settings | `frost.opacity` becomes 1, and `frost.blur` becomes 0 |
 | **Pointer** | fine, coarse | `pointer: coarse` | `size.hit` becomes 44, and dense rows get more padding |
 | **Platform** | macos, windows, linux, web, ipados | The shell | `window.radius` (0 on macOS, which uses the native window), the window control style, and shortcut glyphs |
-| **UI scale** | 90% to 150% | Settings → Appearance | Every `font.ui.*`, `size.*`, and `space.*` value is multiplied. Note text is unaffected. |
+| **UI scale** | 90% to 150% | Settings → Appearance | Every `font.ui.*`, `size.*`, and `space.*` value is multiplied (the build wraps them in `calc(… * var(--fn-ui-scale))`). Note text is unaffected. |
+| **Content font** | sans, serif, mono, hyperlegible, dyslexic, system | ⋯ → View → Font, later the theme manager's Reading tab | `font.content` only. The bundled fonts are self-hosted OFL fonts. |
 
 Mode values are stored as separate token sets in the DTCG source, one file per mode value, and resolved at build time into CSS variable blocks keyed by data attributes on the root element (for example `data-scheme="dark"`, `data-motion="reduced"`).
 

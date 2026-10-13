@@ -1,0 +1,122 @@
+{
+  "color": {
+    "$type": "color",
+    "canvas": {
+      "$value": "{ref.color.dusk.900}"
+    },
+    "surface": {
+      "$value": "{ref.color.dusk.800}"
+    },
+    "surfaceRaised": {
+      "$value": "{ref.color.dusk.700}"
+    },
+    "surfaceSunken": {
+      "$value": "{ref.color.dusk.950}"
+    },
+    "scrim": {
+      "$value": "{ref.color.ink.a55}"
+    },
+    "border": {
+      "$value": "{ref.color.dusk.700}"
+    },
+    "borderStrong": {
+      "$value": "{ref.color.dusk.600}"
+    },
+    "text": {
+      "$value": "{ref.color.dusk.50}"
+    },
+    "textMuted": {
+      "$value": "{ref.color.dusk.400}"
+    },
+    "textPlaceholder": {
+      "$value": "{ref.color.dusk.500}"
+    },
+    "textDisabled": {
+      "$value": "{ref.color.dusk.500}"
+    },
+    "textInverse": {
+      "$value": "{ref.color.dusk.900}"
+    },
+    "hover": {
+      "$value": "{ref.color.dusk.a06}"
+    },
+    "pressed": {
+      "$value": "{ref.color.dusk.a10}"
+    },
+    "scrollbar": {
+      "$value": "{ref.color.dusk.a30}"
+    },
+    "scrollbarHover": {
+      "$value": "{ref.color.dusk.a50}"
+    },
+    "link": {
+      "$value": "{ref.color.blue.300}"
+    },
+    "accent": {
+      "$value": "{ref.color.blue.300}"
+    },
+    "focusRing": {
+      "$value": "{ref.color.blue.300}"
+    },
+    "onAccent": {
+      "$value": "{ref.color.dusk.950}"
+    },
+    "accentMuted": {
+      "$value": "{ref.color.blue.a30}"
+    },
+    "selection": {
+      "$value": "{ref.color.blue.a30}"
+    },
+    "danger": {
+      "$value": "{ref.color.red.300}"
+    },
+    "onDanger": {
+      "$value": "{ref.color.dusk.950}"
+    },
+    "warning": {
+      "$value": "{ref.color.amber.300}"
+    },
+    "success": {
+      "$value": "{ref.color.green.300}"
+    },
+    "info": {
+      "$value": "{ref.color.blue.300}"
+    }
+  },
+  "trigger": {
+    "dot": {
+      "$type": "color",
+      "$value": "{ref.color.red.400}"
+    },
+    "ring": {
+      "$type": "color",
+      "$value": "{ref.color.dusk.800}"
+    },
+    "ringBorder": {
+      "$type": "color",
+      "$value": "{ref.color.dusk.600}"
+    }
+  },
+  "code": {
+    "background": {
+      "$type": "color",
+      "$value": "{ref.color.dusk.800}"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "{ref.color.dusk.50}"
+    }
+  },
+  "shadow": {
+    "$type": "shadow",
+    "1": {
+      "$value": "{ref.shadow.dark1}"
+    },
+    "2": {
+      "$value": "{ref.shadow.dark2}"
+    },
+    "3": {
+      "$value": "{ref.shadow.dark3}"
+    }
+  }
+}

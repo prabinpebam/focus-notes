@@ -1,0 +1,82 @@
+{
+  "color": {
+    "$type": "color",
+    "canvas": {
+      "$value": "{ref.color.harborLight.50}"
+    },
+    "surface": {
+      "$value": "{ref.color.harborLight.0}"
+    },
+    "surfaceRaised": {
+      "$value": "{ref.color.harborLight.0}"
+    },
+    "surfaceSunken": {
+      "$value": "{ref.color.harborLight.100}"
+    },
+    "scrim": {
+      "$value": "{ref.color.harborLight.a40}"
+    },
+    "border": {
+      "$value": "{ref.color.harborLight.200}"
+    },
+    "borderStrong": {
+      "$value": "{ref.color.harborLight.300}"
+    },
+    "text": {
+      "$value": "{ref.color.harborLight.900}"
+    },
+    "textMuted": {
+      "$value": "{ref.color.harborLight.600}"
+    },
+    "textPlaceholder": {
+      "$value": "{ref.color.harborLight.500}"
+    },
+    "textDisabled": {
+      "$value": "{ref.color.harborLight.500}"
+    },
+    "textInverse": {
+      "$value": "{ref.color.harborLight.50}"
+    },
+    "hover": {
+      "$value": "{ref.color.harborLight.a06}"
+    },
+    "pressed": {
+      "$value": "{ref.color.harborLight.a10}"
+    },
+    "scrollbar": {
+      "$value": "{ref.color.harborLight.a30}"
+    },
+    "scrollbarHover": {
+      "$value": "{ref.color.harborLight.a55}"
+    },
+    "link": {
+      "$value": "{ref.color.blue.700}"
+    },
+    "accent": {
+      "$value": "{ref.color.blue.700}"
+    },
+    "focusRing": {
+      "$value": "{ref.color.blue.700}"
+    }
+  },
+  "trigger": {
+    "ring": {
+      "$type": "color",
+      "$value": "{ref.color.harborLight.0}"
+    },
+    "ringBorder": {
+      "$type": "color",
+      "$value": "{ref.color.harborLight.200}"
+    }
+  },
+  "code": {
+    "background": {
+      "$type": "color",
+      "$value": "{ref.color.harborLight.100}"
+    },
+    "text": {
+      "$type": "color",
+      "$value": "{ref.color.harborLight.900}"
+    }
+  }
+}

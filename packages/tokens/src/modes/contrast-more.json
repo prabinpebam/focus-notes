@@ -1,0 +1,14 @@
+{
+  "border": {
+    "$type": "dimension",
+    "focus": {
+      "$value": "{ref.size.3}"
+    }
+  },
+  "focus": {
+    "dimOpacity": {
+      "$type": "number",
+      "$value": 0.55
+    }
+  }
+}

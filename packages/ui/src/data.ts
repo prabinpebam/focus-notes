@@ -8,6 +8,8 @@ export interface CommandItem {
   disabled?: boolean;
   /** Why it's disabled, shown in its tooltip. */
   reason?: string;
+  /** A submenu: this item opens these items instead of running a command. */
+  items?: CommandItem[];
 }
 
 /** One choice in a segmented control or filter. */

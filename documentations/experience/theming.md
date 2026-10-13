@@ -37,7 +37,7 @@ Appearance is **System** (default, follows the OS's `prefers-color-scheme` live)
 | **Harbor**, **Forest** | Light and dark | Cool blue-grey and muted green families. |
 | **High contrast** | Light and dark | At least 7:1 everywhere, heavier focus outlines. |
 
-Every built-in theme passes the [contrast guard](../design/views/theme-manager.html#contrast-guard) (THM-13) with focus mode off. The dimmed rows in focus mode are a deliberate exception (see [Focus mode](focus-mode.md#accessibility)). Named classic schemes (Solarized, Nord, Dracula, Gruvbox, Catppuccin) follow in P1 (THM-09).
+Every built-in theme passes the [contrast guard](../design/views/theme-manager.html#contrast-guard) (THM-13) with focus mode off: a unit test checks each theme's key color pairs (text, muted and placeholder text on every surface at 4.5:1, 7:1 for High contrast; links, danger, and code at 4.5:1; accent, focus ring, and the trigger dot at 3:1), and a journey test runs axe, including color contrast, on every theme. Choosing a High contrast theme also turns on the contrast mode, which the OS can turn on too (`prefers-contrast: more`): a heavier focus ring and lighter focus dimming. The dimmed rows in focus mode are a deliberate exception (see [Focus mode](focus-mode.md#accessibility)). Named classic schemes (Solarized, Nord, Dracula, Gruvbox, Catppuccin) follow in P1 (THM-09).
 
 ## Switching themes
 
