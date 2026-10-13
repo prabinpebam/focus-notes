@@ -18,6 +18,14 @@
       "baseline": 0,
       "noiseAbsolute": 12,
       "unit": "%"
+    },
+    "PRF-07.statusProcesses": {
+      "budget": 2,
+      "unit": " processes"
+    },
+    "PRF-07.cachedStatusMs": {
+      "budget": 5,
+      "unit": "ms"
     }
   },
   "baselinePlatform": "win32",

@@ -41,6 +41,16 @@ contextBridge.exposeInMainWorld("focusNotes", {
       return () => ipcRenderer.removeListener("workspace:changed", handler);
     },
   },
+  // Save and sync with the user's own Git (WP-3.3): intent-level only, never a Git command.
+  sync: {
+    now: (reason: "save" | "switch") => ipcRenderer.invoke("sync:now", reason),
+    status: () => ipcRenderer.invoke("sync:status"),
+    onStatus: (listener: (report: unknown) => void) => {
+      const handler = (_e: unknown, report: unknown) => listener(report);
+      ipcRenderer.on("sync:status", handler);
+      return () => ipcRenderer.removeListener("sync:status", handler);
+    },
+  },
   setWindowScheme: (s: "light" | "dark", canvas?: string) => ipcRenderer.send("window:scheme", s, canvas),
   onFlushRequest: (listener: () => Promise<boolean>) => {
     ipcRenderer.on("app:flush", () => {

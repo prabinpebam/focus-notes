@@ -13,6 +13,7 @@ import {
   applyChanges, buildTree, EMPTY_TREE, followsTitle, isWithin, planRename, stemOf, titleOfMarkdown,
   type WorkspaceChange, type WorkspaceTree,
 } from "./workspace.ts";
+import { planLinkWrites, rewriteLinks } from "./links.ts";
 import { formatWorkspaceFile, migrateWorkspaceFile, MIGRATIONS, readWorkspaceFormat, WORKSPACE_FORMAT, type Migrations, type WorkspaceAccess, type WorkspaceFile } from "./workspace-format.ts";
 
 export interface WorkspaceState {
@@ -153,15 +154,27 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     const plan = planRename(store.state.workspace.tree, path, next);
     if (plan?.kind === "unchanged") title = next;
     if (plan?.kind !== "renamed") return;
+    const moves = [{ from: path, to: plan.to }];
+    let own: string | undefined;
     try {
-      await ws.renameNote(path, plan.to);
+      if (ws.apply) {
+        // Links to it in other notes change in the same batch as the name (FIL-09).
+        const writes = await planLinkWrites(store.state.workspace.tree, moves, (p) => (p === path ? Promise.resolve(markdown) : bridge.readNote(p)));
+        own = writes.find((w) => w.from === path)?.text;
+        await ws.apply([{ op: "move", from: path, to: plan.to }, ...writes.map((w) => ({ op: "write" as const, path: w.path, text: w.text }))]);
+      } else await ws.renameNote(path, plan.to);
     } catch {
       return; // The name is taken or locked: it's tried again on the next save.
     }
     title = next;
-    lastWritten = { path: plan.to, text: markdown };
-    // The editor keeps its note: only the path changes, not the key.
+    lastWritten = { path: plan.to, text: own ?? markdown };
+    // The editor keeps its note: only the path changes, not the key, unless it links to itself by name.
     store.update((s) => ({ ...s, workspace: { ...s.workspace, tree: plan.tree }, note: s.note.path === path ? { ...s.note, path: plan.to } : s.note }));
+    if (own !== undefined && store.state.note.path === plan.to) {
+      const text = rewriteLinks(store.state.note.markdown, path, plan.to, moves).text;
+      setNote({ key: `${plan.to}#links-${Date.now()}`, initialMarkdown: text, markdown: text });
+      loaded(plan.to, text);
+    }
     if (sourceOf(plan.to) !== "private") await persistAppState({ lastNotePath: plan.to });
   }
 

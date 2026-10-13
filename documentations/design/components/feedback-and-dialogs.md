@@ -33,6 +33,8 @@ The shared components that tell people what happened and ask them before anythin
 
 While there's a problem, opening the toolbar adds a status row at its top: "3 changes waiting · [Sync now]". The *Save* button's tooltip always shows the last sync ("Synced 2 min ago").
 
+**As built (WP-3.3, D-97):** the desktop shows sync problems with the trigger's existing problem dot (its name says "Couldn't sync") and one toast when a problem first appears, with [Retry], which saves and syncs again. The toast says the cause in one sentence: offline, GitHub not accepting the sign-in, changes that don't fit (both versions are kept), another program changing the workspace, Git not knowing the person's name and email, a commit that couldn't be signed, or a hook that refused it. <kbd>Mod</kbd>+<kbd>S</kbd> says "Saved and synced" through the task tracker, or the reason. The arcs, the toolbar's status row, the last-sync tooltip, [Details], [Sign in again] (WP-3.2), and [Resolve] (WP-3.5) come later.
+
 <h2 id="waits" data-reader-personas="design engineering">Waits</h2>
 
 Serves UC-SAFE-01 and UC-FILE-06. Every wait a person starts (pressing a button, opening a view, moving or deleting files, <kbd>Mod</kbd>+<kbd>S</kbd>, publishing, signing in) goes through **one task tracker** in `packages/core` (PRF-08, D-69). Background saving and syncing stay silent, as [Save and sync status](#save-and-sync-status) describes, unless the person is waiting on them.

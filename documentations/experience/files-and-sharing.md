@@ -29,6 +29,19 @@ Opened from **Open** in the [trigger toolbar](main-ui.html) (<kbd>Ctrl/⌘</kbd>
 | Restore | *Recently deleted* → Restore or Restore to… | Re-adds the file from Git history in a new commit | FIL-10 |
 
 The full interaction design (anatomy, states, naming rules, multi-select, and the reasoning behind each choice) is in [Files panel](../design/views/files.html).
+
+### Links that follow
+
+Renaming or moving a note or folder rewrites the relative links that point at it, in every note the app can write, in the same batch as the rename or move (FIL-09, D-95). The batch is written all or nothing, and in a Git workspace it's one commit (D-97).
+
+- **What's rewritten:** inline links and images (`[t](../a/b.md)`, `![p](Box/pic.png)`), reference definitions (`[id]: b.md "Title"`), angle-bracket and percent-encoded destinations (`<My Note.md>`, `My%20Note.md`), and links to anything inside a moved folder. Fragments, queries, and titles stay (`b.md#steps` → `Box/b.md#steps`).
+- **The moved notes' own links** are rewritten relative to where they go, so they reach the same files. Links between notes that move together don't change.
+- **What isn't:** links inside code spans and code blocks, HTML, and front matter; absolute URLs, `mailto:`, links within the note (`#…`), and site-root links (`/…`). Links that would climb out of the workspace's root are left as they are.
+- **Byte for byte:** only the characters of a changed destination change. Every other byte, including the parts of a destination that didn't change and how they were spelled, stays as it was.
+- **Renames by title:** renaming a note in Files, and a file name that follows its title as it's typed (FIL-07), update links the same way.
+- **The open note** shows its new links at once, keeping anything typed while the batch was written.
+- **In the browser,** only the notes written there are rewritten; the instance's read-only notes are never read for this, let alone written.
+- **A refusal** puts the links back together with the move: nothing changes on disk or in the browser's storage.
 Commit messages are readable and consistent. For example: `Create notes/ideas.md`, `Move drafts/a.md → archive/a.md`, `Make private: journal/2026-10-13.md`.
 
 ## Public and private
