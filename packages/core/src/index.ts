@@ -11,3 +11,5 @@ export * from "./contrast.ts";
 export * from "./tasks.ts";
 export * from "./browser.ts";
 export * from "./notes.ts";
+export * from "./workspace.ts";
+export * from "./workspace-format.ts";
