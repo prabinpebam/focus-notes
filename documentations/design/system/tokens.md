@@ -10,7 +10,7 @@ Every visual value in Focus Notes is a named token. This page defines the three 
 | Tier | Prefix | Example | Holds | Who may read it | Who may change it |
 | --- | --- | --- | --- | --- | --- |
 | **Reference** | `ref.` | `ref.color.red.600`, `ref.size.16`, `ref.duration.150` | Raw values: the palette, the numeric scales, the font files | Semantic tokens only | The design system |
-| **Semantic** | none | `color.textMuted`, `space.m`, `radius.popover`, `motion.enter` | Roles: what a value is *for* | Component tokens, and layouts for space, size, radius, elevation, and layer | The design system. Themes may override the themeable groups. |
+| **Semantic** | none | `color.textMuted`, `space.m`, `radius.popover`, `motion.enter`, `wait.signDelay` | Roles: what a value is *for* | Component tokens, layouts for space, size, radius, elevation, and layer, and the task tracker for wait timing | The design system. Themes may override the themeable groups. |
 | **Component** | `cmp.` | `cmp.button.primary.background.hover`, `cmp.trigger.dot.size` | One component's parts, variants, and states | That component only | The design system, through the [component process](overview.html#adding-or-changing-a-component) |
 
 **Alias rules.** A component token's value is always an alias of a semantic token, never a raw value. A semantic token's value is an alias of a reference token, or a raw value only in the reference-free groups (opacity and z order). The build fails on an alias that points up or across a tier, on a cycle, or on a component token read by another component.
@@ -28,6 +28,7 @@ component:  cmp.{component}.{variant|part}.{property}[.{state}]   cmp.menuItem.d
 - **States** use a fixed list: `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy`, `invalid`. A token for `rest` can be written without the suffix.
 - **Properties** use a fixed list: `background`, `text`, `icon`, `border`, `borderWidth`, `radius`, `shadow`, `paddingInline`, `paddingBlock`, `gap`, `height`, `minWidth`, `size`, `opacity`, `duration`, `easing`.
 - **Generated names:** `color.textMuted` becomes the CSS variable `--fn-color-text-muted` and the TypeScript constant `tokens.color.textMuted`.
+- **No name is both a token and a group.** DTCG doesn't allow it, so a family that has a base value uses flat names (`font.ui` and `font.uiBody`, not `font.ui.body`).
 
 <h2 data-reader-personas="design engineering">Semantic inventory</h2>
 
@@ -35,25 +36,26 @@ The complete semantic tier. Adding to it needs a decision (see [Adding or changi
 
 | Group | Tokens | Themeable |
 | --- | --- | --- |
-| **Surface color** | `color.canvas`, `color.surface`, `color.surfaceRaised`, `color.surfaceSunken`, `color.scrim`, `color.border`, `color.borderStrong` | Yes |
+| **Surface color** | `color.none` (transparent), `color.canvas`, `color.surface`, `color.surfaceRaised`, `color.surfaceSunken`, `color.scrim`, `color.border`, `color.borderStrong` | Yes |
 | **Text color** | `color.text`, `color.textMuted`, `color.textPlaceholder`, `color.textDisabled`, `color.textInverse`, `color.link` | Yes |
 | **Accent and interaction** | `color.accent`, `color.onAccent`, `color.accentMuted`, `color.hover`, `color.pressed`, `color.selection`, `color.focusRing` | Yes |
 | **Status** | `color.danger`, `color.onDanger`, `color.dangerMuted`, `color.warning`, `color.warningMuted`, `color.success`, `color.successMuted`, `color.info`, `color.infoMuted` | Yes |
 | **Feature roles** | `trigger.dot`, `trigger.ring`, `trigger.ringBorder`, `trigger.blur`, `focus.dimOpacity`, `focus.rowTint`, `color.findMatch`, `color.findMatchActive`, `code.background`, `code.text`, `code.syntax.*` | Yes |
-| **Typography** | `font.content`, `font.ui`, `font.mono`, `font.size` (content base), `font.lineHeight` (content), `font.content.h1` to `font.content.h3` (ratios), `font.ui.caption`, `font.ui.secondary`, `font.ui.body`, `font.ui.emphasis`, `font.ui.title`, `font.weight.regular`, `font.weight.semibold`, `font.weight.bold` | Fonts, content size, and line height |
+| **Typography** | `font.content`, `font.ui`, `font.mono`, `font.size` (content base), `font.lineHeight` (content), `font.contentH1` to `font.contentH3` (ratios), `font.headingLineHeight`, `font.codeRatio`, `font.uiCaption`, `font.uiSecondary`, `font.uiBody`, `font.uiEmphasis`, `font.uiTitle`, `font.uiLineHeight`, `font.weightRegular`, `font.weightSemibold`, `font.weightBold` | Fonts, content size, and line height |
 | **Space** | `space.none` (0), `space.xs` (4), `space.s` (8), `space.m` (12), `space.l` (16), `space.xl` (24), `space.xxl` (32), `space.xxxl` (48), `layout.blockGap` | `layout.blockGap` only |
-| **Size** | `size.hit` (32 fine, 44 coarse), `size.icon.s` (16), `size.icon.m` (20), `size.icon.l` (24), `size.control.s` (28), `size.control.m` (32), `size.control.l` (40), `size.trigger.dot` (10), `size.trigger.ring` (30) | No |
-| **Layout** | `layout.topBand` (44), `layout.measure` (70ch), `layout.gutter`, `layout.wideContent`, `layout.sheet.files` (320), `layout.sheet.theme` (380), `layout.popover` (360), `layout.dialog.s` (480), `layout.dialog.l` (760), `layout.dialog.maxHeight` (85%) | `layout.measure` only |
+| **Size** | `size.hit` (32 fine, 44 coarse), `size.iconS` (16), `size.iconM` (20), `size.iconL` (24), `size.controlS` (28), `size.controlM` (32), `size.controlL` (40), `size.triggerDot` (10), `size.triggerRing` (30) | No |
+| **Layout** | `layout.topBand` (44), `layout.measure` (70ch), `layout.gutter` (48), `layout.gutterCompact` (24), `layout.wideContent` (1040), `layout.sheetFiles` (320), `layout.sheetTheme` (380), `layout.popover` (360), `layout.dialogS` (480), `layout.dialogL` (760), `layout.blockGap`, `layout.editorEndPadding` (40vh), `layout.editorMinHeight` (60vh) | `layout.measure` only |
 | **Radius** | `radius.window`, `radius.sheet`, `radius.popover`, `radius.control`, `radius.small`, `radius.round` | `radius.window` only |
 | **Border** | `border.hairline` (1), `border.focus` (2), `border.focusOffset` (2), `border.selectedBar` (2) | No |
 | **Elevation** | `shadow.0` to `shadow.3`, `frost.opacity` (0.78), `frost.blur` (24) | No |
-| **Opacity** | `opacity.disabled` (0.4), `opacity.hover` (0.06), `opacity.pressed` (0.10) | No |
+| **Opacity** | `opacity.disabled` (0.4), `opacity.hover` (0.06), `opacity.pressed` (0.10), `opacity.muted` (0.75) | No |
 | **Motion** | `motion.micro`, `motion.enter`, `motion.sheet`, `motion.exit`, `motion.theme` (durations), `easing.standard`, `easing.decelerate`, `easing.accelerate` | No |
+| **Wait timing** | `wait.signDelay` (300 ms), `wait.signMinimum` (500 ms), `wait.announceDelay` (1 s), `wait.elapsedDelay` (3 s), `wait.doneDuration` (1.5 s). Used by the task tracker and every component's busy state ([Waits](../components/feedback-and-dialogs.md#waits)). | No |
 | **Layer order** | `layer.canvas` (0), `layer.mask` (1), `layer.contextual` (2), `layer.trigger` (3), `layer.panel` (4), `layer.dialog` (5), `layer.toast` (6), `layer.tooltip` (7) | No |
 | **Breakpoints** | `breakpoint.medium` (600), `breakpoint.wide` (1024). Size classes are *compact*, *medium*, and *wide*. | No |
 | **Window** (desktop) | `window.radius`, `window.titleBarHeight`, `window.shadow` | `window.radius` only, and only on Windows and Linux |
 
-Structural groups (space, size, border, elevation, opacity, motion, layer order, breakpoints) aren't themeable, so a theme can't break layout, hit targets, or accessibility. Reading settings (font, size, line height, measure, block gap) are set by the writer in the theme manager, separately from color themes.
+Structural groups (space, size, border, elevation, opacity, motion, wait timing, layer order, breakpoints) aren't themeable, so a theme can't break layout, hit targets, or accessibility. Wait timings are delays, not animations, so the reduced-motion mode leaves them as they are; only the moving parts of a busy sign stop. Reading settings (font, size, line height, measure, block gap) are set by the writer in the theme manager, separately from color themes.
 
 <h2 data-reader-personas="design engineering">Modes</h2>
 

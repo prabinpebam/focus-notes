@@ -3,7 +3,7 @@
 The shared components that tell people what happened and ask them before anything consequential: toasts, save and sync status, confirmations, context menus, the Move to picker, and the conflict resolver.
 
 > [!NOTE]
-> **TL;DR.** **Toasts** report what just happened and offer Undo. **Save status** stays invisible until something needs attention, and then shows as a thin arc around the trigger. **Confirmations** are reserved for deletes at scale and changes of audience. They name the thing, state the consequence, and default to Cancel. **Context menus** mirror the visible actions. **Move to…** is a searchable folder picker. The **conflict resolver** shows both versions and never discards text silently. Components IA-CMP-TOAST, IA-CMP-SAVESTATE, IA-CMP-DIALOG, IA-CMP-CONTEXTMENU, IA-CMP-MOVE, and IA-CMP-CONFLICT.
+> **TL;DR.** **Toasts** report what just happened and offer Undo. **Save status** stays invisible until something needs attention, and then shows as a thin arc around the trigger. **Waits** a person starts are explained by one task tracker: nothing for work under 300 ms, then a sign at the place and words that say what's happening. **Confirmations** are reserved for deletes at scale and changes of audience. They name the thing, state the consequence, and default to Cancel. **Context menus** mirror the visible actions. **Move to…** is a searchable folder picker. The **conflict resolver** shows both versions and never discards text silently. Components IA-CMP-TOAST, IA-CMP-SAVESTATE, IA-CMP-DIALOG, IA-CMP-CONTEXTMENU, IA-CMP-MOVE, and IA-CMP-CONFLICT.
 
 <h2 id="toast" data-reader-personas="design">Toast</h2>
 
@@ -32,6 +32,36 @@ The shared components that tell people what happened and ask them before anythin
 | Conflict | Same as failed, and the toast offers [Resolve] to open the conflict resolver. | Only the writer can decide. |
 
 While there's a problem, opening the toolbar adds a status row at its top: "3 changes waiting · [Sync now]". The *Save* button's tooltip always shows the last sync ("Synced 2 min ago").
+
+<h2 id="waits" data-reader-personas="design engineering">Waits</h2>
+
+Serves UC-SAFE-01 and UC-FILE-06. Every wait a person starts (pressing a button, opening a view, moving or deleting files, <kbd>Mod</kbd>+<kbd>S</kbd>, publishing, signing in) goes through **one task tracker** in `packages/core` (PRF-08, D-69). Background saving and syncing stay silent, as [Save and sync status](#save-and-sync-status) describes, unless the person is waiting on them.
+
+A task has a target (the node it affects, by ID), a message key that says what's happening ("Moving 3 notes…"), and a start time. The tracker drives two things:
+
+- **A sign at the place.** The target's view-model `busy` field turns true while the task runs. The component's busy state then goes through three phases, which the primitive renders as `data-busy` and styles with its own `cmp.*.busy` tokens: `ack` at once (the press is acknowledged, nothing new is drawn), `on` after `wait.signDelay`, and `done` for `wait.doneDuration` when the task succeeds.
+- **Words.** The busy component's accessible name and visible label say what's happening. After `wait.elapsedDelay` the label adds the elapsed time ("Publishing… 4 s"). When more than one task runs, the toolbar's status row counts them ("2 tasks running"). There's no status bar (DD-FB-02).
+
+| Timing rule | Token | Value |
+| --- | --- | --- |
+| Work that ends sooner shows nothing extra | `wait.signDelay` | 300 ms |
+| Once shown, a sign stays at least this long, so it never flickers | `wait.signMinimum` | 500 ms |
+| Screen readers hear a wait only after this, and then hear its end | `wait.announceDelay` | 1 s |
+| The words add the elapsed time after this | `wait.elapsedDelay` | 3 s |
+| The `done` confirmation shows for | `wait.doneDuration` | 1.5 s |
+
+| Kind of wait | Sign |
+| --- | --- |
+| A button's action | The button keeps its width, swaps its icon for a `Spinner`, and its label says what it's doing ("Publishing…"). Then it says "Published" for `wait.doneDuration`. |
+| Rows being saved | A small `Spinner` at the end of each row (Files: moved, deleted, or created rows) until the write and commit finish ([Files](../views/files.html)) |
+| A region being updated | The region keeps its content, with a thin moving line along its top. With reduced motion, the line is still. |
+| A view opening | A `ProgressBar` line, then a skeleton of the view's layout. A view never opens blank. |
+| A countable wait | The words count: "Indexing notes: 4,000 of 10,000". |
+| Changes being checked | Where sync counts show, a small `Spinner` and "Checking changes…" until the [Git status](../../architecture/desktop-and-git.md#asking-git-what-changed) returns |
+
+- **Failures** end the sign at once and hand over to the command's own error handling: a toast, or an inline error at the place.
+- **Tests** wait for the tracker to report idle before navigating, so they never race a save ([Testing pitfalls](../../architecture/performance-and-quality.md#testing-pitfalls)).
+- Every task records a `performance.measure` with its name, which the benchmark and the diagnostic report use ([Measuring](../../architecture/performance-and-quality.md#measuring)).
 
 <h2 id="confirmation-dialog" data-reader-personas="design product">Confirmation dialog</h2>
 
@@ -89,3 +119,4 @@ While there's a problem, opening the toolbar adds a status row at its top: "3 ch
 | DD-FB-03 | Confirmations open on Cancel and name the object and its consequence. | UC-SHARE-01 | Stops reflexive <kbd>Enter</kbd> from publishing or deleting, and shows people exactly what they're agreeing to. | Focus on the primary button. A generic "Are you sure?". |
 | DD-FB-04 | The conflict resolver offers three outcomes, and "Take the other" keeps a recoverable copy of yours. | UC-SAFE-02 | No choice in the resolver can lose words. | Automatic merging (surprising in prose). Last write wins. |
 | DD-FB-05 | Context menus are app-drawn on every platform, with OS spelling suggestions on the desktop. | UC-FILE-05 | They look and behave the same everywhere, follow the theme, and still offer the platform's spell checker. | Native menus (unthemed, and different between web and desktop). |
+| DD-FB-06 | One task tracker explains every wait a person starts: nothing under 300 ms, then a sign at the place and words, with timings as tokens. | UC-SAFE-01, UC-FILE-06 | Short work stays calm (CP-CALM-01), and long work is never a mystery. One tracker keeps the timing and words consistent everywhere. | A global spinner or progress bar. Each component deciding its own timing. Showing a spinner for every wait at once, which flickers. |

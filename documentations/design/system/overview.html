@@ -163,9 +163,9 @@
 <table>
   <thead><tr><th>Rule</th><th>Check</th><th>Fails when</th></tr></thead>
   <tbody>
-    <tr><td>Markup only in <code>packages/ui</code></td><td>ESLint bans JSX and DOM-creation APIs outside <code>packages/ui</code>. dependency-cruiser allows only <code>packages/ui-runtime</code> to import <code>packages/ui</code>.</td><td>Any <code>.tsx</code> file, JSX, <code>document.createElement</code>, or <code>innerHTML</code> outside the allowed places</td></tr>
-    <tr><td>Styles only in primitives and layouts</td><td>Style files may exist only under <code>packages/ui/src/primitives</code> and <code>packages/ui/src/layouts</code>. Compound component files may not import a style API.</td><td>A <code>.css</code> file or style definition anywhere else</td></tr>
-    <tr><td>Only tokens in styles</td><td>Style values are typed to token variables, and a lint rule rejects color, length, duration, and number literals (except 0).</td><td>A hex color, a <code>px</code> value, or a duration literal in a style</td></tr>
+    <tr><td>Markup only in <code>packages/ui</code></td><td>The boundary check (<code>tools/check-boundaries.mjs</code>, part of <code>pnpm check</code>) bans JSX, DOM-creation APIs, HTML injection, and inline styles outside <code>packages/ui</code>, and bans the renderer from creating anything but registry components.</td><td>Any <code>.tsx</code> file, JSX, <code>document.createElement</code>, or <code>innerHTML</code> outside the allowed places</td></tr>
+    <tr><td>Styles only in primitives and layouts</td><td>Style files may exist only under <code>packages/ui/src/primitives</code>, <code>layouts</code>, <code>host</code>, and <code>blocks</code>. Compound component files may not render DOM elements or import a style API.</td><td>A <code>.css</code> file or style definition anywhere else</td></tr>
+    <tr><td>Only tokens in styles</td><td>Style values come from the generated token references, and the boundary check rejects color, length, duration, and visual number literals (except 0, and <code>1em</code> to turn a ratio token into a length). Primitives may read only their own component tokens, and layouts only structural groups and their own.</td><td>A hex color, a <code>px</code> value, or a duration literal in a style</td></tr>
     <tr><td>Token tiers</td><td>The token build checks every alias: component → semantic → reference only.</td><td>An alias that skips or reverses a tier, or a cycle</td></tr>
     <tr><td>Closed contracts</td><td>TypeScript types generated from each contract, with no index signatures</td><td>A prop that isn't declared</td></tr>
     <tr><td>Valid views</td><td><code>pnpm ui:check</code>: schema, references, binding types, and the accessibility and design rules (<a href="views-as-data.md#validation">Views as data → Validation</a>)</td><td>Any error</td></tr>
@@ -194,8 +194,8 @@
     <tr><td>Styles in primitives and layouts</td><td>vanilla-extract</td><td>MIT</td><td>Type-checked styles compiled to static CSS at build time. Nothing is injected at run time, so the strict Content Security Policy holds, and style values can be typed to tokens only.</td></tr>
     <tr><td>Token build</td><td>Style Dictionary</td><td>Apache-2.0</td><td>Reads the DTCG format (D-53) and generates the CSS variables, the TypeScript types, and the JSON Schema enums that views and themes are validated against.</td></tr>
     <tr><td>View validation</td><td>Ajv with JSON Schema 2020-12</td><td>MIT</td><td>The same standard as every other file format (D-50).</td></tr>
-    <tr><td>Expressions in views</td><td>A restricted subset of JSON Logic</td><td>MIT (json-logic-js)</td><td>Declarative and serializable, with no code execution.</td></tr>
-    <tr><td>Component and view gallery</td><td>Storybook</td><td>MIT</td><td>Every fixture is a story, and the gallery also runs the visual and accessibility tests.</td></tr>
+    <tr><td>Expressions in views</td><td>A restricted subset of JSON Logic, evaluated by the runtime's own small evaluator (<code>packages/ui-runtime/src/expr.ts</code>)</td><td>MIT (this project)</td><td>Declarative and serializable, with no code execution. A general JSON Logic library implements far more than the allowed subset, so it isn't used (D-71).</td></tr>
+    <tr><td>Component and view gallery</td><td>The app's own runtime: every contract fixture becomes a view document, rendered by <code>pnpm gallery</code> and checked by <code>ui:check</code></td><td>MIT (this project)</td><td>Fixtures go through the same renderer as the app, so the gallery tests what ships. Storybook isn't needed (D-71).</td></tr>
   </tbody>
 </table>
 

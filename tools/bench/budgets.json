@@ -1,0 +1,23 @@
+{
+  "$comment": "QLT-05. Budgets come from the spec; baselines are set with pnpm bench --write-baseline in a reviewed commit.",
+  "measures": {
+    "PRF-02.coldReadyMs": {
+      "budget": 2500,
+      "baseline": 214,
+      "unit": "ms",
+      "noiseAbsolute": 100
+    },
+    "PRF-02.warmReadyMs": {
+      "budget": 1500,
+      "baseline": 201,
+      "unit": "ms",
+      "noiseAbsolute": 100
+    },
+    "DSY-11.rendererOverheadPct": {
+      "budget": 10,
+      "baseline": 0,
+      "noiseAbsolute": 12,
+      "unit": "%"
+    }
+  }
+}

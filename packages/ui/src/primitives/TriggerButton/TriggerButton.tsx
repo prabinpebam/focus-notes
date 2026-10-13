@@ -1,0 +1,33 @@
+import { Button as AriaButton } from "react-aria-components";
+import { SignalDot } from "../SignalDot/SignalDot.tsx";
+import { Tooltip } from "../Tooltip/Tooltip.tsx";
+import * as s from "./TriggerButton.css.ts";
+
+export interface TriggerButtonProps {
+  /** Accessible name, which includes any save problem ("Menu. Couldn't save"). */
+  label: string;
+  shortcut?: string;
+  tone?: "red" | "warning" | "danger";
+  expanded?: boolean;
+  id?: string;
+  onPress?: () => void;
+}
+
+/** The trigger: a 10 px red dot inside a 30 px frosted circle (UI-02, D-03). */
+export function TriggerButton({ label, shortcut, tone = "red", expanded, id, onPress }: TriggerButtonProps) {
+  return (
+    <Tooltip label={label} {...(shortcut ? { shortcut } : {})}>
+      <AriaButton
+        id={id}
+        className={s.ring}
+        aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={expanded ?? false}
+        data-trigger=""
+        onPress={onPress}
+      >
+        <SignalDot tone={tone} />
+      </AriaButton>
+    </Tooltip>
+  );
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prabinpebam.github.io/focus-notes/schemas/app-state.v1.json",
+  "title": "Per-device app state (state.json in the app data folder)",
+  "type": "object",
+  "required": [
+    "version"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "lastNotePath": {
+      "type": "string"
+    },
+    "appearance": {
+      "enum": [
+        "system",
+        "light",
+        "dark"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

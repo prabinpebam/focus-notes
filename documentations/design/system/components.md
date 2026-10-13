@@ -3,7 +3,7 @@
 The complete catalog of design-system components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every view in Focus Notes is assembled from this list and nothing else.
 
 > [!NOTE]
-> **TL;DR.** **27 primitives** (Text, Icon, Button, TextField, Switch, Slider, and so on), plus **5 host components** that wrap imperative DOM (the editor surface, the focus mask, the window frame, the color area, and a virtual list). **11 layouts** (Stack, Inline, Grid, Surface, Layer, Positioner, and so on). **9 block components** that render note content in the editor and on published pages, with image and gallery to come. **38 compound components** (some in pairs, like Menu and MenuItem) that compose them, from Toolbar and Menu to CommandPalette, FileTree, and ConflictResolver, each mapped to the IA components it delivers. Every component has a machine-readable **contract**, and the view schema is generated from those contracts (DSY-05).
+> **TL;DR.** **28 primitives** (Text, Icon, Button, TriggerButton, TextField, Switch, Slider, and so on), plus **5 host components** that wrap imperative DOM (the editor surface, the focus mask, the window frame, the color area, and a virtual list). **12 layouts** (AppRoot, Stack, Inline, Grid, Surface, Layer, Positioner, and so on). **9 block components** that render note content in the editor and on published pages, with image and gallery to come. **38 compound components** (some in pairs, like Menu and MenuItem) that compose them, from Toolbar and Menu to CommandPalette, FileTree, and ConflictResolver, each mapped to the IA components it delivers. Every component has a machine-readable **contract**, and the view schema is generated from those contracts (DSY-05).
 
 <h2 id="contracts" data-reader-personas="engineering">Contracts</h2>
 
@@ -40,6 +40,8 @@ Each component declares a contract in `packages/ui`. The build turns contracts i
 | `tokens` | The component's own tokens. It may read nothing else. |
 | `a11y` | The ARIA Authoring Practices pattern, and which prop provides the accessible name. |
 
+**Busy state.** Components with a `busy` state (Button, IconButton, FileTreeItem, ResultItem) take `busy` as a boolean bound to the task tracker. One shared primitive hook turns it into the phases `ack`, `on`, and `done`, rendered as `data-busy`, with the timing from the `wait.*` tokens and the look from the component's own `cmp.*.busy` tokens. A busy Button keeps its width. A region being updated shows an indeterminate `ProgressBar` line, placed by its view with the same timing. No component times its own waits ([Waits](../components/feedback-and-dialogs.md#waits), PRF-08).
+
 <h2 id="primitives" data-reader-personas="design engineering">Primitives</h2>
 
 | Component | Variants and key props | Pattern | Used by |
@@ -66,9 +68,10 @@ Each component declares a contract in `packages/ui`. The build turns contracts i
 | **Badge** | `tone`, `value` | Text | Visibility, agent changes, status |
 | **Tag** | `value`, `removable` | Button, when removable | Audiences, filters |
 | **Swatch** | `color` (a token or a theme's value), `selected`, `label` | Radio or button | Theme gallery, color editor |
-| **SignalDot** | `tone` red, warning, danger, `size` (from `cmp.trigger.dot.size`), `pulse` (off with reduced motion) | Decorative, with status in its parent's name | Trigger, save state |
-| **Spinner** | `size`, `label` | Progress bar, indeterminate | Busy states |
-| **ProgressBar** | `value`, `max`, `label` | Progress bar | Setup, publishing |
+| **SignalDot** | `tone` red, warning, danger (size from `cmp.signalDot.size`) | Decorative, with status in its parent's name | Trigger, save state |
+| **TriggerButton** | `label` (required), `tone`, `expanded`, `shortcut`. A 30 px frosted circle holding a SignalDot, with a 32 px (44 px touch) hit area | Menu button | Trigger |
+| **Spinner** | `size`, `label` | Progress bar, indeterminate | Busy buttons, saving rows in Files, "Checking changes…" ([Waits](../components/feedback-and-dialogs.md#waits)) |
+| **ProgressBar** | `value` (omit for an indeterminate line), `max`, `label` | Progress bar | Setup, publishing, a view opening, a region being updated |
 | **Divider** | `orientation` | Separator | Menus, toolbars |
 | **Tooltip** | `target` (by ID), `label`, `shortcut` | Tooltip | Every icon button |
 
@@ -98,9 +101,10 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | **Spacer** | Takes the remaining space in a Stack or Inline | None |
 | **Surface** | The only way to get a background, border, radius, or shadow | `variant` canvas, frost, raised, sunken, inverted. `shape` window, sheet, popover, control. `padding` |
 | **ScrollArea** | Scrolling with consistent scrollbars and edge fades | `axis`, `fade` |
-| **Layer** | Puts its content on a layer (contextual, panel, dialog, toast, tooltip) with the right order, scrim, and focus handling | `layer`, `scrim`, `trapFocus`, `restoreFocus` |
+| **Layer** | Puts its content on a layer (contextual, trigger, panel, dialog, toast, tooltip) at a fixed position, with the right order. Its content may use frost. It can form a landmark and mark the desktop drag band | `layer`, `position` (topBand, fill, center, bottomCenter), `landmark` (none, banner, complementary, region) with `label`, `dragBand`; later `scrim`, `trapFocus`, `restoreFocus` |
 | **Positioner** | Anchors floating content to a target, flipping and shifting to stay on screen | `anchor`, `placement`, `offset` (token) |
 | **Show** | Shows children only in some size classes, platforms, or pointer types | `sizeClass`, `platform`, `pointer` |
+| **AppRoot** | The root of every view. Applies the theme (`data-theme`) and the token modes (platform, reduced motion, reduced transparency, coarse pointer) to the document, and holds the global token stylesheet | `scheme`, `platform` |
 
 Frost appears only through `Surface variant="frost"`, and `Surface` refuses frost unless it's inside a floating `Layer`. That enforces the foundations rule that frost is only for things that float over text ([Foundations → Surfaces](../foundations.md#surfaces-and-elevation)).
 
@@ -127,7 +131,7 @@ Compounds compose primitives, layouts, and other compounds. They hold behavior (
 
 | Component | Composes | Delivers | Notes |
 | --- | --- | --- | --- |
-| **Trigger** | Surface (frost, round), SignalDot, Tooltip | IA-CMP-TRIGGER, IA-CMP-SAVESTATE | The save state is a `SignalDot` tone, not a separate badge. |
+| **Trigger** | TriggerButton | IA-CMP-TRIGGER, IA-CMP-SAVESTATE | The save state is a `SignalDot` tone, not a separate badge. |
 | **Toolbar** | Inline, IconButton, Divider, Menu | IA-CMP-TOOLBAR | Takes `commands` (a list of command IDs). Shows at most six and moves the rest into ⋯ by itself (UI-04). Roving focus. |
 | **Menu**, **MenuItem**, **MenuSection** | Layer, Surface, Stack, Text, Icon, Shortcut | IA-CMP-OVERFLOW, IA-CMP-CONTEXTMENU | Items name a `command`. Supports submenus, checkable items, and inline rows such as the font size row. |
 | **ContextMenu** | Menu, Positioner | IA-CMP-CONTEXTMENU | Opens at the pointer, or at the focused element with <kbd>Shift</kbd>+<kbd>F10</kbd>. |

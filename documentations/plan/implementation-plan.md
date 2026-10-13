@@ -3,7 +3,7 @@
 Every stage in detail: what you can do at the end, the demo that proves it, the work packages that build it, and the exit criteria on top of the [definition of done](definition-of-done.md). The same plan is in [`work-graph.json`](https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json), which agents read to pick ready work ([The agentic loop](agentic-loop.html)).
 
 > [!NOTE]
-> **TL;DR.** 59 work packages across 10 stages, covering all 181 requirements exactly once. Each work package lists its requirements, the work packages it depends on, the code areas it touches, the reviews it needs, and the spec pages it implements. Every work package also depends on the previous stage's gate, except spikes and long-lead items marked *lookahead*. The longest chain to version 1.0 is 22 work packages. Every stage has a demo script that the owner runs on clean machines at the stage gate, and that then becomes an automated journey test.
+> **TL;DR.** 59 work packages across 10 stages, covering all 188 requirements exactly once. Each work package lists its requirements, the work packages it depends on, the code areas it touches, the reviews it needs, and the spec pages it implements. Every work package also depends on the previous stage's gate, except spikes and long-lead items marked *lookahead*. The longest chain to version 1.0 is 22 work packages. Every stage has a demo script that the owner runs on clean machines at the stage gate, and that then becomes an automated journey test.
 
 ## How to read a work package
 
@@ -40,7 +40,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
-| WP-0.1 | **Repository, CI, and agent loop**. The monorepo, toolchain, CI on three operating systems, the license check, CodeQL, Dependabot, actions pinned by SHA, branch protection, the work graph, and the agent role instructions. | PKG-01, PKG-04, LIC-01, LIC-02, DOC-01, DOC-02, SEC-04, SEC-07, QLT-01 | None | code, security |
+| WP-0.1 | **Repository, CI, and agent loop**. The monorepo, toolchain, CI on three operating systems, the license check, CodeQL, Dependabot, actions pinned by SHA, branch protection, the work graph, the agent role instructions, and the benchmark harness: performance marks and spans, `pnpm bench` on a throwaway fixture workspace, and a budgets file checked in CI. | PKG-01, PKG-04, LIC-01, LIC-02, DOC-01, DOC-02, SEC-04, SEC-07, QLT-01, QLT-05 | None | code, security |
 | WP-0.2 | **Editor spike and block registry** *(lookahead)*. Both Markdown bridges against the round-trip corpus, the decision recorded, and the block registry contract. | EDT-01, EXT-01 | WP-0.1 | code |
 | WP-0.3 | **Token source and build**. DTCG sources for every tier, Style Dictionary output, and alias checks. | DSY-01, DSY-02 | WP-0.1 | code, design-system, accessibility |
 | WP-0.4 | **First primitives, layouts, and contracts**. Text, Icon, Button, IconButton, Tooltip, SignalDot, Stack, Inline, Surface, Layer, and Positioner, with contracts, the gallery, and the component process. | DSY-04, DSY-05, DSY-10 | WP-0.3 | code, design-system, accessibility |
@@ -56,6 +56,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 - CI runs on Windows, macOS, and Linux for every pull request, and every merge to `main` publishes a nightly build.
 - The work graph, the role instructions for agents, and the evidence format from [the agentic loop](agentic-loop.html) are in the repository and in use.
 - The canvas is rendered from a JSON view document that passes `ui:check`.
+- `pnpm bench --check` runs in CI against a committed first baseline for start-up and the canvas (QLT-05).
 
 <h2 id="m1" data-reader-personas="product design engineering">M1: Writing</h2>
 
@@ -82,7 +83,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 | WP-1.1 | **Block editor core**. Blocks, Markdown shortcuts, undo, round-trip fidelity, the extension syntax, and text in any script. | EDT-02, EDT-04, EDT-05, EDT-08, EDT-10, EXT-02, EXT-05, I18N-02 | WP-0.7 | code, design-system, accessibility |
 | WP-1.2 | **Inline formatting, contextual toolbar, and links**. Marks, the contextual toolbar, the link editor, and the hover card. | EDT-03, EDT-12, EDT-13, UI-06 | WP-1.1, WP-1.4 | code, design-system, accessibility |
 | WP-1.3 | **Slash menu and paste**. The slash menu from the block registry, and sanitized paste of Markdown, HTML, and plain text. | EDT-06, EDT-09, SEC-02 | WP-1.1, WP-1.4 | code, design-system, accessibility, security |
-| WP-1.4 | **Compound components, first set**. Menu, Popover, Dialog, Toolbar, Toast, Field, Tabs, and ResultList, with command-driven items and full gallery coverage. | DSY-09, DSY-12 | WP-0.5 | code, design-system, accessibility |
+| WP-1.4 | **Compound components, first set**. Menu, Popover, Dialog, Toolbar, Toast, Field, Tabs, and ResultList, with command-driven items and full gallery coverage, plus the task tracker, the busy state, and the `wait.*` timing tokens. | DSY-09, DSY-12, PRF-08 | WP-0.5 | code, design-system, accessibility |
 | WP-1.5 | **Loop-style tables**. Tables with hover insertion, grips, cell selection, keyboard movement, and spreadsheet paste. | TBL-01 to TBL-03, TBL-05 to TBL-08, TBL-10, TBL-11 | WP-1.1, WP-1.4 | code, design-system, accessibility |
 | WP-1.6 | **Trigger toolbar and ⋯ menu**. The six-action toolbar and the ⋯ menu as view documents, keyboard and screen-reader complete. | UI-03 to UI-05, UI-07, DSY-06 | WP-1.4, WP-1.8 | code, design-system, accessibility |
 | WP-1.7 | **Focus mode**. The row mask with every edge case, inside the typing budget. | FOC-01 to FOC-06, PRF-01 | WP-1.1 | code, design-system, accessibility |
@@ -120,10 +121,10 @@ Work packages off this path run in parallel when their dependencies are Done and
 | --- | --- | --- | --- | --- |
 | WP-2.1 | **Windows and Linux window**. The transparent 20 px window with app-built moving, resizing, maximizing, snapping, Snap Layouts, the system menu, and DPI handling. | DSK-01, DSK-03, DSK-08 | WP-0.6, WP-1.4 | code, design-system, accessibility, security |
 | WP-2.2 | **Title bar, full screen, and macOS menu**. The title bar band, full screen, and the native macOS menu bar generated from commands. | DSK-02, DSK-04, DSK-05 | WP-2.1, WP-1.8 | code, design-system, accessibility |
-| WP-2.3 | **Local workspace model**. Folder workspaces, `workspace.json` with its format version and migrations, and title-based file names. | FIL-07, DST-05 | WP-1.1 | code |
-| WP-2.4 | **Files panel and file operations**. The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to…. | FIL-01 to FIL-03, FIL-08 | WP-2.3, WP-1.4 | code, design-system, accessibility |
+| WP-2.3 | **Local workspace model**. Folder workspaces, `workspace.json` with its format version and migrations, title-based file names, and change notifications scoped to the content each view model declares. | FIL-07, DST-05, PRF-11 | WP-1.1 | code |
+| WP-2.4 | **Files panel and file operations**. The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to…, with structural changes shown before they're saved. | FIL-01 to FIL-03, FIL-08, PRF-09 | WP-2.3, WP-1.4 | code, design-system, accessibility |
 | WP-2.5 | **Link updates**. Relative links updated on every rename and move. | FIL-09 | WP-2.4 | code |
-| WP-2.6 | **Recovery journal and resource budgets**. The one-second recovery journal, and memory and idle CPU budgets on 10,000 notes. | PRF-04, QLT-03 | WP-2.3 | code |
+| WP-2.6 | **Recovery journal and resource budgets**. The one-second recovery journal, memory and idle CPU budgets on 10,000 notes, the parsed-note snapshot, and the warm-up after start. | PRF-04, PRF-10, QLT-03 | WP-2.3 | code |
 
 **Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
 
@@ -153,7 +154,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 | --- | --- | --- | --- | --- |
 | WP-3.1 | **Setup engine and workspace template**. Create my workspace in the user's account from the template, including its AGENTS.md. | FRE-08, AGT-07 | WP-2.3 | code, security |
 | WP-3.2 | **First run and sign-in**. The setup steps, sign-in through Git Credential Manager, the GitHub CLI, or a token, identity, and create or clone. | FRE-01 to FRE-06, SEC-03 | WP-3.1, WP-1.4 | code, design-system, accessibility, security |
-| WP-3.3 | **Local Git adapter, save, and sync**. Commits for every change, push and pull, the lock file, and readable commit messages. | EDT-11, FIL-05 | WP-2.3 | code |
+| WP-3.3 | **Local Git adapter, save, and sync**. Commits for every change, push and pull, the lock file, readable commit messages, and one cached Git status per repository that no view waits for. | EDT-11, FIL-05, PRF-07 | WP-2.3 | code |
 | WP-3.4 | **Public and private roots**. The private repository as a separately synced submodule, visibility per note, private by default, and private settings. | FIL-06, SHR-01, SHR-02, PRV-03 | WP-3.3 | code, design-system, accessibility, security |
 | WP-3.5 | **Conflicts and Recently deleted**. The conflict resolver and restoring from Git history. | FIL-10, FIL-12 | WP-3.3, WP-2.4 | code, design-system, accessibility |
 | WP-3.6 | **Account settings and data inventory**. Switch account, sign out, and remove a workspace, deleting exactly what the inventory lists. | FRE-07, PRV-02 | WP-3.2 | code, security |
@@ -162,6 +163,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 - The fault-injection suite (network drop mid-push, kill during commit, full disk, two computers editing) runs 1,000 randomized rounds with no lost text.
 - The owner and at least two testers use it across two computers for five working days.
+- On the 10,000-note benchmark workspace, no view's first frame waits for Git, and a refresh starts at most one `git status` per repository (PRF-07).
 
 <h2 id="m4" data-reader-personas="product design engineering">M4: Find anything, make it yours</h2>
 
@@ -211,7 +213,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
-| WP-5.1 | **Static renderer and public pages**. Public pages rendered from the reader views and block components, deployed by the user's workflow. | SHR-03, SHR-06, PKG-02, PRV-04, PRF-06 | WP-3.4, WP-1.1 | code, design-system, accessibility, security |
+| WP-5.1 | **Static renderer and public pages**. Public pages rendered from the reader views and block components, deployed by the user's workflow, with font preloading and lab-measured Core Web Vitals. | SHR-03, SHR-06, PKG-02, PRV-04, PRF-06, PRF-12 | WP-3.4, WP-1.1 | code, design-system, accessibility, security |
 | WP-5.2 | **Sealing, leak check, and pinned workflow**. Per-build sealing, keyrings, the leak check, and the reusable workflow pinned by SHA with verification. | SHR-04, SHR-11, SEC-05, SEC-06 | WP-5.1 | code, security |
 | WP-5.3 | **Audiences, passcodes, and invites**. The Share popover, audiences, generated and custom passcodes, expiry, withdrawal, and the invite. | SHR-05, SHR-07 to SHR-09 | WP-5.2 | code, design-system, accessibility, security |
 | WP-5.4 | **Share reader**. The reader with magic links, name and passcode, and the page weight budget. | SHR-10, PRF-05 | WP-5.2 | code, design-system, accessibility, security |

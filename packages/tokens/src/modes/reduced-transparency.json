@@ -1,0 +1,1 @@
+{ "frost": { "opacity": { "$type": "number", "$value": 1 }, "blur": { "$type": "dimension", "$value": "{ref.size.0}" } } }

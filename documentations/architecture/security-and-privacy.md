@@ -46,7 +46,7 @@ What Focus Notes protects, from whom, and how. It also covers what's stored wher
 
 ## Privacy commitments
 
-1. **No telemetry.** No usage analytics, crash reporting services, or error trackers, in any product surface (PRV-01). Problems are reported by the user: *Copy diagnostic report* puts a redacted report on the clipboard, and *Report a problem* opens a pre-filled GitHub issue that the user reviews before sending (QLT-04).
+1. **No telemetry.** No usage analytics, crash reporting services, or error trackers, in any product surface (PRV-01). Problems are reported by the user: *Copy diagnostic report* puts a redacted report on the clipboard, and *Report a problem* opens a pre-filled GitHub issue that the user reviews before sending (QLT-04). Performance measurements stay on the computer too: the app's timings appear only in the diagnostic report, and published pages are measured in CI lab runs, never in readers' browsers (D-65).
 2. **No third-party requests.** The app, the user's sites, and the product site load nothing from other origins: fonts are self-hosted, and there are no CDNs, embeds, or trackers.
 3. **Readers aren't tracked.** Public and shared pages set no cookies. The only browser storage is a share reader's own key, and only if they ask to be remembered.
 4. **Private by default.** New notes are private (D-05). Agents start with no private access (D-45). Synced preferences live in the private repository (D-46).

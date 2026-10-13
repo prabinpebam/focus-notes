@@ -1,0 +1,45 @@
+{
+  "color": {
+    "$type": "color",
+    "canvas": { "$value": "{ref.color.ink.900}" },
+    "surface": { "$value": "{ref.color.ink.800}" },
+    "surfaceRaised": { "$value": "{ref.color.ink.700}" },
+    "surfaceSunken": { "$value": "{ref.color.ink.950}" },
+    "scrim": { "$value": "{ref.color.ink.a55}" },
+    "border": { "$value": "{ref.color.ink.700}" },
+    "borderStrong": { "$value": "{ref.color.ink.600}" },
+    "text": { "$value": "{ref.color.ink.50}" },
+    "textMuted": { "$value": "{ref.color.ink.400}" },
+    "textPlaceholder": { "$value": "{ref.color.ink.500}" },
+    "textDisabled": { "$value": "{ref.color.ink.500}" },
+    "textInverse": { "$value": "{ref.color.ink.900}" },
+    "link": { "$value": "{ref.color.blue.300}" },
+    "accent": { "$value": "{ref.color.blue.300}" },
+    "onAccent": { "$value": "{ref.color.ink.950}" },
+    "accentMuted": { "$value": "{ref.color.blue.a30}" },
+    "hover": { "$value": "{ref.color.ink.a06}" },
+    "pressed": { "$value": "{ref.color.ink.a10}" },
+    "selection": { "$value": "{ref.color.blue.a30}" },
+    "focusRing": { "$value": "{ref.color.blue.300}" },
+    "danger": { "$value": "{ref.color.red.300}" },
+    "onDanger": { "$value": "{ref.color.ink.950}" },
+    "warning": { "$value": "{ref.color.amber.300}" },
+    "success": { "$value": "{ref.color.green.300}" },
+    "info": { "$value": "{ref.color.blue.300}" }
+  },
+  "trigger": {
+    "dot": { "$type": "color", "$value": "{ref.color.red.400}" },
+    "ring": { "$type": "color", "$value": "{ref.color.ink.800}" },
+    "ringBorder": { "$type": "color", "$value": "{ref.color.ink.600}" }
+  },
+  "code": {
+    "background": { "$type": "color", "$value": "{ref.color.ink.800}" },
+    "text": { "$type": "color", "$value": "{ref.color.ink.50}" }
+  },
+  "shadow": {
+    "$type": "shadow",
+    "1": { "$value": "{ref.shadow.dark1}" },
+    "2": { "$value": "{ref.shadow.dark2}" },
+    "3": { "$value": "{ref.shadow.dark3}" }
+  }
+}

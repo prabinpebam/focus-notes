@@ -1,0 +1,14 @@
+{ "cmp": { "tooltip": {
+  "background": { "$type": "color", "$value": "{color.text}" },
+  "text": { "$type": "color", "$value": "{color.textInverse}" },
+  "radius": { "$type": "dimension", "$value": "{radius.small}" },
+  "paddingInline": { "$type": "dimension", "$value": "{space.s}" },
+  "paddingBlock": { "$type": "dimension", "$value": "{space.xs}" },
+  "gap": { "$type": "dimension", "$value": "{space.s}" },
+  "font": { "$type": "fontFamily", "$value": "{font.ui}" },
+  "fontSize": { "$type": "dimension", "$value": "{font.uiSecondary}" },
+  "shadow": { "$type": "shadow", "$value": "{shadow.1}" },
+  "duration": { "$type": "duration", "$value": "{motion.enter}" },
+  "layer": { "$type": "number", "$value": "{layer.tooltip}" },
+  "shortcutOpacity": { "$type": "number", "$value": "{opacity.muted}" }
+} } }

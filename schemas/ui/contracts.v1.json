@@ -1,0 +1,2741 @@
+{
+  "version": 1,
+  "contracts": [
+    {
+      "type": "Text",
+      "tier": "primitive",
+      "description": "A run of interface text. Note text is never rendered with this; it lives in block components.",
+      "props": {
+        "value": {
+          "kind": "message",
+          "required": true
+        },
+        "role": {
+          "kind": "enum",
+          "values": [
+            "caption",
+            "secondary",
+            "body",
+            "label",
+            "emphasis",
+            "title"
+          ],
+          "default": "body"
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "default",
+            "muted",
+            "accent",
+            "danger",
+            "warning",
+            "success"
+          ],
+          "default": "default"
+        },
+        "lines": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "one",
+            "two",
+            "three"
+          ],
+          "default": "none"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.text.*",
+      "a11y": {
+        "pattern": "text"
+      },
+      "fixtures": [
+        {
+          "name": "role caption",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "role": "caption"
+          }
+        },
+        {
+          "name": "role secondary",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "role": "secondary"
+          }
+        },
+        {
+          "name": "role body",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "role": "body"
+          }
+        },
+        {
+          "name": "role label",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "role": "label"
+          }
+        },
+        {
+          "name": "role emphasis",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "role": "emphasis"
+          }
+        },
+        {
+          "name": "role title",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "role": "title"
+          }
+        },
+        {
+          "name": "tone default",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "tone": "default"
+          }
+        },
+        {
+          "name": "tone muted",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "tone": "muted"
+          }
+        },
+        {
+          "name": "tone accent",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "tone": "accent"
+          }
+        },
+        {
+          "name": "tone danger",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "tone": "danger"
+          }
+        },
+        {
+          "name": "tone warning",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "tone": "warning"
+          }
+        },
+        {
+          "name": "tone success",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "tone": "success"
+          }
+        },
+        {
+          "name": "lines none",
+          "props": {
+            "value": {
+              "t": "gallery.long"
+            },
+            "lines": "none"
+          }
+        },
+        {
+          "name": "lines one",
+          "props": {
+            "value": {
+              "t": "gallery.long"
+            },
+            "lines": "one"
+          }
+        },
+        {
+          "name": "lines two",
+          "props": {
+            "value": {
+              "t": "gallery.long"
+            },
+            "lines": "two"
+          }
+        },
+        {
+          "name": "lines three",
+          "props": {
+            "value": {
+              "t": "gallery.long"
+            },
+            "lines": "three"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Heading",
+      "tier": "primitive",
+      "description": "An interface heading for a sheet, dialog, or section.",
+      "props": {
+        "value": {
+          "kind": "message",
+          "required": true
+        },
+        "level": {
+          "kind": "enum",
+          "values": [
+            "1",
+            "2",
+            "3"
+          ],
+          "default": "2"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.heading.*",
+      "a11y": {
+        "pattern": "heading",
+        "name": "value"
+      },
+      "fixtures": [
+        {
+          "name": "level 1",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "level": "1"
+          }
+        },
+        {
+          "name": "level 2",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "level": "2"
+          }
+        },
+        {
+          "name": "level 3",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "level": "3"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Icon",
+      "tier": "primitive",
+      "description": "A Fluent UI System icon. Decorative unless it has a label.",
+      "props": {
+        "name": {
+          "kind": "icon",
+          "required": true
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "s",
+            "m",
+            "l"
+          ],
+          "default": "m"
+        },
+        "label": {
+          "kind": "message"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.icon.*",
+      "a11y": {
+        "pattern": "img",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "size s",
+          "props": {
+            "name": "open",
+            "size": "s"
+          }
+        },
+        {
+          "name": "size m",
+          "props": {
+            "name": "open",
+            "size": "m"
+          }
+        },
+        {
+          "name": "size l",
+          "props": {
+            "name": "open",
+            "size": "l"
+          }
+        },
+        {
+          "name": "labelled",
+          "props": {
+            "name": "warning",
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "Button",
+      "tier": "primitive",
+      "description": "A labelled action. Its label says what it does.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "variant": {
+          "kind": "enum",
+          "values": [
+            "primary",
+            "secondary",
+            "subtle",
+            "danger"
+          ],
+          "default": "secondary"
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "s",
+            "m"
+          ],
+          "default": "m"
+        },
+        "icon": {
+          "kind": "icon"
+        },
+        "iconPosition": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "end"
+          ],
+          "default": "start"
+        },
+        "busy": {
+          "kind": "boolean",
+          "default": false
+        },
+        "disabled": {
+          "kind": "boolean",
+          "default": false
+        },
+        "disabledReason": {
+          "kind": "message",
+          "requiredWhen": "disabled"
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focusVisible",
+        "disabled",
+        "busy"
+      ],
+      "tokens": "cmp.button.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "variant primary",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "variant": "primary"
+          }
+        },
+        {
+          "name": "variant secondary",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "variant": "secondary"
+          }
+        },
+        {
+          "name": "variant subtle",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "variant": "subtle"
+          }
+        },
+        {
+          "name": "variant danger",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "variant": "danger"
+          }
+        },
+        {
+          "name": "size s",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "size": "s"
+          }
+        },
+        {
+          "name": "size m with icon",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "size": "m",
+            "icon": "save"
+          }
+        },
+        {
+          "name": "icon at end",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "icon": "chevronRight",
+            "iconPosition": "end"
+          }
+        },
+        {
+          "name": "busy",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "busy": true
+          }
+        },
+        {
+          "name": "disabled with reason",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "disabled": true,
+            "disabledReason": {
+              "t": "gallery.reason"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "IconButton",
+      "tier": "primitive",
+      "description": "An icon-only action with a required label, shown as its tooltip and accessible name.",
+      "props": {
+        "icon": {
+          "kind": "icon",
+          "required": true
+        },
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "shortcut": {
+          "kind": "text"
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "default",
+            "muted"
+          ],
+          "default": "default"
+        },
+        "toggle": {
+          "kind": "boolean",
+          "default": false
+        },
+        "pressed": {
+          "kind": "boolean",
+          "default": false
+        },
+        "disabled": {
+          "kind": "boolean",
+          "default": false
+        },
+        "disabledReason": {
+          "kind": "message",
+          "requiredWhen": "disabled"
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "selected",
+        "focusVisible",
+        "disabled"
+      ],
+      "tokens": "cmp.iconButton.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "tone default",
+          "props": {
+            "icon": "open",
+            "label": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "tone muted",
+          "props": {
+            "icon": "more",
+            "label": {
+              "t": "gallery.action"
+            },
+            "tone": "muted"
+          }
+        },
+        {
+          "name": "toggle off",
+          "props": {
+            "icon": "focus",
+            "label": {
+              "t": "gallery.action"
+            },
+            "toggle": true,
+            "pressed": false
+          }
+        },
+        {
+          "name": "toggle on",
+          "props": {
+            "icon": "focus",
+            "label": {
+              "t": "gallery.action"
+            },
+            "toggle": true,
+            "pressed": true
+          }
+        },
+        {
+          "name": "disabled with reason",
+          "props": {
+            "icon": "save",
+            "label": {
+              "t": "gallery.action"
+            },
+            "disabled": true,
+            "disabledReason": {
+              "t": "gallery.reason"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "Tooltip",
+      "tier": "primitive",
+      "description": "Shows a control's name and shortcut. Never holds information you can't get another way.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "shortcut": {
+          "kind": "text"
+        },
+        "placement": {
+          "kind": "enum",
+          "values": [
+            "top",
+            "bottom",
+            "start",
+            "end"
+          ],
+          "default": "bottom"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": [
+            "Button",
+            "IconButton"
+          ],
+          "min": 1,
+          "max": 1
+        }
+      },
+      "states": [
+        "hidden",
+        "visible"
+      ],
+      "tokens": "cmp.tooltip.*",
+      "a11y": {
+        "pattern": "tooltip",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "placement top",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "placement": "top"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "placement bottom",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "placement": "bottom"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "placement start",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "placement": "start"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "placement end",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "placement": "end"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "SignalDot",
+      "tier": "primitive",
+      "description": "The red dot. Its tone signals a save problem on the trigger.",
+      "props": {
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "warning",
+            "danger"
+          ],
+          "default": "red"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.signalDot.*",
+      "a11y": {
+        "pattern": "presentation"
+      },
+      "fixtures": [
+        {
+          "name": "tone red",
+          "props": {
+            "tone": "red"
+          }
+        },
+        {
+          "name": "tone warning",
+          "props": {
+            "tone": "warning"
+          }
+        },
+        {
+          "name": "tone danger",
+          "props": {
+            "tone": "danger"
+          }
+        }
+      ]
+    },
+    {
+      "type": "TriggerButton",
+      "tier": "primitive",
+      "description": "The frosted circle with the red dot. The Trigger compound places it and gives it behavior.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "shortcut": {
+          "kind": "text"
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "warning",
+            "danger"
+          ],
+          "default": "red"
+        },
+        "expanded": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focusVisible"
+      ],
+      "tokens": "cmp.triggerButton.*",
+      "a11y": {
+        "pattern": "menu button",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "tone red",
+          "props": {
+            "label": {
+              "t": "trigger.label"
+            },
+            "tone": "red"
+          }
+        },
+        {
+          "name": "tone warning",
+          "props": {
+            "label": {
+              "t": "trigger.label"
+            },
+            "tone": "warning"
+          }
+        },
+        {
+          "name": "tone danger",
+          "props": {
+            "label": {
+              "t": "trigger.label"
+            },
+            "tone": "danger"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Stack",
+      "tier": "layout",
+      "description": "Children in a column, spaced by a space token.",
+      "props": {
+        "gap": {
+          "kind": "token",
+          "group": "space",
+          "default": "none"
+        },
+        "padding": {
+          "kind": "token",
+          "group": "space",
+          "default": "none"
+        },
+        "align": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ],
+          "default": "stretch"
+        },
+        "justify": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "center",
+            "end",
+            "between"
+          ],
+          "default": "start"
+        },
+        "grow": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "space.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        {
+          "name": "gap none",
+          "props": {
+            "gap": "none"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap xs",
+          "props": {
+            "gap": "xs"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap s",
+          "props": {
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap m",
+          "props": {
+            "gap": "m"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap l",
+          "props": {
+            "gap": "l"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap xl",
+          "props": {
+            "gap": "xl"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap xxl",
+          "props": {
+            "gap": "xxl"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap xxxl",
+          "props": {
+            "gap": "xxxl"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "align start",
+          "props": {
+            "align": "start",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "align center",
+          "props": {
+            "align": "center",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "align end",
+          "props": {
+            "align": "end",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "align stretch",
+          "props": {
+            "align": "stretch",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "justify start",
+          "props": {
+            "justify": "start",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "justify center",
+          "props": {
+            "justify": "center",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "justify end",
+          "props": {
+            "justify": "end",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "justify between",
+          "props": {
+            "justify": "between",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Inline",
+      "tier": "layout",
+      "description": "Children in a row, spaced by a space token.",
+      "props": {
+        "gap": {
+          "kind": "token",
+          "group": "space",
+          "default": "none"
+        },
+        "padding": {
+          "kind": "token",
+          "group": "space",
+          "default": "none"
+        },
+        "align": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ],
+          "default": "center"
+        },
+        "justify": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "center",
+            "end",
+            "between"
+          ],
+          "default": "start"
+        },
+        "wrap": {
+          "kind": "boolean",
+          "default": false
+        },
+        "grow": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "space.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        {
+          "name": "gap none",
+          "props": {
+            "gap": "none"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap xs",
+          "props": {
+            "gap": "xs"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap s",
+          "props": {
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap m",
+          "props": {
+            "gap": "m"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap l",
+          "props": {
+            "gap": "l"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap xl",
+          "props": {
+            "gap": "xl"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap xxl",
+          "props": {
+            "gap": "xxl"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gap xxxl",
+          "props": {
+            "gap": "xxxl"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "align start",
+          "props": {
+            "align": "start",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "align center",
+          "props": {
+            "align": "center",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "align end",
+          "props": {
+            "align": "end",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "align stretch",
+          "props": {
+            "align": "stretch",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "justify start",
+          "props": {
+            "justify": "start",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "justify center",
+          "props": {
+            "justify": "center",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "justify end",
+          "props": {
+            "justify": "end",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "justify between",
+          "props": {
+            "justify": "between",
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Surface",
+      "tier": "layout",
+      "description": "A background, border, radius, and shadow. Frost works only inside a floating Layer.",
+      "props": {
+        "variant": {
+          "kind": "enum",
+          "values": [
+            "canvas",
+            "frost",
+            "raised",
+            "sunken",
+            "inverted"
+          ],
+          "default": "raised"
+        },
+        "shape": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "window",
+            "sheet",
+            "popover",
+            "control",
+            "round"
+          ],
+          "default": "none"
+        },
+        "elevation": {
+          "kind": "enum",
+          "values": [
+            "0",
+            "1",
+            "2",
+            "3"
+          ],
+          "default": "0"
+        },
+        "padding": {
+          "kind": "token",
+          "group": "space",
+          "default": "none"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.surface.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        {
+          "name": "variant canvas",
+          "props": {
+            "variant": "canvas",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "variant frost",
+          "props": {
+            "variant": "frost",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "variant raised",
+          "props": {
+            "variant": "raised",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "variant sunken",
+          "props": {
+            "variant": "sunken",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "variant inverted",
+          "props": {
+            "variant": "inverted",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "shape none",
+          "props": {
+            "shape": "none",
+            "padding": "l"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "shape window",
+          "props": {
+            "shape": "window",
+            "padding": "l"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "shape sheet",
+          "props": {
+            "shape": "sheet",
+            "padding": "l"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "shape popover",
+          "props": {
+            "shape": "popover",
+            "padding": "l"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "shape control",
+          "props": {
+            "shape": "control",
+            "padding": "l"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "shape round",
+          "props": {
+            "shape": "round",
+            "padding": "l"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "elevation 0",
+          "props": {
+            "elevation": "0",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "elevation 1",
+          "props": {
+            "elevation": "1",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "elevation 2",
+          "props": {
+            "elevation": "2",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "elevation 3",
+          "props": {
+            "elevation": "3",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Layer",
+      "tier": "layout",
+      "description": "Places content on a layer (trigger, panel, dialog, toast, tooltip) at a fixed position.",
+      "props": {
+        "layer": {
+          "kind": "enum",
+          "values": [
+            "contextual",
+            "trigger",
+            "panel",
+            "dialog",
+            "toast",
+            "tooltip"
+          ],
+          "default": "panel"
+        },
+        "position": {
+          "kind": "enum",
+          "values": [
+            "topBand",
+            "fill",
+            "center",
+            "bottomCenter"
+          ],
+          "default": "center"
+        },
+        "dragBand": {
+          "kind": "boolean",
+          "default": false
+        },
+        "landmark": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "banner",
+            "complementary",
+            "region"
+          ],
+          "default": "none"
+        },
+        "label": {
+          "kind": "message",
+          "requiredWhen": "landmark"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "layer.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        {
+          "name": "layer contextual",
+          "props": {
+            "layer": "contextual",
+            "position": "center"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "layer trigger",
+          "props": {
+            "layer": "trigger",
+            "position": "center"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "layer panel",
+          "props": {
+            "layer": "panel",
+            "position": "center"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "layer dialog",
+          "props": {
+            "layer": "dialog",
+            "position": "center"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "layer toast",
+          "props": {
+            "layer": "toast",
+            "position": "center"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "layer tooltip",
+          "props": {
+            "layer": "tooltip",
+            "position": "center"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "position topBand",
+          "props": {
+            "position": "topBand"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "position fill",
+          "props": {
+            "position": "fill"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "position center",
+          "props": {
+            "position": "center"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "position bottomCenter",
+          "props": {
+            "position": "bottomCenter"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "landmark none",
+          "props": {
+            "landmark": "none",
+            "label": {
+              "t": "gallery.sample"
+            }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "landmark banner",
+          "props": {
+            "landmark": "banner",
+            "label": {
+              "t": "gallery.sample"
+            }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "landmark complementary",
+          "props": {
+            "landmark": "complementary",
+            "label": {
+              "t": "gallery.sample"
+            }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "landmark region",
+          "props": {
+            "landmark": "region",
+            "label": {
+              "t": "gallery.sample"
+            }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Center",
+      "tier": "layout",
+      "description": "Centers content up to a maximum width, with the page gutter.",
+      "props": {
+        "maxWidth": {
+          "kind": "enum",
+          "values": [
+            "measure",
+            "wideContent",
+            "popover",
+            "dialogS",
+            "dialogL"
+          ],
+          "default": "measure"
+        },
+        "gutter": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "regular"
+          ],
+          "default": "regular"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "layout.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        {
+          "name": "max width measure",
+          "props": {
+            "maxWidth": "measure"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "max width wideContent",
+          "props": {
+            "maxWidth": "wideContent"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "max width popover",
+          "props": {
+            "maxWidth": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "max width dialogS",
+          "props": {
+            "maxWidth": "dialogS"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "max width dialogL",
+          "props": {
+            "maxWidth": "dialogL"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gutter none",
+          "props": {
+            "gutter": "none"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gutter regular",
+          "props": {
+            "gutter": "regular"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "AppRoot",
+      "tier": "layout",
+      "description": "The root of every app view. Applies the theme and the token modes to the document.",
+      "props": {
+        "scheme": {
+          "kind": "enum",
+          "values": [
+            "light",
+            "dark"
+          ],
+          "required": true
+        },
+        "platform": {
+          "kind": "enum",
+          "values": [
+            "macos",
+            "windows",
+            "linux",
+            "web"
+          ],
+          "required": true
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.appRoot.*",
+      "a11y": {
+        "pattern": "application root"
+      },
+      "fixtures": [
+        {
+          "name": "scheme light",
+          "props": {
+            "scheme": "light",
+            "platform": "windows"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "scheme dark",
+          "props": {
+            "scheme": "dark",
+            "platform": "macos"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "platform linux",
+          "props": {
+            "scheme": "light",
+            "platform": "linux"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "platform web",
+          "props": {
+            "scheme": "light",
+            "platform": "web"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "EditorSurface",
+      "tier": "host",
+      "description": "The writing surface (Tiptap and ProseMirror). It owns the note's DOM; views place it once.",
+      "props": {
+        "documentKey": {
+          "kind": "text",
+          "required": true
+        },
+        "initialValue": {
+          "kind": "text",
+          "required": true
+        },
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "placeholder": {
+          "kind": "message"
+        },
+        "readOnly": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          }
+        },
+        "ready": {}
+      },
+      "slots": {},
+      "states": [
+        "empty",
+        "editing",
+        "readOnly"
+      ],
+      "tokens": "cmp.editorSurface.*",
+      "a11y": {
+        "pattern": "textbox (multi-line)",
+        "name": "label"
+      },
+      "fixtures": []
+    },
+    {
+      "type": "Trigger",
+      "tier": "compound",
+      "description": "The trigger at the top center. Opens the toolbar, and shows a save problem in its dot.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "problemLabel": {
+          "kind": "message"
+        },
+        "problem": {
+          "kind": "boolean",
+          "default": false
+        },
+        "shortcut": {
+          "kind": "text"
+        },
+        "expanded": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focusVisible",
+        "problem"
+      ],
+      "tokens": "none (composes TriggerButton)",
+      "a11y": {
+        "pattern": "menu button",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "rest",
+          "props": {
+            "label": {
+              "t": "trigger.label"
+            }
+          }
+        },
+        {
+          "name": "save problem",
+          "props": {
+            "label": {
+              "t": "trigger.label"
+            },
+            "problemLabel": {
+              "t": "trigger.saveProblem"
+            },
+            "problem": true
+          }
+        }
+      ]
+    }
+  ]
+}

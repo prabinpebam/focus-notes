@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prabinpebam.github.io/focus-notes/schemas/front-matter.v1.json",
+  "title": "Note front matter",
+  "description": "YAML front matter of a note. The app writes only id; anything else is kept as written.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "description": "ULID, stable across renames and moves",
+      "type": "string",
+      "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+    }
+  },
+  "additionalProperties": true
+}

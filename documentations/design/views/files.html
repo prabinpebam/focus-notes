@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>A floating left sheet over the canvas. It has <strong>Private</strong> and <strong>Public</strong> sections, a filter field, a <strong>New</strong> menu, and <strong>Recently deleted</strong> at the bottom. Rows show note <em>titles</em>, and the current note is revealed and selected. Everything is direct: rename inline, drag to move (or cut and paste, or Move to…), multi-select to act in bulk. Every operation is one Git commit with an <strong>Undo</strong> toast, and links in other notes are updated automatically. Deleting a single private note doesn't ask, because it can be undone and restored. Deleting folders, many items, or public notes asks first. View IA-VIEW-FILES serves UC-FILE-01 to UC-FILE-10.</p>
+  <p>A floating left sheet over the canvas. It has <strong>Private</strong> and <strong>Public</strong> sections, a filter field, a <strong>New</strong> menu, and <strong>Recently deleted</strong> at the bottom. Rows show note <em>titles</em>, and the current note is revealed and selected. Everything is direct: rename inline, drag to move (or cut and paste, or Move to…), multi-select to act in bulk. Every operation shows in the tree at once, then becomes one Git commit with an <strong>Undo</strong> toast, and links in other notes are updated automatically. Deleting a single private note doesn't ask, because it can be undone and restored. Deleting folders, many items, or public notes asks first. View IA-VIEW-FILES serves UC-FILE-01 to UC-FILE-10.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -102,6 +102,7 @@
     <tr><td>Cut (waiting to be pasted)</td><td>50% opacity until pasted or <kbd>Esc</kbd></td></tr>
     <tr><td>Drop target</td><td>Accent outline. A collapsed folder expands after 600 ms of hovering.</td></tr>
     <tr><td>Not synced yet</td><td>A small dot after the title, with the tooltip "Not synced yet"</td></tr>
+    <tr><td>Saving</td><td>Shown in its new place at once, with a small spinner at the end of the row after 300 ms, until the write and commit finish (<a href="../components/feedback-and-dialogs.md#waits">Waits</a>)</td></tr>
   </tbody>
 </table>
 
@@ -142,6 +143,7 @@
   </tbody>
 </table>
 <p>Every move is one commit that updates links. The toast says "Moved 3 notes to drafts." with <strong>Undo</strong>. The list keeps the moved items selected and scrolls to them.</p>
+<p><strong>Changes show at once.</strong> Moving, deleting, creating, and duplicating update the tree within 100 ms, before the files are written and committed (PRF-09). The affected rows show the saving sign until the commit finishes, and only then does the toast appear. If the operation is refused, the tree goes back to how it was and the toast says why. Visibility confirmations still come first: nothing moves on screen until they're answered (<a href="../../architecture/desktop-and-git.md#changes-shown-before-theyre-saved">Desktop and Git → Changes shown before they're saved</a>).</p>
 
 <h2 data-reader-personas="design product">Deleting and restoring</h2>
 <table>
@@ -171,7 +173,7 @@
     <tr><td>No public notes</td><td>"Nothing is public. Notes you publish appear here."</td></tr>
     <tr><td>Filter finds nothing</td><td>"No notes named ‘xyz’." and a link, "Search inside notes", that opens Spotlight with the query.</td></tr>
     <tr><td>Private repository not accessible</td><td>The Private section shows "Private notes aren't available to this account." with a link to Settings → Account.</td></tr>
-    <tr><td>An operation fails (for example, a Git error)</td><td>Nothing changes on disk. A toast gives the reason and a [Details] link.</td></tr>
+    <tr><td>An operation fails (for example, a Git error)</td><td>The tree returns to how it was before the change was shown, and nothing changes on disk. Focus goes back to the item. A toast gives the reason and a [Details] link.</td></tr>
     <tr><td>Offline</td><td>Operations go ahead locally and sync later. Affected rows show the "not synced yet" dot.</td></tr>
   </tbody>
 </table>
@@ -197,5 +199,6 @@
     <tr><td>DD-FILES-07</td><td>Recently deleted lives inside the Files panel and is built from Git history.</td><td>UC-FILE-09</td><td>People look for lost files where files are. Git already keeps everything, so no separate trash folder is needed in the repository.</td><td>A Settings page. A <code>.trash/</code> folder in the repository (clutters the repository and GitHub).</td></tr>
     <tr><td>DD-FILES-08</td><td>Moving across Public and Private always asks for confirmation, whichever way it's done.</td><td>UC-SHARE-01</td><td>Changing the audience is never a side effect of tidying up (CP-SHARE-01).</td><td>Treating it as an ordinary move.</td></tr>
     <tr><td>DD-FILES-09</td><td>No manual ordering. Sort by name or by last change.</td><td>UC-FILE-10</td><td>Git and the file system have no order to store, and the Markdown files stay portable (CP-OWN-01).</td><td>Drag to reorder with an order file in the repository.</td></tr>
+    <tr><td>DD-FILES-10</td><td>Moves, deletes, creates, and duplicates show in the tree before they're written and committed. The toast and Undo come only after the commit, and a refusal puts the tree back.</td><td>UC-FILE-06, UC-FILE-08</td><td>Each commit costs several Git processes, and waiting for them made a drop feel broken. Showing the change first keeps organizing direct, and confirming only after the commit keeps "saved" true (CP-SAFE-01).</td><td>Waiting for the commit before redrawing. Showing the change and the Undo toast before the commit, which could offer Undo for something that never happened.</td></tr>
   </tbody>
 </table>

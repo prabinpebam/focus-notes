@@ -1,0 +1,43 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "canvas",
+  "ia": "IA-VIEW-CANVAS",
+  "viewModels": ["vm.app", "vm.canvas"],
+  "focus": "editor",
+  "root": {
+    "type": "AppRoot",
+    "props": { "scheme": { "get": "vm.app.scheme" }, "platform": { "get": "vm.app.platform" } },
+    "children": [
+      {
+        "type": "Layer",
+        "props": { "layer": "trigger", "position": "topBand", "dragBand": true, "landmark": "banner", "label": { "t": "canvas.bandLabel" } },
+        "children": [
+          {
+            "type": "Trigger",
+            "props": {
+              "label": { "t": "trigger.label" },
+              "problemLabel": { "t": "trigger.saveProblem" },
+              "problem": { "get": "vm.canvas.saveProblem" }
+            },
+            "on": { "press": { "run": "trigger.activate" } }
+          }
+        ]
+      },
+      {
+        "type": "EditorSurface",
+        "id": "editor",
+        "when": { "expr": { "==": [{ "get": "vm.canvas.status" }, "ready"] } },
+        "props": {
+          "documentKey": { "get": "vm.canvas.noteKey" },
+          "initialValue": { "get": "vm.canvas.initialMarkdown" },
+          "label": { "t": "canvas.editorLabel" },
+          "placeholder": { "t": "canvas.placeholder", "args": { "platform": { "get": "vm.app.platform" } } }
+        },
+        "on": {
+          "change": { "run": "note.setContent", "args": { "value": { "get": "event.value" } } },
+          "ready": { "run": "app.ready" }
+        }
+      }
+    ]
+  }
+}

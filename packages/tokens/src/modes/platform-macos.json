@@ -1,0 +1,1 @@
+{ "window": { "radius": { "$type": "dimension", "$value": "{ref.size.0}" } } }

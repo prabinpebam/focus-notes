@@ -3,7 +3,7 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 181 requirements in 25 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 188 requirements in 25 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
@@ -304,6 +304,12 @@ Cross-cutting requirements serving CP-CALM-01, CP-FOCUS-01, and CP-REACH-01. Det
 | PRF-04 | 350 MB or less resident memory with 10,000 notes. Near-zero idle CPU, with no polling except the 5-minute fetch. | P0 |
 | PRF-05 | Installers of 150 MB or less. The web reader page loads 300 KB or less of compressed JavaScript. | P0 |
 | PRF-06 | Publishing 1,000 public and 200 shared notes takes 5 minutes or less. | P0 |
+| PRF-07 | Git status comes from one `git status --porcelain=v2 --branch -z --untracked-files=all --ignore-submodules=dirty` per repository, both repositories in parallel with `GIT_OPTIONAL_LOCKS=0`, cached under a key of the content generation, Git's own file times and sizes, and a 30 s maximum age. Only stable answers are cached, calls in flight are shared, failures aren't stored, commits always ask fresh, and the cache is cleared after commit, push, pull, or discard. No view's first frame waits for Git. *(derived from PRF-02 and DSY-11)* | P0 |
+| PRF-08 | Every wait a person starts goes through one task tracker: nothing extra under 300 ms, a sign at the affected place after that, held at least 500 ms, announced to screen readers after 1 s and at its end, and words with the elapsed time after 3 s. The timings are `wait.*` tokens. *(derived from A11Y-01 and DSY-11)* | P0 |
+| PRF-09 | Moving, deleting, creating, or duplicating notes and folders shows on screen within 100 ms, before the write and commit. Success is confirmed only after the real commit, and a refusal restores the previous state and says why. *(derived from FIL-03 and FIL-05)* | P0 |
+| PRF-10 | Parsed notes are kept in an immutable in-memory snapshot keyed by path, size, and modification time, so reopening an unchanged note takes 50 ms or less. A warm-up after start loads the first views and builds the search index without delaying typing, and is off in end-to-end tests. *(derived from PRF-02 and PRF-03)* | P0 |
+| PRF-11 | Each view model declares the content it shows. A change, from the app or outside it, re-renders only the views and fields that show it, within 500 ms of the file watcher's report. Heavy, rarely used parts of a view load when first shown. *(derived from DSY-11)* | P0 |
+| PRF-12 | Published pages meet LCP 2.5 s, INP 200 ms, and CLS 0.1 in CI lab runs. Images request the width they're shown at, and pages preload only the font faces their first screen uses. No real-user measurement (PRV-01). *(derived from PRF-05)* | P0 |
 
 ## Quality (QLT)
 
@@ -315,6 +321,7 @@ Cross-cutting requirements serving CP-SAFE-01.
 | QLT-02 | Every release is tested on the support matrix (OS versions, browsers, screen readers, keyboard layouts). | P0 |
 | QLT-03 | A recovery journal means a crash loses at most about one second of typing, restored at next launch. | P0 |
 | QLT-04 | Local diagnostics: redacted, rotated logs, *Copy diagnostic report*, and *Report a problem* (a pre-filled GitHub issue the user reviews). Nothing is sent automatically. | P0 |
+| QLT-05 | Every wait a person feels has a named performance measure, and the main process records named spans for Git and content work, kept in memory and shown only in local diagnostics. `pnpm bench` runs Playwright on a throwaway Git copy of a fixture workspace (never real notes), and a committed budgets file with noise allowances supports `--compare` and `--check`, which fails CI on a regression. *(derived from QLT-01)* | P0 |
 
 ## Accessibility (A11Y)
 

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prabinpebam.github.io/focus-notes/schemas/settings.v1.json",
+  "title": "Synced settings (private/.focus-notes/settings.json)",
+  "type": "object",
+  "properties": {
+    "appearance": {
+      "properties": {
+        "mode": {
+          "enum": [
+            "system",
+            "light",
+            "dark"
+          ]
+        },
+        "lightTheme": {
+          "type": "string"
+        },
+        "darkTheme": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "additionalProperties": false
+    },
+    "reading": {
+      "properties": {
+        "contentFont": {
+          "type": "string"
+        },
+        "fontSize": {
+          "enum": [
+            14,
+            15,
+            16,
+            17,
+            18,
+            20,
+            22,
+            24,
+            28,
+            32
+          ]
+        },
+        "lineHeight": {
+          "type": "number",
+          "minimum": 1.2,
+          "maximum": 2.2
+        },
+        "measure": {
+          "description": "Characters",
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 100
+        },
+        "focusDim": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 0.6
+        }
+      },
+      "type": "object",
+      "additionalProperties": false
+    },
+    "toolbar": {
+      "type": "array",
+      "items": {
+        "pattern": "^[a-z][A-Za-z]*(\\.[a-z][A-Za-z]*)+$",
+        "type": "string"
+      },
+      "maxItems": 6
+    }
+  },
+  "additionalProperties": false
+}

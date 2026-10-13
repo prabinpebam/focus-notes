@@ -1,0 +1,11 @@
+{ "cmp": { "text": {
+  "color": { "$type": "color",
+    "default": { "$value": "{color.text}" }, "muted": { "$value": "{color.textMuted}" }, "accent": { "$value": "{color.accent}" },
+    "danger": { "$value": "{color.danger}" }, "warning": { "$value": "{color.warning}" }, "success": { "$value": "{color.success}" } },
+  "font": { "$type": "fontFamily", "$value": "{font.ui}" },
+  "size": { "$type": "dimension",
+    "caption": { "$value": "{font.uiCaption}" }, "secondary": { "$value": "{font.uiSecondary}" }, "body": { "$value": "{font.uiBody}" },
+    "label": { "$value": "{font.uiBody}" }, "emphasis": { "$value": "{font.uiEmphasis}" }, "title": { "$value": "{font.uiTitle}" } },
+  "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" },
+  "weight": { "$type": "fontWeight", "regular": { "$value": "{font.weightRegular}" }, "strong": { "$value": "{font.weightSemibold}" } }
+} } }

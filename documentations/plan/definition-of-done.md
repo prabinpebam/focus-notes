@@ -36,7 +36,7 @@ A work package can start only when all of these are true:
 | **No regressions** | All earlier tests and journey tests pass on Windows, macOS, and Linux. | CI run |
 | **Design system** | `ui:check` passes. No raw values, markup, or styles outside the allowed places. Any new component or token went through the [component process](../design/system/overview.html#adding-or-changing-a-component). Every new variant and state has a fixture and an approved visual baseline. | CI run, gallery link, baseline approvals |
 | **Accessibility** | Zero axe violations. Keyboard path tested for each new interaction. Accessible names present. Focus order and focus return checked. | Test results, keyboard journey test |
-| **Performance** | No budget regresses by more than 10%. New budgets this package owns are met on reference hardware. | Benchmark report |
+| **Performance** | `pnpm bench --check` passes: no measure regresses beyond its noise allowance (10% unless the budgets file says otherwise). New budgets this package owns are met on reference hardware and added to the budgets file. Every new wait a person can feel has a named measure. | Benchmark report |
 | **Security and privacy** | CodeQL and dependency audit clean of high and critical findings. No new network destination, permission, or stored data without a decision and an updated data inventory. The threat model is updated if the attack surface changed. | CI run, diff of the inventory and threat model |
 | **Code quality** | Strict TypeScript with no `any` escapes, lint clean, no unexplained `TODO`, and code an independent reviewer can follow. | Review approval |
 | **Licensing** | The license check passes and new notices are in `THIRD_PARTY_NOTICES`. | CI run |

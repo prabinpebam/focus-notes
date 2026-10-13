@@ -1,0 +1,8 @@
+{ "cmp": { "surface": {
+  "background": { "$type": "color",
+    "canvas": { "$value": "{color.canvas}" }, "frost": { "$value": "{color.surface}" }, "raised": { "$value": "{color.surfaceRaised}" },
+    "sunken": { "$value": "{color.surfaceSunken}" }, "inverted": { "$value": "{color.text}" } },
+  "text": { "$type": "color", "default": { "$value": "{color.text}" }, "inverted": { "$value": "{color.textInverse}" } },
+  "border": { "$type": "color", "$value": "{color.border}" },
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" }
+} } }

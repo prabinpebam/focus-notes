@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prabinpebam.github.io/focus-notes/schemas/theme.v1.json",
+  "title": "Focus Notes theme (W3C DTCG format, D-53)",
+  "description": "May set reference colors and the themeable semantic groups only (Tokens → What themes may change).",
+  "type": "object",
+  "required": [
+    "$name",
+    "$scheme"
+  ],
+  "properties": {
+    "$name": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "$scheme": {
+      "enum": [
+        "light",
+        "dark"
+      ]
+    },
+    "$description": {
+      "type": "string"
+    },
+    "ref": {
+      "type": "object"
+    },
+    "color": {
+      "type": "object"
+    },
+    "trigger": {
+      "type": "object"
+    },
+    "focus": {
+      "type": "object"
+    },
+    "code": {
+      "type": "object"
+    },
+    "font": {
+      "type": "object"
+    },
+    "layout": {
+      "properties": {
+        "measure": {
+          "type": "object"
+        },
+        "blockGap": {
+          "type": "object"
+        }
+      },
+      "type": "object",
+      "additionalProperties": false
+    },
+    "radius": {
+      "properties": {
+        "window": {
+          "type": "object"
+        }
+      },
+      "type": "object",
+      "additionalProperties": false
+    },
+    "window": {
+      "properties": {
+        "radius": {
+          "type": "object"
+        }
+      },
+      "type": "object",
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -4,8 +4,11 @@ Instructions for AI coding agents working in this repository.
 
 ## What this repository is
 
-Focus Notes, a calm, Markdown-native writing app. **Status: specification only.** There is no application code yet. Don't add code unless the owner asks for it.
+Focus Notes, a calm, Markdown-native writing app. **Status: M0 (walking skeleton) is built and being verified; M1 is next.** Work follows [the agentic loop](documentations/plan/agentic-loop.html) over [`work-graph.json`](documentations/plan/work-graph.json).
 
+- `apps/desktop/`: the Electron shell, the renderer and gallery entries, and the journey tests (`e2e/`).
+- `packages/`: `tokens`, `ui` (the design system), `ui-runtime` (renderer and `ui:check`), `views` (view documents and messages), `core` (state, commands, view models), `markdown`, `editor`.
+- `tools/`: the repository checks and `bench/`. `schemas/`: JSON Schemas for every file format and the generated UI schema.
 - `documentations/`: the spec, published as a [Slate](https://github.com/prabinpebam/slate) documentation site.
 - `slate/`: the Slate system, pinned as a Git submodule. Don't edit it here.
 - `.github/skills/slate/`: the skill that loads Slate's rules.
@@ -39,6 +42,20 @@ node .\slate\scripts\runtime-host.mjs check --repo . --host documentations
 ```
 
 Then check in a browser that every changed page renders with one H1, that its links and anchors resolve, and that figures fit and stay legible in light and dark themes.
+
+## Build and test
+
+```powershell
+pnpm install
+pnpm tokens          # build the design tokens
+pnpm check           # boundaries, chain, plan, licenses, ui:check
+pnpm typecheck
+pnpm test            # unit tests, including the Markdown round-trip corpus
+pnpm --filter @focus-notes/desktop run build
+pnpm test:e2e        # journey tests against the real Electron app
+pnpm bench --check   # budgets (QLT-05)
+pnpm dev             # run the app; pnpm gallery for the component gallery
+```
 
 ## Commits
 

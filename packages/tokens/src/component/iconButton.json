@@ -1,0 +1,12 @@
+{ "cmp": { "iconButton": {
+  "size": { "$type": "dimension", "$value": "{size.controlM}" },
+  "radius": { "$type": "dimension", "$value": "{radius.control}" },
+  "duration": { "$type": "duration", "$value": "{motion.micro}" },
+  "disabledOpacity": { "$type": "number", "$value": "{opacity.disabled}" },
+  "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
+  "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" },
+  "color": { "$type": "color",
+    "icon": { "$value": "{color.text}" }, "iconMuted": { "$value": "{color.textMuted}" },
+    "hover": { "$value": "{color.hover}" }, "pressed": { "$value": "{color.pressed}" }, "selected": { "$value": "{color.pressed}" },
+    "focusRing": { "$value": "{color.focusRing}" }, "transparent": { "$value": "{color.none}" } }
+} } }

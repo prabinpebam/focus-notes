@@ -36,6 +36,7 @@ focus-notes/
 │  └─ cli/            # focus-notes command-line tool
 ├─ templates/workspace/   # Source of the workspace template (AGENTS.md, workflow, .gitattributes)
 ├─ schemas/               # JSON Schemas (front matter, settings, themes, keybindings, access)
+├─ tools/                 # Repository checks (plan, chain, boundaries, licenses) and the benchmark, tools/bench/ with its budgets file
 ├─ .github/workflows/     # ci.yml, release.yml, publish.yml (reusable), site.yml
 ├─ documentations/        # This Slate documentation host
 ├─ slate/                 # Slate (submodule)

@@ -1,0 +1,4 @@
+{ "cmp": { "icon": {
+  "size": { "$type": "dimension", "s": { "$value": "{size.iconS}" }, "m": { "$value": "{size.iconM}" }, "l": { "$value": "{size.iconL}" } },
+  "color": { "$type": "color", "$value": "{color.text}" }
+} } }

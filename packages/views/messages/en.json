@@ -1,0 +1,20 @@
+{
+  "trigger.label": "Focus Notes menu",
+  "trigger.saveProblem": "Couldn't save",
+  "canvas.editorLabel": "Note",
+  "canvas.bandLabel": "Focus Notes",
+  "canvas.placeholder": "Start writing, type / for blocks, or press {platform, select, macos {⌘/} other {Ctrl+/}}",
+  "command.note.open": "Open…",
+  "command.note.save": "Save",
+  "command.note.setContent": "Update note",
+  "command.appearance.toggle": "Switch light and dark",
+  "command.trigger.activate": "Open the menu",
+  "command.app.ready": "Ready",
+  "gallery.title": "Component gallery",
+  "gallery.empty": "No fixtures yet",
+  "app.viewFailed": "This panel couldn't load. Copy the diagnostic report from Settings to report it.",
+  "gallery.sample": "The quick brown fox",
+  "gallery.long": "A longer piece of interface text that wraps across several lines, to show how truncation and the maximum widths behave in each layout.",
+  "gallery.action": "Save note",
+  "gallery.reason": "Nothing to save yet"
+}

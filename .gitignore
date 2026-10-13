@@ -1,0 +1,14 @@
+node_modules/
+dist/
+out/
+release/
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.vite/
+.DS_Store
+Thumbs.db
+apps/desktop/src/renderer/index.html
+apps/desktop/src/gallery/index.html
+

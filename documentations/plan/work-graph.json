@@ -80,7 +80,7 @@
       "id": "WP-0.1",
       "stage": "M0",
       "title": "Repository, CI, and agent loop",
-      "summary": "The monorepo, toolchain, CI on three operating systems, the license check, CodeQL, Dependabot, actions pinned by SHA, branch protection, the work graph, and the agent role instructions.",
+      "summary": "The monorepo, toolchain, CI on three operating systems, the license check, CodeQL, Dependabot, actions pinned by SHA, branch protection, the work graph, the agent role instructions, and the benchmark harness with performance marks, spans, and a budgets file checked in CI.",
       "requirements": [
         "PKG-01",
         "PKG-04",
@@ -89,6 +89,7 @@
         "SEC-04",
         "SEC-07",
         "QLT-01",
+        "QLT-05",
         "DOC-01",
         "DOC-02"
       ],
@@ -103,10 +104,11 @@
       ],
       "specs": [
         "plan/distribution.md",
-        "plan/agentic-loop.html"
+        "plan/agentic-loop.html",
+        "architecture/performance-and-quality.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-0.2",
@@ -132,7 +134,7 @@
         "architecture/content-model.md"
       ],
       "lookahead": true,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-0.3",
@@ -159,7 +161,7 @@
         "design/foundations.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-0.4",
@@ -187,7 +189,7 @@
         "design/system/overview.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-0.5",
@@ -216,7 +218,7 @@
         "design/system/views-as-data.md"
       ],
       "lookahead": true,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-0.6",
@@ -244,7 +246,7 @@
         "architecture/security-and-privacy.md"
       ],
       "lookahead": true,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-0.7",
@@ -276,7 +278,7 @@
         "experience/main-ui.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-0.8",
@@ -300,7 +302,7 @@
         "architecture/content-model.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-0.9",
@@ -323,7 +325,7 @@
         "plan/distribution.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-1.1",
@@ -426,10 +428,11 @@
       "id": "WP-1.4",
       "stage": "M1",
       "title": "Compound components, first set",
-      "summary": "Menu, Popover, Dialog, Toolbar, Toast, Field, Tabs, and ResultList, with command-driven items and full gallery coverage.",
+      "summary": "Menu, Popover, Dialog, Toolbar, Toast, Field, Tabs, and ResultList, with command-driven items and full gallery coverage, plus the task tracker, the busy state, and the wait timing tokens.",
       "requirements": [
         "DSY-09",
-        "DSY-12"
+        "DSY-12",
+        "PRF-08"
       ],
       "dependsOn": [
         "WP-0.5"
@@ -443,7 +446,8 @@
         "accessibility"
       ],
       "specs": [
-        "design/system/components.md"
+        "design/system/components.md",
+        "design/components/feedback-and-dialogs.md"
       ],
       "lookahead": false,
       "status": "planned"
@@ -732,10 +736,11 @@
       "id": "WP-2.3",
       "stage": "M2",
       "title": "Local workspace model",
-      "summary": "Folder workspaces, `workspace.json` with its format version and migrations, and title-based file names.",
+      "summary": "Folder workspaces, `workspace.json` with its format version and migrations, title-based file names, and change notifications scoped to the content each view model declares.",
       "requirements": [
         "DST-05",
-        "FIL-07"
+        "FIL-07",
+        "PRF-11"
       ],
       "dependsOn": [
         "WP-1.1"
@@ -748,7 +753,9 @@
         "code"
       ],
       "specs": [
-        "architecture/content-model.md"
+        "architecture/content-model.md",
+        "architecture/desktop-and-git.md",
+        "design/system/views-as-data.md"
       ],
       "lookahead": false,
       "status": "planned"
@@ -757,12 +764,13 @@
       "id": "WP-2.4",
       "stage": "M2",
       "title": "Files panel and file operations",
-      "summary": "The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to….",
+      "summary": "The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to…, with structural changes shown before they're saved.",
       "requirements": [
         "FIL-01",
         "FIL-02",
         "FIL-03",
-        "FIL-08"
+        "FIL-08",
+        "PRF-09"
       ],
       "dependsOn": [
         "WP-2.3",
@@ -779,7 +787,8 @@
         "accessibility"
       ],
       "specs": [
-        "design/views/files.html"
+        "design/views/files.html",
+        "architecture/desktop-and-git.md"
       ],
       "lookahead": false,
       "status": "planned"
@@ -812,10 +821,11 @@
       "id": "WP-2.6",
       "stage": "M2",
       "title": "Recovery journal and resource budgets",
-      "summary": "The one-second recovery journal, and memory and idle CPU budgets on 10,000 notes.",
+      "summary": "The one-second recovery journal, memory and idle CPU budgets on 10,000 notes, the parsed-note snapshot, and the warm-up after start.",
       "requirements": [
         "QLT-03",
-        "PRF-04"
+        "PRF-04",
+        "PRF-10"
       ],
       "dependsOn": [
         "WP-2.3"
@@ -899,10 +909,11 @@
       "id": "WP-3.3",
       "stage": "M3",
       "title": "Local Git adapter, save, and sync",
-      "summary": "Commits for every change, push and pull, the lock file, and readable commit messages.",
+      "summary": "Commits for every change, push and pull, the lock file, readable commit messages, and one cached Git status per repository that no view waits for.",
       "requirements": [
         "EDT-11",
-        "FIL-05"
+        "FIL-05",
+        "PRF-07"
       ],
       "dependsOn": [
         "WP-2.3"
@@ -1150,13 +1161,14 @@
       "id": "WP-5.1",
       "stage": "M5",
       "title": "Static renderer and public pages",
-      "summary": "Public pages rendered from the reader views and block components, deployed by the user's workflow.",
+      "summary": "Public pages rendered from the reader views and block components, deployed by the user's workflow, with font preloading and lab-measured Core Web Vitals.",
       "requirements": [
         "SHR-03",
         "SHR-06",
         "PKG-02",
         "PRV-04",
-        "PRF-06"
+        "PRF-06",
+        "PRF-12"
       ],
       "dependsOn": [
         "WP-3.4",
@@ -1173,7 +1185,8 @@
         "security"
       ],
       "specs": [
-        "architecture/repository-and-publishing.html"
+        "architecture/repository-and-publishing.html",
+        "architecture/performance-and-quality.md"
       ],
       "lookahead": false,
       "status": "planned"

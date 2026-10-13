@@ -1,0 +1,2252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "title": "Focus Notes view document",
+  "type": "object",
+  "required": [
+    "$schema",
+    "id",
+    "viewModels",
+    "root"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][A-Za-z0-9.]*$"
+    },
+    "ia": {
+      "type": "string",
+      "pattern": "^IA-(VIEW|CMP)-[A-Z]+$"
+    },
+    "viewModels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^vm\\.[a-z][A-Za-z0-9]*$"
+      }
+    },
+    "focus": {
+      "type": "string"
+    },
+    "local": {
+      "type": "object",
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean",
+          "null"
+        ]
+      }
+    },
+    "root": {
+      "$ref": "#/$defs/node"
+    }
+  },
+  "$defs": {
+    "message": {
+      "type": "object",
+      "required": [
+        "t"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "t": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9]*(\\.[a-zA-Z0-9]+)+$"
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/value"
+          }
+        }
+      }
+    },
+    "read": {
+      "type": "object",
+      "required": [
+        "get"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "get": {
+          "$ref": "#/$defs/path"
+        }
+      }
+    },
+    "bind": {
+      "type": "object",
+      "required": [
+        "bind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "bind": {
+          "$ref": "#/$defs/path"
+        }
+      }
+    },
+    "expr": {
+      "type": "object",
+      "required": [
+        "expr"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "expr": {}
+      }
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^(vm\\.[a-z][A-Za-z0-9]*|local|env|event|params|[a-z][A-Za-z0-9]*)(\\.[A-Za-z0-9]+)*$"
+    },
+    "value": {
+      "anyOf": [
+        {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "$ref": "#/$defs/message"
+        },
+        {
+          "$ref": "#/$defs/read"
+        },
+        {
+          "$ref": "#/$defs/bind"
+        },
+        {
+          "$ref": "#/$defs/expr"
+        }
+      ]
+    },
+    "action": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "run"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "run": {
+              "type": "string"
+            },
+            "args": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/value"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "set",
+            "to"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "set": {
+              "type": "string",
+              "pattern": "^local\\."
+            },
+            "to": {
+              "$ref": "#/$defs/value"
+            }
+          }
+        }
+      ]
+    },
+    "actions": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/action"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/action"
+          },
+          "minItems": 1
+        }
+      ]
+    },
+    "component": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "discriminator": {
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/c_Text"
+        },
+        {
+          "$ref": "#/$defs/c_Heading"
+        },
+        {
+          "$ref": "#/$defs/c_Icon"
+        },
+        {
+          "$ref": "#/$defs/c_Button"
+        },
+        {
+          "$ref": "#/$defs/c_IconButton"
+        },
+        {
+          "$ref": "#/$defs/c_Tooltip"
+        },
+        {
+          "$ref": "#/$defs/c_SignalDot"
+        },
+        {
+          "$ref": "#/$defs/c_TriggerButton"
+        },
+        {
+          "$ref": "#/$defs/c_Stack"
+        },
+        {
+          "$ref": "#/$defs/c_Inline"
+        },
+        {
+          "$ref": "#/$defs/c_Surface"
+        },
+        {
+          "$ref": "#/$defs/c_Layer"
+        },
+        {
+          "$ref": "#/$defs/c_Center"
+        },
+        {
+          "$ref": "#/$defs/c_AppRoot"
+        },
+        {
+          "$ref": "#/$defs/c_EditorSurface"
+        },
+        {
+          "$ref": "#/$defs/c_Trigger"
+        }
+      ]
+    },
+    "fragmentNode": {
+      "type": "object",
+      "required": [
+        "use"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "use": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/value"
+          }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/node"
+            }
+          }
+        },
+        "when": {}
+      }
+    },
+    "eachNode": {
+      "type": "object",
+      "required": [
+        "each",
+        "as",
+        "key",
+        "render"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "each": {
+          "$ref": "#/$defs/read"
+        },
+        "as": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "render": {
+          "$ref": "#/$defs/node"
+        },
+        "empty": {
+          "$ref": "#/$defs/node"
+        },
+        "when": {}
+      }
+    },
+    "switchNode": {
+      "type": "object",
+      "required": [
+        "switch",
+        "cases"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "switch": {},
+        "cases": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "when": {}
+      }
+    },
+    "slotOutlet": {
+      "type": "object",
+      "required": [
+        "slot"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "slot": {
+          "type": "string"
+        }
+      }
+    },
+    "node": {
+      "if": {
+        "type": "object",
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "$ref": "#/$defs/component"
+      },
+      "else": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/fragmentNode"
+          },
+          {
+            "$ref": "#/$defs/eachNode"
+          },
+          {
+            "$ref": "#/$defs/switchNode"
+          },
+          {
+            "$ref": "#/$defs/slotOutlet"
+          }
+        ]
+      }
+    },
+    "c_Text": {
+      "type": "object",
+      "description": "A run of interface text. Note text is never rendered with this; it lives in block components.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Text"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "role": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "caption",
+                    "secondary",
+                    "body",
+                    "label",
+                    "emphasis",
+                    "title"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "default",
+                    "muted",
+                    "accent",
+                    "danger",
+                    "warning",
+                    "success"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "lines": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "one",
+                    "two",
+                    "three"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_Heading": {
+      "type": "object",
+      "description": "An interface heading for a sheet, dialog, or section.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Heading"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "level": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_Icon": {
+      "type": "object",
+      "description": "A Fluent UI System icon. Decorative unless it has a label.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Icon"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "save",
+                    "darkTheme",
+                    "lightTheme",
+                    "more",
+                    "search",
+                    "add",
+                    "dismiss",
+                    "check",
+                    "newNote",
+                    "bold",
+                    "italic",
+                    "link",
+                    "minimize",
+                    "restore",
+                    "maximize",
+                    "fullScreen",
+                    "exitFullScreen",
+                    "focus",
+                    "font",
+                    "keyboard",
+                    "settings",
+                    "info",
+                    "warning",
+                    "error",
+                    "sync",
+                    "delete",
+                    "rename",
+                    "copy",
+                    "folder",
+                    "document",
+                    "chevronRight",
+                    "chevronDown",
+                    "undo",
+                    "redo",
+                    "table",
+                    "quote",
+                    "code",
+                    "bulletList",
+                    "numberedList",
+                    "heading1",
+                    "heading2",
+                    "heading3",
+                    "color",
+                    "share",
+                    "history"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "s",
+                    "m",
+                    "l"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "name"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_Button": {
+      "type": "object",
+      "description": "A labelled action. Its label says what it does.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Button"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "variant": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "primary",
+                    "secondary",
+                    "subtle",
+                    "danger"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "s",
+                    "m"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "icon": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "save",
+                    "darkTheme",
+                    "lightTheme",
+                    "more",
+                    "search",
+                    "add",
+                    "dismiss",
+                    "check",
+                    "newNote",
+                    "bold",
+                    "italic",
+                    "link",
+                    "minimize",
+                    "restore",
+                    "maximize",
+                    "fullScreen",
+                    "exitFullScreen",
+                    "focus",
+                    "font",
+                    "keyboard",
+                    "settings",
+                    "info",
+                    "warning",
+                    "error",
+                    "sync",
+                    "delete",
+                    "rename",
+                    "copy",
+                    "folder",
+                    "document",
+                    "chevronRight",
+                    "chevronDown",
+                    "undo",
+                    "redo",
+                    "table",
+                    "quote",
+                    "code",
+                    "bulletList",
+                    "numberedList",
+                    "heading1",
+                    "heading2",
+                    "heading3",
+                    "color",
+                    "share",
+                    "history"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "iconPosition": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "start",
+                    "end"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "busy": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "disabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "disabledReason": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_IconButton": {
+      "type": "object",
+      "description": "An icon-only action with a required label, shown as its tooltip and accessible name.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "IconButton"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "icon": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "save",
+                    "darkTheme",
+                    "lightTheme",
+                    "more",
+                    "search",
+                    "add",
+                    "dismiss",
+                    "check",
+                    "newNote",
+                    "bold",
+                    "italic",
+                    "link",
+                    "minimize",
+                    "restore",
+                    "maximize",
+                    "fullScreen",
+                    "exitFullScreen",
+                    "focus",
+                    "font",
+                    "keyboard",
+                    "settings",
+                    "info",
+                    "warning",
+                    "error",
+                    "sync",
+                    "delete",
+                    "rename",
+                    "copy",
+                    "folder",
+                    "document",
+                    "chevronRight",
+                    "chevronDown",
+                    "undo",
+                    "redo",
+                    "table",
+                    "quote",
+                    "code",
+                    "bulletList",
+                    "numberedList",
+                    "heading1",
+                    "heading2",
+                    "heading3",
+                    "color",
+                    "share",
+                    "history"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "shortcut": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "default",
+                    "muted"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "toggle": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "pressed": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "disabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "disabledReason": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "icon",
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_Tooltip": {
+      "type": "object",
+      "description": "Shows a control's name and shortcut. Never holds information you can't get another way.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Tooltip"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "shortcut": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "placement": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "top",
+                    "bottom",
+                    "start",
+                    "end"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_SignalDot": {
+      "type": "object",
+      "description": "The red dot. Its tone signals a save problem on the trigger.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SignalDot"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tone": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "red",
+                    "warning",
+                    "danger"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_TriggerButton": {
+      "type": "object",
+      "description": "The frosted circle with the red dot. The Trigger compound places it and gives it behavior.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "TriggerButton"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "shortcut": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "red",
+                    "warning",
+                    "danger"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "expanded": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_Stack": {
+      "type": "object",
+      "description": "Children in a column, spaced by a space token.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Stack"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "gap": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "xs",
+                    "s",
+                    "m",
+                    "l",
+                    "xl",
+                    "xxl",
+                    "xxxl"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "padding": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "xs",
+                    "s",
+                    "m",
+                    "l",
+                    "xl",
+                    "xxl",
+                    "xxxl"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "align": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "start",
+                    "center",
+                    "end",
+                    "stretch"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "justify": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "start",
+                    "center",
+                    "end",
+                    "between"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "grow": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_Inline": {
+      "type": "object",
+      "description": "Children in a row, spaced by a space token.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Inline"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "gap": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "xs",
+                    "s",
+                    "m",
+                    "l",
+                    "xl",
+                    "xxl",
+                    "xxxl"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "padding": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "xs",
+                    "s",
+                    "m",
+                    "l",
+                    "xl",
+                    "xxl",
+                    "xxxl"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "align": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "start",
+                    "center",
+                    "end",
+                    "stretch"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "justify": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "start",
+                    "center",
+                    "end",
+                    "between"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "wrap": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "grow": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_Surface": {
+      "type": "object",
+      "description": "A background, border, radius, and shadow. Frost works only inside a floating Layer.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Surface"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variant": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "canvas",
+                    "frost",
+                    "raised",
+                    "sunken",
+                    "inverted"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "shape": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "window",
+                    "sheet",
+                    "popover",
+                    "control",
+                    "round"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "elevation": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "padding": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "xs",
+                    "s",
+                    "m",
+                    "l",
+                    "xl",
+                    "xxl",
+                    "xxxl"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_Layer": {
+      "type": "object",
+      "description": "Places content on a layer (trigger, panel, dialog, toast, tooltip) at a fixed position.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Layer"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "layer": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "contextual",
+                    "trigger",
+                    "panel",
+                    "dialog",
+                    "toast",
+                    "tooltip"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "position": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "topBand",
+                    "fill",
+                    "center",
+                    "bottomCenter"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "dragBand": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "landmark": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "banner",
+                    "complementary",
+                    "region"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_Center": {
+      "type": "object",
+      "description": "Centers content up to a maximum width, with the page gutter.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Center"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxWidth": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "measure",
+                    "wideContent",
+                    "popover",
+                    "dialogS",
+                    "dialogL"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "gutter": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "regular"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_AppRoot": {
+      "type": "object",
+      "description": "The root of every app view. Applies the theme and the token modes to the document.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "AppRoot"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "scheme": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "light",
+                    "dark"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "platform": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "macos",
+                    "windows",
+                    "linux",
+                    "web"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "scheme",
+            "platform"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_EditorSurface": {
+      "type": "object",
+      "description": "The writing surface (Tiptap and ProseMirror). It owns the note's DOM; views place it once.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "EditorSurface"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "documentKey": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "initialValue": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "placeholder": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "readOnly": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "documentKey",
+            "initialValue",
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "change": {
+              "$ref": "#/$defs/actions"
+            },
+            "ready": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_Trigger": {
+      "type": "object",
+      "description": "The trigger at the top center. Opens the toolbar, and shows a save problem in its dot.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Trigger"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "problemLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "problem": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "shortcut": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "expanded": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    }
+  }
+}

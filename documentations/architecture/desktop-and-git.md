@@ -3,7 +3,7 @@
 How the Electron app is put together: processes, security, signing in through Git's own sign-in tools, creating a user's workspace, and saving notes as commits and pushes with the user's own `git`.
 
 > [!NOTE]
-> **TL;DR.** The **main process** owns windows, the file system, Git, and setup. The **renderer** runs the same web app core as the browser build, and it reaches the main process only through a small, typed **preload bridge** that offers intent-level operations (such as `workspace.save`), never raw shell or Git. **Focus Notes has no OAuth app, no client ID, and no server** (D-21). Sign-in is done by tools the user already owns: **Git Credential Manager** or the **GitHub CLI**, both with a device-code option, or a **fine-grained token** the user creates on GitHub. Whatever signs Git in also gives the app its GitHub API access, so the app stores no credential of its own. A new user's whole setup (workspace repository, private repository, GitHub Pages, share-link keys) is created **in their own GitHub account** by the app on their computer. Edits are written to disk within 1 s, and a **commit and push** happens on <kbd>Mod</kbd>+<kbd>S</kbd>, on switching or closing a note, on quit, or after 60 s of no typing (D-23).
+> **TL;DR.** The **main process** owns windows, the file system, Git, and setup. The **renderer** runs the same web app core as the browser build, and it reaches the main process only through a small, typed **preload bridge** that offers intent-level operations (such as `workspace.save`), never raw shell or Git. **Focus Notes has no OAuth app, no client ID, and no server** (D-21). Sign-in is done by tools the user already owns: **Git Credential Manager** or the **GitHub CLI**, both with a device-code option, or a **fine-grained token** the user creates on GitHub. Whatever signs Git in also gives the app its GitHub API access, so the app stores no credential of its own. A new user's whole setup (workspace repository, private repository, GitHub Pages, share-link keys) is created **in their own GitHub account** by the app on their computer. Edits are written to disk within 1 s, and a **commit and push** happens on <kbd>Mod</kbd>+<kbd>S</kbd>, on switching or closing a note, on quit, or after 60 s of no typing (D-23). Git runs as separate processes, which are slow on Windows, so the app asks each repository what changed with **one cached `git status`**, never makes a view wait for it, and shows structural changes on screen **before** they're committed (PRF-07, PRF-09, D-66, D-68).
 
 ## Processes and security
 
@@ -95,11 +95,50 @@ Every step can be retried on its own, and a failed step leaves a clear message (
 | The user's own `git` | Runs the `git` found on `PATH`, at a minimum supported version checked during setup. Hooks, `includeIf` configuration, commit signing (GPG or SSH), and `.gitattributes` all apply exactly as in the terminal. |
 | Safe launching | Started with an argument list, never through a shell, and with `-C <repo>`. For background syncs the environment sets `GIT_TERMINAL_PROMPT=0` and `GCM_INTERACTIVE=never`, so no hidden prompt can hang the app. Prompts are only allowed during sign-in, which the user started. |
 | Readable output | Uses machine-readable output formats (`--porcelain=v2 -z`, `--format`), with `LC_ALL=C` where messages need parsing. |
-| One at a time | One queue per repository (public and private), so commands never overlap. Each has a timeout and can be cancelled. |
+| One at a time | One queue per repository (public and private), so commands never overlap within a repository. The two queues run in parallel. Each command has a timeout and can be cancelled. |
+| No optional locks for reads | Read-only commands such as `git status` run with `GIT_OPTIONAL_LOCKS=0`, so they don't rewrite the index. A rewritten index would also invalidate the status cache. |
 | Never skip hooks | `--no-verify` is never used. If a hook rejects a commit, its output is shown to the writer. |
 | Signing that needs input | If commit signing needs a passphrase the app can't provide, the commit fails cleanly with an explanation and a link to set up a signing agent. |
 | Credential expired | If a background push is refused for authentication, sync pauses, the trigger shows the problem state, and the toast offers [Sign in again], which runs the same helper. |
 | Logs | Kept per device for troubleshooting. Tokens and private note text are redacted. |
+
+## Asking Git what changed
+
+Each Git command is a new process, and on Windows a process costs about 80 ms. Asking Git a dozen questions in sequence on every view would make every view slow, so the app asks once, caches the answer honestly, and never makes a view wait (PRF-07, D-66).
+
+### One call per repository
+
+```text
+git -C <repo> status --porcelain=v2 --branch -z --untracked-files=all --ignore-submodules=dirty
+```
+
+- One call returns the branch, its upstream, how many commits it's ahead and behind, the head commit, and every changed file.
+- The notes repository and `private/` are asked **in parallel**, each through its own queue, with `GIT_OPTIONAL_LOCKS=0`.
+- `--ignore-submodules=dirty` hides edits inside `private/` from the notes repository's answer but still reports when the **submodule pointer itself** moved. Edits to private notes come from the separate `private/` call.
+- **Things that never change** during a session are asked once and kept: each repository's root, the remote's URL, and the Git version. The head commit isn't asked separately; it comes with the status.
+
+### The cache
+
+The answer is cached per repository, under a key made of:
+
+| Part of the key | Why |
+| --- | --- |
+| The content generation | A counter the workspace model increments on every write, so the app's own edits are seen at once |
+| The modification time and size of Git's own files: `index`, `HEAD`, `logs/HEAD`, `packed-refs`, `FETCH_HEAD`, and the current branch's ref and its upstream ref | Catches commits, fetches, checkouts, and staging made by any tool, including the terminal. Both the worktree's Git folder and the common Git folder are checked, because a submodule's and a worktree's files are split between them. |
+| A maximum age of 30 s | A safety net for anything the key misses |
+
+### Keeping the cache honest
+
+1. **Store only a stable answer.** The key is read before and after the call, and the answer is stored only if they match.
+2. **Share calls in flight.** Two callers asking at the same moment share one Git process.
+3. **Never store a failure.** A failed or timed-out call is reported, not cached.
+4. **Always ask fresh before committing,** never from the cache. This matters most for a commit that might move the `private/` pointer (D-07).
+5. **Clear after the app commits, pushes, pulls, or discards.**
+6. **Builds, unit tests, and integration tests never use the cache.**
+
+### Views never wait for Git
+
+A view draws at once with the cached counts. If nothing is cached yet, the place that shows them says "Checking changes…", and the counts fill in when the call returns. Opening the Files panel, Settings, or Spotlight never starts with a Git call.
 
 ## Save and sync
 
@@ -112,13 +151,24 @@ typing ──► write file (atomic, ≤ 1 s after the last change)
 ```
 
 1. **Write.** Each note is saved atomically: written to a temporary file, then renamed over the original. Disk never has a half-written note. A crash loses at most about a second of typing.
-2. **Commit.** Changed notes are staged by path, never with `git add -A`. The commit message follows [Files and sharing](../experience/files-and-sharing.md#operations), for example `Update essays/on-focus.md`. Several notes changed in one sync window are committed together.
+2. **Commit.** Changed notes are staged by path, never with `git add -A`. The commit message follows [Files and sharing](../experience/files-and-sharing.md#operations), for example `Update essays/on-focus.md`. Several notes changed in one sync window are committed together. The commit always starts from a fresh `git status`, never the cache ([Keeping the cache honest](#keeping-the-cache-honest)).
 3. **Private first.** If private notes changed, the private repository is committed and pushed first. The public repository's pointer to it moves only as described in D-07.
 4. **Push.** `git push` to the tracking branch. A rejected (non-fast-forward) push fetches, rebases the app's own unpushed commits, and retries once. If that conflicts, the rebase is aborted so the repository is never left mid-rebase, and the note-level conflict choice is shown ([Files and sharing](../experience/files-and-sharing.md#conflicts-and-offline)).
 5. **Pull.** A fetch runs when the window becomes active and every 5 minutes, for the notes repository and for `private/` separately (D-47). If a branch is behind and its working tree is clean, the app pulls it with rebase. `private/` always stays on `main` and is never reset to the publishing pointer. Open notes reload in place, keeping the caret where possible.
 6. **Offline.** Commits pile up locally and the trigger shows its save-problem state (D-06). Everything pushes in order once the network is back.
 
 `Ctrl/⌘+S` runs the commit and push right away and briefly shows "Saved and synced", or the reason it couldn't.
+
+## Changes shown before they're saved
+
+Moving, deleting, creating, or duplicating notes and folders changes the screen **first**, then writes the files and commits (PRF-09, D-68).
+
+- **Only order and presence.** Optimistic updates apply to changes that add, remove, or move notes and folders in the Files panel. Edits in place and renames that need a file name check go through the normal save. Moving or duplicating blocks inside a note needs nothing extra: the editor changes the document first and writes it within 1 s.
+- **"Saved" means saved.** The row's saving sign stays until the write (and, from M3, the commit) has really finished. The toast's Undo is offered only then.
+- **The reply confirms, it doesn't redraw.** When the bridge confirms, nothing visible changes: no spinner, no flash.
+- **Read the current state when the reply arrives,** not when the change was made. Focus, scroll position, selection, and expanded folders are taken from the screen as it is at that moment.
+- **Refusals put everything back and say why.** If the write or commit fails, the tree returns to how it was, focus goes back to the item, and a toast gives the reason with [Details] ([Files → Errors](../design/views/files.html)).
+- **Where an item went is a pure function.** The workspace model's operations keep unchanged items as the same objects, so comparing old and new trees by identity tells a move (same object), a duplicate (an equal copy), and a new item apart. It's unit-tested.
 
 ## Clones and large workspaces
 
@@ -136,6 +186,8 @@ The app, the [command-line tool](agents.md#command-line-tool), and the [MCP serv
 ## External changes
 
 A file watcher (chokidar, MIT) watches the workspace, excluding `.git/`. Changes made outside the app (another editor, a terminal `git pull`) refresh the Files panel and the Spotlight index. An open note with no unsaved edits reloads quietly. If it does have unsaved edits, the writer gets the *Keep mine / Take theirs / Save mine as a copy* choice.
+
+Updates go only where they matter (PRF-11). Each open view declares which content it shows (for example, the Files panel shows the tree, the canvas shows one note, Note history shows one note's history), and the watcher's batched events are matched against those declarations. A change to another note redraws nothing. Git's own files aren't watched: a commit or fetch made in the terminal changes the [status cache](#the-cache)'s key, so the next status read (when the window becomes active, or at the 5-minute fetch) asks Git again, and only the places that show sync state update.
 
 ## Libraries (all MIT-compatible, see D-20)
 

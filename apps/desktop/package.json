@@ -1,0 +1,73 @@
+{
+  "name": "@focus-notes/desktop",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Focus Notes desktop app",
+  "license": "MIT",
+  "author": "Prabin Pebam",
+  "type": "module",
+  "main": "out/main/main.mjs",
+  "scripts": {
+    "build": "node scripts/entry.mjs && vite build --config vite.config.ts && node scripts/build-main.mjs",
+    "dev": "pnpm run build && electron .",
+    "start": "electron .",
+    "gallery": "node scripts/entry.mjs && vite --config vite.gallery.config.ts",
+    "gallery:build": "node scripts/entry.mjs && vite build --config vite.gallery.config.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:e2e": "playwright test",
+    "dist": "pnpm run build && electron-builder --publish never"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "axe-core": "4.14.0",
+    "@vanilla-extract/vite-plugin": "5.2.6",
+    "@vitejs/plugin-react": "6.1.2",
+    "electron": "42.4.1",
+    "electron-builder": "26.15.3",
+    "vite": "8.3.3",
+    "@focus-notes/core": "workspace:*",
+    "@focus-notes/ui": "workspace:*",
+    "@focus-notes/ui-runtime": "workspace:*",
+    "@focus-notes/views": "workspace:*"
+  },
+  "build": {
+    "appId": "io.github.prabinpebam.focusnotes",
+    "productName": "Focus Notes",
+    "artifactName": "Focus-Notes-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/main/**",
+      "out/renderer/**",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "oneClick": false
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "linux": {
+      "maintainer": "Prabin Pebam",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office"
+    },
+    "publish": null
+  }
+}

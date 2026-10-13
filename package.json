@@ -1,0 +1,42 @@
+{
+  "name": "focus-notes",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Focus Notes: a calm, Markdown-native writing app with notes in your own GitHub.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.28.2",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "build": "pnpm -r --filter ./packages/** run build && pnpm --filter @focus-notes/desktop run build",
+    "tokens": "node packages/tokens/build.mjs",
+    "typecheck": "pnpm -r run typecheck",
+    "test": "vitest run",
+    "test:e2e": "pnpm --filter @focus-notes/desktop run test:e2e",
+    "ui:check": "pnpm --filter @focus-notes/ui-runtime run ui:check",
+    "check:boundaries": "node tools/check-boundaries.mjs",
+    "check:chain": "node tools/check-chain.mjs",
+    "check:plan": "node tools/check-plan.mjs",
+    "check:licenses": "node tools/check-licenses.mjs",
+    "bench": "node tools/bench/run.mjs",
+    "check": "pnpm run check:boundaries && pnpm run check:chain && pnpm run check:plan && pnpm run check:licenses && pnpm run ui:check",
+    "dev": "pnpm --filter @focus-notes/desktop run dev",
+    "gallery": "pnpm --filter @focus-notes/desktop run gallery",
+    "dist": "pnpm --filter @focus-notes/desktop run dist"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "5.0.3",
+    "@types/node": "24.19.1",
+    "happy-dom": "20.14.5",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "@vanilla-extract/vite-plugin": "5.2.6",
+    "@vitejs/plugin-react": "6.1.2",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["electron", "esbuild"]
+  }
+}

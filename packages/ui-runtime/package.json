@@ -1,0 +1,22 @@
+{
+  "name": "@focus-notes/ui-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./schema": "./src/schema.ts", "./gallery": "./src/gallery.ts" },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "ui:check": "node src/cli/ui-check.ts"
+  },
+  "dependencies": {
+    "@focus-notes/core": "workspace:*",
+    "@focus-notes/tokens": "workspace:*",
+    "@focus-notes/ui": "workspace:*",
+    "@focus-notes/views": "workspace:*",
+    "ajv": "8.20.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": { "@types/react": "19.3.0", "@types/react-dom": "19.3.0" }
+}

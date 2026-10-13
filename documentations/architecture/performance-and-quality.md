@@ -3,7 +3,7 @@
 How fast Focus Notes must be, how big a workspace it must handle, how it's tested, and the accessibility and language standards it meets.
 
 > [!NOTE]
-> **TL;DR.** Typing must never lag: at most **16 ms from keystroke to paint** at the 95th percentile, even in a 50,000-word note. The app opens to a usable caret in **under 1.5 s** (warm start), Spotlight answers within its budgets, and a workspace of **10,000 notes** stays fast. Every budget is measured in CI on the release build, on fixed reference hardware. Quality relies on a test pyramid (Vitest, Playwright for web and Electron, a Markdown round-trip corpus, axe and manual accessibility passes, IME and keyboard-layout tests), a tested support matrix, crash recovery that loses at most a second of typing, and **WCAG 2.2 AA**. These targets are set by this spec, not measured. They're checked from M0 onward, each from the stage that builds what it measures.
+> **TL;DR.** Typing must never lag: at most **16 ms from keystroke to paint** at the 95th percentile, even in a 50,000-word note. The app opens to a usable caret in **under 1.5 s** (warm start), Spotlight answers within its budgets, and a workspace of **10,000 notes** stays fast. Every budget is measured in CI on the release build, on fixed reference hardware, by one **benchmark** with a committed **budgets file** that fails the build on a regression (QLT-05). Every wait a person feels has a named measure, and the measurements stay on the computer: there's no telemetry (D-55, D-65). The app does less work rather than hiding it: **one cached Git status** per repository that no view waits for, redraws limited to what changed, structural changes shown before they're saved, and one task tracker that explains every wait (PRF-07 to PRF-11). Quality relies on a test pyramid (Vitest, Playwright for web and Electron, a Markdown round-trip corpus, axe and manual accessibility passes, IME and keyboard-layout tests), a tested support matrix, crash recovery that loses at most a second of typing, and **WCAG 2.2 AA**. These targets are set by this spec, not measured. They're checked from M0 onward, each from the stage that builds what it measures.
 
 ## Performance budgets
 
@@ -19,11 +19,66 @@ How fast Focus Notes must be, how big a workspace it must handle, how it's teste
 | Memory | ≤ 350 MB resident with a 10,000-note workspace open | Process metrics after 10 minutes of use | PRF-04 |
 | Idle CPU | Near zero when not typing or syncing. No polling except the 5-minute fetch. | OS process sampling | PRF-04 |
 | View rendering | ≤ 100 ms to a view's first frame, ≤ 10% overhead from the UI runtime | Benchmarks on Settings, Files, and Spotlight | DSY-11 |
+| Git status | One `git status` per repository per refresh, both repositories in parallel. A cached answer in ≤ 5 ms. No view's first frame waits for Git. | The `git.status` span and process count in the benchmark | PRF-07 |
+| Waits explained | Acknowledged in the same frame as the input. A sign after 300 ms, kept ≥ 500 ms once shown, announced after 1 s, elapsed time after 3 s. | The task tracker's marks, with scripted slow operations | PRF-08 |
+| Structural change shown | ≤ 100 ms from the action to the change on screen (move, delete, create, or duplicate a note or folder), before the write or commit finishes | From the drop or key to the updated tree | PRF-09 |
+| Reopening a note | ≤ 50 ms for a note already read this session and unchanged on disk | From click to caret, warm | PRF-10 |
+| Start-up warm-up | Done within 10 s of start. Never pushes a keystroke past the PRF-01 budget. | Typing benchmark run during warm-up | PRF-10 |
+| External change | Affected views update ≤ 500 ms after the file watcher reports it. Unaffected views do no work. | A scripted edit from outside the app | PRF-11 |
+| Published pages (M5) | LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1, in lab runs only | Playwright lab runs in CI on a throttled profile | PRF-12 |
 | Installer size | ≤ 150 MB per platform | Release assets | PRF-05 |
 | Web app first load (M6) | ≤ 300 KB JavaScript compressed for the reader page. ≤ 1.5 MB for the editor. | Build report | PRF-05 |
 | Publish (CI) | ≤ 5 minutes for 1,000 public notes and 200 shared notes | Workflow duration | PRF-06 |
 
-**Reference hardware:** a mid-range laptop (4 cores, 8 GB, SSD) on Windows 11 and macOS. CI enforces the same budgets with a margin, on a fixed runner type. A budget regression of more than 10% fails the build.
+**Reference hardware:** a mid-range laptop (4 cores, 8 GB, SSD) on Windows 11 and macOS. CI enforces the same budgets with a margin, on a fixed runner type. A regression beyond a measure's noise allowance (10% unless the budgets file says otherwise) fails the build.
+
+## Measuring
+
+Measure before fixing anything. Guesses about what's slow are usually wrong: in a project with the same public and private repository layout, Git was 88 to 97% of every screen's time, and the part that looked heavy was 15% of it. Every optimization in this page starts from a measurement and ends with a new baseline (D-65).
+
+### Marks and spans
+
+- **Every wait a person feels** has a `performance.mark` at the input and a `performance.measure` at the visible result, named `fn:<area>.<action>`: for example `fn:view.open.files`, `fn:file.move`, `fn:note.open`, `fn:sync.commit`, and `fn:theme.preview`.
+- **The main process records named spans** inside each bridge call: `git.status`, `git.commit`, `git.push`, `content.read`, `content.parse`, `content.serialize`, and `content.write`. Each bridge reply carries its spans, so the renderer can join them to its own measure.
+- **The last 2,000 measures** stay in memory, in a ring buffer. Nothing is written to disk except the summary in the diagnostic report, and nothing is ever sent (D-55).
+- **Count the work, not only the time.** The benchmark also records Git processes started, notes parsed, and nodes rendered per view, so a fix targets what's actually heavy.
+
+### The benchmark and its budgets
+
+`pnpm bench` (in `tools/bench/`) runs Playwright against the release build of the desktop app (QLT-05).
+
+| Part | Rule |
+| --- | --- |
+| Workspace | A throwaway copy of a fixture workspace (10,000 notes, a `private/` submodule, and a local bare remote for each repository), created in a temporary folder and initialized as real Git repositories. It never opens the user's real notes. |
+| What it times | Start-up cold and warm. Each view opened cold and warm. Each interaction, from the click or key to the visible result. The main-process spans for each step. Typing (PRF-01). |
+| Repetitions | Each measure runs at least 5 times. The report gives p50 and p95. |
+| Budgets file | `tools/bench/budgets.json`, committed. Each measure has a budget, a baseline, and a noise allowance. Changing a baseline is a reviewed commit with the benchmark report attached. |
+| `--compare <report>` | Prints each measure against the baseline or another report, with the change in percent. |
+| `--check` | Exits with an error when a measure is over its budget or regresses beyond its noise allowance. CI runs it on every pull request that touches app code. |
+| Slow-computer run | Before each stage gate, one run with the CPU slowed 4× shows how it feels on an older laptop. A change that takes more than 100 ms to show at 4× is the next thing to trim. |
+
+## Doing less work
+
+| Technique | Rule | Detail | Requirement |
+| --- | --- | --- | --- |
+| One cached Git status | One `git status` per repository, both in parallel, cached and kept off the path of every view | [Desktop and Git → Asking Git what changed](desktop-and-git.md#asking-git-what-changed) | PRF-07 |
+| Redraw only what changed | Per-field subscriptions, views that declare the content they show, and heavy panels loaded when first opened | [Views as data → Rendering](../design/system/views-as-data.md#rendering) | PRF-11 |
+| Show changes first | Structural changes appear before the write and commit, and are put back if refused | [Desktop and Git → Changes shown before they're saved](desktop-and-git.md#changes-shown-before-theyre-saved) | PRF-09 |
+| Explain every wait | One task tracker, signs at the place, and timings as tokens | [Feedback and dialogs → Waits](../design/components/feedback-and-dialogs.md#waits) | PRF-08 |
+| Less reading | A parsed-note snapshot, and a warm-up after start | Below | PRF-10 |
+
+### Less reading
+
+- **Parsed-note snapshot.** The main process keeps each note it has parsed (front matter, blocks, title, links) in memory, keyed by absolute path, size, and modification time, and parses again only what changed. A write hands its result straight to the snapshot, so the next read doesn't touch the disk.
+- **Snapshots are never changed in place.** Each read returns a fresh top-level object over frozen parts. A unit test deep-freezes every cached value and runs the core's operations against it, so any caller that mutates a cached note fails.
+- **Warm-up after start.** Once the canvas has a caret, the app loads the code of the first views people open (Files, Spotlight, Settings) and builds the Spotlight index in its worker, at idle priority. Warm-up pauses while someone types and never delays the first caret (PRF-02). A view opened before warm-up reaches it says what it's waiting for ("Indexing notes: 4,000 of 10,000") instead of showing a blank panel.
+- **Warm-up is off in end-to-end tests**, so timing and focus stay deterministic. The benchmark measures with it on and off.
+
+### Published pages
+
+- **Images** (with the image block, EXT-03): `srcset` and `sizes` match the width the image is actually shown at, capped at the layout's maximum width, rather than the width of its frame.
+- **Fonts:** pages preload only the font faces their first screen uses. An italic or bold face is preloaded only when the page's first screen contains text set in it. Fonts are self-hosted (PRV-04).
+- **Core Web Vitals are measured in the lab only.** CI runs the publisher on a fixture workspace and measures LCP, INP, and CLS with Playwright on a throttled profile (PRF-12). There's no real-user monitoring, no beacon, and no `PerformanceObserver` reporting from readers' browsers, because that would be telemetry (D-55, D-65).
 
 ## Scale the product supports
 
@@ -54,8 +109,17 @@ How fast Focus Notes must be, how big a workspace it must handle, how it's teste
 | View documents | `ui:check` | Schema, references, binding types, accessibility and design rules for every view (DSY-08) |
 | Accessibility | axe-core (MPL-2.0, test-only) plus manual passes | Automated checks on every view, and manual screen-reader passes before each release |
 | Input | Playwright plus manual | IME (Japanese, Chinese, Korean), dead keys, AltGr layouts (German, Polish), non-Latin layouts, macOS Emacs-style keys |
-| Performance | Playwright traces plus benchmarks | The budgets above |
+| Performance | Playwright traces plus `pnpm bench --check` against the budgets file | The budgets above (QLT-05) |
 | Publishing and sealing | A workflow test repository | The leak check, keyrings, expiry, withdrawal, and the name lookup |
+
+### Testing pitfalls
+
+- **Optimistic changes:** a test of a change shown before it's saved holds back the bridge's write or commit reply, checks the screen, then releases the reply and checks that the change was confirmed, or put back with a message.
+- **Navigating after a save:** a test that reloads or opens another view right after a save waits for the save task to end (the task tracker reports when it's idle). Otherwise it races the save.
+- **Line endings:** fixtures and generated files are compared byte for byte. The repository's `.gitattributes` keeps them LF, so a Windows checkout or a new worktree can't turn them into CRLF and fail the comparison.
+- **Windows processes:** each process costs about 80 ms on Windows, so the app and its tests batch Git calls rather than running one per question.
+- **Ports:** a server port closed by one test can stay in use for a few seconds on Windows. Test servers ask the system for a free port each time.
+- **Caches:** unit tests, integration tests, and builds never use the Git status cache. They ask Git directly.
 
 ### Support matrix (tested each release)
 
@@ -84,5 +148,5 @@ How fast Focus Notes must be, how big a workspace it must handle, how it's teste
 ## Diagnostics
 
 - Logs live in the app's data folder, redacted (no tokens, passcodes, or note text), rotated, and kept for 7 days.
-- **Settings → About → Copy diagnostic report** puts the versions, settings summary, recent errors, and Git status on the clipboard.
+- **Settings → About → Copy diagnostic report** puts the versions, settings summary, recent errors, Git status, and a summary of recent timings (each measure's name, count, p50, and p95, with no paths or note text) on the clipboard.
 - **Report a problem** opens a GitHub issue form on the product repository, with the report pasted for the user to review. There's no automatic sending (QLT-04).

@@ -9,16 +9,20 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 
 | Stage | In short | Used by | Delivered as | Requirements |
 | --- | --- | --- | --- | --- |
-| **M0: Walking skeleton** | It runs. | The team, on their own computers | Preview 0.0.x on GitHub Releases (pre-release, unsigned) | 28 |
-| **M1: Writing** | Write a real document. | The owner, for real documents | Preview 0.1.x | 52 |
-| **M2: Desktop and local folders** | Use it every day, offline. | The owner, daily, on one computer | Preview 0.2.x | 15 |
-| **M3: Your notes on GitHub** | Sign in, and your notes follow you. | The owner and a few invited testers, on several computers | Preview 0.3.x | 19 |
+| **M0: Walking skeleton** | It runs. | The team, on their own computers | Preview 0.0.x on GitHub Releases (pre-release, unsigned) | 29 |
+| **M1: Writing** | Write a real document. | The owner, for real documents | Preview 0.1.x | 53 |
+| **M2: Desktop and local folders** | Use it every day, offline. | The owner, daily, on one computer | Preview 0.2.x | 18 |
+| **M3: Your notes on GitHub** | Sign in, and your notes follow you. | The owner and a few invited testers, on several computers | Preview 0.3.x | 20 |
 | **M4: Find anything, make it yours** | Everything is one keystroke away. | Invited testers | Preview 0.4.x | 13 |
-| **M5: Publish and share** | Version 1.0. | Anyone | 1.0 stable on GitHub Releases | 20 |
+| **M5: Publish and share** | Version 1.0. | Anyone | 1.0 stable on GitHub Releases | 21 |
 | **M6: The browser** | Write from any browser. | Anyone | 1.1 | 2 |
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 22 |
 | **Later: Components** | Rich components. | Anyone | Later releases | 2 |
+
+## Where we are
+
+**M0 (walking skeleton) is built** and passes its demo as automated journey tests on Windows: the app opens to the canvas with the trigger, saves what you type as Markdown, reopens it, keeps untouched files byte-identical, and makes no network requests. It's being verified in CI on macOS and Linux before its gate. **M1 is next.**
 
 ## Staging principles
 
@@ -34,19 +38,19 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 <ol class="slate-steps slate-steps--timeline">
 <li class="slate-step">
 <p class="slate-step__title">M0: Walking skeleton (It runs)</p>
-<p>A preview app for Windows, macOS, and Linux opens to the blank canvas with the trigger. You can type paragraphs and headings into a Markdown file you chose, it saves on its own, and the note is back when you reopen the app. <a href="implementation-plan.md#m0">Details</a>. EDT-01, EXT-01, UI-01, UI-02, PKG-01, PKG-03, PKG-04, PKG-06, LIC-01, LIC-02, DOC-01, DOC-02, AGT-08, SEC-01, SEC-04, SEC-07, PRV-01, PRF-02, QLT-01, I18N-01, DSY-01, DSY-02, DSY-04, DSY-05, DSY-07, DSY-08, DSY-10, DSY-11.</p>
+<p>A preview app for Windows, macOS, and Linux opens to the blank canvas with the trigger. You can type paragraphs and headings into a Markdown file you chose, it saves on its own, and the note is back when you reopen the app. <a href="implementation-plan.md#m0">Details</a>. EDT-01, EXT-01, UI-01, UI-02, PKG-01, PKG-03, PKG-04, PKG-06, LIC-01, LIC-02, DOC-01, DOC-02, AGT-08, SEC-01, SEC-04, SEC-07, PRV-01, PRF-02, QLT-01, QLT-05, I18N-01, DSY-01, DSY-02, DSY-04, DSY-05, DSY-07, DSY-08, DSY-10, DSY-11.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M1: Writing (Write a real document)</p>
-<p>Open or create a Markdown file and write a real document: blocks, Markdown shortcuts, inline formatting with the contextual toolbar, links, the slash menu, Loop-style tables, the trigger toolbar and ⋯ menu, focus mode, Light, Dark, and System themes, font size, find and replace, and the Basic and Writer shortcut layers with the cheat sheet. <a href="implementation-plan.md#m1">Details</a>. EDT-02 to EDT-06, EDT-08 to EDT-10, EDT-12, EDT-13, TBL-01 to TBL-03, TBL-05 to TBL-08, TBL-10, TBL-11, EXT-02, EXT-05, UI-03 to UI-07, FOC-01 to FOC-06, THM-01 to THM-03, THM-06, THM-08, KEY-02, KEY-05, KEY-06, FND-01, FND-02, SEC-02, PRF-01, PRF-03, A11Y-01, A11Y-02, I18N-02, DSY-03, DSY-06, DSY-09, DSY-12.</p>
+<p>Open or create a Markdown file and write a real document: blocks, Markdown shortcuts, inline formatting with the contextual toolbar, links, the slash menu, Loop-style tables, the trigger toolbar and ⋯ menu, focus mode, Light, Dark, and System themes, font size, find and replace, and the Basic and Writer shortcut layers with the cheat sheet. <a href="implementation-plan.md#m1">Details</a>. EDT-02 to EDT-06, EDT-08 to EDT-10, EDT-12, EDT-13, TBL-01 to TBL-03, TBL-05 to TBL-08, TBL-10, TBL-11, EXT-02, EXT-05, UI-03 to UI-07, FOC-01 to FOC-06, THM-01 to THM-03, THM-06, THM-08, KEY-02, KEY-05, KEY-06, FND-01, FND-02, SEC-02, PRF-01, PRF-03, PRF-08, A11Y-01, A11Y-02, I18N-02, DSY-03, DSY-06, DSY-09, DSY-12.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M2: Desktop and local folders (Use it every day, offline)</p>
-<p>The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format. <a href="implementation-plan.md#m2">Details</a>. FIL-01 to FIL-03, FIL-07 to FIL-09, DSK-01 to DSK-05, DSK-08, PRF-04, QLT-03, DST-05.</p>
+<p>The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format. <a href="implementation-plan.md#m2">Details</a>. FIL-01 to FIL-03, FIL-07 to FIL-09, DSK-01 to DSK-05, DSK-08, PRF-04, PRF-09 to PRF-11, QLT-03, DST-05.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M3: Your notes on GitHub (Sign in, and your notes follow you)</p>
-<p>The first run signs in through Git's own tools, creates your workspace in your GitHub account (notes repository, private repository, Pages site), and from then on every change is saved as Git commits and synced. Notes are private or public, conflicts are resolved without loss, and deleted notes can be restored. <a href="implementation-plan.md#m3">Details</a>. EDT-11, FIL-05, FIL-06, FIL-10, FIL-12, SHR-01, SHR-02, FRE-01 to FRE-08, AGT-07, SEC-03, PRV-02, PRV-03.</p>
+<p>The first run signs in through Git's own tools, creates your workspace in your GitHub account (notes repository, private repository, Pages site), and from then on every change is saved as Git commits and synced. Notes are private or public, conflicts are resolved without loss, and deleted notes can be restored. <a href="implementation-plan.md#m3">Details</a>. EDT-11, FIL-05, FIL-06, FIL-10, FIL-12, SHR-01, SHR-02, FRE-01 to FRE-08, AGT-07, SEC-03, PRV-02, PRV-03, PRF-07.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M4: Find anything, make it yours (Everything is one keystroke away)</p>
@@ -54,7 +58,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M5: Publish and share (Version 1.0)</p>
-<p>The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. The Get started page offers the downloads, and every release ships with checksums, an SBOM, and attestations. <a href="implementation-plan.md#m5">Details</a>. SHR-03 to SHR-11, PKG-02, SEC-05, SEC-06, PRV-04, PRF-05, PRF-06, QLT-02, QLT-04, DST-01, DST-03, DST-06.</p>
+<p>The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. The Get started page offers the downloads, and every release ships with checksums, an SBOM, and attestations. <a href="implementation-plan.md#m5">Details</a>. SHR-03 to SHR-11, PKG-02, SEC-05, SEC-06, PRV-04, PRF-05, PRF-06, PRF-12, QLT-02, QLT-04, DST-01, DST-03, DST-06.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M6: The browser (Write from any browser)</p>

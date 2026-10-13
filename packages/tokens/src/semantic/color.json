@@ -1,0 +1,51 @@
+{
+  "color": {
+    "$type": "color",
+    "none": { "$value": "{ref.color.transparent}" },
+    "canvas": { "$value": "{ref.color.paper.50}" },
+    "surface": { "$value": "{ref.color.white}" },
+    "surfaceRaised": { "$value": "{ref.color.white}" },
+    "surfaceSunken": { "$value": "{ref.color.paper.100}" },
+    "scrim": { "$value": "{ref.color.paper.a40}" },
+    "border": { "$value": "{ref.color.paper.200}" },
+    "borderStrong": { "$value": "{ref.color.paper.300}" },
+    "text": { "$value": "{ref.color.paper.900}" },
+    "textMuted": { "$value": "{ref.color.paper.600}" },
+    "textPlaceholder": { "$value": "{ref.color.paper.500}" },
+    "textDisabled": { "$value": "{ref.color.paper.500}" },
+    "textInverse": { "$value": "{ref.color.paper.50}" },
+    "link": { "$value": "{ref.color.blue.600}" },
+    "accent": { "$value": "{ref.color.blue.600}" },
+    "onAccent": { "$value": "{ref.color.white}" },
+    "accentMuted": { "$value": "{ref.color.blue.a20}" },
+    "hover": { "$value": "{ref.color.paper.a06}" },
+    "pressed": { "$value": "{ref.color.paper.a10}" },
+    "selection": { "$value": "{ref.color.blue.a20}" },
+    "focusRing": { "$value": "{ref.color.blue.600}" },
+    "danger": { "$value": "{ref.color.red.700}" },
+    "onDanger": { "$value": "{ref.color.white}" },
+    "dangerMuted": { "$value": "{ref.color.red.a15}" },
+    "warning": { "$value": "{ref.color.amber.700}" },
+    "warningMuted": { "$value": "{ref.color.amber.a35}" },
+    "success": { "$value": "{ref.color.green.700}" },
+    "successMuted": { "$value": "{ref.color.green.a15}" },
+    "info": { "$value": "{ref.color.blue.700}" },
+    "infoMuted": { "$value": "{ref.color.blue.a20}" },
+    "findMatch": { "$value": "{ref.color.amber.a35}" },
+    "findMatchActive": { "$value": "{ref.color.amber.a70}" }
+  },
+  "trigger": {
+    "dot": { "$type": "color", "$value": "{ref.color.red.500}" },
+    "ring": { "$type": "color", "$value": "{ref.color.white}" },
+    "ringBorder": { "$type": "color", "$value": "{ref.color.paper.200}" },
+    "blur": { "$type": "dimension", "$value": "{ref.size.12}" }
+  },
+  "focus": {
+    "dimOpacity": { "$type": "number", "$value": 0.3 },
+    "rowTint": { "$type": "color", "$value": "{ref.color.transparent}" }
+  },
+  "code": {
+    "background": { "$type": "color", "$value": "{ref.color.paper.100}" },
+    "text": { "$type": "color", "$value": "{ref.color.paper.900}" }
+  }
+}

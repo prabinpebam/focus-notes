@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prabinpebam.github.io/focus-notes/schemas/access.v1.json",
+  "title": "private/access.json: share audiences",
+  "type": "object",
+  "required": [
+    "version",
+    "grants"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "nameSalt": {
+      "minLength": 22,
+      "type": "string"
+    },
+    "grants": {
+      "type": "array",
+      "items": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9_-]{8,}$",
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1
+          },
+          "link": {
+            "properties": {
+              "secret": {
+                "minLength": 22,
+                "type": "string"
+              }
+            },
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "secret"
+            ]
+          },
+          "passcode": {
+            "properties": {
+              "generated": {
+                "type": "boolean"
+              },
+              "value": {
+                "minLength": 12,
+                "type": "string"
+              }
+            },
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value"
+            ]
+          },
+          "salt": {
+            "type": "string"
+          },
+          "scope": {
+            "properties": {
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "folders": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object",
+            "additionalProperties": false
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "revokedAt": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "scope",
+          "createdAt"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prabinpebam.github.io/focus-notes/schemas/keybindings.v1.json",
+  "title": "keybindings.json",
+  "type": "array",
+  "items": {
+    "properties": {
+      "command": {
+        "description": "A leading minus removes a default binding",
+        "type": "string",
+        "pattern": "^-?[a-z][A-Za-z]*(\\.[a-z][A-Za-z]*)+$"
+      },
+      "key": {
+        "pattern": "^((Mod|Ctrl|Alt|Shift|Meta)\\+)*[^+\\s]+$",
+        "type": "string"
+      },
+      "when": {
+        "type": "string"
+      }
+    },
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "command",
+      "key"
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+{ "cmp": { "signalDot": {
+  "size": { "$type": "dimension", "$value": "{size.triggerDot}" },
+  "color": { "$type": "color", "red": { "$value": "{trigger.dot}" }, "warning": { "$value": "{color.warning}" }, "danger": { "$value": "{color.danger}" } }
+} } }

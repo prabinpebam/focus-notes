@@ -2,7 +2,7 @@
 
 A calm, Markdown-native writing app: a blank canvas, a single red trigger at the top center, and a focus mode that highlights only the row you are writing. Notes are plain Markdown in GitHub: private by default, published to the user's own GitHub Pages site, or shared with named people through a magic link or a passcode. Agents can help through MCP and a command-line tool, within permissions the writer grants. You write in a desktop app (Electron). Every user's Focus Notes is their own isolated instance in their own GitHub account (their repositories, their GitHub Pages site, their sign-in), with nothing hosted by this project.
 
-**Status:** documentation only. No application code yet.
+**Status:** M0, the walking skeleton, is built: the desktop app opens to the blank canvas with the trigger, and saves what you type as Markdown. See the [roadmap](documentations/plan/roadmap.md) and [AGENTS.md](AGENTS.md) for building and testing.
 
 **License:** [MIT](LICENSE). Security reports: see [SECURITY.md](SECURITY.md). Instructions for AI agents: [AGENTS.md](AGENTS.md).
 

@@ -3,7 +3,7 @@
 Every screen in Focus Notes is a JSON document. The UI runtime reads it, checks it, and maps each node onto a design-system component, binding it to typed state and wiring its events to commands. This page defines that format, how it's validated and rendered, and what it deliberately can't do.
 
 > [!NOTE]
-> **TL;DR.** A **view document** names a view model and describes a tree of **nodes**. A node is a component, a fragment, a repeat (`each`), or a choice (`switch`). Prop values are enums, token names, registry IDs, **message keys** (`{"t": …}`), **reads** (`{"get": …}`), **two-way bindings** (`{"bind": …}`), or a small **expression** subset. Events run **actions**, of which there are two kinds: run a command, or set view-local state. There is no code, markup, style, literal text, or raw value anywhere in a view. The build validates every view against a schema generated from the component contracts, resolves every reference, and type-checks every binding against the view model's schema. At run time, the renderer maps nodes to components, and the publisher uses the same views to produce static pages. Covers DSY-06 to DSY-08, DSY-11, and DSY-13.
+> **TL;DR.** A **view document** names a view model and describes a tree of **nodes**. A node is a component, a fragment, a repeat (`each`), or a choice (`switch`). Prop values are enums, token names, registry IDs, **message keys** (`{"t": …}`), **reads** (`{"get": …}`), **two-way bindings** (`{"bind": …}`), or a small **expression** subset. Events run **actions**, of which there are two kinds: run a command, or set view-local state. There is no code, markup, style, literal text, or raw value anywhere in a view. The build validates every view against a schema generated from the component contracts, resolves every reference, and type-checks every binding against the view model's schema. At run time, the renderer maps nodes to components, and the publisher uses the same views to produce static pages. Each view model declares the content it shows, so a change redraws only the views and nodes that show it. Covers DSY-06 to DSY-08, DSY-11, DSY-13, and PRF-11.
 
 <h2 data-reader-personas="design engineering">A first look</h2>
 
@@ -140,6 +140,7 @@ export const appearance = defineViewModel("vm.appearance", {
 - The **schema** is what `ui:check` type-checks bindings against. A view can't read a field that isn't declared.
 - **Setters** are commands, so a binding change is undoable, recorded, and available to agents like any other action.
 - View models are tested with fixtures. The same fixtures drive the view gallery's states (empty, typical, many items, long text, error, loading).
+- Each view model **declares the content it shows**: the workspace tree, one note by path, one note's history, the settings, or the theme list. The workspace model uses these declarations to tell only the affected view models about a change (PRF-11).
 
 <h2 id="fragments" data-reader-personas="design engineering">Fragments</h2>
 
@@ -194,6 +195,14 @@ Fragments are expanded at build time, so they cost nothing at run time.
 
 **The typing path doesn't go through the renderer.** The canvas view places `EditorSurface` once, and from then on ProseMirror owns the note's DOM. Keystrokes never re-render a view, so the renderer can't affect the typing budget (PRF-01).
 
+**Redraw only what changed** (PRF-11):
+
+- **Per field.** A view-model change re-renders only the nodes that read that field. A new list item adds one row to a repeat, keyed by its `key`. It doesn't redraw the list.
+- **Per view.** A change to content that no open view declares does no rendering work at all, whether it came from the app, an agent, or another program ([Desktop and Git → External changes](../../architecture/desktop-and-git.md#external-changes)).
+- **Heavy parts load when first opened.** Each view's code loads on its first open. Inside a view, rarely used heavy parts (a tab, a history diff, the theme gallery's previews) load when they first show, and long lists load a page at a time into a `VirtualList`. Content that arrives later is added to what's there, so a query typed meanwhile, focus, and scroll position are kept.
+- **Loading is never blank.** A view that's waiting for data renders its `loading` case, which uses the skeleton sign from [Waits](../components/feedback-and-dialogs.md#waits).
+- **Measure before trimming.** The gallery reports the nodes rendered and the bytes of view code per view and per region, so a fix targets what's actually heavy rather than what looks heavy.
+
 **Published pages** go through the same views. The publisher renders `fragment.readerLayout` and the reader views to static HTML at build time, with the same components and token CSS. Only the passcode gate and the theme switch are made interactive.
 
 <h2 id="versions-and-migration" data-reader-personas="engineering">Versions and migration</h2>
@@ -217,6 +226,8 @@ Fragments are expanded at build time, so they cost nothing at run time.
 | Renderer overhead compared with the same tree written by hand | ≤ 10% render time, measured on Settings, Files with 10,000 notes, and Spotlight with 200 results | DSY-11 |
 | Opening any view to its first frame | ≤ 100 ms on the reference hardware | DSY-11 |
 | View code per view | Loaded on first open, ≤ 30 KB compressed for the largest view | DSY-11 |
+| A change to content no open view shows | No rendering work | PRF-11 |
+| Content that a view shows changes outside the app | The view updates ≤ 500 ms after the file watcher reports it | PRF-11 |
 
 The M0 runtime spike measures these before any view is built ([Roadmap](../../plan/roadmap.md)).
 
