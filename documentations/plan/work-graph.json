@@ -1,7 +1,7 @@
 {
   "$comment": "The implementation plan in machine-readable form. Agents read this file to choose ready work. Keep it in step with implementation-plan.md; the plan check (WP-0.1) fails CI if they disagree.",
   "version": 1,
-  "updated": "2026-10-13",
+  "updated": "2026-10-14",
   "stages": [
     {
       "id": "M0",
@@ -20,9 +20,23 @@
     {
       "id": "MW",
       "title": "Your Focus Notes on GitHub Pages",
-      "outcome": "Write in any browser from your own GitHub Pages site, locally first, syncing to your own repository.",
-      "channel": "1.1",
+      "outcome": "Open your own Focus Notes at your GitHub Pages address in any browser and write at once, kept in this browser and offline. Read the site's public notes, unlock your private notes read-only with your passphrase, and export your browser notes for the desktop app.",
+      "channel": "Preview 0.2.x",
       "gate": "GATE-M6"
+    },
+    {
+      "id": "M3",
+      "title": "Desktop sign-in and Git",
+      "outcome": "The first run signs in through Git's own tools, creates your instance in your GitHub account (instance repository, private repository, vault passphrase, Pages site), and from then on every change is saved as Git commits and synced: the desktop app is the only place that writes to GitHub. Notes are private or public, notes exported from a browser can be imported, conflicts are resolved without loss, and deleted notes can be restored.",
+      "channel": "Preview 0.3.x",
+      "gate": "GATE-M3"
+    },
+    {
+      "id": "M2",
+      "title": "The desktop app",
+      "outcome": "The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format.",
+      "channel": "Preview 0.3.x",
+      "gate": "GATE-M2"
     },
     {
       "id": "M4",
@@ -37,20 +51,6 @@
       "outcome": "The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. The Get started page offers the downloads, and every release ships with checksums, an SBOM, and attestations.",
       "channel": "1.0 stable on GitHub Releases",
       "gate": "GATE-M5"
-    },
-    {
-      "id": "M2",
-      "title": "The desktop app",
-      "outcome": "The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format.",
-      "channel": "Preview 0.2.x",
-      "gate": "GATE-M2"
-    },
-    {
-      "id": "M3",
-      "title": "Desktop sign-in and Git",
-      "outcome": "The first run signs in through Git's own tools, creates your workspace in your GitHub account (notes repository, private repository, Pages site), and from then on every change is saved as Git commits and synced. Notes are private or public, conflicts are resolved without loss, and deleted notes can be restored.",
-      "channel": "Preview 0.3.x",
-      "gate": "GATE-M3"
     },
     {
       "id": "M7",
@@ -936,17 +936,18 @@
     },
     {
       "id": "WP-3.4",
-      "stage": "MW",
+      "stage": "M3",
       "title": "Public and private roots",
       "summary": "Public notes in the instance repository's notes/, private notes in the private repository at private/, new notes private by default, and moving notes between them (D-84).",
       "requirements": [
+        "FIL-06",
         "SHR-01",
         "SHR-02",
-        "FIL-06",
-        "PRV-03"
+        "PRV-03",
+        "FRE-10"
       ],
       "dependsOn": [
-        "WP-6.1"
+        "WP-3.3"
       ],
       "touches": [
         "git",
@@ -1197,16 +1198,15 @@
     {
       "id": "WP-5.2",
       "stage": "M5",
-      "title": "Sealing, leak check, and pinned workflow",
-      "summary": "Per-build sealing, keyrings, the leak check, and the reusable workflow pinned by SHA with verification.",
+      "title": "Share sealing and the pinned bundle",
+      "summary": "Share grants sealed with the vault's format (WP-6.4), and instances deploying the released web app bundle at a pinned version, verified by checksum and attestation.",
       "requirements": [
-        "SHR-04",
         "SHR-11",
-        "SEC-05",
-        "SEC-06"
+        "SEC-05"
       ],
       "dependsOn": [
-        "WP-5.1"
+        "WP-5.1",
+        "WP-6.4"
       ],
       "touches": [
         "publish",
@@ -1364,19 +1364,19 @@
     {
       "id": "WP-6.1",
       "stage": "MW",
-      "title": "Web app on your own Pages, local first, with GitHub sync",
-      "summary": "The web build deployed by each user's copy of the repository to their GitHub Pages; IndexedDB storage and the outbox; the sync engine on the Git Data API; the encrypted token store.",
+      "title": "Web app on your own Pages, local first",
+      "summary": "The web build deployed by each instance to its own GitHub Pages; notes written in the browser kept in IndexedDB, offline, with persistent storage; export and import bundles. No GitHub sign-in in the browser.",
       "requirements": [
         "PKG-05",
         "PKG-07",
-        "PKG-08"
+        "PKG-11"
       ],
       "dependsOn": [
         "WP-1.4"
       ],
       "touches": [
-        "github",
         "web",
+        "core",
         "ci"
       ],
       "reviews": [
@@ -1392,17 +1392,16 @@
     {
       "id": "WP-6.2",
       "stage": "MW",
-      "title": "Start in the browser, visitor mode, and Use this app for yourself",
-      "summary": "Make your instance from the template; the web first run with Connect GitHub; visitor mode with public notes only; and the Use this app for yourself dialog.",
+      "title": "Start in the browser, the visitor view, and Use this app for yourself",
+      "summary": "Make your instance from the template; the web first run; the visitor view with public notes only; and the Use this app for yourself dialog.",
       "requirements": [
         "DST-01",
         "DST-02",
         "FRE-09",
-        "PKG-09",
-        "UI-12"
+        "PKG-09"
       ],
       "dependsOn": [
-        "WP-6.1"
+        "WP-6.3"
       ],
       "touches": [
         "web",
@@ -1415,6 +1414,68 @@
       "specs": [
         "architecture/web-app.md",
         "experience/first-run.md"
+      ],
+      "lookahead": false,
+      "status": "building"
+    },
+    {
+      "id": "WP-6.3",
+      "stage": "MW",
+      "title": "The instance's notes in the browser",
+      "summary": "The Deploy app workflow publishes notes/ with an index and a site manifest; the browser lists and opens public notes (and, with WP-6.4, private ones) read-only, with Copy to my notes.",
+      "requirements": [
+        "PKG-08"
+      ],
+      "dependsOn": [
+        "WP-6.1"
+      ],
+      "touches": [
+        "web",
+        "core",
+        "publish",
+        "ci"
+      ],
+      "reviews": [
+        "code",
+        "security",
+        "accessibility"
+      ],
+      "specs": [
+        "architecture/web-app.md"
+      ],
+      "lookahead": false,
+      "status": "verifying"
+    },
+    {
+      "id": "WP-6.4",
+      "stage": "MW",
+      "title": "The vault: private notes sealed at deploy, unlocked in the browser",
+      "summary": "The sealing format and sealer (packages/seal), the owner's grant, the leak check in the Deploy app workflow, and the browser's Unlock, Remember on this browser, Lock, and the account pill.",
+      "requirements": [
+        "PKG-10",
+        "SEC-08",
+        "SHR-04",
+        "SEC-06",
+        "UI-12"
+      ],
+      "dependsOn": [
+        "WP-6.3"
+      ],
+      "touches": [
+        "seal",
+        "web",
+        "core",
+        "publish",
+        "ci"
+      ],
+      "reviews": [
+        "code",
+        "security",
+        "accessibility"
+      ],
+      "specs": [
+        "architecture/repository-and-publishing.html#the-vault",
+        "architecture/web-app.md"
       ],
       "lookahead": false,
       "status": "verifying"

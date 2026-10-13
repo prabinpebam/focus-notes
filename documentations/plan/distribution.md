@@ -19,7 +19,7 @@ How this repository becomes what people use: the repository layout, what gets bu
 focus-notes/
 ├─ apps/
 │  ├─ desktop/        # Electron main process, preload bridge, window management, installers
-│  └─ web/            # Static web app, deployed to each instance's own Pages (MW, D-80)
+│  └─ web/            # Static web app, deployed to each instance's own Pages: browser notes, read-only instance notes, the vault reader (MW, D-80, D-90)
 ├─ packages/
 │  ├─ core/           # Commands, keybindings, focus mode, themes, Spotlight index, workspace model
 │  ├─ tokens/         # Design tokens (DTCG source) and the generated CSS, types, and schema
@@ -29,14 +29,15 @@ focus-notes/
 │  ├─ editor/         # Tiptap extensions and block registry (node views come from packages/ui)
 │  ├─ markdown/       # Markdown bridge and round-trip corpus
 │  ├─ git/            # Local Git adapter (desktop)
-│  ├─ github/         # GitHub API adapter and setup engine (shared by desktop and web setup)
-│  ├─ publish/        # Static renderer, sealer, leak check (run by the Deploy app workflow)
+│  ├─ github/         # GitHub REST client and setup engine (desktop only; the browser never calls GitHub, D-90)
+│  ├─ seal/           # Vault and share sealing format, sealer, reader, and leak check; its CLI runs in the Deploy app workflow (D-90)
+│  ├─ publish/        # Static renderer for public pages (run by the Deploy app workflow)
 │  ├─ mcp/            # MCP server
 │  └─ cli/            # focus-notes command-line tool
 ├─ templates/workspace/   # Source of the template repository (AGENTS.md, README, Deploy app workflow, .gitattributes)
 ├─ notes/                 # The owner's public notes (this repository is the owner's instance, D-87)
 ├─ private/               # The owner's private repository (submodule)
-├─ schemas/               # JSON Schemas (front matter, settings, themes, keybindings, access)
+├─ schemas/               # JSON Schemas (front matter, settings, themes, keybindings, access, app state, export bundle)
 ├─ tools/                 # Repository checks (plan, chain, boundaries, licenses) and the benchmark, tools/bench/ with its budgets file
 ├─ .github/workflows/     # ci.yml, codeql.yml, release.yml, pages.yml (Deploy app: builds from source)
 ├─ documentations/        # This Slate documentation host
@@ -126,7 +127,7 @@ There's no separate product site (D-54 is superseded). The project repository's 
 
 | Path | Serves |
 | --- | --- |
-| `/` | The owner's Focus Notes. Visitors see only the owner's public notes, read-only, and [Use this app for yourself](../design/views/get-started.md) (DST-01). |
+| `/` | The owner's Focus Notes. Until a browser unlocks the owner's private notes with the vault passphrase, it shows the visitor view: the owner's public notes, read-only, notes written in that browser, and [Use this app for yourself](../design/views/get-started.md) (PKG-09, DST-01). |
 | `/documentations/` | This documentation |
 | `/schemas/` | The JSON Schemas, at stable `$id` URLs |
 | `/llms.txt` | A map of these docs for language models |

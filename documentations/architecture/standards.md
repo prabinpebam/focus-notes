@@ -3,7 +3,7 @@
 The established standards, specifications, and conventions Focus Notes follows, so the implementation builds on proven ground instead of inventing its own.
 
 > [!NOTE]
-> **TL;DR.** **CommonMark and GFM** for notes, **JSON Schema 2020-12** for every config file, **W3C Design Tokens** format for themes, **WCAG 2.2 AA** and the **ARIA Authoring Practices** for accessibility, **OWASP ASVS** and **Electron's security checklist** for security, **Web Crypto** algorithms with OWASP-recommended parameters for sharing, **SemVer**, **Conventional Commits**, and **Keep a Changelog** for releases, **SLSA provenance**, **SBOMs**, and **OpenSSF Scorecard** for the supply chain, and **MCP**, **AGENTS.md**, and **llms.txt** for agents (D-50). Anything the spec defines that one of these already covers should defer to the standard.
+> **TL;DR.** **CommonMark and GFM** for notes, **JSON Schema 2020-12** for every config file, **W3C Design Tokens** format for themes, **WCAG 2.2 AA** and the **ARIA Authoring Practices** for accessibility, **OWASP ASVS** and **Electron's security checklist** for security, **Web Crypto** algorithms with OWASP-recommended parameters for sharing and the vault, **SemVer**, **Conventional Commits**, and **Keep a Changelog** for releases, **SLSA provenance**, **SBOMs**, and **OpenSSF Scorecard** for the supply chain, and **MCP**, **AGENTS.md**, and **llms.txt** for agents (D-50). Anything the spec defines that one of these already covers should defer to the standard.
 
 | Area | Standard | How Focus Notes uses it |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ The established standards, specifications, and conventions Focus Notes follows, 
 | Front matter | YAML 1.2 (minimal subset) | Only `id` is written by the app |
 | Components | Generic directives proposal (`remark-directive`) | Future image and gallery blocks (D-11) |
 | IDs and dates | ULID for note IDs. ISO 8601 with time zone for every timestamp. | Front matter, grants, logs |
-| Configuration files | JSON Schema 2020-12 | Settings, themes, keybindings, `access.json`, invite template (AGT-08) |
+| Configuration files | JSON Schema 2020-12 | Settings, themes, keybindings, `access.json`, invite template, app state, and the browser export bundle (AGT-08, PKG-11) |
 | Design tokens | W3C Design Tokens Community Group format (`$value`, `$type`) | Every token in the design system, and theme files (D-53, [Tokens](../design/system/tokens.md)) |
 | View documents | JSON Schema 2020-12, with a restricted JSON Logic subset for conditions | [Views as data](../design/system/views-as-data.md) |
 | Component names and anatomy | Open UI research, where it covers a component | [Components](../design/system/components.md) |
@@ -20,7 +20,7 @@ The established standards, specifications, and conventions Focus Notes follows, 
 | Platform conventions | Apple Human Interface Guidelines, Windows app design guidelines, GNOME HIG (Linux) | Keyboard, window behavior, menus |
 | Application security | OWASP ASVS 4.0 Level 2, Electron security checklist, OWASP Cheat Sheets | [Security and privacy](security-and-privacy.md) |
 | Agent security | OWASP Top 10 for LLM Applications (prompt injection) | [Agents](agents.md#risks-specific-to-agents) |
-| Cryptography | Web Crypto API: AES-256-GCM (NIST SP 800-38D), HKDF (RFC 5869), PBKDF2 (RFC 8018) at OWASP's 600,000 iterations for SHA-256 | [Sealing and share links](repository-and-publishing.html#sealing-and-share-links) |
+| Cryptography | Web Crypto API: AES-256-GCM (NIST SP 800-38D), HKDF (RFC 5869), PBKDF2 (RFC 8018) at OWASP's 600,000 iterations for SHA-256 | [Sealing and share links](repository-and-publishing.html#sealing-and-share-links) and [the vault](repository-and-publishing.html#the-vault) |
 | CI security | GitHub's security hardening for Actions (actions pinned to SHAs, least-privilege `permissions:`) | The project's CI and every instance's *Deploy app* workflow |
 | Supply chain | SLSA build provenance (GitHub artifact attestations), CycloneDX SBOM, OpenSSF Scorecard | Releases |
 | Versioning | Semantic Versioning 2.0 | App, desktop installers, and web app bundle versions |

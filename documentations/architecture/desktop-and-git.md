@@ -1,9 +1,9 @@
 # Desktop and Git
 
-How the Electron app is put together: processes, security, signing in through Git's own sign-in tools, creating a user's workspace, and saving notes as commits and pushes with the user's own `git`.
+How the Electron app is put together: processes, security, signing in through Git's own sign-in tools, creating a user's workspace, and saving notes as commits and pushes with the user's own `git`. It's the only client that writes to GitHub (D-90).
 
 > [!NOTE]
-> **TL;DR.** The **main process** owns windows, the file system, Git, and setup. The **renderer** runs the same web app core as the browser build, and it reaches the main process only through a small, typed **preload bridge** that offers intent-level operations (such as `workspace.save`), never raw shell or Git. **Focus Notes has no OAuth app, no client ID, and no server** (D-21). Sign-in is done by tools the user already owns: **Git Credential Manager** or the **GitHub CLI**, both with a device-code option, or a **fine-grained token** the user creates on GitHub. Whatever signs Git in also gives the app its GitHub API access, so the app stores no credential of its own. A new user's whole instance (instance repository from the template, private repository, GitHub Pages, share-link keys) is created **in their own GitHub account** by the app on their computer, or found and cloned if they made it in the browser first. Edits are written to disk within 1 s, and a **commit and push** happens on <kbd>Mod</kbd>+<kbd>S</kbd>, on switching or closing a note, on quit, or after 60 s of no typing (D-23). Git runs as separate processes, which are slow on Windows, so the app asks each repository what changed with **one cached `git status`**, never makes a view wait for it, and shows structural changes on screen **before** they're committed (PRF-07, PRF-09, D-66, D-68).
+> **TL;DR.** The desktop app is **the only GitHub editor** (PKG-03, D-90): the web app keeps its own notes in the browser and only reads the deployed site. The **main process** owns windows, the file system, Git, and setup. The **renderer** runs the same web app core as the browser build, and it reaches the main process only through a small, typed **preload bridge** that offers intent-level operations (such as `workspace.save`), never raw shell or Git. **Focus Notes has no OAuth app, no client ID, and no server** (D-21). Sign-in is done by tools the user already owns: **Git Credential Manager** or the **GitHub CLI**, both with a device-code option, or a **fine-grained token** the user creates on GitHub. Whatever signs Git in also gives the app its GitHub API access, so the app stores no credential of its own. A new user's whole instance (instance repository from the template, private repository, GitHub Pages, the read-only deploy key, and the **vault passphrase**, stored only as its derived key) is created **in their own GitHub account** by the app on their computer, or found and cloned if they made it from the template first; notes **exported from a browser** can be imported, private by default. Edits are written to disk within 1 s, and a **commit and push** happens on <kbd>Mod</kbd>+<kbd>S</kbd>, on switching or closing a note, on quit, or after 60 s of no typing (D-23). Git runs as separate processes, which are slow on Windows, so the app asks each repository what changed with **one cached `git status`**, never makes a view wait for it, and shows structural changes on screen **before** they're committed (PRF-07, PRF-09, D-66, D-68).
 
 ## Processes and security
 
@@ -61,7 +61,7 @@ The app needs the GitHub REST API for a few things: listing and creating reposit
 
 ## Creating a workspace
 
-A new user gets an isolated, self-owned instance in their own account (FRE-08). Everything below runs in the app on their computer, using their credential. People who already made their instance in the browser skip this: the app finds that repository and clones it with its `private/` submodule.
+A new user gets an isolated, self-owned instance in their own account (FRE-08). Everything below runs in the app on their computer, using their credential. People who already copied the template and wrote in the browser keep their instance: the app finds that repository, clones it, and does only the steps still missing (usually the private repository, the deploy key, and the vault passphrase).
 
 <ol class="slate-steps">
 <li class="slate-step">
@@ -78,15 +78,27 @@ A new user gets an isolated, self-owned instance in their own account (FRE-08). 
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Share-link key</p>
-<p>The app generates an SSH key pair locally, adds the public key to the private repository as a <strong>read-only deploy key</strong>, and stores the private key as the instance repository's <code>PRIVATE_CONTENT_KEY</code> Actions secret. The secret is encrypted with the repository's public key (libsodium sealed box, as GitHub requires), then the local copy is deleted.</p>
+<p>The app generates an SSH key pair locally, adds the public key to the private repository as a <strong>read-only deploy key</strong>, and stores the private key as the instance repository's <code>PRIVATE_CONTENT_KEY</code> Actions secret. The secret is encrypted with the repository's public key (libsodium sealed box, as GitHub requires), then the local copy is deleted. The <em>Deploy app</em> workflow uses it to seal the vault and shared notes.</p>
+</li>
+<li class="slate-step">
+<p class="slate-step__title">Vault passphrase</p>
+<p>Asks for the passphrase that opens the private notes in a browser (SEC-08). A strength meter must reach "strong" (at least 12 characters, rated by zxcvbn-ts), and one line says: "If you forget it, it can't be recovered. Your notes stay in your private repository." The app derives its key (PBKDF2-SHA256, 600,000 iterations, a fresh 16-byte salt) and commits only the owner's grant, with that key, to <code>private/access.json</code>, never the passphrase (<a href="repository-and-publishing.html#the-vault">The vault</a>). Until this setup exists, the same grant is made by <code>node packages/seal/src/cli.ts vault-init --private private</code>, which reads the passphrase from standard input (never from arguments), refuses weak ones, and writes only the derived key.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Publishing</p>
-<p>Turns on GitHub Pages for the instance repository with GitHub Actions as the source, and runs the <em>Deploy app</em> workflow. The instance's site, <code>https://&lt;user&gt;.github.io/&lt;repository&gt;/</code>, then serves the web app and the public notes, so the user can also write in the browser.</p>
+<p>Turns on GitHub Pages for the instance repository with GitHub Actions as the source, and runs the <em>Deploy app</em> workflow. The instance's site, <code>https://&lt;user&gt;.github.io/&lt;repository&gt;/</code>, then serves the web app, the public notes, and the vault, so the user can read every note in a browser and write there too (notes written in a browser stay in it).</p>
 </li>
 </ol>
 
-Every step can be retried on its own, and a failed step leaves a clear message ("Couldn't add the deploy key: the token needs Administration permission"). Publishing and share links can be skipped and turned on later in **Settings → Workspace**.
+Every step can be retried on its own, and a failed step leaves a clear message ("Couldn't add the deploy key: the token needs Administration permission"). Publishing, share links, and the vault can be skipped and turned on later in **Settings → Workspace**, where the vault passphrase can also be changed.
+
+## Importing notes from a browser
+
+Notes written in a browser stay in that browser until they're moved (FRE-10, PKG-11). In the browser, *Export my notes…* saves them as one file, `focus-notes-export-<date>.json` ([Web app → Moving notes](web-app.md#moving-notes-between-the-browser-and-github)). The desktop app's first run offers to import one, and *Import notes…* in its ⋯ menu does it later:
+
+1. The file is checked against `schemas/export-bundle.schema.json` (format `focus-notes/export/v1`), and the notes it holds are listed.
+2. They go to **Private** by default, or Public if the user chooses, keeping their folders. A name that's taken keeps both versions.
+3. They're written and committed like any other change, private first. Nothing is deleted on either side: the browser keeps its copies until the user deletes them there.
 
 ## Running git
 

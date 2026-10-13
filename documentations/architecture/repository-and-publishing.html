@@ -1,12 +1,12 @@
 <header class="slate-hero">
   <p class="slate-hero__eyebrow">Architecture</p>
   <h1 class="slate-hero__title">Repository and publishing</h1>
-  <p class="slate-hero__summary">Each user owns their whole instance: one repository with their public notes, a private submodule, and a Deploy app workflow that publishes the app to their own GitHub Pages and never publishes private plaintext.</p>
+  <p class="slate-hero__summary">Each user owns their whole instance: one repository with their public notes, a private submodule, and a Deploy app workflow that publishes the app to their own GitHub Pages, with private notes only as ciphertext.</p>
 </header>
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Every user's Focus Notes is <strong>their own, isolated instance</strong> in their own GitHub account (D-38, D-84, D-87). An instance is <strong>one repository</strong> (the <strong>notes repository</strong>): public notes in <code>notes/</code>, a <strong>private repository linked at <code>private/</code></strong> as a Git submodule (private notes in its <code>notes/</code>, synced settings in <code>.focus-notes/</code>), the same pattern as the <code>personal-site</code> project, and a <em>Deploy app</em> workflow. People who just want to use Focus Notes copy the small <strong>template repository</strong> (not the source repository) to make their instance; its workflow deploys the released web app bundle at a pinned version, checked by SHA-256 and attestation (D-48), so they never build the app themselves. The <strong>project repository</strong> is the owner's own instance and builds the app from source; people who want to improve Focus Notes fork it. On each push, the workflow checks out both repositories (the private one with a read-only deploy key), deploys the app and public notes, <strong>seals</strong> any privately shared notes with AES-256-GCM, checks that no plaintext leaked, and deploys to <em>that instance's own</em> GitHub Pages site. Nothing runs on a server. Readers of shared private notes decrypt them in their own browser using the key in the link's <code>#fragment</code>.</p>
+  <p>Every user's Focus Notes is <strong>their own, isolated instance</strong> in their own GitHub account (D-38, D-84, D-87). An instance is <strong>one repository</strong> (the <strong>notes repository</strong>): public notes in <code>notes/</code>, a <strong>private repository linked at <code>private/</code></strong> as a Git submodule (private notes in its <code>notes/</code>, synced settings in <code>.focus-notes/</code>, grants in <code>access.json</code>), the same pattern as the <code>personal-site</code> project, and a <em>Deploy app</em> workflow. People who just want to use Focus Notes copy the small <strong>template repository</strong> (not the source repository) to make their instance; its workflow deploys the released web app bundle at a pinned version, checked by SHA-256 and attestation (D-48). The <strong>project repository</strong> is the owner's own instance and builds the app from source. Only the <strong>desktop app writes</strong> to either repository; the browser only reads the deployed site (D-90). On each push, the workflow checks out both repositories (the private one with a read-only deploy key), publishes the app and public notes, <strong>seals the vault and shared notes</strong> with AES-256-GCM, checks that no plaintext leaked, and deploys to <em>that instance's own</em> GitHub Pages site. <strong>The vault is a share grant with an audience of one</strong>: every private note, opened in the browser by the owner's passphrase. Ciphertext exists only in the deployed site, never in Git history, with fresh keys every build. Nothing runs on a server.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -14,7 +14,7 @@
        aria-labelledby="pub-title pub-desc" preserveAspectRatio="xMidYMid meet"
        data-slate-svg-motion="viewport">
     <title id="pub-title">Publishing pipeline from two repositories to GitHub Pages</title>
-    <desc id="pub-desc">The user's instance repository, with public notes and the Deploy app workflow, and their private repository, fetched with a read-only deploy key, both feed a GitHub Actions workflow. The workflow puts together the app (the pinned released bundle, or built from source in the project repository) and the public notes, seals privately shared notes, and verifies there are no plaintext leaks before deploying to the instance's own GitHub Pages site, which serves the app, public notes, and ciphertext only.</desc>
+    <desc id="pub-desc">The user's instance repository, with public notes and the Deploy app workflow, and their private repository, fetched with a read-only deploy key, both feed a GitHub Actions workflow. The workflow puts together the app (the pinned released bundle, or built from source in the project repository) and the public notes, seals the vault (every private note, for the owner) and privately shared notes, and verifies there are no plaintext leaks before deploying to the instance's own GitHub Pages site, which serves the app, public notes, and ciphertext only.</desc>
     <g id="pub-inputs" data-slate-svg-step="0" data-slate-svg-effect="fade-rise">
       <rect id="pub-public" x="40" y="60" width="220" height="80" rx="14" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="1.5"/>
       <text x="150" y="94" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="20" font-weight="700">Instance repo</text>
@@ -34,7 +34,7 @@
       <rect id="pub-step-build" x="334" y="92" width="332" height="66" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5"/>
       <text x="500" y="131" text-anchor="middle" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="18" data-slate-fit-target="pub-step-build" data-slate-fit-padding="12">1. App + public notes</text>
       <rect id="pub-step-seal" x="334" y="174" width="332" height="66" rx="12" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5"/>
-      <text x="500" y="213" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="18" data-slate-fit-target="pub-step-seal" data-slate-fit-padding="12">2. Seal shared private notes</text>
+      <text x="500" y="213" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="18" data-slate-fit-target="pub-step-seal" data-slate-fit-padding="12">2. Seal the vault and shared notes</text>
       <rect id="pub-step-verify" x="334" y="256" width="332" height="66" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5"/>
       <text x="500" y="295" text-anchor="middle" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="18" data-slate-fit-target="pub-step-verify" data-slate-fit-padding="12">3. Verify no plaintext leaks</text>
     </g>
@@ -57,9 +57,9 @@
     <thead><tr><th>Stage</th><th>Input</th><th>Output</th></tr></thead>
     <tbody>
       <tr><td>Checkout</td><td>The user's instance repository; their private repository through a read-only deploy key</td><td>The whole instance on the CI runner</td></tr>
-      <tr><td>1. App and public notes</td><td>The released web app bundle at the pinned version (template instances), or the app's source (the project repository); <code>notes/</code></td><td>The app and public note pages</td></tr>
-      <tr><td>2. Seal</td><td>Notes with active grants in <code>access.json</code></td><td>AES-256-GCM ciphertext and keyrings</td></tr>
-      <tr><td>3. Verify</td><td>Build output</td><td>Pass, or fail the deploy if any private plaintext is found</td></tr>
+      <tr><td>1. App and public notes</td><td>The released web app bundle at the pinned version (template instances), or the app's source (the project repository); <code>notes/</code></td><td>The app, the site manifest, and the public notes with their index</td></tr>
+      <tr><td>2. Seal</td><td>The owner's grant (every private note) and the active share grants in <code>access.json</code></td><td>Keyrings, sealed manifests, and sealed notes (AES-256-GCM)</td></tr>
+      <tr><td>3. Verify</td><td>Build output</td><td>Pass, or fail the deploy if a private note's path (12 characters or more) or a line of its text (24 or more) is found (the leak check)</td></tr>
       <tr><td>Deploy</td><td>Verified output</td><td>GitHub Pages site</td></tr>
     </tbody>
   </table>
@@ -72,15 +72,15 @@
     <tr><td><strong>Project repository</strong> (<code>focus-notes</code>, this repository)</td><td>The project (the owner)</td><td>App source, documentation (<code>documentations/</code>, <code>slate/</code>), the template's source (<code>templates/workspace/</code>), and GitHub Releases: the desktop installers and the web app bundle. It's also <strong>the owner's own instance</strong>: the owner's public notes in <code>notes/</code>, the owner's private repository at <code>private/</code>, and a <em>Deploy app</em> workflow that builds the app from source and publishes it, with these docs, to the owner's Pages (D-40, D-87). People who want to improve Focus Notes fork it.</td></tr>
     <tr><td><strong>Template repository</strong> (<code>focus-notes-workspace</code>, a GitHub template repository)</td><td>The project</td><td>What people who just want to use Focus Notes copy (<em>Use this template</em>) to make their instance: an empty <code>notes/</code>, <code>.focus-notes/workspace.json</code>, <code>AGENTS.md</code>, a README, and the <em>Deploy app</em> workflow, which deploys the released web app bundle at a pinned version. No app source, so they never build the app themselves. Generated from <code>templates/workspace/</code> at each release (DST-06).</td></tr>
     <tr><td><strong>Instance repository</strong>, the notes repository (default <code>notes</code>, public)</td><td>Each user</td><td>Public notes in <code>notes/</code>, the <em>Deploy app</em> workflow, the <code>PRIVATE_CONTENT_KEY</code> secret, and a <strong>pointer</strong> (gitlink) to their private repository, plus <code>.gitmodules</code>. Public because GitHub Pages on free plans needs it.</td></tr>
-    <tr><td><strong>Private repository</strong> (default <code>notes-private</code>, private, submodule at <code>private/</code>)</td><td>Each user</td><td>Private notes in <code>notes/</code> and their <code>assets/</code>, custom themes and synced settings in <code>.focus-notes/</code> (D-46), <code>access.json</code> (share grants, whose secrets live only here), and optional <code>access-message.json</code>. Never deployed, and must never be made public.</td></tr>
+    <tr><td><strong>Private repository</strong> (default <code>notes-private</code>, private, submodule at <code>private/</code>)</td><td>Each user</td><td>Private notes in <code>notes/</code> and their <code>assets/</code>, custom themes and synced settings in <code>.focus-notes/</code> (D-46), <code>access.json</code> (share grants and the vault's grant for the owner; their secrets and keys live only here), and optional <code>access-message.json</code>. Never deployed in plaintext, and must never be made public.</td></tr>
   </tbody>
 </table>
 
-<p>A user's instance repository tracks only the submodule <em>pointer</em>, never the private files. This follows the <code>personal-site</code> setup, where <code>.gitmodules</code> declares the private repository with <code>branch = main</code>. In the browser, the user copies the template themselves and the app's <a href="web-app.md#connecting-github">Connect GitHub</a> step makes the private repository from a pre-filled GitHub page and links it (FRE-09). The desktop app's <em>Set up my instance</em> does the same steps for them (FRE-08, <a href="desktop-and-git.md#creating-a-workspace">Creating a workspace</a>). The project never sees either repository.</p>
+<p>A user's instance repository tracks only the submodule <em>pointer</em>, never the private files. This follows the <code>personal-site</code> setup, where <code>.gitmodules</code> declares the private repository with <code>branch = main</code>. The browser sets up nothing and never writes to either repository (D-90). The desktop app's <em>Set up my instance</em> makes the private repository, links it, installs the read-only deploy key, and records the vault's grant (FRE-08, <a href="desktop-and-git.md#creating-a-workspace">Creating a workspace</a>). The project never sees either repository.</p>
 
 <div class="slate-callout slate-callout--info" role="note">
   <p class="slate-callout__title">Nothing hosted, nothing registered</p>
-  <p>Each instance runs on the user's GitHub account alone: their repositories, their Actions, their Pages site, and their own credentials. There's no OAuth app, client ID, server, or telemetry run by the project (D-21). The only hosting is GitHub Pages (each instance's own site) and GitHub Releases. The owner's Pages site is the owner's own app: anyone else who opens it is a visitor who sees only public notes and <a href="../design/views/get-started.md">Use this app for yourself</a> (D-87).</p>
+  <p>Each instance runs on the user's GitHub account alone: their repositories, their Actions, their Pages site, and their own credentials. There's no OAuth app, client ID, server, or telemetry run by the project (D-21). The only hosting is GitHub Pages (each instance's own site) and GitHub Releases. The owner's Pages site is the owner's own app: until a browser unlocks the vault with the owner's passphrase, it shows only public notes, the browser's own notes, and <a href="../design/views/get-started.md">Use this app for yourself</a> (D-87, D-90).</p>
 </div>
 
 <h2>Working with the submodule</h2>
@@ -91,7 +91,7 @@
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Track main</p>
-    <p>The app keeps <code>private/</code> checked out on <code>main</code> and pulls and pushes it as a repository of its own (D-47). It sets <code>push.recurseSubmodules=check</code> but leaves <code>submodule.recurse</code> off. The pointer only moves for publishing (D-07), so a recursive pull would reset <code>private/</code> to an older commit and hide recent private notes. People using the terminal get the same advice in the workspace's <code>AGENTS.md</code> and README: pull <code>private/</code> on its own.</p>
+    <p>The app keeps <code>private/</code> checked out on <code>main</code> and pulls and pushes it as a repository of its own (D-47). It sets <code>push.recurseSubmodules=check</code> but leaves <code>submodule.recurse</code> off. The pointer moves only after private pushes, batched (D-07), so it can trail <code>main</code>, and a recursive pull would reset <code>private/</code> to an older commit and hide recent private notes. People using the terminal get the same advice in the workspace's <code>AGENTS.md</code> and README: pull <code>private/</code> on its own.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Commit private first</p>
@@ -100,17 +100,18 @@
 </ol>
 
 <h3>How the desktop app writes</h3>
-<p>The desktop app works on a local clone and runs the user's own <code>git</code>: commit in <code>private/</code> and push, then commit and push the notes repository (moving the pointer only as D-07 describes). <code>push.recurseSubmodules=check</code> stops a public push whose pointer refers to an unpushed private commit. Details are in <a href="desktop-and-git.md#save-and-sync">Desktop and Git</a>.</p>
+<p>The desktop app is the only client that writes to either repository (D-90). It works on a local clone and runs the user's own <code>git</code>: commit in <code>private/</code> and push, then commit and push the notes repository, moving the pointer to the pushed private commit (D-07). <code>push.recurseSubmodules=check</code> stops a public push whose pointer refers to an unpushed private commit. Details are in <a href="desktop-and-git.md#save-and-sync">Desktop and Git</a>.</p>
 
-<h3>How the web app writes</h3>
-<p>The web app (MW, the primary client, D-80) can't run Git, so the GitHub API adapter does the same thing through the REST API:</p>
+<h3>What the browser reads</h3>
+<p>The web app (MW, D-80) never signs in to GitHub and never calls its API (D-90). Everything it shows of the instance comes from the deployed site, on its own origin:</p>
 <ol>
-  <li><strong>Public note change:</strong> one commit to the notes repository (contents API for single files, git trees and commits API for batched moves).</li>
-  <li><strong>Private note change:</strong> a commit to the private repository, then a commit to the notes repository that updates the <code>private</code> gitlink (tree entry mode <code>160000</code>) to the new private commit SHA.</li>
-  <li><strong>Visibility change:</strong> add the note to the target repository, delete it from the source repository, then update the pointer. Private side first, as always.</li>
+  <li><strong>The site manifest</strong>, <code>/focus-notes.json</code>: the current build ID, where the public index is, and whether the site has a vault.</li>
+  <li><strong>Public notes:</strong> <code>/notes/index.json</code> lists them, and each one is served as Markdown at <code>/notes/&lt;path&gt;</code>. They open read-only.</li>
+  <li><strong>Private notes</strong>, after <em>Unlock</em>: the vault's keyring at <code>/_access/&lt;build&gt;/vault.json</code>, the sealed manifest it opens, and each sealed note when it's opened, all decrypted in the browser and shown read-only (<a href="#the-vault">The vault</a>).</li>
 </ol>
+<p>Notes written in the browser stay in that browser's IndexedDB until they're exported and imported by the desktop app (<a href="web-app.md">Web app</a>).</p>
 <div class="slate-callout slate-callout--note" role="note">
-  <p>Bumping the pointer on every private save would trigger a public deploy (and a public commit) for every keystroke pause. <strong>Proposed (D-07):</strong> update the pointer only when the private change affects publishing (share grants or shared notes), plus once a day. Ordinary private edits stay in the private repository.</p>
+  <p>The deploy seals <code>private/</code> at the pointer, so the pointer decides how current the vault is. Since every private note is in the vault, every private change is publishing-relevant: <strong>D-07 (amended by D-90)</strong> has the desktop app move the pointer after each private push, batched so a writing session makes at most one public commit every few minutes. The browser's vault follows within one deploy.</p>
 </div>
 
 <h2>Deploy pipeline</h2>
@@ -118,31 +119,33 @@
   <dt>Triggers</dt>
   <dd>Push to <code>main</code>, manual dispatch, and a nightly schedule so share-link expiry takes effect without a push.</dd>
   <dt>Private checkout</dt>
-  <dd>The Actions secret <code>PRIVATE_CONTENT_KEY</code> holds an SSH deploy key whose public half is installed <strong>read-only</strong> on the private repository. The workflow rewrites the submodule URL to SSH, runs <code>git submodule update --init --depth 1 private</code>, checks that <code>private/access.json</code> exists (refusing to deploy a half-configured site), then deletes the key from the runner.</dd>
+  <dd>The Actions secret <code>PRIVATE_CONTENT_KEY</code> holds an SSH deploy key whose public half is installed <strong>read-only</strong> on the private repository. The checkout runs <strong>after every third-party build step</strong> (install, tokens, the Vite build), right before the publish step: the workflow rewrites the submodule URL to SSH, runs <code>git submodule update --init --depth 1 private</code>, and checks that <code>private/access.json</code> exists (refusing to deploy a half-configured site). The key is removed by a shell <code>trap</code> however the step ends, checkouts use <code>persist-credentials: false</code>, and <code>private/</code> is deleted straight after publishing. Without the secret it skips this step, and the site has public notes only and no vault.</dd>
   <dd>Build logs that could reveal private note names are sent to a runner-local file instead of the public Actions log.</dd>
   <dt>App and public notes</dt>
-  <dd>In an instance made from the template, the <em>Deploy app</em> workflow downloads the released <strong>web app bundle</strong> (the app plus its publish tools) at the version it pins, and checks it against a SHA-256 recorded in the workflow file and against the release's GitHub artifact attestation before using it. Every action in the workflow is pinned by <strong>full commit SHA</strong> (not a movable tag), as GitHub's security hardening guide recommends, because the workflow runs with the user's <code>PRIVATE_CONTENT_KEY</code> (D-48, SEC-05). The project repository builds the same app from source instead. Either way the app goes at the site's root and every note in <code>notes/</code> is published with it (and, from M5, rendered to a static page at <code>/n/&lt;path&gt;/</code>). Updates reach users only as a pull request in their own repository that moves the pinned version (Dependabot, or the app's <em>Update publishing</em> button), which they merge themselves (DST-06).</dd>
+  <dd>In an instance made from the template, the <em>Deploy app</em> workflow downloads the released <strong>web app bundle</strong> (the app plus its publish tools) at the version it pins, and checks it against a SHA-256 recorded in the workflow file and against the release's GitHub artifact attestation before using it. Every action in the workflow is pinned by <strong>full commit SHA</strong> (not a movable tag), as GitHub's security hardening guide recommends, because the workflow runs with the user's <code>PRIVATE_CONTENT_KEY</code> (D-48, SEC-05). The project repository builds the same app from source instead. Either way the app goes at the site's root, every note in <code>notes/</code> is published with it at <code>/notes/&lt;path&gt;</code> with an index, <code>/notes/index.json</code>, and the site manifest <code>/focus-notes.json</code> records the build (and, from M5, each public note is rendered to a static page at <code>/n/&lt;path&gt;/</code>). Updates reach users only as a pull request in their own repository that moves the pinned version (Dependabot, or the app's <em>Update publishing</em> button), which they merge themselves (DST-06).</dd>
   <dt>Seal</dt>
-  <dd>For each active grant, encrypts the granted notes and their media into <code>_sealed/&lt;build&gt;/</code> and writes the grant keyrings into <code>_access/&lt;build&gt;/</code>.</dd>
+  <dd>Seals <strong>the owner's grant</strong> (the vault: every private note) and each active share grant. For each grant it writes a keyring into <code>_access/&lt;build&gt;/</code>, and a sealed manifest and the sealed notes and their media into <code>_sealed/&lt;build&gt;/</code>, with fresh keys every build. The publisher is <code>packages/seal</code> (the format, the sealer, and the reader, on Web Crypto only, so the same code runs in Node and in browsers), run by the workflow as <code>node packages/seal/src/cli.ts --site _site --notes notes --private private --owner &lt;owner&gt;</code>. Without <code>private/</code> it publishes public notes only and writes <code>"vault": false</code>.</dd>
   <dt>Verify</dt>
-  <dd>A leak check scans the output for any private text or file names and fails the deploy if it finds any.</dd>
+  <dd>The leak check (SEC-06), run by the publisher before upload: it fails the deploy if any private note's path of 12 characters or more, or any line of private text of 24 characters or more, appears in any text file of the site output. Shorter names, such as <code>Todo.md</code>, are too common to test without failing on the app's own files. It never prints the matched text, because the Actions log is public: only the file and whether a path or text matched.</dd>
   <dt>Deploy</dt>
   <dd>Uploads the verified artifact to the user's own GitHub Pages site. Only <code>main</code> deploys.</dd>
 </dl>
 
 <h2 id="sealing-and-share-links">Sealing and share links</h2>
-<p>This follows the <code>personal-site</code> access design (grants, keyrings, fresh keys every build, and a nightly deploy), adapted to Focus Notes: an audience is just a <strong>name</strong>, and it can have a magic link, a passcode, or both (D-41). The experience is in <a href="../design/views/sharing.md">Sharing and visibility</a>.</p>
+<p>This follows the <code>personal-site</code> access design (grants, keyrings, fresh keys every build, and a nightly deploy), adapted to Focus Notes: an audience is just a <strong>name</strong>, and it can have a magic link, a passcode, or both (D-41). The owner's own access to private notes in the browser uses the same scheme: <a href="#the-vault">the vault</a> is a built-in grant for "You" (D-90). The experience is in <a href="../design/views/sharing.md">Sharing and visibility</a>.</p>
 
 <h3>Grant record (<code>private/access.json</code>)</h3>
 <table>
   <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
   <tbody>
     <tr><td><code>id</code></td><td>Random and opaque (<code>g</code> plus 8 base32 characters). Appears in a magic link's fragment.</td></tr>
-    <tr><td><code>name</code></td><td>The audience: a person or group. The only detail recorded about who it's for. Unique among active grants.</td></tr>
+    <tr><td><code>name</code></td><td>The audience: a person or group. The only detail recorded about who it's for. Unique among active grants. The vault's grant is named "You".</td></tr>
+    <tr><td><code>owner</code></td><td><code>true</code> only on the vault's grant (the owner's own access, one per instance). It has no link and no expiry.</td></tr>
     <tr><td><code>link</code></td><td>Present if the audience has a magic link: <code>{ "secret": "&lt;32 random bytes, base64url&gt;" }</code>.</td></tr>
-    <tr><td><code>passcode</code></td><td>Present if it has a passcode: <code>{ "value": "…", "generated": true }</code>. Kept so the invite can be copied again. Never published.</td></tr>
+    <tr><td><code>passcode</code></td><td>Present if a share audience has a passcode: <code>{ "value": "…", "generated": true }</code>. Kept so the invite can be copied again. Never published.</td></tr>
+    <tr><td><code>passcodeKey</code></td><td>On the vault's grant instead of <code>passcode</code>: the 32-byte PBKDF2-SHA256 key derived from the vault passphrase, base64url. The passphrase itself is never stored.</td></tr>
     <tr><td><code>salt</code></td><td>16 random bytes. Published in the keyring header (it isn't secret).</td></tr>
-    <tr><td><code>scope</code></td><td><code>{ "notes": ["&lt;note id&gt;"], "folders": ["drafts/"] }</code>. A folder includes notes added later.</td></tr>
+    <tr><td><code>scope</code></td><td><code>{ "notes": ["&lt;note id&gt;"], "folders": ["drafts/"] }</code>. A folder includes notes added later. The vault's grant has <code>{ "all": true }</code>: every private note.</td></tr>
     <tr><td><code>createdAt</code>, <code>expiresAt</code>, <code>revokedAt</code></td><td>ISO 8601 with time zone. <code>expiresAt</code> is optional. <code>revokedAt</code> is set on withdraw, and the record stays.</td></tr>
   </tbody>
 </table>
@@ -152,8 +155,9 @@
 <table>
   <thead><tr><th>Key</th><th>Derived or made</th><th>Protects</th></tr></thead>
   <tbody>
-    <tr><td><strong>Passcode key</strong></td><td>PBKDF2-HMAC-SHA256 over the passcode (Unicode NFC, trimmed) with the grant's salt and 600,000 iterations, OWASP's current figure for PBKDF2-SHA256. About half a second on a phone, once per session.</td><td>The grant's passcode keyring</td></tr>
+    <tr><td><strong>Passcode key</strong></td><td>PBKDF2-HMAC-SHA256 over the passcode or vault passphrase (Unicode NFC, trimmed) with the grant's salt and 600,000 iterations, OWASP's current figure for PBKDF2-SHA256. About half a second on a phone, once per session.</td><td>The grant's passcode keyring (for the vault, its only keyring)</td></tr>
     <tr><td><strong>Link key</strong></td><td>HKDF-SHA256 over the link's 32 random bytes, with the grant's salt and the info string <code>focus-notes/grant/v1</code>. No slow derivation is needed because the input is already random.</td><td>The grant's link keyring</td></tr>
+    <tr><td><strong>Manifest key</strong></td><td>Random, 256 bits, fresh every build</td><td>One grant's sealed manifest (the titles, paths, and note keys it opens)</td></tr>
     <tr><td><strong>Note key</strong></td><td>Random, 256 bits, fresh every build</td><td>One sealed note (its content, title, and description)</td></tr>
   </tbody>
 </table>
@@ -162,9 +166,10 @@
 <ul>
   <li>Every build has a random <strong>build ID</strong>. Sealed files live under <code>_sealed/&lt;build&gt;/</code> and keyrings under <code>_access/&lt;build&gt;/</code>, so a deploy never overwrites a file that a cached page still needs.</li>
   <li><strong>Link keyrings</strong> are found by grant ID: <code>_access/&lt;build&gt;/l/&lt;id&gt;.json</code>.</li>
-  <li><strong>Passcode keyrings</strong> are found by name: <code>_access/&lt;build&gt;/p/&lt;lookup&gt;.json</code>, where <code>lookup</code> is the first 16 bytes of SHA-256 over <code>focus-notes/name/v1|&lt;workspace salt&gt;|&lt;name&gt;</code>. The name is normalized (Unicode NFKC, trimmed, case-folded). The workspace salt is public and stable, so remembered keys keep working across builds. The lookup only finds a keyring. Opening it still needs the passcode.</li>
-  <li>A <strong>keyring</strong> is a small JSON envelope with its derivation in clear (<code>kdf</code>, <code>iterations</code>, <code>salt</code>, <code>iv</code>), and the header is authenticated as additional data. Decrypted, it holds the grant ID, the expiry, and the note keys it opens (by per-build key IDs, never note IDs). The browser accepts only <code>pbkdf2-sha256</code> at exactly 600,000 iterations or <code>hkdf-sha256</code>, a 16-byte salt, a 12-byte IV, and files under 64 KB, so the format can't be downgraded or used to exhaust the browser.</li>
-  <li><strong>Sealed notes</strong> use AES-256-GCM with a random 96-bit IV. The additional data binds each file to its build and key ID (<code>focus-notes/note/v1|&lt;build&gt;|&lt;kid&gt;</code>), so swapped or stale files fail the authentication tag.</li>
+  <li><strong>Passcode keyrings</strong> are found by name: <code>_access/&lt;build&gt;/p/&lt;lookup&gt;.json</code>, where <code>lookup</code> is the first 16 bytes of SHA-256 over <code>focus-notes/name/v1|&lt;workspace salt&gt;|&lt;name&gt;</code>. The name is normalized (Unicode NFKC, trimmed, case-folded). The workspace salt (<code>nameSalt</code> in <code>access.json</code>) is public and stable, so remembered keys keep working across builds. The lookup only finds a keyring. Opening it still needs the passcode. The vault's keyring has a fixed name, <code>_access/&lt;build&gt;/vault.json</code>.</li>
+  <li>A <strong>keyring</strong> is a small JSON envelope with its derivation in clear (<code>kdf</code>, <code>iterations</code>, <code>salt</code>, <code>iv</code>), and the header is authenticated as additional data. Decrypted, it holds the grant ID, the expiry, and the key ID and key of the grant's <strong>sealed manifest</strong>, not the note keys themselves, so keyrings stay small however much a grant opens. The browser accepts only <code>pbkdf2-sha256</code> at exactly 600,000 iterations or <code>hkdf-sha256</code>, a 16-byte salt, a 12-byte IV, and files under 64 KB, so the format can't be downgraded or used to exhaust the browser.</li>
+  <li>A <strong>sealed manifest</strong> lists what the grant opens: each note's per-build key ID and key, its path relative to the shared scope, its title, and when it changed. Paths and titles are inside the ciphertext, so file names stay opaque on the site.</li>
+  <li><strong>Sealed manifests and notes</strong> use AES-256-GCM with a random 96-bit IV. The additional data binds each file to its build and key ID (<code>focus-notes/manifest/v1|&lt;build&gt;|&lt;kid&gt;</code>, <code>focus-notes/note/v1|&lt;build&gt;|&lt;kid&gt;</code>), so swapped or stale files fail the authentication tag.</li>
   <li>A sealed page's <code>&lt;title&gt;</code> is "Private note". It has no description, and adds <code>noindex, nofollow</code> and <code>referrer: same-origin</code>.</li>
 </ul>
 
@@ -177,15 +182,72 @@
 </ul>
 <p>The protections and limits are listed in the threat model below and in <a href="security-and-privacy.md">Security and privacy</a>.</p>
 
+<h2 id="the-vault">The vault</h2>
+<p><strong>The vault is a share grant with an audience of one</strong> (D-90): a built-in grant for the owner whose scope is every private note and whose passcode is the <strong>vault passphrase</strong>. The desktop app's setup asks for the passphrase and stores only its derived key in <code>private/access.json</code> (FRE-08). Until that setup exists (M3), the owner creates the grant with <code>node packages/seal/src/cli.ts vault-init --private private</code>, which reads the passphrase from standard input (never from arguments), refuses weak ones, and writes only the derived key. The instance's own <em>Deploy app</em> workflow, which already checks out <code>private/</code> with the read-only deploy key, seals it on every deploy with fresh keys. Ciphertext exists only in the deployed Pages artifact, never in Git history. Paths stay readable in the private repository and are opaque on the site. A browser opens it with the passphrase, read-only (<a href="web-app.md#unlocking-private-notes">Web app → Unlocking private notes</a>).</p>
+
+<ol class="slate-steps">
+  <li class="slate-step">
+    <p class="slate-step__title">Site manifest</p>
+    <p>The browser reads <code>/focus-notes.json</code> for the current build ID and whether there's a vault.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Keyring</p>
+    <p>It reads <code>/_access/&lt;build&gt;/vault.json</code>, checks it strictly, derives the key from the passphrase (or uses a remembered key), and decrypts the manifest's key ID and key.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Sealed manifest</p>
+    <p>It reads and decrypts <code>/_sealed/&lt;build&gt;/&lt;kid&gt;.json</code>: the private notes' paths, titles, dates, and note keys.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Sealed note</p>
+    <p>When a note is opened, it reads and decrypts that note's <code>/_sealed/&lt;build&gt;/&lt;kid&gt;.json</code> and shows the Markdown read-only.</p>
+  </li>
+</ol>
+
+<h3>Formats</h3>
+<p>Byte strings are base64url without padding. Times are ISO 8601.</p>
+<table>
+  <thead><tr><th>File</th><th>Shape</th><th>Rules</th></tr></thead>
+  <tbody>
+    <tr><td>Site manifest, <code>/focus-notes.json</code></td><td><code>{ "format": 1, "build": "&lt;random build id&gt;", "notes": "notes/index.json", "vault": true }</code></td><td>Plain JSON. <code>vault</code> is <code>false</code> when there's no <code>private/</code> or no deploy key.</td></tr>
+    <tr><td>Public index, <code>/notes/index.json</code></td><td><code>{ "format": 1, "notes": [{ "path": "Ideas/Hello.md", "title": "Hello", "updated": "…" }] }</code></td><td>Plain JSON. Each note is served at <code>/notes/&lt;path&gt;</code>. Read without GitHub's API.</td></tr>
+    <tr><td>Owner's grant, in <code>private/access.json</code></td><td><code>{ "version": 1, "nameSalt": "…", "grants": [{ "id": "g…", "name": "You", "owner": true, "salt": "…", "passcodeKey": "…", "scope": { "all": true }, "createdAt": "…" }] }</code></td><td>The existing file's shape, checked against <code>schemas/access.schema.json</code>; the owner's grant sits beside share grants and adds <code>owner</code>, <code>passcodeKey</code>, and <code>scope.all</code>. <code>id</code> matches <code>^[A-Za-z0-9_-]{8,}$</code> (the tooling makes <code>g</code> plus 8 base32 characters); <code>salt</code> is 16 bytes; <code>passcodeKey</code> is the 32-byte PBKDF2-SHA256 key (43 base64url characters). <code>nameSalt</code> is optional (the workspace salt for passcode lookups). Never the passphrase. In the private repository only.</td></tr>
+    <tr><td>Keyring, <code>/_access/&lt;build&gt;/vault.json</code></td><td><code>{ "v": 1, "kdf": "pbkdf2-sha256", "iterations": 600000, "salt", "iv", "data" }</code>; decrypted: <code>{ "grant", "expiresAt": null, "manifest": { "kid", "key" } }</code></td><td>AES-256-GCM; key = PBKDF2-HMAC-SHA256 over the passphrase (NFC, trimmed) with <code>salt</code> and 600,000 iterations, 256 bits; additional data <code>focus-notes/keyring/v1|&lt;build&gt;|pbkdf2-sha256|600000|&lt;salt&gt;</code>. Accepted only with exactly these parameters, a 16-byte salt, a 12-byte IV, and under 64 KB.</td></tr>
+    <tr><td>Sealed manifest, <code>/_sealed/&lt;build&gt;/&lt;kid&gt;.json</code></td><td><code>{ "v": 1, "iv", "data" }</code>; decrypted: <code>{ "owner": "&lt;GitHub owner&gt;", "notes": [{ "kid", "key", "path", "title", "updated" }] }</code></td><td>AES-256-GCM; additional data <code>focus-notes/manifest/v1|&lt;build&gt;|&lt;kid&gt;</code>; under 4 MB. Paths are relative to the grant's scope.</td></tr>
+    <tr><td>Sealed note, <code>/_sealed/&lt;build&gt;/&lt;kid&gt;.json</code></td><td><code>{ "v": 1, "iv", "data" }</code>; decrypted: the note's Markdown</td><td>AES-256-GCM; additional data <code>focus-notes/note/v1|&lt;build&gt;|&lt;kid&gt;</code>; under 8 MB.</td></tr>
+  </tbody>
+</table>
+<p>Share grants use the same keyring, manifest, and note formats; only their keyrings' names and derivations differ (<a href="#sealing-and-share-links">Sealing and share links</a>).</p>
+
+<h3>Remembering and locking</h3>
+<ul>
+  <li><strong>By default</strong> the derived key lives only in memory, and the vault locks when the page closes or reloads.</li>
+  <li><strong>Remember on this browser</strong> imports the derived key as a <strong>non-extractable</strong> AES-GCM <code>CryptoKey</code> and stores it in IndexedDB with its salt. It opens every later build's keyring until the passphrase changes. Every site on the same <code>&lt;user&gt;.github.io</code> origin can reach that storage, so the app warns again next to the option, on top of the warning the unlock dialog always shows (SEC-08).</li>
+  <li><strong>Lock</strong> drops the key and the decrypted notes from memory. <strong>Forget this browser</strong> also deletes the remembered key.</li>
+  <li><strong>Changing the passphrase</strong> (in the desktop app) writes a new salt and key to the owner's grant, so remembered keys stop opening the vault after the next deploy.</li>
+  <li><strong>A forgotten passphrase can't be recovered.</strong> The notes stay in the private repository, readable in the desktop app, which can set a new one.</li>
+  <li><strong>No private path is stored.</strong> The app's <code>lastNotePath</code> (in <code>appState</code>) is saved only for the browser's own notes and public notes, so a reload never reopens a private note or leaves its name in IndexedDB.</li>
+</ul>
+
+<h3>Hardening</h3>
+<ul>
+  <li><strong>The shared origin is the main limit.</strong> Every Pages site of one user is the origin <code>&lt;user&gt;.github.io</code>, so any page there can script this one: while the vault is open it could capture the passphrase as it's typed or read decrypted notes, and it could use a remembered key. So the unlock dialog <strong>always</strong> shows the shared-origin warning, not only next to <em>Remember on this browser</em>. A <strong>custom domain</strong> for the instance's site is the real fix.</li>
+  <li><strong>Private content enters the build late.</strong> The <em>Deploy app</em> workflow checks out <code>private/</code> only after every third-party build step, right before publishing, and deletes it straight after; the deploy key is removed by a shell <code>trap</code>, and checkouts use <code>persist-credentials: false</code> (<a href="#deploy-pipeline">Deploy pipeline</a>).</li>
+  <li><strong>The publisher reveals nothing.</strong> It skips symbolic links in <code>notes/</code> and <code>private/</code>, and its errors never quote private file names or <code>access.json</code> content.</li>
+  <li><strong>The browser reads strictly.</strong> It accepts the public index only at <code>notes/index.json</code>, and caps sizes: the site manifest at 64 KB, the public index at 8 MB, each public or sealed note at 8 MB, the sealed manifest at 4 MB, and keyrings at 64 KB. Export bundles over 64 MB or 20,000 notes are refused unread.</li>
+  <li><strong><code>vault-init</code></strong> reads the passphrase from standard input and doesn't echo it when typed at a terminal.</li>
+</ul>
+
 <h2 id="threat-model">Threat model</h2>
 <div class="slate-compare">
   <div class="slate-compare__col">
     <p class="slate-compare__head">Protects against</p>
     <ul>
       <li>Crawlers, search engines, and anyone browsing the public site or repository</li>
+      <li>Anyone without the vault passphrase reading the owner's private notes on the site</li>
       <li>Wrong names or passcodes, and expired or withdrawn audiences (after the next deploy)</li>
       <li>An audience for one note or folder opening anything else</li>
-      <li>Private plaintext slipping into the Pages artifact (the leak check)</li>
+      <li>Private plaintext or file names slipping into the Pages artifact (the leak check)</li>
     </ul>
   </div>
   <div class="slate-compare__col">
@@ -193,8 +255,9 @@
     <ul>
       <li>Readers forwarding the link or passcode, or saving the decrypted text</li>
       <li>Content already downloaded or cached before revoke or expiry</li>
-      <li>Metadata: that sealed files exist, their sizes, and when they change</li>
-      <li>Script injection on the site's origin, which could read keys in the browser (mitigated by CSP and sanitizing)</li>
+      <li>Metadata: that the site has a vault, that sealed files exist, their sizes, and when deploys happen</li>
+      <li>A forgotten vault passphrase: it can't be recovered (the notes stay in the private repository)</li>
+      <li>Script injection on the site's origin, or another page on the same <code>&lt;user&gt;.github.io</code> origin, which can script this one: capture the passphrase as it's typed, read decrypted notes while unlocked, or use a remembered vault key. CSP, sanitizing, opt-in remembering, and an always-shown warning reduce it; only a <strong>custom domain</strong> removes it</li>
       <li>Material that must stay confidential under contract or policy. Don't put that kind of content on public hosting, even encrypted</li>
     </ul>
   </div>
@@ -204,8 +267,11 @@
 <table>
   <thead><tr><th>Path</th><th>Serves</th></tr></thead>
   <tbody>
-    <tr><td><code>/</code></td><td>The app. The owner writes here after connecting; visitors see the public notes, read-only, and <em>Use this app for yourself</em> (PKG-09, DST-01)</td></tr>
-    <tr><td><code>/notes/</code></td><td>The public notes and an index, read by the app for visitors without calling GitHub's API</td></tr>
+    <tr><td><code>/</code></td><td>The app. Notes written in a browser stay in that browser; until a browser unlocks the vault it shows the visitor view: public notes, read-only, and <em>Use this app for yourself</em> (PKG-09, DST-01)</td></tr>
+    <tr><td><code>/focus-notes.json</code></td><td>The site manifest: the build ID, the public index, and whether there's a vault</td></tr>
+    <tr><td><code>/notes/</code></td><td>The public notes as Markdown and their index, <code>/notes/index.json</code>, read by the app without calling GitHub's API</td></tr>
+    <tr><td><code>/_access/&lt;build&gt;/</code></td><td>Keyrings: the vault's <code>vault.json</code>, and share grants' <code>l/</code> (link) and <code>p/</code> (passcode) keyrings</td></tr>
+    <tr><td><code>/_sealed/&lt;build&gt;/</code></td><td>Sealed manifests and sealed notes (ciphertext only)</td></tr>
     <tr><td><code>/n/&lt;path&gt;/</code></td><td>Read-only public note pages (M5)</td></tr>
     <tr><td><code>/s/&lt;token&gt;/</code></td><td>Private share-link reader (decrypts in the browser)</td></tr>
   </tbody>

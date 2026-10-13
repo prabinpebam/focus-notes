@@ -57,7 +57,7 @@ Nothing here says how anything looks. Spacing is a step name, the row arrangemen
 | `params`, `slots` | Fragments only | The fragment's parameters (typed like props) and named slots |
 | `root` | Yes | One node |
 
-Files live next to their owners: `packages/views/` for the app (shared by desktop and web, including visitor mode and the *Use this app for yourself* dialog) and `packages/publish/views/` for published pages. Each IA view is one document. Large views split into sub-views that their parent includes by ID, such as the eight Settings categories.
+Files live next to their owners: `packages/views/` for the app (shared by desktop and web, including the visitor view, the *Unlock* dialog, and the *Use this app for yourself* dialog) and `packages/publish/views/` for published pages. Each IA view is one document. Large views split into sub-views that their parent includes by ID, such as the eight Settings categories.
 
 <h2 data-reader-personas="engineering">Nodes</h2>
 

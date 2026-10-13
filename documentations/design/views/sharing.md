@@ -3,15 +3,15 @@
 Who can read a note, and how to give specific people access with a magic link or a passcode, without any server.
 
 > [!NOTE]
-> **TL;DR.** A note is **Private** (only you), **Shared** (with people you name), or **Public** (anyone). Sharing is by **audience**: a person or group identified **only by a name** ("Asha", "Book club"). Each audience gets a **magic link**, a **passcode**, or both (D-41). The passcode can be **your own** (checked for strength) or **generated** (four random words). An audience can open notes and whole folders, until an expiry (default 30 days) or until you **withdraw** it. Readers open a link, or type **their name and the passcode**, and can stay signed in on their device. Shared notes stay in your private repository and are published only as ciphertext. The cryptography follows the `personal-site` design ([Repository and publishing → Sealing](../../architecture/repository-and-publishing.html#sealing-and-share-links)). View IA-VIEW-SHARE and the share reader in IA-VIEW-PUBLIC serve UC-SHARE-01 to UC-SHARE-05 and UC-READ-01 to UC-READ-02.
+> **TL;DR.** A note is **Private** (only you), **Shared** (with people you name), or **Public** (anyone). Sharing is by **audience**: a person or group identified **only by a name** ("Asha", "Book club"). Each audience gets a **magic link**, a **passcode**, or both (D-41). The passcode can be **your own** (checked for strength) or **generated** (four random words). An audience can open notes and whole folders, until an expiry (default 30 days) or until you **withdraw** it. Readers open a link, or type **their name and the passcode**, and can stay signed in on their device. Shared notes stay in your private repository and are published only as ciphertext. Your own access in a browser uses the same scheme: the **vault** is a built-in audience, "You", that opens every private note with your vault passphrase (D-90). The cryptography follows the `personal-site` design ([Repository and publishing → Sealing](../../architecture/repository-and-publishing.html#sealing-and-share-links), [The vault](../../architecture/repository-and-publishing.html#the-vault)). View IA-VIEW-SHARE and the share reader in IA-VIEW-PUBLIC serve UC-SHARE-01 to UC-SHARE-05 and UC-READ-01 to UC-READ-02.
 
 <h2 data-reader-personas="product design">Three levels of visibility</h2>
 
 | Level | Who can read | Where it's stored | How it's published |
 | --- | --- | --- | --- |
-| **Private** | Only you (and anyone with access to your private repository) | Private repository | Not at all |
+| **Private** | Only you (and anyone with access to your private repository) | Private repository | Only sealed in your vault, which only your vault passphrase opens |
 | **Shared** | You, plus the audiences you name | Private repository | Sealed: encrypted pages that only an audience's link or passcode opens |
-| **Public** | Anyone | Instance repository (`notes/`) | With the app on your GitHub Pages site, where visitors read it, and from M5 as a normal page |
+| **Public** | Anyone | Instance repository (`notes/`) | With the app on your GitHub Pages site, where anyone can read it, and from M5 as a normal page |
 
 New notes are **Private** (D-05). Moving between Private and Shared changes nothing on disk except the grant records. Moving to or from Public moves the file between repositories, and always asks first ([confirmation](../components/feedback-and-dialogs.md#confirmation-dialog)).
 
@@ -29,6 +29,10 @@ An **audience** is one grant: a name, the ways in, what it opens, and when it en
 | **State** | Active · Expires soon (3 days or less) · Expired · Withdrawn · Waiting to publish |
 
 **Withdraw** stops an audience at the next publish and keeps its record, so the history of who had access stays complete. **Delete** removes the record too, after a confirmation. The private repository's history keeps every change either way.
+
+### You: the vault
+
+Every instance has one built-in audience, **You**: the owner's own grant, whose scope is every private note and whose passcode is the **vault passphrase** set in the desktop app (D-90, SEC-08). It has no link and no expiry, can't be withdrawn or deleted here, and only the passphrase's derived key is stored. The browser opens it with *Unlock*, read-only ([Web app → Unlocking private notes](../../architecture/web-app.md#unlocking-private-notes)). It's listed first in *All people with access*, with [Change passphrase] (the same as in **Settings → Workspace**).
 
 <h2 data-reader-personas="design product">The Share popover</h2>
 
@@ -70,7 +74,7 @@ Lines for a way in that the audience doesn't have are left out. [Copy invite], [
 
 <h2 id="settings-sharing" data-reader-personas="design product">Settings → Sharing</h2>
 
-- **All people with access:** every audience with its name, ways in, what it opens, expiry, and state. Filter by Active, Expired, or Withdrawn, search by name, and act on any row.
+- **All people with access:** *You* (the vault) first, then every audience with its name, ways in, what it opens, expiry, and state. Filter by Active, Expired, or Withdrawn, search by name, and act on any row.
 - **Invite template:** edit the message, with the placeholders listed.
 - **Share links on this workspace:** whether share-link publishing is set up (the deploy key and secret from [Creating a workspace](../../architecture/desktop-and-git.md#creating-a-workspace)), with [Set up] if it was skipped.
 
@@ -101,3 +105,4 @@ The page a reader sees at `https://<user>.github.io/<workspace>/s/<token>/`, par
 | DD-SHARE-06 | Withdraw keeps the record. Delete removes it only after confirmation. | UC-SHARE-04 | A complete record of who had access, as in `personal-site`. | Deleting on withdraw. |
 | DD-SHARE-07 | Default expiry is 30 days, replacing the earlier 1 week. | UC-SHARE-03 | Audiences now include groups, and 30 days matches `personal-site`'s suggestion. | 1 week (too short for groups). Never (forgotten access). |
 | DD-SHARE-08 | No read receipts or tracking for shared notes. | UC-READ-01 | No telemetry anywhere (PRV-01, UNSUP-SHARE-02). | `personal-site`'s per-grant analytics. |
+| DD-SHARE-09 | The owner's private notes in a browser are a built-in grant, "You", sealed with the same format as share grants. | UC-SETUP-07 | One format, one sealer, and one reader to secure, and the browser needs no GitHub credential (D-90). | A browser token that reads the private repository (D-81, superseded). A separate encrypted mirror repository. |

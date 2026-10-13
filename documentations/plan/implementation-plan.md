@@ -3,7 +3,7 @@
 Every stage in detail: what you can do at the end, the demo that proves it, the work packages that build it, and the exit criteria on top of the [definition of done](definition-of-done.md). The same plan is in [`work-graph.json`](https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json), which agents read to pick ready work ([The agentic loop](agentic-loop.html)).
 
 > [!NOTE]
-> **TL;DR.** 59 work packages across 10 stages, covering all 196 requirements exactly once. Each work package lists its requirements, the work packages it depends on, the code areas it touches, the reviews it needs, and the spec pages it implements. Every work package also depends on the previous stage's gate, except spikes and long-lead items marked *lookahead*. The longest chain to version 1.0 is 22 work packages. Every stage has a demo script that the owner runs on clean machines at the stage gate, and that then becomes an automated journey test.
+> **TL;DR.** 61 work packages across 10 stages, covering all 200 requirements exactly once. Each work package lists its requirements, the work packages it depends on, the code areas it touches, the reviews it needs, and the spec pages it implements. Every work package also depends on the previous stage's gate, except spikes and long-lead items marked *lookahead*. The longest chain to version 1.0 is 22 work packages. Every stage has a demo script that the owner runs on clean machines at the stage gate, and that then becomes an automated journey test.
 
 ## How to read a work package
 
@@ -101,34 +101,37 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 <h2 id="mw" data-reader-personas="product design engineering">MW: Your Focus Notes on GitHub Pages</h2>
 
-**You can:** open your own Focus Notes at your GitHub Pages address and write at once, with notes kept in your browser and working offline. Connect GitHub once, and public notes sync to `notes/` in your repository and private notes to its `private/` repository. Create, rename, delete, and move notes and folders, and make notes public or private (D-80 to D-85).
+**You can:** open your own Focus Notes at your GitHub Pages address in any browser and write at once, with no account: notes you write there stay in that browser and work offline. Read your site's public notes, unlock your private notes read-only with your passphrase, copy any of them into your browser notes to edit, and export your browser notes for the desktop app. The browser never signs in to GitHub; the desktop app is what saves to your repository (D-80, D-87, D-90).
 
 **Used by:** The owner first, then anyone with a GitHub account. **Delivered as:** Preview 0.2.x, the first build most people use.
 
 **Demo script** (run by the owner on clean machines at the gate, then automated):
 
-1. *Use this template* on the Focus Notes repository, turn on GitHub Pages with GitHub Actions, and open the site when the workflow finishes.
+1. *Use this template* on the template repository, turn on GitHub Pages with GitHub Actions, and open the site when the workflow finishes.
 2. Write a note with no account, reload the page, and find it still there. Go offline, keep writing, and reload again.
-3. Choose *Connect GitHub*: make the notes repository and the token from the pre-filled GitHub pages, paste the token, and see the first sync finish.
-4. Edit the note in github.dev, return to the app, and see the change arrive. Edit it in both places, and see both versions kept.
-5. Open the site in a second browser, connect, and see the same notes.
+3. Open a public note from *Open…*: it's marked read-only. Choose *Copy to my notes* and edit the copy.
+4. Open the site in a private window: as a visitor you see only the public notes and *Use this app for yourself*.
+5. Press *Unlock* and enter the passphrase: the private notes list and open read-only, and the pill shows your name. Close the tab and reopen: locked again. Unlock with *Remember on this browser*: it stays unlocked after a reload, until *Forget this browser*.
+6. *Export my notes*, then import the bundle into a second browser: every note arrives, and nothing was removed from the first.
+7. Plant a private sentence in a public build: the leak check fails the deploy.
 
 **Work packages**
 
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
-| WP-6.1 | **Web app on your own Pages, local first, with GitHub sync**. The web build deployed by each user's copy of the repository to their GitHub Pages; IndexedDB storage and the outbox; the sync engine on the Git Data API; the encrypted token store. | PKG-05, PKG-07, PKG-08 | WP-1.4 | code, security |
-| WP-6.2 | **Start in the browser, visitor mode, and Use this app for yourself**. Make your instance from the template; the web first run with Connect GitHub; visitor mode with public notes only; and the Use this app for yourself dialog. | DST-01, DST-02, FRE-09, PKG-09, UI-12 | WP-6.1 | code, security, accessibility |
+| WP-6.1 | **Web app on your own Pages, local first**. The web build deployed by each instance to its own GitHub Pages; notes written in the browser kept in IndexedDB, offline, with persistent storage; export and import bundles. No GitHub sign-in in the browser. | PKG-05, PKG-07, PKG-11 | WP-1.4 | code, security |
+| WP-6.2 | **Start in the browser, the visitor view, and Use this app for yourself**. Make your instance from the template; the web first run; the visitor view with public notes only; and the Use this app for yourself dialog. | DST-01, DST-02, FRE-09, PKG-09 | WP-6.3 | code, security, accessibility |
+| WP-6.3 | **The instance's notes in the browser**. The *Deploy app* workflow publishes `notes/` with an index and a site manifest; the browser lists and opens public notes (and, with WP-6.4, private ones) read-only, with *Copy to my notes*. | PKG-08 | WP-6.1 | code, security, accessibility |
+| WP-6.4 | **The vault: private notes sealed at deploy, unlocked in the browser**. The sealing format and sealer (`packages/seal`), the owner's grant, the leak check in the *Deploy app* workflow, and the browser's *Unlock*, *Remember on this browser*, *Lock*, and the account pill. | PKG-10, SEC-08, SHR-04, SEC-06, UI-12 | WP-6.3 | code, security, accessibility |
 | WP-2.3 | **Local workspace model**. Folder workspaces, `workspace.json` with its format version and migrations, title-based file names, and change notifications scoped to the content each view model declares. | FIL-07, DST-05, PRF-11 | WP-1.1 | code |
 | WP-2.4 | **Files panel and file operations**. The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to…, with structural changes shown before they're saved. | FIL-01 to FIL-03, FIL-08, PRF-09 | WP-2.3, WP-1.4 | code, design-system, accessibility |
 | WP-2.5 | **Link updates**. Relative links updated on every rename and move. | FIL-09 | WP-2.4 | code |
-| WP-3.4 | **Public and private roots**. The private repository as a separately synced submodule, visibility per note, private by default, and private settings. | FIL-06, SHR-01, SHR-02, PRV-03 | WP-6.1 | code, design-system, accessibility, security |
 
 **Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
 
-- Browser journeys pass in Chromium, Firefox, and WebKit against the built site, with GitHub mocked at the network layer.
-- A live smoke test on the project's own Pages site writes, syncs, and reads back a note in a test repository.
-- The token never leaves for any host but `api.github.com`, checked by a network capture.
+- Browser journeys pass in Chromium, Firefox, and WebKit against the built site, with a sealed fixture vault.
+- A network capture shows the web app requests nothing but its own site's files, and nothing that opens the vault is stored unless *Remember on this browser* was chosen.
+- The sealer's test vectors pass in Node and in every browser, and the browser refuses keyrings with any other parameters.
 
 <h2 id="m4" data-reader-personas="product design engineering">M4: Find anything, make it yours</h2>
 
@@ -179,7 +182,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
 | WP-5.1 | **Static renderer and public pages**. Public pages rendered from the reader views and block components, deployed by the user's workflow, with font preloading and lab-measured Core Web Vitals. | SHR-03, SHR-06, PKG-02, PRV-04, PRF-06, PRF-12 | WP-3.4, WP-1.1 | code, design-system, accessibility, security |
-| WP-5.2 | **Sealing, leak check, and the pinned bundle**. Per-build sealing, keyrings, the leak check, and instances deploying the released web app bundle at a pinned version, verified by checksum and attestation. | SHR-04, SHR-11, SEC-05, SEC-06 | WP-5.1 | code, security |
+| WP-5.2 | **Share sealing and the pinned bundle**. Share grants sealed with the vault's format (WP-6.4), and instances deploying the released web app bundle at a pinned version, verified by checksum and attestation. | SHR-11, SEC-05 | WP-5.1, WP-6.4 | code, security |
 | WP-5.3 | **Audiences, passcodes, and invites**. The Share popover, audiences, generated and custom passcodes, expiry, withdrawal, and the invite. | SHR-05, SHR-07 to SHR-09 | WP-5.2 | code, design-system, accessibility, security |
 | WP-5.4 | **Share reader**. The reader with magic links, name and passcode, and the page weight budget. | SHR-10, PRF-05 | WP-5.2 | code, design-system, accessibility, security |
 | WP-5.5 | **Release pipeline**. Draft releases with the desktop installers, the web app bundle, checksums, SBOM, and attestations. | DST-03 | WP-0.9, WP-5.1 | code, security |
@@ -191,11 +194,46 @@ Work packages off this path run in parallel when their dependencies are Done and
 - The [release definition of done](definition-of-done.md#release-definition-of-done) is met for everything in M0 to M5.
 - A moderated usability test with five writers new to the app: at least four finish setup and their first shared note unaided.
 
+<h2 id="m3" data-reader-personas="product design engineering">M3: Desktop sign-in and Git</h2>
+
+**You can:** The first run signs in through Git's own tools, creates your instance in your GitHub account (instance repository, private repository, vault passphrase, Pages site), and from then on every change is saved as Git commits and synced: the desktop app is the only place that writes to GitHub (D-90). Notes are private or public, notes exported from a browser can be imported, conflicts are resolved without loss, and deleted notes can be restored.
+
+**Used by:** The owner and a few invited testers, on several computers. **Delivered as:** Preview 0.3.x.
+
+**Demo script** (run by the owner on clean machines at the gate, then automated):
+
+1. On a clean machine without Git, the first run guides the Git install, sign-in with a device code, and your identity, then creates the workspace. The repositories appear in your GitHub account.
+2. Write a note: it's committed and pushed, and the commit shows on GitHub.
+3. On a second computer, sign in and choose the existing workspace: the notes are there.
+4. Edit the same note offline on both computers, then reconnect: the conflict resolver appears, and nothing is lost.
+5. Make a note public, then private again: it moves between the repositories. New notes are private.
+6. Import a bundle exported from the browser: its notes become private notes in the instance, committed and pushed, and after the deploy they open in the browser once unlocked.
+7. Delete a note and restore it from Recently deleted.
+8. In a terminal, `git push` in the workspace works without signing in again.
+9. Sign out from Settings → Account: everything in the data inventory is removed.
+
+**Work packages**
+
+| ID | Work package | Requirements | Depends on | Reviews |
+| --- | --- | --- | --- | --- |
+| WP-3.1 | **Setup engine and workspace template**. Create my workspace in the user's account from the template, including its AGENTS.md. | FRE-08, AGT-07 | WP-2.3 | code, security |
+| WP-3.2 | **First run and sign-in**. The setup steps, sign-in through Git Credential Manager, the GitHub CLI, or a token, identity, and create or clone. | FRE-01 to FRE-06, SEC-03 | WP-3.1, WP-1.4 | code, design-system, accessibility, security |
+| WP-3.3 | **Local Git adapter, save, and sync**. Commits for every change, push and pull, the lock file, readable commit messages, and one cached Git status per repository that no view waits for. | EDT-11, FIL-05, PRF-07 | WP-2.3 | code |
+| WP-3.4 | **Public and private roots**. The private repository as a separately synced submodule, visibility per note, private by default, private settings, and importing a browser export bundle. | FIL-06, SHR-01, SHR-02, PRV-03, FRE-10 | WP-3.3 | code, design-system, accessibility, security |
+| WP-3.5 | **Conflicts and Recently deleted**. The conflict resolver and restoring from Git history. | FIL-10, FIL-12 | WP-3.3, WP-2.4 | code, design-system, accessibility |
+| WP-3.6 | **Account settings and data inventory**. Switch account, sign out, and remove a workspace, deleting exactly what the inventory lists. | FRE-07, PRV-02 | WP-3.2 | code, security |
+
+**Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
+
+- The fault-injection suite (network drop mid-push, kill during commit, full disk, two computers editing) runs 1,000 randomized rounds with no lost text.
+- The owner and at least two testers use it across two computers for five working days.
+- On the 10,000-note benchmark workspace, no view's first frame waits for Git, and a refresh starts at most one `git status` per repository (PRF-07).
+
 <h2 id="m2" data-reader-personas="product design engineering">M2: The desktop app</h2>
 
 **You can:** The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format.
 
-**Used by:** The owner, daily, on one computer. **Delivered as:** Preview 0.2.x.
+**Used by:** The owner, daily. **Delivered as:** Preview 0.3.x, with M3.
 
 **Demo script** (run by the owner on clean machines at the gate, then automated):
 
@@ -219,39 +257,6 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 - The owner uses it as their only notes app for five working days with no S1 or S2 defects.
 - Window behavior passes on Windows 10, Windows 11, and Ubuntu with mixed-DPI monitors.
-
-<h2 id="m3" data-reader-personas="product design engineering">M3: Desktop sign-in and Git</h2>
-
-**You can:** The first run signs in through Git's own tools, creates your workspace in your GitHub account (notes repository, private repository, Pages site), and from then on every change is saved as Git commits and synced. Notes are private or public, conflicts are resolved without loss, and deleted notes can be restored.
-
-**Used by:** The owner and a few invited testers, on several computers. **Delivered as:** Preview 0.3.x.
-
-**Demo script** (run by the owner on clean machines at the gate, then automated):
-
-1. On a clean machine without Git, the first run guides the Git install, sign-in with a device code, and your identity, then creates the workspace. The repositories appear in your GitHub account.
-2. Write a note: it's committed and pushed, and the commit shows on GitHub.
-3. On a second computer, sign in and choose the existing workspace: the notes are there.
-4. Edit the same note offline on both computers, then reconnect: the conflict resolver appears, and nothing is lost.
-5. Make a note public, then private again: it moves between the repositories. New notes are private.
-6. Delete a note and restore it from Recently deleted.
-7. In a terminal, `git push` in the workspace works without signing in again.
-8. Sign out from Settings → Account: everything in the data inventory is removed.
-
-**Work packages**
-
-| ID | Work package | Requirements | Depends on | Reviews |
-| --- | --- | --- | --- | --- |
-| WP-3.1 | **Setup engine and workspace template**. Create my workspace in the user's account from the template, including its AGENTS.md. | FRE-08, AGT-07 | WP-2.3 | code, security |
-| WP-3.2 | **First run and sign-in**. The setup steps, sign-in through Git Credential Manager, the GitHub CLI, or a token, identity, and create or clone. | FRE-01 to FRE-06, SEC-03 | WP-3.1, WP-1.4 | code, design-system, accessibility, security |
-| WP-3.3 | **Local Git adapter, save, and sync**. Commits for every change, push and pull, the lock file, readable commit messages, and one cached Git status per repository that no view waits for. | EDT-11, FIL-05, PRF-07 | WP-2.3 | code |
-| WP-3.5 | **Conflicts and Recently deleted**. The conflict resolver and restoring from Git history. | FIL-10, FIL-12 | WP-3.3, WP-2.4 | code, design-system, accessibility |
-| WP-3.6 | **Account settings and data inventory**. Switch account, sign out, and remove a workspace, deleting exactly what the inventory lists. | FRE-07, PRV-02 | WP-3.2 | code, security |
-
-**Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
-
-- The fault-injection suite (network drop mid-push, kill during commit, full disk, two computers editing) runs 1,000 randomized rounds with no lost text.
-- The owner and at least two testers use it across two computers for five working days.
-- On the 10,000-note benchmark workspace, no view's first frame waits for Git, and a refresh starts at most one `git status` per repository (PRF-07).
 
 <h2 id="m7" data-reader-personas="product design engineering">M7: Agents</h2>
 

@@ -3,13 +3,13 @@
 This page covers the main workflows besides writing: managing notes and folders, choosing who can see a note, and sharing it with a link.
 
 > [!NOTE]
-> **TL;DR.** The **Files** panel (*Open* in the trigger toolbar, <kbd>Ctrl/⌘</kbd>+<kbd>O</kbd>) is a tree of folders and notes with create, rename, move, and delete. [Spotlight](spotlight.html) quick open (<kbd>Ctrl/⌘</kbd>+<kbd>P</kbd>) finds any note by name. Every operation is a Git commit, so nothing is lost for good. In the browser those commits are made through the GitHub API after connecting; on the desktop they're made and pushed with the user's own `git`. Each note is **public** or **private**. Public notes live in `notes/` of the instance repository and are published with the app on its GitHub Pages site, where visitors can read them, and from M5 each gets a stable read-only URL. Private notes live in the private submodule repository, are never published in plaintext, and can be shared with one person through an expiring, revocable link. Covers FIL-* and SHR-* in the [requirements](../product/requirements.md).
+> **TL;DR.** The **Files** panel (*Open* in the trigger toolbar, <kbd>Ctrl/⌘</kbd>+<kbd>O</kbd>) is a tree of folders and notes with create, rename, move, and delete. [Spotlight](spotlight.html) quick open (<kbd>Ctrl/⌘</kbd>+<kbd>P</kbd>) finds any note by name. Every operation is a Git commit, so nothing is lost for good. Only the desktop app makes those commits, with the user's own `git` (D-90). In the browser, notes written there are kept in that browser, and the instance's notes open read-only with *Copy to my notes*. Each note is **public** or **private**. Public notes live in `notes/` of the instance repository and are published with the app on its GitHub Pages site, where anyone can read them, and from M5 each gets a stable read-only URL. Private notes live in the private submodule repository and are never published in plaintext: they're sealed into the owner's **vault**, which opens in a browser with the owner's passphrase, and can be shared with named audiences through a link or passcode. Covers FIL-* and SHR-* in the [requirements](../product/requirements.md).
 
 ## The Files panel
 
 Opened from **Open** in the [trigger toolbar](main-ui.html) (<kbd>Ctrl/⌘</kbd>+<kbd>O</kbd>). It's a transient overlay that closes after a note is opened, so the canvas stays blank. Its keyboard behavior follows Finder on macOS and Explorer on Windows ([Keyboard shortcuts → Files panel](keyboard-shortcuts.md#files-panel)).
 
-- **Two roots:** *Public* and *Private*. They map to the two content repositories (see [Repository and publishing](../architecture/repository-and-publishing.html)). Each note's visibility is clear from which root it sits under.
+- **Two roots:** *Public* and *Private*. They map to the two content repositories (see [Repository and publishing](../architecture/repository-and-publishing.html)). Each note's visibility is clear from which root it sits under. In the browser there's a third root for the notes written in this browser, the only ones editable there; *Public* and, once unlocked, *Private* are read-only ([Web app](../architecture/web-app.md#three-kinds-of-note)).
 - **Tree:** folders first, then notes, sorted alphabetically. Expand and collapse with the arrow keys. Typing a name jumps to it.
 - **Quick open:** <kbd>Ctrl/⌘</kbd>+<kbd>P</kbd> opens [Spotlight](spotlight.html) in note mode to fuzzy-find any note by title and path (FIL-04).
 - **Context menu** on each item (right-click, the item's menu button, or <kbd>Shift</kbd>+<kbd>F10</kbd>) lists the operations below.
@@ -38,8 +38,8 @@ Seed: *"The content can be made public or private. Private content are hosted in
 | | Public note | Shared note | Private note |
 | --- | --- | --- | --- |
 | Stored in | The instance repository, `notes/` | The private repository, `private/notes/` | The private repository, `private/notes/` |
-| Published on GitHub Pages | Yes, as a read-only page | Only as sealed (encrypted) files | Never |
-| Who can read it | Anyone with the URL | Named audiences, with a magic link or their name and passcode | Only you |
+| Published on GitHub Pages | Yes, as a read-only page | Only as sealed (encrypted) files | Only sealed, in the owner's vault |
+| Who can read it | Anyone with the URL | Named audiences, with a magic link or their name and passcode, and you | Only you (in a browser, with your vault passphrase) |
 | Default for new notes | No | No | **Yes** (SHR-01, safe by default) |
 ### Changing visibility
 
@@ -62,10 +62,10 @@ Seed: *"The content can be made public or private. Private content are hosted in
 
 ### Sharing with people (SHR-05)
 
-A private note or folder can be shared with an **audience**: a person or group identified only by a **name**, using a **magic link**, a **passcode** (your own or generated), or both, until an expiry or until you withdraw it. Shared notes stay in the private repository and are published only as ciphertext that the link or the name plus passcode opens. The full design is in [Sharing and visibility](../design/views/sharing.md), and the cryptography is in [Repository and publishing → Sealing](../architecture/repository-and-publishing.html#sealing-and-share-links).
+A private note or folder can be shared with an **audience**: a person or group identified only by a **name**, using a **magic link**, a **passcode** (your own or generated), or both, until an expiry or until you withdraw it. Shared notes stay in the private repository and are published only as ciphertext that the link or the name plus passcode opens. Your own access works the same way: the **vault** is a built-in grant for "You" that opens every private note with your vault passphrase (D-90). The full design is in [Sharing and visibility](../design/views/sharing.md), and the cryptography is in [Repository and publishing → Sealing](../architecture/repository-and-publishing.html#sealing-and-share-links) and [The vault](../architecture/repository-and-publishing.html#the-vault).
 
 ## Conflicts and offline
 
-- **Desktop (primary):** the app works on a local clone, so reading and writing work fully offline. Commits are made locally and pushed when the network is back. Before pushing it fetches, and if the same note changed elsewhere the writer chooses between **Keep mine**, **Take theirs**, and **Save mine as a copy**. Nothing is merged silently, and the repository is never left half-rebased ([Desktop and Git](../architecture/desktop-and-git.md#save-and-sync)).
-- **Web (MW):** every save carries the version (Git blob SHA) the edit started from. If the remote file has changed since then, the save is rejected and the same three choices appear. While offline, edits are queued in IndexedDB and synced in order when the connection returns.
-- In both, the trigger shows the save-problem state while changes are waiting, and *Save* (<kbd>Ctrl/⌘</kbd>+<kbd>S</kbd>) retries right away.
+- **Desktop:** the app works on a local clone, so reading and writing work fully offline. Commits are made locally and pushed when the network is back. Before pushing it fetches, and if the same note changed elsewhere the writer chooses between **Keep mine**, **Take theirs**, and **Save mine as a copy**. Nothing is merged silently, and the repository is never left half-rebased ([Desktop and Git](../architecture/desktop-and-git.md#save-and-sync)).
+- **Browser:** notes written there live only in that browser's IndexedDB and work offline, so there's nothing to conflict with. The instance's notes are read-only copies of the last deploy. Moving notes to the instance is an explicit export and import that keeps both versions on a name clash and deletes nothing ([Web app](../architecture/web-app.md#moving-notes-between-the-browser-and-github)).
+- On the desktop, the trigger shows the save-problem state while changes are waiting, and *Save* (<kbd>Ctrl/⌘</kbd>+<kbd>S</kbd>) retries right away.

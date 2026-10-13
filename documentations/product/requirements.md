@@ -3,13 +3,13 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 196 requirements in 25 areas. **P0** means the first usable release of its channel (the web app, then the desktop app), **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 200 requirements in 25 areas. **P0** means the first usable release of its channel (the web app, then the desktop app), **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
 | Priority | Meaning |
 | --- | --- |
-| **P0** | Needed for the first usable release of its channel: the web app's 1.0 (stages M0, M1, MW, M4, and M5) or the desktop app's first release (M2 and M3) (see [Roadmap](../plan/roadmap.md), D-85). |
+| **P0** | Needed for version 1.0: stages M0, M1, MW, M3, M2, M4, and M5, in that order. The browser keeps its own notes and reads the instance; the desktop app is what saves to GitHub (see [Roadmap](../plan/roadmap.md), D-85, D-90). |
 | **P1** | Needed for the full vision. Ships after P0. |
 | **Later** | Extension point. The architecture must allow it, but it isn't built yet. |
 
@@ -80,7 +80,7 @@ Seed: *"entire UI is blank except for a red 10px circle enclosed by a frosted ci
 | UI-09 | Scrollbars are minimal: no arrow buttons, a thin rounded thumb that is hidden at rest and appears only while scrolling or while the pointer is over the scrollbar edge. Space for it is always reserved, so text never moves when it appears or hides (D-73). | P0 |
 | UI-10 | The trigger sits 40 px below the window's top edge. On hover the red dot grows to fill its frosted circle. Opening the toolbar morphs the circle into the toolbar (the dot shrinks and fades, the buttons fade in after the shape settles), and closing reverses it. No motion with reduced motion (D-78). | P0 |
 | UI-11 | Reading zone: text is read and written in the band between 25% and 65% of the window height. A note starts 25% down, the last line can scroll up to leave 35% below it, and the line being edited is scrolled back into the band whenever it leaves it (D-78). | P0 |
-| UI-12 | Account pill: a small, muted pill in the bottom-left corner shows the signed-in GitHub name; pressing it offers the sync status, *Sync now*, and *Sign out*. When nobody is signed in, the same place shows a quiet *Sign in* link that opens Connect GitHub. Hidden where there's no GitHub connection (D-89). | P0 |
+| UI-12 | Account pill: a small, muted pill in the bottom-left corner. In the desktop app it shows the signed-in GitHub name, and pressing it offers the sync status, *Sync now*, and *Sign out*. In the browser it's a quiet *Unlock* link when the site has private notes; once unlocked it shows the owner's name and offers *Lock* and *Forget this browser*. Hidden where neither applies (D-89, D-90). | P0 |
 
 ## Focus mode (FOC)
 
@@ -161,13 +161,15 @@ Seed: *"managed as a github repo… hosted in github pages… web or an electron
 | --- | --- | --- |
 | PKG-01 | The project repository holds the app's source, docs, releases, and the instance template, and is also the owner's own instance (public notes in `notes/`, the private repository at `private/`). People who want to use Focus Notes make their instance from the **template repository**, which holds only their content and a *Deploy app* workflow; people who want to improve it fork the project repository (D-87). | P0 |
 | PKG-02 | Each instance's *Deploy app* workflow publishes the app and the instance's public notes to its own GitHub Pages. The project repository builds the app from source; instances made from the template deploy the released web app bundle at a pinned version, so their owners never build anything (D-87). | P0 |
-| PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access, for people who want a dedicated desktop experience (D-80). | P0 |
+| PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access. It's the only client that writes to GitHub (D-80, D-90). | P0 |
 | PKG-04 | The product repository builds and tests without any user workspace, credentials, or secrets. | P0 |
-| PKG-05 | The web app is the primary way to use Focus Notes: each instance's *Deploy app* workflow publishes it to the instance's own GitHub Pages site (template instances deploy the released bundle; the project repository builds from source), and it runs in any modern browser with nothing to download (D-80, D-87). | P0 |
+| PKG-05 | The web app runs from each instance's own GitHub Pages site (its *Deploy app* workflow deploys the released bundle in template instances and builds from source in the project repository), in any modern browser with nothing to download. It never signs in to GitHub and never writes to a repository (D-80, D-87, D-90). | P0 |
 | PKG-06 | Nothing hosted or registered by the project: no OAuth app, client ID, server, or telemetry. Each user's instance needs only their own GitHub account plus the public release files on GitHub (D-21, D-87). | P0 |
-| PKG-07 | Local first in the owner's browser: notes, settings, and the queue of unsynced changes live in IndexedDB, survive reloads, and work offline. The app asks the browser to keep its storage (`navigator.storage.persist`). On an instance's site, writing starts once the owner connects (D-82, D-88). | P0 |
-| PKG-08 | Sync from the browser: public notes are committed to the instance repository and private notes to its private repository, through the GitHub REST API, several files in one commit per repository, and pulled on open, on focus, and every few minutes. A note changed in both places keeps both versions, so no text is ever lost (D-82, D-84). | P0 |
-| PKG-09 | Visitor mode: someone who opens an instance without its owner's token sees only its public notes, read-only, with the note list. Private notes, editing, and syncing need the owner's token. Visitors also see **Use this app for yourself** (DST-01) (D-87). | P0 |
+| PKG-07 | Local first in the browser: the notes you write in the browser, and their settings, live only in this browser's IndexedDB, survive reloads, work offline, need no account, and are never sent anywhere. The app asks the browser to keep its storage (`navigator.storage.persist`) and says plainly that clearing the site's data deletes them (D-90). | P0 |
+| PKG-08 | The instance's notes in the browser, read-only: the site's public notes (from the published `notes/` and its index, without GitHub's API) and, once unlocked, its private notes (PKG-10) open read-only and clearly marked, with *Copy to my notes* to edit a copy in this browser. The browser never changes them (D-90). | P0 |
+| PKG-09 | Visitor view: until a browser unlocks the instance's private notes, it shows only the public notes of the instance, read-only, and **Use this app for yourself** (DST-01). Anyone can still write their own notes, kept only in their own browser (D-87, D-90). | P0 |
+| PKG-10 | Unlock in the browser: the owner's passphrase opens the vault (the owner's private notes, sealed by the *Deploy app* workflow as a share grant with an audience of one, D-41) read-only, decrypted in the browser. Locked again when the tab closes, unless *Remember on this browser* is chosen, which keeps a non-extractable key in IndexedDB; *Lock* and *Forget this browser* undo it. A wrong passphrase gets one generic message (D-90). | P0 |
+| PKG-11 | Export and import in the browser: *Export my notes* saves every note written in this browser as one bundle file (Markdown text with paths and dates, checked against its JSON Schema); *Import notes* adds a bundle's notes to this browser and keeps both versions when a name is taken. Nothing is deleted on either side (D-90). | P0 |
 
 ## Desktop app (DSK)
 
@@ -197,8 +199,9 @@ Owner: *"We need a sign in and setup flow for the electron app… device sign in
 | FRE-05 | Git identity (name and email) is checked and, if missing, filled in from GitHub with the private noreply address. | P0 |
 | FRE-06 | Workspace: create a new one (FRE-08), clone an existing one from GitHub (with the private submodule when the account can reach it), or open a local clone. | P0 |
 | FRE-07 | Settings → Account: switch account, sign out (optionally removing Git's saved credential), and run setup again. | P0 |
-| FRE-08 | *Set up my instance* (desktop): in the user's own GitHub account, make the repository from the Focus Notes template, the private repository, the submodule link, the read-only deploy key and Actions secret for share links, and GitHub Pages, each step retryable on its own (D-84). | P0 |
-| FRE-09 | Web first run: the app knows its instance from its own Pages address. A browser that hasn't connected opens in visitor mode, with **I own this site: Connect GitHub** and **Use this app for yourself**. Connecting: make the private repository from a pre-filled GitHub page, make one fine-grained token for both repositories from a pre-filled GitHub link, paste it, and the app checks that it can write to this instance and links `private/` if it isn't linked yet. Resumable and reversible from Settings (sign out removes the token) (D-81, D-84, D-88). | P0 |
+| FRE-08 | *Set up my instance* (desktop): in the user's own GitHub account, make the repository from the Focus Notes template, the private repository, the submodule link, the read-only deploy key and Actions secret for sealing, the vault passphrase (only its derived key is stored, in `private/access.json`), and GitHub Pages, each step retryable on its own (D-84, D-90). | P0 |
+| FRE-09 | Web first run: the app knows its instance from its own Pages address. A first visit opens the newest public note, if there is one, or a welcome note kept in this browser, which says that notes written here stay in this browser and that the desktop app saves to GitHub. There's nothing to sign in to (D-90). | P0 |
+| FRE-10 | Bring browser notes to the desktop: the first run, and *Import notes* later, add an exported bundle to the instance, private unless the user chooses public, as ordinary commits. The browser keeps its copies until the user deletes them (D-90). | P0 |
 
 ## Keyboard shortcuts (KEY)
 
@@ -283,11 +286,12 @@ Cross-cutting requirements serving CP-SAFE-01 and CP-OWN-01 across every capabil
 | --- | --- | --- |
 | SEC-01 | The Electron hardening checklist: context isolation, sandbox, no Node in the renderer, a validated preload bridge, navigation and permissions denied, no remote content, strict CSP, fuses (`RunAsNode` off, only load from ASAR, ASAR integrity on). | P0 |
 | SEC-02 | Markdown and HTML are sanitized everywhere they're rendered. Raw HTML in notes is shown as text. Only safe URL schemes are allowed. Trusted Types in the app. | P0 |
-| SEC-03 | Credentials live only in Git's credential helper. API tokens are held in memory. Browser tokens are encrypted with a non-extractable key, or kept for the session. Tokens never appear in logs, URLs, or process arguments. | P0 |
+| SEC-03 | Credentials live only in Git's credential helper, in the desktop app. API tokens are held in memory. The browser holds no GitHub credential at all. Tokens never appear in logs, URLs, or process arguments (D-90). | P0 |
 | SEC-04 | Supply chain: lockfiles, Dependabot, CodeQL, secret scanning with push protection, actions pinned by SHA, release SBOM, checksums, and artifact attestations. | P0 |
 | SEC-05 | Instances' workflows pin every action by commit SHA and verify the web app bundle by SHA-256 and attestation before deploying it. Updates arrive only as pull requests. | P0 |
 | SEC-06 | Every Pages deploy runs the leak check and fails if private text or file names appear in the output. | P0 |
 | SEC-07 | `SECURITY.md` and GitHub private vulnerability reporting, with acknowledgement within 7 days. Documented responses for leaked share secrets, keys, and tokens. | P0 |
+| SEC-08 | The vault passphrase is never stored or sent. Its key is derived with PBKDF2-SHA256 at 600,000 iterations, and the browser accepts no other parameters. Setup requires a strong passphrase and says that a forgotten one can't be recovered (the notes stay in the private repository). *Remember on this browser* warns that every site on the same `github.io` address shares the browser's storage, and recommends a custom domain (D-90). | P0 |
 
 ## Privacy (PRV)
 
@@ -376,8 +380,8 @@ Owner: *"How do we package and distribute this?… It would be ideal if people c
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| DST-01 | **Use this app for yourself:** in visitor mode, a button opens a dialog that explains how Focus Notes works (your own independent instance in your own GitHub account, no server, nothing shared with the person whose site this is) and gives the steps: create a GitHub account, make your instance from the template, turn on GitHub Pages, and connect; plus **Download the desktop app** from the latest GitHub Release. The README says the same (D-87). | P0 |
-| DST-02 | Start in the browser: copy the Focus Notes template repository (*Use this template*, or clone it; not the source repository) to make your instance, with no app to build, turn on GitHub Pages with GitHub Actions, and open your site; the app's first run does the rest (D-80, D-87). | P0 |
+| DST-01 | **Use this app for yourself:** in the visitor view, a button opens a dialog that explains how Focus Notes works (your own independent instance in your own GitHub account, no server, nothing shared with the person whose site this is) and gives the steps: create a GitHub account, make your instance from the template, turn on GitHub Pages, and write in your site's browser; plus **Download the desktop app** from the latest GitHub Release to save your notes to your repository. The README says the same (D-87, D-90). | P0 |
+| DST-02 | Start in the browser: copy the Focus Notes template repository (*Use this template*, or clone it; not the source repository) to make your instance, with no app to build, turn on GitHub Pages with GitHub Actions, open your site, and write at once in the browser. The desktop app connects the same instance to GitHub whenever you want your notes in your repository (D-80, D-87, D-90). | P0 |
 | DST-03 | A release pipeline in the project repository that builds the desktop installers for Windows, macOS, and Linux and the web app bundle, plus checksums, an SBOM, and attestations, into a draft GitHub Release with smoke tests. | P0 |
 | DST-04 | Store listings: winget and Homebrew cask (and Flathub later), updated automatically from releases. | P1 |
 | DST-05 | `.focus-notes/workspace.json` with `formatVersion`. Migrations ask first, and older apps refuse to write newer formats. | P0 |

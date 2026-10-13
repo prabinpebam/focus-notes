@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Notion/Loop-style editing (built on Tiptap) that saves plain Markdown to your own GitHub repository. You write first in the browser: the web app runs from your own instance's GitHub Pages site, works offline, and syncs to your repositories once you connect with a token. A desktop app (MIT-licensed Electron, with an invisible title bar, 20 px rounded on Windows and Linux, native on macOS) is the second way, downloaded from GitHub Releases. Every user's Focus Notes is their own instance in their own GitHub account: one repository with public notes, a private submodule, and a workflow that deploys the app to its own Pages, with nothing hosted by the project and no server. People who just want to use it copy the template repository (not the source repository) to make their instance; people who want to improve it fork the project repository. Visitors to anyone's site see only public notes and <em>Use this app for yourself</em>. <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> opens Spotlight to find anything and act on it, and the keymap copies the apps people already use. Notes are private by default. They can be published on the user's own GitHub Pages site, or shared with named audiences through a magic link or a passcode. Agents can help through MCP and a command-line tool, within permissions the writer grants, and there is no telemetry. Every pixel comes from a strict design system, and the interface itself is data: JSON views built only from the system's components, with no HTML or CSS in the app. This site turns the human-written <a href="seed-specs.md">seed spec</a> and the owner's later decisions into product, experience, architecture, and delivery documentation, and it's kept in step with the build. The plan has ten stages that each leave a usable app, each with a demo and a definition of done.</p>
+  <p>Notion/Loop-style editing (built on Tiptap) that saves plain Markdown to your own GitHub repository. You start in the browser: the web app runs from your own instance's GitHub Pages site, keeps what you write in that browser with no account and offline, and shows your public notes and, once you unlock them with your passphrase, your private ones, read-only. A desktop app (MIT-licensed Electron, with an invisible title bar, 20 px rounded on Windows and Linux, native on macOS), downloaded from GitHub Releases, is the only client that saves to GitHub, and it imports what you wrote in a browser (D-90). Every user's Focus Notes is their own instance in their own GitHub account: one repository with public notes, a private submodule, and a workflow that deploys the app to its own Pages, with nothing hosted by the project and no server. People who just want to use it copy the template repository (not the source repository) to make their instance; people who want to improve it fork the project repository. Until a browser unlocks a site's private notes, it sees only public notes and <em>Use this app for yourself</em>. <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> opens Spotlight to find anything and act on it, and the keymap copies the apps people already use. Notes are private by default. They can be published on the user's own GitHub Pages site, or shared with named audiences through a magic link or a passcode. Agents can help through MCP and a command-line tool, within permissions the writer grants, and there is no telemetry. Every pixel comes from a strict design system, and the interface itself is data: JSON views built only from the system's components, with no HTML or CSS in the app. This site turns the human-written <a href="seed-specs.md">seed spec</a> and the owner's later decisions into product, experience, architecture, and delivery documentation, and it's kept in step with the build. The plan has ten stages that each leave a usable app, each with a demo and a definition of done.</p>
 </aside>
 
 <div class="slate-metrics">
@@ -65,7 +65,7 @@
   <article class="slate-card slate-card--interactive">
     <a href="experience/first-run.md">
       <h3 class="slate-card__title">First run and sign-in</h3>
-      <p class="slate-card__body">In the browser, start writing at once or connect GitHub with a token from a pre-filled link. On the desktop, sign in through Git's own tools.</p>
+      <p class="slate-card__body">In the browser, nothing to set up: start writing at once, kept in that browser. On the desktop, sign in through Git's own tools and choose your vault passphrase.</p>
     </a>
   </article>
   <article class="slate-card slate-card--interactive">
@@ -89,13 +89,13 @@
   <article class="slate-card slate-card--interactive">
     <a href="plan/roadmap.md">
       <h3 class="slate-card__title">Plan and definition of done</h3>
-      <p class="slate-card__body">Ten stages that each leave a usable app, 59 work packages in a machine-readable graph, an agentic build loop, and a measurable definition of done at every level.</p>
+      <p class="slate-card__body">Ten stages that each leave a usable app (M0, M1, MW, M3, M2, M4, M5, M7, M8, Later), 61 work packages in a machine-readable graph, an agentic build loop, and a measurable definition of done at every level.</p>
     </a>
   </article>
   <article class="slate-card slate-card--interactive">
     <a href="design/views/get-started.md">
       <h3 class="slate-card__title">Use this app for yourself</h3>
-      <p class="slate-card__body">What visitors to anyone's site see: how Focus Notes works, the steps to make your own instance from the template, and the desktop download.</p>
+      <p class="slate-card__body">What anyone's site offers until it's unlocked: how Focus Notes works, the steps to make your own instance from the template, and the desktop download.</p>
     </a>
   </article>
 </div>
@@ -129,8 +129,8 @@
   <thead><tr><th>Source</th><th>Used for</th></tr></thead>
   <tbody>
     <tr><td><a href="seed-specs.md">Seed spec</a></td><td>The original requirements. Written by a person; never edited by tooling or agents.</td></tr>
-    <tr><td><a href="plan/decisions.md">Owner decisions, 2026-10-13</a></td><td>Trigger size, Tiptap and MIT, device sign-in, the desktop window, toolbar cap, keyboard strategy, find, Spotlight, the articulation chain, Loop-style tables, the contextual toolbar, theme management, and web first: one repository per instance on its own GitHub Pages, the template for people who just want to use it, and visitor mode (D-80 to D-87).</td></tr>
-    <tr><td><a href="plan/decisions.md#owner-decisions">Owner decisions, 2026-10-14</a></td><td>Sharing with named audiences through magic links and passcodes (following the access model of the owner's personal site), private sharing in the first release, download-first getting started (since superseded by web first, D-80), and agent-friendly interfaces.</td></tr>
+    <tr><td><a href="plan/decisions.md">Owner decisions, 2026-10-13</a></td><td>Trigger size, Tiptap and MIT, device sign-in, the desktop window, toolbar cap, keyboard strategy, find, Spotlight, the articulation chain, Loop-style tables, the contextual toolbar, theme management, and web first: one repository per instance on its own GitHub Pages, the template for people who just want to use it, and the visitor view (D-80 to D-87).</td></tr>
+    <tr><td><a href="plan/decisions.md#owner-decisions">Owner decisions, 2026-10-14</a></td><td>Sharing with named audiences through magic links and passcodes (following the access model of the owner's personal site), private sharing in the first release, download-first getting started (since superseded by web first, D-80), agent-friendly interfaces, and the browser keeping its own notes while the desktop app is the only GitHub editor, with private notes in a vault sealed at deploy (D-90).</td></tr>
     <tr><td><a href="https://github.com/prabinpebam/markdown-focus-editor">markdown-focus-editor</a></td><td>Focus mode only: the visual-row unit and the mask technique.</td></tr>
     <tr><td><code>personal-site</code> (local project)</td><td>Private content as a submodule, sealed publishing, and share links.</td></tr>
     <tr><td><a href="https://www.electronjs.org/docs/latest/tutorial/custom-window-styles">Electron: custom window styles</a></td><td>What transparent windows can't do, which drives the 20 px corner design.</td></tr>

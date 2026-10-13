@@ -7,7 +7,7 @@
       "order": 0,
       "icon": "home",
       "status": "draft",
-      "updated": "2026-10-13"
+      "updated": "2026-10-14"
     },
     {
       "path": "seed-specs.md",
@@ -24,7 +24,7 @@
       "order": 110,
       "icon": "flag",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Product"
     },
     {
@@ -51,7 +51,7 @@
       "order": 140,
       "icon": "auto_stories",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Product/Spec chain"
     },
     {
@@ -78,7 +78,7 @@
       "order": 200,
       "icon": "radio_button_checked",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Experience"
     },
     {
@@ -96,7 +96,7 @@
       "order": 220,
       "icon": "edit_note",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Experience"
     },
     {
@@ -132,7 +132,7 @@
       "order": 260,
       "icon": "folder_shared",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Experience"
     },
     {
@@ -150,7 +150,7 @@
       "order": 280,
       "icon": "desktop_windows",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Experience"
     },
     {
@@ -159,7 +159,7 @@
       "order": 290,
       "icon": "login",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Experience"
     },
     {
@@ -168,7 +168,7 @@
       "order": 300,
       "icon": "lan",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Design"
     },
     {
@@ -177,7 +177,7 @@
       "order": 301,
       "icon": "category",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Design/System"
     },
     {
@@ -204,7 +204,7 @@
       "order": 304,
       "icon": "widgets",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Design/System"
     },
     {
@@ -213,7 +213,7 @@
       "order": 305,
       "icon": "data_object",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Design/System"
     },
     {
@@ -249,7 +249,7 @@
       "order": 341,
       "icon": "group",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Design/Views"
     },
     {
@@ -258,7 +258,7 @@
       "order": 342,
       "icon": "rocket_launch",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Design/Views"
     },
     {
@@ -294,7 +294,7 @@
       "order": 400,
       "icon": "schema",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Architecture"
     },
     {
@@ -321,7 +321,7 @@
       "order": 425,
       "icon": "terminal",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Architecture"
     },
     {
@@ -330,7 +330,7 @@
       "order": 430,
       "icon": "terminal",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Architecture"
     },
     {
@@ -339,7 +339,7 @@
       "order": 440,
       "icon": "publish",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Architecture"
     },
     {
@@ -357,7 +357,7 @@
       "order": 460,
       "icon": "shield_lock",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Architecture"
     },
     {
@@ -375,7 +375,7 @@
       "order": 480,
       "icon": "verified",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Architecture"
     },
     {
@@ -384,7 +384,7 @@
       "order": 500,
       "icon": "timeline",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Plan"
     },
     {
@@ -393,7 +393,7 @@
       "order": 501,
       "icon": "list_alt",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Plan"
     },
     {
@@ -402,7 +402,7 @@
       "order": 502,
       "icon": "fact_check",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Plan"
     },
     {
@@ -411,7 +411,7 @@
       "order": 503,
       "icon": "autorenew",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Plan"
     },
     {
@@ -420,7 +420,7 @@
       "order": 510,
       "icon": "rule",
       "status": "stable",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Plan"
     },
     {
@@ -429,7 +429,7 @@
       "order": 520,
       "icon": "package_2",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Plan"
     },
     {
@@ -438,7 +438,7 @@
       "order": 530,
       "icon": "warning",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Plan"
     }
   ]
