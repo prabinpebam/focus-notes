@@ -1,4 +1,4 @@
-/** The web app's entry (D-80): the same app as every shell, on IndexedDB and the GitHub API. */
+/** The web app's entry (D-80, D-90): the same app as every shell, on IndexedDB and its own site's files. */
 import { createApp } from "@focus-notes/core";
 import { mountApp, flushApp } from "@focus-notes/ui-runtime";
 import { views, messages } from "@focus-notes/views";

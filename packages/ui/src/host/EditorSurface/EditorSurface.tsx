@@ -78,7 +78,7 @@ export function EditorSurface({
       injectCSS: false,
       shouldRerenderOnTransaction: false,
       editorProps: {
-        attributes: { class: s.prose, role: "textbox", "aria-multiline": "true", "aria-label": label, spellcheck: "true", "data-editor": "", ...(id ? { id } : {}) },
+        attributes: { class: s.prose, role: "textbox", "aria-multiline": "true", "aria-label": label, ...(readOnly ? { "aria-readonly": "true" } : {}), spellcheck: "true", "data-editor": "", ...(id ? { id } : {}) },
       },
       onTransaction: ({ editor: ed }) => {
         // While the find bar is open, the count follows every change and selection move.

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prabinpebam.github.io/focus-notes/schemas/export-bundle.v1.json",
+  "title": "Focus Notes export bundle: the notes written in a browser (PKG-11, D-90)",
+  "type": "object",
+  "required": [
+    "format",
+    "exported",
+    "notes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "focus-notes/export/v1"
+    },
+    "exported": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "text",
+          "updated"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The note's path among the browser's notes, with / between folders."
+          },
+          "text": {
+            "type": "string",
+            "description": "The Markdown, exactly as written."
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}

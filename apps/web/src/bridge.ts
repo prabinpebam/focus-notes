@@ -1,159 +1,149 @@
 /**
- * The web app's PlatformBridge (D-80 to D-82): notes and state in IndexedDB, and sync with the
- * user's notes repository through the GitHub REST API once they connect.
+ * The web app's PlatformBridge (D-80, D-90): notes written in this browser live in IndexedDB, and the
+ * instance's own notes are read from its site, public ones as files and private ones as sealed copies
+ * that the owner's passphrase opens. Nothing is written anywhere but this browser, and there's no
+ * GitHub credential here at all.
  */
-import { ConnectError, parseRepo, type AppStateFile, type GitHubBridge, type NoteSummary, type PlatformBridge, type SyncStatus } from "@focus-notes/core";
-import { GitHubApi, GitHubError, SyncEngine, type Connection } from "@focus-notes/github";
+import {
+  BUNDLE_MAX_BYTES, bundleFileName, innerPath, isReadOnlyPath, makeBundle, parseBundle, planImport, sourceOf, UnlockError,
+  type AppStateFile, type InstanceBridge, type NoteSummary, type PlatformBridge, type VaultStatus,
+} from "@focus-notes/core";
+import { SealError, SiteReader, type OpenVault, type SiteFetch } from "@focus-notes/seal";
+import { openTextFile, saveTextFile } from "@focus-notes/ui/files";
 import { WebDb } from "./idb.ts";
-import { forgetToken, loadToken, storeToken } from "./vault.ts";
 
 const WELCOME = `# Welcome to Focus Notes
 
-This note lives in your browser. Write anything; it's saved as you type.
+This note lives in this browser, and so does everything you write here. It's saved as you type and works offline. Nothing is sent anywhere.
 
 - Press **Ctrl+.** (or click the red dot) for the toolbar.
 - Press **Ctrl+Shift+/** for every keyboard shortcut.
-- Choose **Connect GitHub…** in the toolbar's ⋯ menu to keep your notes in a repository you own.
+- To keep your notes in your own GitHub repository, use the desktop app: it saves there, and this site shows them. Bring notes from here with **Export my notes** in the toolbar's ⋯ menu.
 `;
 
-/** Push this long after the last change, so a burst of typing becomes one commit. */
-const PUSH_DELAY_MS = 3000;
-/** Pull this often while the page is visible. */
-const PULL_EVERY_MS = 5 * 60_000;
+/** A key this browser remembers for the vault (PKG-10): non-extractable, with the salt it was made for. */
+interface RememberedKey { key: CryptoKey; salt: string }
+const REMEMBERED = "vaultUnlockKey";
+/** What earlier versions stored for browser sync (D-81, D-82), removed on open (D-90). */
+const RETIRED_META = ["token", "vaultKey", "connection", "login"];
 
 export interface WebBridge extends PlatformBridge {
-  github: GitHubBridge;
   db: WebDb;
+  instance: InstanceBridge;
 }
 
-export async function createWebBridge(fetchImpl?: typeof fetch): Promise<WebBridge> {
+export interface WebBridgeOptions {
+  /** Reads a file of the site; tests pass their own. */
+  fetchSite?: SiteFetch;
+}
+
+const siteFetch: SiteFetch = async (path) => {
+  // The manifest and keyring change every deploy; the browser revalidates them instead of trusting a cache.
+  const res = await fetch(new URL(path, document.baseURI), { cache: "no-cache", credentials: "omit", redirect: "error" });
+  if (res.status === 404) return undefined;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
+};
+
+export async function createWebBridge(options: WebBridgeOptions = {}): Promise<WebBridge> {
   const db = await WebDb.open();
+  for (const k of RETIRED_META) await db.deleteMeta(k);
   void navigator.storage?.persist?.().catch(() => false);
   const dark = matchMedia("(prefers-color-scheme: dark)");
+  const reader = new SiteReader(options.fetchSite ?? siteFetch);
 
-  let status: SyncStatus = { state: "local", pending: 0 };
-  let engine: SyncEngine | undefined;
-  let pushTimer: ReturnType<typeof setTimeout> | undefined;
-  const statusListeners = new Set<(s: SyncStatus) => void>();
-  const changeListeners = new Set<(paths: string[]) => void>();
-  const conflictListeners = new Set<(a: string, b: string) => void>();
-  const pending = async () => (await db.allNotes()).filter((n) => n.dirty || n.deleted).length;
-  const setStatus = async (patch: Partial<SyncStatus>) => {
-    status = { ...status, ...patch, pending: await pending() };
-    for (const l of statusListeners) l(status);
+  // ---- the instance's notes ----
+  let open: OpenVault | undefined;
+  let status: VaultStatus = { state: "none" };
+  const listeners = new Set<(v: VaultStatus) => void>();
+  const setStatus = (v: VaultStatus) => {
+    status = v;
+    for (const l of listeners) l(v);
   };
-
-  const run = async () => {
-    if (!engine) return;
-    if (!navigator.onLine) return setStatus({ state: "offline" });
-    await setStatus({ state: "syncing" });
+  const info = (async () => {
+    const m = await reader.manifest();
+    if (!m) return undefined;
+    const notes = await reader.publicNotes().catch(() => []);
+    return { manifest: m, publicNotes: notes };
+  })();
+  // A key this browser remembers opens the vault before anything is shown (PKG-10).
+  const ready = (async () => {
+    const i = await info;
+    if (!i?.manifest.vault) return;
+    setStatus({ state: "locked" });
+    const remembered = await db.getMeta<RememberedKey>(REMEMBERED);
+    if (!remembered) return;
     try {
-      const r = await engine.sync();
-      if (r.changed.length) for (const l of changeListeners) l(r.changed);
-      for (const [a, b] of r.conflicts) for (const l of conflictListeners) l(a, b);
-      await setStatus({ state: "idle", message: "" });
+      open = await reader.unlockWithKey(remembered.key, remembered.salt);
+      setStatus({ state: "unlocked", owner: open.owner, remembered: true });
     } catch (e) {
-      const ge = e instanceof GitHubError ? e : undefined;
-      if (ge?.status === 0) await setStatus({ state: "offline" });
-      else if (ge?.unauthorized) await setStatus({ state: "signedOut" });
-      else await setStatus({ state: "error", message: ge?.message ?? String(e) });
-      throw e;
+      // A changed passphrase makes the old key useless: forget it. Offline, keep it for next time.
+      if (e instanceof SealError && e.code === "key") await db.deleteMeta(REMEMBERED);
     }
-  };
-  const schedule = (ms = PUSH_DELAY_MS) => {
-    clearTimeout(pushTimer);
-    if (engine) pushTimer = setTimeout(() => void run().catch(() => {}), ms);
-  };
+  })();
 
-  const begin = async () => {
-    const token = await loadToken(db);
-    const conn = await db.getMeta<Connection>("connection");
-    if (!token || !conn) return;
-    engine = new SyncEngine(new GitHubApi(token, fetchImpl), {
-      allNotes: () => db.allNotes(), getNote: (p) => db.getNote(p), putNote: (n) => db.putNote(n), removeNote: (p) => db.removeNote(p),
-      getConnection: () => db.getMeta<Connection>("connection"), setConnection: (c) => db.setMeta("connection", c),
-    });
-    const login = await db.getMeta<string>("login");
-    await setStatus({ state: "idle", repo: `${conn.owner}/${conn.repo}`, ...(login ? { login } : {}) });
-  };
-  await begin();
-  if (engine) schedule(0);
-  addEventListener("online", () => schedule(0));
-  addEventListener("offline", () => void setStatus({ state: engine ? "offline" : "local" }));
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") schedule(0); });
-  setInterval(() => { if (document.visibilityState === "visible") schedule(0); }, PULL_EVERY_MS);
-
-  const github: GitHubBridge = {
-    status: () => status,
-    onStatus(l) { statusListeners.add(l); return () => statusListeners.delete(l); },
-    onNotesChanged(l) { changeListeners.add(l); return () => changeListeners.delete(l); },
-    onConflict(l) { conflictListeners.add(l); return () => conflictListeners.delete(l); },
-    async connect(repoInput, token) {
-      const parsed = parseRepo(repoInput);
-      if (!parsed) throw new ConnectError("notFound");
-      const api = new GitHubApi(token, fetchImpl);
-      const fail = (e: unknown): never => {
-        if (e instanceof GitHubError) {
-          if (e.status === 0) throw new ConnectError("offline");
-          if (e.status === 401) throw new ConnectError("badToken");
-          if (e.status === 403) throw new ConnectError("noAccess");
-          if (e.status === 404) throw new ConnectError("notFound");
-        }
-        throw new ConnectError("other", String(e));
-      };
-      const user = await api.user().catch(fail);
-      const owner = parsed.owner ?? user.login;
-      const repo = await api.repo(owner, parsed.name).catch(fail);
-      if (!repo.canPush) throw new ConnectError("readOnly");
-      const previous = await db.getMeta<Connection>("connection");
-      const same = previous && previous.owner === repo.owner && previous.repo === repo.name;
-      if (!same) {
-        // A different repository: every note here that was ever written is offered to it, and
-        // matching notes there resolve without conflict copies.
-        for (const n of await db.allNotes()) {
-          if (n.deleted) await db.removeNote(n.path);
-          else if (n.sha || n.dirty) await db.putNote({ path: n.path, text: n.text, dirty: true, updated: n.updated });
-        }
+  const instance: InstanceBridge = {
+    async info() {
+      const i = await info;
+      await ready;
+      return i ? { publicNotes: i.publicNotes.length, hasVault: i.manifest.vault } : undefined;
+    },
+    vault: () => status,
+    onVault(l) { listeners.add(l); return () => listeners.delete(l); },
+    async unlock(passphrase, remember) {
+      await ready;
+      try {
+        const r = await reader.unlock(passphrase);
+        open = r.vault;
+        if (remember) await db.setMeta(REMEMBERED, { key: r.key, salt: r.salt } satisfies RememberedKey);
+        else await db.deleteMeta(REMEMBERED);
+        setStatus({ state: "unlocked", owner: open.owner, remembered: remember });
+      } catch (e) {
+        if (e instanceof SealError) throw new UnlockError(e.code === "key" ? "wrong" : "unavailable");
+        throw new UnlockError(navigator.onLine ? "unavailable" : "offline");
       }
-      await db.setMeta("connection", same ? previous : { owner: repo.owner, repo: repo.name, branch: repo.defaultBranch } satisfies Connection);
-      await db.setMeta("login", user.login);
-      await storeToken(db, token);
-      await begin();
-      await run().catch(() => {});
-      return { login: user.login, repo: `${repo.owner}/${repo.name}` };
     },
-    async disconnect() {
-      clearTimeout(pushTimer);
-      engine = undefined;
-      await forgetToken(db);
-      await db.deleteMeta("login");
-      await setStatus({ state: "local", login: "", repo: "", message: "" });
+    async lock() {
+      open = undefined;
+      await db.deleteMeta(REMEMBERED);
+      if (status.state !== "none") setStatus({ state: "locked" });
     },
-    async syncNow() {
-      clearTimeout(pushTimer);
-      await run();
-    },
+    origin: () => location.origin.replace(/^https?:\/\//, ""),
   };
+
+  const localNotes = async () => (await db.allNotes()).filter((n) => !n.deleted);
 
   const bridge: WebBridge = {
     platform: "web",
     db,
-    github,
+    instance,
     async readNote(path) {
+      const source = sourceOf(path);
+      if (source === "public") return reader.readPublic(innerPath(path));
+      if (source === "private") {
+        await ready;
+        if (!open) throw new Error("Locked");
+        return open.read(innerPath(path));
+      }
       const n = await db.getNote(path);
       if (!n || n.deleted) throw new Error(`No note at ${path}`);
       return n.text;
     },
     async writeNote(path, text) {
+      // The instance's notes are read-only here (D-90).
+      if (isReadOnlyPath(path)) throw new Error("Read-only note");
       const old = await db.getNote(path);
       if (old && old.text === text && !old.deleted) return;
-      await db.putNote({ path, text, ...(old?.sha ? { sha: old.sha } : {}), dirty: true, updated: Date.now() });
-      await setStatus({});
-      schedule();
+      await db.putNote({ path, text, updated: Date.now() });
     },
     chooseNote: async () => undefined,
     async listNotes(): Promise<NoteSummary[]> {
-      return (await db.allNotes()).filter((n) => !n.deleted).map((n) => ({ path: n.path, updated: n.updated }));
+      const mine: NoteSummary[] = (await localNotes()).map((n) => ({ path: n.path, updated: n.updated }));
+      const i = await info;
+      await ready;
+      const pub: NoteSummary[] = (i?.publicNotes ?? []).map((n) => ({ path: `public:${n.path}`, title: n.title, updated: Date.parse(n.updated) || 0 }));
+      const priv: NoteSummary[] = (open?.notes ?? []).map((n) => ({ path: `private:${n.path}`, title: n.title, updated: Date.parse(n.updated) || 0 }));
+      return [...mine, ...pub, ...priv];
     },
     async newNotePath(near) {
       const dir = near && near.includes("/") ? near.slice(0, near.lastIndexOf("/") + 1) : "";
@@ -163,9 +153,11 @@ export async function createWebBridge(fetchImpl?: typeof fetch): Promise<WebBrid
       }
     },
     async defaultNotePath() {
-      const notes = (await db.allNotes()).filter((n) => !n.deleted);
+      const notes = await localNotes();
       if (notes.length) return notes.sort((a, b) => b.updated - a.updated)[0]!.path;
-      // The welcome note is local only: it isn't pushed unless it's edited.
+      // A first visit to a site with public notes opens the newest one, read-only (FRE-09).
+      const pub = (await info)?.publicNotes ?? [];
+      if (pub.length) return `public:${[...pub].sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated))[0]!.path}`;
       await db.putNote({ path: "Welcome.md", text: WELCOME, updated: Date.now() });
       return "Welcome.md";
     },
@@ -182,8 +174,22 @@ export async function createWebBridge(fetchImpl?: typeof fetch): Promise<WebBrid
       else void document.documentElement.requestFullscreen?.();
     },
     openExternal(url) {
-      // Only GitHub's own pages are ever opened (D-81).
+      // Only GitHub's own pages are ever opened.
       if (/^https:\/\/github\.com\//.test(url)) window.open(url, "_blank", "noopener,noreferrer");
+    },
+    async exportNotes() {
+      const notes = await localNotes();
+      saveTextFile(bundleFileName(), JSON.stringify(makeBundle(notes), null, 2));
+      return notes.length;
+    },
+    async importNotes() {
+      const text = await openTextFile(".json,application/json", BUNDLE_MAX_BYTES);
+      if (text === undefined) return undefined;
+      const bundle = parseBundle(text);
+      const existing = new Map((await localNotes()).map((n) => [n.path, n.text]));
+      const plan = planImport(bundle, existing);
+      for (const n of plan) await db.putNote({ path: n.path, text: n.text, updated: Number.isFinite(n.updated) ? n.updated : Date.now() });
+      return { added: plan.length, renamed: plan.filter((n) => n.renamed).length };
     },
   };
   return bridge;

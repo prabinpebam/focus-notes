@@ -8,7 +8,8 @@ import {
   ChevronDown20Regular, ArrowUndo20Regular, ArrowRedo20Regular, Table20Regular, TextQuote20Regular, Code20Regular,
   TextBulletList20Regular, TextNumberListLtr20Regular, TextHeader120Regular, TextHeader220Regular,
   TextHeader320Regular, Color20Regular, Share20Regular, History20Regular, TextCaseTitle20Regular, TextWholeWord20Regular,
-  BracesVariable20Regular, ArrowUp20Regular, ArrowDown20Regular, type FluentIcon,
+  BracesVariable20Regular, ArrowUp20Regular, ArrowDown20Regular, LockClosed20Regular, ArrowExportLtr20Regular,
+  ArrowImport20Regular, type FluentIcon,
 } from "@fluentui/react-icons";
 import type { IconName } from "./icon-names.ts";
 
@@ -26,5 +27,6 @@ export const ICONS: Record<IconName, FluentIcon> = {
   bulletList: TextBulletList20Regular, numberedList: TextNumberListLtr20Regular, heading1: TextHeader120Regular,
   heading2: TextHeader220Regular, heading3: TextHeader320Regular, color: Color20Regular, share: Share20Regular,
   history: History20Regular, matchCase: TextCaseTitle20Regular, wholeWord: TextWholeWord20Regular, regex: BracesVariable20Regular,
-  arrowUp: ArrowUp20Regular, arrowDown: ArrowDown20Regular,
+  arrowUp: ArrowUp20Regular, arrowDown: ArrowDown20Regular, lock: LockClosed20Regular, export: ArrowExportLtr20Regular,
+  import: ArrowImport20Regular,
 };

@@ -1,5 +1,13 @@
-/** A small promise wrapper over IndexedDB for the web app's stores (Web app → Storage and sync). */
-import type { NoteRecord } from "@focus-notes/github";
+/** A small promise wrapper over IndexedDB for the web app's stores (Web app → Storage). */
+
+/** A note written in this browser. Older versions also stored sync fields; they're ignored. */
+export interface NoteRecord {
+  path: string;
+  text: string;
+  updated: number;
+  /** Set by older versions for deletions waiting to sync (D-82); such notes are treated as gone. */
+  deleted?: boolean;
+}
 
 export const DB_NAME = "focus-notes";
 const VERSION = 1;

@@ -57,9 +57,13 @@ test("toolbar actions run their commands and show their state", async () => {
   await expect(toolbar.getByRole("button", { name: "Focus mode" })).toHaveAttribute("aria-pressed", "true");
   await toolbar.getByRole("button", { name: "Focus mode" }).click();
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBeUndefined();
+  await expect(toolbar).toBeHidden();
   await page.keyboard.press(`${mod}+.`);
   await expect(toolbar.getByRole("button", { name: "Focus mode" })).toHaveAttribute("aria-pressed", "false");
+  // Escape reaches the toolbar only once it has taken focus; before that the keypress goes to the note.
+  await expect(toolbar.locator(":focus")).toHaveCount(1);
   await page.keyboard.press("Escape");
+  await expect(toolbar).toBeHidden();
 
   // Search isn't here yet, and says why instead of doing nothing.
   await page.keyboard.press(`${mod}+.`);

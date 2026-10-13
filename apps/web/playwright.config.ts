@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
-// Browser journeys against the built site (MW). GitHub is faked at the network layer.
+// Browser journeys against the built site (MW), published with the fixture instance in e2e/fixture:
+// public notes, and private notes sealed for the test passphrase (D-90).
 export default defineConfig({
   testDir: "e2e",
   outputDir: "../../test-results/web",
@@ -15,7 +16,7 @@ export default defineConfig({
     viewport: { width: 1100, height: 780 },
   },
   webServer: {
-    command: "pnpm exec vite preview --config vite.config.ts --port 4317 --strictPort --host 127.0.0.1",
+    command: "node ../../packages/seal/src/cli.ts publish --site dist --notes e2e/fixture/notes --private e2e/fixture/private --owner octo && pnpm exec vite preview --config vite.config.ts --port 4317 --strictPort --host 127.0.0.1",
     url: "http://127.0.0.1:4317/",
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

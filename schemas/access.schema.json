@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://prabinpebam.github.io/focus-notes/schemas/access.v1.json",
-  "title": "private/access.json: share audiences",
+  "title": "private/access.json: share audiences, and the owner's vault grant (D-41, D-90)",
   "type": "object",
   "required": [
     "version",
@@ -58,7 +58,9 @@
             ]
           },
           "salt": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{22}$",
+            "description": "16 random bytes, base64url. Published in the keyring header."
           },
           "scope": {
             "properties": {
@@ -73,6 +75,10 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "all": {
+                "type": "boolean",
+                "description": "Every private note, including ones added later (the owner's grant)."
               }
             },
             "type": "object",
@@ -95,6 +101,15 @@
               "string",
               "null"
             ]
+          },
+          "owner": {
+            "type": "boolean",
+            "description": "The built-in grant for the instance's owner: an audience of one whose scope is every private note (the vault, D-90). At most one active."
+          },
+          "passcodeKey": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$",
+            "description": "PBKDF2-HMAC-SHA256 (600,000 iterations, this grant's salt) of the passphrase, base64url. Stored instead of the passphrase, which is never written anywhere."
           }
         },
         "type": "object",

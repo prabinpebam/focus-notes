@@ -10,9 +10,9 @@
     "vm.find",
     "vm.feedback",
     "vm.picker",
-    "vm.connect",
-    "vm.sync",
-    "vm.account"
+    "vm.account",
+    "vm.unlock",
+    "vm.about"
   ],
   "focus": "editor",
   "root": {
@@ -510,6 +510,9 @@
           },
           "findRegex": {
             "get": "vm.find.regex"
+          },
+          "readOnly": {
+            "get": "vm.canvas.readOnly"
           }
         },
         "on": {
@@ -911,25 +914,25 @@
       },
       {
         "type": "Dialog",
-        "id": "connect",
+        "id": "unlock",
         "when": {
-          "get": "vm.connect.open"
+          "get": "vm.unlock.open"
         },
         "props": {
           "title": {
-            "get": "vm.connect.title"
+            "t": "unlock.title"
           },
           "closeLabel": {
             "t": "dialog.close"
           },
           "open": {
-            "get": "vm.connect.open"
+            "get": "vm.unlock.open"
           },
           "size": "s"
         },
         "on": {
           "openChange": {
-            "run": "connect.setOpen",
+            "run": "unlock.setOpen",
             "args": {
               "open": {
                 "get": "event.open"
@@ -939,301 +942,171 @@
         },
         "children": [
           {
-            "switch": {
-              "get": "vm.connect.step"
+            "type": "Stack",
+            "props": {
+              "gap": "l"
             },
-            "cases": {
-              "welcome": {
-                "type": "Stack",
+            "children": [
+              {
+                "type": "Text",
                 "props": {
-                  "gap": "l"
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "value": {
-                        "t": "connect.welcome"
-                      }
-                    }
-                  },
-                  {
-                    "type": "Inline",
-                    "props": {
-                      "gap": "s",
-                      "justify": "end",
-                      "wrap": true
-                    },
-                    "children": [
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "command.github.connect"
-                          },
-                          "variant": "secondary"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "connect.begin"
-                          }
-                        }
-                      },
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "command.connect.startWriting"
-                          },
-                          "variant": "primary"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "connect.startWriting"
-                          }
-                        }
-                      }
-                    ]
+                  "value": {
+                    "t": "unlock.intro"
                   }
-                ]
+                }
               },
-              "repo": {
-                "type": "Stack",
+              {
+                "type": "TextField",
                 "props": {
-                  "gap": "l"
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "value": {
-                        "t": "connect.repoIntro"
-                      }
-                    }
+                  "label": {
+                    "t": "unlock.passphrase"
                   },
-                  {
-                    "type": "Inline",
-                    "props": {
-                      "gap": "s"
-                    },
-                    "children": [
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "command.connect.openRepoPage"
-                          },
-                          "icon": "open"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "connect.openRepoPage"
-                          }
-                        }
-                      }
-                    ]
+                  "type": "password",
+                  "value": {
+                    "bind": "vm.unlock.passphrase"
                   },
-                  {
-                    "type": "TextField",
-                    "props": {
-                      "label": {
-                        "t": "connect.repoLabel"
-                      },
-                      "description": {
-                        "t": "connect.repoHelp"
-                      },
-                      "value": {
-                        "bind": "vm.connect.repo"
-                      },
-                      "invalid": {
-                        "get": "vm.connect.hasError"
-                      },
-                      "focusRequest": {
-                        "get": "vm.connect.focus"
-                      }
-                    }
+                  "invalid": {
+                    "get": "vm.unlock.hasError"
                   },
-                  {
-                    "type": "Text",
-                    "when": {
-                      "get": "vm.connect.hasError"
-                    },
-                    "props": {
-                      "value": {
-                        "get": "vm.connect.error"
-                      },
-                      "tone": "danger",
-                      "announce": true
-                    }
-                  },
-                  {
-                    "type": "Inline",
-                    "props": {
-                      "gap": "s",
-                      "justify": "end"
-                    },
-                    "children": [
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "command.connect.back"
-                          },
-                          "variant": "secondary"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "connect.back"
-                          }
-                        }
-                      },
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "command.connect.next"
-                          },
-                          "variant": "primary"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "connect.toToken"
-                          }
-                        }
-                      }
-                    ]
+                  "autoFocus": true,
+                  "focusRequest": {
+                    "get": "vm.unlock.focus"
                   }
-                ]
+                },
+                "on": {
+                  "submit": {
+                    "run": "unlock.submit"
+                  }
+                }
               },
-              "token": {
-                "type": "Stack",
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.unlock.hasError"
+                },
                 "props": {
-                  "gap": "l"
-                },
-                "children": [
-                  {
-                    "type": "Text",
-                    "props": {
-                      "value": {
-                        "t": "connect.tokenIntro"
-                      }
-                    }
+                  "value": {
+                    "get": "vm.unlock.error"
                   },
-                  {
-                    "type": "Inline",
-                    "props": {
-                      "gap": "s"
-                    },
-                    "children": [
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "command.connect.openTokenPage"
-                          },
-                          "icon": "open"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "connect.openTokenPage"
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Text",
-                    "props": {
-                      "value": {
-                        "get": "vm.connect.tokenHelp"
-                      },
-                      "tone": "muted"
-                    }
-                  },
-                  {
-                    "type": "TextField",
-                    "props": {
-                      "label": {
-                        "t": "connect.tokenLabel"
-                      },
-                      "type": "password",
-                      "value": {
-                        "bind": "vm.connect.token"
-                      },
-                      "invalid": {
-                        "get": "vm.connect.hasError"
-                      },
-                      "focusRequest": {
-                        "get": "vm.connect.focus"
-                      }
-                    }
-                  },
-                  {
-                    "type": "Text",
-                    "when": {
-                      "get": "vm.connect.hasError"
-                    },
-                    "props": {
-                      "value": {
-                        "get": "vm.connect.error"
-                      },
-                      "tone": "danger",
-                      "announce": true
-                    }
-                  },
-                  {
-                    "type": "Inline",
-                    "props": {
-                      "gap": "s",
-                      "justify": "end"
-                    },
-                    "children": [
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "command.connect.back"
-                          },
-                          "variant": "secondary"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "connect.back"
-                          }
-                        }
-                      },
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "command.connect.verify"
-                          },
-                          "variant": "primary",
-                          "busy": {
-                            "get": "vm.connect.busy"
-                          }
-                        },
-                        "on": {
-                          "press": {
-                            "run": "connect.verify"
-                          }
-                        }
-                      }
-                    ]
-                  }
-                ]
+                  "tone": "danger",
+                  "announce": true
+                }
               },
-              "check": {
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.unlock.rememberNote"
+                  },
+                  "tone": "muted",
+                  "role": "caption"
+                }
+              },
+              {
                 "type": "Inline",
+                "props": {
+                  "gap": "s",
+                  "justify": "end",
+                  "wrap": true
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "command.unlock.remember"
+                      },
+                      "variant": "secondary",
+                      "disabled": {
+                        "get": "vm.unlock.busy"
+                      },
+                      "disabledReason": {
+                        "t": "task.unlocking"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "unlock.remember"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "command.unlock.submit"
+                      },
+                      "variant": "primary",
+                      "busy": {
+                        "get": "vm.unlock.busy"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "unlock.submit"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "about",
+        "when": {
+          "get": "vm.about.open"
+        },
+        "props": {
+          "title": {
+            "t": "about.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.about.open"
+          },
+          "size": "s"
+        },
+        "on": {
+          "openChange": {
+            "run": "about.setOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "about.intro"
+                  }
+                }
+              },
+              {
+                "type": "Stack",
                 "props": {
                   "gap": "s"
                 },
                 "children": [
                   {
-                    "type": "Spinner",
+                    "type": "Text",
                     "props": {
-                      "label": {
-                        "t": "connect.checking"
+                      "value": {
+                        "t": "about.step1"
                       }
                     }
                   },
@@ -1241,55 +1114,76 @@
                     "type": "Text",
                     "props": {
                       "value": {
-                        "t": "connect.checking"
+                        "t": "about.step2"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "about.step3"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "about.step4"
                       }
                     }
                   }
                 ]
               },
-              "done": {
-                "type": "Stack",
+              {
+                "type": "Text",
                 "props": {
-                  "gap": "l"
+                  "value": {
+                    "t": "about.privacy"
+                  },
+                  "tone": "muted"
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "gap": "s",
+                  "justify": "end",
+                  "wrap": true
                 },
                 "children": [
                   {
-                    "type": "Text",
+                    "type": "Button",
                     "props": {
-                      "value": {
-                        "get": "vm.connect.doneText"
+                      "label": {
+                        "t": "command.about.download"
                       },
-                      "announce": true
+                      "variant": "secondary"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "about.download"
+                      }
                     }
                   },
                   {
-                    "type": "Inline",
+                    "type": "Button",
                     "props": {
-                      "justify": "end"
+                      "label": {
+                        "t": "command.about.template"
+                      },
+                      "variant": "primary"
                     },
-                    "children": [
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "command.connect.startWriting"
-                          },
-                          "variant": "primary"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "connect.setOpen",
-                            "args": {
-                              "open": false
-                            }
-                          }
-                        }
+                    "on": {
+                      "press": {
+                        "run": "about.template"
                       }
-                    ]
+                    }
                   }
                 ]
               }
-            }
+            ]
           }
         ]
       },
@@ -1309,11 +1203,13 @@
         },
         "children": [
           {
-            "switch": {
-              "get": "vm.account.mode"
+            "type": "Inline",
+            "props": {
+              "gap": "xs",
+              "wrap": true
             },
-            "cases": {
-              "signIn": {
+            "children": [
+              {
                 "type": "PillButton",
                 "props": {
                   "label": {
@@ -1322,11 +1218,21 @@
                 },
                 "on": {
                   "press": {
-                    "run": "github.connect"
+                    "run": "vault.unlock"
+                  }
+                },
+                "when": {
+                  "expr": {
+                    "==": [
+                      {
+                        "get": "vm.account.mode"
+                      },
+                      "unlock"
+                    ]
                   }
                 }
               },
-              "owner": {
+              {
                 "type": "MenuButton",
                 "props": {
                   "variant": "pill",
@@ -1350,9 +1256,51 @@
                       }
                     }
                   }
+                },
+                "when": {
+                  "expr": {
+                    "==": [
+                      {
+                        "get": "vm.account.mode"
+                      },
+                      "owner"
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "PillButton",
+                "when": {
+                  "get": "vm.account.about"
+                },
+                "props": {
+                  "label": {
+                    "t": "account.about"
+                  }
+                },
+                "on": {
+                  "press": {
+                    "run": "about.open"
+                  }
+                }
+              },
+              {
+                "type": "PillButton",
+                "when": {
+                  "get": "vm.account.readOnly"
+                },
+                "props": {
+                  "label": {
+                    "get": "vm.account.readOnlyText"
+                  }
+                },
+                "on": {
+                  "press": {
+                    "run": "note.copyToLocal"
+                  }
                 }
               }
-            }
+            ]
           }
         ]
       },

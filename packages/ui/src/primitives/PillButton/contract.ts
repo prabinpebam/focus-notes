@@ -10,5 +10,5 @@ export const contract = defineContract({
   states: ["rest", "hover", "pressed", "focusVisible"],
   tokens: "cmp.pillButton.*",
   a11y: { pattern: "button", name: "label" },
-  fixtures: [{ name: "sign in", props: { label: { t: "account.signIn" } } }],
+  fixtures: [{ name: "unlock", props: { label: { t: "account.unlock" } } }],
 });

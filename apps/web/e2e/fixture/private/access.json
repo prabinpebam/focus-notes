@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "grants": [
+    {
+      "id": "gyepmi2i5",
+      "name": "You",
+      "owner": true,
+      "salt": "XXce3d_ohy0ZIpwKe-RfxA",
+      "passcodeKey": "nFv6Me5HpAWzFyQJzgJRq_tmXkdEsJrr8Gxl9Yd3tC0",
+      "scope": {
+        "all": true
+      },
+      "createdAt": "2026-10-13T19:27:49.964Z"
+    }
+  ]
+}

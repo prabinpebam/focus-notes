@@ -1,13 +1,15 @@
 /**
- * Features of shells that keep notes themselves, chiefly the web app on the user's own Pages site
- * (PKG-05, PKG-07, PKG-08, FRE-09): Open… as an in-app dialog, the web first run with Connect
- * GitHub, the sync status, and reloading a note when a pull changes it.
+ * Features of the web app on an instance's own Pages site (D-90): Open… as an in-app dialog over the
+ * notes written in this browser and the instance's public and private notes; Unlock, Lock, and the
+ * account corner; Copy to my notes; export and import; and Use this app for yourself. The browser
+ * never signs in to GitHub and never writes to a repository.
  */
 import type { AppState } from "./app.ts";
 import type { AppStateFile, NoteSummary, PlatformBridge } from "./bridge.ts";
-import { ConnectError } from "./bridge.ts";
+import { UnlockError } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
+import { freePath, innerPath, isReadOnlyPath, safeLocalPath, sourceOf, titleOfPath } from "./notes.ts";
 import type { Store } from "./store.ts";
 import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
@@ -21,44 +23,30 @@ export interface PickerState {
 }
 export const PICKER_CLOSED: PickerState = { open: false, query: "", activeId: "", notes: [], focus: 0 };
 
-export type ConnectStep = "welcome" | "repo" | "token" | "check" | "done";
-export interface ConnectState {
+export interface UnlockState {
   open: boolean;
-  step: ConnectStep;
-  repo: string;
-  token: string;
+  passphrase: string;
   busy: boolean;
   /** A message key for what went wrong, if anything. */
   error: string;
-  login: string;
-  connectedRepo: string;
   focus: number;
 }
-export const CONNECT_CLOSED: ConnectState = { open: false, step: "welcome", repo: "notes", token: "", busy: false, error: "", login: "", connectedRepo: "", focus: 0 };
+export const UNLOCK_CLOSED: UnlockState = { open: false, passphrase: "", busy: false, error: "", focus: 0 };
 
-/** GitHub's own pages, pre-filled (D-81). Nothing else is opened, and nothing is sent anywhere. */
-export const newRepoUrl = (name: string) =>
-  `https://github.com/new?${new URLSearchParams({ name: name || "notes", visibility: "private", description: "Notes written with Focus Notes" })}`;
-export const newTokenUrl = (owner?: string) =>
-  `https://github.com/settings/personal-access-tokens/new?${new URLSearchParams({
-    name: "Focus Notes",
-    description: "Lets Focus Notes in your browser read and write your notes repository. Choose Only select repositories, then your notes repository.",
-    ...(owner ? { target_name: owner } : {}),
-    expires_in: "366",
-    contents: "write",
-  })}`;
-
-/** "notes", "you/notes", or a github.com URL → { owner?, name }. */
-export function parseRepo(input: string): { owner?: string; name: string } | undefined {
-  const s = input.trim().replace(/^https?:\/\/github\.com\//i, "").replace(/\.git$/i, "").replace(/\/+$/, "");
-  const parts = s.split("/").filter(Boolean);
-  const ok = (x: string | undefined) => Boolean(x && /^[A-Za-z0-9_.-]{1,100}$/.test(x));
-  if (parts.length === 1 && ok(parts[0])) return { name: parts[0]! };
-  if (parts.length === 2 && ok(parts[0]) && ok(parts[1])) return { owner: parts[0]!, name: parts[1]! };
-  return undefined;
+/** What this browser knows about its instance (PKG-08, PKG-10). */
+export interface InstanceState {
+  present: boolean;
+  publicNotes: number;
+  hasVault: boolean;
+  vault: "none" | "locked" | "unlocked";
+  owner: string;
+  remembered: boolean;
 }
+export const NO_INSTANCE: InstanceState = { present: false, publicNotes: 0, hasVault: false, vault: "none", owner: "", remembered: false };
 
-const titleOf = (path: string) => path.split("/").at(-1)!.replace(/\.(md|markdown)$/i, "");
+/** Where Use this app for yourself sends people (DST-01, D-87). Both are GitHub's own pages. */
+export const TEMPLATE_URL = "https://github.com/prabinpebam/focus-notes-workspace";
+export const RELEASES_URL = "https://github.com/prabinpebam/focus-notes/releases/latest";
 
 export interface BrowserContext {
   store: Store<AppState>;
@@ -67,23 +55,30 @@ export interface BrowserContext {
   catalog: MessageCatalog;
   bridge: PlatformBridge;
   load(path: string): Promise<void>;
+  flush(): Promise<boolean>;
   toast(message: string, opts?: { tone?: "info" | "error"; action?: { command: string; label: string } }): number;
   tracker: TaskTracker;
   menu: { id: string; label: string; items: (string | { submenu: string; label: string; items: string[] })[] }[];
   appState(): AppStateFile;
   persistAppState(patch: Partial<AppStateFile>): Promise<void>;
+  /** The schema of a menu item, shared with the toolbar's view model. */
+  itemSchema: Record<string, unknown>;
+  describeItem(id: string): Record<string, unknown>;
 }
 
-export function registerBrowserFeatures(ctx: BrowserContext): { start(): void } {
+export function registerBrowserFeatures(ctx: BrowserContext): { start(): Promise<void> } {
   const { store, commands, viewModels, catalog, bridge } = ctx;
-  const github = bridge.github;
+  const instance = bridge.instance;
   const setPicker = (patch: Partial<PickerState>) => store.update((s) => ({ ...s, ui: { ...s.ui, picker: { ...s.ui.picker, ...patch } } }));
-  const setConnect = (patch: Partial<ConnectState>) => store.update((s) => ({ ...s, ui: { ...s.ui, connect: { ...s.ui.connect, ...patch } } }));
+  const setUnlock = (patch: Partial<UnlockState>) => store.update((s) => ({ ...s, ui: { ...s.ui, unlock: { ...s.ui.unlock, ...patch } } }));
+  const setInstance = (patch: Partial<InstanceState>) => store.update((s) => ({ ...s, instance: { ...s.instance, ...patch } }));
+  const setAbout = (open: boolean) => store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, aboutOpen: open } }));
 
-  // ---- Open… (notes kept by the shell) ----
+  // ---- Open… (notes kept by the shell, and the instance's) ----
+  const titleFor = (n: NoteSummary) => n.title || titleOfPath(n.path);
   const matches = (s: PickerState) => {
     const q = s.query.trim().toLowerCase();
-    return s.notes.filter((n) => !q || n.path.toLowerCase().includes(q)).slice(0, 200);
+    return s.notes.filter((n) => !q || titleFor(n).toLowerCase().includes(q) || innerPath(n.path).toLowerCase().includes(q)).slice(0, 200);
   };
   commands.register({
     id: "picker.open", title: "command.note.open",
@@ -138,137 +133,181 @@ export function registerBrowserFeatures(ctx: BrowserContext): { start(): void } 
       const list = matches(p);
       return {
         open: true, query: p.query, activeId: p.activeId, focus: p.focus,
-        items: list.map((n) => ({ id: n.path, label: titleOf(n.path), description: n.path.includes("/") ? n.path : "", icon: "document" })),
+        items: list.map((n) => {
+          const inner = innerPath(n.path);
+          const folder = inner.includes("/") ? inner.slice(0, inner.lastIndexOf("/")) : "";
+          const source = sourceOf(n.path);
+          const label = source === "local" ? "" : catalog.format(`picker.source.${source}`);
+          const where = label && folder ? catalog.format("picker.where", { source: label, folder }) : label || folder;
+          return { id: n.path, label: titleFor(n), description: where, icon: source === "private" ? "lock" : "document" };
+        }),
         summary: list.length ? catalog.format("picker.count", { count: list.length }) : catalog.format("picker.none"),
       };
     },
   });
 
-  // ---- GitHub: the web first run, connecting, and sync (FRE-09, PKG-08) ----
-  // Registered in every shell so views stay the same; they're only available with a GitHub bridge.
-  if (github) {
-    ctx.menu.push({ id: "github", label: "menu.github", items: ["github.connect", "github.syncNow", "github.signOut"] });
-    store.update((s) => ({ ...s, sync: github.status() }));
-    github.onStatus((sync) => store.update((s) => ({ ...s, sync })));
-    github.onNotesChanged(async (paths) => {
-      const open = store.state.note.path;
-      // An open note changed on GitHub reloads, but only if everything here is saved; otherwise the
-      // sync engine already kept both versions.
-      if (open && paths.includes(open) && store.state.note.saveState === "saved") await ctx.load(open);
-    });
-    github.onConflict((original, copy) => {
-      ctx.toast(catalog.format("sync.conflict", { note: titleOf(original), copy: titleOf(copy) }));
-    });
-  }
-  {
+  // ---- Copy to my notes (PKG-08) ----
+  commands.register({
+    id: "note.copyToLocal", title: "command.note.copyToLocal", icon: "copy",
+    enabled: (s) => isReadOnlyPath(s.note.path) && s.note.status === "ready",
+    disabledReason: "command.note.copyToLocal.reason",
+    run: async () => {
+      const { path, markdown } = store.state.note;
+      if (!path || !isReadOnlyPath(path)) return;
+      const taken = new Set(((await bridge.listNotes?.()) ?? []).filter((n) => !isReadOnlyPath(n.path)).map((n) => n.path));
+      const target = freePath(safeLocalPath(path), taken);
+      await bridge.writeNote(target, markdown);
+      await ctx.load(target);
+      ctx.toast(catalog.format("toast.copiedToLocal", { note: titleOfPath(target) }));
+    },
+  });
 
-    const openConnect = (step: ConnectStep) =>
-      store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, connect: { ...s.ui.connect, open: true, step, error: "", busy: false, focus: s.ui.connect.focus + 1 } } }));
-    const go = (step: ConnectStep) => setConnect({ step, error: "", focus: store.state.ui.connect.focus + 1 });
-    commands.register({
-      id: "github.connect", title: "command.github.connect", icon: "sync",
-      enabled: (s) => Boolean(github) && (s.sync.state === "local" || s.sync.state === "signedOut"),
-      run: () => openConnect("repo"),
-    });
-    commands.register<{ open: boolean }>({
-      id: "connect.setOpen", title: "command.github.connect",
-      run: async ({ open }) => {
-        if (open) return;
-        setConnect({ open: false, token: "" });
-        await ctx.persistAppState({ webWelcomed: true });
-      },
-    });
-    commands.register({ id: "connect.startWriting", title: "command.connect.startWriting", run: async (_a, c) => c.run("connect.setOpen", { open: false }) });
-    commands.register({ id: "connect.begin", title: "command.github.connect", run: () => go("repo") });
-    commands.register({ id: "connect.back", title: "command.connect.back", run: () => {
-      const order: ConnectStep[] = ["welcome", "repo", "token", "check"];
-      const i = order.indexOf(store.state.ui.connect.step);
-      go(order[Math.max(0, i - 1)]!);
-    } });
-    commands.register<{ value: string }>({ id: "connect.setRepo", title: "command.connect.setRepo", run: ({ value }) => setConnect({ repo: typeof value === "string" ? value : "", error: "" }) });
-    commands.register<{ value: string }>({ id: "connect.setToken", title: "command.connect.setToken", run: ({ value }) => setConnect({ token: typeof value === "string" ? value.trim() : "", error: "" }) });
-    commands.register({ id: "connect.openRepoPage", title: "command.connect.openRepoPage", run: () => bridge.openExternal?.(newRepoUrl(parseRepo(store.state.ui.connect.repo)?.name ?? "notes")) });
-    commands.register({ id: "connect.openTokenPage", title: "command.connect.openTokenPage", run: () => bridge.openExternal?.(newTokenUrl(parseRepo(store.state.ui.connect.repo)?.owner)) });
-    commands.register({
-      id: "connect.toToken", title: "command.connect.next",
-      run: () => {
-        if (!parseRepo(store.state.ui.connect.repo)) return setConnect({ error: "connect.error.repoName" });
-        go("token");
-      },
-    });
-    commands.register({
-      id: "connect.verify", title: "command.connect.verify",
-      run: async () => {
-        const c = store.state.ui.connect;
-        if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{20,}$/.test(c.token)) return setConnect({ error: "connect.error.tokenShape" });
-        setConnect({ busy: true, error: "", step: "check" });
-        try {
-          if (!github) throw new ConnectError("other");
-          const gh = github;
-          const r = await ctx.tracker.run("connect.verify", "task.connecting", () => gh.connect(c.repo, c.token), "task.connected");
-          setConnect({ busy: false, step: "done", token: "", login: r.login, connectedRepo: r.repo, focus: store.state.ui.connect.focus + 1 });
-          await ctx.persistAppState({ webWelcomed: true });
-        } catch (e) {
-          const code = e instanceof ConnectError ? e.code : "other";
-          setConnect({ busy: false, step: code === "badToken" || code === "noAccess" || code === "readOnly" ? "token" : code === "notFound" ? "repo" : "token", error: `connect.error.${code}`, focus: store.state.ui.connect.focus + 1 });
-        }
-      },
-    });
-    commands.register({
-      id: "github.syncNow", title: "command.github.syncNow", icon: "sync",
-      enabled: (s) => Boolean(github) && s.sync.state !== "local" && s.sync.state !== "signedOut",
-      run: () => ctx.tracker.run("github.syncNow", "task.syncing", () => github!.syncNow(), "task.synced").catch(() => {}),
-    });
-    commands.register({
-      id: "github.signOut", title: "command.github.signOut",
-      enabled: (s) => Boolean(github) && s.sync.state !== "local",
-      run: async () => {
-        await github?.disconnect();
-        ctx.toast(catalog.format("sync.signedOut"));
-      },
-    });
-    viewModels.register({
-      id: "vm.connect",
-      schema: {
-        type: "object",
-        properties: {
-          open: { type: "boolean" }, step: { type: "string", enum: ["welcome", "repo", "token", "check", "done"] },
-          repo: { type: "string" }, token: { type: "string" }, busy: { type: "boolean" }, error: { type: "string" }, hasError: { type: "boolean" },
-          doneText: { type: "string" }, tokenHelp: { type: "string" }, focus: { type: "number" }, title: { type: "string" },
-        },
-      },
-      setters: { repo: "connect.setRepo", token: "connect.setToken" },
-      select: (s) => {
-        const c = s.ui.connect;
-        const parsed = parseRepo(c.repo);
-        return {
-          open: c.open, step: c.step, repo: c.repo, token: c.token, busy: c.busy, focus: c.focus,
-          error: c.error && catalog.has(c.error) ? catalog.format(c.error) : c.error ? catalog.format("connect.error.other") : "",
-          hasError: Boolean(c.error),
-          doneText: c.step === "done" ? catalog.format("connect.done", { login: c.login, repo: c.connectedRepo }) : "",
-          tokenHelp: catalog.format("connect.tokenHelp", { repo: parsed ? parsed.name : "notes" }),
-          title: catalog.format(c.step === "welcome" ? "connect.welcomeTitle" : "connect.title"),
-        };
-      },
-    });
-  }
+  // ---- Export and import (PKG-11) ----
+  commands.register({
+    id: "notes.export", title: "command.notes.export", icon: "export",
+    enabled: () => Boolean(bridge.exportNotes),
+    run: async () => {
+      if (!(await ctx.flush())) return;
+      const count = await ctx.tracker.run("notes.export", "task.exporting", () => bridge.exportNotes!(), "task.exported").catch(() => -1);
+      ctx.toast(count < 0 ? catalog.format("toast.exportFailed") : catalog.format("toast.exported", { count }), count < 0 ? { tone: "error" } : {});
+    },
+  });
+  commands.register({
+    id: "notes.import", title: "command.notes.import", icon: "import",
+    enabled: () => Boolean(bridge.importNotes),
+    run: async () => {
+      try {
+        const r = await bridge.importNotes!();
+        if (!r) return;
+        ctx.toast(catalog.format("toast.imported", { count: r.added, renamed: r.renamed }));
+      } catch {
+        ctx.toast(catalog.format("toast.importFailed"), { tone: "error" });
+      }
+    },
+  });
 
+  // ---- Unlock, Lock, and Forget this browser (PKG-10, SEC-08) ----
+  if (instance) instance.onVault((v) => setInstance({ vault: v.state, owner: v.owner ?? "", remembered: Boolean(v.remembered) }));
+  commands.register({
+    id: "vault.unlock", title: "command.vault.unlock", icon: "lock",
+    enabled: (s) => s.instance.hasVault && s.instance.vault === "locked",
+    disabledReason: "command.vault.unlock.reason",
+    run: () => store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, unlock: { open: true, passphrase: "", busy: false, error: "", focus: s.ui.unlock.focus + 1 } } })),
+  });
+  commands.register<{ open: boolean }>({ id: "unlock.setOpen", title: "command.vault.unlock", run: ({ open }) => { if (!open) setUnlock({ open: false, passphrase: "", error: "" }); } });
+  commands.register<{ value: string }>({ id: "unlock.setPassphrase", title: "command.unlock.setPassphrase", run: ({ value }) => setUnlock({ passphrase: typeof value === "string" ? value : "", error: "" }) });
+  const submit = (remember: boolean) => async () => {
+    const u = store.state.ui.unlock;
+    if (!instance || u.busy) return;
+    if (!u.passphrase.trim()) return setUnlock({ error: "unlock.error.empty", focus: u.focus + 1 });
+    setUnlock({ busy: true, error: "" });
+    try {
+      await ctx.tracker.run(remember ? "unlock.remember" : "unlock.submit", "task.unlocking", () => instance.unlock(u.passphrase, remember), "task.unlocked");
+      setUnlock({ open: false, busy: false, passphrase: "" });
+      ctx.toast(catalog.format(remember ? "toast.unlockedRemembered" : "toast.unlocked", { count: (await bridge.listNotes?.() ?? []).filter((n) => sourceOf(n.path) === "private").length }));
+    } catch (e) {
+      const code = e instanceof UnlockError ? e.code : "unavailable";
+      setUnlock({ busy: false, passphrase: code === "wrong" ? "" : store.state.ui.unlock.passphrase, error: `unlock.error.${code}`, focus: store.state.ui.unlock.focus + 1 });
+    }
+  };
+  commands.register({ id: "unlock.submit", title: "command.unlock.submit", run: submit(false) });
+  commands.register({ id: "unlock.remember", title: "command.unlock.remember", run: submit(true) });
+  const lockAndLeave = async (messageKey: string) => {
+    if (!instance) return;
+    await instance.lock();
+    // A private note can't stay open once the key is gone.
+    if (sourceOf(store.state.note.path) === "private") await ctx.load(await bridge.defaultNotePath());
+    ctx.toast(catalog.format(messageKey));
+  };
+  commands.register({
+    id: "vault.lock", title: "command.vault.lock", icon: "lock",
+    enabled: (s) => s.instance.vault === "unlocked" && !s.instance.remembered,
+    run: () => lockAndLeave("toast.locked"),
+  });
+  commands.register({
+    id: "vault.forget", title: "command.vault.forget", icon: "lock",
+    enabled: (s) => s.instance.vault === "unlocked" && s.instance.remembered,
+    run: () => lockAndLeave("toast.forgotten"),
+  });
   viewModels.register({
-    id: "vm.sync",
-    schema: { type: "object", properties: { state: { type: "string" }, label: { type: "string" }, problem: { type: "boolean" } } },
+    id: "vm.unlock",
+    schema: {
+      type: "object",
+      properties: {
+        open: { type: "boolean" }, passphrase: { type: "string" }, busy: { type: "boolean" }, error: { type: "string" }, hasError: { type: "boolean" },
+        focus: { type: "number" }, rememberNote: { type: "string" },
+      },
+    },
+    setters: { passphrase: "unlock.setPassphrase" },
     select: (s) => {
-      const st = s.sync;
-      const label = st.state === "local" ? "" : catalog.format(`sync.state.${st.state}`, { pending: st.pending, repo: st.repo ?? "", message: st.message ?? "" });
-      return { state: st.state, label, problem: st.state === "error" || st.state === "signedOut" };
+      const u = s.ui.unlock;
+      return {
+        open: u.open, passphrase: u.passphrase, busy: u.busy, focus: u.focus, hasError: Boolean(u.error),
+        error: u.error ? catalog.format(catalog.has(u.error) ? u.error : "unlock.error.unavailable") : "",
+        rememberNote: instance ? catalog.format("unlock.rememberNote", { origin: instance.origin() }) : "",
+      };
+    },
+  });
+
+  // ---- Use this app for yourself (DST-01) ----
+  commands.register({ id: "about.open", title: "command.about.open", icon: "info", enabled: (s) => s.instance.present, run: () => setAbout(true) });
+  commands.register<{ open: boolean }>({ id: "about.setOpen", title: "command.about.open", run: ({ open }) => { if (!open) setAbout(false); } });
+  commands.register({ id: "about.template", title: "command.about.template", run: () => bridge.openExternal?.(TEMPLATE_URL) });
+  commands.register({ id: "about.download", title: "command.about.download", run: () => bridge.openExternal?.(RELEASES_URL) });
+  viewModels.register({
+    id: "vm.about",
+    schema: { type: "object", properties: { open: { type: "boolean" } } },
+    select: (s) => ({ open: s.ui.aboutOpen }),
+  });
+
+  if (instance || bridge.exportNotes) {
+    ctx.menu.push({ id: "notes", label: "menu.notes", items: ["note.copyToLocal", "notes.export", "notes.import", ...(instance ? ["vault.unlock", "about.open"] : [])] });
+  }
+
+  // ---- The bottom-left corner: the account pill, Use this app for yourself, and Read only (UI-12) ----
+  viewModels.register({
+    id: "vm.account",
+    schema: {
+      type: "object",
+      properties: {
+        visible: { type: "boolean" },
+        mode: { type: "string", enum: ["none", "unlock", "owner"] },
+        text: { type: "string" }, label: { type: "string" },
+        sections: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
+        about: { type: "boolean" },
+        readOnly: { type: "boolean" }, readOnlyText: { type: "string" },
+      },
+    },
+    select: (s) => {
+      const i = s.instance;
+      const readOnly = isReadOnlyPath(s.note.path) && s.note.status === "ready";
+      const about = i.present && i.vault !== "unlocked";
+      const base = { about, readOnly, readOnlyText: readOnly ? catalog.format("account.readOnly") : "" };
+      if (i.vault === "unlocked") {
+        return {
+          ...base, visible: true, mode: "owner", text: i.owner, label: catalog.format("account.owner", { owner: i.owner }),
+          sections: [{
+            id: "vault", label: catalog.format(i.remembered ? "account.remembered" : "account.unlocked"),
+            items: [i.remembered ? "vault.forget" : "vault.lock"].map(ctx.describeItem),
+          }],
+        };
+      }
+      const mode = i.hasVault ? "unlock" : "none";
+      return {
+        ...base, visible: mode !== "none" || about || readOnly, mode,
+        text: mode === "unlock" ? catalog.format("account.unlock") : "", label: mode === "unlock" ? catalog.format("account.unlockLabel") : "", sections: [],
+      };
     },
   });
 
   return {
-    start() {
-      // The web first run, once (FRE-09).
-      if (github && !ctx.appState().webWelcomed && github.status().state === "local") {
-        store.update((s) => ({ ...s, ui: { ...s.ui, connect: { ...s.ui.connect, open: true, step: "welcome", focus: s.ui.connect.focus + 1 } } }));
+    async start() {
+      const info = await instance?.info().catch(() => undefined);
+      if (info && instance) {
+        const v = instance.vault();
+        setInstance({ present: true, publicNotes: info.publicNotes, hasVault: info.hasVault, vault: v.state, owner: v.owner ?? "", remembered: Boolean(v.remembered) });
       }
+      if (!ctx.appState().webWelcomed && bridge.listNotes) await ctx.persistAppState({ webWelcomed: true });
     },
   };
 }

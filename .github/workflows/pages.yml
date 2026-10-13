@@ -1,4 +1,7 @@
-# Deploy app (D-80): builds the web app and publishes it to this repository's own GitHub Pages.
+# Deploy app (D-80, D-90): builds the web app and publishes it to this repository's own GitHub Pages,
+# with the public notes in notes/ and, when the instance has a private repository at private/ and the
+# read-only deploy key PRIVATE_CONTENT_KEY, the owner's private notes sealed as the vault. The leak
+# check fails the deploy if any private text or file name would reach the site (SEC-06).
 # Every copy of the repository (Use this template, or a fork) gets its own instance this way:
 # Settings -> Pages -> Source: GitHub Actions, then run this workflow.
 name: Deploy app
@@ -17,10 +20,16 @@ jobs:
     env:
       # The web app doesn't need the desktop shell's Electron binary.
       ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      HAS_PRIVATE_KEY: ${{ secrets.PRIVATE_CONTENT_KEY != '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          submodules: true
+          # Full history, so each public note's date is its last commit.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check out the public submodules
+        run: |
+          if git config -f .gitmodules --get submodule.slate.path >/dev/null; then git submodule update --init --depth 1 slate; fi
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -37,6 +46,32 @@ jobs:
           cp -r documentations _site/documentations
           if [ -d slate ]; then cp -r slate _site/slate; fi
           touch _site/.nojekyll
+      # Only now, after every third-party build step, is private plaintext on the runner.
+      - name: Check out the private repository with the read-only deploy key
+        if: env.HAS_PRIVATE_KEY == 'true'
+        env:
+          PRIVATE_CONTENT_KEY: ${{ secrets.PRIVATE_CONTENT_KEY }}
+        run: |
+          url=$(git config -f .gitmodules --get submodule.private.url || true)
+          if [ -z "$url" ]; then echo "PRIVATE_CONTENT_KEY is set but there's no private submodule." >&2; exit 1; fi
+          key="$RUNNER_TEMP/private_key"
+          trap 'rm -f "$key"' EXIT
+          umask 077 && printf '%s\n' "$PRIVATE_CONTENT_KEY" > "$key"
+          ssh_url=$(printf '%s' "$url" | sed -E 's#^https://github.com/#git@github.com:#')
+          git config submodule.private.url "$ssh_url"
+          # GitHub's published host key, pinned rather than scanned at run time.
+          echo "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl" > "$RUNNER_TEMP/known_hosts"
+          GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts" \
+            git submodule update --init --depth 1 private
+          test -f private/access.json || { echo "private/access.json is missing: refusing to deploy a half-configured site." >&2; exit 1; }
+      - name: Publish the notes, seal the vault, and run the leak check
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          args="--site _site --notes notes --owner $OWNER --git"
+          if [ -f private/access.json ]; then args="$args --private private"; fi
+          node packages/seal/src/cli.ts publish $args
+          rm -rf private
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

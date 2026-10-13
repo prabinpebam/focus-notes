@@ -14,10 +14,12 @@ export interface TextFieldProps {
   focusRequest?: number;
   id?: string;
   onChange?: (payload: { value: string }) => void;
+  /** Enter in the field, outside an IME composition. */
+  onSubmit?: () => void;
 }
 
 /** A labelled single-line field. Secrets use type "password" and are never spell-checked or autofilled. */
-export function TextField({ label, value, placeholder, description, type = "text", invalid, autoFocus, focusRequest, id, onChange }: TextFieldProps) {
+export function TextField({ label, value, placeholder, description, type = "text", invalid, autoFocus, focusRequest, id, onChange, onSubmit }: TextFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     if (focusRequest) input.current?.focus();
@@ -40,6 +42,12 @@ export function TextField({ label, value, placeholder, description, type = "text
         autoCapitalize="off"
         autoCorrect="off"
         autoComplete={type === "password" ? "off" : "on"}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.nativeEvent.isComposing && onSubmit) {
+            e.preventDefault();
+            onSubmit();
+          }
+        }}
         {...(placeholder ? { placeholder } : {})}
       />
       {description ? <Text slot="description" className={s.description}>{description}</Text> : null}

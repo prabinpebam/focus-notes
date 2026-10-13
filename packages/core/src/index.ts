@@ -10,3 +10,4 @@ export * from "./themes.ts";
 export * from "./contrast.ts";
 export * from "./tasks.ts";
 export * from "./browser.ts";
+export * from "./notes.ts";

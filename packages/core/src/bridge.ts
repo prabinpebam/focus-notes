@@ -26,51 +26,56 @@ export interface PlatformBridge {
   markReady?(): void;
   /** Notes the shell keeps itself (the web app's IndexedDB). When present, Open… shows them in-app. */
   listNotes?(): Promise<NoteSummary[]>;
-  /** Opens a page in a new tab or the default browser (GitHub's pre-filled pages). */
+  /** Opens a page in a new tab or the default browser. Only GitHub's own pages are ever opened. */
   openExternal?(url: string): void;
-  /** Sync with the user's notes repository from the browser (PKG-08, FRE-09). */
-  github?: GitHubBridge;
+  /** The instance this web app was deployed with: its public notes and its vault (PKG-08, PKG-10). */
+  instance?: InstanceBridge;
+  /** Saves every note written here as one bundle file (PKG-11). Resolves to the number of notes. */
+  exportNotes?(): Promise<number>;
+  /** Asks for a bundle file and adds its notes here, never replacing any (PKG-11). Undefined if cancelled. */
+  importNotes?(): Promise<{ added: number; renamed: number } | undefined>;
 }
 
 export interface NoteSummary {
+  /** Notes written here have plain paths; the instance's are `public:` or `private:` (notes.ts). */
   path: string;
   updated: number;
+  title?: string;
 }
 
-export type SyncState = "local" | "idle" | "syncing" | "offline" | "error" | "signedOut";
-
-export interface SyncStatus {
-  state: SyncState;
-  login?: string;
-  /** owner/name of the notes repository. */
-  repo?: string;
-  /** Notes changed here and not yet on GitHub. */
-  pending: number;
-  /** For error states: what went wrong, in words. */
-  message?: string;
+export type VaultState = "none" | "locked" | "unlocked";
+export interface VaultStatus {
+  state: VaultState;
+  /** The instance owner's GitHub name, once unlocked. */
+  owner?: string;
+  /** Unlocked with a key this browser remembers (PKG-10). */
+  remembered?: boolean;
 }
 
-export class ConnectError extends Error {
-  /** badToken, noAccess, notFound, readOnly, offline, other */
-  readonly code: string;
-  constructor(code: string, message = code) {
-    super(message);
+export class UnlockError extends Error {
+  /** wrong: the passphrase doesn't open it (one message for every cause). offline, unavailable. */
+  readonly code: "wrong" | "offline" | "unavailable";
+  constructor(code: "wrong" | "offline" | "unavailable") {
+    super(code);
     this.code = code;
   }
 }
 
-export interface GitHubBridge {
-  status(): SyncStatus;
-  onStatus(listener: (s: SyncStatus) => void): () => void;
-  /** Checks the token and repository, stores the token (encrypted), and starts syncing. */
-  connect(repo: string, token: string): Promise<{ login: string; repo: string }>;
-  /** Deletes the token from this browser. Notes stay. */
-  disconnect(): Promise<void>;
-  syncNow(): Promise<void>;
-  /** Notes a pull changed here, so an open note can reload. */
-  onNotesChanged(listener: (paths: string[]) => void): () => void;
-  /** Conflict copies a pull made: [original, copy]. */
-  onConflict(listener: (original: string, copy: string) => void): () => void;
+/**
+ * The instance's site, read-only (D-90). The browser never writes to it and holds no GitHub
+ * credential: public notes are files of the site, and private ones are sealed copies it decrypts.
+ */
+export interface InstanceBridge {
+  /** Undefined where there's no instance (local development, a site without a manifest). */
+  info(): Promise<{ publicNotes: number; hasVault: boolean } | undefined>;
+  vault(): VaultStatus;
+  onVault(listener: (v: VaultStatus) => void): () => void;
+  /** Rejects with UnlockError. With remember, a non-extractable key stays in this browser. */
+  unlock(passphrase: string, remember: boolean): Promise<void>;
+  /** Locks, and forgets the remembered key if there is one. */
+  lock(): Promise<void>;
+  /** The address shown in the warning about sites that share this browser's storage (SEC-08). */
+  origin(): string;
 }
 
 /** Per-device app state, stored in the app's data folder (see the data inventory). */

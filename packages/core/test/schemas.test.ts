@@ -12,7 +12,7 @@ describe("file format schemas (AGT-08)", () => {
   addFormats(ajv);
   const files = readdirSync(dir).filter((f) => f.endsWith(".schema.json"));
   it("covers every format", () => {
-    expect(files.sort()).toEqual(["access-message.schema.json", "access.schema.json", "app-state.schema.json", "front-matter.schema.json", "keybindings.schema.json", "settings.schema.json", "theme.schema.json", "workspace.schema.json"]);
+    expect(files.sort()).toEqual(["access-message.schema.json", "access.schema.json", "app-state.schema.json", "export-bundle.schema.json", "front-matter.schema.json", "keybindings.schema.json", "settings.schema.json", "theme.schema.json", "workspace.schema.json"]);
   });
   for (const f of files) it(`${f} compiles with a stable $id`, () => {
     const s = load(f);
@@ -29,5 +29,9 @@ describe("file format schemas (AGT-08)", () => {
     expect(check("settings.schema.json", { toolbar: ["a.b", "a.c", "a.d", "a.e", "a.f", "a.g", "a.h"] })).toBe(false);
     expect(check("theme.schema.json", { $name: "Mine", $scheme: "dark", cmp: {} })).toBe(false);
     expect(check("access.schema.json", { version: 1, grants: [{ id: "abcdefgh", name: "Asha", scope: { folders: ["drafts"] }, createdAt: "2026-10-13T10:00:00Z", passcode: { value: "short" } }] })).toBe(false);
+    expect(check("access.schema.json", { version: 1, grants: [{ id: "gabcdefgh", name: "You", owner: true, salt: "A".repeat(22), passcodeKey: "B".repeat(43), scope: { all: true }, createdAt: "2026-10-14T10:00:00Z" }] })).toBe(true);
+    expect(check("access.schema.json", { version: 1, grants: [{ id: "gabcdefgh", name: "You", owner: true, passphrase: "never stored", scope: { all: true }, createdAt: "2026-10-14T10:00:00Z" }] })).toBe(false);
+    expect(check("export-bundle.schema.json", { format: "focus-notes/export/v1", exported: "2026-10-14T10:00:00Z", notes: [{ path: "A.md", text: "a", updated: "2026-10-14T10:00:00Z" }] })).toBe(true);
+    expect(check("export-bundle.schema.json", { format: "focus-notes/export/v2", exported: "2026-10-14T10:00:00Z", notes: [] })).toBe(false);
   });
 });

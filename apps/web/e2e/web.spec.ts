@@ -1,28 +1,14 @@
 /**
- * MW journeys (PKG-05, PKG-07, PKG-08, DST-02, FRE-09): the app on its own, local first in
- * IndexedDB, then connected to a notes repository through GitHub's API (faked here).
+ * MW journeys (D-90): the web app against a built site with a fixture instance (e2e/fixture: public
+ * notes, and private notes sealed for the passphrase below). Notes written here stay in the browser,
+ * the instance's notes are read-only, and nothing goes anywhere but the site itself.
  */
+import { readFile } from "node:fs/promises";
 import { test, expect, type Page } from "@playwright/test";
-import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 import { axeViolations } from "../../desktop/e2e/axe.ts";
 
-const TOKEN = "github_pat_" + "A".repeat(40);
-
-async function fakeGitHub(page: Page) {
-  const gh = new FakeGitHub();
-  gh.token = TOKEN;
-  const hosts = new Set<string>();
-  page.on("request", (r) => hosts.add(new URL(r.url()).host));
-  // GitHub's own pages (opened in new tabs) are stubbed, so they don't redirect to a sign-in page.
-  await page.context().route("https://github.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>GitHub</title>" }));
-  await page.route("https://api.github.com/**", async (route) => {
-    const req = route.request();
-    const headers = await req.allHeaders();
-    const res = await gh.fetch(req.url(), { method: req.method(), headers: { Authorization: headers["authorization"] ?? "" }, body: req.postData() ?? undefined } as RequestInit);
-    await route.fulfill({ status: res.status, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }, body: await res.text() });
-  });
-  return { gh, hosts };
-}
+const PASSPHRASE = "correct horse battery staple";
+const SITE = "127.0.0.1:4317";
 const mod = "Control";
 /** Dialogs fade in; accessibility checks run on the settled page, not mid-fade. */
 const settledAxe = async (page: Page) => {
@@ -30,192 +16,223 @@ const settledAxe = async (page: Page) => {
   return axeViolations(page);
 };
 const editor = (page: Page) => page.getByRole("textbox", { name: "Note" });
+const corner = (page: Page) => page.getByRole("region", { name: "Account" });
 
-test("the app runs on its own: welcome, local notes that survive a reload, and Open", async ({ page }) => {
-  await fakeGitHub(page);
+/** Records every host the page talks to, and stubs GitHub's pages that buttons open in new tabs. */
+async function watch(page: Page) {
+  const hosts = new Set<string>();
+  page.context().on("request", (r) => hosts.add(new URL(r.url()).host));
+  await page.context().route("https://github.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>GitHub</title>" }));
+  return hosts;
+}
+/** A site with no instance files: what local development and a fresh copy before its first deploy look like. */
+const noInstance = (page: Page) => page.route("**/focus-notes.json", (route) => route.fulfill({ status: 404, body: "" }));
+
+async function unlock(page: Page, button: "Unlock" | "Unlock and remember") {
+  await corner(page).getByRole("button", { name: "Unlock" }).click();
+  const dialog = page.getByRole("dialog", { name: "Unlock private notes" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Passphrase").fill(PASSPHRASE);
+  await dialog.getByRole("button", { name: button, exact: true }).click();
+  await expect(dialog).toBeHidden({ timeout: 15_000 });
+}
+
+test("your notes stay in this browser: written with no account, kept across reloads and offline", async ({ page, context }) => {
+  const hosts = await watch(page);
+  await noInstance(page);
   await page.goto("./");
-  const welcome = page.getByRole("dialog", { name: "Welcome to Focus Notes" });
-  await expect(welcome).toBeVisible();
-  expect(await settledAxe(page)).toEqual([]);
-  await page.screenshot({ path: "../../test-results/screens/web-welcome.png" });
-  await welcome.getByRole("button", { name: "Start writing" }).click();
-  await expect(welcome).toBeHidden();
   await expect(editor(page)).toContainText("Welcome to Focus Notes");
+  await expect(editor(page)).toContainText("This note lives in this browser");
+  // Outside an instance there's nothing to unlock and no visitor view.
+  await expect(corner(page)).toHaveCount(0);
 
-  // Write, reload: it's still there, and the welcome doesn't come back.
   await editor(page).click();
   await page.keyboard.press(`${mod}+End`);
   await page.keyboard.type(" Written in the browser.");
   await page.waitForTimeout(800);
   await page.reload();
   await expect(editor(page)).toContainText("Written in the browser.");
-  await expect(page.getByRole("dialog", { name: "Welcome to Focus Notes" })).toBeHidden();
 
-  // A second note, then Open… lists both and opens the first again.
+  await context.setOffline(true);
   await page.keyboard.press(`${mod}+Alt+n`);
+  await expect(editor(page)).not.toContainText("Written in the browser.");
   await expect(editor(page)).toBeFocused();
-  await page.keyboard.type("# Second note");
-  await page.waitForTimeout(800);
+  await page.keyboard.type("# Offline thoughts");
+  await expect(editor(page)).toContainText("Offline thoughts");
+  // Saved to IndexedDB while offline: the note is there before the reload.
+  await expect.poll(() => page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((res) => { const r = indexedDB.open("focus-notes"); r.onsuccess = () => res(r.result); });
+    return new Promise<string>((res) => { const r = db.transaction("notes").objectStore("notes").get("Untitled.md"); r.onsuccess = () => res(r.result?.text ?? ""); });
+  })).toContain("Offline thoughts");
+  await context.setOffline(false);
+  await page.reload();
+  await expect(editor(page)).toContainText("Offline thoughts");
   await page.keyboard.press(`${mod}+o`);
   const open = page.getByRole("dialog", { name: "Open a note" });
-  await expect(open).toBeVisible();
   await expect(open.getByRole("option")).toHaveCount(2);
   await open.getByRole("combobox", { name: "Find a note" }).fill("welc");
   await expect(open.getByRole("option")).toHaveCount(1);
   expect(await settledAxe(page)).toEqual([]);
   await page.keyboard.press("Enter");
-  await expect(open).toBeHidden();
   await expect(editor(page)).toContainText("Written in the browser.");
+
+  // The browser holds no GitHub credential and talks to nothing but its own site (D-90).
+  expect([...hosts].filter((h) => h !== SITE)).toEqual([]);
+  const stored = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((res, rej) => { const r = indexedDB.open("focus-notes"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    const keys = await new Promise<IDBValidKey[]>((res) => { const r = db.transaction("meta").objectStore("meta").getAllKeys(); r.onsuccess = () => res(r.result); });
+    return keys.map(String);
+  });
+  expect(stored).toEqual(["appState"]);
 });
 
-test("connect GitHub from pre-filled pages, then sync both ways and keep both versions on a conflict", async ({ page, context }) => {
-  const { gh, hosts } = await fakeGitHub(page);
-  gh.commitFiles({ "From GitHub.md": "# From GitHub\n\nAlready in the repository.\n" });
+test("a visitor sees the public notes read-only and how to use the app for themselves", async ({ page, context }) => {
+  const hosts = await watch(page);
   await page.goto("./");
-  const dialog = page.getByRole("dialog", { name: "Welcome to Focus Notes" });
-  await dialog.getByRole("button", { name: "Connect GitHub…" }).click();
-  const connect = page.getByRole("dialog", { name: "Connect GitHub" });
-
-  // Step 1: the notes repository, from GitHub's own pre-filled page.
-  const [repoPage] = await Promise.all([context.waitForEvent("page"), connect.getByRole("button", { name: "Create the repository on GitHub" }).click()]);
-  const repoUrl = new URL(repoPage.url());
-  expect(repoUrl.origin + repoUrl.pathname).toBe("https://github.com/new");
-  expect(repoUrl.searchParams.get("visibility")).toBe("private");
-  await repoPage.close();
-  await expect(connect.getByRole("textbox", { name: "Notes repository" })).toHaveValue("notes");
-  await connect.getByRole("button", { name: "Next" }).click();
-
-  // Step 2: the token, from the pre-filled fine-grained token page.
-  const [tokenPage] = await Promise.all([context.waitForEvent("page"), connect.getByRole("button", { name: "Create a token on GitHub" }).click()]);
-  const tokenUrl = new URL(tokenPage.url());
-  expect(tokenUrl.pathname).toBe("/settings/personal-access-tokens/new");
-  expect(tokenUrl.searchParams.get("contents")).toBe("write");
-  expect(tokenUrl.searchParams.get("name")).toBe("Focus Notes");
-  await tokenPage.close();
-  const token = connect.getByLabel("Token");
-  await token.fill("not a token");
-  await connect.getByRole("button", { name: "Connect" }).click();
-  await expect(connect.getByText("doesn't look like a GitHub token")).toBeVisible();
-  await token.fill("github_pat_" + "B".repeat(40));
-  await connect.getByRole("button", { name: "Connect" }).click();
-  await expect(connect.getByText("didn't accept that token")).toBeVisible();
-  await token.fill(TOKEN);
+  // The first visit opens the newest public note, read-only (FRE-09, PKG-09).
+  await expect(editor(page)).toContainText(/Garden log|Reading list/);
+  await expect(editor(page)).toHaveAttribute("aria-readonly", "true");
+  await expect(editor(page)).toHaveAttribute("contenteditable", "false");
+  const c = corner(page);
+  await expect(c.getByRole("button", { name: "Unlock" })).toBeVisible();
+  await expect(c.getByRole("button", { name: "Use this app for yourself" })).toBeVisible();
+  await expect(c.getByRole("button", { name: "Read only · Copy to my notes" })).toBeVisible();
   expect(await settledAxe(page)).toEqual([]);
-  await connect.getByRole("button", { name: "Connect" }).click();
-  await expect(connect.getByText("Connected as me to me/notes.")).toBeVisible();
-  await page.screenshot({ path: "../../test-results/screens/web-connected.png" });
+  await page.screenshot({ path: "../../test-results/screens/web-visitor.png" });
 
-  // The token is stored encrypted, never as text.
-  const stored = await page.evaluate(() => new Promise<string>((resolve) => {
-    const r = indexedDB.open("focus-notes");
-    r.onsuccess = () => {
-      const g = r.result.transaction("meta").objectStore("meta").get("token");
-      g.onsuccess = () => resolve(JSON.stringify(g.result, (_k, v) => (v instanceof ArrayBuffer ? `bytes:${v.byteLength}` : v)));
-    };
-  }));
-  expect(stored).not.toContain("github_pat_");
-  expect(stored).toContain("bytes:");
-
-  await connect.getByRole("button", { name: "Start writing" }).click();
-  // The repository's notes arrived; the local welcome note wasn't pushed.
+  // Open… lists the public notes, marked as such; private ones stay hidden until unlocked.
   await page.keyboard.press(`${mod}+o`);
   const open = page.getByRole("dialog", { name: "Open a note" });
-  await expect(open.getByRole("option", { name: /From GitHub/ })).toBeVisible();
-  await open.getByRole("option", { name: /From GitHub/ }).click();
-  await expect(editor(page)).toContainText("Already in the repository.");
-  expect(Object.keys(gh.files())).toEqual(["From GitHub.md"]);
+  await expect(open.getByRole("option")).toHaveCount(2);
+  await expect(open.getByRole("option", { name: /Garden log/ })).toContainText("Public · Guides");
+  await open.getByRole("option", { name: /Reading list/ }).click();
+  await expect(editor(page)).toContainText("Books I want to read");
 
-  // Typing here becomes a commit there.
+  // Use this app for yourself explains the model and goes only to GitHub's own pages (DST-01).
+  await c.getByRole("button", { name: "Use this app for yourself" }).click();
+  const about = page.getByRole("dialog", { name: "Use this app for yourself" });
+  await expect(about).toContainText("Nothing here is shared with you");
+  await expect(about).toContainText("Use this template");
+  expect(await settledAxe(page)).toEqual([]);
+  await page.screenshot({ path: "../../test-results/screens/web-about.png" });
+  const [template] = await Promise.all([context.waitForEvent("page"), about.getByRole("button", { name: "Make my own copy on GitHub" }).click()]);
+  expect(template.url()).toBe("https://github.com/prabinpebam/focus-notes-workspace");
+  await template.close();
+  const [release] = await Promise.all([context.waitForEvent("page"), about.getByRole("button", { name: "Download the desktop app" }).click()]);
+  expect(release.url()).toBe("https://github.com/prabinpebam/focus-notes/releases/latest");
+  await release.close();
+  await page.keyboard.press("Escape");
+  await expect(about).toBeHidden();
+
+  // Typing changes nothing; Copy to my notes makes an editable copy here.
+  await editor(page).click();
+  await page.keyboard.type("nope");
+  await expect(editor(page)).not.toContainText("nope");
+  await c.getByRole("button", { name: "Read only · Copy to my notes" }).click();
+  await expect(page.getByText("Copied to your notes in this browser as “Reading”.")).toBeVisible();
+  await expect(editor(page)).not.toHaveAttribute("aria-readonly", "true");
   await editor(page).click();
   await page.keyboard.press(`${mod}+End`);
-  await page.keyboard.press("Enter");
-  await page.keyboard.type("Typed in the browser.");
-  await expect.poll(() => gh.files()["From GitHub.md"] ?? "", { timeout: 15_000 }).toContain("Typed in the browser.");
-
-  // A change made elsewhere arrives when the page asks again (focus, timer, or Sync now).
-  gh.commitFiles({ "From GitHub.md": gh.files()["From GitHub.md"]!.replace("Already", "Edited elsewhere, already") });
-  await page.keyboard.press(`${mod}+.`);
-  await page.getByRole("button", { name: "More" }).click();
-  await page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: "Sync now" }).click();
-  await expect(editor(page)).toContainText("Edited elsewhere, already in the repository.");
-
-  // Both sides change: both versions are kept, and a toast says so.
-  gh.commitFiles({ "From GitHub.md": "# From GitHub\n\nRemote rewrite.\n" });
-  await editor(page).click();
-  await page.keyboard.press(`${mod}+End`);
-  await page.keyboard.type(" Local addition.");
-  await expect(page.getByRole("status").filter({ hasText: "Both are kept" })).toBeVisible({ timeout: 15_000 });
-  await expect.poll(() => Object.keys(gh.files()).sort(), { timeout: 15_000 }).toEqual(["From GitHub (conflict " + new Date().toISOString().slice(0, 10) + ").md", "From GitHub.md"]);
-  expect(gh.files()["From GitHub.md"]).toContain("Local addition.");
-
-  // Nothing went anywhere but this site and GitHub's API.
-  expect([...hosts].filter((h) => h !== "127.0.0.1:4317" && h !== "api.github.com")).toEqual([]);
-});
-
-test("offline: writing goes on, and the change syncs when the connection returns", async ({ page, context }) => {
-  const { gh } = await fakeGitHub(page);
-  gh.commitFiles({ "Offline.md": "start\n" });
-  await page.goto("./");
-  await page.getByRole("dialog", { name: "Welcome to Focus Notes" }).getByRole("button", { name: "Connect GitHub…" }).click();
-  const connect = page.getByRole("dialog", { name: "Connect GitHub" });
-  await connect.getByRole("button", { name: "Next" }).click();
-  await connect.getByLabel("Token").fill(TOKEN);
-  await connect.getByRole("button", { name: "Connect" }).click();
-  await connect.getByRole("button", { name: "Start writing" }).click();
-  await page.keyboard.press(`${mod}+o`);
-  await page.getByRole("dialog", { name: "Open a note" }).getByRole("option", { name: /Offline/ }).click();
-
-  await context.setOffline(true);
-  await editor(page).click();
-  await page.keyboard.press(`${mod}+End`);
-  await page.keyboard.type("written offline");
-  await page.waitForTimeout(4000);
-  expect(gh.files()["Offline.md"]).toBe("start\n");
-  await page.reload().catch(() => {});
-  await context.setOffline(false);
+  await page.keyboard.type(" Mine now.");
+  await page.waitForTimeout(800);
   await page.reload();
-  await expect(editor(page)).toContainText("written offline");
-  await expect.poll(() => gh.files()["Offline.md"] ?? "", { timeout: 15_000 }).toContain("written offline");
+  await expect(editor(page)).toContainText("Mine now.");
+  await expect(c.getByRole("button", { name: "Read only · Copy to my notes" })).toHaveCount(0);
+  expect([...hosts].filter((h) => h !== SITE && h !== "github.com")).toEqual([]);
 });
 
-
-test("the account pill: a quiet Sign in at the bottom left, then the name with sync and sign out (UI-12)", async ({ page }) => {
-  await fakeGitHub(page);
+test("the owner unlocks private notes read-only; the page forgets them unless asked to remember", async ({ page }) => {
+  await watch(page);
   await page.goto("./");
-  await page.getByRole("dialog", { name: "Welcome to Focus Notes" }).getByRole("button", { name: "Start writing" }).click();
-  const account = page.getByRole("region", { name: "Account" });
-  const signIn = account.getByRole("button", { name: "Sign in" });
-  await expect(signIn).toBeVisible();
+  await expect(editor(page)).toContainText(/Garden log|Reading list/);
+  await corner(page).getByRole("button", { name: "Unlock" }).click();
+  const dialog = page.getByRole("dialog", { name: "Unlock private notes" });
+  await expect(dialog).toContainText("Every site at 127.0.0.1:4317 shares this browser's storage and can reach this page");
+  expect(await settledAxe(page)).toEqual([]);
+  await page.screenshot({ path: "../../test-results/screens/web-unlock.png" });
 
-  // Bottom left, small, and faint at rest.
-  const box = (await signIn.boundingBox())!;
-  const view = page.viewportSize()!;
-  expect(box.x).toBeLessThan(40);
-  expect(view.height - (box.y + box.height)).toBeLessThan(40);
-  expect(box.height).toBeLessThanOrEqual(32);
-  // Muted words with no fill, but still readable (AA contrast, checked by axe below).
-  const style = await signIn.evaluate((e) => ({ bg: getComputedStyle(e).backgroundColor, color: getComputedStyle(e).color, text: getComputedStyle(document.querySelector(".ProseMirror")!).color }));
-  expect(style.bg).toBe("rgba(0, 0, 0, 0)");
-  expect(style.color).not.toBe(style.text);
+  // A wrong passphrase: one generic message, and the field is cleared for another try.
+  await dialog.getByLabel("Passphrase").fill("not the passphrase");
+  await page.keyboard.press("Enter");
+  await expect(dialog.getByText("That passphrase doesn't open the private notes on this site.")).toBeVisible({ timeout: 15_000 });
+  await expect(dialog.getByLabel("Passphrase")).toHaveValue("");
   expect(await settledAxe(page)).toEqual([]);
 
-  await signIn.click();
-  const connect = page.getByRole("dialog", { name: "Connect GitHub" });
-  await expect(connect).toBeVisible();
-  await connect.getByRole("button", { name: "Next" }).click();
-  await connect.getByLabel("Token").fill(TOKEN);
-  await connect.getByRole("button", { name: "Connect" }).click();
-  await connect.getByRole("button", { name: "Start writing" }).click();
+  await dialog.getByLabel("Passphrase").fill(PASSPHRASE);
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeHidden({ timeout: 15_000 });
+  await expect(page.getByText("1 private note unlocked until you close this page.")).toBeVisible();
+  const pill = corner(page).getByRole("button", { name: "Private notes unlocked for octo" });
+  await expect(pill).toHaveText("octo");
+  await expect(corner(page).getByRole("button", { name: "Use this app for yourself" })).toHaveCount(0);
 
-  const pill = account.getByRole("button", { name: "Signed in to GitHub as me" });
-  await expect(pill).toHaveText("me");
+  await page.keyboard.press(`${mod}+o`);
+  const open = page.getByRole("dialog", { name: "Open a note" });
+  await expect(open.getByRole("option")).toHaveCount(3);
+  await open.getByRole("option", { name: /Launch/ }).click();
+  await expect(editor(page)).toContainText("second week of November");
+  await expect(editor(page)).toHaveAttribute("aria-readonly", "true");
   expect(await settledAxe(page)).toEqual([]);
-  await page.screenshot({ path: "../../test-results/screens/web-account-pill.png" });
-  await pill.click();
-  const menu = page.getByRole("menu", { name: "Signed in to GitHub as me" });
-  await expect(menu.getByText(/Synced with me\/notes|Syncing with me\/notes/)).toBeVisible();
-  await expect(menu.getByRole("menuitem", { name: "Sync now" })).toBeVisible();
-  expect(await settledAxe(page)).toEqual([]);
-  await menu.getByRole("menuitem", { name: "Sign out of GitHub" }).click();
-  await expect(account.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await page.screenshot({ path: "../../test-results/screens/web-unlocked.png" });
+
+  // Nothing that opens the vault was stored: a reload locks it again.
+  const keys = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((res) => { const r = indexedDB.open("focus-notes"); r.onsuccess = () => res(r.result); });
+    return new Promise<string[]>((res) => { const r = db.transaction("meta").objectStore("meta").getAllKeys(); r.onsuccess = () => res(r.result.map(String)); });
+  });
+  expect(keys).not.toContain("vaultUnlockKey");
+  await page.reload();
+  await expect(corner(page).getByRole("button", { name: "Unlock" })).toBeVisible();
+  await expect(editor(page)).not.toContainText("second week of November");
+
+  // Remembered: still unlocked after a reload, until Forget this browser.
+  await unlock(page, "Unlock and remember");
+  await page.reload();
+  await expect(corner(page).getByRole("button", { name: "Private notes unlocked for octo" })).toBeVisible();
+  await corner(page).getByRole("button", { name: "Private notes unlocked for octo" }).click();
+  const menu = page.getByRole("menu", { name: "Private notes unlocked for octo" });
+  await expect(menu.getByText("Remembered on this browser")).toBeVisible();
+  await menu.getByRole("menuitem", { name: "Forget this browser" }).click();
+  await expect(page.getByText("Private notes locked, and this browser forgot the key.")).toBeVisible();
+  await page.reload();
+  await expect(corner(page).getByRole("button", { name: "Unlock" })).toBeVisible();
+});
+
+test("export your notes, and import them into another browser without losing anything (PKG-11)", async ({ page, browser }) => {
+  await watch(page);
+  await noInstance(page);
+  await page.goto("./");
+  await editor(page).click();
+  await page.keyboard.press(`${mod}+End`);
+  await page.keyboard.type(" Exported text.");
+  await page.waitForTimeout(800);
+
+  await page.keyboard.press(`${mod}+.`);
+  const toolbar = page.getByRole("toolbar", { name: "Toolbar" });
+  await toolbar.getByRole("button", { name: "More" }).click();
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("menuitem", { name: "Export my notes…" }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^focus-notes-export-\d{4}-\d{2}-\d{2}\.json$/);
+  const file = await download.path();
+  const bundle = JSON.parse(await readFile(file, "utf8"));
+  expect(bundle.format).toBe("focus-notes/export/v1");
+  expect(bundle.notes).toHaveLength(1);
+  await expect(page.getByText("Exported 1 note.")).toBeVisible();
+
+  // A second browser (its own storage) with a note of the same name: both are kept.
+  const other = await browser.newContext({ baseURL: "http://127.0.0.1:4317/" });
+  const p2 = await other.newPage();
+  await noInstance(p2);
+  await p2.goto("./");
+  await expect(editor(p2)).toContainText("Welcome to Focus Notes");
+  await p2.keyboard.press(`${mod}+.`);
+  await p2.getByRole("toolbar", { name: "Toolbar" }).getByRole("button", { name: "More" }).click();
+  const [chooser] = await Promise.all([p2.waitForEvent("filechooser"), p2.getByRole("menuitem", { name: "Import notes…" }).click()]);
+  await chooser.setFiles(file);
+  await expect(p2.getByText("Imported 1 note; 1 kept with a new name, because its name was taken.")).toBeVisible();
+  await p2.keyboard.press(`${mod}+o`);
+  const open = p2.getByRole("dialog", { name: "Open a note" });
+  await expect(open.getByRole("option")).toHaveCount(2);
+  await open.getByRole("option", { name: /Welcome 2/ }).click();
+  await expect(editor(p2)).toContainText("Exported text.");
+  await other.close();
 });
