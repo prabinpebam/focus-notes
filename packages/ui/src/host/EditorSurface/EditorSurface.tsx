@@ -3,6 +3,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import { coreExtensions, MarkdownSession, type PMNode } from "@focus-notes/editor";
 import { trackFocusBand } from "./focus-band.ts";
+import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import * as s from "./EditorSurface.css.ts";
 
 export interface EditorSurfaceProps {
@@ -29,6 +30,8 @@ export const REFOCUS_EVENT = "focus-notes:refocus";
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({ documentKey, initialValue, label, placeholder, readOnly, focusMode, id, onChange, onReady }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
+  const scrollerRef = useRef<HTMLElement | null>(null);
+  useAutoHideScrollbar(scrollerRef);
   const session = useMemo(() => new MarkdownSession(initialValue), [documentKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -115,7 +118,7 @@ export function EditorSurface({ documentKey, initialValue, label, placeholder, r
   }, [editor, session]);
 
   return (
-    <main className={s.scroller} data-editor-scroller="" aria-label={label}>
+    <main className={s.scroller} data-editor-scroller="" aria-label={label} ref={scrollerRef}>
       <div className={focusMode ? `${s.column} ${s.focusOn}` : s.column} ref={columnRef} data-focus-mode={focusMode ? "on" : undefined}>
         <EditorContent editor={editor} />
       </div>

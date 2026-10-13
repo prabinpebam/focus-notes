@@ -41,7 +41,8 @@
     "controlM": { "$value": "{ref.size.32}" },
     "controlL": { "$value": "{ref.size.40}" },
     "triggerDot": { "$value": "{ref.size.10}" },
-    "triggerRing": { "$value": "{ref.size.30}" }
+    "triggerRing": { "$value": "{ref.size.30}" },
+    "scrollbar": { "$value": "{ref.size.10}" }
   },
   "layout": {
     "$type": "dimension",
@@ -74,7 +75,8 @@
     "hairline": { "$value": "{ref.size.1}" },
     "focus": { "$value": "{ref.size.2}" },
     "focusOffset": { "$value": "{ref.size.2}" },
-    "selectedBar": { "$value": "{ref.size.2}" }
+    "selectedBar": { "$value": "{ref.size.2}" },
+    "scrollbarInset": { "$value": "{ref.size.2}" }
   },
   "shadow": {
     "$type": "shadow",

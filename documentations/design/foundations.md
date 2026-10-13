@@ -50,6 +50,21 @@ The shared building blocks every view and component uses: layout, spacing, shape
 
 **Shadows:** shadow 1 is a soft 0 1 px 2 px and 0 2 px 8 px at low opacity, shadow 2 is 0 8 px 24 px, and shadow 3 is 0 16 px 48 px. In dark themes shadows are weaker, and a lighter 1 px border carries the edge instead.
 
+<h3 data-reader-personas="design engineering">Scrollbars</h3>
+
+Every scrolling area (the note, sheets, menus, dialogs, result lists) uses the same minimal scrollbar (UI-09, [D-73](../plan/decisions.md)):
+
+| Rule | Value |
+| --- | --- |
+| Shape | A rounded thumb only. No arrow buttons and no visible track. `size.scrollbar` (10 px) wide, inset by `border.scrollbarInset` (2 px), so the visible thumb is 6 px. |
+| At rest | Hidden. |
+| Appears | While scrolling (by wheel, keyboard, or caret), and for 900 ms after the last scroll. Also while the pointer is over the scrollbar's edge, so it can always be found and dragged. |
+| Color | `color.scrollbar` (ink at 30%), and `color.scrollbarHover` (ink at 55%) under the pointer or while dragged. Dark themes use paper tints. |
+| Space | Always reserved (`scrollbar-gutter: stable`), so text never moves when the thumb appears, hides, or when a note grows long enough to scroll. |
+| Forced colors | The thumb stays visible at all times in a system color, so it never disappears in high-contrast modes (delivered with the forced-colors mode in WP-1.9). |
+
+The same rules apply on every platform. On macOS they match the system's overlay scrollbars, except that space is still reserved.
+
 <h2 data-reader-personas="design">Type</h2>
 
 **Note text** follows the theme's content font (see [Theming](../experience/theming.md#fonts)). Sizes are relative to `font.size`, default 18 px:

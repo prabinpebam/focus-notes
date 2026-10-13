@@ -428,11 +428,12 @@
       "id": "WP-1.4",
       "stage": "M1",
       "title": "Compound components, first set",
-      "summary": "Menu, Popover, Dialog, Toolbar, Toast, Field, Tabs, and ResultList, with command-driven items and full gallery coverage, plus the task tracker, the busy state, and the wait timing tokens.",
+      "summary": "Menu, Popover, Dialog, Toolbar, Toast, Field, Tabs, and ResultList, with command-driven items and full gallery coverage, plus the task tracker, the busy state, the wait timing tokens, and the minimal auto-hiding scrollbar.",
       "requirements": [
         "DSY-09",
         "DSY-12",
-        "PRF-08"
+        "PRF-08",
+        "UI-09"
       ],
       "dependsOn": [
         "WP-0.5"

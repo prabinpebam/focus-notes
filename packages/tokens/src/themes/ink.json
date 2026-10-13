@@ -25,7 +25,9 @@
     "onDanger": { "$value": "{ref.color.ink.950}" },
     "warning": { "$value": "{ref.color.amber.300}" },
     "success": { "$value": "{ref.color.green.300}" },
-    "info": { "$value": "{ref.color.blue.300}" }
+    "info": { "$value": "{ref.color.blue.300}" },
+    "scrollbar": { "$value": "{ref.color.ink.a30}" },
+    "scrollbarHover": { "$value": "{ref.color.ink.a50}" }
   },
   "trigger": {
     "dot": { "$type": "color", "$value": "{ref.color.red.400}" },

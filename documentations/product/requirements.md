@@ -3,7 +3,7 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 188 requirements in 25 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 189 requirements in 25 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
@@ -77,6 +77,7 @@ Seed: *"entire UI is blank except for a red 10px circle enclosed by a frosted ci
 | UI-06 | Inline formatting UI (bubble, slash menu, block handle) shows up only in context and disappears when unused. | P0 |
 | UI-07 | The six default toolbar actions are New note, Open, Search, Save, Focus, Theme. The ⋯ menu holds at least font size (larger, smaller, reset), full screen, find, find and replace, share and visibility, settings, keyboard shortcuts, and help (D-18). | P0 |
 | UI-08 | The writer can choose which six actions are pinned to the toolbar. The rest go into ⋯ automatically. | P1 |
+| UI-09 | Scrollbars are minimal: no arrow buttons, a thin rounded thumb that is hidden at rest and appears only while scrolling or while the pointer is over the scrollbar edge. Space for it is always reserved, so text never moves when it appears or hides (D-73). | P0 |
 
 ## Focus mode (FOC)
 

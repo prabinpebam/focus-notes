@@ -9,7 +9,7 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 
 | ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-CANVAS-01 | open the app straight into writing, with the caret in the last note or a new one | SC-WRITE-01 | P0 | IA-VIEW-CANVAS | UI-01, PKG-03 | From launch, typing lands in a note with no click, and nothing but text and the trigger is visible. |
+| UC-CANVAS-01 | open the app straight into writing, with the caret in the last note or a new one | SC-WRITE-01 | P0 | IA-VIEW-CANVAS | UI-01, UI-09, PKG-03 | From launch, typing lands in a note with no click, and nothing but text and the trigger is visible. Even the scrollbar stays hidden until you scroll or point at it. |
 | UC-CANVAS-02 | reach every app action from the trigger without any persistent chrome | SC-WRITE-01 | P0 | IA-CMP-TRIGGER, IA-CMP-TOOLBAR, IA-CMP-OVERFLOW | UI-02, UI-03, UI-04, UI-05, UI-07, UI-06 | At most six toolbar actions plus ⋯. Every action can be reached by keyboard, pointer, and touch. |
 | UC-CANVAS-03 | move, resize, maximize, snap, and full-screen the desktop window just like any native window | SC-WRITE-01 | P0 | IA-CMP-TITLEBAR | DSK-01, DSK-02, DSK-03, DSK-04, DSK-05, DSK-08 | macOS: every native window behavior works. Windows and Linux: resizing from every edge and corner, edge snapping, the Snap Layouts picker, double-click maximize, and full screen all work. Corners are 20 px, or square when maximized or snapped. |
 | UC-CANVAS-04 | open notes in separate windows side by side | SC-FILE-02 | P1 | IA-VIEW-CANVAS | DSK-06 | <kbd>Mod</kbd>+<kbd>Enter</kbd> in Spotlight opens a note in a new window. Each window remembers its note. |

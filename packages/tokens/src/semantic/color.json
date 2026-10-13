@@ -31,6 +31,8 @@
     "successMuted": { "$value": "{ref.color.green.a15}" },
     "info": { "$value": "{ref.color.blue.700}" },
     "infoMuted": { "$value": "{ref.color.blue.a20}" },
+    "scrollbar": { "$value": "{ref.color.paper.a30}" },
+    "scrollbarHover": { "$value": "{ref.color.paper.a55}" },
     "findMatch": { "$value": "{ref.color.amber.a35}" },
     "findMatchActive": { "$value": "{ref.color.amber.a70}" }
   },

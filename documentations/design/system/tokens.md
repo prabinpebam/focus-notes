@@ -40,13 +40,13 @@ The complete semantic tier. Adding to it needs a decision (see [Adding or changi
 | **Text color** | `color.text`, `color.textMuted`, `color.textPlaceholder`, `color.textDisabled`, `color.textInverse`, `color.link` | Yes |
 | **Accent and interaction** | `color.accent`, `color.onAccent`, `color.accentMuted`, `color.hover`, `color.pressed`, `color.selection`, `color.focusRing` | Yes |
 | **Status** | `color.danger`, `color.onDanger`, `color.dangerMuted`, `color.warning`, `color.warningMuted`, `color.success`, `color.successMuted`, `color.info`, `color.infoMuted` | Yes |
-| **Feature roles** | `trigger.dot`, `trigger.ring`, `trigger.ringBorder`, `trigger.blur`, `focus.dimOpacity`, `focus.rowTint`, `color.findMatch`, `color.findMatchActive`, `code.background`, `code.text`, `code.syntax.*` | Yes |
+| **Feature roles** | `trigger.dot`, `trigger.ring`, `trigger.ringBorder`, `trigger.blur`, `focus.dimOpacity`, `focus.rowTint`, `color.findMatch`, `color.findMatchActive`, `color.scrollbar`, `color.scrollbarHover`, `code.background`, `code.text`, `code.syntax.*` | Yes |
 | **Typography** | `font.content`, `font.ui`, `font.mono`, `font.size` (content base), `font.lineHeight` (content), `font.contentH1` to `font.contentH3` (ratios), `font.headingLineHeight`, `font.codeRatio`, `font.uiCaption`, `font.uiSecondary`, `font.uiBody`, `font.uiEmphasis`, `font.uiTitle`, `font.uiLineHeight`, `font.weightRegular`, `font.weightSemibold`, `font.weightBold` | Fonts, content size, and line height |
 | **Space** | `space.none` (0), `space.xs` (4), `space.s` (8), `space.m` (12), `space.l` (16), `space.xl` (24), `space.xxl` (32), `space.xxxl` (48), `layout.blockGap` | `layout.blockGap` only |
-| **Size** | `size.hit` (32 fine, 44 coarse), `size.iconS` (16), `size.iconM` (20), `size.iconL` (24), `size.controlS` (28), `size.controlM` (32), `size.controlL` (40), `size.triggerDot` (10), `size.triggerRing` (30) | No |
+| **Size** | `size.hit` (32 fine, 44 coarse), `size.iconS` (16), `size.iconM` (20), `size.iconL` (24), `size.controlS` (28), `size.controlM` (32), `size.controlL` (40), `size.triggerDot` (10), `size.triggerRing` (30), `size.scrollbar` (10) | No |
 | **Layout** | `layout.topBand` (44), `layout.measure` (70ch), `layout.gutter` (48), `layout.gutterCompact` (24), `layout.wideContent` (1040), `layout.sheetFiles` (320), `layout.sheetTheme` (380), `layout.popover` (360), `layout.dialogS` (480), `layout.dialogL` (760), `layout.blockGap`, `layout.editorEndPadding` (40vh), `layout.editorMinHeight` (60vh) | `layout.measure` only |
 | **Radius** | `radius.window`, `radius.sheet`, `radius.popover`, `radius.control`, `radius.small`, `radius.round` | `radius.window` only |
-| **Border** | `border.hairline` (1), `border.focus` (2), `border.focusOffset` (2), `border.selectedBar` (2) | No |
+| **Border** | `border.hairline` (1), `border.focus` (2), `border.focusOffset` (2), `border.selectedBar` (2), `border.scrollbarInset` (2) | No |
 | **Elevation** | `shadow.0` to `shadow.3`, `frost.opacity` (0.78), `frost.blur` (24) | No |
 | **Opacity** | `opacity.disabled` (0.4), `opacity.hover` (0.06), `opacity.pressed` (0.10), `opacity.muted` (0.75) | No |
 | **Motion** | `motion.micro`, `motion.enter`, `motion.sheet`, `motion.exit`, `motion.theme` (durations), `easing.standard`, `easing.decelerate`, `easing.accelerate` | No |
