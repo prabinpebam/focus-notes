@@ -111,6 +111,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@focus-notes/markdown':
+        specifier: workspace:*
+        version: link:../markdown
       '@focus-notes/tokens':
         specifier: workspace:*
         version: link:../tokens
