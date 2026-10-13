@@ -2,7 +2,7 @@
  * The renderer (DSY-06, Views as data → Rendering). Maps view nodes to registry components,
  * resolves values, and turns events into actions. It never creates DOM elements itself.
  */
-import { Component, createElement, Fragment, useMemo, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
+import { Component, createElement, Fragment, memo, useCallback, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
 import type { App, AppState } from "@focus-notes/core";
 import { formatChord } from "@focus-notes/core";
 import type { Contract } from "@focus-notes/ui/contracts";
@@ -109,7 +109,10 @@ export function createResolver(deps: RuntimeDeps) {
 
 type Resolver = ReturnType<typeof createResolver>;
 
-function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, key: string | number): ReactNode {
+/** Renders a view's top node with each child as its own region (PRF-11). */
+interface RegionCtx { deps: RuntimeDeps; resolver: Resolver; local: Record<string, unknown>; setLocal: Scope["setLocal"] }
+
+function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, key: string | number, regions?: RegionCtx): ReactNode {
   if ("when" in node && node.when !== undefined && !r.value(node.when as Value, scope)) return null;
   if (isSlot(node) || isFragment(node)) return null; // Fragments are expanded at build time.
   if (isEach(node)) {
@@ -167,28 +170,84 @@ function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, ke
     props.commandInfo = { ...d, title: deps.app.messages.format(d.title), shortcut: d.shortcut ? formatChord(d.shortcut, deps.app.bridge.platform) : undefined };
   }
   for (const [slot, nodes] of Object.entries(node.slots ?? {})) props[slot] = nodes.map((n, i) => renderNode(n, scope, deps, r, i));
-  const children = (node.children ?? []).map((n, i) => renderNode(n, scope, deps, r, i));
+  const children = (node.children ?? []).map((n, i) =>
+    regions ? createElement(RegionHost, { key: (isComponent(n) && n.id) || i, node: n, ...regions }) : renderNode(n, scope, deps, r, i));
   return createElement(Comp, props, ...children);
 }
 
-/** Hosts one view: subscribes to the store and renders the view document. */
+/**
+ * What a part of a view reads: the view models in its reads and bindings, or everything when it
+ * reads `env` or shows a command's state, which can depend on anything. Found once per node.
+ */
+interface Needs { vms: readonly string[]; all: boolean }
+const needsCache = new WeakMap<object, Needs>();
+function needsOf(node: unknown, skipChildren = false): Needs {
+  const hit = !skipChildren && typeof node === "object" && node !== null ? needsCache.get(node) : undefined;
+  if (hit) return hit;
+  const vms = new Set<string>();
+  let all = false;
+  const visit = (v: unknown, top: boolean): void => {
+    if (Array.isArray(v)) { for (const x of v) visit(x, false); return; }
+    if (typeof v !== "object" || v === null) return;
+    for (const [k, x] of Object.entries(v)) {
+      if (top && skipChildren && k === "children") continue;
+      if ((k === "get" || k === "bind") && typeof x === "string") {
+        const [head, id] = x.split(".");
+        if (head === "vm" && id) vms.add(`vm.${id}`);
+        else if (head === "env") all = true;
+      } else if (k === "command") all = true;
+      visit(x, false);
+    }
+  };
+  visit(node, true);
+  const needs = { vms: [...vms], all };
+  if (!skipChildren && typeof node === "object" && node !== null) needsCache.set(node, needs);
+  return needs;
+}
+
+interface RegionProps extends RegionCtx { node: Node; top?: boolean; viewKey?: string }
+
+/**
+ * One region of a view: a direct child of the view's top node (or the top node's own props). It
+ * re-renders only when a view model it reads changes, so typing in the note, or a change shown
+ * elsewhere, re-renders nothing here (PRF-11). A region hidden by its `when` reads only what the
+ * `when` needs until it first shows, so heavy, rarely shown parts cost nothing until then.
+ */
+const RegionHost = memo(function RegionHost({ node, top, viewKey, deps, resolver, local, setLocal }: RegionProps): ReactNode {
+  const needs = useMemo(() => needsOf(node, top), [node, top]);
+  const when = "when" in node ? (node as { when?: unknown }).when : undefined;
+  const gate = useMemo(() => (!top && when !== undefined ? needsOf(when) : undefined), [when, top]);
+  const shown = useRef(!gate);
+  const cache = useRef<{ state: AppState; values: unknown[]; version: number } | undefined>(undefined);
+  const subscribe = useCallback((l: () => void) => deps.app.store.subscribe(l), [deps]);
+  const snapshot = (): unknown => {
+    const state = deps.app.store.state;
+    const n = shown.current || !gate ? needs : gate;
+    if (n.all) return state;
+    const c = cache.current;
+    if (c?.state === state) return c.version;
+    const values = n.vms.map((id) => deps.app.viewModels.select(id, state));
+    if (c && values.length === c.values.length && values.every((v, i) => v === c.values[i])) {
+      c.state = state;
+      return c.version;
+    }
+    cache.current = { state, values, version: (c?.version ?? 0) + 1 };
+    return cache.current.version;
+  };
+  useSyncExternalStore(subscribe, snapshot, snapshot);
+  const scope: Scope = { state: deps.app.store.state, local, setLocal, items: {} };
+  if (!shown.current && resolver.value(when as Value, scope)) shown.current = true;
+  return renderNode(node, scope, deps, resolver, viewKey ?? 0, top ? { deps, resolver, local, setLocal } : undefined);
+});
+
+/** Hosts one view: its local state, and its regions, each subscribed to what it shows (PRF-11). */
 export function ViewHost({ viewId, deps }: { viewId: string; deps: RuntimeDeps }): ReactNode {
   const doc = deps.views[viewId] as ViewDocument | undefined;
   if (!doc) throw new Error(`Unknown view ${viewId}`);
-  const state = useSyncExternalStore(
-    (l) => deps.app.store.subscribe(l),
-    () => deps.app.store.state,
-    () => deps.app.store.state,
-  );
   const [local, setLocalState] = useState<Record<string, unknown>>(() => ({ ...(doc.local ?? {}) }));
   const resolver = useMemo(() => createResolver(deps), [deps]);
-  const scope: Scope = {
-    state,
-    local,
-    setLocal: (k, v) => setLocalState((prev) => ({ ...prev, [k]: v })),
-    items: {},
-  };
-  return renderNode(doc.root, scope, deps, resolver, viewId);
+  const setLocal = useCallback((k: string, v: unknown) => setLocalState((prev) => ({ ...prev, [k]: v })), []);
+  return createElement(RegionHost, { node: doc.root, top: true, viewKey: viewId, deps, resolver, local, setLocal });
 }
 
 /** A calm fallback when a view fails, so the rest of the app keeps working. */

@@ -28,6 +28,18 @@ contextBridge.exposeInMainWorld("focusNotes", {
   // Links in notes open in the default browser; the main process checks the address again (EDT-13).
   openLink: (url: string) => ipcRenderer.send("link:open", url),
   copyText: (text: string) => ipcRenderer.invoke("clipboard:write", text),
+  // The workspace (WP-2.3): its tree, its format, renames that follow titles, and outside changes.
+  workspace: {
+    info: () => ipcRenderer.invoke("workspace:info"),
+    scan: () => ipcRenderer.invoke("workspace:scan"),
+    writeFormat: (text: string) => ipcRenderer.invoke("workspace:writeFormat", text),
+    renameNote: (from: string, to: string) => ipcRenderer.invoke("workspace:rename", from, to),
+    onChange: (listener: (changes: unknown[]) => void) => {
+      const handler = (_e: unknown, changes: unknown[]) => listener(changes);
+      ipcRenderer.on("workspace:changed", handler);
+      return () => ipcRenderer.removeListener("workspace:changed", handler);
+    },
+  },
   setWindowScheme: (s: "light" | "dark", canvas?: string) => ipcRenderer.send("window:scheme", s, canvas),
   onFlushRequest: (listener: () => Promise<boolean>) => {
     ipcRenderer.on("app:flush", () => {

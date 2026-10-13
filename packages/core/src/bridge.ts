@@ -1,4 +1,5 @@
 import type { Platform } from "./commands.ts";
+import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
 
 /**
  * Services a shell provides. The Electron preload implements this as `window.focusNotes`;
@@ -41,6 +42,25 @@ export interface PlatformBridge {
   exportNotes?(): Promise<number>;
   /** Asks for a bundle file and adds its notes here, never replacing any (PKG-11). Undefined if cancelled. */
   importNotes?(): Promise<{ added: number; renamed: number } | undefined>;
+  /** The workspace: its notes and folders, its format, and changes made outside the app (WP-2.3). */
+  workspace?: WorkspaceBridge;
+}
+
+/**
+ * The workspace a shell keeps (Desktop and Git, Web app). Paths are the shell's own, as for
+ * `readNote`. The desktop reads a folder and watches it; the browser reads IndexedDB and its site.
+ */
+export interface WorkspaceBridge {
+  /** Where the workspace is, and the text of its format file if it has one (DST-05). Quick: read before the first note opens. */
+  info(): Promise<{ folder: string; format?: string }>;
+  /** Every note and folder in the workspace's roots. */
+  scan(): Promise<WorkspaceScan>;
+  /** Writes the format file, after a migration the person agreed to. */
+  writeFormat(text: string): Promise<void>;
+  /** Renames a note in its folder. Rejects if the new name is taken, except for a change of case. */
+  renameNote(from: string, to: string): Promise<void>;
+  /** Changes made outside the app, in batches (the desktop's file watcher). */
+  onChange?(listener: (changes: WorkspaceChange[]) => void): () => void;
 }
 
 export interface NoteSummary {

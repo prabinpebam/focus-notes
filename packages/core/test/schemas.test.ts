@@ -3,6 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
+import { formatWorkspaceFile, WORKSPACE_FORMAT } from "../src/workspace-format.ts";
 
 const dir = join(import.meta.dirname, "..", "..", "..", "schemas");
 const load = (f: string) => JSON.parse(readFileSync(join(dir, f), "utf8"));
@@ -24,6 +25,10 @@ describe("file format schemas (AGT-08)", () => {
     expect(check("app-state.schema.json", { version: 1, lastNotePath: "C:/n.md", appearance: "dark" })).toBe(true);
     expect(check("app-state.schema.json", { version: 2 })).toBe(false);
     expect(check("workspace.schema.json", { formatVersion: 1 })).toBe(true);
+    expect(check("workspace.schema.json", { formatVersion: 0 })).toBe(false);
+    expect(check("workspace.schema.json", { templateVersion: "1.0.0" })).toBe(false);
+    // What the app writes after a migration is valid (DST-05).
+    expect(check("workspace.schema.json", JSON.parse(formatWorkspaceFile({ formatVersion: WORKSPACE_FORMAT, templateVersion: "1.0.0" })))).toBe(true);
     expect(check("keybindings.schema.json", [{ command: "focus.toggle", key: "Mod+Shift+F" }])).toBe(true);
     expect(check("keybindings.schema.json", [{ command: "Focus", key: "x y" }])).toBe(false);
     expect(check("settings.schema.json", { toolbar: ["a.b", "a.c", "a.d", "a.e", "a.f", "a.g", "a.h"] })).toBe(false);

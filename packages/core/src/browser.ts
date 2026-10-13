@@ -13,6 +13,7 @@ import { freePath, innerPath, isReadOnlyPath, safeLocalPath, sourceOf, titleOfPa
 import type { Store } from "./store.ts";
 import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
+import { noteReadOnly } from "./workspace-app.ts";
 
 export interface PickerState {
   open: boolean;
@@ -127,6 +128,7 @@ export function registerBrowserFeatures(ctx: BrowserContext): { start(): Promise
       },
     },
     setters: { query: "picker.setQuery" },
+    reads: ["ui.picker"],
     select: (s) => {
       const p = s.ui.picker;
       if (!p.open) return { open: false, query: "", activeId: "", focus: p.focus, items: [], summary: "" };
@@ -239,6 +241,7 @@ export function registerBrowserFeatures(ctx: BrowserContext): { start(): Promise
       },
     },
     setters: { passphrase: "unlock.setPassphrase" },
+    reads: ["ui.unlock"],
     select: (s) => {
       const u = s.ui.unlock;
       return {
@@ -257,6 +260,7 @@ export function registerBrowserFeatures(ctx: BrowserContext): { start(): Promise
   viewModels.register({
     id: "vm.about",
     schema: { type: "object", properties: { open: { type: "boolean" } } },
+    reads: ["ui.aboutOpen"],
     select: (s) => ({ open: s.ui.aboutOpen }),
   });
 
@@ -278,11 +282,16 @@ export function registerBrowserFeatures(ctx: BrowserContext): { start(): Promise
         readOnly: { type: "boolean" }, readOnlyText: { type: "string" },
       },
     },
+    // Its menu shows command states, which can depend on anything (PRF-11).
+    reads: "*",
     select: (s) => {
       const i = s.instance;
-      const readOnly = isReadOnlyPath(s.note.path) && s.note.status === "ready";
+      const readOnly = noteReadOnly(s) && s.note.status === "ready";
       const about = i.present && i.vault !== "unlocked";
-      const base = { about, readOnly, readOnlyText: readOnly ? catalog.format("account.readOnly") : "" };
+      // An instance note can be copied; a workspace that can't be written says why (DST-05).
+      const why = isReadOnlyPath(s.note.path) ? "account.readOnly" : s.workspace.access === "migrate" ? "account.readOnlyOlder"
+        : s.workspace.access === "newer" ? "account.readOnlyNewer" : "account.readOnlyUnreadable";
+      const base = { about, readOnly, readOnlyText: readOnly ? catalog.format(why) : "" };
       if (i.vault === "unlocked") {
         return {
           ...base, visible: true, mode: "owner", text: i.owner, label: catalog.format("account.owner", { owner: i.owner }),

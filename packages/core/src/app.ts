@@ -7,6 +7,7 @@ import { MessageCatalog, type Messages } from "./messages.ts";
 import type { PlatformBridge, AppStateFile } from "./bridge.ts";
 import { registerBrowserFeatures, PICKER_CLOSED, UNLOCK_CLOSED, NO_INSTANCE, type PickerState, type UnlockState, type InstanceState } from "./browser.ts";
 import { isReadOnlyPath, sourceOf } from "./notes.ts";
+import { registerWorkspaceFeatures, noteReadOnly, NO_WORKSPACE, type WorkspaceState, type WorkspaceFormatOptions } from "./workspace-app.ts";
 import type { Platform } from "./commands.ts";
 import { waits } from "@focus-notes/tokens";
 import { TaskTracker, type Clock, type TaskView } from "./tasks.ts";
@@ -56,6 +57,8 @@ export interface AppState {
   };
   /** The instance this web app was deployed with, read-only (PKG-08, PKG-10). */
   instance: InstanceState;
+  /** The workspace: its tree of notes and folders, and whether this app may write it (DST-05). */
+  workspace: WorkspaceState;
   /** Waits a person started (PRF-08). */
   tasks: TaskView[];
   /** The latest polite announcement for screen readers; `n` makes repeats announce again. */
@@ -144,6 +147,8 @@ export const resolvedTheme = (s: AppState): string =>
 export interface AppOptions {
   /** A clock for the task tracker and toasts; tests pass a fake one. */
   clock?: Clock;
+  /** The workspace format and its migrations; tests pass their own (DST-05). */
+  workspaceFormat?: WorkspaceFormatOptions;
 }
 
 export function createApp(bridge: PlatformBridge, messages: Messages, locale = "en", options: AppOptions = {}): App {
@@ -156,6 +161,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     focusMode: false,
     ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED },
     instance: NO_INSTANCE,
+    workspace: NO_WORKSPACE,
     tasks: [],
     announcement: { text: "", n: 0 },
   });
@@ -199,15 +205,19 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
 
   const setNote = (patch: Partial<AppState["note"]>) =>
     store.update((s) => ({ ...s, note: { ...s.note, ...patch } }));
+  const workspace = registerWorkspaceFeatures({ store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}) });
 
   async function writeNow(): Promise<void> {
     clearTimeout(saveTimer);
     saveTimer = undefined;
     const { path, markdown, saveState } = store.state.note;
-    if (!path || saveState === "saved") return;
+    // Never into a workspace this app mustn't write (DST-05); the text stays unsaved, not lost.
+    if (!path || saveState === "saved" || noteReadOnly(store.state)) return;
     setNote({ saveState: "saving" });
     try {
       await bridge.writeNote(path, markdown);
+      // The file name follows the title (FIL-07); a rename keeps the editor as it is.
+      await workspace.written(path, markdown);
       // Only mark saved if nothing changed while writing.
       if (store.state.note.markdown === markdown) setNote({ saveState: "saved" });
       else schedule();
@@ -231,6 +241,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     try {
       const md = await bridge.readNote(path);
       setNote({ path, key: `${path}#${Date.now()}`, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
+      workspace.loaded(path, md);
       // A private note's name is private: it's never written to this browser's storage (D-90).
       if (sourceOf(path) !== "private") await persistAppState({ lastNotePath: path });
     } catch {
@@ -281,8 +292,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     title: "command.note.setContent",
     run: ({ value }) => {
       if (typeof value !== "string" || value === store.state.note.markdown) return;
-      // The instance's notes are read-only in the browser (D-90); the editor doesn't change them either.
-      if (isReadOnlyPath(store.state.note.path)) return;
+      // The instance's notes are read-only in the browser (D-90), and so is a workspace this app
+      // mustn't write (DST-05); the editor doesn't change them either.
+      if (noteReadOnly(store.state)) return;
       setNote({ markdown: value, saveState: "unsaved" });
       schedule();
     },
@@ -372,6 +384,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   commands.register({
     id: "note.new", title: "command.note.new", icon: "newNote", shortcut: { default: "Mod+N", web: "Ctrl+Alt+N" }, layer: "basic", group: "app",
+    enabled: (s) => s.workspace.access === "write",
+    disabledReason: "command.note.new.readOnly",
     run: async () => {
       const current = store.state.note.path;
       const path = await bridge.newNotePath(isReadOnlyPath(current) ? undefined : current);
@@ -623,6 +637,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         dismissLabel: { type: "string" },
       },
     },
+    reads: ["announcement", "ui.toasts", "ui.toastFocus"],
     select: (s) => ({
       announcement: s.announcement.text,
       announcementKey: s.announcement.n,
@@ -642,6 +657,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         triggerShortcut: { type: "string" },
       },
     },
+    // Command states can depend on anything; the value is kept while it's equal (PRF-11).
+    reads: "*",
     select: (s) => ({
       open: s.ui.toolbarOpen,
       items: DEFAULT_TOOLBAR.map(describeItem),
@@ -670,6 +687,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       },
     },
     setters: { query: "find.setQuery", replace: "find.setReplace" },
+    reads: ["ui.find"],
     select: (s) => {
       const f = s.ui.find;
       if (!f.open) return { ...f, status: "", statusTone: "muted", canReplace: false, actions: {} };
@@ -707,6 +725,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         editorKeymap: { type: "array", items: { type: "object", properties: { id: { type: "string" }, chord: { type: "string" } } } },
       },
     },
+    reads: ["appearance", "focusMode"],
     select: (s) => ({
       scheme: resolvedScheme(s), theme: resolvedTheme(s), platform: bridge.platform, fontSize: s.appearance.fontSize, focusMode: s.focusMode,
       contentFont: s.appearance.contentFont, uiScale: s.appearance.uiScale, editorKeymap,
@@ -748,6 +767,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       },
     },
     setters: { query: "shortcuts.setQuery", layer: "shortcuts.setLayer", platform: "shortcuts.setPlatform" },
+    reads: ["ui.shortcuts"],
     // Re-selected on every keystroke in the note, so it's cheap while closed and memoized while open.
     select: (s) => {
       const sh = s.ui.shortcuts;
@@ -779,13 +799,16 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         problemLabel: { type: "string" },
       },
     },
+    // Not note.markdown: typing never re-selects the canvas (PRF-11). It shows one note, by path.
+    reads: ["note.key", "note.initialMarkdown", "note.status", "note.saveState", "note.path", "workspace.access", "workspace.folder"],
+    shows: (s) => (s.note.path ? [{ kind: "note", path: s.note.path }] : []),
     select: (s) => ({
       noteKey: s.note.key,
       initialMarkdown: s.note.initialMarkdown,
       status: s.note.status,
       saveState: s.note.saveState,
       saveProblem: s.note.saveState === "error",
-      readOnly: isReadOnlyPath(s.note.path),
+      readOnly: noteReadOnly(s),
       // The trigger's dot shows a save problem (Feedback → Save and sync status).
       problem: s.note.saveState === "error",
       problemLabel: s.note.saveState === "error" ? (catalog.has("trigger.saveProblem") ? catalog.format("trigger.saveProblem") : "") : "",
@@ -800,6 +823,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       return () => editorListeners.delete(listener);
     },
     async start() {
+      // The workspace format is read alongside the app state, before the first note opens (DST-05).
+      const formatRead = workspace.prepare();
       appState = await bridge.loadAppState().catch(() => ({ version: 1 as const }));
       store.update((s) => ({
         ...s,
@@ -817,9 +842,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         focusMode: appState.focusMode ?? true,
       }));
       bridge.onSystemSchemeChange((system) => store.update((s) => ({ ...s, appearance: { ...s.appearance, system } })));
+      await formatRead;
       const path = appState.lastNotePath ?? (await bridge.defaultNotePath());
       await load(path);
       if (store.state.note.status === "error" && appState.lastNotePath) await load(await bridge.defaultNotePath());
+      workspace.start();
       await browser.start();
     },
   };

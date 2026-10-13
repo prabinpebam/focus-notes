@@ -28,6 +28,12 @@ async function watch(page: Page) {
 /** A site with no instance files: what local development and a fresh copy before its first deploy look like. */
 const noInstance = (page: Page) => page.route("**/focus-notes.json", (route) => route.fulfill({ status: 404, body: "" }));
 
+/** The paths of the notes kept in this browser. */
+const notePaths = (page: Page) => page.evaluate(async () => {
+  const db = await new Promise<IDBDatabase>((res) => { const r = indexedDB.open("focus-notes"); r.onsuccess = () => res(r.result); });
+  return new Promise<string[]>((res) => { const r = db.transaction("notes").objectStore("notes").getAllKeys(); r.onsuccess = () => res((r.result as string[]).sort()); });
+});
+
 async function unlock(page: Page, button: "Unlock" | "Unlock and remember") {
   await corner(page).getByRole("button", { name: "Unlock" }).click();
   const dialog = page.getByRole("dialog", { name: "Unlock private notes" });
@@ -59,11 +65,12 @@ test("your notes stay in this browser: written with no account, kept across relo
   await expect(editor(page)).toBeFocused();
   await page.keyboard.type("# Offline thoughts");
   await expect(editor(page)).toContainText("Offline thoughts");
-  // Saved to IndexedDB while offline: the note is there before the reload.
+  // Saved to IndexedDB while offline: the note is there before the reload, named after its title (FIL-07).
   await expect.poll(() => page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((res) => { const r = indexedDB.open("focus-notes"); r.onsuccess = () => res(r.result); });
-    return new Promise<string>((res) => { const r = db.transaction("notes").objectStore("notes").get("Untitled.md"); r.onsuccess = () => res(r.result?.text ?? ""); });
+    return new Promise<string>((res) => { const r = db.transaction("notes").objectStore("notes").get("offline-thoughts.md"); r.onsuccess = () => res(r.result?.text ?? ""); });
   })).toContain("Offline thoughts");
+  expect(await notePaths(page)).toEqual(["Welcome.md", "offline-thoughts.md"]);
   await context.setOffline(false);
   await page.reload();
   await expect(editor(page)).toContainText("Offline thoughts");
@@ -83,7 +90,8 @@ test("your notes stay in this browser: written with no account, kept across relo
     const keys = await new Promise<IDBValidKey[]>((res) => { const r = db.transaction("meta").objectStore("meta").getAllKeys(); r.onsuccess = () => res(r.result); });
     return keys.map(String);
   });
-  expect(stored).toEqual(["appState"]);
+  // Only what the data inventory lists: the app state and the notes' format (DST-05).
+  expect(stored).toEqual(["appState", "workspaceFormat"]);
 });
 
 test("a visitor sees the public notes read-only and how to use the app for themselves", async ({ page, context }) => {
@@ -269,4 +277,30 @@ test("EDT-13 on the web: a note's links open in a new tab with noopener, and the
   await link.click({ modifiers: ["Control"] });
   await expect.poll(opened).toHaveLength(2);
   expect(page.url()).toBe(at);
+});
+
+test("DST-05: notes a newer Focus Notes saved in this browser open read-only and are never written", async ({ page }) => {
+  await noInstance(page);
+  await page.goto("./");
+  await expect(editor(page)).toContainText("Welcome to Focus Notes");
+  const meta = (value?: string) => page.evaluate(async (v) => {
+    const db = await new Promise<IDBDatabase>((res) => { const r = indexedDB.open("focus-notes"); r.onsuccess = () => res(r.result); });
+    const store = db.transaction("meta", v === undefined ? "readonly" : "readwrite").objectStore("meta");
+    return new Promise<string>((res) => { const r = v === undefined ? store.get("workspaceFormat") : store.put(v, "workspaceFormat"); r.onsuccess = () => res(String(r.result)); });
+  }, value);
+  // The current app recorded its format; a newer one has since written its own.
+  expect(JSON.parse(await meta())).toEqual({ formatVersion: 1 });
+  await meta('{"formatVersion":99}');
+  await page.reload();
+  await expect(editor(page)).toContainText("Welcome to Focus Notes");
+  await expect(page.getByText(/saved by a newer Focus Notes \(format 99\)/)).toBeVisible();
+  await expect(corner(page).getByRole("button", { name: "Read only · Needs a newer Focus Notes" })).toBeVisible();
+  await editor(page).click();
+  await page.keyboard.press(`${mod}+End`);
+  await page.keyboard.type(" Typed anyway.");
+  await page.waitForTimeout(1000);
+  await page.reload();
+  await expect(editor(page)).not.toContainText("Typed anyway.");
+  expect(await notePaths(page)).toEqual(["Welcome.md"]);
+  expect(await meta()).toBe('{"formatVersion":99}');
 });

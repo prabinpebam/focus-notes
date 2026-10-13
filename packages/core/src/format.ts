@@ -194,6 +194,7 @@ export function registerFormatting({ store, commands, viewModels, catalog, bridg
   let memo: { key: FormatState; value: Record<string, unknown> } | undefined;
   viewModels.register({
     id: "vm.format",
+    reads: ["ui.format", "note.path", "note.status"],
     schema: {
       type: "object",
       properties: {
