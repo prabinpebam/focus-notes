@@ -7,7 +7,7 @@ This page covers the main workflows besides writing: managing notes and folders,
 
 ## The Files panel
 
-Opened from **Open** in the [trigger toolbar](main-ui.html) (<kbd>Ctrl/⌘</kbd>+<kbd>O</kbd>). It's a transient overlay that closes after a note is opened, so the canvas stays blank. Its keyboard behavior follows Finder on macOS and Explorer on Windows ([Keyboard shortcuts → Files panel](keyboard-shortcuts.md#files-panel)).
+Opened from **Open** in the [trigger toolbar](main-ui.html) (<kbd>Ctrl/⌘</kbd>+<kbd>O</kbd>). It's a transient overlay that closes after a note is opened, so the canvas stays blank. Its keyboard behavior follows Finder on macOS and Explorer on Windows ([Keyboard shortcuts → Files panel](keyboard-shortcuts.md#files-panel)). Until Git arrives (M3), each operation is one batch the app writes at once: on the desktop, deleted items go to the system trash; in the browser, they're kept, marked deleted. [What's built](../design/views/files.html#whats-built) lists what works today (D-94).
 
 - **Two roots:** *Public* and *Private*. They map to the two content repositories (see [Repository and publishing](../architecture/repository-and-publishing.html)). Each note's visibility is clear from which root it sits under. In the browser there's a third root for the notes written in this browser, the only ones editable there; *Public* and, once unlocked, *Private* are read-only ([Web app](../architecture/web-app.md#three-kinds-of-note)).
 - **Tree:** folders first, then notes, sorted alphabetically. Expand and collapse with the arrow keys. Typing a name jumps to it.
