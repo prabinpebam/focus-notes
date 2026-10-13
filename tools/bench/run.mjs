@@ -5,6 +5,7 @@ import { cpSync, mkdtempSync, readFileSync, writeFileSync, mkdirSync } from "nod
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const root = join(import.meta.dirname, "..", "..");
 const budgetsPath = join(import.meta.dirname, "budgets.json");
@@ -58,7 +59,45 @@ function rendererOverhead() {
   return { "DSY-11.rendererOverheadPct": Number(m[1]) };
 }
 
-const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead() } };
+// PRF-07: one `git status` per repository per refresh, and a cached answer within 5 ms. The fixture
+// workspace gets a private repository as its `private/` submodule, as an instance has.
+async function gitStatus() {
+  const docs = throwawayWorkspace();
+  const git = (cwd, ...args) => execFileSync("git", ["-c", "protocol.file.allow=always", ...args], { cwd, stdio: ["ignore", "pipe", "pipe"] });
+  const id = ["-c", "user.name=Bench", "-c", "user.email=bench@example.com", "-c", "commit.gpgsign=false"];
+  const priv = mkdtempSync(join(tmpdir(), "fn-bench-private-"));
+  git(priv, "init", "-q", "-b", "main");
+  mkdirSync(join(priv, "notes"));
+  writeFileSync(join(priv, "notes", "welcome.md"), "# Private\n");
+  git(priv, "add", "-A");
+  git(priv, ...id, "commit", "-q", "-m", "Start");
+  git(docs, "submodule", "add", "-q", priv, "private");
+  git(docs, "add", "-A");
+  git(docs, ...id, "commit", "-q", "-m", "Start");
+  const { GitSync } = await import(pathToFileURL(join(root, "apps", "desktop", "src", "main", "git", "sync.ts")).href);
+  const { createRunner } = await import(pathToFileURL(join(root, "apps", "desktop", "src", "main", "git", "run.ts")).href);
+  let statuses = 0;
+  const run = createRunner({ onSpawn: (args) => { if (args.includes("status")) statuses++; } });
+  const sync = await GitSync.open({ folder: docs, run, fetchEveryMs: 3_600_000 });
+  try {
+    sync.changed();
+    statuses = 0;
+    await sync.status();
+    const processes = statuses;
+    const cached = [];
+    for (let i = 0; i < 20; i++) {
+      const t = performance.now();
+      await sync.status();
+      cached.push(performance.now() - t);
+    }
+    if (statuses !== processes) throw new Error("A cached status started a Git process");
+    return { "PRF-07.statusProcesses": processes, "PRF-07.cachedStatusMs": Math.round(median(cached) * 100) / 100 };
+  } finally {
+    await sync.dispose();
+  }
+}
+
+const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()) } };
 mkdirSync(join(root, "test-results"), { recursive: true });
 writeFileSync(join(root, "test-results", "bench.json"), JSON.stringify(report, null, 2));
 
