@@ -96,3 +96,7 @@ globalStyle(`${prose} .ProseMirror-active-search-match`, {
   outlineWidth: t.findMatchOutlineWidth,
   outlineColor: t.findMatchOutline,
 });
+
+// ProseMirror's own needs (what Tiptap would otherwise inject): hidden selections stay hidden.
+globalStyle(p(".ProseMirror-hideselection *::selection"), { backgroundColor: "transparent" });
+globalStyle(`${prose}.ProseMirror-hideselection`, { caretColor: "transparent" });

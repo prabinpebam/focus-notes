@@ -74,6 +74,8 @@ export function EditorSurface({
       editable: !readOnly,
       autofocus: "end",
       immediatelyRender: true,
+      // The design system styles the editor; Tiptap's own <style> tag would be blocked by the CSP anyway.
+      injectCSS: false,
       shouldRerenderOnTransaction: false,
       editorProps: {
         attributes: { class: s.prose, role: "textbox", "aria-multiline": "true", "aria-label": label, spellcheck: "true", "data-editor": "", ...(id ? { id } : {}) },

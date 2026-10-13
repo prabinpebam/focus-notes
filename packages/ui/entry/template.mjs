@@ -13,10 +13,10 @@ export const DEFAULT_CSP = [
 ].join("; ");
 
 /**
- * @param {{ title: string; script: string; csp?: string; lang?: string }} options
+ * @param {{ title: string; script: string; csp?: string; lang?: string; icon?: string }} options
  * @returns {string}
  */
-export function renderEntryHtml({ title, script, csp = DEFAULT_CSP, lang = "en" }) {
+export function renderEntryHtml({ title, script, csp = DEFAULT_CSP, lang = "en", icon }) {
   return `<!doctype html>
 <html lang="${lang}">
   <head>
@@ -24,7 +24,8 @@ export function renderEntryHtml({ title, script, csp = DEFAULT_CSP, lang = "en" 
     <meta http-equiv="Content-Security-Policy" content="${csp}" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <title>${title}</title>
+    <title>${title}</title>${icon ? `
+    <link rel="icon" href="${icon}" type="image/svg+xml" />` : ""}
   </head>
   <body>
     <div id="root"></div>

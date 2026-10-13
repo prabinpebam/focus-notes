@@ -7,5 +7,5 @@ import { renderEntryHtml, DEFAULT_CSP } from "../../../packages/ui/entry/templat
 const csp = DEFAULT_CSP.replace("connect-src 'self'", "connect-src 'self' https://api.github.com").replace("; frame-ancestors 'none'", "");
 const dir = join(import.meta.dirname, "..", "src");
 mkdirSync(dir, { recursive: true });
-writeFileSync(join(dir, "index.html"), renderEntryHtml({ title: "Focus Notes", script: "./main.ts", csp }));
+writeFileSync(join(dir, "index.html"), renderEntryHtml({ title: "Focus Notes", script: "./main.ts", csp, icon: "./favicon.svg" }));
 console.log("Web entry document generated.");
