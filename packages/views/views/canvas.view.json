@@ -11,7 +11,8 @@
     "vm.feedback",
     "vm.picker",
     "vm.connect",
-    "vm.sync"
+    "vm.sync",
+    "vm.account"
   ],
   "focus": "editor",
   "root": {
@@ -1287,6 +1288,69 @@
                     ]
                   }
                 ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "Layer",
+        "id": "account",
+        "when": {
+          "get": "vm.account.visible"
+        },
+        "props": {
+          "layer": "panel",
+          "position": "bottomStart",
+          "landmark": "region",
+          "label": {
+            "t": "account.region"
+          }
+        },
+        "children": [
+          {
+            "switch": {
+              "get": "vm.account.mode"
+            },
+            "cases": {
+              "signIn": {
+                "type": "PillButton",
+                "props": {
+                  "label": {
+                    "get": "vm.account.text"
+                  }
+                },
+                "on": {
+                  "press": {
+                    "run": "github.connect"
+                  }
+                }
+              },
+              "owner": {
+                "type": "MenuButton",
+                "props": {
+                  "variant": "pill",
+                  "text": {
+                    "get": "vm.account.text"
+                  },
+                  "label": {
+                    "get": "vm.account.label"
+                  },
+                  "placement": "top start",
+                  "sections": {
+                    "get": "vm.account.sections"
+                  }
+                },
+                "on": {
+                  "action": {
+                    "run": "command.run",
+                    "args": {
+                      "id": {
+                        "get": "event.id"
+                      }
+                    }
+                  }
+                }
               }
             }
           }

@@ -3,7 +3,7 @@
 Every stage in detail: what you can do at the end, the demo that proves it, the work packages that build it, and the exit criteria on top of the [definition of done](definition-of-done.md). The same plan is in [`work-graph.json`](https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json), which agents read to pick ready work ([The agentic loop](agentic-loop.html)).
 
 > [!NOTE]
-> **TL;DR.** 59 work packages across 10 stages, covering all 195 requirements exactly once. Each work package lists its requirements, the work packages it depends on, the code areas it touches, the reviews it needs, and the spec pages it implements. Every work package also depends on the previous stage's gate, except spikes and long-lead items marked *lookahead*. The longest chain to version 1.0 is 22 work packages. Every stage has a demo script that the owner runs on clean machines at the stage gate, and that then becomes an automated journey test.
+> **TL;DR.** 59 work packages across 10 stages, covering all 196 requirements exactly once. Each work package lists its requirements, the work packages it depends on, the code areas it touches, the reviews it needs, and the spec pages it implements. Every work package also depends on the previous stage's gate, except spikes and long-lead items marked *lookahead*. The longest chain to version 1.0 is 22 work packages. Every stage has a demo script that the owner runs on clean machines at the stage gate, and that then becomes an automated journey test.
 
 ## How to read a work package
 
@@ -118,7 +118,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
 | WP-6.1 | **Web app on your own Pages, local first, with GitHub sync**. The web build deployed by each user's copy of the repository to their GitHub Pages; IndexedDB storage and the outbox; the sync engine on the Git Data API; the encrypted token store. | PKG-05, PKG-07, PKG-08 | WP-1.4 | code, security |
-| WP-6.2 | **Start in the browser, visitor mode, and Use this app for yourself**. Make your instance from the template; the web first run with Connect GitHub; visitor mode with public notes only; and the Use this app for yourself dialog. | DST-01, DST-02, FRE-09, PKG-09 | WP-6.1 | code, security, accessibility |
+| WP-6.2 | **Start in the browser, visitor mode, and Use this app for yourself**. Make your instance from the template; the web first run with Connect GitHub; visitor mode with public notes only; and the Use this app for yourself dialog. | DST-01, DST-02, FRE-09, PKG-09, UI-12 | WP-6.1 | code, security, accessibility |
 | WP-2.3 | **Local workspace model**. Folder workspaces, `workspace.json` with its format version and migrations, title-based file names, and change notifications scoped to the content each view model declares. | FIL-07, DST-05, PRF-11 | WP-1.1 | code |
 | WP-2.4 | **Files panel and file operations**. The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to…, with structural changes shown before they're saved. | FIL-01 to FIL-03, FIL-08, PRF-09 | WP-2.3, WP-1.4 | code, design-system, accessibility |
 | WP-2.5 | **Link updates**. Relative links updated on every rename and move. | FIL-09 | WP-2.4 | code |

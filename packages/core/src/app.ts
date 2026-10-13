@@ -639,6 +639,30 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       triggerShortcut: formatChord("Mod+.", bridge.platform),
     }),
   });
+  // The account pill (UI-12, D-89): the signed-in name, or a quiet Sign in; nothing without GitHub.
+  viewModels.register({
+    id: "vm.account",
+    schema: {
+      type: "object",
+      properties: {
+        mode: { type: "string", enum: ["signIn", "owner"] }, visible: { type: "boolean" },
+        text: { type: "string" }, label: { type: "string" },
+        sections: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM_SCHEMA } } } },
+      },
+    },
+    select: (s) => {
+      if (!bridge.github) return { mode: "signIn", visible: false, text: "", label: "", sections: [] };
+      const st = s.sync;
+      if (st.state === "local" || st.state === "signedOut" || !st.login) {
+        return { mode: "signIn", visible: true, text: catalog.format("account.signIn"), label: catalog.format("account.signInLabel"), sections: [] };
+      }
+      const status = catalog.format(`sync.state.${st.state}`, { pending: st.pending, repo: st.repo ?? "", message: st.message ?? "" });
+      return {
+        mode: "owner", visible: true, text: st.login, label: catalog.format("account.label", { login: st.login }),
+        sections: [{ id: "account", label: status, items: ["github.syncNow", "github.signOut"].map(describeItem) }],
+      };
+    },
+  });
   viewModels.register({
     id: "vm.find",
     schema: {

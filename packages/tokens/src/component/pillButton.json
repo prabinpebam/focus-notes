@@ -1,0 +1,70 @@
+{
+  "cmp": {
+    "pillButton": {
+      "height": {
+        "$type": "dimension",
+        "$value": "{size.iconL}"
+      },
+      "paddingInline": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "radius": {
+        "$type": "dimension",
+        "$value": "{radius.round}"
+      },
+      "text": {
+        "$type": "color",
+        "$value": "{color.textMuted}"
+      },
+      "textHover": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "hover": {
+        "$type": "color",
+        "$value": "{color.hover}"
+      },
+      "border": {
+        "$type": "color",
+        "$value": "{color.none}"
+      },
+      "borderHover": {
+        "$type": "color",
+        "$value": "{color.border}"
+      },
+      "borderWidth": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      },
+      "font": {
+        "$type": "fontFamily",
+        "$value": "{font.ui}"
+      },
+      "fontSize": {
+        "$type": "dimension",
+        "$value": "{font.uiCaption}"
+      },
+      "focusRing": {
+        "$type": "color",
+        "$value": "{color.focusRing}"
+      },
+      "focusWidth": {
+        "$type": "dimension",
+        "$value": "{border.focus}"
+      },
+      "duration": {
+        "$type": "duration",
+        "$value": "{motion.micro}"
+      },
+      "easing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.standard}"
+      },
+      "transparent": {
+        "$type": "color",
+        "$value": "{color.none}"
+      }
+    }
+  }
+}

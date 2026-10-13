@@ -3,7 +3,7 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 195 requirements in 25 areas. **P0** means the first usable release of its channel (the web app, then the desktop app), **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 196 requirements in 25 areas. **P0** means the first usable release of its channel (the web app, then the desktop app), **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
@@ -80,6 +80,7 @@ Seed: *"entire UI is blank except for a red 10px circle enclosed by a frosted ci
 | UI-09 | Scrollbars are minimal: no arrow buttons, a thin rounded thumb that is hidden at rest and appears only while scrolling or while the pointer is over the scrollbar edge. Space for it is always reserved, so text never moves when it appears or hides (D-73). | P0 |
 | UI-10 | The trigger sits 40 px below the window's top edge. On hover the red dot grows to fill its frosted circle. Opening the toolbar morphs the circle into the toolbar (the dot shrinks and fades, the buttons fade in after the shape settles), and closing reverses it. No motion with reduced motion (D-78). | P0 |
 | UI-11 | Reading zone: text is read and written in the band between 25% and 65% of the window height. A note starts 25% down, the last line can scroll up to leave 35% below it, and the line being edited is scrolled back into the band whenever it leaves it (D-78). | P0 |
+| UI-12 | Account pill: a small, muted pill in the bottom-left corner shows the signed-in GitHub name; pressing it offers the sync status, *Sync now*, and *Sign out*. When nobody is signed in, the same place shows a quiet *Sign in* link that opens Connect GitHub. Hidden where there's no GitHub connection (D-89). | P0 |
 
 ## Focus mode (FOC)
 

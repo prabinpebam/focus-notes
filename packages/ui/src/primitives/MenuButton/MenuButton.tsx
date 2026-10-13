@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { Header, Keyboard, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator, SubmenuTrigger } from "react-aria-components";
+import { Button, Header, Keyboard, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator, SubmenuTrigger } from "react-aria-components";
 import { IconButton } from "../IconButton/IconButton.tsx";
 import { Icon } from "../Icon/Icon.tsx";
 import type { IconName } from "../../icon-names.ts";
@@ -7,8 +7,15 @@ import type { CommandItem, MenuSection as Section } from "../../data.ts";
 import * as s from "./MenuButton.css.ts";
 
 export interface MenuButtonProps {
-  icon: IconName;
+  /** For the icon variant. */
+  icon?: IconName;
+  /** The accessible name (and the tooltip of the icon variant). */
   label: string;
+  /** "icon" (default) or "pill": a quiet text pill showing `text` (UI-12). */
+  variant?: "icon" | "pill";
+  text?: string;
+  /** Where the menu opens from the trigger. */
+  placement?: "bottom end" | "top start";
   sections: Section[];
   shortcut?: string;
   onAction?: (payload: { id: string }) => void;
@@ -51,12 +58,14 @@ function Submenu({ item, onAction }: { item: CommandItem; onAction?: ((payload: 
 }
 
 /** An icon button that opens a menu of commands, each with its state and shortcut (IA-CMP-OVERFLOW). */
-export function MenuButton({ icon, label, sections, shortcut, onAction }: MenuButtonProps) {
+export function MenuButton({ icon = "more", label, variant = "icon", text, placement = "bottom end", sections, shortcut, onAction }: MenuButtonProps) {
   const checkable = sections.some((sec) => sec.items.some((i) => i.checked !== undefined));
   return (
     <MenuTrigger>
-      <IconButton icon={icon} label={label} {...(shortcut ? { shortcut } : {})} />
-      <Popover className={s.popover} placement="bottom end" offset={8} data-floating-child="">
+      {variant === "pill"
+        ? <Button className={s.pill} aria-label={label}>{text ?? label}</Button>
+        : <IconButton icon={icon} label={label} {...(shortcut ? { shortcut } : {})} />}
+      <Popover className={s.popover} placement={placement} offset={8} data-floating-child="">
         <Menu className={s.menu} aria-label={label} shouldCloseOnSelect onAction={(key) => onAction?.({ id: String(key) })} disabledKeys={sections.flatMap((sec) => sec.items.filter((i) => i.disabled && !i.items).map((i) => i.id))}>
           {sections.map((sec, index) => (
             <Fragment key={sec.id}>

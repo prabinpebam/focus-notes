@@ -18,4 +18,5 @@ export const position = styleVariants({
   fill: { inset: 0, alignItems: "stretch", justifyContent: "stretch" },
   center: { inset: 0, alignItems: "center", justifyContent: "center" },
   bottomCenter: { left: 0, right: 0, bottom: tokens.space.xl, alignItems: "flex-end", justifyContent: "center" },
+  bottomStart: { left: tokens.space.l, bottom: tokens.space.l, alignItems: "flex-end", justifyContent: "flex-start" },
 });

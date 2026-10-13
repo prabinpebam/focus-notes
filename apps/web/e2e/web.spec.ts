@@ -177,3 +177,45 @@ test("offline: writing goes on, and the change syncs when the connection returns
   await expect(editor(page)).toContainText("written offline");
   await expect.poll(() => gh.files()["Offline.md"] ?? "", { timeout: 15_000 }).toContain("written offline");
 });
+
+
+test("the account pill: a quiet Sign in at the bottom left, then the name with sync and sign out (UI-12)", async ({ page }) => {
+  await fakeGitHub(page);
+  await page.goto("./");
+  await page.getByRole("dialog", { name: "Welcome to Focus Notes" }).getByRole("button", { name: "Start writing" }).click();
+  const account = page.getByRole("region", { name: "Account" });
+  const signIn = account.getByRole("button", { name: "Sign in" });
+  await expect(signIn).toBeVisible();
+
+  // Bottom left, small, and faint at rest.
+  const box = (await signIn.boundingBox())!;
+  const view = page.viewportSize()!;
+  expect(box.x).toBeLessThan(40);
+  expect(view.height - (box.y + box.height)).toBeLessThan(40);
+  expect(box.height).toBeLessThanOrEqual(32);
+  // Muted words with no fill, but still readable (AA contrast, checked by axe below).
+  const style = await signIn.evaluate((e) => ({ bg: getComputedStyle(e).backgroundColor, color: getComputedStyle(e).color, text: getComputedStyle(document.querySelector(".ProseMirror")!).color }));
+  expect(style.bg).toBe("rgba(0, 0, 0, 0)");
+  expect(style.color).not.toBe(style.text);
+  expect(await settledAxe(page)).toEqual([]);
+
+  await signIn.click();
+  const connect = page.getByRole("dialog", { name: "Connect GitHub" });
+  await expect(connect).toBeVisible();
+  await connect.getByRole("button", { name: "Next" }).click();
+  await connect.getByLabel("Token").fill(TOKEN);
+  await connect.getByRole("button", { name: "Connect" }).click();
+  await connect.getByRole("button", { name: "Start writing" }).click();
+
+  const pill = account.getByRole("button", { name: "Signed in to GitHub as me" });
+  await expect(pill).toHaveText("me");
+  expect(await settledAxe(page)).toEqual([]);
+  await page.screenshot({ path: "../../test-results/screens/web-account-pill.png" });
+  await pill.click();
+  const menu = page.getByRole("menu", { name: "Signed in to GitHub as me" });
+  await expect(menu.getByText(/Synced with me\/notes|Syncing with me\/notes/)).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Sync now" })).toBeVisible();
+  expect(await settledAxe(page)).toEqual([]);
+  await menu.getByRole("menuitem", { name: "Sign out of GitHub" }).click();
+  await expect(account.getByRole("button", { name: "Sign in" })).toBeVisible();
+});
