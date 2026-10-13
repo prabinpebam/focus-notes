@@ -7,7 +7,7 @@
  * are written with mdast-util-to-markdown. Constructs the editor can't represent yet become
  * raw blocks that keep their source verbatim.
  */
-import { unified } from "unified";
+import { unified, type Processor } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkFrontmatter from "remark-frontmatter";
@@ -211,6 +211,45 @@ function convertInlineRaw(nodes: Md.PhrasingContent[], marks: PMMark[]): PMNode[
 }
 
 const textNode = (text: string, marks: PMMark[]): PMNode => (marks.length ? { type: "text", text, marks } : { type: "text", text });
+
+// ---------------- link destinations (FIL-09) ----------------
+
+/** Where a link's or image's destination is written, or a reference definition's (`[id]: path.md`). */
+export interface LinkDestination {
+  /** Offsets into the text as given (a byte-order mark counts), excluding any angle brackets. */
+  start: number;
+  end: number;
+  /** Written as `<…>`, where spaces may appear unencoded. */
+  angle: boolean;
+}
+
+let foundDestinations: LinkDestination[] = [];
+type Token = { start: { offset: number }; end: { offset: number } };
+const recordRaw = (t: Token) => { foundDestinations.push({ start: t.start.offset, end: t.end.offset, angle: false }); };
+const recordLiteral = (t: Token) => { if (t.end.offset - t.start.offset > 2) foundDestinations.push({ start: t.start.offset + 1, end: t.end.offset - 1, angle: true }); };
+/** The parser's own tokens say exactly where each destination is; nothing in code, HTML, or front matter is one. */
+function collectDestinations(this: Processor) {
+  const data = this.data();
+  (data.fromMarkdownExtensions ??= []).push({
+    exit: { resourceDestinationRaw: recordRaw, resourceDestinationLiteral: recordLiteral, definitionDestinationRaw: recordRaw, definitionDestinationLiteral: recordLiteral },
+  });
+}
+const linkProcessor = unified().use(remarkParse).use(remarkGfm).use(remarkFrontmatter, ["yaml"]).use(remarkDirective).use(collectDestinations);
+
+/**
+ * Every link, image, and reference definition destination in a note, in source order, so a
+ * caller can change just those characters and leave every other byte as it was.
+ */
+export function linkDestinations(input: string): LinkDestination[] {
+  const bom = input.startsWith("\uFEFF") ? 1 : 0;
+  foundDestinations = [];
+  try {
+    linkProcessor.parse(bom ? input.slice(1) : input);
+    return foundDestinations.map((d) => ({ ...d, start: d.start + bom, end: d.end + bom })).sort((a, b) => a.start - b.start);
+  } finally {
+    foundDestinations = [];
+  }
+}
 
 // ---------------- serialize ----------------
 
