@@ -4,6 +4,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { coreExtensions, EDITOR_ACTIONS, MarkdownSession, findFromCaret, findStatus, setFind, syncSelection, type PMNode } from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
+import { keepInReadingZone } from "./reading-zone.ts";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import * as s from "./EditorSurface.css.ts";
 
@@ -133,11 +134,11 @@ export function EditorSurface({
     return () => clearTimeout(h);
   }, [editor, findOpen, findQuery, findCase, findWord, findRegex]);
 
-  // While find is open, matches scroll into view below the bar, not under it.
+  // The reading zone (UI-11): the edited line stays between 25% and 65% of the window, and with
+  // find open, never under the bar.
   useEffect(() => {
-    if (!editor || editor.isDestroyed || !columnRef.current) return;
-    const top = findOpen ? parseFloat(getComputedStyle(columnRef.current).paddingTop) || 0 : 5;
-    editor.view.setProps({ scrollMargin: { top, bottom: 5, left: 5, right: 5 }, scrollThreshold: { top, bottom: 0, left: 0, right: 0 } });
+    if (!editor || !scrollerRef.current || !columnRef.current) return;
+    return keepInReadingZone(editor, scrollerRef.current, columnRef.current, Boolean(findOpen));
   }, [editor, findOpen]);
 
   // Closing the find bar puts the caret back in the note, on the current match (VS Code behavior).

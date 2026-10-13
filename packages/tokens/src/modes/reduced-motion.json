@@ -18,6 +18,12 @@
     },
     "spin": {
       "$value": "{ref.duration.0}"
+    },
+    "morph": {
+      "$value": "{ref.duration.0}"
+    },
+    "grow": {
+      "$value": "{ref.duration.0}"
     }
   }
 }

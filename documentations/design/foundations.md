@@ -9,7 +9,7 @@ The shared building blocks every view and component uses: layout, spacing, shape
 
 | Token | Value | Notes |
 | --- | --- | --- |
-| `layout.topBand` | 44 px | The trigger's band. It's the title bar on the desktop. Nothing else lives there at rest. |
+| `layout.topBand` | 110 px | The trigger's band: 40 px above the trigger (`layout.triggerTop`), the 30 px circle, and 40 px below. It's the window's drag area on the desktop. Nothing else lives there at rest. |
 | `layout.measure` | 70 ch (themeable, 50–100) | Width of the reading column. |
 | `layout.gutter` | 48 px wide, 24 px compact | Minimum space beside the reading column. |
 | `layout.wideContent` | Up to 1040 px, never wider than the canvas minus 2 gutters | Tables and future galleries may grow wider than the reading column, centered on it. |
@@ -17,6 +17,17 @@ The shared building blocks every view and component uses: layout, spacing, shape
 | `layout.dialogWidth` | 480 px (confirmation), 760 px (Settings, Shortcuts) | Never taller than 85% of the window. Content scrolls inside. |
 
 **Size classes.** *Compact* is under 600 px wide (phones, narrow windows): sheets and dialogs become full-screen and toolbars become bottom-anchored. *Medium* is 600–1023 px. *Wide* is 1024 px and up.
+
+<h3 data-reader-personas="design engineering">Reading zone</h3>
+
+Text is read and written in the band between **25% and 65% of the window height** (UI-11, [D-78](../plan/decisions.md)):
+
+| Rule | Value |
+| --- | --- |
+| Top of the note | 25% of the window height down (`layout.readingTop`, never less than the trigger band), so the title starts at the top of the band. |
+| End of the note | 35% of the window height of space below the last line (`layout.editorEndPadding`), so the last line can always scroll up to the band's bottom edge, even in a short or empty note. |
+| The line being edited | Kept inside the band (`layout.readingZoneTop` 0.25, `layout.readingZoneBottom` 0.65). Typing, arrow keys, or a click that puts it outside scrolls the note at once so it sits on the nearest edge of the band. A drag-selection doesn't scroll until the pointer is released. |
+| With the find bar open | The top of the band never sits under the bar. |
 
 <h2 data-reader-personas="design">Spacing and shape</h2>
 
@@ -67,14 +78,17 @@ The same rules apply on every platform. On macOS they match the system's overlay
 
 <h2 data-reader-personas="design">Type</h2>
 
-**Note text** follows the theme's content font (see [Theming](../experience/theming.md#fonts)). Sizes are relative to `font.size`, default 18 px:
+**Note text** follows the content font, **Roboto Mono** by default (see [Theming](../experience/theming.md#fonts) and [D-78](../plan/decisions.md)). Sizes are relative to `font.size`, default 16 px. Blocks are 1.5 em apart, and headings have their own space above them:
 
-| Role | Size | Line height | Weight |
-| --- | --- | --- | --- |
-| Body | 1 em | 1.6 | Regular |
-| Heading 1 | 1.75 em | 1.25 | Bold |
-| Heading 2 | 1.4 em | 1.3 | Bold |
-| Heading 3 | 1.15 em | 1.4 | Semibold |
+| Role | Size | Line height | Weight | Space above |
+| --- | --- | --- | --- | --- |
+| Body | 1 em | 1.5 | Regular | 1.5 em |
+| Heading 1 | 2.5 em | 1.25 | Bold | 1.5 em |
+| Heading 2 | 2.0 em | 1.25 | Bold | 1.2 em |
+| Heading 3 | 1.6 em | 1.25 | Bold | 1.0 em |
+| Heading 4 | 1.3 em | 1.25 | Bold | 0.8 em |
+| Heading 5 | 1.1 em | 1.25 | Bold | 0.6 em |
+| Heading 6 | 1.0 em | 1.25 | Bold | 0.5 em |
 | Table cell | 0.94 em | 1.45 | Regular (header semibold) |
 | Code | 0.9 em, `font.mono` | 1.5 | Regular |
 
@@ -88,7 +102,7 @@ The same rules apply on every platform. On macOS they match the system's overlay
 | Emphasis | 16 px | Spotlight field, dialog field |
 | Title | 20 px | Dialog and sheet titles |
 
-**Bundled fonts** are self-hosted and licensed under the SIL Open Font License, which D-29 proposes adding to the allowed list for fonts: Inter (sans), Source Serif 4 (serif), JetBrains Mono (mono), Atkinson Hyperlegible (a highly legible font designed for low vision), and OpenDyslexic (an option for some dyslexic readers). License checks in CI confirm each one.
+**Bundled fonts** are self-hosted and licensed under the SIL Open Font License, which D-29 proposes adding to the allowed list for fonts: Roboto Mono (mono, the default for note text and code), Inter (sans), Source Serif 4 (serif), Atkinson Hyperlegible (a highly legible font designed for low vision), and OpenDyslexic (an option for some dyslexic readers). License checks in CI confirm each one.
 
 <h2 data-reader-personas="design">Icons</h2>
 

@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { globalStyle, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.triggerButton;
@@ -34,3 +34,7 @@ export const ring = style({
     "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
   },
 });
+
+// Pointing at the trigger grows the red dot to fill the circle (UI-10, D-78).
+globalStyle(`${ring} > *`, { transitionProperty: "width, height", transitionDuration: t.growDuration, transitionTimingFunction: t.growEasing });
+globalStyle(`${ring}[data-hovered] > *`, { width: `calc(${t.size} - 2 * ${t.borderWidth})`, height: `calc(${t.size} - 2 * ${t.borderWidth})` });

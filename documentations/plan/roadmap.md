@@ -44,7 +44,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M1: Writing (Write a real document)</p>
-<p>Open or create a Markdown file and write a real document: blocks, Markdown shortcuts, inline formatting with the contextual toolbar, links, the slash menu, Loop-style tables, the trigger toolbar and ⋯ menu, focus mode, Light, Dark, and System themes, font size, find and replace, and the Basic and Writer shortcut layers with the cheat sheet. <a href="implementation-plan.md#m1">Details</a>. EDT-02 to EDT-06, EDT-08 to EDT-10, EDT-12, EDT-13, TBL-01 to TBL-03, TBL-05 to TBL-08, TBL-10, TBL-11, EXT-02, EXT-05, UI-03 to UI-07, UI-09, FOC-01 to FOC-06, THM-01 to THM-03, THM-06, THM-08, KEY-02, KEY-05, KEY-06, FND-01, FND-02, SEC-02, PRF-01, PRF-03, PRF-08, A11Y-01, A11Y-02, I18N-02, DSY-03, DSY-06, DSY-09, DSY-12.</p>
+<p>Open or create a Markdown file and write a real document: blocks, Markdown shortcuts, inline formatting with the contextual toolbar, links, the slash menu, Loop-style tables, the trigger toolbar and ⋯ menu, focus mode, Light, Dark, and System themes, font size, find and replace, and the Basic and Writer shortcut layers with the cheat sheet. <a href="implementation-plan.md#m1">Details</a>. EDT-02 to EDT-06, EDT-08 to EDT-10, EDT-12, EDT-13, TBL-01 to TBL-03, TBL-05 to TBL-08, TBL-10, TBL-11, EXT-02, EXT-05, UI-03 to UI-07, UI-09 to UI-11, FOC-01 to FOC-06, THM-01 to THM-03, THM-06, THM-08, KEY-02, KEY-05, KEY-06, FND-01, FND-02, SEC-02, PRF-01, PRF-03, PRF-08, A11Y-01, A11Y-02, I18N-02, DSY-03, DSY-06, DSY-09, DSY-12.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M2: Desktop and local folders (Use it every day, offline)</p>

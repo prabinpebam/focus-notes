@@ -3,7 +3,7 @@
 Every stage in detail: what you can do at the end, the demo that proves it, the work packages that build it, and the exit criteria on top of the [definition of done](definition-of-done.md). The same plan is in [`work-graph.json`](https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json), which agents read to pick ready work ([The agentic loop](agentic-loop.html)).
 
 > [!NOTE]
-> **TL;DR.** 59 work packages across 10 stages, covering all 189 requirements exactly once. Each work package lists its requirements, the work packages it depends on, the code areas it touches, the reviews it needs, and the spec pages it implements. Every work package also depends on the previous stage's gate, except spikes and long-lead items marked *lookahead*. The longest chain to version 1.0 is 22 work packages. Every stage has a demo script that the owner runs on clean machines at the stage gate, and that then becomes an automated journey test.
+> **TL;DR.** 59 work packages across 10 stages, covering all 191 requirements exactly once. Each work package lists its requirements, the work packages it depends on, the code areas it touches, the reviews it needs, and the spec pages it implements. Every work package also depends on the previous stage's gate, except spikes and long-lead items marked *lookahead*. The longest chain to version 1.0 is 22 work packages. Every stage has a demo script that the owner runs on clean machines at the stage gate, and that then becomes an automated journey test.
 
 ## How to read a work package
 
@@ -85,8 +85,8 @@ Work packages off this path run in parallel when their dependencies are Done and
 | WP-1.3 | **Slash menu and paste**. The slash menu from the block registry, and sanitized paste of Markdown, HTML, and plain text. | EDT-06, EDT-09, SEC-02 | WP-1.1, WP-1.4 | code, design-system, accessibility, security |
 | WP-1.4 | **Compound components, first set**. Menu, Popover, Dialog, Toolbar, Toast, Field, Tabs, and ResultList, with command-driven items and full gallery coverage, plus the task tracker, the busy state, the `wait.*` timing tokens, and the minimal auto-hiding scrollbar. | DSY-09, DSY-12, PRF-08, UI-09 | WP-0.5 | code, design-system, accessibility |
 | WP-1.5 | **Loop-style tables**. Tables with hover insertion, grips, cell selection, keyboard movement, and spreadsheet paste. | TBL-01 to TBL-03, TBL-05 to TBL-08, TBL-10, TBL-11 | WP-1.1, WP-1.4 | code, design-system, accessibility |
-| WP-1.6 | **Trigger toolbar and ⋯ menu**. The six-action toolbar and the ⋯ menu as view documents, keyboard and screen-reader complete. | UI-03 to UI-05, UI-07, DSY-06 | WP-1.4, WP-1.8 | code, design-system, accessibility |
-| WP-1.7 | **Focus mode**. The row mask with every edge case, inside the typing budget. | FOC-01 to FOC-06, PRF-01 | WP-1.1 | code, design-system, accessibility |
+| WP-1.6 | **Trigger toolbar and ⋯ menu**. The six-action toolbar and the ⋯ menu as view documents, keyboard and screen-reader complete. | UI-03 to UI-05, UI-07, UI-10, DSY-06 | WP-1.4, WP-1.8 | code, design-system, accessibility |
+| WP-1.7 | **Focus mode**. The row mask with every edge case, inside the typing budget. | FOC-01 to FOC-06, PRF-01, UI-11 | WP-1.1 | code, design-system, accessibility |
 | WP-1.8 | **Commands, keymap, and cheat sheet**. The command registry, the Basic and Writer layers per platform, browser substitutes, and the cheat sheet. | KEY-02, KEY-05, KEY-06 | WP-1.4 | code, design-system, accessibility |
 | WP-1.9 | **Themes, appearance, and modes**. Paper, Ink, and the other built-ins, System switching, fonts and size, and every token mode including forced colors. | THM-01 to THM-03, THM-06, THM-08, A11Y-02, DSY-03 | WP-1.4 | code, design-system, accessibility |
 | WP-1.10 | **Find and replace in a note**. The find bar with live count, options, replace, and replace all as one undo step. | FND-01, FND-02 | WP-1.1, WP-1.4 | code, design-system, accessibility |

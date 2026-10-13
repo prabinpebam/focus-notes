@@ -23,7 +23,7 @@ test("M0: launch to the blank canvas, type, save as Markdown, and reopen", async
   // PRF-02 is defined on reference hardware; CI runners are checked by pnpm bench with a margin.
   const ready = await first.readyMs();
   if (!process.env.CI) expect(ready).toBeLessThan(2500);
-  expect(await page.locator("button").count()).toBe(1);
+  expect(await page.getByRole("button").count()).toBe(1);
 
   // The trigger: a 10 px dot in a 30 px circle, at the top center.
   const ring = await trigger.boundingBox();
@@ -32,7 +32,8 @@ test("M0: launch to the blank canvas, type, save as Markdown, and reopen", async
   expect(Math.round(ring!.width)).toBe(30);
   expect(Math.round(dot!.width)).toBe(10);
   expect(Math.abs(ring!.x + ring!.width / 2 - width / 2)).toBeLessThan(1.5);
-  expect(ring!.y + ring!.height / 2).toBeLessThan(44);
+  // 40 px below the window's top edge (UI-10, D-78).
+  expect(Math.abs(ring!.y - 40)).toBeLessThan(1.5);
 
   // Type a heading and two paragraphs into the welcome note.
   await page.keyboard.press(`${mod}+A`);

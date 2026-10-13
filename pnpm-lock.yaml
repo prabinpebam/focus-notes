@@ -168,10 +168,10 @@ importers:
       '@fontsource/inter':
         specifier: 5.3.0
         version: 5.3.0
-      '@fontsource/jetbrains-mono':
+      '@fontsource/opendyslexic':
         specifier: 5.3.0
         version: 5.3.0
-      '@fontsource/opendyslexic':
+      '@fontsource/roboto-mono':
         specifier: 5.3.0
         version: 5.3.0
       '@fontsource/source-serif-4':
@@ -551,11 +551,11 @@ packages:
   '@fontsource/inter@5.3.0':
     resolution: {integrity: sha1-hmJ43CNXZZ+L4XVci2fynTaXtEA=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/inter/-/inter-5.3.0.tgz}
 
-  '@fontsource/jetbrains-mono@5.3.0':
-    resolution: {integrity: sha1-h7/YSfJLU27XLom1auDUIiNpf3Q=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/jetbrains-mono/-/jetbrains-mono-5.3.0.tgz}
-
   '@fontsource/opendyslexic@5.3.0':
     resolution: {integrity: sha512-BVYIW/ghc1U2iAghhYTN+GFWiZ3lnCy8Jf2KkZC23aHQHBNcMqKT718zckfqVxRx4qsXJmIMPWvczirRuhmtsg==, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/opendyslexic/-/opendyslexic-5.3.0.tgz}
+
+  '@fontsource/roboto-mono@5.3.0':
+    resolution: {integrity: sha1-3hxY1JCkKFM4nK7KBTduzbKV5+M=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/roboto-mono/-/roboto-mono-5.3.0.tgz}
 
   '@fontsource/source-serif-4@5.3.0':
     resolution: {integrity: sha1-iCSkoxNpwAcEVbF6rJ09B/FJjes=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/source-serif-4/-/source-serif-4-5.3.0.tgz}
@@ -3375,9 +3375,9 @@ snapshots:
 
   '@fontsource/inter@5.3.0': {}
 
-  '@fontsource/jetbrains-mono@5.3.0': {}
-
   '@fontsource/opendyslexic@5.3.0': {}
+
+  '@fontsource/roboto-mono@5.3.0': {}
 
   '@fontsource/source-serif-4@5.3.0': {}
 

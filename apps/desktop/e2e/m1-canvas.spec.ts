@@ -1,0 +1,138 @@
+/**
+ * UI-10 and UI-11 (D-78): the trigger's place, hover, and morph into the toolbar; the reading zone
+ * between 25% and 65% of the window; and the default type (Roboto Mono, 16 px, 2.5× headings).
+ */
+import { test, expect, type Page } from "@playwright/test";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { launch, quit, tempDirs } from "./helpers.ts";
+
+const mod = process.platform === "darwin" ? "Meta" : "Control";
+const withMod = async (page: Page, key: string) => {
+  await page.keyboard.down(mod);
+  await page.keyboard.press(key);
+  await page.keyboard.up(mod);
+};
+const panel = (page: Page) => page.evaluate(() => {
+  const root = document.querySelector("[data-morph-panel]") as HTMLElement;
+  const b = root.getBoundingClientRect();
+  const content = root.children[1] as HTMLElement;
+  return { w: b.width, h: b.height, y: b.y, cx: b.x + b.width / 2, contentOpacity: Number(getComputedStyle(content).opacity), contentW: content.offsetWidth };
+});
+
+test("UI-10: the trigger sits 40 px down, its dot grows on hover, and it morphs into the toolbar and back", async () => {
+  const l = await launch(tempDirs());
+  const { page } = l;
+  await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+  const trigger = page.getByRole("button", { name: "Focus Notes menu" });
+  const ring = (await trigger.boundingBox())!;
+  expect(Math.round(ring.y)).toBe(40);
+  const dot = () => trigger.locator("span").first().evaluate((el) => el.getBoundingClientRect().width);
+  expect(Math.round(await dot())).toBe(10);
+  await trigger.hover();
+  await expect.poll(async () => Math.round(await dot())).toBe(28);
+  await page.screenshot({ path: "../../test-results/screens/trigger-hover.png", clip: { x: ring.x - 40, y: 0, width: ring.width + 80, height: 110 } });
+  await page.mouse.move(10, 400);
+  await expect.poll(async () => Math.round(await dot())).toBe(10);
+
+  // Opening: the circle grows into the toolbar's shape, centered where it was, then the buttons appear.
+  const width = await page.evaluate(() => window.innerWidth);
+  await page.keyboard.press(`${mod}+.`);
+  const during: number[] = [];
+  for (let i = 0; i < 6; i++) {
+    during.push((await panel(page)).w);
+    await page.waitForTimeout(40);
+  }
+  await expect.poll(async () => (await panel(page)).contentOpacity).toBe(1);
+  const open = await panel(page);
+  expect(Math.abs(open.cx - width / 2)).toBeLessThan(1.5);
+  expect(Math.round(open.y)).toBe(40);
+  expect(open.w).toBeGreaterThan(200);
+  // It grew through sizes in between rather than jumping.
+  expect(during.some((w) => w > 31 && w < open.w - 1)).toBe(true);
+  await expect(page.getByRole("toolbar", { name: "Toolbar" }).getByRole("button", { name: "New note" })).toBeFocused();
+  await page.screenshot({ path: "../../test-results/screens/trigger-open.png", clip: { x: 0, y: 0, width, height: 120 } });
+
+  // Closing reverses it, back to the circle.
+  await page.keyboard.press("Escape");
+  await expect.poll(async () => Math.round((await panel(page)).w)).toBe(30);
+  await expect(trigger).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+
+  // With reduced motion it switches at once.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.keyboard.press(`${mod}+.`);
+  await page.waitForTimeout(30);
+  expect((await panel(page)).w).toBeGreaterThan(200);
+  await quit(l);
+});
+
+test("UI-11: the note starts 25% down, the edited line stays between 25% and 65%, and the end can scroll to 65%", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Title\n\n" + Array.from({ length: 80 }, (_, i) => `Line ${i + 1} of a long note.`).join("\n\n") + "\n");
+  const l = await launch(dirs);
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  const zone = () => page.evaluate(() => {
+    const scroller = document.querySelector("[data-editor-scroller]") as HTMLElement;
+    const box = scroller.getBoundingClientRect();
+    const sel = window.getSelection()!;
+    const r = sel.rangeCount ? sel.getRangeAt(0).getBoundingClientRect() : null;
+    const rects = sel.rangeCount ? sel.getRangeAt(0).getClientRects() : null;
+    const caret = r && r.height ? r : rects && rects.length ? rects[0]! : (sel.anchorNode?.parentElement?.getBoundingClientRect() ?? null);
+    const h1 = document.querySelector("[data-editor] h1")!.getBoundingClientRect();
+    return { top: box.top, h: box.height, caretTop: caret ? caret.top - box.top : NaN, caretBottom: caret ? caret.bottom - box.top : NaN, h1Top: h1.top - box.top, scrollTop: scroller.scrollTop };
+  });
+
+  // The title starts at 25% of the window height, in Roboto Mono at 2.5 × 16 px.
+  await withMod(page, process.platform === "darwin" ? "ArrowUp" : "Home");
+  await expect.poll(async () => (await zone()).scrollTop).toBe(0);
+  const z0 = await zone();
+  expect(Math.abs(z0.h1Top - z0.h * 0.25)).toBeLessThan(4);
+  const h1 = editor.locator("h1");
+  expect(await h1.evaluate((el) => getComputedStyle(el).fontSize)).toBe("40px");
+  expect(await editor.evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/^"Roboto Mono"/);
+  expect(await editor.evaluate((el) => getComputedStyle(el).fontSize)).toBe("16px");
+
+  // Moving down line by line, the caret never leaves the band.
+  for (let i = 0; i < 40; i++) await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(100);
+  let z = await zone();
+  expect(z.caretTop).toBeGreaterThanOrEqual(z.h * 0.25 - 2);
+  expect(z.caretBottom).toBeLessThanOrEqual(z.h * 0.65 + 2);
+  expect(z.scrollTop).toBeGreaterThan(0);
+
+  // Typing new lines at the end keeps the caret at the band's bottom edge.
+  await withMod(page, process.platform === "darwin" ? "ArrowDown" : "End");
+  for (let i = 0; i < 5; i++) {
+    await page.keyboard.press("Enter");
+    await page.keyboard.type(`New ${i}`);
+  }
+  await page.waitForTimeout(100);
+  z = await zone();
+  expect(z.caretBottom).toBeLessThanOrEqual(z.h * 0.65 + 2);
+  expect(z.caretBottom).toBeGreaterThan(z.h * 0.65 - 40);
+
+  // Scrolled all the way down, 35% of the window is left below the last line.
+  const lastBottom = await page.evaluate(() => {
+    const scroller = document.querySelector("[data-editor-scroller]") as HTMLElement;
+    scroller.scrollTop = scroller.scrollHeight;
+    const blocks = document.querySelectorAll("[data-editor] > *");
+    const last = blocks[blocks.length - 1]!.getBoundingClientRect();
+    return (last.bottom - scroller.getBoundingClientRect().top) / scroller.clientHeight;
+  });
+  expect(Math.abs(lastBottom - 0.65)).toBeLessThan(0.02);
+
+  // Clicking a line low in the window brings it back into the band.
+  await page.evaluate(() => { (document.querySelector("[data-editor-scroller]") as HTMLElement).scrollTop = 0; });
+  const low = editor.locator("p").nth(14);
+  const lb = (await low.boundingBox())!;
+  expect(lb.y).toBeGreaterThan(z.top + z.h * 0.65);
+  await low.click();
+  await page.waitForTimeout(150);
+  z = await zone();
+  expect(z.caretBottom).toBeLessThanOrEqual(z.h * 0.65 + 2);
+  await page.screenshot({ path: "../../test-results/screens/reading-zone.png" });
+  await quit(l);
+});

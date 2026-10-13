@@ -4,6 +4,7 @@
  * Rendering lives in packages/ui (block components and the EditorSurface host).
  */
 import { Extension, Node, mergeAttributes, type AnyExtension, type Editor } from "@tiptap/core";
+import { Selection } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import Strike from "@tiptap/extension-strike";
 import HardBreak from "@tiptap/extension-hard-break";
@@ -114,6 +115,9 @@ export const AutoDirection = Extension.create({
  */
 export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor) => boolean>> = {
   "edit.undo": (e) => e.commands.undo(),
+  // Explicit, so they're reliable in long scrolled notes and scroll into the reading zone (UI-11).
+  "edit.docStart": (e) => e.chain().setTextSelection(Selection.atStart(e.state.doc).from).scrollIntoView().run(),
+  "edit.docEnd": (e) => e.chain().setTextSelection(Selection.atEnd(e.state.doc).from).scrollIntoView().run(),
   "edit.redo": (e) => e.commands.redo(),
   "format.bold": (e) => e.commands.toggleBold(),
   "format.italic": (e) => e.commands.toggleItalic(),
@@ -156,7 +160,8 @@ export function syncSelection(editor: Editor): void {
 export function toKeyName(chord: string): string {
   const parts = chord.split("+");
   const key = parts.pop()!;
-  const name = key === "Plus" ? "+" : key.length === 1 ? key.toLowerCase() : key;
+  const NAMES: Record<string, string> = { Plus: "+", Up: "ArrowUp", Down: "ArrowDown", Left: "ArrowLeft", Right: "ArrowRight" };
+  const name = NAMES[key] ?? (key.length === 1 ? key.toLowerCase() : key);
   return [...parts, name].join("-");
 }
 

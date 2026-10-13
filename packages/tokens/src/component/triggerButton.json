@@ -1,16 +1,70 @@
-{ "cmp": { "triggerButton": {
-  "size": { "$type": "dimension", "$value": "{size.triggerRing}" },
-  "hit": { "$type": "dimension", "$value": "{size.hit}" },
-  "radius": { "$type": "dimension", "$value": "{radius.round}" },
-  "ring": { "$type": "color", "$value": "{trigger.ring}" },
-  "ringBorder": { "$type": "color", "$value": "{trigger.ringBorder}" },
-  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
-  "blur": { "$type": "dimension", "$value": "{trigger.blur}" },
-  "opacity": { "$type": "number", "$value": "{frost.opacity}" },
-  "shadow": { "$type": "shadow", "$value": "{shadow.1}" },
-  "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
-  "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
-  "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" },
-  "duration": { "$type": "duration", "$value": "{motion.micro}" },
-  "layer": { "$type": "number", "$value": "{layer.trigger}" }
-} } }
+{
+  "cmp": {
+    "triggerButton": {
+      "size": {
+        "$type": "dimension",
+        "$value": "{size.triggerRing}"
+      },
+      "hit": {
+        "$type": "dimension",
+        "$value": "{size.hit}"
+      },
+      "radius": {
+        "$type": "dimension",
+        "$value": "{radius.round}"
+      },
+      "ring": {
+        "$type": "color",
+        "$value": "{trigger.ring}"
+      },
+      "ringBorder": {
+        "$type": "color",
+        "$value": "{trigger.ringBorder}"
+      },
+      "borderWidth": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      },
+      "blur": {
+        "$type": "dimension",
+        "$value": "{trigger.blur}"
+      },
+      "opacity": {
+        "$type": "number",
+        "$value": "{frost.opacity}"
+      },
+      "shadow": {
+        "$type": "shadow",
+        "$value": "{shadow.1}"
+      },
+      "focusRing": {
+        "$type": "color",
+        "$value": "{color.focusRing}"
+      },
+      "focusWidth": {
+        "$type": "dimension",
+        "$value": "{border.focus}"
+      },
+      "focusOffset": {
+        "$type": "dimension",
+        "$value": "{border.focusOffset}"
+      },
+      "duration": {
+        "$type": "duration",
+        "$value": "{motion.micro}"
+      },
+      "layer": {
+        "$type": "number",
+        "$value": "{layer.trigger}"
+      },
+      "growDuration": {
+        "$type": "duration",
+        "$value": "{motion.grow}"
+      },
+      "growEasing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.standard}"
+      }
+    }
+  }
+}

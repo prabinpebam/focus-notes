@@ -95,7 +95,8 @@ test("the content font changes only the note text, and the bundled font loads of
   const editor = page.getByRole("textbox", { name: "Note" });
   await expect(editor).toBeFocused();
   const family = () => editor.evaluate((el) => getComputedStyle(el).fontFamily);
-  expect(await family()).toMatch(/^Inter/);
+  expect(await family()).toMatch(/^"Roboto Mono"/);
+  await expect.poll(() => page.evaluate(() => document.fonts.check('16px "Roboto Mono"'))).toBe(true);
   await pick(page, "Font", "Serif (Source Serif 4)");
   await expect.poll(family).toMatch(/^"Source Serif 4"/);
   await expect.poll(() => page.evaluate(() => document.fonts.check('16px "Source Serif 4"'))).toBe(true);
@@ -147,9 +148,8 @@ test("200% zoom at a 640 px window reflows to 320 CSS px without sideways scroll
   await page.keyboard.press(`${mod}+.`);
   const toolbar = page.getByRole("toolbar", { name: "Toolbar" });
   await expect(toolbar).toBeVisible();
-  const box = (await toolbar.boundingBox())!;
-  expect(box.x).toBeGreaterThanOrEqual(0);
-  expect(box.x + box.width).toBeLessThanOrEqual(320);
+  // Once the morph settles, the toolbar fits inside 320 px.
+  await expect.poll(async () => { const b = (await toolbar.boundingBox())!; return b.x >= 0 && b.x + b.width <= 320; }).toBe(true);
   await page.keyboard.press("Escape");
   await page.keyboard.press(`${mod}+Shift+Slash`);
   const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
@@ -168,10 +168,9 @@ test("UI scale enlarges the interface but not the note text", async () => {
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
   await expect(editor).toBeFocused();
-  expect(await editor.evaluate((el) => getComputedStyle(el).fontSize)).toBe("18px");
+  expect(await editor.evaluate((el) => getComputedStyle(el).fontSize)).toBe("16px");
   await page.keyboard.press(`${mod}+.`);
   const btn = page.getByRole("toolbar", { name: "Toolbar" }).getByRole("button", { name: "Save" });
-  const h = (await btn.boundingBox())!.height;
-  expect(h).toBeGreaterThanOrEqual(44);
+  await expect.poll(async () => (await btn.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await quit(l);
 });

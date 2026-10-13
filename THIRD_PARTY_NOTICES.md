@@ -357,14 +357,15 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
 
-## @fontsource/jetbrains-mono 5.3.0
+## @fontsource/opendyslexic 5.3.0
 
 License: OFL-1.1  
-Homepage: https://fontsource.org/fonts/jetbrains-mono
+Homepage: https://fontsource.org/fonts/opendyslexic
 
 ```text
-Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) JetBrainsMono-Italic[wght].ttf: Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
-
+Copyright (c) 2019-07-29, Abbie Gonzalez (https://abbiecod.es|support@abbiecod.es),
+with Reserved Font Name OpenDyslexic.
+Copyright (c) 12/2012 - 2019
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
 http://scripts.sil.org/OFL
@@ -458,15 +459,14 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
 
-## @fontsource/opendyslexic 5.3.0
+## @fontsource/roboto-mono 5.3.0
 
 License: OFL-1.1  
-Homepage: https://fontsource.org/fonts/opendyslexic
+Homepage: https://fontsource.org/fonts/roboto-mono
 
 ```text
-Copyright (c) 2019-07-29, Abbie Gonzalez (https://abbiecod.es|support@abbiecod.es),
-with Reserved Font Name OpenDyslexic.
-Copyright (c) 12/2012 - 2019
+Copyright 2015 The Roboto Mono Project Authors (https://github.com/googlefonts/robotomono) RobotoMono-Italic[wght].ttf: Copyright 2015 The Roboto Mono Project Authors (https://github.com/googlefonts/robotomono)
+
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
 http://scripts.sil.org/OFL

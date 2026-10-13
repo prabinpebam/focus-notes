@@ -103,7 +103,7 @@
   "theme.contrast-dark": "High contrast",
   "font.sans": "Sans (Inter)",
   "font.serif": "Serif (Source Serif 4)",
-  "font.mono": "Mono (JetBrains Mono)",
+  "font.mono": "Mono (Roboto Mono)",
   "font.hyperlegible": "Hyperlegible (Atkinson)",
   "font.dyslexic": "OpenDyslexic",
   "font.system": "System font",
@@ -150,5 +150,7 @@
   "command.toast.action": "Run the message's action",
   "command.toast.setPaused": "Pause the message",
   "command.toast.focus": "Go to the message",
-  "toasts.label": "Messages"
+  "toasts.label": "Messages",
+  "command.edit.docStart": "Go to the start of the note",
+  "command.edit.docEnd": "Go to the end of the note"
 }

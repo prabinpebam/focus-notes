@@ -641,6 +641,21 @@
       },
       "64": {
         "$value": "64px"
+      },
+      "110": {
+        "$value": "110px"
+      },
+      "25vh": {
+        "$value": "25vh"
+      },
+      "35vh": {
+        "$value": "35vh"
+      },
+      "em150": {
+        "$value": "1.5em"
+      },
+      "em60": {
+        "$value": "0.6em"
       }
     },
     "duration": {
@@ -805,7 +820,7 @@
         "$value": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif"
       },
       "mono": {
-        "$value": "\"JetBrains Mono\", ui-monospace, \"Cascadia Code\", Consolas, monospace"
+        "$value": "\"Roboto Mono\", ui-monospace, \"Cascadia Code\", Consolas, monospace"
       },
       "hyperlegible": {
         "$value": "\"Atkinson Hyperlegible\", system-ui, sans-serif"

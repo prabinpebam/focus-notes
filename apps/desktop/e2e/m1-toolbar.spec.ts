@@ -73,7 +73,7 @@ test("⋯ holds the rest: text size steps and the theme mode, each showing its s
   const { page } = l;
   await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
   const size = () => page.evaluate(() => getComputedStyle(document.querySelector("[data-editor]")!).fontSize);
-  expect(await size()).toBe("18px");
+  expect(await size()).toBe("16px");
 
   await page.keyboard.press(`${mod}+.`);
   await page.getByRole("button", { name: "More" }).click();
@@ -81,14 +81,14 @@ test("⋯ holds the rest: text size steps and the theme mode, each showing its s
   await expect(menu).toBeVisible();
   await expect(menu.getByRole("menuitemcheckbox", { name: "System" })).toHaveAttribute("aria-checked", "true");
   await menu.getByRole("menuitem", { name: /Larger text/ }).click();
-  await expect.poll(size).toBe("20px");
-
-  // The shortcuts work too, and reset returns to 18 px (THM-06).
-  await page.keyboard.press(`${mod}+-`);
-  await page.keyboard.press(`${mod}+-`);
   await expect.poll(size).toBe("17px");
+
+  // The shortcuts work too, and reset returns to 16 px (THM-06, D-78).
+  await page.keyboard.press(`${mod}+-`);
+  await page.keyboard.press(`${mod}+-`);
+  await expect.poll(size).toBe("15px");
   await page.keyboard.press(`${mod}+0`);
-  await expect.poll(size).toBe("18px");
+  await expect.poll(size).toBe("16px");
   await quit(l);
 });
 

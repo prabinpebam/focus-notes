@@ -12,7 +12,8 @@ export const layer = styleVariants({
   tooltip: { zIndex: tokens.layer.tooltip },
 });
 export const position = styleVariants({
-  topBand: { top: 0, left: 0, right: 0, height: tokens.layout.topBand, alignItems: "center", justifyContent: "center" },
+  // The trigger band: the trigger sits layout.triggerTop below the top edge, and what opens from it grows down.
+  topBand: { top: 0, left: 0, right: 0, height: tokens.layout.topBand, alignItems: "flex-start", justifyContent: "center", paddingTop: tokens.layout.triggerTop, boxSizing: "border-box" },
   belowTopBand: { top: tokens.layout.topBand, left: tokens.space.s, right: tokens.space.s, alignItems: "flex-start", justifyContent: "center" },
   fill: { inset: 0, alignItems: "stretch", justifyContent: "stretch" },
   center: { inset: 0, alignItems: "center", justifyContent: "center" },

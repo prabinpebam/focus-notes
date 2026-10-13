@@ -1,0 +1,74 @@
+{
+  "cmp": {
+    "morphPanel": {
+      "closedSize": {
+        "$type": "dimension",
+        "$value": "{size.triggerRing}"
+      },
+      "background": {
+        "$type": "color",
+        "$value": "{color.surface}"
+      },
+      "opacity": {
+        "$type": "number",
+        "$value": "{frost.opacity}"
+      },
+      "blur": {
+        "$type": "dimension",
+        "$value": "{frost.blur}"
+      },
+      "border": {
+        "$type": "color",
+        "$value": "{color.border}"
+      },
+      "borderWidth": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      },
+      "radius": {
+        "$type": "dimension",
+        "$value": "{radius.popover}"
+      },
+      "shadow": {
+        "$type": "shadow",
+        "$value": "{shadow.2}"
+      },
+      "padding": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
+      },
+      "duration": {
+        "$type": "duration",
+        "$value": "{motion.morph}"
+      },
+      "contentDelay": {
+        "$type": "duration",
+        "$value": "{motion.enter}"
+      },
+      "contentDuration": {
+        "$type": "duration",
+        "$value": "{motion.sheet}"
+      },
+      "easing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.standard}"
+      },
+      "layer": {
+        "$type": "number",
+        "$value": "{layer.panel}"
+      },
+      "transparent": {
+        "$type": "color",
+        "$value": "{color.none}"
+      },
+      "shadowNone": {
+        "$type": "shadow",
+        "$value": "{shadow.0}"
+      },
+      "visible": {
+        "$type": "number",
+        "$value": "{opacity.full}"
+      }
+    }
+  }
+}

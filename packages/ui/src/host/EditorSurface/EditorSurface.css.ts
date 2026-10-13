@@ -22,11 +22,13 @@ export const column = style({
   maxWidth: `calc(${t.measure} + 2 * ${t.gutter})`,
   marginInline: "auto",
   paddingInline: t.gutter,
-  paddingTop: t.topBand,
+  // The reading zone (UI-11): the note starts 25% down the window (never under the trigger band)
+  // and its last line can scroll up to leave 35% below it.
+  paddingTop: `max(${t.readingTop}, ${t.topBand})`,
   paddingBottom: t.endPadding,
   selectors: {
     // While the find bar is open, the top of the note sits below it, so it never covers a match.
-    "[data-find-open] > &": { paddingTop: `calc(${t.topBand} + ${t.findClearance})` },
+    "[data-find-open] > &": { paddingTop: `max(${t.readingTop}, calc(${t.topBand} + ${t.findClearance}))` },
   },
 });
 
@@ -61,11 +63,15 @@ const p = (sel: string) => `${prose} ${sel}`;
 globalStyle(p("> * + *"), { marginTop: t.blockGap });
 globalStyle(`:where(${prose}) :where(p)`, { margin: 0 });
 globalStyle(`:where(${prose}) :where(h1, h2, h3, h4, h5, h6)`, { margin: 0, fontWeight: t.headingWeight, lineHeight: t.headingLineHeight });
-globalStyle(p("h1"), { fontSize: `calc(${t.h1} * 1em)` });
-globalStyle(p("h2"), { fontSize: `calc(${t.h2} * 1em)` });
-globalStyle(p("h3"), { fontSize: `calc(${t.h3} * 1em)` });
+// The heading ramp and the space above each heading, in its own em (D-78).
+const ramp = [[t.h1, t.h1Before], [t.h2, t.h2Before], [t.h3, t.h3Before], [t.h4, t.h4Before], [t.h5, t.h5Before], [t.h6, t.h6Before]] as const;
+ramp.forEach(([size, before], i) => {
+  globalStyle(p(`h${i + 1}`), { fontSize: `calc(${size} * 1em)` });
+  globalStyle(p(`> * + h${i + 1}`), { marginTop: `calc(${before} * 1em)` });
+});
 globalStyle(`:where(${prose}) :where(ul, ol)`, { margin: 0, paddingInlineStart: t.space.l });
 globalStyle(p("li > * + *"), { marginTop: t.space.s });
+globalStyle(p("li + li"), { marginTop: t.listItemGap });
 globalStyle(`:where(${prose}) :where(blockquote)`, { margin: 0, paddingInlineStart: t.space.m, borderInlineStartStyle: "solid", borderInlineStartWidth: t.quoteBorderWidth, borderInlineStartColor: t.quoteBorder, color: t.quoteText });
 globalStyle(p("code"), { fontFamily: t.codeFont, backgroundColor: t.codeBackground, color: t.codeText, borderRadius: t.codeRadius, paddingInline: t.space.s, fontSize: `calc(${t.codeRatio} * 1em)` });
 globalStyle(`:where(${prose}) :where(pre)`, { fontFamily: t.codeFont, backgroundColor: t.codeBackground, color: t.codeText, borderRadius: t.codeRadius, padding: t.space.m, margin: 0, overflowX: "auto", fontSize: `calc(${t.codeRatio} * 1em)`, whiteSpace: "pre" });

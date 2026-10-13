@@ -24,7 +24,7 @@ function Submenu({ item, onAction }: { item: CommandItem; onAction?: ((payload: 
         <span className={s.label}>{item.label}</span>
         <span className={s.shortcut} aria-hidden="true"><Icon name="chevronRight" /></span>
       </MenuItem>
-      <Popover className={s.popover} placement="end top" offset={4}>
+      <Popover className={s.popover} placement="end top" offset={4} data-floating-child="">
         <Menu
           className={s.menu}
           aria-label={item.label}
@@ -56,7 +56,7 @@ export function MenuButton({ icon, label, sections, shortcut, onAction }: MenuBu
   return (
     <MenuTrigger>
       <IconButton icon={icon} label={label} {...(shortcut ? { shortcut } : {})} />
-      <Popover className={s.popover} placement="bottom end" offset={8}>
+      <Popover className={s.popover} placement="bottom end" offset={8} data-floating-child="">
         <Menu className={s.menu} aria-label={label} shouldCloseOnSelect onAction={(key) => onAction?.({ id: String(key) })} disabledKeys={sections.flatMap((sec) => sec.items.filter((i) => i.disabled && !i.items).map((i) => i.id))}>
           {sections.map((sec, index) => (
             <Fragment key={sec.id}>

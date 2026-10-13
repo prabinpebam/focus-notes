@@ -83,7 +83,7 @@ export interface ToastState {
 export const SAVE_DELAY_MS = 400;
 /** Note text sizes in px (THM-06). */
 export const FONT_STEPS = [14, 15, 16, 17, 18, 20, 22, 24, 28, 32] as const;
-export const DEFAULT_FONT_SIZE = 18;
+export const DEFAULT_FONT_SIZE = 16;
 
 /** The six default toolbar actions, in order (UI-07, D-18). */
 export const DEFAULT_TOOLBAR = ["note.new", "note.open", "spotlight.open", "note.save", "focus.toggle", "appearance.toggle"] as const;
@@ -138,7 +138,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     note: { key: "none", initialMarkdown: "", markdown: "", status: "loading", saveState: "saved" },
     appearance: {
       mode: "system", system: bridge.systemScheme(), fontSize: DEFAULT_FONT_SIZE,
-      lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "sans", uiScale: 1,
+      lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
     },
     focusMode: false,
     ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0 },

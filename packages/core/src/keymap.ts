@@ -24,6 +24,8 @@ const ed = (id: string, chord: string | Shortcut, layer: KeyLayer, group: KeyGro
 /** Editor commands (KEY-02). Each one is also runnable from menus and, later, Spotlight. */
 export const EDITOR_COMMANDS: readonly EditorCommandSpec[] = [
   ed("edit.undo", "Mod+Z", "basic", "editing"),
+  ed("edit.docStart", { macos: "Mod+Up", default: "Mod+Home" }, "basic", "editing"),
+  ed("edit.docEnd", { macos: "Mod+Down", default: "Mod+End" }, "basic", "editing"),
   ed("edit.redo", { macos: "Mod+Shift+Z", default: "Mod+Y", alternates: { default: ["Mod+Shift+Z"], macos: [] } }, "basic", "editing"),
   ed("format.bold", "Mod+B", "basic", "formatting"),
   ed("format.italic", "Mod+I", "basic", "formatting"),

@@ -1,7 +1,7 @@
 import { defineContract } from "../../contract.ts";
 
 const THEMES = ["paper", "sepia", "harbor-light", "forest-light", "contrast-light", "ink", "dusk", "harbor-dark", "forest-dark", "contrast-dark"] as const;
-const FONTS = ["sans", "serif", "mono", "hyperlegible", "dyslexic", "system"] as const;
+const FONTS = ["mono", "sans", "serif", "hyperlegible", "dyslexic", "system"] as const;
 const sample = [{ type: "Text", props: { value: { t: "gallery.sample" } } }];
 
 export const contract = defineContract({
@@ -14,7 +14,7 @@ export const contract = defineContract({
     contentSize: { kind: "number", min: 14, max: 32 },
     focusMode: { kind: "boolean", default: false },
     theme: { kind: "enum", values: THEMES, description: "The theme to show (THM-08). Defaults to Paper or Ink." },
-    contentFont: { kind: "enum", values: FONTS, default: "sans", description: "The content font (THM-03)." },
+    contentFont: { kind: "enum", values: FONTS, default: "mono", description: "The content font (THM-03)." },
     uiScale: { kind: "number", min: 0.9, max: 1.5, description: "Interface scale (DSY-03); note text is unaffected." },
   },
   events: {},

@@ -89,6 +89,7 @@ The standard OS text keys work as expected and aren't listed one by one: moving 
 | --- | --- | --- | --- | --- |
 | Undo / redo | <kbd>⌘Z</kbd> / <kbd>⇧⌘Z</kbd> | <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd> or <kbd>Ctrl+Shift+Z</kbd> | Basic | Universal |
 | Cut / copy / paste | <kbd>⌘X</kbd> / <kbd>⌘C</kbd> / <kbd>⌘V</kbd> | <kbd>Ctrl+X</kbd> / <kbd>Ctrl+C</kbd> / <kbd>Ctrl+V</kbd> | Basic | Universal |
+| Go to the start / end of the note | <kbd>⌘↑</kbd> / <kbd>⌘↓</kbd> | <kbd>Ctrl+Home</kbd> / <kbd>Ctrl+End</kbd> | Basic | Universal |
 | Paste as plain text | <kbd>⇧⌘V</kbd> (also <kbd>⌥⇧⌘V</kbd>) | <kbd>Ctrl+Shift+V</kbd> | Writer | Google Docs, macOS |
 | Select all (once: the block; twice: the note) | <kbd>⌘A</kbd> | <kbd>Ctrl+A</kbd> | Basic | Notion |
 | Expand / shrink selection (word → sentence → block → note) | <kbd>⌃⇧⌘→</kbd> / <kbd>⌃⇧⌘←</kbd> | <kbd>Shift+Alt+→</kbd> / <kbd>Shift+Alt+←</kbd> | Pro (P1) | VS Code |

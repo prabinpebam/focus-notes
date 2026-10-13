@@ -18,8 +18,8 @@ export const contract = defineContract({
   events: { openChange: { payload: { open: "boolean" } }, action: { payload: { id: "text" } } },
   slots: {},
   states: ["rest", "hover", "pressed", "focusVisible", "open", "problem"],
-  tokens: "none (composes TriggerButton, PopoverPanel, Toolbar)",
-  a11y: { pattern: "menu button with a toolbar popover", name: "label" },
+  tokens: "none (composes TriggerButton, MorphPanel, Toolbar)",
+  a11y: { pattern: "button that morphs into a toolbar (non-modal dialog)", name: "label" },
   fixtures: [
     { name: "rest", props: { label: { t: "trigger.label" }, toolbarLabel: { t: "toolbar.label" }, items: { get: "vm.gallery.toolbar" }, more: { get: "vm.gallery.menu" }, moreLabel: { t: "toolbar.more" } } },
     { name: "save problem", props: { label: { t: "trigger.label" }, problemLabel: { t: "trigger.saveProblem" }, problem: true, toolbarLabel: { t: "toolbar.label" }, items: { get: "vm.gallery.toolbar" }, more: { get: "vm.gallery.menu" }, moreLabel: { t: "toolbar.more" } } },

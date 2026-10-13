@@ -2,7 +2,7 @@
   "font": {
     "content": {
       "$type": "fontFamily",
-      "$value": "{ref.font.mono}"
+      "$value": "{ref.font.sans}"
     }
   }
 }

@@ -18,7 +18,7 @@ const THEMES = Object.fromEntries(list("themes").filter((f) => !f.endsWith("pape
 // Modes are selectors on :root, or media queries ("@media ..."), applied after themes in this order.
 const MODES = {
   '[data-contrast="more"]': join(src, "modes", "contrast-more.json"),
-  ...Object.fromEntries(["serif", "mono", "hyperlegible", "dyslexic", "system"].map((f) => [`[data-content-font="${f}"]`, join(src, "modes", `content-font-${f}.json`)])),
+  ...Object.fromEntries(["sans", "serif", "hyperlegible", "dyslexic", "system"].map((f) => [`[data-content-font="${f}"]`, join(src, "modes", `content-font-${f}.json`)])),
   '[data-motion="reduced"]': join(src, "modes", "reduced-motion.json"),
   '[data-transparency="reduced"]': join(src, "modes", "reduced-transparency.json"),
   '[data-pointer="coarse"]': join(src, "modes", "coarse-pointer.json"),

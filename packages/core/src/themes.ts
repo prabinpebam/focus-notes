@@ -26,8 +26,8 @@ export const BUILT_IN_THEMES: readonly ThemeInfo[] = [
 export const DEFAULT_THEMES = { light: "paper", dark: "ink" } as const;
 export const themeById = (id: string | undefined) => BUILT_IN_THEMES.find((t) => t.id === id);
 
-/** Content fonts. "sans" is the default (Inter); the rest are token modes. All bundled fonts are OFL (D-29). */
-export const CONTENT_FONTS = ["sans", "serif", "mono", "hyperlegible", "dyslexic", "system"] as const;
+/** Content fonts. "mono" (Roboto Mono) is the default (D-78); the rest are token modes. All bundled fonts are OFL (D-29). */
+export const CONTENT_FONTS = ["mono", "sans", "serif", "hyperlegible", "dyslexic", "system"] as const;
 export type ContentFont = (typeof CONTENT_FONTS)[number];
 
 /** Interface scale steps (DSY-03, Settings → Appearance). Note text has its own size. */

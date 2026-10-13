@@ -10,8 +10,10 @@ import "@fontsource/source-serif-4/400.css";
 import "@fontsource/source-serif-4/400-italic.css";
 import "@fontsource/source-serif-4/600.css";
 import "@fontsource/source-serif-4/700.css";
-import "@fontsource/jetbrains-mono/400.css";
-import "@fontsource/jetbrains-mono/700.css";
+import "@fontsource/roboto-mono/400.css";
+import "@fontsource/roboto-mono/400-italic.css";
+import "@fontsource/roboto-mono/700.css";
+import "@fontsource/roboto-mono/700-italic.css";
 import "@fontsource/atkinson-hyperlegible/400.css";
 import "@fontsource/atkinson-hyperlegible/400-italic.css";
 import "@fontsource/atkinson-hyperlegible/700.css";
@@ -24,7 +26,7 @@ export interface AppRootProps {
   scheme: "light" | "dark";
   /** The theme to show; defaults to Paper or Ink for the scheme (THM-08). */
   theme?: string;
-  /** The content font (THM-03): a token mode; "sans" is the default. */
+  /** The content font (THM-03): a token mode; "mono" (Roboto Mono) is the default (D-78). */
   contentFont?: string;
   /** Interface scale (DSY-03). Note text is unaffected. */
   uiScale?: number;
@@ -57,7 +59,7 @@ export function AppRoot({ scheme, theme, contentFont, uiScale, platform, content
 
   useEffect(() => {
     const html = document.documentElement;
-    if (contentFont && contentFont !== "sans") html.dataset.contentFont = contentFont;
+    if (contentFont && contentFont !== "mono") html.dataset.contentFont = contentFont;
     else delete html.dataset.contentFont;
     if (uiScale && uiScale !== 1) html.style.setProperty("--fn-ui-scale", String(uiScale));
     else html.style.removeProperty("--fn-ui-scale");

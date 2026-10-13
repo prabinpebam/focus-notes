@@ -1,5 +1,5 @@
 import { TriggerButton } from "../../primitives/TriggerButton/TriggerButton.tsx";
-import { PopoverPanel } from "../../primitives/PopoverPanel/PopoverPanel.tsx";
+import { MorphPanel } from "../../primitives/MorphPanel/MorphPanel.tsx";
 import { Toolbar } from "../Toolbar/Toolbar.tsx";
 import type { CommandItem, MenuSection } from "../../data.ts";
 
@@ -24,9 +24,9 @@ export interface TriggerProps {
  */
 export function Trigger({ label, problemLabel, problem, shortcut, open, toolbarLabel, items, more, moreLabel, onOpenChange, onAction }: TriggerProps) {
   return (
-    <PopoverPanel
+    <MorphPanel
       label={toolbarLabel}
-      {...(open !== undefined ? { open } : {})}
+      open={Boolean(open)}
       {...(onOpenChange ? { onOpenChange } : {})}
       trigger={
         <TriggerButton
@@ -34,6 +34,7 @@ export function Trigger({ label, problemLabel, problem, shortcut, open, toolbarL
           tone={problem ? "danger" : "red"}
           {...(shortcut ? { shortcut } : {})}
           expanded={Boolean(open)}
+          onPress={() => onOpenChange?.({ open: !open })}
         />
       }
       content={<Toolbar label={toolbarLabel} items={items} more={more} moreLabel={moreLabel} {...(onAction ? { onAction } : {})} />}
