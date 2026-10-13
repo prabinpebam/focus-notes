@@ -329,7 +329,7 @@ async function importBundle(id: unknown, to: unknown): Promise<{ added: number; 
   if (!chosenBundle || chosenBundle.id !== id) throw refuse("notFound");
   const root = isWorkspace() ? roots().find((r) => r.id === to) : undefined;
   if (!root) throw refuse("invalid");
-  await assertWritable(join(root.path, "x.md")).catch(() => { throw refuse("readOnly"); });
+  await assertWritable(root.path).catch(() => { throw refuse("readOnly"); });
   const { bundle } = chosenBundle;
   const existing = new Map<string, string | undefined>((await notesIn(root.path)).map((p) => [p, undefined]));
   // Only the notes a bundle note could be the same as are read, to skip identical copies.
