@@ -70,5 +70,10 @@
     },
     "publish": null,
     "executableName": "focus-notes"
+  },
+  "homepage": "https://github.com/prabinpebam/focus-notes",
+  "repository": {
+    "url": "https://github.com/prabinpebam/focus-notes.git",
+    "type": "git"
   }
 }

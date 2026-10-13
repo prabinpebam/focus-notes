@@ -27,11 +27,14 @@ const mainEntry = join(root, "apps", "desktop", "out", "main", "main.mjs");
 function launchReadyMs(userData, docs) {
   return new Promise((resolve, reject) => {
     const child = spawn(electronPath, [mainEntry], { env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs } });
-    const timer = setTimeout(() => { child.kill(); reject(new Error("The app never reported ready")); }, 20_000);
+    let ready;
+    const timer = setTimeout(() => { child.kill(); reject(new Error("The app never reported ready")); }, 30_000);
     child.stdout.on("data", (d) => {
       const m = String(d).match(/ready-ms=(\d+)/);
-      if (m) { clearTimeout(timer); child.kill(); resolve(Number(m[1])); }
+      if (m && ready === undefined) { ready = Number(m[1]); clearTimeout(timer); child.kill(); }
     });
+    // Resolve only once the process has exited, so the next launch doesn't meet the single-instance lock.
+    child.on("exit", () => (ready === undefined ? reject(new Error("The app exited before it was ready")) : resolve(ready)));
   });
 }
 
