@@ -1,4 +1,4 @@
-import { globalStyle, style } from "@vanilla-extract/css";
+import { createVar, globalStyle, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.editorSurface;
@@ -13,11 +13,27 @@ export const scroller = style({
 });
 
 export const column = style({
+  position: "relative",
   maxWidth: `calc(${t.measure} + 2 * ${t.gutter})`,
   marginInline: "auto",
   paddingInline: t.gutter,
   paddingTop: t.topBand,
   paddingBottom: t.endPadding,
+});
+
+// Focus mode (FOC-01 to FOC-06): a full-width mask over the content, bright only in the band.
+// The band is in content coordinates, so scrolling never recomputes it. Registered properties
+// let the band glide (motion.micro), and reduced motion makes the duration 0 (FOC-04).
+export const bandTop = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const bandBottom = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+const dimmed = `color-mix(in srgb, black calc(${t.focusDim} * 100%), transparent)`;
+const mask = `linear-gradient(to bottom, ${dimmed} 0, ${dimmed} ${bandTop}, black ${bandTop}, black ${bandBottom}, ${dimmed} ${bandBottom}, ${dimmed} 100%)`;
+export const focusOn = style({
+  maskImage: mask,
+  WebkitMaskImage: mask,
+  transitionProperty: `${bandTop}, ${bandBottom}`,
+  transitionDuration: t.focusDuration,
+  transitionTimingFunction: t.focusEasing,
 });
 
 export const prose = style({
@@ -34,16 +50,16 @@ export const prose = style({
 
 const p = (sel: string) => `${prose} ${sel}`;
 globalStyle(p("> * + *"), { marginTop: t.blockGap });
-globalStyle(p("p"), { margin: 0 });
-globalStyle(p("h1, h2, h3, h4, h5, h6"), { margin: 0, fontWeight: t.headingWeight, lineHeight: t.headingLineHeight });
+globalStyle(`:where(${prose}) :where(p)`, { margin: 0 });
+globalStyle(`:where(${prose}) :where(h1, h2, h3, h4, h5, h6)`, { margin: 0, fontWeight: t.headingWeight, lineHeight: t.headingLineHeight });
 globalStyle(p("h1"), { fontSize: `calc(${t.h1} * 1em)` });
 globalStyle(p("h2"), { fontSize: `calc(${t.h2} * 1em)` });
 globalStyle(p("h3"), { fontSize: `calc(${t.h3} * 1em)` });
-globalStyle(p("ul, ol"), { margin: 0, paddingInlineStart: t.space.l });
+globalStyle(`:where(${prose}) :where(ul, ol)`, { margin: 0, paddingInlineStart: t.space.l });
 globalStyle(p("li > * + *"), { marginTop: t.space.s });
-globalStyle(p("blockquote"), { margin: 0, paddingInlineStart: t.space.m, borderInlineStartStyle: "solid", borderInlineStartWidth: t.quoteBorderWidth, borderInlineStartColor: t.quoteBorder, color: t.quoteText });
+globalStyle(`:where(${prose}) :where(blockquote)`, { margin: 0, paddingInlineStart: t.space.m, borderInlineStartStyle: "solid", borderInlineStartWidth: t.quoteBorderWidth, borderInlineStartColor: t.quoteBorder, color: t.quoteText });
 globalStyle(p("code"), { fontFamily: t.codeFont, backgroundColor: t.codeBackground, color: t.codeText, borderRadius: t.codeRadius, paddingInline: t.space.s, fontSize: `calc(${t.codeRatio} * 1em)` });
-globalStyle(p("pre"), { fontFamily: t.codeFont, backgroundColor: t.codeBackground, color: t.codeText, borderRadius: t.codeRadius, padding: t.space.m, margin: 0, overflowX: "auto", fontSize: `calc(${t.codeRatio} * 1em)`, whiteSpace: "pre" });
+globalStyle(`:where(${prose}) :where(pre)`, { fontFamily: t.codeFont, backgroundColor: t.codeBackground, color: t.codeText, borderRadius: t.codeRadius, padding: t.space.m, margin: 0, overflowX: "auto", fontSize: `calc(${t.codeRatio} * 1em)`, whiteSpace: "pre" });
 globalStyle(p("pre code"), { backgroundColor: "transparent", padding: 0, fontSize: "inherit" });
 globalStyle(p("pre[data-raw-markdown]"), { userSelect: "text" });
 globalStyle(p("a"), { color: t.link, textDecoration: "underline" });

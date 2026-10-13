@@ -51,12 +51,14 @@ test("toolbar actions run their commands and show their state", async () => {
   await expect.poll(theme).not.toBe(before);
   await expect(editor).toBeFocused();
 
-  // Focus mode toggles and shows as pressed.
-  await page.keyboard.press(`${mod}+.`);
-  await toolbar.getByRole("button", { name: "Focus mode" }).click();
+  // Focus mode (on for new installs, D-04) toggles off, and the button shows its state.
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBe("on");
   await page.keyboard.press(`${mod}+.`);
   await expect(toolbar.getByRole("button", { name: "Focus mode" })).toHaveAttribute("aria-pressed", "true");
+  await toolbar.getByRole("button", { name: "Focus mode" }).click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBeUndefined();
+  await page.keyboard.press(`${mod}+.`);
+  await expect(toolbar.getByRole("button", { name: "Focus mode" })).toHaveAttribute("aria-pressed", "false");
   await page.keyboard.press("Escape");
 
   // Search isn't here yet, and says why instead of doing nothing.

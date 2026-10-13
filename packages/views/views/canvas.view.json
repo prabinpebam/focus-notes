@@ -45,6 +45,7 @@
           "documentKey": { "get": "vm.canvas.noteKey" },
           "initialValue": { "get": "vm.canvas.initialMarkdown" },
           "label": { "t": "canvas.editorLabel" },
+          "focusMode": { "get": "vm.app.focusMode" },
           "placeholder": { "t": "canvas.placeholder", "args": { "platform": { "get": "vm.app.platform" } } }
         },
         "on": {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import { coreExtensions, MarkdownSession, type PMNode } from "@focus-notes/editor";
+import { trackFocusBand } from "./focus-band.ts";
 import * as s from "./EditorSurface.css.ts";
 
 export interface EditorSurfaceProps {
@@ -11,6 +12,8 @@ export interface EditorSurfaceProps {
   label: string;
   placeholder?: string;
   readOnly?: boolean;
+  /** Focus mode: only the caret's visual row at full strength (FOC-01). */
+  focusMode?: boolean;
   id?: string;
   onChange?: (payload: { value: string }) => void;
   onReady?: () => void;
@@ -24,7 +27,8 @@ export const FLUSH_EVENT = "focus-notes:flush";
 export const REFOCUS_EVENT = "focus-notes:refocus";
 
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
-export function EditorSurface({ documentKey, initialValue, label, placeholder, readOnly, id, onChange, onReady }: EditorSurfaceProps) {
+export function EditorSurface({ documentKey, initialValue, label, placeholder, readOnly, focusMode, id, onChange, onReady }: EditorSurfaceProps) {
+  const columnRef = useRef<HTMLDivElement | null>(null);
   const session = useMemo(() => new MarkdownSession(initialValue), [documentKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -72,6 +76,11 @@ export function EditorSurface({ documentKey, initialValue, label, placeholder, r
     if (editor) onReady?.();
   }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (!focusMode || !editor || !columnRef.current) return;
+    return trackFocusBand(editor, columnRef.current, { top: s.bandTop, bottom: s.bandBottom });
+  }, [focusMode, editor]);
+
   // Flush a pending change when the surface goes away (switching notes, closing).
   useEffect(() => () => {
     if (timer.current && editor && !editor.isDestroyed) {
@@ -107,7 +116,7 @@ export function EditorSurface({ documentKey, initialValue, label, placeholder, r
 
   return (
     <main className={s.scroller} data-editor-scroller="" aria-label={label}>
-      <div className={s.column}>
+      <div className={focusMode ? `${s.column} ${s.focusOn}` : s.column} ref={columnRef} data-focus-mode={focusMode ? "on" : undefined}>
         <EditorContent editor={editor} />
       </div>
     </main>

@@ -10,6 +10,7 @@ export const contract = defineContract({
     label: { kind: "message", required: true },
     placeholder: { kind: "message" },
     readOnly: { kind: "boolean", default: false },
+    focusMode: { kind: "boolean", default: false },
   },
   events: { change: { payload: { value: "text" } }, ready: {} },
   slots: {},

@@ -325,7 +325,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       store.update((s) => ({
         ...s,
         appearance: { ...s.appearance, ...(appState.appearance ? { mode: appState.appearance } : {}), ...(appState.fontSize ? { fontSize: appState.fontSize } : {}) },
-        focusMode: appState.focusMode ?? false,
+        // Focus mode is on for new installs: it's a signature feature (D-04).
+        focusMode: appState.focusMode ?? true,
       }));
       bridge.onSystemSchemeChange((system) => store.update((s) => ({ ...s, appearance: { ...s.appearance, system } })));
       const path = appState.lastNotePath ?? (await bridge.defaultNotePath());
