@@ -44,6 +44,32 @@ export interface PlatformBridge {
   importNotes?(): Promise<{ added: number; renamed: number } | undefined>;
   /** The workspace: its notes and folders, its format, and changes made outside the app (WP-2.3). */
   workspace?: WorkspaceBridge;
+  /** Commits and pushes with the user's own Git (the desktop, WP-3.3). Absent in the browser. */
+  sync?: SyncBridge;
+}
+
+/** Why saving to Git or syncing failed (Feedback → Save and sync status). */
+export type SyncProblem = "offline" | "auth" | "conflict" | "locked" | "identity" | "signing" | "hook" | "failed";
+/** Where Git saving stands. Only problems are shown (EDT-11). */
+export interface SyncReport {
+  /** False when the workspace isn't a Git repository: saving stays local, with no Git UI. */
+  git: boolean;
+  state: "idle" | "syncing" | "problem";
+  problem?: SyncProblem;
+  /** Changes not yet on GitHub: notes not committed, and commits not pushed. */
+  waiting: number;
+}
+/**
+ * Save and sync (Desktop and Git → Save and sync, D-23). The shell commits on its own after 60 s
+ * with no typing and on quit; the app asks at once on Mod+S and when switching notes. Each Files
+ * batch is one commit, made by `workspace.apply` itself.
+ */
+export interface SyncBridge {
+  /** Commits written notes and pushes, then resolves with how it went. */
+  now(reason: "save" | "switch"): Promise<SyncReport>;
+  /** The latest report, from the cached Git status (PRF-07): never waits for a commit. */
+  status(): Promise<SyncReport>;
+  onStatus(listener: (report: SyncReport) => void): () => void;
 }
 
 /**
@@ -61,8 +87,10 @@ export interface WorkspaceBridge {
   renameNote(from: string, to: string): Promise<void>;
   /**
    * Applies a batch of file operations as one: every operation is checked first, and if any is
-   * refused nothing changes (WP-2.4). From M3 the desktop makes each batch one Git commit, and a
-   * move between the Public and Private roots changes visibility (WP-3.4). Rejects with an Error
+   * refused nothing changes (WP-2.4). In a Git workspace the desktop makes each batch one commit
+   * per repository before resolving (FIL-05); a commit that fails is reported through `sync`, and
+   * the files stay as the batch left them. A move between the Public and Private roots changes
+   * visibility (WP-3.4). Rejects with an Error
    * whose message ends in an {@link OpErrorCode}.
    */
   apply?(ops: WorkspaceOp[]): Promise<void>;
