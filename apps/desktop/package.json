@@ -68,6 +68,7 @@
       ],
       "category": "Office"
     },
-    "publish": null
+    "publish": null,
+    "executableName": "focus-notes"
   }
 }

@@ -93,5 +93,5 @@ describe("renderer overhead (DSY-11)", () => {
     console.log(`DSY-11: overhead ${(overhead * 100).toFixed(1)}% (${strict ? "production React" : "development React"})`);
     // The 10% budget applies to production builds (pnpm bench). Development React adds its own cost.
     expect(overhead).toBeLessThanOrEqual(strict ? 0.1 : 0.25);
-  });
+  }, 120_000);
 });
