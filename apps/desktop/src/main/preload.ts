@@ -51,6 +51,19 @@ contextBridge.exposeInMainWorld("focusNotes", {
       return () => ipcRenderer.removeListener("sync:status", handler);
     },
   },
+  // Set up my instance (WP-3.1, FRE-08): intent-level steps; the passphrase is passed only to run the vault step.
+  setup: {
+    status: () => ipcRenderer.invoke("setup:status"),
+    start: (options: unknown, passphrase?: string) => ipcRenderer.invoke("setup:start", options, passphrase),
+    retry: (step: string, passphrase?: string) => ipcRenderer.invoke("setup:retry", step, passphrase),
+    reset: () => ipcRenderer.invoke("setup:reset"),
+    passphraseStrength: (passphrase: string) => ipcRenderer.invoke("setup:strength", passphrase),
+    onReport: (listener: (report: unknown) => void) => {
+      const handler = (_e: unknown, report: unknown) => listener(report);
+      ipcRenderer.on("setup:report", handler);
+      return () => ipcRenderer.removeListener("setup:report", handler);
+    },
+  },
   setWindowScheme: (s: "light" | "dark", canvas?: string) => ipcRenderer.send("window:scheme", s, canvas),
   onFlushRequest: (listener: () => Promise<boolean>) => {
     ipcRenderer.on("app:flush", () => {

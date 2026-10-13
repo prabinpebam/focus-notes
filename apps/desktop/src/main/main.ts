@@ -1,7 +1,8 @@
 /**
  * The Electron main process (PKG-03, SEC-01, PKG-06, PRV-01): a hardened shell that owns the
- * window, the file system, and the user's own `git`. It makes no network requests of its own and
- * allows none from the renderer; Git talks to the workspace's remotes (WP-3.3).
+ * window, the file system, and the user's own `git`. It allows no network requests from the
+ * renderer; Git talks to the workspace's remotes (WP-3.3), and its own only requests are setup's
+ * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
@@ -11,6 +12,11 @@ import { pathToFileURL } from "node:url";
 import { readWorkspaceFormat } from "@focus-notes/core/workspace-format";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
 import { GitSync, NO_GIT } from "./git/sync.ts";
+import { createRunner } from "./git/run.ts";
+import { passphraseStrength } from "@focus-notes/seal";
+import { SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
+import { checkOptions, SetupEngine } from "./setup/engine.ts";
+import { githubFetch, githubToken } from "./setup/credential.ts";
 import type { BatchOp } from "./git/message.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
@@ -71,6 +77,25 @@ const gitOpening = new Promise<GitSync | undefined>((resolve) => {
     }));
   };
 });
+
+// ---- set up my instance (WP-3.1, FRE-08) ----
+// Opened when first asked. The token is read from Git's credential helper when a step needs it and
+// kept only in the engine; progress (names and step states, nothing secret) is in setup.json.
+let setupEngine: Promise<SetupEngine> | undefined;
+const setupRunner = createRunner();
+const setup = () => (setupEngine ??= SetupEngine.open({
+  git: setupRunner,
+  progressFile: join(app.getPath("userData"), "setup.json"),
+  token: () => githubToken(setupRunner, app.getPath("home")),
+  fetch: githubFetch(),
+  onReport: (r) => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("setup:report", r);
+  },
+  // Step names, states, and problem codes only.
+  log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
+}));
+/** A vault passphrase from the renderer: text, or none (Skip for now). Never logged or stored. */
+const passphraseArg = (p: unknown) => (typeof p === "string" && p.length > 0 && p.length <= 1024 ? p : undefined);
 
 // ---- the workspace (WP-2.3) ----
 // The notes folder is the workspace. With .focus-notes/workspace.json it has the repository's
@@ -376,6 +401,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const g = await gitOpening;
     return g ? g.status() : NO_GIT;
   });
+  handle("setup:status", async () => (await setup()).report());
+  handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions(options), passphraseArg(passphrase)));
+  handle("setup:retry", async (id, passphrase) => {
+    if (!(SETUP_STEPS as readonly unknown[]).includes(id)) throw new Error("Unknown setup step");
+    return (await setup()).retry(id as SetupStepId, passphraseArg(passphrase));
+  });
+  handle("setup:reset", async () => (await setup()).reset());
+  handle("setup:strength", async (p) => passphraseStrength(passphraseArg(p) ?? ""));
   handle("window:fullScreen", async () => {
     const w = win();
     if (w) w.setFullScreen(!w.isFullScreen());

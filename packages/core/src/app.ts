@@ -15,6 +15,7 @@ import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
 import { joinPath } from "./workspace.ts";
 import { registerSync, NO_SYNC, SyncFailed, type SyncState } from "./sync-app.ts";
+import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -66,6 +67,8 @@ export interface AppState {
   workspace: WorkspaceState;
   /** Save and sync with Git: whether there's a repository, and the problem to show if any (EDT-11). */
   sync: SyncState;
+  /** Set up my instance: the latest report from the shell's setup (FRE-08). */
+  setup: SetupState;
   /** Waits a person started (PRF-08). */
   tasks: TaskView[];
   /** The latest polite announcement for screen readers; `n` makes repeats announce again. */
@@ -172,6 +175,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
     sync: NO_SYNC,
+    setup: NO_SETUP,
     tasks: [],
     announcement: { text: "", n: 0 },
   });
@@ -216,6 +220,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const setNote = (patch: Partial<AppState["note"]>) =>
     store.update((s) => ({ ...s, note: { ...s.note, ...patch } }));
   const sync = registerSync({ store, bridge, catalog, toast });
+  const setup = registerSetup({ store, bridge, catalog, commands, viewModels });
   const workspace = registerWorkspaceFeatures({ store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}) });
 
   async function writeNow(): Promise<void> {
@@ -886,6 +891,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       if (store.state.note.status === "error" && appState.lastNotePath) await load(await bridge.defaultNotePath());
       workspace.start();
       sync.start();
+      setup.start();
       await browser.start();
     },
   };
