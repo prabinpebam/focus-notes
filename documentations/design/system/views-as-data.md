@@ -140,7 +140,7 @@ export const appearance = defineViewModel("vm.appearance", {
 - The **schema** is what `ui:check` type-checks bindings against. A view can't read a field that isn't declared.
 - **Setters** are commands, so a binding change is undoable, recorded, and available to agents like any other action.
 - View models are tested with fixtures. The same fixtures drive the view gallery's states (empty, typical, many items, long text, error, loading).
-- Each view model **declares the content it shows**: the workspace tree, one note by path, one note's history, the settings, or the theme list. The workspace model uses these declarations to tell only the affected view models about a change (PRF-11).
+- Each view model **declares what it shows** (PRF-11): `reads`, the state it reads as dotted paths (`"note.key"`, `"ui.find"`), and `shows`, the workspace content it shows (the tree, one note by path, or the format). While nothing it reads changes, its value stays the same object and it isn't selected again; a view model that shows command states, which can depend on anything, declares `"*"` and keeps its value while it's equal. The workspace model matches outside changes against `shows`, so only the affected view models hear about them.
 
 <h2 id="fragments" data-reader-personas="design engineering">Fragments</h2>
 
@@ -187,7 +187,7 @@ Fragments are expanded at build time, so they cost nothing at run time.
 <ol class="slate-steps">
   <li class="slate-step"><p class="slate-step__title">Build</p><p>Views are validated, fragments are expanded, and each view becomes a compact frozen tree in the app bundle, split per view so it loads only when first opened.</p></li>
   <li class="slate-step"><p class="slate-step__title">Map</p><p>The renderer (<code>packages/ui-runtime</code>) walks the tree and maps each <code>type</code> to its component through a closed registry. There is no dynamic import by name and no fallback for unknown types.</p></li>
-  <li class="slate-step"><p class="slate-step__title">Bind</p><p>Each read subscribes to just the view-model field it needs, so a change re-renders only the nodes that use it. Messages resolve through the active locale.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Bind</p><p>Each region of a view subscribes to just the view models it reads, so a change re-renders only the regions that show it. Messages resolve through the active locale.</p></li>
   <li class="slate-step"><p class="slate-step__title">Act</p><p>Events turn into actions: <code>run</code> goes to the command service, and <code>set</code> updates local state.</p></li>
   <li class="slate-step"><p class="slate-step__title">Contain</p><p>Each view has an error boundary that shows a calm "This panel couldn't load" message with <em>Copy diagnostic report</em>, and logs locally. The note and the canvas keep working.</p></li>
 </ol>
@@ -196,9 +196,9 @@ Fragments are expanded at build time, so they cost nothing at run time.
 
 **Redraw only what changed** (PRF-11):
 
-- **Per field.** A view-model change re-renders only the nodes that read that field. A new list item adds one row to a repeat, keyed by its `key`. It doesn't redraw the list.
+- **Per region.** Each child of a view's top node is a region that subscribes to the view models it reads, and re-renders only when one of their values changes. Typing in the note re-renders nothing, because the canvas view model doesn't read the note's text. A region that reads `env` or names a `command` re-renders on every change, as those can depend on anything. Repeats are keyed by their `key`, so React keeps the rows that stayed.
 - **Per view.** A change to content that no open view declares does no rendering work at all, whether it came from the app, an agent, or another program ([Desktop and Git → External changes](../../architecture/desktop-and-git.md#external-changes)).
-- **Heavy parts load when first opened.** Each view's code loads on its first open. Inside a view, rarely used heavy parts (a tab, a history diff, the theme gallery's previews) load when they first show, and long lists load a page at a time into a `VirtualList`. Content that arrives later is added to what's there, so a query typed meanwhile, focus, and scroll position are kept.
+- **Heavy parts load when first shown.** A region hidden by its `when` reads only what its `when` needs until it first shows, so its view model isn't selected (the cheat sheet's groups are built only while it's open). Splitting each view's code so it loads on its first open, and loading long lists a page at a time into a `VirtualList`, arrive with the Files panel (WP-2.4), the second view. Content that arrives later is added to what's there, so a query typed meanwhile, focus, and scroll position are kept.
 - **Loading is never blank.** A view that's waiting for data renders its `loading` case, which uses the skeleton sign from [Waits](../components/feedback-and-dialogs.md#waits).
 - **Measure before trimming.** The gallery reports the nodes rendered and the bytes of view code per view and per region, so a fix targets what's actually heavy rather than what looks heavy.
 

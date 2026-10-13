@@ -40,6 +40,8 @@ A read-only note shows a quiet pill in the bottom-left corner, *Read only · Cop
 ### Your notes in this browser
 
 - Typing is saved to IndexedDB within a second. Notes survive reloads, work offline, and need no account (PKG-07).
+- A note's name follows its title, as on the desktop (FIL-07): typing *Offline thoughts* into a new note keeps it as `offline-thoughts.md`. The browser's notes are never published, so their names always follow (a name chosen by hand, like `Welcome.md`, is kept).
+- The browser's notes, with the instance's read-only ones, are one workspace ([Content model → The workspace model](content-model.md#the-workspace-model)). Their format is kept in IndexedDB, and notes saved by a newer Focus Notes open read-only here (DST-05).
 - The app asks the browser to keep its storage (`navigator.storage.persist()`), so it isn't cleared under storage pressure. It says plainly that clearing the site's data in the browser deletes these notes, and points to *Export my notes* and the desktop app.
 - Each browser and each site keeps its own notes: what you write in one browser isn't in another.
 - On a first visit the app opens the newest public note, if there is one, or a welcome note kept in this browser, which says that notes written here stay in this browser and that the desktop app saves to GitHub (FRE-09). There's nothing to sign in to.
@@ -105,7 +107,7 @@ Why: a static site has no simple, consumer-grade way to save to GitHub. A token 
 | Store | Holds |
 | --- | --- |
 | `notes` | One record per note written in this browser: path, text, and when it changed. |
-| `meta` | `appState` (the last note, appearance, and other per-device state; `schemas/app-state.schema.json`). Its `lastNotePath` is saved only for the browser's own notes and public notes, never a private note's path, so a reload doesn't reopen a private note and, only with *Remember on this browser*, the vault key (a non-extractable `CryptoKey`) and its salt. |
+| `meta` | `workspaceFormat` (the format of the notes in this browser, as the text of a `workspace.json`, DST-05), `appState` (the last note, appearance, and other per-device state; `schemas/app-state.schema.json`). Its `lastNotePath` is saved only for the browser's own notes and public notes, never a private note's path, so a reload doesn't reopen a private note and, only with *Remember on this browser*, the vault key (a non-extractable `CryptoKey`) and its salt. |
 
 The instance's notes aren't stored in IndexedDB: public notes are read from the site, and decrypted private text is held only in memory while unlocked. The code is `apps/web` (the same app on a browser bridge) and `packages/seal` (the vault's format and reader); `packages/github` keeps the REST client that the desktop setup uses (D-83).
 

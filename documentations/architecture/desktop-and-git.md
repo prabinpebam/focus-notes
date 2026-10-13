@@ -10,7 +10,7 @@ How the Electron app is put together: processes, security, signing in through Gi
 | Part | Responsibilities | Not allowed |
 | --- | --- | --- |
 | **Main process** | Windows (shape, resize handles, snapping, state), app menu, running sign-in helpers, file reads and writes, file watching, running `git`, workspace creation | Rendering note content |
-| **Preload bridge** | A typed API: `workspace.*` (tree, read, save, move, delete, create), `sync.*` (status, sync now), `auth.*` (detect, sign in, status, sign out), `window.*` (minimize, maximize, snap, close, full screen), `app.*` (open external link, show in Finder or Explorer) | Exposing `ipcRenderer`, Node, or any generic exec |
+| **Preload bridge** | A typed API: `workspace.*` (built: `info`, `scan`, `renameNote`, `writeFormat`, `onChange`; planned: move, delete, create), `sync.*` (status, sync now), `auth.*` (detect, sign in, status, sign out), `window.*` (minimize, maximize, snap, close, full screen), `app.*` (open external link, show in Finder or Explorer) | Exposing `ipcRenderer`, Node, or any generic exec |
 | **Renderer** | The app core: editor, focus mode, Spotlight, theming, UI | Node access, network access except to `api.github.com` |
 
 Security settings: `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, a strict Content Security Policy, navigation and new windows denied (external links open in the default browser), and only the app's own local files served. Every bridge call is checked for a valid workspace-relative path, so nothing outside the workspace can be read or written.
@@ -197,9 +197,11 @@ The app, the [command-line tool](agents.md#command-line-tool), and the [MCP serv
 - A stale lock (from a process that no longer exists) is taken over safely.
 ## External changes
 
-A file watcher (chokidar, MIT) watches the workspace, excluding `.git/`. Changes made outside the app (another editor, a terminal `git pull`) refresh the Files panel and the Spotlight index. An open note with no unsaved edits reloads quietly. If it does have unsaved edits, the writer gets the *Keep mine / Take theirs / Save mine as a copy* choice.
+The main process watches the notes folder with Node's own recursive `fs.watch` (no dependency, D-92), on its real path (on Windows, a short 8.3 folder name makes the watcher report wrong names). Git's files, folders and files starting with a dot, and the app's own temporary files aren't reported; `.focus-notes/workspace.json` is. Events are batched for 30 ms, each path is checked on disk, and one report goes to the app: notes and folders that appeared (with everything inside a new folder) or went away, and format changes. Changes made outside the app (another editor, a terminal `git pull`) update the workspace tree, and a changed format file is read again ([Content model → The workspace format](content-model.md#the-workspace-format)). An open note with no unsaved edits reloads quietly. If it does have unsaved edits, they're kept and a message says the file changed outside Focus Notes; the *Keep mine / Take theirs / Save mine as a copy* choice arrives with the conflict resolver (FIL-12). The app's own saves come back from the watcher too, and change nothing.
 
-Updates go only where they matter (PRF-11). Each open view declares which content it shows (for example, the Files panel shows the tree, the canvas shows one note, Note history shows one note's history), and the watcher's batched events are matched against those declarations. A change to another note redraws nothing. Git's own files aren't watched: a commit or fetch made in the terminal changes the [status cache](#the-cache)'s key, so the next status read (when the window becomes active, or at the 5-minute fetch) asks Git again, and only the places that show sync state update.
+Updates go only where they matter (PRF-11). Each view model declares the content it shows (the canvas shows one note, by path; from WP-2.4 the Files panel shows the tree), and the watcher's batched events are matched against those declarations. A change to another note does no work: nothing is read and nothing redraws. The journey test measures the open note updating within 500 ms of the watcher's report.
+
+A note's file name follows its title (FIL-07): after a save whose title changed, the app plans the new name in the workspace model and asks the main process to rename the file in its folder. The rename waits for writes to that file already under way, refuses to replace another note, and changes only the case in two steps through a temporary name. The editor keeps the note as it is; only its path changes. Git's own files aren't watched: a commit or fetch made in the terminal changes the [status cache](#the-cache)'s key, so the next status read (when the window becomes active, or at the 5-minute fetch) asks Git again, and only the places that show sync state update.
 
 ## Libraries (all MIT-compatible, see D-20)
 
@@ -207,7 +209,7 @@ Updates go only where they matter (PRF-11). Each open view declares which conten
 | --- | --- | --- |
 | Desktop runtime | Electron | MIT |
 | Packaging and updates | electron-builder, electron-updater | MIT |
-| File watching | chokidar | MIT |
+| File watching | Node.js built-in `fs.watch` (recursive) | Not applicable |
 | Encrypting the Actions secret | libsodium.js (sealed box) | ISC |
 | SSH key generation | Node.js built-in crypto (Ed25519) | Not applicable |
 | Search across files | ripgrep | MIT / Unlicense |
