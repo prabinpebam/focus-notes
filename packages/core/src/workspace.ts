@@ -18,6 +18,8 @@ export interface NoteNode {
   readonly name: string;
   /** Pushed at least once (set by sync from M3). Its file name then stays fixed (FIL-07). */
   readonly published: boolean;
+  /** Its first H1, when the shell read it: the Files panel shows titles, not file names (D-94). */
+  readonly title?: string;
 }
 export interface FolderNode {
   readonly kind: "folder";
@@ -48,15 +50,19 @@ export interface WorkspaceEntry {
   path: string;
   kind: "note" | "folder";
   published?: boolean;
+  title?: string;
 }
 /** One change the file watcher saw. `format` is `.focus-notes/workspace.json` (DST-05). */
 export interface WorkspaceChange {
   path: string;
   kind: "note" | "folder" | "format";
   exists: boolean;
+  /** A note's title as it is now, when the shell read it. */
+  title?: string;
 }
 
-export type Refusal = { kind: "refused"; reason: "notFound" | "readOnly" | "invalid" | "taken" | "intoItself" };
+export type RefusalReason = "notFound" | "readOnly" | "invalid" | "taken" | "intoItself";
+export type Refusal = { kind: "refused"; reason: RefusalReason };
 const refuse = (reason: Refusal["reason"]): Refusal => ({ kind: "refused", reason });
 
 // ---- paths ----
@@ -76,6 +82,14 @@ function within(base: string, path: string): boolean {
 export const isWithin = within;
 const partsOf = (base: string, path: string) => path.slice(base.length).split(/[\\/]/).filter(Boolean);
 const pathOf = (root: { path: string }, parts: readonly string[]) => parts.reduce(joinPath, root.path);
+
+/** The folder (or root) a path is in, in the shell's own spelling: `a/b.md` → `a`, `public:b.md` → `public:`. */
+export function dirOf(path: string): string {
+  const i = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  if (i >= 0) return path.slice(0, i);
+  const m = PREFIXED.exec(path);
+  return m ? m[0] : "";
+}
 
 /** The root a path is in: the longest root that contains it. */
 export function rootOf<R extends { path: string }>(tree: { roots: readonly R[] }, path: string): R | undefined {
@@ -116,12 +130,38 @@ const inline = (s: string) =>
 
 /** A note's title: its first H1, outside front matter and code (content-model.md → A note file). */
 export function titleOfMarkdown(markdown: string): string | undefined {
-  const lines = markdown.replace(/^\uFEFF/, "").split(/\r?\n/);
-  let i = 0;
-  if (lines[0] === "---") {
-    const end = lines.findIndex((l, n) => n > 0 && (l === "---" || l === "..."));
-    if (end > 0) i = end + 1;
+  return findTitle(markdown.replace(/^\uFEFF/, "").split(/\r?\n/))?.text;
+}
+
+/**
+ * A note's text with a new title (Files → Renaming): its first H1 is replaced, or one is added at
+ * the top (after front matter) when it has none. Everything else stays byte for byte.
+ */
+export function retitle(markdown: string, title: string): string {
+  const bom = markdown.startsWith("\uFEFF") ? "\uFEFF" : "";
+  const body = markdown.slice(bom.length);
+  const eol = body.includes("\r\n") ? "\r\n" : "\n";
+  const lines = body.split(/\r?\n/);
+  const heading = `# ${title.replace(/\s+/g, " ").trim()}`;
+  const found = findTitle(lines);
+  if (found) lines.splice(found.line, found.setext ? 2 : 1, heading);
+  else {
+    const at = frontMatterEnd(lines);
+    const rest = lines.slice(at);
+    const empty = rest.every((l) => !l.trim());
+    lines.splice(at, lines.length - at, heading, ...(empty ? [""] : ["", ...rest]));
   }
+  return bom + lines.join(eol);
+}
+
+function frontMatterEnd(lines: readonly string[]): number {
+  if (lines[0] !== "---") return 0;
+  const end = lines.findIndex((l, n) => n > 0 && (l === "---" || l === "..."));
+  return end > 0 ? end + 1 : 0;
+}
+
+function findTitle(lines: readonly string[]): { line: number; setext: boolean; text: string } | undefined {
+  let i = frontMatterEnd(lines);
   let fence = "";
   for (; i < lines.length; i++) {
     const line = lines[i]!;
@@ -137,12 +177,12 @@ export function titleOfMarkdown(markdown: string): string | undefined {
     const atx = /^ {0,3}#(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/.exec(line);
     if (atx) {
       const t = inline(atx[1] ?? "");
-      if (t) return t;
+      if (t) return { line: i, setext: false, text: t };
       continue;
     }
     if (line.trim() && /^ {0,3}=+[ \t]*$/.test(lines[i + 1] ?? "") && !/^ {0,3}([-*+>#]|\d+[.)])/.test(line)) {
       const t = inline(line);
-      if (t) return t;
+      if (t) return { line: i, setext: true, text: t };
     }
   }
   return undefined;
@@ -174,7 +214,7 @@ export function buildTree(scan: WorkspaceScan): WorkspaceTree {
       at = next;
     }
     const name = parts.at(-1)!;
-    if (e.kind === "note") at.children.set(name, { kind: "note", name, published: Boolean(e.published) });
+    if (e.kind === "note") at.children.set(name, { kind: "note", name, published: Boolean(e.published), ...(e.title ? { title: e.title } : {}) });
     else if (at.children.get(name)?.kind !== "folder") at.children.set(name, { kind: "folder", name, children: new Map() });
   }
   return { roots: tops.map(({ root, top }) => ({ id: root.id, path: root.path, readOnly: root.readOnly, children: freeze(top) })) };
@@ -268,8 +308,9 @@ export function applyChanges(tree: WorkspaceTree, changes: readonly WorkspaceCha
     }
     t = edit(t, root, dir, (list) => {
       const old = list.find((n) => n.name === name);
+      if (old?.kind === "note" && c.kind === "note" && c.title !== undefined && c.title !== old.title) return withNode({ ...old, title: c.title })(list);
       if (old?.kind === c.kind) return list;
-      return withNode(c.kind === "note" ? { kind: "note", name, published: false } : { kind: "folder", name, children: [] })(list);
+      return withNode(c.kind === "note" ? { kind: "note", name, published: false, ...(c.title ? { title: c.title } : {}) } : { kind: "folder", name, children: [] })(list);
     }, true);
   }
   return t;

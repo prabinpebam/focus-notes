@@ -15,3 +15,5 @@ export * from "./format.ts";
 export * from "./workspace.ts";
 export * from "./workspace-format.ts";
 export * from "./workspace-app.ts";
+export * from "./files.ts";
+export * from "./flat-store.ts";

@@ -59,8 +59,31 @@ export interface WorkspaceBridge {
   writeFormat(text: string): Promise<void>;
   /** Renames a note in its folder. Rejects if the new name is taken, except for a change of case. */
   renameNote(from: string, to: string): Promise<void>;
+  /**
+   * Applies a batch of file operations as one: every operation is checked first, and if any is
+   * refused nothing changes (WP-2.4). From M3 the desktop makes each batch one Git commit, and a
+   * move between the Public and Private roots changes visibility (WP-3.4). Rejects with an Error
+   * whose message ends in an {@link OpErrorCode}.
+   */
+  apply?(ops: WorkspaceOp[]): Promise<void>;
   /** Changes made outside the app, in batches (the desktop's file watcher). */
   onChange?(listener: (changes: WorkspaceChange[]) => void): () => void;
+}
+
+/** One file operation in a batch (Files panel, D-94). Paths are the shell's own. */
+export type WorkspaceOp =
+  | { op: "createFolder"; path: string }
+  | { op: "move"; from: string; to: string }
+  /** Desktop: to the system trash until Git keeps deletions (FIL-10). Browser: kept, marked deleted. */
+  | { op: "delete"; path: string };
+
+/** Why a batch was refused. The shell's error message ends with one of these. */
+export const OP_ERROR_CODES = ["notFound", "taken", "readOnly", "invalid", "intoItself", "trash", "failed"] as const;
+export type OpErrorCode = (typeof OP_ERROR_CODES)[number];
+/** The code at the end of a shell's error message (Electron prefixes its own words), or "failed". */
+export function opErrorCode(error: unknown): OpErrorCode {
+  const word = /(\w+)\s*$/.exec(error instanceof Error ? error.message : String(error))?.[1];
+  return (OP_ERROR_CODES as readonly string[]).includes(word ?? "") ? (word as OpErrorCode) : "failed";
 }
 
 export interface NoteSummary {
