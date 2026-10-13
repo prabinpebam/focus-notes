@@ -35,7 +35,7 @@ import { Positioner } from "./layouts/Positioner/Positioner.tsx";
 import { MorphPanel } from "./primitives/MorphPanel/MorphPanel.tsx";
 import { TextField } from "./primitives/TextField/TextField.tsx";
 import { PillButton } from "./primitives/PillButton/PillButton.tsx";
-import { FileTree } from "./primitives/FileTree/FileTree.tsx";
+import { FileTree } from "./primitives/FileTree/lazy.tsx";
 import { Sheet } from "./layouts/Sheet/Sheet.tsx";
 
 /** The closed registry: the renderer can create these and nothing else (DSY-06). */
