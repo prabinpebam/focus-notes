@@ -30,7 +30,7 @@ How fast Focus Notes must be, how big a workspace it must handle, how it's teste
 | Web app first load (MW) | ≤ 300 KB JavaScript compressed for the reader page. ≤ 1.5 MB for the editor. | Build report | PRF-05 |
 | Publish (CI) | ≤ 5 minutes for 1,000 public notes and 200 shared notes | Workflow duration | PRF-06 |
 
-**Reference hardware:** a mid-range laptop (4 cores, 8 GB, SSD) on Windows 11 and macOS. CI enforces the same budgets with a margin, on a fixed runner type. A regression beyond a measure's noise allowance (10% unless the budgets file says otherwise) fails the build.
+**Reference hardware:** a mid-range laptop (4 cores, 8 GB, SSD) on Windows 11 and macOS. CI enforces the same budgets with a margin, on a fixed runner type: the hosted Windows runner. The macOS runner runs the benchmarks too but only reports, because its start times vary several-fold between runs; macOS budgets are checked on the reference laptop. A regression beyond a measure's noise allowance (10% unless the budgets file says otherwise) fails the build.
 
 ## Measuring
 

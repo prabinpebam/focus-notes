@@ -32,9 +32,14 @@ jobs:
         run: pnpm test
       - name: Build the desktop app
         run: pnpm --filter @focus-notes/desktop run build
+      # Budgets are enforced on one fixed runner type (Performance and quality); macOS runners'
+      # start times swing too far between runs to gate on, so they only report.
       - name: Budgets (QLT-05)
-        if: runner.os != 'Linux'
+        if: runner.os == 'Windows'
         run: pnpm bench --check
+      - name: Budgets, report only
+        if: runner.os == 'macOS'
+        run: pnpm bench
       - name: Journey tests (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a pnpm test:e2e
