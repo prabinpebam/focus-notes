@@ -9,6 +9,7 @@ Focus Notes, a calm, Markdown-native writing app. **Status: M0 (walking skeleton
 - `apps/desktop/`: the Electron shell, the renderer and gallery entries, and the journey tests (`e2e/`).
 - `packages/`: `tokens`, `ui` (the design system), `ui-runtime` (renderer and `ui:check`), `views` (view documents and messages), `core` (state, commands, view models), `markdown`, `editor`.
 - `tools/`: the repository checks and `bench/`. `schemas/`: JSON Schemas for every file format and the generated UI schema.
+- `templates/workspace/`: the source of the template repository people copy to make their instance (`focus-notes-workspace`).
 - `documentations/`: the spec, published as a [Slate](https://github.com/prabinpebam/slate) documentation site.
 - `slate/`: the Slate system, pinned as a Git submodule. Don't edit it here.
 - `.github/skills/slate/`: the skill that loads Slate's rules.
@@ -56,6 +57,16 @@ pnpm test:e2e        # journey tests against the real Electron app
 pnpm bench --check   # budgets (QLT-05)
 pnpm dev             # run the app; pnpm gallery for the component gallery
 ```
+
+## Notes in this repository (AGT-07)
+
+This repository is also the owner's own Focus Notes instance, so the workspace rules apply here too. The template's [`templates/workspace/AGENTS.md`](templates/workspace/AGENTS.md) has them in full; in short:
+
+- **Layout.** Public notes in `notes/`, published on GitHub Pages. Private notes in `private/notes/`, where `private/` is a Git submodule pointing at a private repository; `private/access.json` holds share grants and the vault's key. `.focus-notes/workspace.json` names the workspace format. The template's source is `templates/workspace/`, published as `focus-notes-workspace`.
+- **Front matter.** Optional. The app writes only `id`; never change or remove one, and keep other keys as they are. The first H1 is a note's title.
+- **Links.** Relative Markdown links (`[see](../ideas.md)`). Renames and moves update them in the same commit. A public note never links to a private one.
+- **`private/` rules.** Never copy, quote, or summarize private content into `notes/`, commit messages, issues, pull requests, or logs; never make the private repository public; never print or edit `access.json`'s secrets and keys. Commit and push in `private/` first, then the pointer; pull `private/` on its own, never recursively.
+- **Commit style.** Small commits with plain subjects that say what changed (`Update notes/ideas.md`, `Move 2 items to notes/archive`, `Update private notes to 1a2b3c4`); code commits name the area and the requirement IDs. Never force-push published history or skip hooks.
 
 ## Commits
 
