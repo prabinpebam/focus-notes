@@ -10,6 +10,10 @@ export const DEFAULT_CSP = [
   "base-uri 'none'",
   "form-action 'none'",
   "frame-ancestors 'none'",
+  // Trusted Types (SEC-02): HTML reaches the DOM only through the app's sanitizing default policy
+  // and DOMPurify's own; scripts and script URLs have no policy at all.
+  "require-trusted-types-for 'script'",
+  "trusted-types default dompurify",
 ].join("; ");
 
 /**

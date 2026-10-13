@@ -206,6 +206,9 @@
     "menuMinWidth": {
       "$value": "{ref.size.240}"
     },
+    "slashMenu": {
+      "$value": "{ref.size.320}"
+    },
     "dialogS": {
       "$value": "{ref.size.480}"
     },

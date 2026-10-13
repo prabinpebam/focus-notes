@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
@@ -16,8 +16,15 @@ export const list = style({
   fontSize: t.fontSize,
   color: t.text,
   outline: "none",
+  selectors: {
+    // Reached with Tab, the list itself takes the arrow keys; inset so a scrolling list keeps it visible.
+    "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
+  },
 });
 minimalScrollbar(list, t);
+
+/** Fills its container (Spotlight, Move to), or the slash menu's fixed width. */
+export const width = styleVariants({ fill: {}, menu: { width: t.menuWidth } });
 
 export const item = style({
   display: "flex",

@@ -12,6 +12,7 @@ export * from "./tasks.ts";
 export * from "./browser.ts";
 export * from "./notes.ts";
 export * from "./format.ts";
+export * from "./slash.ts";
 export * from "./workspace.ts";
 export * from "./workspace-format.ts";
 export * from "./workspace-app.ts";

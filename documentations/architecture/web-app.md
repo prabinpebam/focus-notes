@@ -113,7 +113,7 @@ The instance's notes aren't stored in IndexedDB: public notes are read from the 
 
 ## Security
 
-- **The page** has a strict Content Security Policy: scripts and styles only from the site itself, `connect-src 'self'` only, no inline scripts, and no third-party code. Markdown is never rendered as raw HTML (SEC-02). Trusted Types follow with sanitized paste (WP-1.3).
+- **The page** has a strict Content Security Policy: scripts and styles only from the site itself, `connect-src 'self'` only, no inline scripts, and no third-party code. Markdown is never rendered as raw HTML, and the page requires Trusted Types, with pasted HTML sanitized (SEC-02, WP-1.3).
 - **The vault** is sealed by the instance's own *Deploy app* workflow, with fresh keys every build. Its passphrase key is derived with PBKDF2-SHA256 at 600,000 iterations, the desktop setup requires a strong passphrase, and the browser accepts no other parameters, which slows offline guessing of the published keyring (SEC-08).
 - **Private notes** are never in the deployed site in plaintext: the leak check fails the deploy if a private note's path (12 characters or more) or a line of its text (24 or more) appears in the output, and never prints what matched (SEC-06).
 - **The shared origin.** Every Pages site of one user is the same origin, `<user>.github.io`, so they share the browser's storage, and any page there can script this one: it could capture the passphrase as it's typed or read decrypted notes while the vault is open. That's why the browser holds no credential, why the unlock dialog always shows a warning, why remembering the vault key is opt-in, and why a **custom domain** is the real fix.

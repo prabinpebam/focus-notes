@@ -10,9 +10,10 @@ export interface AnchorRect {
   left: number;
   right: number;
 }
-export type AnchorName = "selection" | "link";
+/** The selection (or caret), a link, and the `/` the slash menu opened at. */
+export type AnchorName = "selection" | "link" | "caret";
 
-const rects: Record<AnchorName, AnchorRect | null> = { selection: null, link: null };
+const rects: Record<AnchorName, AnchorRect | null> = { selection: null, link: null, caret: null };
 const listeners = new Set<() => void>();
 
 export const anchors = {
@@ -62,10 +63,11 @@ export interface Placed {
  * when that would reach the top band (or `prefer` is below and there's no room under it), and kept
  * `edge` inside the window. It never covers the anchor.
  */
-export function place(a: AnchorRect, size: { width: number; height: number }, view: { width: number; height: number }, m: Metrics, prefer: "above" | "below"): Placed {
+export function place(a: AnchorRect, size: { width: number; height: number }, view: { width: number; height: number }, m: Metrics, prefer: "above" | "below", align: "center" | "start" = "center"): Placed {
   const center = (a.left + a.right) / 2;
   const maxX = view.width - m.edge - size.width;
-  const x = Math.max(m.edge, Math.min(center - size.width / 2, maxX));
+  // Start alignment lines the content up with the anchor's leading edge (the slash menu under its `/`).
+  const x = Math.max(m.edge, Math.min(align === "start" ? a.left : center - size.width / 2, maxX));
   const aboveY = a.top - m.gap - size.height;
   const belowY = a.bottom + m.gap;
   let side = prefer;

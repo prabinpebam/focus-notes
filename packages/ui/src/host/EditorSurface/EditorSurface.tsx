@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
-import { applyLink, coreExtensions, EDITOR_ACTIONS, MarkdownSession, findFromCaret, findStatus, formatState, setFind, setSelectionGhost, syncSelection, type PMNode } from "@focus-notes/editor";
+import {
+  applyLink, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
+  setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
+} from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
 import { keepInReadingZone } from "./reading-zone.ts";
 import { trackFormatting, type FormatPayload, type FormatTracker } from "./formatting.ts";
+import { trackSlash, type SlashPayload } from "./slash-menu.ts";
+import { resultItemId } from "../../primitives/ResultList/ResultList.tsx";
 import { inCompanion } from "../../behaviors/anchors.ts";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import * as s from "./EditorSurface.css.ts";
@@ -30,6 +35,12 @@ export interface EditorSurfaceProps {
   findRegex?: boolean;
   /** The link editor is open: the selection stays highlighted and anchored while its field has focus. */
   linkEditing?: boolean;
+  /** The slash menu shows (EDT-06): arrows, Enter, and Tab drive it while focus stays in the note. */
+  slashOpen?: boolean;
+  /** Its active row, which Enter inserts. */
+  slashActive?: string;
+  /** The ID of its list, for aria-controls and aria-activedescendant. */
+  slashList?: string;
   id?: string;
   onChange?: (payload: { value: string }) => void;
   onFindResult?: (payload: { count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }) => void;
@@ -41,6 +52,12 @@ export interface EditorSurfaceProps {
   onLinkEdit?: (payload: { href: string; selected: boolean }) => void;
   /** Mod+click on a link (or a plain click in a read-only note). */
   onOpenLink?: (payload: { href: string }) => void;
+  /** The `/query` the slash menu filters by, and the blocks valid there (EDT-06). */
+  onSlash?: (payload: SlashPayload) => void;
+  /** Up or Down while the slash menu shows. */
+  onSlashMove?: (payload: { delta: number }) => void;
+  /** Something pasted couldn't come in (EDT-09): images, until the image block. */
+  onPasteNotice?: (payload: { kind: string }) => void;
 }
 
 /** Find waits this long after the last keystroke in its field before searching (FND-01). */
@@ -58,7 +75,8 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 export function EditorSurface({
   documentKey, initialValue, label, placeholder, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, linkEditing,
-  id, onChange, onReady, onFindResult, onFindPrefill, onFormat, onLinkEdit, onOpenLink,
+  slashOpen, slashActive = "", slashList,
+  id, onChange, onReady, onFindResult, onFindPrefill, onFormat, onLinkEdit, onOpenLink, onSlash, onSlashMove, onPasteNotice,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
@@ -68,8 +86,10 @@ export function EditorSurface({
   onChangeRef.current = onChange;
   const findRef = useRef({ onFindResult, onFindPrefill, findOpen });
   findRef.current = { onFindResult, onFindPrefill, findOpen };
-  const formatRef = useRef({ onFormat, onLinkEdit, onOpenLink });
-  formatRef.current = { onFormat, onLinkEdit, onOpenLink };
+  const formatRef = useRef({ onFormat, onLinkEdit, onOpenLink, onPasteNotice });
+  formatRef.current = { onFormat, onLinkEdit, onOpenLink, onPasteNotice };
+  const slashRef = useRef({ open: Boolean(slashOpen), active: slashActive, onSlash, onSlashMove });
+  slashRef.current = { open: Boolean(slashOpen), active: slashActive, onSlash, onSlashMove };
   const tracker = useRef<FormatTracker | null>(null);
   const replaceRef = useRef(findReplace);
   replaceRef.current = findReplace;
@@ -79,11 +99,40 @@ export function EditorSurface({
   const lastFind = useRef("");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const last = useRef(initialValue);
+  const editorRef = useRef<Editor | null>(null);
+
+  /** Arrows, Enter, Tab, and Esc while the slash menu is open (Text formatting → Slash menu → Keyboard). */
+  const slashKey = (event: KeyboardEvent): boolean => {
+    const ed = editorRef.current;
+    if (!ed || ed.isDestroyed || !slashInfo(ed.state).open) return false;
+    // Esc closes it and keeps what was typed, even when no row matched.
+    if (event.key === "Escape") return closeSlashMenu(ed);
+    const menu = slashRef.current;
+    if (!menu.open || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return false;
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      menu.onSlashMove?.({ delta: event.key === "ArrowDown" ? 1 : -1 });
+      return true;
+    }
+    if (event.key !== "Enter" && event.key !== "Tab") return false;
+    const entry = slashEntries().find((e) => e.id === menu.active);
+    if (entry) {
+      insertSlashEntry(ed, entry);
+      return true;
+    }
+    // Nothing matched: the key does what it always does.
+    closeSlashMenu(ed);
+    return false;
+  };
 
   const editor = useEditor(
     {
+      ...EDITOR_OPTIONS,
       extensions: [
-        ...coreExtensions(keymap ?? [], { openLink: (href) => formatRef.current.onOpenLink?.({ href }), ghostClass: s.ghost }),
+        ...coreExtensions(keymap ?? [], {
+          openLink: (href) => formatRef.current.onOpenLink?.({ href }),
+          ghostClass: s.ghost,
+          onPasteNotice: (kind) => formatRef.current.onPasteNotice?.({ kind }),
+        }),
         Placeholder.configure({ placeholder: placeholder ?? "" }),
       ],
       content: session.doc as object,
@@ -94,8 +143,12 @@ export function EditorSurface({
       injectCSS: false,
       shouldRerenderOnTransaction: false,
       editorProps: {
-        // Esc hides the formatting toolbar or hover card and keeps the selection (Text formatting).
-        handleKeyDown: (_view, event) => event.key === "Escape" && !event.isComposing && Boolean(tracker.current?.dismiss()),
+        handleKeyDown: (view, event) => {
+          if (event.isComposing) return false;
+          if (slashKey(event)) return true;
+          // Esc hides the formatting toolbar or hover card and keeps the selection (Text formatting).
+          return event.key === "Escape" && Boolean(tracker.current?.dismiss());
+        },
         attributes: { class: s.prose, role: "textbox", "aria-multiline": "true", "aria-label": label, ...(readOnly ? { "aria-readonly": "true" } : {}), spellcheck: "true", "data-editor": "", ...(id ? { id } : {}) },
       },
       onTransaction: ({ editor: ed }) => {
@@ -129,9 +182,32 @@ export function EditorSurface({
     [documentKey],
   );
 
+  editorRef.current = editor;
+
   useEffect(() => {
     last.current = initialValue;
   }, [documentKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The slash menu (EDT-06): the editor reports the query; the menu is a view node under the `/`.
+  useEffect(() => {
+    if (!editor || !scrollerRef.current) return;
+    return trackSlash(editor, scrollerRef.current, (p) => slashRef.current.onSlash?.(p));
+  }, [editor]);
+  // Focus stays in the note, which points at the menu's active row (aria-activedescendant).
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    const dom = editor.view.dom;
+    const open = Boolean(slashOpen && slashList);
+    if (open) {
+      dom.setAttribute("aria-controls", slashList!);
+      dom.setAttribute("aria-autocomplete", "list");
+    } else {
+      dom.removeAttribute("aria-controls");
+      dom.removeAttribute("aria-autocomplete");
+    }
+    if (open && slashActive) dom.setAttribute("aria-activedescendant", resultItemId(slashList!, slashActive));
+    else dom.removeAttribute("aria-activedescendant");
+  }, [editor, slashOpen, slashActive, slashList]);
 
   useEffect(() => {
     if (editor) onReady?.();
@@ -230,6 +306,13 @@ export function EditorSurface({
         const { from, to, empty } = editor.state.selection;
         const text = empty ? "" : editor.state.doc.textBetween(from, to, "\n");
         if (text && !text.includes("\n") && text.length <= 200) findRef.current.onFindPrefill?.({ value: text });
+        return;
+      }
+      if (id === "slash.insert") {
+        // A row clicked in the slash menu; focus never left the note.
+        const entry = slashEntries().find((e) => e.id === args.id);
+        if (entry && editor.isEditable) insertSlashEntry(editor, entry);
+        editor.view.focus();
         return;
       }
       if (runLinkAction(id, args)) return;

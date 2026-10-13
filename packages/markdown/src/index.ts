@@ -212,6 +212,44 @@ function convertInlineRaw(nodes: Md.PhrasingContent[], marks: PMMark[]): PMNode[
 
 const textNode = (text: string, marks: PMMark[]): PMNode => (marks.length ? { type: "text", text, marks } : { type: "text", text });
 
+// ---------------- paste (EDT-09) ----------------
+
+/**
+ * Plain text, one paragraph per non-empty line: what content the editor can't represent becomes
+ * when it's pasted (EDT-09), so nothing pasted is lost or read-only.
+ */
+export function plainTextBlocks(text: string): PMNode[] {
+  return text.split(/\r\n?|\n/).filter((line) => line.trim()).map((line) => para([textNode(line, [])]));
+}
+
+/** Pasted Markdown as blocks: what the editor can't represent yet degrades to its text. */
+export function markdownToBlocks(markdown: string): PMNode[] {
+  const parsed = parseMarkdown(markdown);
+  return degrade(parsed.blocks.length ? parsed.doc.content ?? [] : []);
+}
+
+/**
+ * Markdown (as mdast, from converted HTML) as blocks. A construct the editor can't represent yet,
+ * a table until WP-1.5 for example, becomes its Markdown text, one paragraph per line.
+ */
+export function blocksFromMdast(root: Md.Root): PMNode[] {
+  currentSource = "";
+  const out: PMNode[] = [];
+  for (const child of root.children) {
+    let node: PMNode | undefined;
+    try {
+      node = convertBlock(child);
+    } catch {
+      node = undefined;
+    }
+    if (node) out.push(node);
+    else out.push(...plainTextBlocks(toMarkdown({ type: "root", children: [child] } as Md.Root, MD_OPTIONS)));
+  }
+  return out;
+}
+
+const degrade = (nodes: PMNode[]): PMNode[] => nodes.flatMap((n) => (n.type === "rawMarkdown" ? plainTextBlocks(String(n.attrs?.source ?? "")) : [n]));
+
 // ---------------- serialize ----------------
 
 const MD_OPTIONS: ToMarkdownOptions = {

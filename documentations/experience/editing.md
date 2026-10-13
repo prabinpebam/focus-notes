@@ -39,7 +39,7 @@ Underline, text color, and highlight aren't offered because CommonMark/GFM can't
 ## Contextual controls
 
 - **Contextual formatting toolbar.** Appears just above any non-empty selection with *Turn into ▾*, Bold, Italic, Strikethrough, Code, and Link. It never covers the selection, hides when typing resumes, and is reachable with <kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd> (EDT-12).
-- **Slash menu.** Typing `/` at the start of a block or after a space opens a filterable list of the registered blocks that are valid at the caret (EDT-06). The list comes from the block registry, so new components show up on their own.
+- **Slash menu.** Typing `/` at the start of a block or after a space opens a filterable list of the registered blocks that are valid at the caret (EDT-06). The list comes from the block registry, so new components show up on their own. Arrows, <kbd>Enter</kbd>, and <kbd>Tab</kbd> work while you keep typing, and <kbd>Esc</kbd> keeps what you typed. It never opens in code.
 - **Block handle.** On hover or keyboard focus, a handle appears in the left margin. Drag it to reorder; click it for Duplicate, Delete, Turn into, and Copy link to block (EDT-07).
 
 All three use the theme's surface tokens and stay quiet. None of them appear while you're just typing, which keeps the [blank-canvas](main-ui.html) promise. The detailed design (anatomy, placement, states, keyboard, and rationale) is in [Text formatting](../design/components/text-formatting.html).
@@ -61,10 +61,15 @@ Tables are edited the way Microsoft Loop tables are: hover + insertion points, r
 
 ## Paste and drop
 
-1. **Markdown text** is parsed into blocks (EDT-09).
-2. **HTML** (from browsers and Office apps) is converted to the closest supported block and inline types. Unsupported styling is dropped.
-3. **Anything else** comes in as plain text.
-4. **Images** are refused with a clear message until the image component ships (EXT-03). They are never silently dropped.
+Pasting and dropping text work the same way (EDT-09, SEC-02):
+
+1. **Markdown text** is parsed into blocks: headings, lists, tasks, quotes, code, links, and marks. One line pasted between words joins them.
+2. **HTML** (from browsers, Word, and Google Docs) is sanitized first, then converted to the nearest Markdown: headings, nested lists (Word's list paragraphs too), quotes, code blocks with their language, links, bold, italic (including Docs' styled text), strikethrough, and inline code. Other styling is dropped. HTML that's only styled text, like Markdown copied from a code editor, is read as Markdown.
+3. **Anything not supported yet** degrades to plain text, never to a read-only block: a table becomes its GFM text, one paragraph per line, until tables arrive (WP-1.5, TBL-10). Raw HTML stays text.
+4. **Images** are left out with a message ("Images can't be added to notes yet, so they were left out.") until the image component ships (EXT-03). An image's alt text is kept. They're never dropped silently.
+5. **Links** keep only safe addresses: http, https, mailto, and relative ones. Others become plain text.
+6. **<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd>** pastes plain text exactly as it is, one paragraph per line, with Markdown characters kept as characters. Pasting into a code block is always plain.
+7. **Copying within Focus Notes** keeps the exact structure.
 
 ## Undo, redo, and saving
 

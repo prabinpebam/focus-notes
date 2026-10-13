@@ -29,6 +29,12 @@ describe("placing the toolbar over a selection (EDT-12)", () => {
     expect(place({ top: 400, bottom: 420, left: 400, right: 500 }, size, view, m, "below")).toMatchObject({ side: "below", y: 428 });
     expect(place({ top: 760, bottom: 780, left: 400, right: 500 }, size, view, m, "below")).toMatchObject({ side: "above" });
   });
+  it("EDT-06: the slash menu lines up under its `/`, kept on screen, and flips above near the bottom", () => {
+    const slash = { top: 400, bottom: 420, left: 300, right: 300 };
+    expect(place(slash, size, view, m, "below", "start")).toMatchObject({ side: "below", x: 300, y: 428 });
+    expect(place({ ...slash, left: 900, right: 900 }, size, view, m, "below", "start").x).toBe(1000 - 12 - 300);
+    expect(place({ top: 760, bottom: 780, left: 300, right: 300 }, size, view, m, "below", "start")).toMatchObject({ side: "above", x: 300 });
+  });
   it("hides while the anchor is scrolled out of view", () => {
     expect(place({ top: 0, bottom: 30, left: 0, right: 10 }, size, view, m, "above").offscreen).toBe(true);
     expect(place({ top: 900, bottom: 920, left: 0, right: 10 }, size, view, m, "above").offscreen).toBe(true);

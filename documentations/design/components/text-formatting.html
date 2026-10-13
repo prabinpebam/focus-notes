@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Select text and a small frosted toolbar appears just above it with six controls: <strong>Turn into ▾</strong>, <strong>Bold</strong>, <strong>Italic</strong>, <strong>Strikethrough</strong>, <strong>Code</strong>, and <strong>Link</strong>. That's everything Markdown can store for a selection, and nothing more. It never covers the selection, hides as soon as you type, flips below the selection near the top of the window or on touch screens, and is fully usable from the keyboard (<kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd>). Links get an inline editor and a hover card. The toolbar, link editor, and hover card are built (WP-1.2, with the deviations in <a href="../../plan/decisions.md">D-91</a>). <code>/</code> opens a filtered block menu. A handle in the margin moves and converts blocks. Components IA-CMP-FORMAT, IA-CMP-LINK, IA-CMP-SLASH, and IA-CMP-HANDLE serve UC-FMT-01 to UC-FMT-05 and UC-BLOCK-01 to UC-BLOCK-03.</p>
+  <p>Select text and a small frosted toolbar appears just above it with six controls: <strong>Turn into ▾</strong>, <strong>Bold</strong>, <strong>Italic</strong>, <strong>Strikethrough</strong>, <strong>Code</strong>, and <strong>Link</strong>. That's everything Markdown can store for a selection, and nothing more. It never covers the selection, hides as soon as you type, flips below the selection near the top of the window or on touch screens, and is fully usable from the keyboard (<kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd>). Links get an inline editor and a hover card. The toolbar, link editor, and hover card are built (WP-1.2, with the deviations in <a href="../../plan/decisions.md">D-91</a>). <code>/</code> opens a filtered block menu from the block registry, keyboard-complete while focus stays in the note (WP-1.3, <a href="../../plan/decisions.md">D-93</a>). A handle in the margin moves and converts blocks. Components IA-CMP-FORMAT, IA-CMP-LINK, IA-CMP-SLASH, and IA-CMP-HANDLE serve UC-FMT-01 to UC-FMT-05 and UC-BLOCK-01 to UC-BLOCK-03.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -168,15 +168,16 @@
 </table>
 
 <h2 id="slash-menu" data-reader-personas="design product">Slash menu</h2>
-<p><strong>IA-CMP-SLASH.</strong> Serves UC-BLOCK-01, UC-BLOCK-02, UC-TABLE-01.</p>
+<p><strong>IA-CMP-SLASH.</strong> Serves UC-BLOCK-01, UC-BLOCK-02, UC-TABLE-01. Built in WP-1.3; where it differs from the first design, <a href="../../plan/decisions.md">D-93</a> says why.</p>
 <ul>
-  <li><strong>Opens</strong> when <code>/</code> is typed at the start of an empty block, or after a space. It doesn't open inside a word, so <code>and/or</code> stays text, and it doesn't open in code blocks or table cells.</li>
-  <li><strong>Placement:</strong> a popover 8 px below the caret (above it when there's no room), 320 px wide, showing up to 8 rows before scrolling.</li>
-  <li><strong>Groups:</strong> <em>Text</em> (Text, Heading 1–3, Quote), <em>Lists</em> (Bulleted, Numbered, To-do), <em>Insert</em> (Table, Divider, Code block). Future components (Image, Gallery) join <em>Insert</em> through the block registry.</li>
-  <li><strong>Rows:</strong> 16 px icon, name, a one-line hint on the selected row only, and on the right the Markdown shortcut (<code>##</code>) or key (<kbd>⌥⌘2</kbd>).</li>
-  <li><strong>Filtering:</strong> characters typed after <code>/</code> filter by name and synonyms ("h2", "title", "grid" → Table, "checkbox" → To-do). Matching letters are bold. With no match: "No blocks match ‘xyz’. Press Esc to keep the text."</li>
-  <li><strong>Keyboard:</strong> <kbd>↑</kbd>/<kbd>↓</kbd> move, <kbd>Enter</kbd> or <kbd>Tab</kbd> inserts, and <kbd>Esc</kbd> closes and leaves the typed <code>/query</code> as text. <kbd>Backspace</kbd> past the <code>/</code> closes it.</li>
-  <li><strong>Result:</strong> the current block becomes the chosen block, or a new block is inserted below if the current one has text. The caret lands inside the new block (in a table, the first header cell).</li>
+  <li><strong>Opens</strong> when <code>/</code> is typed at the start of a block or after a space or line break. It doesn't open inside a word, so <code>and/or</code> stays text, and it doesn't open in code blocks or inline code (or, once tables ship, in table cells).</li>
+  <li><strong>Placement:</strong> a frosted popover 8 px below the <code>/</code>, lined up with it, above it when there's no room below, and kept inside the window. 320 px wide, showing about 8 rows before it scrolls.</li>
+  <li><strong>Rows</strong> come from the block registry, so a block registered later (Table, Image, Gallery) appears by registration alone. In order: <em>Text</em> (Text, Heading 1–3, Quote), <em>Lists</em> (Bulleted, Numbered, To-do), <em>Insert</em> (Code block, Divider; Table joins with WP-1.5). There are no group headings. Each row has its icon, its name, a one-line hint on the active row only, and its Markdown shortcut on the right (<code>##</code>).</li>
+  <li><strong>Only valid blocks:</strong> the menu offers only blocks that can go where the <code>/</code> is, so a heading isn't offered on a list item's first line (DD-FMT-08).</li>
+  <li><strong>Filtering:</strong> each word typed after <code>/</code> must start a word of the block's name or synonyms ("h2", "title", "checkbox" → To-do). With no match: "No blocks match ‘xyz’. Press Esc to keep the text." A space right after <code>/</code> closes it, and a space when nothing matches hides it until a match comes back.</li>
+  <li><strong>Keyboard:</strong> focus stays in the note, which points at the active row (<code>aria-activedescendant</code>). <kbd>↑</kbd>/<kbd>↓</kbd> move and wrap, <kbd>Enter</kbd> or <kbd>Tab</kbd> inserts, and <kbd>Esc</kbd> closes it and leaves the typed <code>/query</code> as text. <kbd>Backspace</kbd> past the <code>/</code> closes it. With nothing matching, <kbd>Enter</kbd> and <kbd>Tab</kbd> do what they always do. The list is also a tab stop that takes the same keys, so a scrolling list can be used on its own.</li>
+  <li><strong>Pointer:</strong> pointing at a row makes it active, and clicking inserts it. Focus never leaves the note. Clicking elsewhere closes the menu.</li>
+  <li><strong>Result:</strong> the <code>/query</code> goes, and the current block becomes the chosen block, or, if it has other text, the chosen block goes below it (the space typed before the <code>/</code> goes too). The caret lands inside the new block (in a table, the first header cell). One <kbd>Mod</kbd>+<kbd>Z</kbd> brings back the typed <code>/query</code>.</li>
 </ul>
 
 <h2 id="block-handle" data-reader-personas="design product">Block handle</h2>

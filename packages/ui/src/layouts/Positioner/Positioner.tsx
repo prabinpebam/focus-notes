@@ -9,6 +9,8 @@ export interface PositionerProps {
   anchor?: AnchorName;
   /** The preferred side. Above flips below near the top band; on touch screens it's always below. */
   placement?: "above" | "below";
+  /** Centered on the anchor, or lined up with its start (a menu under the caret). */
+  align?: "center" | "start";
   /** The space between the anchor and the content. */
   offset?: Space;
   /** The landmark it forms, so its content is reachable by landmark navigation. */
@@ -24,7 +26,7 @@ const name = (v: string) => v.replace(/^var\(/, "").replace(/\)$/, "");
  * Anchors floating content to a range in the note (Components → Positioner): centered on it, never
  * covering it, kept on screen, following it as it scrolls, and hidden while it's out of view.
  */
-export function Positioner({ anchor = "selection", placement = "above", offset = "s", landmark = "none", label, id, children }: PositionerProps) {
+export function Positioner({ anchor = "selection", placement = "above", align = "center", offset = "s", landmark = "none", label, id, children }: PositionerProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
     const el = ref.current;
@@ -41,7 +43,7 @@ export function Positioner({ anchor = "selection", placement = "above", offset =
       const px = (v: string) => parseFloat(cs.getPropertyValue(name(v))) || 0;
       const box = el.getBoundingClientRect();
       const touch = globalThis.matchMedia?.("(pointer: coarse)").matches ?? false;
-      const p = place(a, box, { width: innerWidth, height: innerHeight }, { gap: px(s.gapVar), edge: px(s.edgeVar), topBand: px(s.bandVar) }, touch ? "below" : placement);
+      const p = place(a, box, { width: innerWidth, height: innerHeight }, { gap: px(s.gapVar), edge: px(s.edgeVar), topBand: px(s.bandVar) }, touch ? "below" : placement, align);
       el.style.setProperty(name(s.xVar), `${Math.round(p.x)}px`);
       el.style.setProperty(name(s.yVar), `${Math.round(p.y)}px`);
       el.dataset.placed = p.side;
@@ -64,7 +66,7 @@ export function Positioner({ anchor = "selection", placement = "above", offset =
       // Gone from under the pointer: pointerleave never comes.
       companion.hovered = false;
     };
-  }, [anchor, placement]);
+  }, [anchor, placement, align]);
 
   const leave = () => window.dispatchEvent(new Event(COMPANION_LEAVE_EVENT));
   return (

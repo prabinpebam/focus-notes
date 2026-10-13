@@ -8,6 +8,6 @@ export const ICON_NAMES = [
   "font", "keyboard", "settings", "info", "warning", "error", "sync", "delete", "rename", "copy", "folder",
   "document", "chevronRight", "chevronDown", "undo", "redo", "table", "quote", "code", "bulletList",
   "numberedList", "heading1", "heading2", "heading3", "color", "share", "history", "matchCase", "wholeWord", "regex",
-  "arrowUp", "arrowDown", "lock", "export", "import", "strikethrough",
+  "arrowUp", "arrowDown", "lock", "export", "import", "strikethrough", "text", "taskList", "divider",
 ] as const;
 export type IconName = (typeof ICON_NAMES)[number];

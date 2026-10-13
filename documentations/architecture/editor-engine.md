@@ -72,7 +72,7 @@ The full allow-list and deny-list are in [Decisions → Licensing policy](../pla
 | `markdown.parse` | Which mdast node(s) or directive it comes from. |
 | `markdown.serialize` | How it writes back to Markdown. |
 | `inputRules` | Optional Markdown shortcuts that create it (`# `, `- `, …). |
-| `slash` | Slash-menu label, keywords, and icon. Omit it to hide the block from the menu. |
+| `slash` | Its slash-menu rows (built in WP-1.3): each an `id`, a `title` message key (synonyms and hint in `slash.keywords.<id>` and `slash.hint.<id>`), a `group` (text, lists, or insert), an `icon`, its `markdown` shortcut, and an `insert` command that's also dry-run to offer only rows valid at the caret. Omit it to hide the block from the menu. The app receives the rows when it mounts, so a new registration appears in the menu with no other change. |
 | `commands` | Named commands with default keybindings and `when` contexts (for example `block.turnInto.heading1`, <kbd>⌥⌘1</kbd>). These also appear in Spotlight. |
 | `actions` | Optional entries for the block handle (for example *Replace image*). |
 | `searchText` | How to get the block's visible text for find and Spotlight (defaults to its text content). |

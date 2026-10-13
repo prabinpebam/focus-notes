@@ -267,6 +267,13 @@ function createWindow(): BrowserWindow {
     },
   });
   win.once("ready-to-show", () => win.show());
+  // ⇧⌘V pastes plain text on macOS too (Keyboard shortcuts → Everyday editing), where Chromium binds
+  // only ⌥⇧⌘V. The renderer still sees Shift held, so the editor pastes the text as it is (EDT-09).
+  if (platform === "macos") {
+    win.webContents.on("before-input-event", (_e, input) => {
+      if (input.type === "keyDown" && input.meta && input.shift && !input.alt && !input.control && input.key.toLowerCase() === "v") win.webContents.pasteAndMatchStyle();
+    });
+  }
   void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform } });
 
   // Ask the renderer to save pending changes before the window closes (QLT-03). If saving fails,

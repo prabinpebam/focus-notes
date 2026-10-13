@@ -51,6 +51,8 @@ export const NATIVE_KEYS: readonly EditorCommandSpec[] = [
   { id: "keys.selectAll", title: "keys.selectAll", shortcut: { default: "Mod+A" }, layer: "basic", group: "editing" },
   { id: "keys.indent", title: "keys.indent", shortcut: { default: "Tab", alternates: { default: ["Shift+Tab"] } }, layer: "basic", group: "blocks" },
   { id: "keys.lineBreak", title: "keys.lineBreak", shortcut: { default: "Shift+Enter" }, layer: "basic", group: "blocks" },
+  // The slash menu (EDT-06) opens on a typed `/`, not a chord, so the editor handles it.
+  { id: "keys.slashMenu", title: "keys.slashMenu", shortcut: { default: "/" }, layer: "writer", group: "blocks" },
 ];
 
 /** Rows follow the order of the tables in Keyboard shortcuts; anything unlisted keeps registry order. */

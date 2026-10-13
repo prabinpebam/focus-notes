@@ -9,6 +9,7 @@
     "vm.shortcuts",
     "vm.find",
     "vm.format",
+    "vm.slash",
     "vm.feedback",
     "vm.picker",
     "vm.account",
@@ -517,7 +518,14 @@
           },
           "linkEditing": {
             "get": "vm.format.linkOpen"
-          }
+          },
+          "slashOpen": {
+            "get": "vm.slash.open"
+          },
+          "slashActive": {
+            "get": "vm.slash.activeId"
+          },
+          "slashList": "slashList"
         },
         "on": {
           "change": {
@@ -613,6 +621,36 @@
             "args": {
               "href": {
                 "get": "event.href"
+              }
+            }
+          },
+          "slash": {
+            "run": "slash.setState",
+            "args": {
+              "open": {
+                "get": "event.open"
+              },
+              "query": {
+                "get": "event.query"
+              },
+              "valid": {
+                "get": "event.valid"
+              }
+            }
+          },
+          "slashMove": {
+            "run": "slash.move",
+            "args": {
+              "delta": {
+                "get": "event.delta"
+              }
+            }
+          },
+          "pasteNotice": {
+            "run": "paste.notice",
+            "args": {
+              "kind": {
+                "get": "event.kind"
               }
             }
           }
@@ -840,6 +878,91 @@
                     }
                   }
                 ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Positioner",
+        "id": "slashMenu",
+        "when": {
+          "get": "vm.slash.open"
+        },
+        "props": {
+          "anchor": "caret",
+          "placement": "below",
+          "align": "start",
+          "offset": "s",
+          "landmark": "region",
+          "label": {
+            "t": "slash.menu"
+          }
+        },
+        "children": [
+          {
+            "type": "Surface",
+            "props": {
+              "variant": "frost",
+              "shape": "popover",
+              "elevation": "2",
+              "padding": "xs"
+            },
+            "children": [
+              {
+                "type": "ResultList",
+                "id": "slashList",
+                "when": {
+                  "expr": {
+                    "!": {
+                      "get": "vm.slash.empty"
+                    }
+                  }
+                },
+                "props": {
+                  "label": {
+                    "t": "slash.label"
+                  },
+                  "items": {
+                    "get": "vm.slash.items"
+                  },
+                  "activeId": {
+                    "get": "vm.slash.activeId"
+                  },
+                  "width": "menu"
+                },
+                "on": {
+                  "action": {
+                    "run": "slash.choose",
+                    "args": {
+                      "id": {
+                        "get": "event.id"
+                      }
+                    }
+                  },
+                  "activeChange": {
+                    "run": "slash.setActive",
+                    "args": {
+                      "id": {
+                        "get": "event.id"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.slash.empty"
+                },
+                "props": {
+                  "value": {
+                    "get": "vm.slash.emptyText"
+                  },
+                  "role": "caption",
+                  "tone": "muted",
+                  "announce": true
+                }
               }
             ]
           }

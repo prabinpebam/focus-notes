@@ -3,7 +3,7 @@
  * and the Markdown session that keeps files byte-identical where untouched (EDT-10).
  * Rendering lives in packages/ui (block components and the EditorSurface host).
  */
-import { Extension, Node, mergeAttributes, type AnyExtension, type Editor } from "@tiptap/core";
+import { Extension, Node, mergeAttributes, type AnyExtension, type CommandProps, type Editor } from "@tiptap/core";
 import { Selection } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import Strike from "@tiptap/extension-strike";
@@ -15,8 +15,14 @@ import { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@foc
 export { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
 export * from "./find.ts";
 export * from "./format.ts";
+export * from "./slash.ts";
+export * from "./paste.ts";
+export * from "./sanitize.ts";
 import { Find, FIND_ACTIONS } from "./find.ts";
 import { LinkOpen, LinkPaste, SelectionGhost, removeLink, selectLink } from "./format.ts";
+import { SlashMenu, blockIs, insideNode, type SlashEntry } from "./slash.ts";
+import { SmartPaste } from "./paste.ts";
+import { isSafeHref } from "./sanitize.ts";
 
 /** One registration per block type, built-in or future (Editor engine → Block registry contract). */
 export interface BlockRegistration {
@@ -30,6 +36,8 @@ export interface BlockRegistration {
   insertable: boolean;
   /** Markdown shortcut that creates it at the start of a block, if any (EDT-05). */
   inputRule?: string;
+  /** Its rows in the slash menu (EDT-06), when it's insertable. */
+  slash?: readonly SlashEntry[];
 }
 
 const registry = new Map<string, BlockRegistration>();
@@ -38,17 +46,48 @@ export function registerBlock(b: BlockRegistration): void {
   registry.set(b.name, b);
 }
 export const blocks = (): BlockRegistration[] => [...registry.values()];
+/** Every slash-menu entry, in registry order (EDT-06). */
+export const slashEntries = (): SlashEntry[] => blocks().filter((b) => b.insertable).flatMap((b) => b.slash ?? []);
+/** What core needs to show an entry: everything but its insert command. */
+export const slashCatalog = () => slashEntries().map(({ id, title, group, icon, markdown }) => ({ id, title, group, icon, markdown: markdown ?? "" }));
 
-registerBlock({ name: "paragraph", title: "block.paragraph", markdown: "native", insertable: true });
-registerBlock({ name: "heading", title: "block.heading", markdown: "native", insertable: true, inputRule: "# " });
-registerBlock({ name: "bulletList", title: "block.bulletList", markdown: "native", insertable: true, inputRule: "- " });
-registerBlock({ name: "orderedList", title: "block.orderedList", markdown: "native", insertable: true, inputRule: "1. " });
+registerBlock({
+  name: "paragraph", title: "block.paragraph", markdown: "native", insertable: true,
+  slash: [{ id: "block.paragraph", title: "format.block.paragraph", group: "text", icon: "text", insert: ({ commands, state }) => blockIs(state, "paragraph") || commands.setParagraph() }],
+});
+registerBlock({
+  name: "heading", title: "block.heading", markdown: "native", insertable: true, inputRule: "# ",
+  slash: ([1, 2, 3] as const).map((level) => ({
+    id: `block.heading${level}`, title: `format.block.heading${level}`, group: "text" as const, icon: `heading${level}`,
+    markdown: "#".repeat(level), insert: ({ commands, state }: CommandProps) => blockIs(state, "heading", { level }) || commands.setHeading({ level }),
+  })),
+});
+registerBlock({
+  name: "bulletList", title: "block.bulletList", markdown: "native", insertable: true, inputRule: "- ",
+  slash: [{ id: "block.bulletList", title: "format.block.bulletList", group: "lists", icon: "bulletList", markdown: "-", insert: ({ commands, state }) => insideNode(state, "bulletList") || commands.toggleBulletList() }],
+});
+registerBlock({
+  name: "orderedList", title: "block.orderedList", markdown: "native", insertable: true, inputRule: "1. ",
+  slash: [{ id: "block.orderedList", title: "format.block.orderedList", group: "lists", icon: "numberedList", markdown: "1.", insert: ({ commands, state }) => insideNode(state, "orderedList") || commands.toggleOrderedList() }],
+});
 registerBlock({ name: "listItem", title: "block.listItem", markdown: "native", insertable: false });
-registerBlock({ name: "taskList", title: "block.taskList", markdown: "native", insertable: true, inputRule: "[ ] " });
+registerBlock({
+  name: "taskList", title: "block.taskList", markdown: "native", insertable: true, inputRule: "[ ] ",
+  slash: [{ id: "block.taskList", title: "format.block.taskList", group: "lists", icon: "taskList", markdown: "[ ]", insert: ({ commands, state }) => insideNode(state, "taskList") || commands.toggleTaskList() }],
+});
 registerBlock({ name: "taskItem", title: "block.taskItem", markdown: "native", insertable: false });
-registerBlock({ name: "blockquote", title: "block.blockquote", markdown: "native", insertable: true, inputRule: "> " });
-registerBlock({ name: "codeBlock", title: "block.codeBlock", markdown: "native", insertable: true, inputRule: "```" });
-registerBlock({ name: "horizontalRule", title: "block.horizontalRule", markdown: "native", insertable: true, inputRule: "---" });
+registerBlock({
+  name: "blockquote", title: "block.blockquote", markdown: "native", insertable: true, inputRule: "> ",
+  slash: [{ id: "block.quote", title: "format.block.quote", group: "text", icon: "quote", markdown: ">", insert: ({ commands }) => commands.setBlockquote() }],
+});
+registerBlock({
+  name: "codeBlock", title: "block.codeBlock", markdown: "native", insertable: true, inputRule: "```",
+  slash: [{ id: "block.codeBlock", title: "format.block.codeBlock", group: "insert", icon: "code", markdown: "```", insert: ({ commands }) => commands.setCodeBlock() }],
+});
+registerBlock({
+  name: "horizontalRule", title: "block.horizontalRule", markdown: "native", insertable: true, inputRule: "---",
+  slash: [{ id: "block.divider", title: "format.block.divider", group: "insert", icon: "divider", markdown: "---", insert: ({ commands }) => commands.setHorizontalRule() }],
+});
 registerBlock({ name: "rawMarkdown", title: "block.rawMarkdown", markdown: "verbatim", insertable: false });
 
 /** Markdown the editor can't represent yet, kept verbatim and read-only (EXT-05). */
@@ -77,7 +116,11 @@ export const MarkdownLink = Link.extend({
   addAttributes() {
     return { ...this.parent?.(), title: { default: null } };
   },
-}).configure({ openOnClick: false, autolink: true, linkOnPaste: false, markdownLinks: true, defaultProtocol: "https" });
+}).configure({
+  openOnClick: false, autolink: true, linkOnPaste: false, markdownLinks: true, defaultProtocol: "https",
+  // Rendered addresses keep only safe schemes; a note's own text is never changed (SEC-02).
+  isAllowedUri: (url) => !url || isSafeHref(url),
+});
 
 /** Pressing Enter after ``` (optionally with a language) starts a code block, like typing a space (EDT-05). */
 export const FenceOnEnter = Extension.create({
@@ -209,7 +252,15 @@ export interface CoreOptions {
   openLink?: (href: string) => void;
   /** The class that keeps the selection visible while the link editor has focus. */
   ghostClass?: string;
+  /** Something pasted couldn't come in (images, until EXT-03). */
+  onPasteNotice?: (kind: "images") => void;
 }
+
+/**
+ * Editor options every surface uses with coreExtensions. Tiptap's paste rules are off: pasted
+ * Markdown is parsed once by the paste pipeline, and Mod+Shift+V keeps `**text**` as it is.
+ */
+export const EDITOR_OPTIONS = { enablePasteRules: false } as const;
 
 /** The schema shared by the editor surface, tests, and (later) the publisher. */
 export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions = {}): AnyExtension[] {
@@ -233,6 +284,8 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
     RawMarkdown,
     AutoDirection,
     FenceOnEnter,
+    SlashMenu,
+    SmartPaste.configure(options.onPasteNotice ? { onNotice: options.onPasteNotice } : {}),
   ];
 }
 

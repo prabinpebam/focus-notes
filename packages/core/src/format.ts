@@ -11,6 +11,7 @@ import type { PlatformBridge } from "./bridge.ts";
 import type { AppState } from "./app.ts";
 import type { Store } from "./store.ts";
 import { isReadOnlyPath } from "./notes.ts";
+import { registerSlash, SLASH_CLOSED, type SlashMenuState } from "./slash.ts";
 
 export type MarkState = "on" | "off" | "mixed";
 const MARKS = ["bold", "italic", "strike", "code"] as const;
@@ -39,6 +40,8 @@ export interface FormatState {
   /** Bumped to move focus into the toolbar (Alt+F10). */
   focusToolbar: number;
   link: LinkEditorState;
+  /** The slash menu (EDT-06), which belongs to the open note like the toolbar. */
+  slash: SlashMenuState;
 }
 export interface LinkEditorState {
   open: boolean;
@@ -51,7 +54,7 @@ export interface LinkEditorState {
 }
 export const FORMAT_CLOSED: FormatState = {
   toolbar: false, card: false, bold: "off", italic: "off", strike: "off", code: "off", block: "", codeBlock: false, inlineCode: false,
-  oneBlock: false, href: "", focusToolbar: 0, link: { open: false, url: "", text: "", withText: false, error: "", focus: 0 },
+  oneBlock: false, href: "", focusToolbar: 0, link: { open: false, url: "", text: "", withText: false, error: "", focus: 0 }, slash: SLASH_CLOSED,
 };
 
 /** A web address the shell may open in the browser: http, https, or mailto (EDT-13). */
@@ -94,6 +97,7 @@ export interface FormatDeps {
 }
 
 export function registerFormatting({ store, commands, viewModels, catalog, bridge, editorAction, toast }: FormatDeps): void {
+  registerSlash({ store, commands, viewModels, catalog, editorAction, toast });
   const set = (patch: Partial<FormatState>) => store.update((s) => ({ ...s, ui: { ...s.ui, format: { ...s.ui.format, ...patch } } }));
   const setLink = (patch: Partial<LinkEditorState>) => set({ link: { ...store.state.ui.format.link, ...patch } });
   const writable = (s: AppState) => s.note.status === "ready" && !isReadOnlyPath(s.note.path);

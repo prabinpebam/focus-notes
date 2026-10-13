@@ -61,6 +61,10 @@
         "$type": "dimension",
         "$value": "{layout.popover}"
       },
+      "menuWidth": {
+        "$type": "dimension",
+        "$value": "{layout.slashMenu}"
+      },
       "scrollbarSize": {
         "$type": "dimension",
         "$value": "{size.scrollbar}"
@@ -80,6 +84,14 @@
       "scrollbarTrack": {
         "$type": "color",
         "$value": "{color.none}"
+      },
+      "focusRing": {
+        "$type": "color",
+        "$value": "{color.focusRing}"
+      },
+      "focusWidth": {
+        "$type": "dimension",
+        "$value": "{border.focus}"
       },
       "disabledOpacity": {
         "$type": "number",

@@ -133,6 +133,8 @@ Markdown typing shortcuts (`**bold**`, `# `, `- `, …) are listed on [Editing](
 
 **Block selection mode (Pro).** <kbd>Esc</kbd> while typing selects the current block. <kbd>↑</kbd>/<kbd>↓</kbd> moves between blocks and <kbd>Shift</kbd>+arrows extend the selection. <kbd>Mod</kbd>+<kbd>C</kbd> copies the selected blocks as Markdown, <kbd>Backspace</kbd> deletes them, the move, duplicate, and turn-into keys work on the whole selection, and <kbd>Enter</kbd> returns to typing. A second <kbd>Esc</kbd> clears the selection.
 
+**Slash menu.** Typing <kbd>/</kbd> at the start of a block or after a space opens it (EDT-06). While it shows, focus stays in the note: <kbd>↑</kbd>/<kbd>↓</kbd> move through the rows (and wrap), <kbd>Enter</kbd> or <kbd>Tab</kbd> inserts the active row, and <kbd>Esc</kbd> closes it and keeps the typed text. With no row matching, <kbd>Enter</kbd> and <kbd>Tab</kbd> do what they always do. The cheat sheet lists it as *Insert a block (slash menu)*. See [Text formatting → Slash menu](../design/components/text-formatting.html#slash-menu).
+
 ## Tables
 
 These apply when the caret is in a table and take priority over the block bindings.

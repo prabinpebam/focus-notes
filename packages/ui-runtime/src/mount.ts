@@ -2,7 +2,7 @@
 import { createElement, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { App } from "@focus-notes/core";
-import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT } from "@focus-notes/ui";
+import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, slashCatalog } from "@focus-notes/ui";
 import { ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
 
 export interface MountOptions {
@@ -12,6 +12,10 @@ export interface MountOptions {
 }
 
 export function mountApp(el: Element, { app, views, view = "canvas" }: MountOptions): Root {
+  // Before anything renders: HTML reaches the DOM only through the sanitizing policy (SEC-02).
+  installTrustedTypes();
+  // The slash menu offers the editor's registered blocks (EDT-06, EXT-01).
+  void app.commands.run("slash.register", { entries: slashCatalog() });
   const deps: RuntimeDeps = { app, registry, contracts: contractByType, views };
   const root = createRoot(el);
   const Text = registry.Text!;
