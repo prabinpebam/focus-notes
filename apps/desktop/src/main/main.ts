@@ -81,6 +81,20 @@ function atomicWrite(path: string, content: string): Promise<void> {
   return next;
 }
 
+/** Renames, retrying while Windows sync clients and antivirus briefly lock a file they just saw. */
+async function renameRetrying(from: string, to: string): Promise<void> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await rename(from, to);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (attempt >= 4 || (code !== "EPERM" && code !== "EBUSY" && code !== "EACCES")) throw error;
+      await new Promise((r) => setTimeout(r, 50 * 2 ** attempt));
+    }
+  }
+}
+
 async function writeNow(path: string, content: string): Promise<void> {
   await assertWritable(path);
   await mkdir(dirname(path), { recursive: true });
@@ -168,9 +182,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (caseOnly && a !== b) {
       // Case-insensitive file systems need two steps for a change of case.
       const tmp = `${a}.${process.pid}.rename.tmp`;
-      await rename(a, tmp);
-      await rename(tmp, b);
-    } else await rename(a, b);
+      await renameRetrying(a, tmp);
+      await renameRetrying(tmp, b);
+    } else await renameRetrying(a, b);
   });
   handle("window:fullScreen", async () => {
     const w = win();

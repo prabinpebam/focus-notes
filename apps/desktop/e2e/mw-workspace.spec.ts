@@ -43,8 +43,12 @@ test("FIL-07: a new note's file follows its title as it's typed", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);
   const { page } = l;
-  await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
   await page.keyboard.press(`${mod}+N`);
+  // The new note is open and empty before typing starts.
+  await expect(editor).toHaveText("");
+  await expect(editor).toBeFocused();
   await expect.poll(() => readdirSync(dirs.docs).sort()).toEqual(["Untitled.md", "Welcome.md"]);
   await page.keyboard.type("# On focus");
   await page.keyboard.press("Enter");
