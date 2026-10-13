@@ -78,17 +78,17 @@ describe("renderer overhead (DSY-11)", () => {
         h(Icon!, { name: "document" }), h(Text!, { value: it.label, tone: "muted" }),
         h(Button!, { label: it.label, variant: "subtle", onPress: () => app.commands.run("bench.pick", { id: it.id }) }))))));
     const viaRuntime = () => render(app, view);
-    for (let i = 0; i < 5; i++) { byHand(); viaRuntime(); }
-    // Paired runs, alternating order, cancel drift from warm-up, GC, and other load on the machine.
+    for (let i = 0; i < 20; i++) { byHand(); viaRuntime(); }
+    // Many paired runs (shared CI machines are noisy), alternating order, cancel drift from warm-up, GC, and other load on the machine.
     const ratios: number[] = [];
-    for (let i = 0; i < 61; i++) {
+    for (let i = 0; i < 201; i++) {
       const first = i % 2 === 0 ? byHand : viaRuntime;
       const second = first === byHand ? viaRuntime : byHand;
       let s = performance.now(); first(); const a = performance.now() - s;
       s = performance.now(); second(); const b = performance.now() - s;
       ratios.push(first === byHand ? b / a : a / b);
     }
-    const overhead = ratios.sort((x, y) => x - y)[30]! - 1;
+    const overhead = ratios.sort((x, y) => x - y)[100]! - 1;
     const strict = process.env.NODE_ENV === "production";
     console.log(`DSY-11: overhead ${(overhead * 100).toFixed(1)}% (${strict ? "production React" : "development React"})`);
     // The 10% budget applies to production builds (pnpm bench). Development React adds its own cost.
