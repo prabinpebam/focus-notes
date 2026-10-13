@@ -108,7 +108,7 @@
         "architecture/performance-and-quality.md"
       ],
       "lookahead": false,
-      "status": "verifying"
+      "status": "done"
     },
     {
       "id": "WP-0.2",
@@ -134,7 +134,7 @@
         "architecture/content-model.md"
       ],
       "lookahead": true,
-      "status": "verifying"
+      "status": "done"
     },
     {
       "id": "WP-0.3",
@@ -161,7 +161,7 @@
         "design/foundations.md"
       ],
       "lookahead": false,
-      "status": "verifying"
+      "status": "done"
     },
     {
       "id": "WP-0.4",
@@ -189,7 +189,7 @@
         "design/system/overview.html"
       ],
       "lookahead": false,
-      "status": "verifying"
+      "status": "done"
     },
     {
       "id": "WP-0.5",
@@ -218,7 +218,7 @@
         "design/system/views-as-data.md"
       ],
       "lookahead": true,
-      "status": "verifying"
+      "status": "done"
     },
     {
       "id": "WP-0.6",
@@ -246,7 +246,7 @@
         "architecture/security-and-privacy.md"
       ],
       "lookahead": true,
-      "status": "verifying"
+      "status": "done"
     },
     {
       "id": "WP-0.7",
@@ -278,7 +278,7 @@
         "experience/main-ui.html"
       ],
       "lookahead": false,
-      "status": "verifying"
+      "status": "done"
     },
     {
       "id": "WP-0.8",
@@ -302,7 +302,7 @@
         "architecture/content-model.md"
       ],
       "lookahead": false,
-      "status": "verifying"
+      "status": "done"
     },
     {
       "id": "WP-0.9",
@@ -325,7 +325,7 @@
         "plan/distribution.md"
       ],
       "lookahead": false,
-      "status": "verifying"
+      "status": "done"
     },
     {
       "id": "WP-1.1",
