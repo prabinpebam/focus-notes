@@ -1,15 +1,15 @@
 # Requirements
 
-This catalogue turns the [seed spec](../seed-specs.md) into testable requirements. Every requirement has a stable ID, a priority, the seed line it comes from, and the page that specifies it in detail.
+This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail.
 
 > [!NOTE]
-> **TL;DR.** 56 requirements in 10 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated in the seed but are needed to meet a seed requirement, and each one says which.
+> **TL;DR.** 96 requirements in 16 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
 | Priority | Meaning |
 | --- | --- |
-| **P0** | Needed for the first usable release (see [Roadmap](../plan/roadmap.md) M1 to M4). |
+| **P0** | Needed for the first usable release (see [Roadmap](../plan/roadmap.md) M1 to M5). |
 | **P1** | Needed for the full vision. Ships after P0. |
 | **Later** | Extension point. The architecture must allow it, but it isn't built yet. |
 
@@ -29,7 +29,7 @@ Seed: *"a simple text editor that works with markdown… very similar to how Not
 | EDT-08 | Undo and redo across all edits, including table and structural edits. | P0 |
 | EDT-09 | Paste: Markdown text is parsed into blocks; HTML is converted to the nearest supported Markdown; unsupported content degrades to plain text. | P0 |
 | EDT-10 | Round-trip fidelity: opening and saving a note without edits doesn't change the file (see [Content model](../architecture/content-model.md)). | P0 |
-| EDT-11 | Autosave with a visible but unobtrusive saved/unsaved state. *(derived from EDT-01 and FIL-*)* | P0 |
+| EDT-11 | Saving happens on its own (write to disk within 1 s; commit and push on <kbd>Mod</kbd>+<kbd>S</kbd>, switching or closing a note, quit, or 60 s with no typing). Only problems are shown. *(derived from EDT-01 and FIL-*; cadence in D-23)* | P0 |
 
 ## Table editing (TBL)
 
@@ -58,16 +58,18 @@ Seed: *"Special components can be added later… make it scalable… image, gall
 
 ## Main UI (UI)
 
-Seed: *"entire UI is blank except for a red 10px circle enclosed by a frosted circle of 30px radius at the top center… trigger for opening a minimal toolbar."* Detailed in [Main UI and trigger](../experience/main-ui.html).
+Seed: *"entire UI is blank except for a red 10px circle enclosed by a frosted circle of 30px radius at the top center… trigger for opening a minimal toolbar."* The owner later confirmed both sizes are **diameters** (D-03) and capped the toolbar at six entries (D-26). Detailed in [Main UI and trigger](../experience/main-ui.html).
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| UI-01 | The default UI shows only the document and the trigger. No sidebars, title bars, or status bars stay visible. | P0 |
-| UI-02 | Trigger: a red dot 10 px in diameter, centered in a frosted (backdrop-blurred, translucent) circle with a 30 px radius, fixed at the top center. | P0 |
+| UI-01 | The default UI shows only the document and the trigger. No sidebars, visible title bars, or status bars. | P0 |
+| UI-02 | Trigger: a red dot 10 px in diameter, centered in a frosted (backdrop-blurred, translucent) circle 30 px in diameter, fixed at the top center. Its invisible hit area is at least 44 &times; 44 px. | P0 |
 | UI-03 | Activating the trigger (click, tap, Enter or Space, or a global shortcut) opens the minimal toolbar. Esc or clicking outside closes it. | P0 |
-| UI-04 | The toolbar holds app-level actions only: files, new note, focus mode, theme, share, settings. | P0 |
-| UI-05 | The trigger and toolbar are fully keyboard- and screen-reader-accessible. | P0 |
+| UI-04 | The toolbar shows **at most six** actions. Every other action is in a ⋯ (more) menu as the seventh item. | P0 |
+| UI-05 | The trigger, toolbar, and ⋯ menu are fully keyboard- and screen-reader-accessible. | P0 |
 | UI-06 | Inline formatting UI (bubble, slash menu, block handle) shows up only in context and disappears when unused. | P0 |
+| UI-07 | The six default toolbar actions are New note, Open, Search, Save, Focus, Theme. The ⋯ menu holds at least font size (larger, smaller, reset), full screen, find, find and replace, share and visibility, settings, keyboard shortcuts, and help (D-18). | P0 |
+| UI-08 | The writer can choose which six actions are pinned to the toolbar. The rest go into ⋯ automatically. | P1 |
 
 ## Focus mode (FOC)
 
@@ -91,7 +93,7 @@ Seed: *"CRUD files and folders, including moves."* Detailed in [Files and sharin
 | FIL-01 | Create, rename, and delete notes. | P0 |
 | FIL-02 | Create, rename, and delete folders, including nested ones. | P0 |
 | FIL-03 | Move notes and folders between folders (drag-and-drop and a "Move to…" picker). | P0 |
-| FIL-04 | Quick open: fuzzy search notes by title or path. | P1 |
+| FIL-04 | Quick open: fuzzy search notes by title or path (<kbd>Mod</kbd>+<kbd>P</kbd>, part of [Spotlight](../experience/spotlight.html)). | P0 |
 | FIL-05 | Every file operation is a Git commit with a readable message. Deletes can be recovered from history. | P0 |
 | FIL-06 | Moving a note between public and private changes its storage repository (see SHR-02). | P0 |
 
@@ -103,21 +105,22 @@ Seed: *"Sharing of public links… content can be made public or private… Priv
 | --- | --- | --- |
 | SHR-01 | Every note is either **public** or **private**. New notes are private by default. *(derived: safe default)* | P0 |
 | SHR-02 | Public notes are stored in the public repository; private notes are stored in the private content repository, mounted as a submodule. | P0 |
-| SHR-03 | A public note has a stable, read-only public URL on GitHub Pages. "Copy link" in the toolbar copies it. | P0 |
+| SHR-03 | A public note has a stable, read-only public URL on GitHub Pages. "Copy public link" (in ⋯, Share, and Spotlight) copies it. | P0 |
 | SHR-04 | Private notes are never published in plaintext. | P0 |
 | SHR-05 | A private note can be shared with a specific person through an expiring, revocable link (sealed content plus a key in the URL fragment). | P1 |
 
 ## Theming (THM)
 
-Seed: *"ability to change theme — Colors, fonts."* Detailed in [Theming](../experience/theming.md).
+Seed: *"ability to change theme — Colors, fonts."* The owner confirmed Light, Dark, and System (D-25) and font size controls in the toolbar. Detailed in [Theming](../experience/theming.md).
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
 | THM-01 | All UI and content colors come from semantic design tokens. | P0 |
-| THM-02 | Built-in Light and Dark themes, plus "System" (follows the OS). | P0 |
+| THM-02 | Built-in Light and Dark themes, plus "System" (follows the OS and switches live). This includes the desktop window's native parts. | P0 |
 | THM-03 | The writer can change the content font (serif, sans, mono, or a custom stack) and size. | P0 |
 | THM-04 | Themes are JSON documents, and custom themes can be added without code changes. | P1 |
 | THM-05 | Theme choice persists per device and syncs through the repository if the writer opts in. | P1 |
+| THM-06 | Font size can be made larger, smaller, or reset with <kbd>Mod</kbd>+<kbd>=</kbd> / <kbd>-</kbd> / <kbd>0</kbd> and from the ⋯ menu, in steps. Light/dark can be toggled with one shortcut. | P0 |
 
 ## Packaging and distribution (PKG)
 
@@ -126,9 +129,88 @@ Seed: *"managed as a github repo… hosted in github pages… web or an electron
 | ID | Requirement | Priority |
 | --- | --- | --- |
 | PKG-01 | One GitHub repository holds the app source, public content, and documentation. | P0 |
-| PKG-02 | The web app is built and deployed to GitHub Pages by GitHub Actions. | P0 |
-| PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access. | P1 |
+| PKG-02 | The web build is built and deployed to GitHub Pages by GitHub Actions. In the first release it serves public note pages and share links. | P0 |
+| PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access. It is the primary writing client (D-10). | P0 |
 | PKG-04 | Developers without access to the private repository can still build and run the app. | P0 |
+| PKG-05 | Editing in the browser (web build) through the GitHub API, with a personal access token (D-13). | P1 |
+
+## Desktop app (DSK)
+
+Owner: *"Our electron app will have 20px rounded corners with custom title bar."* Detailed in [Desktop app](../experience/desktop-app.html).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| DSK-01 | The window has 20 px rounded corners, or square corners when maximized, snapped, or full screen. | P0 |
+| DSK-02 | A custom title bar: the top 44 px are a drag region with the trigger centered. Window controls (macOS traffic lights, app-drawn buttons on Windows and Linux) appear on hover or keyboard focus. | P0 |
+| DSK-03 | Full window behavior is kept: resizing from every edge and corner, double-click to maximize, minimize, maximize, close, and remembered size and position. | P0 |
+| DSK-04 | Full-screen mode (<kbd>⌃⌘F</kbd> / <kbd>F11</kbd>, and in ⋯). The title bar reappears when the pointer reaches the top edge. | P0 |
+| DSK-05 | A full native menu bar on macOS that lists every command with its shortcut. | P0 |
+| DSK-06 | Multiple windows, one note per window. | P1 |
+| DSK-07 | Signed builds and automatic updates from GitHub Releases. | P1 |
+
+## First run and sign-in (FRE)
+
+Owner: *"We need a sign in and setup flow for the electron app… device sign in… proper intuitive FRE… sign-in at the CLI level so that all the commit and push work."* Detailed in [First run and sign-in](../experience/first-run.md) and [Desktop and Git](../architecture/desktop-and-git.md).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| FRE-01 | A guided first run (Welcome, Git, Sign in, Identity, Workspace, Make it yours, Ready) that can be done entirely by keyboard and resumed after quitting. | P0 |
+| FRE-02 | GitHub sign-in with the OAuth device flow inside the app (code shown, browser opened, approval waited for), recovering from declined, expired, and offline states. | P0 |
+| FRE-03 | The credential is saved in git's credential helper, so commits and pushes work in the app and from the user's terminal with one sign-in. | P0 |
+| FRE-04 | An existing working Git credential or GitHub CLI session is found and offered, skipping the device code. | P0 |
+| FRE-05 | Git identity (name and email) is checked and, if missing, filled in from GitHub with the private noreply address. | P0 |
+| FRE-06 | Workspace: clone from GitHub (with the private submodule when the account can reach it) or open a local clone. Creating a new workspace from a template is P1. | P0 |
+| FRE-07 | Settings → Account: switch account, sign out (optionally removing Git's saved credential), and run setup again. | P0 |
+
+## Keyboard shortcuts (KEY)
+
+Owner: *"A solid keyboard shortcut strategy… same as the most popular apps… exhaustive coverage from basic to advanced… work for mac and iOS."* Detailed in [Keyboard shortcuts](../experience/keyboard-shortcuts.md).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| KEY-01 | Every action is a named command that can be run from Spotlight, which shows its shortcut. | P0 |
+| KEY-02 | The default keymap follows platform conventions and well-known app precedent on macOS, iPadOS and iOS with a hardware keyboard, Windows, and Linux. | P0 |
+| KEY-03 | The Basic, Writer, and Power layers of the keymap are complete. | P0 |
+| KEY-04 | The Pro layer (block selection mode, cell selection mode, expand selection, Spotlight action keys, reveal in Finder or Explorer) is complete. | P1 |
+| KEY-05 | A searchable cheat sheet (<kbd>Mod</kbd>+<kbd>/</kbd>) shows the right symbols for the platform. | P0 |
+| KEY-06 | OS-reserved keys are never bound. Web substitutes exist for browser-reserved keys. AltGr characters, IME composition, and non-Latin layouts are handled. | P0 |
+| KEY-07 | Custom keybindings (`keybindings.json`) with conflict warnings and reset. | P1 |
+
+## Find and replace (FND)
+
+Owner: *"Find and find-and-replace."* Detailed in [Find and replace](../experience/find-and-replace.md).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| FND-01 | Find in the note (<kbd>Mod</kbd>+<kbd>F</kbd>): live count, next and previous, case, whole word, and regex toggles, matching on visible text. | P0 |
+| FND-02 | Replace current and replace all in the note. Replace all is one undo step and keeps formatting. | P0 |
+| FND-03 | Find in selection. | P1 |
+| FND-04 | Find in all notes (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>) with grouped snippets and jump to match. | P0 |
+| FND-05 | Replace in all notes with a preview, one commit per repository, and a one-step revert. | P1 |
+
+## Spotlight (SPT)
+
+Owner: *"Powerful search-and-act… Ctrl+K can trigger a macOS Spotlight-like UI that can search for stuff and can even show some quick actions."* Detailed in [Spotlight](../experience/spotlight.html).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| SPT-01 | <kbd>Mod</kbd>+<kbd>K</kbd> opens Spotlight from anywhere in the app. With text selected in the editor, it adds a link instead (D-16). | P0 |
+| SPT-02 | One ranked list covering notes (title, path, headings, full text), folders, commands, and settings. | P0 |
+| SPT-03 | Quick actions for the selected result (<kbd>→</kbd> or <kbd>Mod</kbd>+<kbd>K</kbd>): open in a new window, copy link, move, rename, make public or private, delete, and more. | P0 |
+| SPT-04 | Commands and settings show their current state. The empty field shows recent notes and suggestions. No match offers create and find-in-all-notes. | P0 |
+| SPT-05 | Modes and prefixes: quick open (<kbd>Mod</kbd>+<kbd>P</kbd>), commands (<code>&gt;</code>, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>), headings (<code>#</code>, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>), help (<code>?</code>). | P0 |
+| SPT-06 | Filters (`is:`, `in:`, `type:`, exact phrases) and a preview pane on the desktop. | P1 |
+| SPT-07 | Opens in under 50 ms. Title and command results in under 16 ms per keystroke and full text in under 100 ms, on 5,000 notes. | P0 |
+| SPT-08 | The search index is built and kept on the device only. Private note text never leaves it. | P0 |
+
+## Licensing (LIC)
+
+Owner: *"We need MIT licence, our app itself will be MIT."* Detailed in [Decisions → Licensing policy](../plan/decisions.md#licensing-policy-d-20-details-proposed).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| LIC-01 | The app is released under the MIT license (`LICENSE` at the repository root). | P0 |
+| LIC-02 | Every shipped dependency uses an allowed MIT-compatible license. A CI check fails the build otherwise, and third-party notices are generated. | P0 |
 
 ## Documentation (DOC)
 

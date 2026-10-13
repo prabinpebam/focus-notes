@@ -16,7 +16,7 @@
     - Text editing
     - Sharing o public links
 
-# Theming and scalability
+## Theming and scalability
 - I want the ability to change theme
     - Colors, fonts
 

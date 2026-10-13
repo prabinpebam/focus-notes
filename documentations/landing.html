@@ -6,20 +6,20 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Notion/Loop-style editing that saves plain Markdown to your own GitHub repository. It runs on GitHub Pages or in Electron. Notes are public or private (private ones live in a submodule repository), and public notes can be shared by link. This site turns the human-written <a href="seed-specs.md">seed spec</a> into product, experience, architecture, and delivery documentation. It is documentation only; no code has been written yet.</p>
+  <p>Notion/Loop-style editing (built on Tiptap) that saves plain Markdown to your own GitHub repository. You write in an MIT-licensed desktop app with 20 px rounded corners and an invisible title bar. One GitHub device code signs in both the app and the computer's <code>git</code>. <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> opens Spotlight to find anything and act on it, and the keymap copies the apps people already use. Notes are public or private (private ones live in a submodule repository), and public notes are published on GitHub Pages. This site turns the human-written <a href="seed-specs.md">seed spec</a> and the owner's later decisions into product, experience, architecture, and delivery documentation. It is documentation only; no code has been written yet.</p>
 </aside>
 
 <div class="slate-metrics">
   <div class="slate-metric">
-    <p class="slate-metric__value">56</p>
-    <p class="slate-metric__label">Requirements, traced to the seed</p>
+    <p class="slate-metric__value">96</p>
+    <p class="slate-metric__label">Requirements in 16 areas</p>
   </div>
   <div class="slate-metric">
-    <p class="slate-metric__value">8</p>
-    <p class="slate-metric__label">Milestones, M0 to M7</p>
+    <p class="slate-metric__value">9</p>
+    <p class="slate-metric__label">Milestones, M0 to M8</p>
   </div>
   <div class="slate-metric">
-    <p class="slate-metric__value">3</p>
+    <p class="slate-metric__value">4</p>
     <p class="slate-metric__label">Open decisions needing the owner</p>
   </div>
 </div>
@@ -29,7 +29,7 @@
   <article class="slate-card slate-card--interactive">
     <a href="experience/main-ui.html">
       <h3 class="slate-card__title">The blank canvas and trigger</h3>
-      <p class="slate-card__body">Nothing but text, plus a 10 px red dot in a frosted 30 px-radius circle at the top center that opens a minimal toolbar.</p>
+      <p class="slate-card__body">Nothing but text, plus a red dot 10 px across in a frosted circle 30 px across that opens a toolbar of at most six actions.</p>
     </a>
   </article>
   <article class="slate-card slate-card--interactive">
@@ -39,9 +39,27 @@
     </a>
   </article>
   <article class="slate-card slate-card--interactive">
-    <a href="experience/editing.md">
-      <h3 class="slate-card__title">Notion-grade editing</h3>
-      <p class="slate-card__body">Blocks, slash menu, Markdown shortcuts, and real table editing, all saved as plain Markdown.</p>
+    <a href="experience/spotlight.html">
+      <h3 class="slate-card__title">Spotlight</h3>
+      <p class="slate-card__body"><kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> finds notes, headings, text, settings, and commands, then acts on them.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="experience/keyboard-shortcuts.md">
+      <h3 class="slate-card__title">Keyboard shortcuts</h3>
+      <p class="slate-card__body">Four layers, from basic to pro, borrowed from the apps people already know, on macOS, iPadOS, Windows, and Linux.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="experience/desktop-app.html">
+      <h3 class="slate-card__title">The desktop app</h3>
+      <p class="slate-card__body">A 20 px rounded, frameless window whose title bar is invisible until you need it.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="experience/first-run.md">
+      <h3 class="slate-card__title">First run and sign-in</h3>
+      <p class="slate-card__body">Seven calm steps. One GitHub device code signs in the app and the terminal's <code>git</code>.</p>
     </a>
   </article>
 </div>
@@ -54,15 +72,15 @@
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Experience</p>
-    <p><a href="experience/main-ui.html">Main UI and trigger</a>, <a href="experience/focus-mode.md">Focus mode</a>, <a href="experience/editing.md">Editing</a>, <a href="experience/files-and-sharing.md">Files and sharing</a>, <a href="experience/theming.md">Theming</a>.</p>
+    <p><a href="experience/main-ui.html">Main UI and trigger</a>, <a href="experience/focus-mode.md">Focus mode</a>, <a href="experience/editing.md">Editing</a>, <a href="experience/find-and-replace.md">Find and replace</a>, <a href="experience/spotlight.html">Spotlight</a>, <a href="experience/keyboard-shortcuts.md">Keyboard shortcuts</a>, <a href="experience/files-and-sharing.md">Files and sharing</a>, <a href="experience/theming.md">Theming</a>, <a href="experience/desktop-app.html">Desktop app</a>, <a href="experience/first-run.md">First run and sign-in</a>.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Architecture</p>
-    <p><a href="architecture/overview.html">Overview</a>, <a href="architecture/content-model.md">Content model</a>, <a href="architecture/editor-engine.md">Editor engine</a>, <a href="architecture/repository-and-publishing.html">Repository and publishing</a>.</p>
+    <p><a href="architecture/overview.html">Overview</a>, <a href="architecture/content-model.md">Content model</a>, <a href="architecture/editor-engine.md">Editor engine</a>, <a href="architecture/desktop-and-git.md">Desktop and Git</a>, <a href="architecture/repository-and-publishing.html">Repository and publishing</a>.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Plan</p>
-    <p><a href="plan/roadmap.md">Roadmap</a> and <a href="plan/decisions.md">Decisions</a>. Start with the three open decisions.</p>
+    <p><a href="plan/roadmap.md">Roadmap</a> and <a href="plan/decisions.md">Decisions</a>. Start with the four open decisions.</p>
   </li>
 </ol>
 
@@ -70,9 +88,11 @@
 <table>
   <thead><tr><th>Source</th><th>Used for</th></tr></thead>
   <tbody>
-    <tr><td><a href="seed-specs.md">Seed spec</a></td><td>All requirements. Written by a person; never edited by tooling or agents.</td></tr>
+    <tr><td><a href="seed-specs.md">Seed spec</a></td><td>The original requirements. Written by a person; never edited by tooling or agents.</td></tr>
+    <tr><td><a href="plan/decisions.md">Owner decisions, 2026-10-13</a></td><td>Trigger size, Tiptap and MIT, device sign-in, the desktop window, toolbar cap, keyboard strategy, find, and Spotlight.</td></tr>
     <tr><td><a href="https://github.com/prabinpebam/markdown-focus-editor">markdown-focus-editor</a></td><td>Focus mode only: the visual-row unit and the mask technique.</td></tr>
     <tr><td><code>personal-site</code> (local project)</td><td>Private content as a submodule, sealed publishing, and share links.</td></tr>
+    <tr><td><a href="https://www.electronjs.org/docs/latest/tutorial/custom-window-styles">Electron: custom window styles</a></td><td>What transparent windows can't do, which drives the 20 px corner design.</td></tr>
     <tr><td><a href="https://github.com/prabinpebam/slate">Slate</a></td><td>This documentation system, pinned as the <code>slate/</code> submodule.</td></tr>
   </tbody>
 </table>

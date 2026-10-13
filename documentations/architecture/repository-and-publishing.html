@@ -107,8 +107,11 @@
   </li>
 </ol>
 
+<h3>How the desktop app writes</h3>
+<p>The desktop app works on a local clone and runs the user's own <code>git</code>: commit in <code>private/</code> and push, then commit and push the public repository (moving the pointer only as D-07 describes). <code>push.recurseSubmodules=check</code> stops a public push whose pointer refers to an unpushed private commit. Details are in <a href="desktop-and-git.md#save-and-sync">Desktop and Git</a>.</p>
+
 <h3>How the web app writes</h3>
-<p>The web app can't run Git, so the GitHub API adapter does the same thing through the REST API:</p>
+<p>The web app (M6) can't run Git, so the GitHub API adapter does the same thing through the REST API:</p>
 <ol>
   <li><strong>Public note change:</strong> one commit to the public repository (contents API for single files, git trees and commits API for batched moves).</li>
   <li><strong>Private note change:</strong> a commit to the private repository, then a commit to the public repository that updates the <code>private</code> gitlink (tree entry mode <code>160000</code>) to the new private commit SHA.</li>
@@ -190,7 +193,7 @@
 <table>
   <thead><tr><th>Path</th><th>Serves</th></tr></thead>
   <tbody>
-    <tr><td><code>/</code></td><td>The app (asks the owner to connect a token on first use)</td></tr>
+    <tr><td><code>/</code></td><td>Landing page with desktop downloads. Browser editing (M6) asks the owner for a token on first use</td></tr>
     <tr><td><code>/n/&lt;path&gt;/</code></td><td>Read-only public note pages</td></tr>
     <tr><td><code>/s/&lt;token&gt;/</code></td><td>Private share-link reader (decrypts in the browser)</td></tr>
     <tr><td><code>/docs/</code></td><td>This documentation (optional)</td></tr>

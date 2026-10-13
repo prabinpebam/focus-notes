@@ -32,9 +32,9 @@ Lists nest with <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>. Pressing <kb
 | Italic | <kbd>Ctrl/Cmd</kbd>+<kbd>I</kbd> | `*text*` or `_text_` | `*text*` |
 | Strikethrough | <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> | `~~text~~` | `~~text~~` |
 | Inline code | <kbd>Ctrl/Cmd</kbd>+<kbd>E</kbd> | `` `code` `` | `` `code` `` |
-| Link | <kbd>Ctrl/Cmd</kbd>+<kbd>K</kbd> | `[text](url)`, or paste a URL over selected text | `[text](url)` |
+| Link | <kbd>Ctrl/Cmd</kbd>+<kbd>K</kbd> with text selected (with nothing selected, the same keys open [Spotlight](spotlight.html); D-16) | `[text](url)`, or paste a URL over selected text | `[text](url)` |
 
-Underline, text color, and highlight aren't offered because CommonMark/GFM can't represent them. Adding them would break the "Markdown is the source of truth" principle (see [Vision](../product/vision.md)).
+Underline, text color, and highlight aren't offered because CommonMark/GFM can't represent them. Adding them would break the "Markdown is the source of truth" principle (see [Vision](../product/vision.md)). The full keymap, including block, table, and pro shortcuts, is on [Keyboard shortcuts](keyboard-shortcuts.md).
 
 ## Contextual controls
 
@@ -69,7 +69,8 @@ Tables get first-class editing (TBL-01 to TBL-06), but they always save as GFM p
 ## Undo, redo, and saving
 
 - **Undo and redo** (<kbd>Ctrl/Cmd</kbd>+<kbd>Z</kbd>, <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd>) cover typing, formatting, structural edits, and table operations. Typing is grouped into word-sized steps (EDT-08).
-- **Autosave** writes the note to local storage right away, then commits to the repository after a short idle pause (proposed: 3 seconds of no typing, or when the note is closed). Saves are silent. Only failures surface, through the trigger's save-problem state (see [Main UI](main-ui.html#states)) (EDT-11).
+- **Saving** is automatic (EDT-11, D-23). The note is written to disk within a second of the last change. A commit and push follows on <kbd>Ctrl/Cmd</kbd>+<kbd>S</kbd>, when switching or closing the note, on quit, or after 60 seconds without typing. That way history stays readable instead of having a commit for every pause. Saves are silent. Only failures surface, through the trigger's save-problem state (see [Main UI](main-ui.html#states)). The mechanics are in [Desktop and Git](../architecture/desktop-and-git.md#save-and-sync).
+- **Find and replace** in the note, and across all notes, is described on [Find and replace](find-and-replace.md).
 - **Round-trip fidelity.** Opening and closing a note without edits writes nothing. Saving after an edit only changes the lines that were edited, as far as the serializer allows (EDT-10). See [Content model](../architecture/content-model.md#round-trip-fidelity).
 
 ## Extending with components

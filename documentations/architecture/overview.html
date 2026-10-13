@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Focus Notes is a static, client-side web app. The <strong>same build</strong> runs in the browser from GitHub Pages and inside an <strong>Electron</strong> shell. A shared core (editor engine and block registry, focus mode, theme engine, workspace) talks to storage through one <strong>workspace adapter</strong> interface. The web uses the GitHub REST API; Electron uses a local Git clone. All content lives in two GitHub repositories, a public one and a private one mounted as a submodule. There is no proprietary server.</p>
+  <p>Focus Notes is a client-side app with no server of its own. The <strong>same web build</strong> runs inside an <strong>Electron</strong> desktop shell, which is the primary writing client (D-10), and from GitHub Pages in the browser. A shared core (Tiptap editor and block registry, focus mode, theme engine, command and keybinding service, Spotlight index, workspace) talks to storage through one <strong>workspace adapter</strong> interface. The desktop runs the user's own <code>git</code> on a local clone, signed in once through GitHub's device flow. The web build uses the GitHub REST API (M6). All content lives in two GitHub repositories, a public one and a private one mounted as a submodule. Everything is MIT-licensed or uses a compatible license.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -90,9 +90,13 @@
 <h2>Layers</h2>
 <dl class="slate-defs">
   <dt>Shells</dt>
-  <dd>Startup, window chrome, and access to platform services. The web shell is a static page. The Electron shell adds a frameless window, native menus and shortcuts, file-system access, and Git, all exposed through a narrow, typed preload bridge with context isolation turned on.</dd>
+  <dd>Startup, window chrome, and access to platform services. The Electron shell adds a frameless 20 px-rounded window with a custom title bar, a native menu bar on macOS, file-system access, sign-in, and Git, all exposed through a narrow, typed preload bridge (<a href="desktop-and-git.md">Desktop and Git</a>, <a href="../experience/desktop-app.html">Desktop app</a>). The web shell is a static page.</dd>
   <dt>Editor engine and block registry</dt>
-  <dd>The WYSIWYG block editor, Markdown parse and serialize, input rules, and the plugin registry for block types (<a href="editor-engine.md">Editor engine</a>).</dd>
+  <dd>The Tiptap block editor, Markdown parse and serialize, input rules, find and replace, and the plugin registry for block types (<a href="editor-engine.md">Editor engine</a>).</dd>
+  <dt>Commands and keybindings</dt>
+  <dd>Every action is a named command. The keybinding service maps keys to commands by context and platform, and feeds the toolbar, ⋯ menu, macOS menu bar, cheat sheet, and Spotlight (<a href="../experience/keyboard-shortcuts.md">Keyboard shortcuts</a>).</dd>
+  <dt>Spotlight and search index</dt>
+  <dd>A MiniSearch index in a Web Worker covering notes, headings, full text, folders, commands, and settings. It's kept on the device only (<a href="../experience/spotlight.html">Spotlight</a>).</dd>
   <dt>Focus mode</dt>
   <dd>A self-contained module that watches the editor's selection and writes the mask band (<a href="../experience/focus-mode.md">Focus mode</a>).</dd>
   <dt>Theme engine</dt>
@@ -103,33 +107,40 @@
   <dd>One interface with two implementations. The operations are: list a tree, read a note (with its version), write a note against an expected version, move, delete, commit a batch, and read history. Each operation is told which repository it targets: public or private.</dd>
 </dl>
 
-<h2>Web and desktop compared</h2>
+<h2>Desktop and web compared</h2>
 <table>
-  <thead><tr><th>Concern</th><th>Web (GitHub Pages)</th><th>Desktop (Electron, P1)</th></tr></thead>
+  <thead><tr><th>Concern</th><th>Desktop (Electron, primary, P0)</th><th>Web (GitHub Pages)</th></tr></thead>
   <tbody>
-    <tr><td>Delivery</td><td>Static files built and deployed by GitHub Actions</td><td>Packaged installers wrapping the same build</td></tr>
-    <tr><td>Storage</td><td>GitHub REST API (contents, git trees and commits)</td><td>Local clone with submodule. Pushes and pulls with git</td></tr>
-    <tr><td>Sign-in</td><td>Fine-grained personal access token limited to the two content repositories (see D-02)</td><td>GitHub OAuth device flow, token kept in the OS keychain</td></tr>
-    <tr><td>Offline</td><td>Local edit queue in IndexedDB that syncs when back online</td><td>Fully offline, pushes later</td></tr>
-    <tr><td>Visitors without an account</td><td>Read-only public pages and private share links</td><td>Not applicable</td></tr>
+    <tr><td>Role</td><td>Writing and managing notes</td><td>First release: public note pages and share links. Editing follows in M6 (P1)</td></tr>
+    <tr><td>Delivery</td><td>Signed installers for Windows, macOS, and Linux, wrapping the same build</td><td>Static files built and deployed by GitHub Actions</td></tr>
+    <tr><td>Storage</td><td>Local clone with the private submodule. Commits, pushes, and pulls with the user's own <code>git</code></td><td>GitHub REST API (contents, git trees and commits)</td></tr>
+    <tr><td>Sign-in</td><td>GitHub OAuth device flow during the first run. The token goes in the OS's secure storage <em>and</em> git's credential helper, so the terminal works too (D-02)</td><td>Fine-grained personal access token limited to the two content repositories (D-13)</td></tr>
+    <tr><td>Offline</td><td>Fully offline. Commits pile up and push later</td><td>Local edit queue in IndexedDB that syncs when back online</td></tr>
+    <tr><td>Full-text search</td><td>Files on disk (ripgrep) plus the Spotlight index</td><td>The Spotlight index over cached notes</td></tr>
+    <tr><td>Visitors without an account</td><td>Not applicable</td><td>Read-only public pages and private share links</td></tr>
   </tbody>
 </table>
 
 <div class="slate-callout slate-callout--info" role="note">
-  <p class="slate-callout__title">Why no OAuth button on the web, at first</p>
-  <p>GitHub's OAuth token exchange needs a client secret and can't be called from a browser page. A purely static GitHub Pages app therefore can't finish a standard OAuth sign-in without a small token-exchange service. The first release uses a scoped personal access token so it needs no server. Adding a tiny token-exchange function later is tracked as decision D-02.</p>
+  <p class="slate-callout__title">Why device sign-in only works on the desktop</p>
+  <p>GitHub's device-flow endpoints don't send cross-origin (CORS) headers, and the standard OAuth code exchange needs a client secret. Neither can run from a static GitHub Pages page without a server in between. The desktop app calls GitHub directly, so device flow works there with only the public client ID. Browser editing in M6 starts with a scoped personal access token. A small token-exchange function could add one-click browser sign-in later.</p>
 </div>
 
-<h2>Tech stack (proposed)</h2>
+<h2>Tech stack</h2>
 <table>
-  <thead><tr><th>Area</th><th>Proposal</th><th>Reason</th></tr></thead>
+  <thead><tr><th>Area</th><th>Choice</th><th>License</th><th>Status</th></tr></thead>
   <tbody>
-    <tr><td>Language</td><td>TypeScript</td><td>One typed codebase across both shells</td></tr>
-    <tr><td>Build</td><td>Vite, static output</td><td>Fast builds; static files suit GitHub Pages and Electron alike</td></tr>
-    <tr><td>Editor engine</td><td>Tiptap on ProseMirror (pending D-01)</td><td>See <a href="editor-engine.md">Editor engine</a></td></tr>
-    <tr><td>Desktop</td><td>Electron with context isolation and a typed preload bridge</td><td>Required by the seed spec</td></tr>
-    <tr><td>Local cache</td><td>IndexedDB</td><td>Offline edit queue and fast reopen on the web</td></tr>
-    <tr><td>CI/CD</td><td>GitHub Actions to GitHub Pages</td><td>Required by the seed spec</td></tr>
+    <tr><td>Language</td><td>TypeScript</td><td>Apache-2.0</td><td>Proposed</td></tr>
+    <tr><td>Build</td><td>Vite, static output</td><td>MIT</td><td>Proposed</td></tr>
+    <tr><td>Editor engine</td><td>Tiptap on ProseMirror, MIT packages only (<a href="editor-engine.md">Editor engine</a>)</td><td>MIT</td><td><strong>Decided</strong> (D-01)</td></tr>
+    <tr><td>Find and replace</td><td><code>prosemirror-search</code></td><td>MIT</td><td>Proposed</td></tr>
+    <tr><td>Search index</td><td>MiniSearch in a Web Worker</td><td>MIT</td><td>Proposed</td></tr>
+    <tr><td>Desktop</td><td>Electron with context isolation, sandbox, and a typed preload bridge</td><td>MIT</td><td>Required by the seed spec</td></tr>
+    <tr><td>Desktop packaging and updates</td><td>electron-builder, electron-updater</td><td>MIT</td><td>Proposed</td></tr>
+    <tr><td>Git</td><td>The user's own <code>git</code> (not shipped)</td><td>Not applicable</td><td>Proposed (D-22)</td></tr>
+    <tr><td>Local cache (web)</td><td>IndexedDB</td><td>Not applicable</td><td>Proposed</td></tr>
+    <tr><td>CI/CD</td><td>GitHub Actions to GitHub Pages and GitHub Releases, with a license check</td><td>Not applicable</td><td>Required by the seed spec</td></tr>
+    <tr><td>App license</td><td>MIT</td><td>MIT</td><td><strong>Decided</strong> (D-20)</td></tr>
   </tbody>
 </table>
 
@@ -137,6 +148,6 @@
 <ul>
   <li>A strict Content Security Policy: no inline scripts, and connections only to <code>api.github.com</code> and the app's own origin.</li>
   <li>Markdown is sanitized when rendered, both in the editor and on published pages. Raw HTML in notes is shown as text, not run.</li>
-  <li>Access tokens never go into the repository or into URLs. On the web they are held in memory, with an optional encrypted local copy. In Electron they go in the OS keychain.</li>
+  <li>Access tokens never go into the repository, URLs, process arguments, or logs. In Electron they go in the OS's secure storage and git's credential helper (never the plaintext <code>store</code> helper). On the web they are held in memory, with an optional encrypted local copy.</li>
   <li>Private note content only reaches the GitHub Pages artifact in sealed (encrypted) form (see <a href="repository-and-publishing.html#threat-model">threat model</a>).</li>
 </ul>

@@ -1,0 +1,217 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Experience</p>
+  <h1 class="slate-hero__title">Spotlight: search and act</h1>
+  <p class="slate-hero__summary">One keystroke to find any note, heading, sentence, setting, or command, and act on it without touching the mouse.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p><kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> opens a centered, frosted panel modeled on macOS Spotlight and Raycast. It searches <strong>notes</strong> (titles, paths, headings, full text), <strong>folders</strong>, <strong>commands</strong>, and <strong>settings</strong> in one ranked list. <kbd>Enter</kbd> runs the default action; <kbd>→</kbd> or <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> opens <strong>quick actions</strong> for the selected result (open in a new window, copy link, move, rename, make public, delete…). Prefixes (<code>&gt;</code> commands, <code>#</code> headings) and filters (<code>is:private</code>, <code>in:essays/</code>) narrow the search. Quick open, the command palette, go-to-heading, and find-in-notes are all this same panel, opened in a different mode. Covers SPT-01 to SPT-08 in the <a href="../product/requirements.md">requirements</a>.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" role="img"
+       aria-labelledby="spot-title spot-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="spot-title">Spotlight showing mixed results for the query "foc"</title>
+    <desc id="spot-desc">A centered panel with the query "foc". The top hit, which is selected, is the command Toggle focus mode, shown as currently on with its shortcut. Below it are two notes, a full-text match inside a third note, and two actions: create a note named foc, and find foc in all notes. A footer lists the keys: Enter to open, Command or Ctrl Enter for a new window, right arrow for actions, Escape to close.</desc>
+    <g id="spot-panel" data-slate-svg-step="0" data-slate-svg-effect="scale-in">
+      <rect x="120" y="30" width="720" height="560" rx="20" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <rect x="144" y="54" width="672" height="56" rx="12" fill="var(--color-neutral-bg-3)"/>
+      <text x="172" y="90" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22">foc</text>
+      <path d="M210 68 V98" stroke="var(--color-brand-fg-1)" stroke-width="2.5" stroke-linecap="round"/>
+      <text x="792" y="89" text-anchor="end" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="16">All</text>
+    </g>
+    <g id="spot-top" data-slate-svg-step="1" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)">
+      <text x="150" y="140" fill="var(--color-neutral-fg-2)" font-size="14" font-weight="700" letter-spacing="1">TOP HIT</text>
+      <rect id="spot-sel" x="144" y="150" width="672" height="52" rx="10" fill="var(--color-neutral-bg-2)" stroke="var(--color-brand-stroke)" stroke-width="2"/>
+      <text x="172" y="183" fill="var(--color-neutral-fg-1)" font-size="19" font-weight="700" data-slate-fit-target="spot-sel" data-slate-fit-padding="10">Toggle focus mode</text>
+      <text x="792" y="182" text-anchor="end" fill="var(--color-neutral-fg-2)" font-size="16" data-slate-fit-target="spot-sel" data-slate-fit-padding="10">On  ·  ⇧⌘D</text>
+    </g>
+    <g id="spot-notes" data-slate-svg-step="2" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)">
+      <text x="150" y="234" fill="var(--color-neutral-fg-2)" font-size="14" font-weight="700" letter-spacing="1">NOTES</text>
+      <text x="172" y="268" fill="var(--color-neutral-fg-1)" font-size="18">On focus</text>
+      <text x="792" y="268" text-anchor="end" fill="var(--color-neutral-fg-2)" font-size="15">essays/on-focus.md · Public</text>
+      <text x="172" y="304" fill="var(--color-neutral-fg-1)" font-size="18">Focus sessions</text>
+      <text x="792" y="304" text-anchor="end" fill="var(--color-neutral-fg-2)" font-size="15">journal/focus-sessions.md · Private</text>
+      <text x="150" y="346" fill="var(--color-neutral-fg-2)" font-size="14" font-weight="700" letter-spacing="1">IN NOTES</text>
+      <text x="172" y="380" fill="var(--color-neutral-fg-2)" font-size="16">…one line at a time, in <tspan font-weight="700" fill="var(--color-neutral-fg-1)">foc</tspan>us…</text>
+      <text x="792" y="380" text-anchor="end" fill="var(--color-neutral-fg-2)" font-size="15">ideas.md</text>
+    </g>
+    <g id="spot-actions" data-slate-svg-step="3" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)">
+      <text x="150" y="422" fill="var(--color-neutral-fg-2)" font-size="14" font-weight="700" letter-spacing="1">ACTIONS</text>
+      <text x="172" y="456" fill="var(--color-neutral-fg-1)" font-size="18">Create note “foc”</text>
+      <text x="792" y="456" text-anchor="end" fill="var(--color-neutral-fg-2)" font-size="15">⌘N</text>
+      <text x="172" y="492" fill="var(--color-neutral-fg-1)" font-size="18">Find “foc” in all notes</text>
+      <text x="792" y="492" text-anchor="end" fill="var(--color-neutral-fg-2)" font-size="15">⇧⌘F</text>
+    </g>
+    <g id="spot-footer" data-slate-svg-step="4" data-slate-svg-effect="fade" font-family="var(--font-family-base)">
+      <path d="M144 524 H816" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5"/>
+      <g fill="var(--color-neutral-fg-2)" font-size="15">
+        <text x="150" y="560">↵ Open</text>
+        <text x="250" y="560">⌘↵ New window</text>
+        <text x="410" y="560">→ Actions</text>
+        <text x="530" y="560">esc Close</text>
+      </g>
+    </g>
+  </svg>
+  <figcaption>One query, every kind of result. The highlighted top hit is a command that shows its current state and its shortcut.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>Group</th><th>Result</th><th>Detail shown</th></tr></thead>
+    <tbody>
+      <tr><td>Top hit</td><td>Toggle focus mode (command)</td><td>Current state "On", shortcut ⇧⌘D</td></tr>
+      <tr><td>Notes</td><td>On focus</td><td>essays/on-focus.md, Public</td></tr>
+      <tr><td>Notes</td><td>Focus sessions</td><td>journal/focus-sessions.md, Private</td></tr>
+      <tr><td>In notes</td><td>Text snippet with the match in bold</td><td>ideas.md</td></tr>
+      <tr><td>Actions</td><td>Create note "foc"; Find "foc" in all notes</td><td>⌘N; ⇧⌘F</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2>Opening Spotlight</h2>
+<table>
+  <thead><tr><th>Way in</th><th>Opens in mode</th><th>Precedent</th></tr></thead>
+  <tbody>
+    <tr><td><kbd>Mod</kbd>+<kbd>K</kbd> (with no text selected in the editor)</td><td>All</td><td>GitHub, Linear, Slack</td></tr>
+    <tr><td><kbd>Mod</kbd>+<kbd>P</kbd></td><td>Notes (quick open)</td><td>VS Code</td></tr>
+    <tr><td><kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, or typing <code>&gt;</code></td><td>Commands</td><td>VS Code</td></tr>
+    <tr><td><kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>, or typing <code>#</code></td><td>Headings in this note</td><td>VS Code (go to symbol)</td></tr>
+    <tr><td><kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td>Find in notes (see <a href="find-and-replace.md#find-in-all-notes">Find and replace</a>)</td><td>VS Code</td></tr>
+    <tr><td><strong>Search</strong> in the <a href="main-ui.html#the-minimal-toolbar">trigger toolbar</a></td><td>All</td><td>Pointer and touch users</td></tr>
+  </tbody>
+</table>
+<p>With text selected in the editor, <kbd>Mod</kbd>+<kbd>K</kbd> adds a link instead, which is what every major editor does (<a href="../plan/decisions.md">D-16</a>). <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> always opens Spotlight. Pressing a mode's shortcut again while Spotlight is open switches mode and keeps the query.</p>
+
+<h2>Anatomy</h2>
+<dl class="slate-defs">
+  <dt>Panel</dt>
+  <dd>Centered horizontally, about 20% from the top, 640 px wide (full width minus margins on small screens). Uses the frosted surface from the theme, and the canvas behind it dims slightly. The panel is built once and kept hidden, so it opens instantly.</dd>
+  <dt>Field</dt>
+  <dd>Has a mode chip on the left (All, Notes, Commands, Headings, Find in notes). <kbd>Backspace</kbd> in an empty field returns to All. A clear button appears when there's text.</dd>
+  <dt>Results</dt>
+  <dd>Grouped and labeled (Top hit, Notes, In notes, Folders, Commands, Settings, Actions). Each row shows an icon, a title with the matching characters in bold, details (path, visibility, snippet), and on the right either the shortcut or the current state.</dd>
+  <dt>Action panel</dt>
+  <dd><kbd>→</kbd> or <kbd>Mod</kbd>+<kbd>K</kbd> slides in the list of actions for the selected result, the same way Raycast does. <kbd>←</kbd> or <kbd>Esc</kbd> goes back.</dd>
+  <dt>Preview (desktop, P1)</dt>
+  <dd>In wide windows, the selected note's first lines appear in a pane on the right, like macOS Spotlight's preview.</dd>
+  <dt>Footer</dt>
+  <dd>Key hints for the selected result: the default action, the alternative action, Actions, and Close.</dd>
+</dl>
+
+<h2>What it searches</h2>
+<table>
+  <thead><tr><th>Source</th><th>Matches on</th><th>Default action (<kbd>Enter</kbd>)</th><th>Alternative (<kbd>Mod</kbd>+<kbd>Enter</kbd>)</th></tr></thead>
+  <tbody>
+    <tr><td>Notes</td><td>Title, file name, path, front-matter <code>id</code></td><td>Open</td><td>Open in a new window (desktop)</td></tr>
+    <tr><td>Headings</td><td>Heading text in every note</td><td>Open at that heading</td><td>New window</td></tr>
+    <tr><td>In notes</td><td>Full text (snippet around the match)</td><td>Open at the match, with the find bar pre-filled</td><td>New window</td></tr>
+    <tr><td>Folders</td><td>Name, path</td><td>Show in the Files panel</td><td>New note in that folder</td></tr>
+    <tr><td>Commands</td><td>Name, synonyms (for example "dark", "night", "theme")</td><td>Run</td><td>Show its shortcut in the cheat sheet</td></tr>
+    <tr><td>Settings</td><td>Each setting as an action, with its current value</td><td>Toggle or step it (for example <em>Font size: Larger</em>)</td><td>Open that setting in Settings</td></tr>
+    <tr><td>Recent</td><td>Shown when the field is empty</td><td>Open</td><td>New window</td></tr>
+    <tr><td>Create</td><td>Always last when the query isn't empty</td><td>Create note named after the query</td><td>Create it in a chosen folder</td></tr>
+  </tbody>
+</table>
+
+<h2>Quick actions</h2>
+<p>The action panel lists everything that applies to the selected result. Each action also shows its own shortcut.</p>
+<table>
+  <thead><tr><th>Result type</th><th>Actions</th></tr></thead>
+  <tbody>
+    <tr><td>Note</td><td>Open · Open in new window · Copy public link (public notes) · Copy Markdown link · Copy as Markdown · Rename · Move to… · Duplicate · Make public / Make private · Share privately… (P1) · Show in Files · Show in Finder / Explorer (desktop) · Delete</td></tr>
+    <tr><td>Heading</td><td>Go to · Copy link to heading · Show the note's outline</td></tr>
+    <tr><td>Folder</td><td>Show in Files · New note here · New folder here · Rename · Move to… · Delete</td></tr>
+    <tr><td>Command</td><td>Run · Copy command ID · Change shortcut… (P1)</td></tr>
+    <tr><td>Setting</td><td>Toggle or set · Reset to default · Open in Settings</td></tr>
+  </tbody>
+</table>
+<div class="slate-callout slate-callout--tip" role="note">
+  <p class="slate-callout__title">Commands show their state</p>
+  <p>Toggles show the current value right in the row ("Focus mode · On", "Theme · System"), so Spotlight doubles as a quick settings panel. Running one leaves Spotlight open and updates the row. <kbd>Esc</kbd> closes it when you're done.</p>
+</div>
+
+<h2>Prefixes and filters</h2>
+<table>
+  <thead><tr><th>Type</th><th>Effect</th><th>Example</th><th>Priority</th></tr></thead>
+  <tbody>
+    <tr><td><code>&gt;</code></td><td>Commands and settings only</td><td><code>&gt;dark</code></td><td>P0</td></tr>
+    <tr><td><code>#</code></td><td>Headings in the current note (<code>##</code> for all notes)</td><td><code>#scope</code></td><td>P0</td></tr>
+    <tr><td><code>?</code></td><td>Help: lists prefixes, filters, and keys</td><td><code>?</code></td><td>P0</td></tr>
+    <tr><td><code>is:public</code> / <code>is:private</code></td><td>Limit to one visibility</td><td><code>is:private budget</code></td><td>P1</td></tr>
+    <tr><td><code>in:&lt;folder&gt;</code></td><td>Limit to a folder</td><td><code>in:essays/ focus</code></td><td>P1</td></tr>
+    <tr><td><code>type:note</code> / <code>folder</code> / <code>command</code></td><td>Limit to one kind of result</td><td><code>type:folder arch</code></td><td>P1</td></tr>
+    <tr><td><code>"…"</code></td><td>Exact phrase in full text</td><td><code>"one line at a time"</code></td><td>P1</td></tr>
+  </tbody>
+</table>
+
+<h2>Ranking</h2>
+<ol class="slate-steps">
+  <li class="slate-step">
+    <p class="slate-step__title">Match quality</p>
+    <p>Exact title, then title prefix, then the start of a word, then a fuzzy title match, then headings, then full text. Typos are tolerated (one edit for 4 to 7 characters, two for longer queries).</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Frecency</p>
+    <p>How recently and how often each note was opened and each command was run, decaying with a half-life of one week. It is stored per device and never synced.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Context</p>
+    <p>A small boost for notes in the current note's folder, and for commands that apply to the current selection (for example, table commands when the caret is in a table).</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Top hit</p>
+    <p>The single best result across all groups is shown first and selected, so <kbd>Mod</kbd>+<kbd>K</kbd>, a few letters, and <kbd>Enter</kbd> is enough most of the time.</p>
+  </li>
+</ol>
+
+<h2>Empty and no-result states</h2>
+<ul>
+  <li><strong>Empty field:</strong> the five most recent notes, then three suggestions (New note, Toggle focus mode, Switch theme), then a "Type ? for help" hint.</li>
+  <li><strong>No match:</strong> "Create note "<em>query</em>"" and "Find "<em>query</em>" in all notes" are always offered, so <kbd>Enter</kbd> still does something useful.</li>
+  <li><strong>Index still building</strong> (first launch on a big workspace): titles are searchable right away, and a quiet "Indexing 1,240 / 5,000" line shows in the footer.</li>
+</ul>
+
+<h2>Index and privacy</h2>
+<ul>
+  <li>The index is <a href="https://github.com/lucaong/minisearch">MiniSearch</a> (MIT), built in a Web Worker so typing never stutters. Titles, paths, and headings are indexed eagerly and full text incrementally.</li>
+  <li><strong>Desktop:</strong> built from the files on disk at startup and kept current by a file watcher, so changes made outside the app (another editor, <code>git pull</code>) are picked up.</li>
+  <li><strong>Web (M6):</strong> the file tree comes from the GitHub API. Note text is indexed as notes are opened or prefetched in the background, and cached in IndexedDB.</li>
+  <li><strong>Private notes are indexed only on the device.</strong> The index is never uploaded, logged, or sent anywhere. Signing out deletes it.</li>
+</ul>
+
+<h2>Performance budgets</h2>
+<div class="slate-metrics">
+  <div class="slate-metric">
+    <p class="slate-metric__value">&lt; 50 ms</p>
+    <p class="slate-metric__label">From keypress to a visible panel</p>
+  </div>
+  <div class="slate-metric">
+    <p class="slate-metric__value">&lt; 16 ms</p>
+    <p class="slate-metric__label">Per keystroke, title and command results (5,000 notes)</p>
+  </div>
+  <div class="slate-metric">
+    <p class="slate-metric__value">&lt; 100 ms</p>
+    <p class="slate-metric__label">Full-text results (5,000 notes)</p>
+  </div>
+</div>
+<p>These are targets set by this spec, not measurements. M4 checks them on a mid-range laptop with a generated 5,000-note workspace.</p>
+
+<h2>Accessibility</h2>
+<ul>
+  <li>Uses the ARIA combobox and listbox pattern: focus stays in the field, and the selected result is set with <code>aria-activedescendant</code>.</li>
+  <li>Groups are labeled. The number of results is announced politely after typing pauses.</li>
+  <li>The panel traps focus while open and returns focus, caret, and selection exactly to where they were when it closes.</li>
+  <li>Every action in Spotlight is also reachable with a pointer, through the toolbar, the ⋯ menu, or context menus.</li>
+</ul>
+
+<h2>Acceptance checks</h2>
+<ul>
+  <li><strong>SPT-01:</strong> <kbd>Mod</kbd>+<kbd>K</kbd> opens Spotlight from the editor, the Files panel, and Settings. With text selected in the editor it opens the link editor instead.</li>
+  <li><strong>SPT-02, SPT-04:</strong> "foc" returns a command, notes, a full-text snippet, and create/find actions, as in the figure, and the command row shows its live state.</li>
+  <li><strong>SPT-03:</strong> <kbd>→</kbd> on a note lists the actions in the table above. <em>Make public</em> asks for confirmation and then moves the note.</li>
+  <li><strong>SPT-07:</strong> The performance budgets hold on the 5,000-note test workspace.</li>
+  <li><strong>SPT-08:</strong> With network monitoring on, searching private notes makes no network requests.</li>
+</ul>

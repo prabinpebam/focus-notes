@@ -111,9 +111,14 @@ All triggers mark the band as stale, and one `requestAnimationFrame` callback do
 ## Turning it on and off
 
 - **Toolbar:** the *Focus* action in the [trigger toolbar](main-ui.html).
-- **Shortcut:** <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> (proposed). The reference had no shortcut.
+- **Shortcut:** <kbd>⇧⌘D</kbd> / <kbd>Ctrl+Shift+D</kbd>, or <kbd>F8</kbd> (Typora's focus-mode key) ([D-17](../plan/decisions.md)). <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> is kept for *find in all notes*, following VS Code. The reference project had no shortcut.
+- **Spotlight:** `> Focus mode`, which shows the current state.
 - **Persistence:** stored per device, like the reference's `localStorage` `focusEnabled` flag. In Electron it goes in app settings.
-- **Default:** *on* for new installs, since this is a signature feature. Proposed; see [decisions](../plan/decisions.md) D-04.
+- **Default:** *on* for new installs, since this is a signature feature. Proposed; see [decisions](../plan/decisions.md) D-04. The first-run experience offers it as a choice.
+
+## Working with find
+
+While the [find bar](find-and-replace.md#highlights-and-focus-mode) is open, the bright row follows the **current match** instead of the caret. Other matches stay dimmed with their rows, but their highlight color still shows. When the find bar closes, the band goes back to the caret.
 
 ## Accessibility
 

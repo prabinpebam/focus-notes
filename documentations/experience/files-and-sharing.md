@@ -3,15 +3,15 @@
 This page covers the main workflows besides writing: managing notes and folders, choosing who can see a note, and sharing it with a link.
 
 > [!NOTE]
-> **TL;DR.** The **Files** panel (opened from the trigger) is a tree of folders and notes with create, rename, move, and delete. Every operation is a Git commit, so nothing is lost for good. Each note is **public** or **private**. Public notes get a stable read-only URL on GitHub Pages. Private notes live in the private submodule repository, are never published in plaintext, and can be shared with one person through an expiring, revocable link. Covers FIL-* and SHR-* in the [requirements](../product/requirements.md).
+> **TL;DR.** The **Files** panel (*Open* in the trigger toolbar, <kbd>Ctrl/⌘</kbd>+<kbd>O</kbd>) is a tree of folders and notes with create, rename, move, and delete. [Spotlight](spotlight.html) quick open (<kbd>Ctrl/⌘</kbd>+<kbd>P</kbd>) finds any note by name. Every operation is a Git commit, so nothing is lost for good. On the desktop those commits are made and pushed with the user's own `git`. Each note is **public** or **private**. Public notes get a stable read-only URL on GitHub Pages. Private notes live in the private submodule repository, are never published in plaintext, and can be shared with one person through an expiring, revocable link. Covers FIL-* and SHR-* in the [requirements](../product/requirements.md).
 
 ## The Files panel
 
-Opened from **Files** in the [trigger toolbar](main-ui.html) (<kbd>Ctrl/Cmd</kbd>+<kbd>O</kbd>). It's a transient overlay that closes after a note is opened, so the canvas stays blank.
+Opened from **Open** in the [trigger toolbar](main-ui.html) (<kbd>Ctrl/⌘</kbd>+<kbd>O</kbd>). It's a transient overlay that closes after a note is opened, so the canvas stays blank. Its keyboard behavior follows Finder on macOS and Explorer on Windows ([Keyboard shortcuts → Files panel](keyboard-shortcuts.md#files-panel)).
 
 - **Two roots:** *Public* and *Private*. They map to the two content repositories (see [Repository and publishing](../architecture/repository-and-publishing.html)). Each note's visibility is clear from which root it sits under.
-- **Tree:** folders first, then notes, sorted alphabetically. Expand and collapse with the arrow keys.
-- **Quick open** (P1): type to fuzzy-filter every note by title and path.
+- **Tree:** folders first, then notes, sorted alphabetically. Expand and collapse with the arrow keys. Typing a name jumps to it.
+- **Quick open:** <kbd>Ctrl/⌘</kbd>+<kbd>P</kbd> opens [Spotlight](spotlight.html) in note mode to fuzzy-find any note by title and path (FIL-04).
 - **Context menu** on each item (right-click, the item's menu button, or <kbd>Shift</kbd>+<kbd>F10</kbd>) lists the operations below.
 
 ## Operations
@@ -75,6 +75,6 @@ This follows the sealed-content approach proven in the `personal-site` project:
 
 ## Conflicts and offline
 
-- Every save carries the version (Git blob SHA) the edit started from. If the remote file has changed since then, the save is rejected and the user chooses between **Keep mine**, **Take theirs**, and **Save mine as a copy**. Nothing is merged silently.
-- While offline, edits are queued locally, and the trigger shows the save-problem state. The queue syncs in order when the connection returns.
-- Electron (P1) works directly on a local clone, so it reads and writes files offline and pushes when it can.
+- **Desktop (primary):** the app works on a local clone, so reading and writing work fully offline. Commits are made locally and pushed when the network is back. Before pushing it fetches, and if the same note changed elsewhere the writer chooses between **Keep mine**, **Take theirs**, and **Save mine as a copy**. Nothing is merged silently, and the repository is never left half-rebased ([Desktop and Git](../architecture/desktop-and-git.md#save-and-sync)).
+- **Web (M6):** every save carries the version (Git blob SHA) the edit started from. If the remote file has changed since then, the save is rejected and the same three choices appear. While offline, edits are queued in IndexedDB and synced in order when the connection returns.
+- In both, the trigger shows the save-problem state while changes are waiting, and *Save* (<kbd>Ctrl/⌘</kbd>+<kbd>S</kbd>) retries right away.

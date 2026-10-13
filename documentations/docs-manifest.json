@@ -64,9 +64,36 @@
       "group": "Experience"
     },
     {
+      "path": "experience/find-and-replace.md",
+      "title": "Find and replace",
+      "order": 23,
+      "icon": "find_replace",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Experience"
+    },
+    {
+      "path": "experience/spotlight.html",
+      "title": "Spotlight",
+      "order": 24,
+      "icon": "manage_search",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Experience"
+    },
+    {
+      "path": "experience/keyboard-shortcuts.md",
+      "title": "Keyboard shortcuts",
+      "order": 25,
+      "icon": "keyboard",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Experience"
+    },
+    {
       "path": "experience/files-and-sharing.md",
       "title": "Files and sharing",
-      "order": 23,
+      "order": 26,
       "icon": "folder_shared",
       "status": "draft",
       "updated": "2026-10-13",
@@ -75,8 +102,26 @@
     {
       "path": "experience/theming.md",
       "title": "Theming",
-      "order": 24,
+      "order": 27,
       "icon": "palette",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Experience"
+    },
+    {
+      "path": "experience/desktop-app.html",
+      "title": "Desktop app",
+      "order": 28,
+      "icon": "desktop_windows",
+      "status": "deciding",
+      "updated": "2026-10-13",
+      "group": "Experience"
+    },
+    {
+      "path": "experience/first-run.md",
+      "title": "First run and sign-in",
+      "order": 29,
+      "icon": "login",
       "status": "draft",
       "updated": "2026-10-13",
       "group": "Experience"
@@ -104,14 +149,23 @@
       "title": "Editor engine",
       "order": 32,
       "icon": "extension",
-      "status": "deciding",
+      "status": "stable",
+      "updated": "2026-10-13",
+      "group": "Architecture"
+    },
+    {
+      "path": "architecture/desktop-and-git.md",
+      "title": "Desktop and Git",
+      "order": 33,
+      "icon": "terminal",
+      "status": "draft",
       "updated": "2026-10-13",
       "group": "Architecture"
     },
     {
       "path": "architecture/repository-and-publishing.html",
       "title": "Repository and publishing",
-      "order": 33,
+      "order": 34,
       "icon": "publish",
       "status": "draft",
       "updated": "2026-10-13",
