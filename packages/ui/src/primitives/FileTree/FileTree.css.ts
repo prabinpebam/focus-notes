@@ -55,7 +55,7 @@ export const section = style({
 export const chevron = style({ display: "inline-flex", flexShrink: 0, width: t.iconSize, height: t.iconSize, alignItems: "center", justifyContent: "center", color: t.textMuted });
 export const icon = style({ display: "inline-flex", flexShrink: 0, color: t.textMuted });
 export const label = style({ flexGrow: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
-export const description = style({ flexShrink: 0, color: t.textMuted, fontSize: t.captionSize, fontWeight: t.weight });
+export const description = style({ flexShrink: 0, color: t.textMuted, fontSize: t.captionSize, fontWeight: t.weight, textTransform: "none" });
 /** The saving sign appears only after the wait sign's delay (Waits), so quick writes show nothing. */
 const appear = keyframes({ to: { visibility: "visible" } });
 export const pending = style({
