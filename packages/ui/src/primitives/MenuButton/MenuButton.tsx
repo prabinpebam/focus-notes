@@ -11,11 +11,11 @@ export interface MenuButtonProps {
   icon?: IconName;
   /** The accessible name (and the tooltip of the icon variant). */
   label: string;
-  /** "icon" (default) or "pill": a quiet text pill showing `text` (UI-12). */
-  variant?: "icon" | "pill";
+  /** "icon" (default), "pill": a quiet text pill showing `text` (UI-12), or "text": `text` and a chevron (Turn into). */
+  variant?: "icon" | "pill" | "text";
   text?: string;
   /** Where the menu opens from the trigger. */
-  placement?: "bottom end" | "top start";
+  placement?: "bottom end" | "bottom start" | "top start";
   sections: Section[];
   shortcut?: string;
   onAction?: (payload: { id: string }) => void;
@@ -64,7 +64,9 @@ export function MenuButton({ icon = "more", label, variant = "icon", text, place
     <MenuTrigger>
       {variant === "pill"
         ? <Button className={s.pill} aria-label={label}>{text ?? label}</Button>
-        : <IconButton icon={icon} label={label} {...(shortcut ? { shortcut } : {})} />}
+        : variant === "text"
+          ? <Button className={s.text} aria-label={label}>{text ?? label}<Icon name="chevronDown" size="s" /></Button>
+          : <IconButton icon={icon} label={label} {...(shortcut ? { shortcut } : {})} />}
       <Popover className={s.popover} placement={placement} offset={8} data-floating-child="">
         <Menu className={s.menu} aria-label={label} shouldCloseOnSelect onAction={(key) => onAction?.({ id: String(key) })} disabledKeys={sections.flatMap((sec) => sec.items.filter((i) => i.disabled && !i.items).map((i) => i.id))}>
           {sections.map((sec, index) => (

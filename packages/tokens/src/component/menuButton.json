@@ -168,6 +168,26 @@
       "pillTransparent": {
         "$type": "color",
         "$value": "{color.none}"
+      },
+      "textHeight": {
+        "$type": "dimension",
+        "$value": "{size.controlM}"
+      },
+      "textPaddingInline": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "textGap": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
+      },
+      "textRadius": {
+        "$type": "dimension",
+        "$value": "{radius.control}"
+      },
+      "textTransparent": {
+        "$type": "color",
+        "$value": "{color.none}"
       }
     }
   }

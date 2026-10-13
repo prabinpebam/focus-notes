@@ -9,6 +9,8 @@ export interface TextFieldProps {
   description?: string;
   type?: "text" | "password" | "url";
   invalid?: boolean;
+  /** Read by screen readers, not shown. */
+  labelHidden?: boolean;
   autoFocus?: boolean;
   /** Each new value moves focus into the field. */
   focusRequest?: number;
@@ -19,7 +21,7 @@ export interface TextFieldProps {
 }
 
 /** A labelled single-line field. Secrets use type "password" and are never spell-checked or autofilled. */
-export function TextField({ label, value, placeholder, description, type = "text", invalid, autoFocus, focusRequest, id, onChange, onSubmit }: TextFieldProps) {
+export function TextField({ label, value, placeholder, description, type = "text", invalid, labelHidden, autoFocus, focusRequest, id, onChange, onSubmit }: TextFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     if (focusRequest) input.current?.focus();
@@ -34,7 +36,7 @@ export function TextField({ label, value, placeholder, description, type = "text
       {...(autoFocus ? { autoFocus } : {})}
       {...(id ? { id } : {})}
     >
-      <Label className={s.label}>{label}</Label>
+      <Label className={labelHidden ? s.hidden : s.label}>{label}</Label>
       <Input
         ref={input}
         className={s.input}

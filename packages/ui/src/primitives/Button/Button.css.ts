@@ -23,6 +23,7 @@ export const base = style({
   selectors: {
     "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focus.ring, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
     '&[aria-disabled="true"]': { opacity: t.disabledOpacity },
+    "&[data-selected]": { backgroundColor: t.toggle.selected },
   },
 });
 

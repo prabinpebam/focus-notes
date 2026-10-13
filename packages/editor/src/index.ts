@@ -14,7 +14,9 @@ import { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@foc
 
 export { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
 export * from "./find.ts";
+export * from "./format.ts";
 import { Find, FIND_ACTIONS } from "./find.ts";
+import { LinkOpen, LinkPaste, SelectionGhost, removeLink, selectLink } from "./format.ts";
 
 /** One registration per block type, built-in or future (Editor engine → Block registry contract). */
 export interface BlockRegistration {
@@ -67,12 +69,15 @@ export const RawMarkdown = Node.create({
   },
 });
 
-/** Links keep their Markdown title, so opening and saving never drops it. */
+/**
+ * Links keep their Markdown title, so opening and saving never drops it. `[text](url)` is an input
+ * rule (EDT-03); pasting over a selection is LinkPaste's, so one undo pastes the address as text.
+ */
 export const MarkdownLink = Link.extend({
   addAttributes() {
     return { ...this.parent?.(), title: { default: null } };
   },
-}).configure({ openOnClick: false, autolink: true, linkOnPaste: true, defaultProtocol: "https" });
+}).configure({ openOnClick: false, autolink: true, linkOnPaste: false, markdownLinks: true, defaultProtocol: "https" });
 
 /** Pressing Enter after ``` (optionally with a language) starts a code block, like typing a space (EDT-05). */
 export const FenceOnEnter = Extension.create({
@@ -124,6 +129,11 @@ export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor) => boolean
   "format.strike": (e) => e.commands.toggleStrike(),
   "format.code": (e) => e.commands.toggleCode(),
   "format.clear": (e) => e.commands.unsetAllMarks(),
+  // The link editor and hover card (EDT-13). Applying a link needs its address, so the surface does it.
+  "link.select": selectLink,
+  "link.remove": removeLink,
+  /** Only puts the caret back: used when the toolbar or link editor hands focus back to the note. */
+  "edit.focus": () => true,
   "block.paragraph": (e) => e.commands.setParagraph(),
   "block.heading1": (e) => e.commands.toggleHeading({ level: 1 }),
   "block.heading2": (e) => e.commands.toggleHeading({ level: 2 }),
@@ -194,8 +204,15 @@ export const CommandKeymap = Extension.create<{ bindings: KeyBinding[] }>({
   },
 });
 
+export interface CoreOptions {
+  /** Opens a link through the shell (Mod+click). */
+  openLink?: (href: string) => void;
+  /** The class that keeps the selection visible while the link editor has focus. */
+  ghostClass?: string;
+}
+
 /** The schema shared by the editor surface, tests, and (later) the publisher. */
-export function coreExtensions(bindings: KeyBinding[] = []): AnyExtension[] {
+export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions = {}): AnyExtension[] {
   return [
     // Strike and line-break keys follow the app keymap (KEY-02), not Tiptap's defaults.
     StarterKit.configure({ underline: false, link: false, trailingNode: false, strike: false, hardBreak: false }),
@@ -208,6 +225,9 @@ export function coreExtensions(bindings: KeyBinding[] = []): AnyExtension[] {
     CommandKeymap.configure({ bindings }),
     Find,
     MarkdownLink,
+    LinkPaste,
+    LinkOpen.configure(options.openLink ? { openLink: options.openLink } : {}),
+    SelectionGhost.configure({ className: options.ghostClass ?? "" }),
     TaskList,
     TaskItem.configure({ nested: true }),
     RawMarkdown,

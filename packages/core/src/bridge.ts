@@ -28,6 +28,13 @@ export interface PlatformBridge {
   listNotes?(): Promise<NoteSummary[]>;
   /** Opens a page in a new tab or the default browser. Only GitHub's own pages are ever opened. */
   openExternal?(url: string): void;
+  /**
+   * Opens a link from a note in the default browser or a new tab (EDT-13). Shells accept only
+   * http, https, and mailto, and the app window itself never navigates.
+   */
+  openLink?(url: string): void;
+  /** Puts text on the clipboard (a link's address). */
+  copyText?(text: string): Promise<void>;
   /** The instance this web app was deployed with: its public notes and its vault (PKG-08, PKG-10). */
   instance?: InstanceBridge;
   /** Saves every note written here as one bundle file (PKG-11). Resolves to the number of notes. */

@@ -25,6 +25,9 @@ contextBridge.exposeInMainWorld("focusNotes", {
     return () => ipcRenderer.removeListener("scheme:changed", handler);
   },
   markReady: () => ipcRenderer.send("app:ready"),
+  // Links in notes open in the default browser; the main process checks the address again (EDT-13).
+  openLink: (url: string) => ipcRenderer.send("link:open", url),
+  copyText: (text: string) => ipcRenderer.invoke("clipboard:write", text),
   setWindowScheme: (s: "light" | "dark", canvas?: string) => ipcRenderer.send("window:scheme", s, canvas),
   onFlushRequest: (listener: () => Promise<boolean>) => {
     ipcRenderer.on("app:flush", () => {

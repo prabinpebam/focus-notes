@@ -8,5 +8,6 @@
   "color": { "$type": "color",
     "icon": { "$value": "{color.text}" }, "iconMuted": { "$value": "{color.textMuted}" },
     "hover": { "$value": "{color.hover}" }, "pressed": { "$value": "{color.pressed}" }, "selected": { "$value": "{color.pressed}" },
+    "mixed": { "$value": "{color.hover}" },
     "focusRing": { "$value": "{color.focusRing}" }, "transparent": { "$value": "{color.none}" } }
 } } }

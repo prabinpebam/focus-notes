@@ -177,6 +177,13 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
       // Only GitHub's own pages are ever opened.
       if (/^https:\/\/github\.com\//.test(url)) window.open(url, "_blank", "noopener,noreferrer");
     },
+    async copyText(text) {
+      await navigator.clipboard.writeText(text);
+    },
+    openLink(url) {
+      // A note's link opens in a new tab, never in this one, and only for web and mail (EDT-13).
+      if (/^(https?:\/\/|mailto:)\S+$/i.test(url)) window.open(url, "_blank", "noopener,noreferrer");
+    },
     async exportNotes() {
       const notes = await localNotes();
       saveTextFile(bundleFileName(), JSON.stringify(makeBundle(notes), null, 2));

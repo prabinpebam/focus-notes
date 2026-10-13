@@ -72,6 +72,10 @@
       "captionSize": {
         "$type": "dimension",
         "$value": "{font.uiCaption}"
+      },
+      "srOnlySize": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
       }
     }
   }

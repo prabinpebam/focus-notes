@@ -13,6 +13,8 @@ export interface IconButtonProps {
   tone?: keyof typeof s.tone;
   toggle?: boolean;
   pressed?: boolean;
+  /** A toggle that applies to only part of what it acts on: half-pressed (DD-FMT-06). */
+  mixed?: boolean;
   disabled?: boolean;
   disabledReason?: string;
   /** A wait it started is showing (PRF-08): a spinner replaces the icon, and the label says what it's doing. */
@@ -22,12 +24,16 @@ export interface IconButtonProps {
   onPress?: () => void;
 }
 
-export function IconButton({ icon, label, shortcut, tone = "default", toggle, pressed, disabled, disabledReason, busy, busyLabel, id, onPress }: IconButtonProps) {
+export function IconButton({ icon, label, shortcut, tone = "default", toggle, pressed, mixed, disabled, disabledReason, busy, busyLabel, id, onPress }: IconButtonProps) {
   const className = `${s.base} ${s.tone[tone]}`;
   const name = busyLabel || label;
   const common = { id, className, "aria-label": name, "aria-disabled": disabled ? ("true" as const) : undefined, "aria-busy": busy ? ("true" as const) : undefined };
   const glyph = busy ? <Spinner size="s" /> : <Icon name={icon} />;
-  const button = toggle ? (
+  const button = toggle && mixed ? (
+    <AriaButton {...common} aria-pressed="mixed" onPress={disabled || busy ? undefined : onPress}>
+      {glyph}
+    </AriaButton>
+  ) : toggle ? (
     <ToggleButton {...common} isSelected={Boolean(pressed)} onChange={disabled || busy ? undefined : () => onPress?.()}>
       {glyph}
     </ToggleButton>

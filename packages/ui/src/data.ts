@@ -26,7 +26,7 @@ export interface ResultItem {
 }
 
 /** Key scopes (Keyboard shortcuts → Contexts decide): keys registered for a scope work only inside it. */
-export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField"] as const;
+export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor"] as const;
 export type KeyScope = (typeof KEY_SCOPES)[number];
 
 /** One choice in a segmented control or filter. */

@@ -1,0 +1,26 @@
+{
+  "cmp": {
+    "positioner": {
+      "edge": {
+        "$type": "dimension",
+        "$value": "{space.m}"
+      },
+      "topBand": {
+        "$type": "dimension",
+        "$value": "{layout.topBand}"
+      },
+      "layer": {
+        "$type": "number",
+        "$value": "{layer.contextual}"
+      },
+      "duration": {
+        "$type": "duration",
+        "$value": "{motion.enter}"
+      },
+      "easing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.decelerate}"
+      }
+    }
+  }
+}

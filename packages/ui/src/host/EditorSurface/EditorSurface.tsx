@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
-import { coreExtensions, EDITOR_ACTIONS, MarkdownSession, findFromCaret, findStatus, setFind, syncSelection, type PMNode } from "@focus-notes/editor";
+import { applyLink, coreExtensions, EDITOR_ACTIONS, MarkdownSession, findFromCaret, findStatus, formatState, setFind, setSelectionGhost, syncSelection, type PMNode } from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
 import { keepInReadingZone } from "./reading-zone.ts";
+import { trackFormatting, type FormatPayload, type FormatTracker } from "./formatting.ts";
+import { inCompanion } from "../../behaviors/anchors.ts";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import * as s from "./EditorSurface.css.ts";
 
@@ -26,11 +28,19 @@ export interface EditorSurfaceProps {
   findCase?: boolean;
   findWord?: boolean;
   findRegex?: boolean;
+  /** The link editor is open: the selection stays highlighted and anchored while its field has focus. */
+  linkEditing?: boolean;
   id?: string;
   onChange?: (payload: { value: string }) => void;
   onFindResult?: (payload: { count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }) => void;
   onFindPrefill?: (payload: { value: string }) => void;
   onReady?: () => void;
+  /** What the formatting toolbar and link hover card show, whenever it changes (EDT-12, EDT-13). */
+  onFormat?: (payload: FormatPayload) => void;
+  /** Answers the link editor's open request with the link and whether text was selected. */
+  onLinkEdit?: (payload: { href: string; selected: boolean }) => void;
+  /** Mod+click on a link (or a plain click in a read-only note). */
+  onOpenLink?: (payload: { href: string }) => void;
 }
 
 /** Find waits this long after the last keystroke in its field before searching (FND-01). */
@@ -47,8 +57,8 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({
   documentKey, initialValue, label, placeholder, readOnly, focusMode, keymap,
-  findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false,
-  id, onChange, onReady, onFindResult, onFindPrefill,
+  findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, linkEditing,
+  id, onChange, onReady, onFindResult, onFindPrefill, onFormat, onLinkEdit, onOpenLink,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
@@ -58,6 +68,9 @@ export function EditorSurface({
   onChangeRef.current = onChange;
   const findRef = useRef({ onFindResult, onFindPrefill, findOpen });
   findRef.current = { onFindResult, onFindPrefill, findOpen };
+  const formatRef = useRef({ onFormat, onLinkEdit, onOpenLink });
+  formatRef.current = { onFormat, onLinkEdit, onOpenLink };
+  const tracker = useRef<FormatTracker | null>(null);
   const replaceRef = useRef(findReplace);
   replaceRef.current = findReplace;
   const findOptions = () => ({ query: findOpen ? findQuery : "", replace: replaceRef.current, caseSensitive: findCase, wholeWord: findWord, regex: findRegex });
@@ -69,7 +82,10 @@ export function EditorSurface({
 
   const editor = useEditor(
     {
-      extensions: [...coreExtensions(keymap ?? []), Placeholder.configure({ placeholder: placeholder ?? "" })],
+      extensions: [
+        ...coreExtensions(keymap ?? [], { openLink: (href) => formatRef.current.onOpenLink?.({ href }), ghostClass: s.ghost }),
+        Placeholder.configure({ placeholder: placeholder ?? "" }),
+      ],
       content: session.doc as object,
       editable: !readOnly,
       autofocus: "end",
@@ -78,6 +94,8 @@ export function EditorSurface({
       injectCSS: false,
       shouldRerenderOnTransaction: false,
       editorProps: {
+        // Esc hides the formatting toolbar or hover card and keeps the selection (Text formatting).
+        handleKeyDown: (_view, event) => event.key === "Escape" && !event.isComposing && Boolean(tracker.current?.dismiss()),
         attributes: { class: s.prose, role: "textbox", "aria-multiline": "true", "aria-label": label, ...(readOnly ? { "aria-readonly": "true" } : {}), spellcheck: "true", "data-editor": "", ...(id ? { id } : {}) },
       },
       onTransaction: ({ editor: ed }) => {
@@ -150,6 +168,25 @@ export function EditorSurface({
     wasOpen.current = Boolean(findOpen);
   }, [findOpen, editor]);
 
+  // The formatting toolbar and link hover card follow the selection (EDT-12, EDT-13, UI-06).
+  const findOpenRef = useRef(findOpen);
+  findOpenRef.current = findOpen;
+  useEffect(() => {
+    if (!editor || !scrollerRef.current) return;
+    const t = trackFormatting(editor, scrollerRef.current, (p) => formatRef.current.onFormat?.(p), () => Boolean(findOpenRef.current));
+    tracker.current = t;
+    return () => {
+      t.dispose();
+      tracker.current = null;
+    };
+  }, [editor]);
+  useEffect(() => tracker.current?.refresh(), [findOpen]);
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    setSelectionGhost(editor, Boolean(linkEditing));
+    tracker.current?.holdSelection(Boolean(linkEditing));
+  }, [editor, linkEditing]);
+
   useEffect(() => {
     if (!focusMode || !editor || !columnRef.current) return;
     return trackFocusBand(editor, columnRef.current, { top: s.bandTop, bottom: s.bandBottom });
@@ -183,7 +220,9 @@ export function EditorSurface({
     });
     window.addEventListener(REFOCUS_EVENT, refocus);
     const runAction = (e: Event) => {
-      const id = String((e as CustomEvent<{ id?: string }>).detail?.id);
+      const detail = (e as CustomEvent<{ id?: string; args?: Record<string, unknown> }>).detail;
+      const id = String(detail?.id);
+      const args = detail?.args ?? {};
       if (!editor || editor.isDestroyed) return;
       syncSelection(editor);
       if (id === "find.prefill") {
@@ -193,6 +232,7 @@ export function EditorSurface({
         if (text && !text.includes("\n") && text.length <= 200) findRef.current.onFindPrefill?.({ value: text });
         return;
       }
+      if (runLinkAction(id, args)) return;
       const action = EDITOR_ACTIONS[id];
       if (!action || (!editor.isEditable && id !== "find.next" && id !== "find.prev")) return;
       if (id.startsWith("find.")) {
@@ -211,8 +251,52 @@ export function EditorSurface({
         editor.commands.scrollIntoView();
         return;
       }
+      // Back to the text from the toolbar or link editor: at once, with the selection as it was.
+      if (id === "edit.focus") {
+        editor.view.focus();
+        return;
+      }
+      // Run from the formatting toolbar by keyboard, focus stays in the toolbar; Esc goes back to the text.
+      const active = document.activeElement;
+      if (inCompanion(active) && active?.matches("[data-focus-visible]")) {
+        action(editor);
+        return;
+      }
       editor.commands.focus();
       action(editor);
+      // A menu that ran it (Turn into) hands focus back to its button as it closes; the caret belongs in the note.
+      if (active?.closest("[data-floating-child]")) {
+        requestAnimationFrame(() => {
+          if (!editor.isDestroyed && inCompanion(document.activeElement)) editor.view.focus();
+        });
+      }
+    };
+    const runLinkAction = (id: string, args: Record<string, unknown>): boolean => {
+      if (!editor || editor.isDestroyed) return false;
+      const select = () => {
+        const r = tracker.current?.cardRange();
+        if (r) editor.commands.setTextSelection(r);
+      };
+      switch (id) {
+        case "link.edit": {
+          if (!editor.isEditable) return true;
+          select();
+          const info = formatState(editor.state);
+          formatRef.current.onLinkEdit?.({ href: info.link?.href ?? "", selected: !editor.state.selection.empty });
+          return true;
+        }
+        case "link.apply":
+          applyLink(editor, { href: String(args.href ?? ""), text: String(args.text ?? "") });
+          editor.view.focus();
+          return true;
+        case "link.remove":
+          select();
+          EDITOR_ACTIONS["link.remove"]!(editor);
+          editor.view.focus();
+          return true;
+        default:
+          return false;
+      }
     };
     window.addEventListener(EDITOR_ACTION_EVENT, runAction);
     return () => {

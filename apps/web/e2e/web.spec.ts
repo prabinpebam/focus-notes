@@ -236,3 +236,37 @@ test("export your notes, and import them into another browser without losing any
   await expect(editor(p2)).toContainText("Exported text.");
   await other.close();
 });
+
+test("EDT-13 on the web: a note's links open in a new tab with noopener, and the app never navigates", async ({ page }) => {
+  await noInstance(page);
+  await page.goto("./");
+  await expect(editor(page)).toContainText("Welcome to Focus Notes");
+  await page.keyboard.press(`${mod}+Alt+n`);
+  await expect(editor(page)).not.toContainText("Welcome to Focus Notes");
+  await expect(editor(page)).toBeFocused();
+  await page.keyboard.type("# Links");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Read [the docs](https://example.com/docs) today");
+  const link = editor(page).locator('a[href="https://example.com/docs"]');
+  await expect(link).toHaveText("the docs");
+  await page.evaluate(() => {
+    const w = window as unknown as { opened: unknown[][] };
+    w.opened = [];
+    window.open = (...args: unknown[]) => { w.opened.push(args); return null; };
+  });
+  const opened = () => page.evaluate(() => (window as unknown as { opened: unknown[][] }).opened);
+  const at = page.url();
+
+  // A plain click places the caret, and the hover card offers Open.
+  await link.click();
+  expect(await opened()).toEqual([]);
+  const card = page.getByRole("region", { name: "Link", exact: true });
+  await expect(card).toBeVisible();
+  expect(await settledAxe(page)).toEqual([]);
+  await card.getByRole("button", { name: "Open" }).click();
+  await expect.poll(opened).toEqual([["https://example.com/docs", "_blank", "noopener,noreferrer"]]);
+  // Ctrl+click opens it too.
+  await link.click({ modifiers: ["Control"] });
+  await expect.poll(opened).toHaveLength(2);
+  expect(page.url()).toBe(at);
+});

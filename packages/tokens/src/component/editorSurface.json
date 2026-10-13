@@ -248,6 +248,10 @@
       "headingFont": {
         "$type": "fontFamily",
         "$value": "{font.contentHeading}"
+      },
+      "selectionGhost": {
+        "$type": "color",
+        "$value": "{color.selection}"
       }
     }
   }

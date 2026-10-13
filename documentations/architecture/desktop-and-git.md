@@ -10,7 +10,7 @@ How the Electron app is put together: processes, security, signing in through Gi
 | Part | Responsibilities | Not allowed |
 | --- | --- | --- |
 | **Main process** | Windows (shape, resize handles, snapping, state), app menu, running sign-in helpers, file reads and writes, file watching, running `git`, workspace creation | Rendering note content |
-| **Preload bridge** | A typed API: `workspace.*` (tree, read, save, move, delete, create), `sync.*` (status, sync now), `auth.*` (detect, sign in, status, sign out), `window.*` (minimize, maximize, snap, close, full screen), `app.*` (open external link, show in Finder or Explorer) | Exposing `ipcRenderer`, Node, or any generic exec |
+| **Preload bridge** | A typed API: `workspace.*` (tree, read, save, move, delete, create), `sync.*` (status, sync now), `auth.*` (detect, sign in, status, sign out), `window.*` (minimize, maximize, snap, close, full screen), `app.*` (open external link, open a note's web link (http, https, and mailto only), copy text, show in Finder or Explorer) | Exposing `ipcRenderer`, Node, or any generic exec |
 | **Renderer** | The app core: editor, focus mode, Spotlight, theming, UI | Node access, network access except to `api.github.com` |
 
 Security settings: `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, a strict Content Security Policy, navigation and new windows denied (external links open in the default browser), and only the app's own local files served. Every bridge call is checked for a valid workspace-relative path, so nothing outside the workspace can be read or written.

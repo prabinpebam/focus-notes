@@ -13,6 +13,7 @@
   "focus": { "$type": "color", "ring": { "$value": "{color.focusRing}" } },
   "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
   "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" },
+  "toggle": { "$type": "color", "selected": { "$value": "{color.pressed}" } },
   "primary": { "$type": "color",
     "background": { "rest": { "$value": "{color.accent}" }, "hover": { "$value": "{color.accent}" }, "pressed": { "$value": "{color.accent}" } },
     "text": { "$value": "{color.onAccent}" }, "border": { "$value": "{color.accent}" } },

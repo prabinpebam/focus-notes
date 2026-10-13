@@ -8,6 +8,7 @@
     "vm.toolbar",
     "vm.shortcuts",
     "vm.find",
+    "vm.format",
     "vm.feedback",
     "vm.picker",
     "vm.account",
@@ -513,6 +514,9 @@
           },
           "readOnly": {
             "get": "vm.canvas.readOnly"
+          },
+          "linkEditing": {
+            "get": "vm.format.linkOpen"
           }
         },
         "on": {
@@ -554,8 +558,549 @@
                 "get": "event.value"
               }
             }
+          },
+          "format": {
+            "run": "format.setState",
+            "args": {
+              "toolbar": {
+                "get": "event.toolbar"
+              },
+              "card": {
+                "get": "event.card"
+              },
+              "bold": {
+                "get": "event.bold"
+              },
+              "italic": {
+                "get": "event.italic"
+              },
+              "strike": {
+                "get": "event.strike"
+              },
+              "code": {
+                "get": "event.code"
+              },
+              "block": {
+                "get": "event.block"
+              },
+              "codeBlock": {
+                "get": "event.codeBlock"
+              },
+              "inlineCode": {
+                "get": "event.inlineCode"
+              },
+              "oneBlock": {
+                "get": "event.oneBlock"
+              },
+              "href": {
+                "get": "event.href"
+              }
+            }
+          },
+          "linkEdit": {
+            "run": "link.openEditor",
+            "args": {
+              "href": {
+                "get": "event.href"
+              },
+              "selected": {
+                "get": "event.selected"
+              }
+            }
+          },
+          "openLink": {
+            "run": "link.open",
+            "args": {
+              "href": {
+                "get": "event.href"
+              }
+            }
           }
         }
+      },
+      {
+        "type": "Positioner",
+        "id": "formatToolbar",
+        "when": {
+          "get": "vm.format.toolbar"
+        },
+        "props": {
+          "anchor": "selection",
+          "placement": "above",
+          "offset": "s",
+          "landmark": "region",
+          "label": {
+            "t": "format.label"
+          }
+        },
+        "children": [
+          {
+            "type": "Surface",
+            "props": {
+              "variant": "frost",
+              "shape": "popover",
+              "elevation": "2",
+              "padding": "xs",
+              "keyScope": "formatToolbar"
+            },
+            "children": [
+              {
+                "type": "ToolbarRow",
+                "props": {
+                  "label": {
+                    "t": "format.label"
+                  },
+                  "focusRequest": {
+                    "get": "vm.format.focusToolbar"
+                  }
+                },
+                "children": [
+                  {
+                    "type": "MenuButton",
+                    "props": {
+                      "variant": "text",
+                      "text": {
+                        "get": "vm.format.blockLabel"
+                      },
+                      "label": {
+                        "get": "vm.format.turnIntoLabel"
+                      },
+                      "placement": "bottom start",
+                      "sections": {
+                        "get": "vm.format.turnInto"
+                      }
+                    },
+                    "on": {
+                      "action": {
+                        "run": "command.run",
+                        "args": {
+                          "id": {
+                            "get": "event.id"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Divider",
+                    "when": {
+                      "get": "vm.format.showCode"
+                    },
+                    "props": {
+                      "orientation": "vertical"
+                    }
+                  },
+                  {
+                    "type": "IconButton",
+                    "when": {
+                      "get": "vm.format.showMarks"
+                    },
+                    "props": {
+                      "icon": "bold",
+                      "label": {
+                        "get": "vm.format.bold.label"
+                      },
+                      "shortcut": {
+                        "get": "vm.format.bold.shortcut"
+                      },
+                      "toggle": true,
+                      "pressed": {
+                        "get": "vm.format.bold.pressed"
+                      },
+                      "mixed": {
+                        "get": "vm.format.bold.mixed"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "format.bold"
+                      }
+                    }
+                  },
+                  {
+                    "type": "IconButton",
+                    "when": {
+                      "get": "vm.format.showMarks"
+                    },
+                    "props": {
+                      "icon": "italic",
+                      "label": {
+                        "get": "vm.format.italic.label"
+                      },
+                      "shortcut": {
+                        "get": "vm.format.italic.shortcut"
+                      },
+                      "toggle": true,
+                      "pressed": {
+                        "get": "vm.format.italic.pressed"
+                      },
+                      "mixed": {
+                        "get": "vm.format.italic.mixed"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "format.italic"
+                      }
+                    }
+                  },
+                  {
+                    "type": "IconButton",
+                    "when": {
+                      "get": "vm.format.showMarks"
+                    },
+                    "props": {
+                      "icon": "strikethrough",
+                      "label": {
+                        "get": "vm.format.strike.label"
+                      },
+                      "shortcut": {
+                        "get": "vm.format.strike.shortcut"
+                      },
+                      "toggle": true,
+                      "pressed": {
+                        "get": "vm.format.strike.pressed"
+                      },
+                      "mixed": {
+                        "get": "vm.format.strike.mixed"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "format.strike"
+                      }
+                    }
+                  },
+                  {
+                    "type": "IconButton",
+                    "when": {
+                      "get": "vm.format.showCode"
+                    },
+                    "props": {
+                      "icon": "code",
+                      "label": {
+                        "get": "vm.format.codeMark.label"
+                      },
+                      "shortcut": {
+                        "get": "vm.format.codeMark.shortcut"
+                      },
+                      "toggle": true,
+                      "pressed": {
+                        "get": "vm.format.codeMark.pressed"
+                      },
+                      "mixed": {
+                        "get": "vm.format.codeMark.mixed"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "format.code"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Divider",
+                    "when": {
+                      "get": "vm.format.showLink"
+                    },
+                    "props": {
+                      "orientation": "vertical"
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "when": {
+                      "get": "vm.format.showLink"
+                    },
+                    "props": {
+                      "label": {
+                        "get": "vm.format.linkAction.label"
+                      },
+                      "icon": "link",
+                      "variant": "subtle",
+                      "toggle": true,
+                      "pressed": {
+                        "get": "vm.format.linkAction.pressed"
+                      },
+                      "disabled": {
+                        "expr": {
+                          "!": {
+                            "get": "vm.format.linkEnabled"
+                          }
+                        }
+                      },
+                      "disabledReason": {
+                        "t": "format.linkAcross"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "link.edit"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Positioner",
+        "id": "linkEditor",
+        "when": {
+          "get": "vm.format.linkOpen"
+        },
+        "props": {
+          "anchor": "selection",
+          "placement": "above",
+          "offset": "s",
+          "landmark": "region",
+          "label": {
+            "t": "format.link.editor"
+          }
+        },
+        "children": [
+          {
+            "type": "Surface",
+            "props": {
+              "variant": "frost",
+              "shape": "popover",
+              "elevation": "2",
+              "padding": "s",
+              "keyScope": "linkEditor"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "xs"
+                },
+                "children": [
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "xs"
+                    },
+                    "children": [
+                      {
+                        "type": "TextField",
+                        "props": {
+                          "label": {
+                            "t": "format.link.url"
+                          },
+                          "labelHidden": true,
+                          "type": "url",
+                          "placeholder": {
+                            "t": "format.link.urlPlaceholder"
+                          },
+                          "value": {
+                            "bind": "vm.format.url"
+                          },
+                          "invalid": {
+                            "get": "vm.format.hasError"
+                          },
+                          "focusRequest": {
+                            "get": "vm.format.focusUrl"
+                          }
+                        },
+                        "on": {
+                          "submit": {
+                            "run": "link.apply"
+                          }
+                        }
+                      },
+                      {
+                        "type": "TextField",
+                        "when": {
+                          "get": "vm.format.withText"
+                        },
+                        "props": {
+                          "label": {
+                            "t": "format.link.text"
+                          },
+                          "labelHidden": true,
+                          "placeholder": {
+                            "t": "format.link.text"
+                          },
+                          "value": {
+                            "bind": "vm.format.text"
+                          }
+                        },
+                        "on": {
+                          "submit": {
+                            "run": "link.apply"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "format.link.apply"
+                          },
+                          "variant": "primary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "link.apply"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "format.link.cancel"
+                          },
+                          "variant": "subtle"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "link.cancel"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "when": {
+                      "get": "vm.format.hasError"
+                    },
+                    "props": {
+                      "value": {
+                        "get": "vm.format.error"
+                      },
+                      "role": "caption",
+                      "tone": "danger",
+                      "announce": true
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Positioner",
+        "id": "linkCard",
+        "when": {
+          "get": "vm.format.card"
+        },
+        "props": {
+          "anchor": "link",
+          "placement": "below",
+          "offset": "xs",
+          "landmark": "region",
+          "label": {
+            "t": "format.card"
+          }
+        },
+        "children": [
+          {
+            "type": "Surface",
+            "props": {
+              "variant": "frost",
+              "shape": "popover",
+              "elevation": "2",
+              "padding": "xs"
+            },
+            "children": [
+              {
+                "type": "Inline",
+                "props": {
+                  "gap": "xs",
+                  "padding": "xs"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.format.shortHref"
+                      },
+                      "role": "secondary",
+                      "tone": "default",
+                      "lines": "one"
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "format.card.open"
+                      },
+                      "variant": "subtle",
+                      "size": "s",
+                      "disabled": {
+                        "expr": {
+                          "!": {
+                            "get": "vm.format.canOpen"
+                          }
+                        }
+                      },
+                      "disabledReason": {
+                        "t": "format.card.cantOpen"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "link.open"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "format.card.copy"
+                      },
+                      "variant": "subtle",
+                      "size": "s"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "link.copy"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "format.card.edit"
+                      },
+                      "variant": "subtle",
+                      "size": "s"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "link.edit"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "format.card.remove"
+                      },
+                      "variant": "subtle",
+                      "size": "s"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "link.remove"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
       {
         "type": "Dialog",

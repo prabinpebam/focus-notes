@@ -42,7 +42,7 @@ export function mountApp(el: Element, { app, views, view = "canvas" }: MountOpti
     void app.commands.run(id);
   }, true);
   // Editor commands run from menus and Spotlight reach the editor surface through a window event.
-  app.onEditorAction((id) => window.dispatchEvent(new CustomEvent(EDITOR_ACTION_EVENT, { detail: { id } })));
+  app.onEditorAction((id, args) => window.dispatchEvent(new CustomEvent(EDITOR_ACTION_EVENT, { detail: { id, args } })));
   // A file dropped outside the editor must never navigate the window away from the app.
   const stopNavigation = (e: DragEvent) => {
     if (e.dataTransfer?.types.includes("Files")) e.preventDefault();

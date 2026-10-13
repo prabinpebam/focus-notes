@@ -1,4 +1,4 @@
-import { Button as AriaButton } from "react-aria-components";
+import { Button as AriaButton, ToggleButton } from "react-aria-components";
 import { Icon } from "../Icon/Icon.tsx";
 import { Tooltip } from "../Tooltip/Tooltip.tsx";
 import type { IconName } from "../../icon-names.ts";
@@ -10,6 +10,9 @@ export interface ButtonProps {
   size?: keyof typeof s.size;
   icon?: IconName;
   iconPosition?: "start" | "end";
+  /** A toggle button: `pressed` is its state (aria-pressed). */
+  toggle?: boolean;
+  pressed?: boolean;
   busy?: boolean;
   disabled?: boolean;
   /** Required with `disabled`: a disabled button stays focusable and says why (Foundations → States). */
@@ -18,20 +21,25 @@ export interface ButtonProps {
   onPress?: () => void;
 }
 
-export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", busy, disabled, disabledReason, id, onPress }: ButtonProps) {
+export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, busy, disabled, disabledReason, id, onPress }: ButtonProps) {
   const inert = disabled || busy;
-  const button = (
-    <AriaButton
-      id={id}
-      className={[s.base, s.size[size], s.variant[variant]].join(" ")}
-      aria-disabled={inert ? "true" : undefined}
-      aria-busy={busy ? "true" : undefined}
-      onPress={inert ? undefined : onPress}
-    >
+  const common = {
+    id,
+    className: [s.base, s.size[size], s.variant[variant]].join(" "),
+    "aria-disabled": inert ? ("true" as const) : undefined,
+    "aria-busy": busy ? ("true" as const) : undefined,
+  };
+  const content = (
+    <>
       {icon && iconPosition === "start" ? <Icon name={icon} size="s" /> : null}
       {label}
       {icon && iconPosition === "end" ? <Icon name={icon} size="s" /> : null}
-    </AriaButton>
+    </>
+  );
+  const button = toggle ? (
+    <ToggleButton {...common} isSelected={Boolean(pressed)} onChange={inert ? undefined : () => onPress?.()}>{content}</ToggleButton>
+  ) : (
+    <AriaButton {...common} onPress={inert ? undefined : onPress}>{content}</AriaButton>
   );
   return disabled && disabledReason ? <Tooltip label={disabledReason}>{button}</Tooltip> : button;
 }

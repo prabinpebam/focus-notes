@@ -4,12 +4,22 @@ import * as s from "./ToolbarRow.css.ts";
 
 export interface ToolbarRowProps {
   label: string;
+  /** Each new value moves focus to its first item. */
+  focusRequest?: number;
   children?: ReactNode;
 }
 
 /** A row with the toolbar role: one tab stop, arrow keys between items, Home and End (Main UI → Behavior). */
-export function ToolbarRow({ label, children }: ToolbarRowProps) {
+export function ToolbarRow({ label, focusRequest, children }: ToolbarRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
+  // Only a new request moves focus: a toolbar that reappears never takes it by itself.
+  const seen = useRef(focusRequest);
+  useEffect(() => {
+    if (!focusRequest || focusRequest === seen.current) return;
+    seen.current = focusRequest;
+    const first = [...(ref.current?.querySelectorAll<HTMLElement>("button") ?? [])].find((b) => b.getAttribute("aria-disabled") !== "true");
+    first?.focus();
+  }, [focusRequest]);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;

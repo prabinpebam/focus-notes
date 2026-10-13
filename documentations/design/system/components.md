@@ -50,13 +50,13 @@ Each component declares a contract in `packages/ui`. The build turns contracts i
 | **Heading** | `level` 1 to 3 (interface headings, not note headings), `value` | Heading | Sheets, dialogs, settings |
 | **Icon** | `name` (Fluent registry), `size` s/m/l, `filled` | Image, or hidden when decorative | Everywhere |
 | **Shortcut** | `keys` (key caps in the platform's symbols, from a view model, which takes them from the command registry) and `label` (the chord in words). Caps are hidden from screen readers, which read the words instead | Text, with an accessible name that says the keys in words | Menus, tooltips, Spotlight, cheat sheet |
-| **Button** | `variant` primary, secondary, subtle, danger. `size`, `icon`, `busy`, `disabledReason` | Button | Dialogs, forms, banners |
-| **IconButton** | `icon`, `label` (required), `variant` subtle or frost, `toggle` with `pressed` | Button, or toggle button | Toolbar, window controls, find bar |
+| **Button** | `variant` primary, secondary, subtle, danger. `size`, `icon`, `busy`, `disabledReason`, `toggle` with `pressed` | Button, or toggle button | Dialogs, forms, banners, the formatting toolbar's Link |
+| **IconButton** | `icon`, `label` (required), `variant` subtle or frost, `toggle` with `pressed`, and `mixed` for a toggle that applies to only part of what it acts on (`aria-pressed="mixed"`, a lighter fill) | Button, or toggle button | Toolbar, window controls, find bar, formatting toolbar |
 | **Link** | `label`, `command` (internal) or `url` (opened through the `link.open` command) | Link | Help text, About |
 | **Checkbox** | `label`, `checked` (bindable), `indeterminate` | Checkbox | Lists, settings |
 | **RadioGroup** | `label`, `options` (bound list), `value` (bindable), `orientation` | Radio group | Settings |
 | **Switch** | `label`, `description`, `checked` (bindable) | Switch | Settings |
-| **TextField** | `label`, `description`, `error`, `value` (bindable), `placeholder`, `icon`, `type` text, email, or url | Text box | Forms, rename |
+| **TextField** | `label`, `description`, `error`, `value` (bindable), `placeholder`, `icon`, `type` text, email, or url. `labelHidden` keeps the label for screen readers only, for one-line editors | Text box | Forms, rename, link editor |
 | **TextArea** | As TextField, plus `rows` | Text box, multi-line | Invite message |
 | **SearchField** | `label`, `value` (bindable), `placeholder`, `clearLabel`, `autoFocus`. <kbd>Esc</kbd> clears it, or passes on to close the dialog when it's already empty | Search box | Spotlight, Files, Settings |
 | **SecretField** | `label`, `value`, `reveal` toggle, `strength` (bound) | Text box, with a reveal button | Passcodes, tokens |
@@ -73,7 +73,7 @@ Each component declares a contract in `packages/ui`. The build turns contracts i
 | **PopoverPanel** | `label` (required), `open`, `placement`; slots `trigger` and `content`; event `openChange`. Frosted, anchored, closes on Esc (in one press, even over a tooltip) and outside click, and moves focus to its first action | Dialog (non-modal popover) | Trigger's toolbar, Share, link editor |
 | **DialogPanel** | `label` (required), `open`, `size` s or l; slots `header`, `fixed`, and the scrolling body; event `openChange`. The scrim, the raised panel, focus kept inside and returned on close, <kbd>Esc</kbd> and scrim click to close. The body takes focus so it can be scrolled from the keyboard, and uses the minimal scrollbar | Dialog (modal) | Dialog, and through it Settings, the cheat sheet, and confirmations |
 | **MorphPanel** | `label` (required), `open`; slots `trigger` and `content`; event `openChange`. Closed it's the trigger's circle; open, the circle grows into the content's frosted shape (sizes measured from the content, `motion.morph`) while the trigger shrinks away and the content fades in after `motion.enter`. Esc and clicking outside close it, and it reverses (UI-10) | Dialog (non-modal) | The trigger's toolbar |
-| **MenuButton** | `icon`, `label` (required), `variant` icon or pill (with `text`), `placement` bottom end or top start, `sections` (command items from a view model), event `action`. Checkable items use `menuitemcheckbox`; each item shows its shortcut | Menu button | ⋯ menu, block menu, account pill (UI-12) |
+| **MenuButton** | `icon`, `label` (required), `variant` icon, pill, or text (pill and text show `text`; text adds a chevron, as in Turn into), `placement` bottom end, bottom start, or top start, `sections` (command items from a view model), event `action`. Checkable items use `menuitemcheckbox`; each item shows its shortcut | Menu button | ⋯ menu, block menu, account pill (UI-12), Turn into |
 | **PillButton** | `label` (required), event `press`. Muted caption text in a pill with no fill or border until pointed at or focused; full opacity, so it keeps AA contrast | Button | *Unlock* and the owner's name in the account pill (UI-12), *Use this app for yourself*, and *Read only · Copy to my notes* |
 | **Spinner** | `size`, `label` | Progress bar, indeterminate | Busy buttons, saving rows in Files, "Checking changes…" ([Waits](../components/feedback-and-dialogs.md#waits)) |
 | **ProgressBar** | `value` (omit for an indeterminate line), `max`, `label` | Progress bar | Setup, publishing, a view opening, a region being updated |
@@ -100,7 +100,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | --- | --- | --- |
 | **Stack** | Children in a column | `gap`, `align`, `padding` |
 | **Inline** | Children in a row | `gap`, `align`, `justify`, `wrap`, `padding` |
-| **ToolbarRow** | A row with the toolbar role: one tab stop, arrow keys, Home and End between its items | `label` (required) |
+| **ToolbarRow** | A row with the toolbar role: one tab stop, arrow keys, Home and End between its items. A new `focusRequest` moves focus into it (<kbd>Alt+F10</kbd>) | `label` (required), `focusRequest` |
 | **Grid** | Children in columns | `columns` (1 to 6) or `minItem` (a size token), `gap` |
 | **Center** | Centers content up to a maximum width | `maxWidth` (for example `layout.measure`), `gutter` |
 | **Split** | Two panes, optionally resizable | `start` and `end` sizes (tokens), `resizable`, `collapseBelow` (a size class) |
@@ -108,7 +108,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | **Surface** | The only way to get a background, border, radius, or shadow | `variant` canvas, frost, raised, sunken, inverted. `shape` window, sheet, popover, control. `padding` |
 | **ScrollArea** | Scrolling with consistent scrollbars and edge fades | `axis`, `fade` |
 | **Layer** | Puts its content on a layer (contextual, trigger, panel, dialog, toast, tooltip) at a fixed position, with the right order. Its content may use frost. It can form a landmark and mark the desktop drag band | `layer`, `position` (topBand, belowTopBand, fill, center, bottomCenter, bottomStart), `landmark` (none, banner, complementary, region) with `label`, `dragBand`; later `scrim`, `trapFocus`, `restoreFocus` |
-| **Positioner** | Anchors floating content to a target, flipping and shifting to stay on screen | `anchor`, `placement`, `offset` (token) |
+| **Positioner** | Anchors floating content to a range in the note (the selection or a link) that the editor surface publishes: centered on it, never covering it, flipping below near the top band (always below on touch screens), kept 12 px inside the window, following it as it scrolls, and hidden while it's out of view. Its content may use frost. Tokens `cmp.positioner.*` | `anchor` selection or link, `placement` above or below, `offset` (space token), `landmark` none or region, `label` |
 | **Show** | Shows children only in some size classes, platforms, or pointer types | `sizeClass`, `platform`, `pointer` |
 | **AppRoot** | The root of every view. Applies the theme (`data-theme`) and the token modes (platform, reduced motion, reduced transparency, coarse pointer) to the document, and holds the global token stylesheet | `scheme`, `platform` |
 
@@ -142,7 +142,7 @@ Compounds compose primitives, layouts, and other compounds. They hold behavior (
 | **Menu**, **MenuItem**, **MenuSection** | Layer, Surface, Stack, Text, Icon, Shortcut | IA-CMP-OVERFLOW, IA-CMP-CONTEXTMENU | Items name a `command`. Supports submenus, checkable items, and inline rows such as the font size row. |
 | **ContextMenu** | Menu, Positioner | IA-CMP-CONTEXTMENU | Opens at the pointer, or at the focused element with <kbd>Shift</kbd>+<kbd>F10</kbd>. |
 | **Popover** | Layer, Positioner, Surface, Stack, Heading | IA-VIEW-SHARE, IA-CMP-LINK | A titled, anchored panel. |
-| **HoverCard** | Popover | IA-CMP-LINK | Opens on hover or focus after a delay, never on its own. |
+| **HoverCard** | Popover | IA-CMP-LINK | Opens on hover or focus after a delay, never on its own. The link hover card is composed in the canvas view document instead (D-91). |
 | **Dialog** | DialogPanel, Heading, IconButton (close), Inline | IA-VIEW-SETTINGS, IA-VIEW-SHORTCUTS | `title` and `closeLabel` are required. `size` s or l. A `toolbar` slot holds controls that stay put above the scrolling body. Full-screen in the compact size class. |
 | **ConfirmDialog** | Dialog | IA-CMP-DIALOG | Takes the object's name and a verb. The confirm button names the action (Foundations → Words). |
 | **Sheet** | Layer, Surface, Stack, Heading, IconButton | IA-VIEW-FILES, IA-VIEW-THEME, IA-VIEW-HISTORY | `side` start or end. `width` is a `layout.sheet.*` token. |
@@ -157,8 +157,8 @@ Compounds compose primitives, layouts, and other compounds. They hold behavior (
 | **Banner** | Surface, Inline, Icon, Text, Button | Note history, sync problems | Inline, persistent until resolved. |
 | **EmptyState** | Center, Stack, Icon, Text, Button | Files, Spotlight, Sharing | One sentence and at most one action. |
 | **FindBar** | Surface (`keyScope` findBar), Stack, Inline, SearchField (`keyScope` findField and replaceField), IconButton, Button, Text | IA-CMP-FINDBAR | Composed in the canvas view document rather than as a compound (D-76). Match count and notices are live regions. |
-| **FormattingToolbar** | Layer, Positioner, Toolbar | IA-CMP-FORMAT | Follows the selection. Its items are commands. |
-| **LinkEditor** | Popover, TextField, Inline, IconButton | IA-CMP-LINK | Opens with <kbd>Mod</kbd>+<kbd>K</kbd>. |
+| **FormattingToolbar** | Positioner, Surface (`keyScope` formatToolbar), ToolbarRow, MenuButton (text), IconButton, Button, Divider | IA-CMP-FORMAT | Composed in the canvas view document rather than as a compound (D-91). Follows the selection. Its items are commands, and `vm.format` says which show. |
+| **LinkEditor** | Positioner, Surface (`keyScope` linkEditor), Stack, Inline, TextField, Button, Text | IA-CMP-LINK | Composed in the canvas view document (D-91). Opens with <kbd>Mod</kbd>+<kbd>K</kbd> or the toolbar's Link. |
 | **SlashMenu** | Layer, Positioner, ResultList | IA-CMP-SLASH | Items come from the block registry. |
 | **BlockHandle** | Positioner, IconButton, Menu | IA-CMP-HANDLE | Drag handle and block menu. |
 | **TableControls** | Positioner, IconButton, Menu | IA-CMP-TABLE | Row and column grips, insert lines, and the cell menu. |

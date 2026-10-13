@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Select text and a small frosted toolbar appears just above it with six controls: <strong>Turn into ▾</strong>, <strong>Bold</strong>, <strong>Italic</strong>, <strong>Strikethrough</strong>, <strong>Code</strong>, and <strong>Link</strong>. That's everything Markdown can store for a selection, and nothing more. It never covers the selection, hides as soon as you type, flips below the selection near the top of the window or on touch screens, and is fully usable from the keyboard (<kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd>). Links get an inline editor and a hover card. <code>/</code> opens a filtered block menu. A handle in the margin moves and converts blocks. Components IA-CMP-FORMAT, IA-CMP-LINK, IA-CMP-SLASH, and IA-CMP-HANDLE serve UC-FMT-01 to UC-FMT-05 and UC-BLOCK-01 to UC-BLOCK-03.</p>
+  <p>Select text and a small frosted toolbar appears just above it with six controls: <strong>Turn into ▾</strong>, <strong>Bold</strong>, <strong>Italic</strong>, <strong>Strikethrough</strong>, <strong>Code</strong>, and <strong>Link</strong>. That's everything Markdown can store for a selection, and nothing more. It never covers the selection, hides as soon as you type, flips below the selection near the top of the window or on touch screens, and is fully usable from the keyboard (<kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd>). Links get an inline editor and a hover card. The toolbar, link editor, and hover card are built (WP-1.2, with the deviations in <a href="../../plan/decisions.md">D-91</a>). <code>/</code> opens a filtered block menu. A handle in the margin moves and converts blocks. Components IA-CMP-FORMAT, IA-CMP-LINK, IA-CMP-SLASH, and IA-CMP-HANDLE serve UC-FMT-01 to UC-FMT-05 and UC-BLOCK-01 to UC-BLOCK-03.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -60,6 +60,7 @@
 <h2 data-reader-personas="design product">Contextual formatting toolbar</h2>
 
 <p><strong>IA-CMP-FORMAT.</strong> Serves UC-FMT-01, UC-FMT-02, UC-FMT-04, UC-TABLE-07. The owner asked for formatting through a "simple contextual toolbar". Simple here means one row, six controls, no ⋯, and no settings.</p>
+<p>It's composed in the canvas view document rather than as a compound, like the find bar (D-76): a <code>Positioner</code> anchored to the selection holds a frosted <code>Surface</code> (key scope <code>formatToolbar</code>) with a <code>ToolbarRow</code> of a text <code>MenuButton</code>, <code>IconButton</code> toggles, and a toggle <code>Button</code>. The editor surface reports what the selection holds (the <code>format</code> event), and <code>vm.format</code> says what to show.</p>
 
 <h3>When it appears and disappears</h3>
 <table>
@@ -68,22 +69,22 @@
     <tr><td>Mouse or pen selection ends (pointer up) with at least one character selected</td><td>Appears after 150 ms</td></tr>
     <tr><td>Keyboard selection (<kbd>Shift</kbd>+arrows, <kbd>Mod</kbd>+<kbd>A</kbd>, double-click)</td><td>Appears 300 ms after the last selection change, so it doesn't flicker while the selection grows</td></tr>
     <tr><td>Touch selection</td><td>Appears <em>below</em> the selection when the selection handles are released, because the OS menu takes the space above</td></tr>
-    <tr><td>Typing, or a collapsed selection</td><td>Hides at once (120 ms fade)</td></tr>
+    <tr><td>Typing, or a collapsed selection</td><td>Hides at once. It fades in (<code>motion.enter</code>) and leaves without a fade.</td></tr>
     <tr><td><kbd>Esc</kbd></td><td>Hides and stays hidden until the selection changes. The selection is kept.</td></tr>
     <tr><td>Scrolling</td><td>Follows the selection. Hides while the selection is off-screen.</td></tr>
     <tr><td>Selection inside a raw (read-only) block or a future component</td><td>Doesn't appear</td></tr>
-    <tr><td>Find bar, Spotlight, or a panel opens</td><td>Hides</td></tr>
+    <tr><td>Find bar, Spotlight, or a panel opens</td><td>Hides (focus leaving the note for anything but the toolbar or the link editor hides it)</td></tr>
   </tbody>
 </table>
 
 <h3>Anatomy</h3>
 <dl class="slate-defs">
   <dt>Container</dt>
-  <dd>Frosted popover (<a href="../foundations.md#surfaces-and-elevation">layer 2</a>), <code>radius.popover</code>, 6 px padding, 40 px tall controls, 4 px between controls, a 1 px divider after Turn into and before Link. About 500 px wide at the default UI scale.</dd>
+  <dd>Frosted popover (<a href="../foundations.md#surfaces-and-elevation">layer 2</a>), <code>radius.popover</code>, <code>space.xs</code> (4 px) padding, 32 px controls (<code>size.controlM</code>, the same buttons as the trigger's toolbar), 4 px between controls, a 1 px divider after Turn into and before Link. About 320 px wide at the default UI scale.</dd>
   <dt>Turn into ▾</dt>
   <dd>A text button showing the current block type ("Text", "Heading 2", "Bulleted list", or "Mixed" for several types). It opens the Turn into menu below it.</dd>
   <dt>Mark toggles</dt>
-  <dd>Bold, Italic, Strikethrough, Code. Icon buttons, 40 &times; 40 px, Fluent Regular icons, filled when pressed. Their tooltips include the shortcut.</dd>
+  <dd>Bold, Italic, Strikethrough, Code. Icon buttons, 32 &times; 32 px, Fluent Regular icons on a pressed fill when on. Their tooltips include the shortcut.</dd>
   <dt>Link</dt>
   <dd>Icon and the word "Link", because it opens something rather than toggling. Pressed when the selection is entirely inside one link, where it opens the link editor pre-filled.</dd>
 </dl>
@@ -104,7 +105,7 @@
 <ol class="slate-steps">
   <li class="slate-step">
     <p class="slate-step__title">Anchor</p>
-    <p>The first line rectangle of the selection. For a selection that starts above the visible area, the first visible line.</p>
+    <p>The first line rectangle of the selection (its top and horizontal extent), and the last line's bottom. A selection that starts above the visible area flips the toolbar below its last line.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Above by default</p>
@@ -116,23 +117,23 @@
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Clamp</p>
-    <p>Kept at least 12 px inside the canvas edges. A small caret on the toolbar's edge still points at the selection when it had to slide sideways.</p>
+    <p>Kept at least 12 px (<code>space.m</code>) inside the window's edges. While the whole selection is scrolled out of view, the toolbar hides, and it comes back with it.</p>
   </li>
 </ol>
 
 <h3>States and behavior</h3>
 <ul>
-  <li><strong>Pressed</strong> when the whole selection has that format. <strong>Mixed</strong> (part of the selection has it) shows a half-fill, and clicking applies the format to all of it, as Word and Google Docs do.</li>
+  <li><strong>Pressed</strong> when the whole selection has that format. <strong>Mixed</strong> (part of the selection has it) shows a lighter fill (<code>aria-pressed="mixed"</code>), and clicking applies the format to all of it, as Word and Google Docs do.</li>
   <li>Each click is one undo step. The selection stays the same, so several formats can be applied in a row.</li>
   <li>The toolbar sits above the focus-mode mask and is never dimmed.</li>
-  <li><kbd>Mod</kbd>+<kbd>U</kbd> isn't in the toolbar (UNSUP-FMT-01). The first time it's pressed, a toast explains that Markdown has no underline.</li>
+  <li><kbd>Mod</kbd>+<kbd>U</kbd> isn't in the toolbar (UNSUP-FMT-01). The toast that explains Markdown has no underline isn't built yet (D-91).</li>
 </ul>
 
 <h3>Keyboard and accessibility</h3>
 <ul>
-  <li><kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd> moves focus into the toolbar. This is the established rich-text-editor convention, since <kbd>Tab</kbd> already indents lists.</li>
+  <li><kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd> moves focus into the toolbar: to Turn into the first time, then back to the control used last. This is the established rich-text-editor convention, since <kbd>Tab</kbd> already indents lists.</li>
   <li><kbd>←</kbd>/<kbd>→</kbd> move between controls, <kbd>Home</kbd>/<kbd>End</kbd> jump to the ends, and <kbd>Enter</kbd> or <kbd>Space</kbd> activates. <kbd>↓</kbd> on Turn into opens its menu.</li>
-  <li><kbd>Esc</kbd> returns focus to the text with the selection unchanged.</li>
+  <li><kbd>Esc</kbd> returns focus to the text with the selection unchanged. A control activated from the keyboard keeps focus in the toolbar; one clicked with the pointer puts the caret back in the text.</li>
   <li>The toolbar has <code>role="toolbar"</code> and <code>aria-label="Text formatting"</code>. Toggles use <code>aria-pressed</code> (<code>mixed</code> for partial). Opening it doesn't move focus or announce anything, so screen-reader users aren't interrupted mid-selection.</li>
 </ul>
 
@@ -152,17 +153,17 @@
 <p>The current type is checked. The menu is a standard <code>menu</code> with arrow-key navigation and type-ahead. Converting several blocks is one undo step.</p>
 
 <h2 id="link-editor-and-hover-card" data-reader-personas="design product">Link editor and hover card</h2>
-<p><strong>IA-CMP-LINK.</strong> Serves UC-FMT-03.</p>
+<p><strong>IA-CMP-LINK.</strong> Serves UC-FMT-03. Both are composed in the canvas view document: the link editor is a <code>Positioner</code> on the selection with a frosted <code>Surface</code> (key scope <code>linkEditor</code>), and the hover card is a <code>Positioner</code> on the link, placed below it.</p>
 <table>
   <thead><tr><th>Moment</th><th>Design</th></tr></thead>
   <tbody>
-    <tr><td>Create (Link button, or <kbd>Mod</kbd>+<kbd>K</kbd>)</td><td>With a selection, the toolbar turns into a one-line editor in the same spot: a URL field (focused, pre-filled from the clipboard if it holds a URL), [Apply] and [Cancel]. <kbd>Enter</kbd> applies and <kbd>Esc</kbd> cancels, both keeping the selection. With nothing selected, <kbd>Mod</kbd>+<kbd>K</kbd> opens the same editor at the caret with an extra <em>Text</em> field and inserts a new link.</td></tr>
-    <tr><td>Paste a URL over selected text</td><td>Makes a link right away (Notion, Google Docs, Slack). <kbd>Mod</kbd>+<kbd>Z</kbd> straight after pastes the URL as text instead.</td></tr>
-    <tr><td>Type or paste a bare URL</td><td>Becomes an autolink when followed by a space or <kbd>Enter</kbd>.</td></tr>
-    <tr><td>Hover a link (500 ms) or put the caret in it</td><td>A small hover card: the shortened address, then [Open], [Copy], [Edit], [Remove]. It leaves after 200 ms when the pointer moves away.</td></tr>
-    <tr><td>Open a link</td><td><kbd>Mod</kbd>+click, or [Open] on the card. A plain click places the caret, because this is an editor. Links to other notes open in the app, and web links open in the default browser.</td></tr>
-    <tr><td>Link to another note</td><td>Typing in the URL field also searches note titles (the same index as Spotlight) and inserts a relative Markdown link.</td></tr>
-    <tr><td>Invalid address</td><td>Shown inline under the field: "Use a full web address (https://…) or pick a note." The field stays open.</td></tr>
+    <tr><td>Create (Link button, or <kbd>Mod</kbd>+<kbd>K</kbd>)</td><td>With a selection, the toolbar turns into a one-line editor in the same spot: a URL field (focused, and filled in when the selection is in a link), [Apply] and [Cancel]. The selection stays highlighted while the field has focus. <kbd>Enter</kbd> applies and <kbd>Esc</kbd> cancels, both keeping the selection. With nothing selected, <kbd>Mod</kbd>+<kbd>K</kbd> opens the same editor at the caret with an extra <em>Text</em> field and inserts a new link.</td></tr>
+    <tr><td>Paste a URL over selected text</td><td>Makes a link right away (Notion, Google Docs, Slack) when the clipboard holds one http, https, or mailto address. <kbd>Mod</kbd>+<kbd>Z</kbd> straight after leaves the address itself instead, which links to itself as a typed address does.</td></tr>
+    <tr><td>Type or paste a bare URL</td><td>Becomes an autolink when followed by a space or <kbd>Enter</kbd>, saved as <code>&lt;https://…&gt;</code>. Typing <code>[text](url)</code> makes a link too.</td></tr>
+    <tr><td>Hover a link (500 ms) or put the caret in it</td><td>A small hover card below the link: the shortened address (no scheme or <code>www.</code>, at most 34 characters), then [Open], [Copy], [Edit], [Remove]. It leaves after 200 ms when the pointer moves away, unless the pointer is on the card. It isn't shown while typing, or with the toolbar.</td></tr>
+    <tr><td>Open a link</td><td><kbd>Mod</kbd>+click, or [Open] on the card. A plain click places the caret, because this is an editor (in a read-only note, a plain click opens it). Only http, https, and mailto links open, always through the shell: the desktop app asks the main process, which checks the address again and calls the default browser; the web app opens a new tab with <code>noopener</code>. The app window never navigates. [Open] is disabled for other links, and links to other notes don't open in the app yet (D-91).</td></tr>
+    <tr><td>Link to another note</td><td>Planned with Spotlight's index (M4): typing in the URL field will also search note titles and insert a relative Markdown link. Not built yet (D-91).</td></tr>
+    <tr><td>Invalid address</td><td>Shown inline under the field and announced: "Use a full web address, like https://example.com." The field stays open and focused. A bare domain gets <code>https://</code> and a bare email address <code>mailto:</code>; any other scheme (<code>javascript:</code>, <code>file:</code>, <code>data:</code>) is refused.</td></tr>
   </tbody>
 </table>
 
@@ -197,7 +198,7 @@
     <tr><td>DD-FMT-03</td><td>Above the selection, flipped below near the top band and on touch screens.</td><td>UC-FMT-01</td><td>It must never cover the selected text or the trigger. On iPad and iPhone the OS selection menu sits above the selection.</td><td>Always below (covers the next lines while reading back). Following the pointer (jumpy).</td></tr>
     <tr><td>DD-FMT-04</td><td>A 150 ms delay after pointer selection and 300 ms after keyboard selection. Hidden immediately when typing starts.</td><td>UC-FMT-01</td><td>Avoids flicker while a selection is still growing, and keeps typing free of anything floating.</td><td>Showing it immediately (flickers during <kbd>Shift</kbd>+arrows).</td></tr>
     <tr><td>DD-FMT-05</td><td><kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd> moves focus into the toolbar.</td><td>UC-FMT-04</td><td>It's the convention used by established web rich-text editors. <kbd>Tab</kbd> is taken by list indentation.</td><td><kbd>Tab</kbd>, or automatic focus (interrupts screen-reader selection).</td></tr>
-    <tr><td>DD-FMT-06</td><td>A mixed selection shows a half-pressed state, and clicking applies the format to all of it.</td><td>UC-FMT-01</td><td>Matches Word and Google Docs. One click always ends in a consistent state.</td><td>Toggling off when any part has the format (surprising).</td></tr>
+    <tr><td>DD-FMT-06</td><td>A mixed selection shows a half-pressed state (a lighter fill), and clicking applies the format to all of it.</td><td>UC-FMT-01</td><td>Matches Word and Google Docs. One click always ends in a consistent state.</td><td>Toggling off when any part has the format (surprising).</td></tr>
     <tr><td>DD-FMT-07</td><td>Pasting a URL over selected text makes a link, and one undo pastes plain text instead.</td><td>UC-FMT-03</td><td>The fastest path that people already know from Notion, Docs, and Slack, with a cheap way out.</td><td>Always asking, which adds a dialog.</td></tr>
     <tr><td>DD-FMT-08</td><td>The slash menu offers only blocks that are valid at the caret, and <kbd>Esc</kbd> keeps the typed text.</td><td>UC-BLOCK-01, UC-BLOCK-02</td><td>An invalid choice that then fails is worse than not offering it. <kbd>Esc</kbd> never loses what was typed.</td><td>Showing everything and refusing afterwards.</td></tr>
     <tr><td>DD-FMT-09</td><td>The block handle sits in the gutter, appears on hover, and always has a keyboard equivalent.</td><td>UC-BLOCK-03</td><td>Keeps the column clean (CP-CALM-01) while giving pointer users a familiar Notion/Loop grip.</td><td>Handles always visible (visual noise).</td></tr>

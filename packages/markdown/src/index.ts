@@ -216,7 +216,7 @@ const textNode = (text: string, marks: PMMark[]): PMNode => (marks.length ? { ty
 
 const MD_OPTIONS: ToMarkdownOptions = {
   bullet: "-",
-  emphasis: "_",
+  emphasis: "*",
   strong: "*",
   fence: "`",
   fences: true,

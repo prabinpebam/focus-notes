@@ -10,6 +10,7 @@ import { isReadOnlyPath, sourceOf } from "./notes.ts";
 import type { Platform } from "./commands.ts";
 import { waits } from "@focus-notes/tokens";
 import { TaskTracker, type Clock, type TaskView } from "./tasks.ts";
+import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -50,6 +51,8 @@ export interface AppState {
     unlock: UnlockState;
     /** Use this app for yourself (DST-01). */
     aboutOpen: boolean;
+    /** The formatting toolbar, link editor, and link hover card (EDT-12, EDT-13). */
+    format: FormatState;
   };
   /** The instance this web app was deployed with, read-only (PKG-08, PKG-10). */
   instance: InstanceState;
@@ -126,8 +129,8 @@ export interface App {
   start(): Promise<void>;
   /** Writes any pending or failed change now. Resolves to false if the note couldn't be saved. */
   flush(): Promise<boolean>;
-  /** Editor commands are delivered to the editor surface through this. */
-  onEditorAction(listener: (id: string) => void): () => void;
+  /** Editor commands are delivered to the editor surface through this, some with arguments (a link's address). */
+  onEditorAction(listener: (id: string, args?: Record<string, unknown>) => void): () => void;
   /** Resolves when no wait is running or showing (PRF-08), so tests never race a save. */
   idle(): Promise<void>;
 }
@@ -151,7 +154,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED },
     instance: NO_INSTANCE,
     tasks: [],
     announcement: { text: "", n: 0 },
@@ -223,6 +226,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     // Never replace a note whose latest text isn't on disk (data safety, QLT-03).
     if (!(await flush())) return;
     setNote({ status: "loading" });
+    // The toolbar and link editor belong to the note that was open.
+    store.update((s) => ({ ...s, ui: { ...s.ui, format: FORMAT_CLOSED } }));
     try {
       const md = await bridge.readNote(path);
       setNote({ path, key: `${path}#${Date.now()}`, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
@@ -411,7 +416,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
   });
   // Editor commands: the editor's keymap runs their keys; menus and Spotlight run them through here.
-  const editorListeners = new Set<(id: string) => void>();
+  const editorListeners = new Set<(id: string, args?: Record<string, unknown>) => void>();
   for (const spec of EDITOR_COMMANDS) {
     commands.register({
       ...spec,
@@ -422,7 +427,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
 
   // ---- find and replace (FND-01, FND-02) ----
   const setFind = (patch: Partial<FindState>) => store.update((s) => ({ ...s, ui: { ...s.ui, find: { ...s.ui.find, ...patch } } }));
-  const editorAction = (id: string) => { for (const l of editorListeners) l(id); };
+  const editorAction = (id: string, args?: Record<string, unknown>) => { for (const l of editorListeners) l(id, args); };
   const findHistory: string[] = [];
   let historyAt = -1;
   const remember = () => {
@@ -598,6 +603,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       busy: { type: "boolean" as const }, busyLabel: { type: "string" as const },
     },
   };
+  registerFormatting({ store, commands, viewModels, catalog, bridge, editorAction, toast: (m) => void toast(m) });
   const browser = registerBrowserFeatures({
     store, commands, viewModels, catalog, bridge, load, flush, toast, tracker, menu: extraMenu,
     appState: () => appState, persistAppState, itemSchema: ITEM_SCHEMA, describeItem,

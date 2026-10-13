@@ -2,7 +2,7 @@
  * The Electron main process (PKG-03, SEC-01, PKG-06, PRV-01): a hardened shell that owns the
  * window, the file system, and nothing else. It makes no network requests and allows none.
  */
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { mkdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
@@ -64,6 +64,16 @@ async function writeNow(path: string, content: string): Promise<void> {
   }
 }
 
+/** Addresses a note's link may open in the browser: http, https, and mailto, well formed (EDT-13). */
+function isWebLink(url: string): boolean {
+  if (!/^(https?:\/\/[^\s/?#]+|mailto:[^\s@]+@)\S*$/i.test(url)) return false;
+  try {
+    return Boolean(new URL(url));
+  } catch {
+    return false;
+  }
+}
+
 /** The renderer page every IPC request must come from (review issue 4). */
 const appPageUrl = () => pathToFileURL(join(import.meta.dirname, "..", "renderer", "index.html")).href;
 function fromApp(e: IpcMainInvokeEvent | IpcMainEvent): boolean {
@@ -116,6 +126,16 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("state:save", async (s) => {
     if (!s || s.version !== 1) throw new Error("Unknown state version");
     await atomicWrite(stateFile(), JSON.stringify(s, null, 2));
+  });
+  // Copying a link's address (EDT-13). Text only, and never read back: the renderer can't read the clipboard.
+  handle("clipboard:write", async (text) => {
+    if (typeof text !== "string" || text.length > 10_000) throw new Error("Only text can be copied");
+    clipboard.writeText(text);
+  });
+  // A link from a note (EDT-13): only http, https, and mailto, and only in the user's browser.
+  ipcMain.on("link:open", (e, url: unknown) => {
+    if (!fromApp(e) || typeof url !== "string" || !isWebLink(url)) return;
+    void shell.openExternal(url);
   });
   ipcMain.on("app:ready", (e) => {
     if (!fromApp(e)) return;

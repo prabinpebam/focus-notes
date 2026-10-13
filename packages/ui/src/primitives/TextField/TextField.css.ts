@@ -25,3 +25,5 @@ export const input = style({
   },
 });
 export const description = style({ color: t.description, fontSize: t.captionSize });
+/** A label for screen readers only. */
+export const hidden = style({ position: "absolute", width: t.srOnlySize, height: t.srOnlySize, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" });

@@ -43,6 +43,29 @@ export const check = style({ width: t.captionSize, display: "inline-flex", justi
 export const shortcut = style({ color: t.textMuted, fontSize: t.captionSize });
 export const separator = style({ height: t.separatorWidth, backgroundColor: t.separator, marginBlock: t.padding });
 
+// The text variant: the current value and a chevron, as in Turn into (Text formatting → Anatomy).
+export const text = style({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: t.textGap,
+  height: t.textHeight,
+  paddingInline: t.textPaddingInline,
+  borderRadius: t.textRadius,
+  borderStyle: "none",
+  backgroundColor: t.textTransparent,
+  color: t.text,
+  fontFamily: t.font,
+  fontSize: t.fontSize,
+  whiteSpace: "nowrap",
+  cursor: "default",
+  outline: "none",
+  selectors: {
+    "&[data-hovered], &[aria-expanded=\"true\"]": { backgroundColor: t.hover },
+    "&[data-pressed]": { backgroundColor: t.pressed },
+    "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.pillFocusWidth, outlineColor: t.focusRing },
+  },
+});
+
 // The pill variant: the trigger is a quiet text pill (UI-12).
 
 export const pill = style({

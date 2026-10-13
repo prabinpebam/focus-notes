@@ -21,6 +21,7 @@ export const base = style({
     '&[data-hovered]:not([aria-disabled="true"])': { backgroundColor: t.color.hover },
     '&[data-pressed]:not([aria-disabled="true"])': { backgroundColor: t.color.pressed },
     "&[data-selected]": { backgroundColor: t.color.selected },
+    '&[aria-pressed="mixed"]': { backgroundColor: t.color.mixed },
     "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.color.focusRing, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
     '&[aria-disabled="true"]': { opacity: t.disabledOpacity },
   },

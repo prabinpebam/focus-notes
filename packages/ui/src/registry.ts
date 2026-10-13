@@ -31,6 +31,7 @@ import { Toast } from "./primitives/Toast/Toast.tsx";
 import { ResultList } from "./primitives/ResultList/ResultList.tsx";
 import { Tabs } from "./primitives/Tabs/Tabs.tsx";
 import { Field } from "./layouts/Field/Field.tsx";
+import { Positioner } from "./layouts/Positioner/Positioner.tsx";
 import { MorphPanel } from "./primitives/MorphPanel/MorphPanel.tsx";
 import { TextField } from "./primitives/TextField/TextField.tsx";
 import { PillButton } from "./primitives/PillButton/PillButton.tsx";
@@ -38,7 +39,7 @@ import { PillButton } from "./primitives/PillButton/PillButton.tsx";
 /** The closed registry: the renderer can create these and nothing else (DSY-06). */
 export const registry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton,
-  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field,
+  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner,
   EditorSurface,
   Trigger, Toolbar, Dialog,
 });

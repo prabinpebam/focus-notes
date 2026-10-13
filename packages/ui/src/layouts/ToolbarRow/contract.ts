@@ -4,7 +4,10 @@ export const contract = defineContract({
   type: "ToolbarRow",
   tier: "layout",
   description: "A row with the toolbar role: one tab stop, with arrow keys, Home, and End moving between its items.",
-  props: { label: { kind: "message", required: true } },
+  props: {
+    label: { kind: "message", required: true },
+    focusRequest: { kind: "number", min: 0, description: "Each new value moves focus to its first item (Alt+F10)." },
+  },
   events: {},
   slots: { default: { accepts: ["IconButton", "Button", "MenuButton", "Divider"] } },
   states: ["rest"],
