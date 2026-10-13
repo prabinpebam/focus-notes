@@ -424,6 +424,63 @@ export function planMove(tree: WorkspaceTree, paths: readonly string[], dest: st
   return { kind: "moved", moves, crossesVisibility: crosses, tree: t };
 }
 
+// ---- who can read a note (SHR-01, SHR-02) ----
+
+/**
+ * Who can read a note: its root says so. A public note lives in the instance repository's
+ * `notes/`, a private one in the private repository's `notes/` (D-84). Shared is a private note
+ * with an audience, which arrives with grants (M5): `shared` says which private notes have one.
+ */
+export type Visibility = "private" | "shared" | "public";
+export function visibilityOf(tree: WorkspaceTree, path: string, shared?: (path: string) => boolean): Visibility | undefined {
+  const id = rootOf(tree, path)?.id;
+  if (id === "public") return "public";
+  if (id === "private") return shared?.(path) ? "shared" : "private";
+  return undefined;
+}
+
+/**
+ * Where a new note goes (SHR-01, safe by default): the folder chosen in Files; else the open
+ * note's folder when it's private; else the Private root. Undefined without a writable Private
+ * root (a folder before setup, the browser), where it goes next to the open note as before.
+ */
+export function newNoteFolder(tree: WorkspaceTree, chosen: string | undefined, current: string | undefined): string | undefined {
+  if (chosen !== undefined) return chosen;
+  const priv = tree.roots.find((r) => r.id === "private" && !r.readOnly);
+  if (!priv) return undefined;
+  return current && rootOf(tree, current) === priv && findNode(tree, current) ? dirOf(current) : priv.path;
+}
+
+/**
+ * Make public or Make private (FIL-06): each item moves to the same folder path in the other root,
+ * whose missing folders are created, so links between notes that move together still work
+ * (Files and sharing → Changing visibility). Items already there are left; a clash is numbered.
+ */
+export function planVisibility(tree: WorkspaceTree, paths: readonly string[], to: "public" | "private"):
+  Refusal | { kind: "moved"; moves: { from: string; to: string }[]; tree: WorkspaceTree } {
+  const target = tree.roots.find((r) => r.id === to);
+  if (!target) return refuse("notFound");
+  let t = tree;
+  const moves: { from: string; to: string }[] = [];
+  for (const path of paths) {
+    const found = findNode(t, path);
+    if (!found) return refuse("notFound");
+    if (found.root.readOnly || target.readOnly) return refuse("readOnly");
+    if (found.root.id === to) continue;
+    if (found.root.id !== "public" && found.root.id !== "private") return refuse("invalid");
+    const parts = partsOf(found.root.path, path);
+    const dir = parts.slice(0, -1);
+    t = edit(t, sameRoot(t, found.root), dir, without(found.node.name));
+    const there = findNode(t, pathOf(target, dir));
+    const taken = dir.length === 0 ? sameRoot(t, target).children : there?.node.kind === "folder" ? there.node.children : [];
+    const ext = found.node.kind === "note" ? found.node.name.slice(stemOf(found.node.name).length) : "";
+    const name = taken.some((n) => nameKey(n.name) === nameKey(found.node.name)) ? uniqueName(stemOf(found.node.name), taken.map((n) => n.name), ext) : found.node.name;
+    t = edit(t, sameRoot(t, target), dir, withNode(name === found.node.name ? found.node : { ...found.node, name }), true);
+    moves.push({ from: path, to: pathOf(target, [...dir, name]) });
+  }
+  return { kind: "moved", moves, tree: t };
+}
+
 /**
  * Deletes notes and folders. `notes` lists every note that goes, and `ask` says whether to ask
  * first: a folder with notes, five or more items, or any public note (Files → Deleting).
