@@ -14,8 +14,12 @@ const LIGHT = ["Paper", "Sepia", "Harbor", "Forest", "High contrast"];
 const DARK = ["Ink", "Dusk", "Harbor", "Forest", "High contrast"];
 
 async function pick(page: Page, submenu: string, item: string) {
-  await page.keyboard.press(`${mod}+.`);
-  await page.getByRole("button", { name: "More" }).click();
+  // Ctrl+. toggles the toolbar, so it's pressed only when the toolbar has settled closed.
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+  const more = page.getByRole("button", { name: "More" });
+  if (!(await more.isVisible())) await page.keyboard.press(`${mod}+.`);
+  await more.click();
   await page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: submenu }).click();
   await page.getByRole("menu", { name: submenu }).getByRole("menuitemradio", { name: item }).click();
   await expect(page.getByRole("menu", { name: "More" })).toBeHidden();
