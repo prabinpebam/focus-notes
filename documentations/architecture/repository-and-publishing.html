@@ -91,7 +91,7 @@
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Track main</p>
-    <p>The app keeps <code>private/</code> checked out on <code>main</code> and pulls and pushes it as a repository of its own (D-47). It sets <code>push.recurseSubmodules=check</code> but leaves <code>submodule.recurse</code> off. The pointer moves only after private pushes, batched (D-07), so it can trail <code>main</code>, and a recursive pull would reset <code>private/</code> to an older commit and hide recent private notes. People using the terminal get the same advice in the workspace's <code>AGENTS.md</code> and README: pull <code>private/</code> on its own.</p>
+    <p>The app keeps <code>private/</code> checked out on <code>main</code> and pulls and pushes it as a repository of its own (D-47). It sets <code>push.recurseSubmodules=check</code> in the notes repository when it opens a workspace with <code>private/</code> (D-97) but leaves <code>submodule.recurse</code> off. The pointer moves only after private pushes, batched (D-07), so it can trail <code>main</code>, and a recursive pull would reset <code>private/</code> to an older commit and hide recent private notes. People using the terminal get the same advice in the workspace's <code>AGENTS.md</code> and README: pull <code>private/</code> on its own.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Commit private first</p>
@@ -111,7 +111,7 @@
 </ol>
 <p>Notes written in the browser stay in that browser's IndexedDB until they're exported and imported by the desktop app (<a href="web-app.md">Web app</a>).</p>
 <div class="slate-callout slate-callout--note" role="note">
-  <p>The deploy seals <code>private/</code> at the pointer, so the pointer decides how current the vault is. Since every private note is in the vault, every private change is publishing-relevant: <strong>D-07 (amended by D-90)</strong> has the desktop app move the pointer after each private push, batched so a writing session makes at most one public commit every few minutes. The browser's vault follows within one deploy.</p>
+  <p>The deploy seals <code>private/</code> at the pointer, so the pointer decides how current the vault is. Since every private note is in the vault, every private change is publishing-relevant: <strong>D-07 (amended by D-90)</strong> has the desktop app move the pointer after each private push, batched so a writing session makes at most one public commit every few minutes. As built (D-97), the pointer moves to a pushed private commit at once the first time in a session, then at most once every 5 minutes (riding along in any notes commit that's happening anyway), and on quit whatever the gap. The browser's vault follows within one deploy.</p>
 </div>
 
 <h2>Deploy pipeline</h2>

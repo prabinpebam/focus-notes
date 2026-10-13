@@ -19,7 +19,7 @@ How fast Focus Notes must be, how big a workspace it must handle, how it's teste
 | Memory | ≤ 350 MB resident with a 10,000-note workspace open | Process metrics after 10 minutes of use | PRF-04 |
 | Idle CPU | Near zero when not typing or syncing. No polling except the 5-minute fetch. | OS process sampling | PRF-04 |
 | View rendering | ≤ 100 ms to a view's first frame, ≤ 10% overhead from the UI runtime | Benchmarks on Settings, Files, and Spotlight | DSY-11 |
-| Git status | One `git status` per repository per refresh, both repositories in parallel. A cached answer in ≤ 5 ms. No view's first frame waits for Git. | The `git.status` span and process count in the benchmark | PRF-07 |
+| Git status | One `git status` per repository per refresh, both repositories in parallel. A cached answer in ≤ 5 ms. No view's first frame waits for Git. | The `git.status` span and process count in the benchmark (built: `PRF-07.statusProcesses` and `PRF-07.cachedStatusMs`, D-97) | PRF-07 |
 | Waits explained | Acknowledged in the same frame as the input. A sign after 300 ms, kept ≥ 500 ms once shown, announced after 1 s, elapsed time after 3 s. | The task tracker's marks, with scripted slow operations | PRF-08 |
 | Structural change shown | ≤ 100 ms from the action to the change on screen (move, delete, create, or duplicate a note or folder), before the write or commit finishes | From the drop or key to the updated tree | PRF-09 |
 | Reopening a note | ≤ 50 ms for a note already read this session and unchanged on disk | From click to caret, warm | PRF-10 |

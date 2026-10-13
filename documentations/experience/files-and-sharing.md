@@ -32,7 +32,7 @@ The full interaction design (anatomy, states, naming rules, multi-select, and th
 
 ### Links that follow
 
-Renaming or moving a note or folder rewrites the relative links that point at it, in every note the app can write, in the same batch as the rename or move (FIL-09, D-95). Until Git arrives (M3) the batch is written all or nothing; from M3 it's one commit.
+Renaming or moving a note or folder rewrites the relative links that point at it, in every note the app can write, in the same batch as the rename or move (FIL-09, D-95). The batch is written all or nothing, and in a Git workspace it's one commit (D-97).
 
 - **What's rewritten:** inline links and images (`[t](../a/b.md)`, `![p](Box/pic.png)`), reference definitions (`[id]: b.md "Title"`), angle-bracket and percent-encoded destinations (`<My Note.md>`, `My%20Note.md`), and links to anything inside a moved folder. Fragments, queries, and titles stay (`b.md#steps` → `Box/b.md#steps`).
 - **The moved notes' own links** are rewritten relative to where they go, so they reach the same files. Links between notes that move together don't change.
