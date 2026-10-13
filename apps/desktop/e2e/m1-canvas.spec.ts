@@ -65,10 +65,21 @@ test("UI-10: the trigger sits 40 px down, its dot grows on hover, and it morphs 
   await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
 
   // With reduced motion it switches at once.
+  // Every frame's width is sampled until it opens: no sizes in between, however slow the machine.
   await page.emulateMedia({ reducedMotion: "reduce" });
+  const sampled = page.evaluate(() => new Promise<number[]>((resolve) => {
+    const widths: number[] = [];
+    const frame = () => {
+      const w = (document.querySelector("[data-morph-panel]") as HTMLElement).getBoundingClientRect().width;
+      widths.push(w);
+      if (w > 200 || widths.length > 600) resolve(widths); else requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }));
   await page.keyboard.press(`${mod}+.`);
-  await page.waitForTimeout(30);
-  expect((await panel(page)).w).toBeGreaterThan(200);
+  const widths = await sampled;
+  expect(widths.at(-1)!).toBeGreaterThan(200);
+  expect(widths.filter((w) => w > 31 && w <= 200)).toEqual([]);
   await quit(l);
 });
 
