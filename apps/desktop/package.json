@@ -26,6 +26,8 @@
     "electron-builder": "26.15.3",
     "vite": "8.3.3",
     "@focus-notes/core": "workspace:*",
+    "@focus-notes/github": "workspace:*",
+    "@focus-notes/seal": "workspace:*",
     "@focus-notes/ui": "workspace:*",
     "@focus-notes/ui-runtime": "workspace:*",
     "@focus-notes/views": "workspace:*"

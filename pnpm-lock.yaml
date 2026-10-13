@@ -47,6 +47,12 @@ importers:
       '@focus-notes/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@focus-notes/github':
+        specifier: workspace:*
+        version: link:../../packages/github
+      '@focus-notes/seal':
+        specifier: workspace:*
+        version: link:../../packages/seal
       '@focus-notes/ui':
         specifier: workspace:*
         version: link:../../packages/ui
