@@ -99,9 +99,9 @@ Work packages off this path run in parallel when their dependencies are Done and
 - Every M1 surface is a view document. The gallery covers every component and view state, with no unapproved visual differences and no axe violations.
 - The owner writes at least three real documents in it before exit.
 
-<h2 id="mw" data-reader-personas="product design engineering">MW: Your app on GitHub Pages</h2>
+<h2 id="mw" data-reader-personas="product design engineering">MW: Your Focus Notes on GitHub Pages</h2>
 
-**You can:** open your own Focus Notes at your GitHub Pages address and write at once, with notes kept in your browser and working offline. Connect GitHub once, and every note syncs to your own notes repository (D-80 to D-82).
+**You can:** open your own Focus Notes at your GitHub Pages address and write at once, with notes kept in your browser and working offline. Connect GitHub once, and public notes sync to `notes/` in your repository and private notes to its `private/` repository. Create, rename, delete, and move notes and folders, and make notes public or private (D-80 to D-85).
 
 **Used by:** The owner first, then anyone with a GitHub account. **Delivered as:** Preview 0.2.x, the first build most people use.
 
@@ -119,78 +119,16 @@ Work packages off this path run in parallel when their dependencies are Done and
 | --- | --- | --- | --- | --- |
 | WP-6.1 | **Web app on your own Pages, local first, with GitHub sync**. The web build deployed by each user's copy of the repository to their GitHub Pages; IndexedDB storage and the outbox; the sync engine on the Git Data API; the encrypted token store. | PKG-05, PKG-07, PKG-08 | WP-1.4 | code, security |
 | WP-6.2 | **Start in the browser and connect GitHub**. Template or fork, turn on Pages, open your site; the web first run with the pre-filled notes repository and fine-grained token. | DST-02, FRE-09 | WP-6.1 | code, security, accessibility |
+| WP-2.3 | **Local workspace model**. Folder workspaces, `workspace.json` with its format version and migrations, title-based file names, and change notifications scoped to the content each view model declares. | FIL-07, DST-05, PRF-11 | WP-1.1 | code |
+| WP-2.4 | **Files panel and file operations**. The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to…, with structural changes shown before they're saved. | FIL-01 to FIL-03, FIL-08, PRF-09 | WP-2.3, WP-1.4 | code, design-system, accessibility |
+| WP-2.5 | **Link updates**. Relative links updated on every rename and move. | FIL-09 | WP-2.4 | code |
+| WP-3.4 | **Public and private roots**. The private repository as a separately synced submodule, visibility per note, private by default, and private settings. | FIL-06, SHR-01, SHR-02, PRV-03 | WP-6.1 | code, design-system, accessibility, security |
 
 **Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
 
 - Browser journeys pass in Chromium, Firefox, and WebKit against the built site, with GitHub mocked at the network layer.
 - A live smoke test on the project's own Pages site writes, syncs, and reads back a note in a test repository.
 - The token never leaves for any host but `api.github.com`, checked by a network capture.
-
-<h2 id="m2" data-reader-personas="product design engineering">M2: Desktop and local folders</h2>
-
-**You can:** The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format.
-
-**Used by:** The owner, daily, on one computer. **Delivered as:** Preview 0.2.x.
-
-**Demo script** (run by the owner on clean machines at the gate, then automated):
-
-1. On Windows, drag the window to each edge and corner and see snap previews, hover the maximize button for Snap Layouts, use <kbd>Win</kbd>+arrows and <kbd>Alt</kbd>+<kbd>Space</kbd>, resize from every edge, and move it between monitors with different scaling.
-2. On macOS, find every command in the menu bar with its shortcut.
-3. Enter and leave full screen with <kbd>F11</kbd> and <kbd>Ctrl</kbd>+<kbd>⌘</kbd>+<kbd>F</kbd>.
-4. Open a folder. In Files, create, rename, and delete notes and folders, select several, drag them into a folder, and use Move to….
-5. Rename a note that others link to: their links update.
-6. Kill the app while typing, relaunch, and get the text back.
-7. Open the 10,000-note fixture: memory stays at 350 MB or less, and idle CPU is near zero.
-
-**Work packages**
-
-| ID | Work package | Requirements | Depends on | Reviews |
-| --- | --- | --- | --- | --- |
-| WP-2.1 | **Windows and Linux window**. The transparent 20 px window with app-built moving, resizing, maximizing, snapping, Snap Layouts, the system menu, and DPI handling. | DSK-01, DSK-03, DSK-08 | WP-0.6, WP-1.4 | code, design-system, accessibility, security |
-| WP-2.2 | **Title bar, full screen, and macOS menu**. The title bar band, full screen, and the native macOS menu bar generated from commands. | DSK-02, DSK-04, DSK-05 | WP-2.1, WP-1.8 | code, design-system, accessibility |
-| WP-2.3 | **Local workspace model**. Folder workspaces, `workspace.json` with its format version and migrations, title-based file names, and change notifications scoped to the content each view model declares. | FIL-07, DST-05, PRF-11 | WP-1.1 | code |
-| WP-2.4 | **Files panel and file operations**. The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to…, with structural changes shown before they're saved. | FIL-01 to FIL-03, FIL-08, PRF-09 | WP-2.3, WP-1.4 | code, design-system, accessibility |
-| WP-2.5 | **Link updates**. Relative links updated on every rename and move. | FIL-09 | WP-2.4 | code |
-| WP-2.6 | **Recovery journal and resource budgets**. The one-second recovery journal, memory and idle CPU budgets on 10,000 notes, the parsed-note snapshot, and the warm-up after start. | PRF-04, PRF-10, QLT-03 | WP-2.3 | code |
-
-**Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
-
-- The owner uses it as their only notes app for five working days with no S1 or S2 defects.
-- Window behavior passes on Windows 10, Windows 11, and Ubuntu with mixed-DPI monitors.
-
-<h2 id="m3" data-reader-personas="product design engineering">M3: Your notes on GitHub</h2>
-
-**You can:** The first run signs in through Git's own tools, creates your workspace in your GitHub account (notes repository, private repository, Pages site), and from then on every change is saved as Git commits and synced. Notes are private or public, conflicts are resolved without loss, and deleted notes can be restored.
-
-**Used by:** The owner and a few invited testers, on several computers. **Delivered as:** Preview 0.3.x.
-
-**Demo script** (run by the owner on clean machines at the gate, then automated):
-
-1. On a clean machine without Git, the first run guides the Git install, sign-in with a device code, and your identity, then creates the workspace. The repositories appear in your GitHub account.
-2. Write a note: it's committed and pushed, and the commit shows on GitHub.
-3. On a second computer, sign in and choose the existing workspace: the notes are there.
-4. Edit the same note offline on both computers, then reconnect: the conflict resolver appears, and nothing is lost.
-5. Make a note public, then private again: it moves between the repositories. New notes are private.
-6. Delete a note and restore it from Recently deleted.
-7. In a terminal, `git push` in the workspace works without signing in again.
-8. Sign out from Settings → Account: everything in the data inventory is removed.
-
-**Work packages**
-
-| ID | Work package | Requirements | Depends on | Reviews |
-| --- | --- | --- | --- | --- |
-| WP-3.1 | **Setup engine and workspace template**. Create my workspace in the user's account from the template, including its AGENTS.md. | FRE-08, AGT-07 | WP-2.3 | code, security |
-| WP-3.2 | **First run and sign-in**. The setup steps, sign-in through Git Credential Manager, the GitHub CLI, or a token, identity, and create or clone. | FRE-01 to FRE-06, SEC-03 | WP-3.1, WP-1.4 | code, design-system, accessibility, security |
-| WP-3.3 | **Local Git adapter, save, and sync**. Commits for every change, push and pull, the lock file, readable commit messages, and one cached Git status per repository that no view waits for. | EDT-11, FIL-05, PRF-07 | WP-2.3 | code |
-| WP-3.4 | **Public and private roots**. The private repository as a separately synced submodule, visibility per note, private by default, and private settings. | FIL-06, SHR-01, SHR-02, PRV-03 | WP-3.3 | code, design-system, accessibility, security |
-| WP-3.5 | **Conflicts and Recently deleted**. The conflict resolver and restoring from Git history. | FIL-10, FIL-12 | WP-3.3, WP-2.4 | code, design-system, accessibility |
-| WP-3.6 | **Account settings and data inventory**. Switch account, sign out, and remove a workspace, deleting exactly what the inventory lists. | FRE-07, PRV-02 | WP-3.2 | code, security |
-
-**Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
-
-- The fault-injection suite (network drop mid-push, kill during commit, full disk, two computers editing) runs 1,000 randomized rounds with no lost text.
-- The owner and at least two testers use it across two computers for five working days.
-- On the 10,000-note benchmark workspace, no view's first frame waits for Git, and a refresh starts at most one `git status` per repository (PRF-07).
 
 <h2 id="m4" data-reader-personas="product design engineering">M4: Find anything, make it yours</h2>
 
@@ -252,6 +190,68 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 - The [release definition of done](definition-of-done.md#release-definition-of-done) is met for everything in M0 to M5.
 - A moderated usability test with five writers new to the app: at least four finish setup and their first shared note unaided.
+
+<h2 id="m2" data-reader-personas="product design engineering">M2: The desktop app</h2>
+
+**You can:** The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format.
+
+**Used by:** The owner, daily, on one computer. **Delivered as:** Preview 0.2.x.
+
+**Demo script** (run by the owner on clean machines at the gate, then automated):
+
+1. On Windows, drag the window to each edge and corner and see snap previews, hover the maximize button for Snap Layouts, use <kbd>Win</kbd>+arrows and <kbd>Alt</kbd>+<kbd>Space</kbd>, resize from every edge, and move it between monitors with different scaling.
+2. On macOS, find every command in the menu bar with its shortcut.
+3. Enter and leave full screen with <kbd>F11</kbd> and <kbd>Ctrl</kbd>+<kbd>⌘</kbd>+<kbd>F</kbd>.
+4. Open a folder. In Files, create, rename, and delete notes and folders, select several, drag them into a folder, and use Move to….
+5. Rename a note that others link to: their links update.
+6. Kill the app while typing, relaunch, and get the text back.
+7. Open the 10,000-note fixture: memory stays at 350 MB or less, and idle CPU is near zero.
+
+**Work packages**
+
+| ID | Work package | Requirements | Depends on | Reviews |
+| --- | --- | --- | --- | --- |
+| WP-2.1 | **Windows and Linux window**. The transparent 20 px window with app-built moving, resizing, maximizing, snapping, Snap Layouts, the system menu, and DPI handling. | DSK-01, DSK-03, DSK-08 | WP-0.6, WP-1.4 | code, design-system, accessibility, security |
+| WP-2.2 | **Title bar, full screen, and macOS menu**. The title bar band, full screen, and the native macOS menu bar generated from commands. | DSK-02, DSK-04, DSK-05 | WP-2.1, WP-1.8 | code, design-system, accessibility |
+| WP-2.6 | **Recovery journal and resource budgets**. The one-second recovery journal, memory and idle CPU budgets on 10,000 notes, the parsed-note snapshot, and the warm-up after start. | PRF-04, PRF-10, QLT-03 | WP-2.3 | code |
+
+**Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
+
+- The owner uses it as their only notes app for five working days with no S1 or S2 defects.
+- Window behavior passes on Windows 10, Windows 11, and Ubuntu with mixed-DPI monitors.
+
+<h2 id="m3" data-reader-personas="product design engineering">M3: Desktop sign-in and Git</h2>
+
+**You can:** The first run signs in through Git's own tools, creates your workspace in your GitHub account (notes repository, private repository, Pages site), and from then on every change is saved as Git commits and synced. Notes are private or public, conflicts are resolved without loss, and deleted notes can be restored.
+
+**Used by:** The owner and a few invited testers, on several computers. **Delivered as:** Preview 0.3.x.
+
+**Demo script** (run by the owner on clean machines at the gate, then automated):
+
+1. On a clean machine without Git, the first run guides the Git install, sign-in with a device code, and your identity, then creates the workspace. The repositories appear in your GitHub account.
+2. Write a note: it's committed and pushed, and the commit shows on GitHub.
+3. On a second computer, sign in and choose the existing workspace: the notes are there.
+4. Edit the same note offline on both computers, then reconnect: the conflict resolver appears, and nothing is lost.
+5. Make a note public, then private again: it moves between the repositories. New notes are private.
+6. Delete a note and restore it from Recently deleted.
+7. In a terminal, `git push` in the workspace works without signing in again.
+8. Sign out from Settings → Account: everything in the data inventory is removed.
+
+**Work packages**
+
+| ID | Work package | Requirements | Depends on | Reviews |
+| --- | --- | --- | --- | --- |
+| WP-3.1 | **Setup engine and workspace template**. Create my workspace in the user's account from the template, including its AGENTS.md. | FRE-08, AGT-07 | WP-2.3 | code, security |
+| WP-3.2 | **First run and sign-in**. The setup steps, sign-in through Git Credential Manager, the GitHub CLI, or a token, identity, and create or clone. | FRE-01 to FRE-06, SEC-03 | WP-3.1, WP-1.4 | code, design-system, accessibility, security |
+| WP-3.3 | **Local Git adapter, save, and sync**. Commits for every change, push and pull, the lock file, readable commit messages, and one cached Git status per repository that no view waits for. | EDT-11, FIL-05, PRF-07 | WP-2.3 | code |
+| WP-3.5 | **Conflicts and Recently deleted**. The conflict resolver and restoring from Git history. | FIL-10, FIL-12 | WP-3.3, WP-2.4 | code, design-system, accessibility |
+| WP-3.6 | **Account settings and data inventory**. Switch account, sign out, and remove a workspace, deleting exactly what the inventory lists. | FRE-07, PRV-02 | WP-3.2 | code, security |
+
+**Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
+
+- The fault-injection suite (network drop mid-push, kill during commit, full disk, two computers editing) runs 1,000 randomized rounds with no lost text.
+- The owner and at least two testers use it across two computers for five working days.
+- On the 10,000-note benchmark workspace, no view's first frame waits for Git, and a refresh starts at most one `git status` per repository (PRF-07).
 
 <h2 id="m7" data-reader-personas="product design engineering">M7: Agents</h2>
 

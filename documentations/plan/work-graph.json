@@ -19,24 +19,10 @@
     },
     {
       "id": "MW",
-      "title": "Your app on GitHub Pages",
+      "title": "Your Focus Notes on GitHub Pages",
       "outcome": "Write in any browser from your own GitHub Pages site, locally first, syncing to your own repository.",
       "channel": "1.1",
       "gate": "GATE-M6"
-    },
-    {
-      "id": "M2",
-      "title": "Desktop and local folders",
-      "outcome": "The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format.",
-      "channel": "Preview 0.2.x",
-      "gate": "GATE-M2"
-    },
-    {
-      "id": "M3",
-      "title": "Your notes on GitHub",
-      "outcome": "The first run signs in through Git's own tools, creates your workspace in your GitHub account (notes repository, private repository, Pages site), and from then on every change is saved as Git commits and synced. Notes are private or public, conflicts are resolved without loss, and deleted notes can be restored.",
-      "channel": "Preview 0.3.x",
-      "gate": "GATE-M3"
     },
     {
       "id": "M4",
@@ -51,6 +37,20 @@
       "outcome": "The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. The Get started page offers the downloads, and every release ships with checksums, an SBOM, and attestations.",
       "channel": "1.0 stable on GitHub Releases",
       "gate": "GATE-M5"
+    },
+    {
+      "id": "M2",
+      "title": "The desktop app",
+      "outcome": "The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format.",
+      "channel": "Preview 0.2.x",
+      "gate": "GATE-M2"
+    },
+    {
+      "id": "M3",
+      "title": "Desktop sign-in and Git",
+      "outcome": "The first run signs in through Git's own tools, creates your workspace in your GitHub account (notes repository, private repository, Pages site), and from then on every change is saved as Git commits and synced. Notes are private or public, conflicts are resolved without loss, and deleted notes can be restored.",
+      "channel": "Preview 0.3.x",
+      "gate": "GATE-M3"
     },
     {
       "id": "M7",
@@ -737,9 +737,9 @@
     },
     {
       "id": "WP-2.3",
-      "stage": "M2",
+      "stage": "MW",
       "title": "Local workspace model",
-      "summary": "Folder workspaces, `workspace.json` with its format version and migrations, title-based file names, and change notifications scoped to the content each view model declares.",
+      "summary": "The workspace model shared by the web app and the desktop app: the repository and its private submodule as one tree of notes and folders, file names from titles, and the versioned workspace format.",
       "requirements": [
         "DST-05",
         "FIL-07",
@@ -765,9 +765,9 @@
     },
     {
       "id": "WP-2.4",
-      "stage": "M2",
+      "stage": "MW",
       "title": "Files panel and file operations",
-      "summary": "The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to…, with structural changes shown before they're saved.",
+      "summary": "The Files panel in the browser and on the desktop: the tree, create, rename, delete, multiple selection, drag and drop, and Move to…, saved as commits.",
       "requirements": [
         "FIL-01",
         "FIL-02",
@@ -798,7 +798,7 @@
     },
     {
       "id": "WP-2.5",
-      "stage": "M2",
+      "stage": "MW",
       "title": "Link updates",
       "summary": "Relative links updated on every rename and move.",
       "requirements": [
@@ -936,9 +936,9 @@
     },
     {
       "id": "WP-3.4",
-      "stage": "M3",
+      "stage": "MW",
       "title": "Public and private roots",
-      "summary": "The private repository as a separately synced submodule, visibility per note, private by default, and private settings.",
+      "summary": "Public notes in the instance repository's notes/, private notes in the private repository at private/, new notes private by default, and moving notes between them (D-84).",
       "requirements": [
         "SHR-01",
         "SHR-02",
@@ -946,7 +946,7 @@
         "PRV-03"
       ],
       "dependsOn": [
-        "WP-3.3"
+        "WP-6.1"
       ],
       "touches": [
         "git",

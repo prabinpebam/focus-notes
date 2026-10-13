@@ -158,14 +158,14 @@ Seed: *"managed as a github repo… hosted in github pages… web or an electron
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| PKG-01 | The product repository holds the app source, documentation, releases, and the reusable publish workflow. A separate template repository provides the starting layout for each user's notes repository (D-38). | P0 |
-| PKG-02 | Each user's notes repository builds and deploys their public pages to their own GitHub Pages with GitHub Actions, through the reusable publish workflow at a pinned release. In the first release it serves public note pages and share links. | P0 |
+| PKG-01 | One repository is a whole Focus Notes instance, as the seed spec says: the app's source, its *Deploy app* workflow, the docs, public notes in `notes/`, and private notes in a private repository linked at `private/` as a submodule (the owner's personal-site pattern). The project's own repository is an instance too, and *Use this template* (or a fork) makes a new one (D-84). | P0 |
+| PKG-02 | The repository's *Deploy app* workflow publishes, to its own GitHub Pages site, the app at the root and each public note as a read-only page; with share links, sealed private pages too (D-84). | P0 |
 | PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access, for people who want a dedicated desktop experience (D-80). | P0 |
 | PKG-04 | The product repository builds and tests without any user workspace, credentials, or secrets. | P0 |
 | PKG-05 | The web app is the primary way to use Focus Notes: each user's copy of the Focus Notes repository builds and deploys it to their own GitHub Pages site, and it runs in any modern browser with nothing to download (D-80). | P0 |
-| PKG-06 | Nothing hosted or registered by the project: no OAuth app, client ID, server, or telemetry. Each user's instance needs only their own GitHub account plus the public release files on GitHub (D-21). | P0 |
+| PKG-06 | Nothing is hosted, registered, or distributed by the project: no OAuth app, client ID, server, product site, downloads, store listings, or telemetry. Each instance needs only its owner's GitHub account and its own copy of the repository (D-21, D-86). | P0 |
 | PKG-07 | Local first in the browser: notes, settings, and the queue of unsynced changes live in IndexedDB, survive reloads, work offline, and need no account to start writing. The app asks the browser to keep its storage (`navigator.storage.persist`) (D-82). | P0 |
-| PKG-08 | Sync from the browser: changes are committed to the user's notes repository through the GitHub REST API, several files in one commit, and pulled on open, on focus, and every few minutes. A note changed in both places keeps both versions, so no text is ever lost (D-82). | P0 |
+| PKG-08 | Sync from the browser: public notes are committed to the instance repository and private notes to its private repository, through the GitHub REST API, several files in one commit per repository, and pulled on open, on focus, and every few minutes. A note changed in both places keeps both versions, so no text is ever lost (D-82, D-84). | P0 |
 
 ## Desktop app (DSK)
 
@@ -179,7 +179,7 @@ Owner: *"Our electron app will have 20px rounded corners with custom title bar."
 | DSK-04 | Full-screen mode (<kbd>⌃⌘F</kbd> / <kbd>F11</kbd>, and in ⋯). The title bar reappears when the pointer reaches the top edge. | P0 |
 | DSK-05 | A full native menu bar on macOS that lists every command with its shortcut. | P0 |
 | DSK-06 | Multiple windows, one note per window. | P1 |
-| DSK-07 | Signed builds and automatic updates from GitHub Releases. | P1 |
+| DSK-07 | Signed builds (when the owner has certificates) and automatic updates from the owner's own copy's GitHub Releases (D-86). | P1 |
 | DSK-08 | Windows and Linux: edge and corner snapping with previews, a Snap Layouts picker on the maximize button, an app-drawn system menu (<kbd>Alt</kbd>+<kbd>Space</kbd>), a drawn shadow with a click-through margin, and correct behavior across monitors with different scaling. See [Desktop app](../experience/desktop-app.html#window-management-on-windows-and-linux). | P0 |
 
 ## First run and sign-in (FRE)
@@ -195,8 +195,8 @@ Owner: *"We need a sign in and setup flow for the electron app… device sign in
 | FRE-05 | Git identity (name and email) is checked and, if missing, filled in from GitHub with the private noreply address. | P0 |
 | FRE-06 | Workspace: create a new one (FRE-08), clone an existing one from GitHub (with the private submodule when the account can reach it), or open a local clone. | P0 |
 | FRE-07 | Settings → Account: switch account, sign out (optionally removing Git's saved credential), and run setup again. | P0 |
-| FRE-08 | *Create my workspace*: in the user's own GitHub account, create the notes repository from the template, the private repository, the submodule link, the read-only deploy key and Actions secret for share links, and GitHub Pages, each step retryable on its own. | P0 |
-| FRE-09 | Web first run: *Start writing* at once (notes stay in this browser), or *Connect GitHub*: make the notes repository from a pre-filled GitHub page, make a fine-grained token limited to it from a pre-filled GitHub link, paste it, and the app checks it. Resumable, skippable, and reversible from Settings (sign out removes the token) (D-81). | P0 |
+| FRE-08 | *Set up my instance* (desktop): in the user's own GitHub account, make the repository from the Focus Notes template, the private repository, the submodule link, the read-only deploy key and Actions secret for share links, and GitHub Pages, each step retryable on its own (D-84). | P0 |
+| FRE-09 | Web first run: the app knows its repository from its own Pages address. *Start writing* at once (notes stay in this browser), or *Connect GitHub*: make the private repository from a pre-filled GitHub page, make one fine-grained token for both repositories from a pre-filled GitHub link, paste it, and the app checks it and links `private/` if it isn't linked yet. Resumable, skippable, and reversible from Settings (sign out removes the token) (D-81, D-84). | P0 |
 
 ## Keyboard shortcuts (KEY)
 
@@ -283,7 +283,7 @@ Cross-cutting requirements serving CP-SAFE-01 and CP-OWN-01 across every capabil
 | SEC-02 | Markdown and HTML are sanitized everywhere they're rendered. Raw HTML in notes is shown as text. Only safe URL schemes are allowed. Trusted Types in the app. | P0 |
 | SEC-03 | Credentials live only in Git's credential helper. API tokens are held in memory. Browser tokens are encrypted with a non-extractable key, or kept for the session. Tokens never appear in logs, URLs, or process arguments. | P0 |
 | SEC-04 | Supply chain: lockfiles, Dependabot, CodeQL, secret scanning with push protection, actions pinned by SHA, release SBOM, checksums, and artifact attestations. | P0 |
-| SEC-05 | Users' publish workflows pin the reusable workflow by commit SHA and verify the reader bundle by SHA-256 and attestation. Updates arrive only as pull requests. | P0 |
+| SEC-05 | Each copy's workflows pin every third-party action by commit SHA and build only from the repository's own source; nothing is fetched from the project at build or run time, and upstream updates arrive as changes the owner reviews (D-86). | P0 |
 | SEC-06 | Every Pages deploy runs the leak check and fails if private text or file names appear in the output. | P0 |
 | SEC-07 | `SECURITY.md` and GitHub private vulnerability reporting, with acknowledgement within 7 days. Documented responses for leaked share secrets, keys, and tokens. | P0 |
 
@@ -374,10 +374,10 @@ Owner: *"How do we package and distribute this?… It would be ideal if people c
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| DST-01 | A Get started page on the product site: OS-detected download from GitHub's latest-release links, how it works, the privacy statement, and requirements. | P0 |
-| DST-02 | Start in the browser: *Use this template* (or fork), turn on GitHub Pages with GitHub Actions, and open your site. The README and the Get started page say exactly that, and the app's first run does the rest (D-80). | P0 |
-| DST-03 | A release pipeline that builds installers for Windows, macOS, and Linux, plus the reader bundle, checksums, SBOM, and attestations, into a draft GitHub Release with smoke tests. | P0 |
-| DST-04 | Store listings: winget and Homebrew cask (and Flathub later), updated automatically from releases. | P1 |
+| DST-01 | The README's *Get your own Focus Notes* section is the only getting-started guide: copy the repository (*Use this template* or fork), turn on GitHub Pages, and open your site; for the desktop app, build it from your copy. No page or download is offered to visitors (D-86). | P0 |
+| DST-02 | Start in the browser: *Use this template* (or fork), turn on GitHub Pages with GitHub Actions, and open your site. The README says exactly that, and the app's first run does the rest (D-80, D-86). | P0 |
+| DST-03 | Each copy's own release workflow builds the desktop app for Windows, macOS, and Linux (installers, checksums, SBOM, and attestations) into that copy's own GitHub Releases, for its owner's use only (D-86). | P0 |
+| DST-04 | Building the desktop app on your own computer: one command (`pnpm dist`) makes an installer for that computer from your copy (D-86). | P1 |
 | DST-05 | `.focus-notes/workspace.json` with `formatVersion`. Migrations ask first, and older apps refuse to write newer formats. | P0 |
-| DST-06 | The workspace template is generated from `templates/workspace/` at each release, and the reusable workflow's SHA and the bundle checksum are recorded for update pull requests. | P0 |
-| DST-07 | Stable and Beta update channels. | P1 |
+| DST-06 | Updates never touch content: the app's code, workflows, and docs are kept apart from content (`notes/`, `private/`, `.focus-notes/`), so bringing a copy up to date with upstream Focus Notes only changes the app (D-84, D-86). | P0 |
+| DST-07 | Updating your instance: the app shows when your copy is behind upstream Focus Notes and links to GitHub's *Sync fork* (or an update pull request for copies made from the template); the Deploy app workflow then redeploys (D-86). | P1 |

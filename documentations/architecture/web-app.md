@@ -1,48 +1,50 @@
 # Web app
 
-How Focus Notes runs from each user's own GitHub Pages site: local first in the browser, synced to the user's own repository, with no server and no app registration anywhere.
+How Focus Notes runs from your own GitHub Pages site: one repository is your whole instance, the app writes locally first in the browser, and public and private notes sync to your repository and its private submodule. Nothing is hosted by anyone else.
 
 > [!NOTE]
-> **TL;DR.** The web app is the primary way to use Focus Notes ([D-80](../plan/decisions.md)). You make your own copy of the Focus Notes repository (*Use this template* or fork) and turn on GitHub Pages; GitHub Actions builds the app and deploys it to your site. You can write at once: notes live in your browser's **IndexedDB** and work offline. **Connect GitHub** once by pasting a **fine-grained token** made from a pre-filled GitHub link and limited to your notes repository ([D-81](../plan/decisions.md)). The app then commits changes through the **GitHub REST API** (several files per commit) and pulls changes made elsewhere; a note changed in two places keeps both versions ([D-82](../plan/decisions.md)). Notes go to a separate **notes repository**, private by default, because Pages on free plans needs the app's repository to be public. Covers PKG-05, PKG-07, PKG-08, DST-02, and FRE-09.
+> **TL;DR.** Your copy of the Focus Notes repository is your instance ([D-84](../plan/decisions.md)): the app's source, its *Deploy app* workflow, the docs, **public notes in `notes/`**, and a **private repository linked at `private/`** as a submodule, as in the owner's personal-site. The workflow deploys the app to **your own GitHub Pages site**; nobody hosts anything for anyone else, and the owner's site is just the owner's own app ([D-86](../plan/decisions.md)). The app knows its repository from its own address. You can write at once: notes live in your browser's **IndexedDB** and work offline. **Connect GitHub** once: make the private repository and one **fine-grained token** for both repositories from pre-filled GitHub pages, and paste the token ([D-81](../plan/decisions.md)). The app then commits public notes to your repository and private notes to the private one through the **GitHub REST API**, and pulls changes made elsewhere; a note changed in two places keeps both versions ([D-82](../plan/decisions.md)). Covers PKG-05, PKG-07, PKG-08, DST-02, and FRE-09.
 
 ## The picture
 
 | Piece | Where it lives | What it does |
 | --- | --- | --- |
-| **Your app repository** | `github.com/you/focus-notes` (public), your copy of this repository | Holds the app's source. Its *Deploy app* workflow builds the web app and publishes it to your Pages site on every push to `main`. |
-| **Your site** | `https://you.github.io/focus-notes/` | Serves the app: static files only. Nothing on it can see your notes. |
-| **Your browser** | IndexedDB, per site | Notes, settings, the outbox of unsynced changes, and the encrypted token. |
-| **Your notes repository** | `github.com/you/notes` (private by default) | Every note as a Markdown file, with history. The same repository the desktop app uses. |
+| **Your repository** | `github.com/you/focus-notes` (public: GitHub Pages on free plans needs it) | The app's source, the *Deploy app* workflow, the docs, and your **public notes** in `notes/`. |
+| **Your private repository** | `github.com/you/focus-notes-private` (private), linked at `private/` | Your **private notes** in `notes/`, and synced settings in `.focus-notes/`. Never deployed. |
+| **Your site** | `https://you.github.io/focus-notes/` | Serves the app, and (from M5) your public notes as read-only pages. Static files only. |
+| **Your browser** | IndexedDB, per site | Notes, settings, unsynced changes, and the encrypted token. |
 | **GitHub's API** | `api.github.com` | The only place the app sends anything. It accepts calls from web pages (CORS) with a token. |
 
-The project runs nothing and registers nothing: no OAuth app, no client ID, no server, no telemetry (D-21, PKG-06).
+The project runs nothing, registers nothing, and distributes nothing: no OAuth app, no server, no product site, no downloads for others, no telemetry (D-21, PKG-06, D-86). The owner's own repository is simply one more instance.
 
-## Running on your own Pages
+## Getting your own instance
 
-1. On the Focus Notes repository, choose **Use this template** (or fork it) into your account. Keep it public: free GitHub plans serve Pages only from public repositories.
+1. On the Focus Notes repository, choose **Use this template** (or fork it) into your account. Keep it public.
 2. In your copy, open **Settings → Pages** and set **Source** to **GitHub Actions**.
 3. Run the **Deploy app** workflow (it also runs on every push to `main`). When it finishes, open `https://<you>.github.io/<repository>/`.
 
-The workflow builds with the site's path as the base, so the app works under any repository name. Updating is pulling the latest Focus Notes into your copy (a fork's *Sync fork* button, or a pull request); the workflow redeploys.
+The README says exactly this; there's no other getting-started page (DST-01). The app is built with relative paths, so it works under any repository name. Updating is bringing your copy up to date with upstream Focus Notes (*Sync fork*, or a pull request for template copies); the app's code, workflows, and docs never touch `notes/` or `private/`, so updates can't change your notes (DST-06). The workflow then redeploys.
 
 ## Connecting GitHub
 
-The first run offers two ways to start (FRE-09):
+The app reads its repository from its address: on `https://you.github.io/focus-notes/` it's `you/focus-notes`. The first run offers two ways to start (FRE-09):
 
 | Choice | What happens |
 | --- | --- |
 | **Start writing** | Opens the canvas at once. Notes stay in this browser until you connect. |
 | **Connect GitHub** | Three short steps, each opening a pre-filled GitHub page in a new tab and coming back. |
 
-The three steps:
+1. **Your private repository.** Opens `github.com/new` pre-filled: `<repository>-private`, private. Already have one? Type its name instead.
+2. **Your token.** Opens `github.com/settings/personal-access-tokens/new` pre-filled: name *Focus Notes*, a description, **Contents: read and write**, and a one-year expiry. GitHub's form can't pre-select repositories, so the step says: choose **Only select repositories**, then your Focus Notes repository and your private repository.
+3. **Paste and check.** The app checks the token against both repositories and shows who you're signed in as. If `private/` isn't linked yet, it links it (one commit adding `.gitmodules` and the submodule entry). Errors say what to fix: a wrong name, a token without access to one of the repositories, a read-only token, an expired token, or being offline.
 
-1. **Your notes repository.** Opens `github.com/new` pre-filled (name `notes`, private, with a README). Or type the name of one you already have.
-2. **Your token.** Opens `github.com/settings/personal-access-tokens/new` pre-filled: name *Focus Notes*, a description saying what it's for, **Contents: read and write**, and a one-year expiry. GitHub's form can't pre-select repositories, so the step says: under *Repository access*, choose **Only select repositories** and pick your notes repository.
-3. **Paste and check.** The app calls `GET /user` and `GET /repos/{owner}/{repo}` with the token and shows who you're signed in as and which repository it reaches. It refuses a token that can write to more than the chosen repositories when GitHub reports that, and explains how to fix it.
+Why a token rather than *Sign in with GitHub*: GitHub's sign-in endpoints don't accept calls from web pages, so a static site could only use them through a server or a registered app, both ruled out (D-21). github.dev and Codespaces can't be driven from another site either, so the app links to them (*Open in github.dev*) rather than writing through them.
 
-Why a token rather than *Sign in with GitHub*: GitHub's sign-in endpoints (`github.com/login/oauth/access_token` and the device-code endpoints) don't accept calls from web pages, so a static site can only use them through a server or a registered app, both ruled out (D-21). github.dev and Codespaces can't be driven from another site either, so the app links to them (*Open in github.dev*) rather than writing through them.
+**After connecting:** the trigger's ⋯ menu has **Sync now** and **Sign out of GitHub** (deletes the token from this browser; notes stay). When the token is about to expire, the trigger offers **Renew token**, which opens the same pre-filled link.
 
-**After connecting:** Settings → Account shows the account, repository, branch, and when the token expires, with **Sign out** (deletes the token from this browser) and **Change repository**. Two weeks before expiry, the trigger's status row offers **Renew token**, which opens the same pre-filled link.
+## Public and private notes
+
+Every note is private or public (SHR-01, SHR-02); new notes are private. A private note is stored as `notes/<path>` in the private repository; a public note as `notes/<path>` in your repository. Changing a note's visibility moves it between the two in one sync (FIL-06). The Files panel shows one tree, with a mark on public notes. Before connecting, notes keep their visibility in the browser and go to the right repository on the first sync.
 
 ## Storage and sync
 
@@ -50,33 +52,25 @@ Why a token rather than *Sign in with GitHub*: GitHub's sign-in endpoints (`gith
 
 | Store | Holds |
 | --- | --- |
-| `notes` | One record per note: path, text, the Git blob SHA it was last synced at, and when it changed. |
-| `outbox` | Unsynced changes in order: write or delete, with the text. Survives reloads and offline time. |
-| `meta` | App state (last note, appearance), the connection (owner, repository, branch, the last synced commit and tree), and the encrypted token. |
+| `notes` | One record per note: path, visibility, text, the Git blob SHA it was last synced at, whether it changed here, and when. |
+| `meta` | App state (last note, appearance), each repository's last synced commit and tree, and the encrypted token. |
 
-The app asks the browser to keep this storage (`navigator.storage.persist()`), so it isn't cleared under storage pressure. Until you connect, *Settings → Export notes* downloads them as a ZIP.
+Unsynced changes are the notes marked as changed, plus deletion markers. The app asks the browser to keep its storage (`navigator.storage.persist()`), so it isn't cleared under storage pressure.
 
-**Pushing** (after a short pause in typing, on *Save*, and when going back online): the outbox is folded into one commit through the Git Data API:
+**Pushing** (after a short pause in typing, on *Save*, and when going back online): each repository's changes are folded into one commit through the Git Data API: blobs, a tree on top of the last synced tree, a commit, then a fast-forward update of the branch. If the branch moved, the app pulls and retries. A push that changes nothing makes no commit.
 
-1. Create a blob for each changed note.
-2. Create a tree on top of the last synced tree, with the new blobs and any deletions.
-3. Create a commit with that tree and the last synced commit as its parent.
-4. Move the branch to it with a fast-forward update.
+**Pulling** (on open, when the page becomes visible, and every five minutes): the app compares each repository's current tree with the last synced one and fetches only changed notes. An open note that changed elsewhere reloads, unless it has unsynced changes here.
 
-If GitHub refuses the update because the branch moved, the app pulls, then retries the push. A commit's message names the notes it changes ("Update On focus").
+**Conflicts:** a note changed both here and on GitHub keeps the text from here, and the GitHub version is saved beside it as `Name (conflict 2026-10-13).md`, with a toast. No text is ever lost (PKG-08).
 
-**Pulling** (on open, when the window regains focus, and every five minutes while visible): the app reads the branch head; if its tree differs from the last synced one, it compares the two trees and fetches only the blobs that changed.
-
-**Conflicts:** a note changed both here and on GitHub since the last sync keeps the text from here, and the GitHub version is saved beside it as `Name (conflict 2026-10-13).md`, with a toast that names both. No text is ever lost (PKG-08).
-
-**Limits:** the REST API allows 5,000 requests an hour per token; a sync of a few changed notes costs four to six. Files over 1 MB aren't synced from the browser in this stage and are left alone.
+**Limits:** the REST API allows 5,000 requests an hour per token, and a sync of a few notes costs a handful. Files over 1 MB aren't synced from the browser.
 
 ## Security
 
-- **The token** is encrypted at rest with an AES-GCM key generated by WebCrypto as **non-extractable** and kept in IndexedDB, so it can't be read from the browser's files without the browser itself. It's decrypted only in memory, sent only in the `Authorization` header to `https://api.github.com`, and never logged.
-- **The page** has a strict Content Security Policy: scripts only from the site itself, `connect-src` only `'self'` and `https://api.github.com`, no inline scripts, and no third-party code. Markdown is never rendered as raw HTML (SEC-02). Trusted Types follow with sanitized paste (WP-1.3), because the editor's paste handling parses HTML.
-- **Scope:** the token can read and write only the repositories you select. Losing it means someone could change those notes until you revoke it on GitHub, which *Sign out* links to.
+- **The token** is encrypted at rest with an AES-GCM key that WebCrypto creates as **non-extractable**, kept in IndexedDB. It's decrypted only in memory, sent only to `https://api.github.com`, and never logged. It can reach only the two repositories you select.
+- **The page** has a strict Content Security Policy: scripts and styles only from the site itself, `connect-src` only `'self'` and `https://api.github.com`, no inline scripts, and no third-party code. Markdown is never rendered as raw HTML (SEC-02). Trusted Types follow with sanitized paste (WP-1.3).
+- **Private notes** are never part of the deployed site. Only public notes are published, and from M5, sealed share pages (SHR-04).
 
 ## What the desktop app adds
 
-The desktop app ([Desktop and Git](desktop-and-git.md)) runs real Git on a local folder: full history, the private submodule, signing in through Git's own helpers, and the custom window. The web app and the desktop app read and write the same notes repository, so you can use both.
+The desktop app ([Desktop and Git](desktop-and-git.md)) is the second way to use your instance: it clones the same repository with its `private/` submodule, runs real Git, signs in through Git's own helpers, and has its own window. You build it from your copy (DST-03, DST-04). Both work on the same repositories, so you can use either.
