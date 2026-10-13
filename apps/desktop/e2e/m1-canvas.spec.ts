@@ -67,6 +67,7 @@ test("UI-10: the trigger sits 40 px down, its dot grows on hover, and it morphs 
   // With reduced motion it switches at once.
   // Every frame's width is sampled until it opens: no sizes in between, however slow the machine.
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(page.locator("html")).toHaveAttribute("data-motion", "reduced");
   const sampled = page.evaluate(() => new Promise<number[]>((resolve) => {
     const widths: number[] = [];
     const frame = () => {
