@@ -147,11 +147,21 @@ export class GitSync {
     return this.#report;
   }
 
-  /** Where a path belongs: the private repository, or the notes repository. */
+  /**
+   * Where a path belongs: the private repository, or the notes repository. Nothing under `private/`
+   * ever belongs to the notes repository: without a private repository, private notes stay
+   * uncommitted rather than public (SHR-02).
+   */
   #locate(abs: string): { repo: Repo; rel: string } | undefined {
     if (this.privateRepo && inside(this.privateRepo.dir, abs)) return { repo: this.privateRepo, rel: posix(relative(this.privateRepo.dir, abs)) };
-    if (inside(this.notes.dir, abs) && !(this.privateRepo && posix(relative(this.notes.dir, abs)) === PRIVATE)) return { repo: this.notes, rel: posix(relative(this.notes.dir, abs)) };
-    return undefined;
+    if (!inside(this.notes.dir, abs)) return undefined;
+    const rel = posix(relative(this.notes.dir, abs));
+    return rel === PRIVATE || rel.startsWith(`${PRIVATE}/`) ? undefined : { repo: this.notes, rel };
+  }
+  /** Whether a path is private: under `private/`, whether or not that's a repository. */
+  #isPrivate(abs: string): boolean {
+    const r = relative(this.notes.dir, abs);
+    return inside(join(this.notes.dir, PRIVATE), abs) || posix(r) === PRIVATE;
   }
 
   /** Any change to the workspace's files: the status cache's key changes at once. */
@@ -222,7 +232,11 @@ export class GitSync {
     return done;
   }
 
-  /** One Files batch, one commit in each repository it touches (FIL-05, D-94). Resolves after the commit; pushing follows in the background. */
+  /**
+   * One Files batch, one commit in each repository it touches (FIL-05, D-94), the private one first.
+   * A move between the roots is the delete in one repository and the add in the other (FIL-06).
+   * Resolves after the commits; pushing, and then the pointer, follow in the background (D-97).
+   */
   commitBatch(ops: AbsoluteOp[]): Promise<SyncProblem | undefined> {
     for (const op of ops) for (const p of op.op === "move" ? [op.from, op.to] : [op.path]) this.#touch(p);
     const done = this.#ops.run(async () => {
@@ -236,6 +250,10 @@ export class GitSync {
             const a = this.#locate(op.from);
             const b = this.#locate(op.to);
             if (a?.repo === repo && b?.repo === repo) rel.push({ op: "move", from: a.rel, to: b.rel });
+            else if (a?.repo === repo || b?.repo === repo) {
+              // Across repositories: what left this one, or what arrived in it.
+              rel.push({ op: "visibility", path: (a?.repo === repo ? a : b)!.rel, to: this.#isPrivate(op.to) ? "private" : "public" });
+            }
           } else {
             const a = this.#locate(op.path);
             if (a?.repo === repo) rel.push({ ...op, path: a.rel });

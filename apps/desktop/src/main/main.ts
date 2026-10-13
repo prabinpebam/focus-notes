@@ -8,8 +8,11 @@ import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "nod
 import { existsSync, realpathSync, watch, type FSWatcher } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
+import { randomUUID } from "node:crypto";
 import { readWorkspaceFormat } from "@focus-notes/core/workspace-format";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
+import { BUNDLE_MAX_BYTES, parseBundle, planImport, safeWorkspacePath, type Bundle } from "@focus-notes/core/notes";
+import { parseSettings } from "@focus-notes/core/settings";
 import { GitSync, NO_GIT } from "./git/sync.ts";
 import type { BatchOp } from "./git/message.ts";
 
@@ -207,7 +210,8 @@ const writesDone = (p: string) => Promise.allSettled([...writeQueues].filter(([k
  * fails the earlier ones are undone. A write replaces a moved or linking note's text (links that
  * follow the move, FIL-09), and is undone by writing the old text back. Deletes go last, to the
  * system trash, until Git keeps them (FIL-10).
- * A move between roots changes visibility, which arrives with Git (WP-3.4), so it's refused here.
+ * A move between the Private and Public roots changes who can see it (FIL-06): the folders it needs
+ * in the other root are made, and taken away again if the batch is undone.
  */
 async function applyOps(raw: unknown): Promise<BatchOp[]> {
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > 5000) throw refuse("invalid");
@@ -219,7 +223,8 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
     if (o?.op === "move") {
       const from = opPath(o.from);
       const to = opPath(o.to);
-      if (from.root !== to.root) throw refuse("invalid");
+      // Only a workspace's two roots can be crossed (D-84); anything else stays in its root.
+      if (from.root !== to.root && !isWorkspace()) throw refuse("invalid");
       return { op: "move" as const, path: from.path, to: to.path, root: from.root };
     }
     if (o?.op === "write") {
@@ -250,6 +255,11 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         if (st.isDirectory() && inside(from, to)) throw refuse("intoItself");
         const caseOnly = from.toLowerCase() === to.toLowerCase();
         if (!caseOnly && existsSync(to)) throw refuse("taken");
+        if (!inside(op.root, to)) {
+          // Into the other root: the same folder path there is made if it's missing (Files and sharing → Changing visibility).
+          const made = await mkdir(dirname(to), { recursive: true });
+          if (made) undo.push(() => rm(made, { recursive: true, force: true }));
+        }
         if (!(await isDir(dirname(to)))) throw refuse("notFound");
         await writesDone(from);
         if (caseOnly && from !== to) {
@@ -278,6 +288,81 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
   // What was done, for the batch's one commit.
   return ops.map((op): BatchOp => (op.op === "move" ? { op: "move", from: op.path, to: op.to } : { op: op.op, path: op.path }));
 }
+
+// ---- importing browser notes (FRE-10, D-90) ----
+// Only this process reads the bundle: the renderer gets a handle and a count, never the file.
+let chosenBundle: { id: string; bundle: Bundle } | undefined;
+const fold = (p: string) => p.normalize("NFC").toLowerCase();
+/** Every note's path in a root, relative with forward slashes; dot folders skipped as in the scan. */
+async function notesIn(dir: string, base = dir, out: string[] = []): Promise<string[]> {
+  for (const d of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+    if (d.name.startsWith(".")) continue;
+    const p = join(dir, d.name);
+    if (d.isDirectory()) await notesIn(p, base, out);
+    else if (d.isFile() && isMarkdown(d.name)) out.push(relative(base, p).split(sep).join("/"));
+  }
+  return out;
+}
+async function chooseBundle(w: BrowserWindow | undefined): Promise<{ id: string; name: string; notes: number } | undefined> {
+  const opts = { properties: ["openFile" as const], filters: [{ name: "Focus Notes export", extensions: ["json"] }] };
+  const res = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
+  const file = res.canceled ? undefined : res.filePaths[0];
+  if (!file) return undefined;
+  // A file that's too large is refused unread (web-app.md → Moving notes).
+  const st = await stat(file).catch(() => undefined);
+  if (!st?.isFile()) throw new Error("invalid");
+  if (st.size > BUNDLE_MAX_BYTES) throw new Error("tooLarge");
+  let bundle: Bundle;
+  try {
+    bundle = parseBundle(await readFile(file, "utf8"));
+  } catch {
+    throw new Error("invalid");
+  }
+  chosenBundle = { id: randomUUID(), bundle };
+  return { id: chosenBundle.id, name: basename(file), notes: bundle.notes.length };
+}
+/**
+ * Adds the chosen bundle's notes to a root, all or nothing, never replacing a file (`wx`), then
+ * commits them as one batch in that root's repository.
+ */
+async function importBundle(id: unknown, to: unknown): Promise<{ added: number; renamed: number }> {
+  if (!chosenBundle || chosenBundle.id !== id) throw refuse("notFound");
+  const root = isWorkspace() ? roots().find((r) => r.id === to) : undefined;
+  if (!root) throw refuse("invalid");
+  await assertWritable(join(root.path, "x.md")).catch(() => { throw refuse("readOnly"); });
+  const { bundle } = chosenBundle;
+  const existing = new Map<string, string | undefined>((await notesIn(root.path)).map((p) => [p, undefined]));
+  // Only the notes a bundle note could be the same as are read, to skip identical copies.
+  const named = new Set(bundle.notes.map((n) => fold(safeWorkspacePath(n.path))));
+  for (const p of existing.keys()) if (named.has(fold(p))) existing.set(p, await readFile(join(root.path, ...p.split("/")), "utf8").catch(() => undefined));
+  const plan = planImport(bundle, existing, { foldCase: true });
+  const written: string[] = [];
+  const made: string[] = [];
+  try {
+    for (const n of plan) {
+      const abs = resolve(root.path, ...n.path.split("/"));
+      if (!inside(root.path, abs) || abs === root.path) throw refuse("invalid");
+      const dir = await mkdir(dirname(abs), { recursive: true });
+      if (dir) made.push(dir);
+      await writeFile(abs, n.text, { encoding: "utf8", flag: "wx" });
+      written.push(abs);
+    }
+  } catch (error) {
+    for (const p of written.reverse()) await rm(p, { force: true }).catch(() => {});
+    for (const d of made.reverse()) await rm(d, { recursive: true, force: true }).catch(() => {});
+    throw error instanceof Refused ? error : refuse("failed");
+  }
+  chosenBundle = undefined;
+  // Ordinary commits: one for the import, in the chosen root's repository (FRE-10, D-97).
+  if (written.length) await (await gitOpening)?.commitBatch(written.map((path) => ({ op: "import", path })));
+  return { added: plan.length, renamed: plan.filter((n) => n.renamed).length };
+}
+
+// ---- synced settings (PRV-03, D-46) ----
+// Only where there's a private repository to sync through; while the file exists, syncing is on.
+const privateDir = () => join(notesHome(), "private");
+const settingsFile = () => join(privateDir(), ".focus-notes", "settings.json");
+const settingsAvailable = () => isWorkspace() && existsSync(privateDir());
 
 /** Addresses a note's link may open in the browser: http, https, and mailto, well formed (EDT-13). */
 function isWebLink(url: string): boolean {
@@ -367,6 +452,26 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("workspace:apply", async (ops) => {
     const done = await applyOps(ops);
     await (await gitOpening)?.commitBatch(done);
+  });
+  handle("bundle:choose", () => chooseBundle(win()));
+  handle("bundle:import", (id, to) => importBundle(id, to));
+  handle("settings:load", async () => {
+    if (!settingsAvailable()) return { available: false };
+    const text = await readFile(settingsFile(), "utf8").catch(() => undefined);
+    return { available: true, ...(text !== undefined && text.length <= 64 * 1024 ? { text } : {}) };
+  });
+  handle("settings:save", async (text) => {
+    // Only a settings file, and only what's valid in it, is ever written (schemas/settings.schema.json).
+    const parsed = typeof text === "string" && text.length <= 64 * 1024 ? parseSettings(text) : undefined;
+    if (!settingsAvailable() || !parsed) throw new Error("Not a settings file");
+    await atomicWrite(settingsFile(), `${JSON.stringify(parsed, null, 2)}\n`);
+    withGit((g) => g.written(settingsFile()));
+  });
+  handle("settings:remove", async () => {
+    if (!settingsAvailable()) return;
+    await assertWritable(settingsFile());
+    await rm(settingsFile(), { force: true });
+    withGit((g) => g.written(settingsFile()));
   });
   handle("sync:now", async (reason) => {
     const g = await gitOpening;

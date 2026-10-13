@@ -11,12 +11,18 @@ export interface Change {
   from?: string;
 }
 
-/** A file operation from a batch (D-94), with repository-relative paths. */
+/**
+ * A file operation from a batch (D-94), with repository-relative paths. A move between Public and
+ * Private is a `visibility` change in each repository: the path it left, or the path it arrived at
+ * (FIL-06). `import` is a note added from a browser's export bundle (FRE-10).
+ */
 export type BatchOp =
   | { op: "createFolder"; path: string }
   | { op: "move"; from: string; to: string }
   | { op: "delete"; path: string }
-  | { op: "write"; path: string };
+  | { op: "write"; path: string }
+  | { op: "visibility"; path: string; to: "public" | "private" }
+  | { op: "import"; path: string };
 
 const parent = (p: string) => (p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "");
 const KEEP = "/.gitkeep";
@@ -79,7 +85,10 @@ export function saveMessage(changes: Change[]): string {
 export function batchMessage(ops: BatchOp[], changes: Change[] = []): string {
   const main = ops.filter((o) => o.op !== "write");
   const writes = ops.filter((o): o is Extract<BatchOp, { op: "write" }> => o.op === "write");
-  const movedTo = new Set(main.flatMap((o) => (o.op === "move" ? [o.to] : [])));
+  const movedTo = new Set(main.flatMap((o) => (o.op === "move" ? [o.to] : o.op === "visibility" ? [o.path] : [])));
+  const line = (o: (typeof main)[number]) => (o.op === "createFolder" ? `Create folder ${o.path}` : o.op === "delete" ? `Delete ${o.path}`
+    : o.op === "move" ? describe({ status: "R", from: o.from, path: o.to })
+      : o.op === "visibility" ? `Make ${o.to}: ${o.path}` : o.op === "import" ? `Import ${o.path}` : "");
   const linkNotes = writes.filter((w) => !movedTo.has(w.path)).length;
   const links = linkNotes ? [`Update links in ${plural(linkNotes, "note", "notes")}`] : [];
   if (!main.length) return changes.length ? message(saveMessage(changes), []) : "Update notes";
@@ -87,15 +96,14 @@ export function batchMessage(ops: BatchOp[], changes: Change[] = []): string {
   let subject: string;
   let lines: string[] = [];
   if (main.length === 1) {
-    const o = main[0]!;
-    subject = o.op === "createFolder" ? `Create folder ${o.path}`
-      : o.op === "delete" ? `Delete ${o.path}`
-        : o.op === "move" ? describe({ status: "R", from: o.from, path: o.to })
-          : "Update notes";
+    subject = line(main[0]!) || "Update notes";
   } else {
-    const kind = kinds.size === 1 ? main[0]!.op : "mixed";
-    lines = main.map((o) => (o.op === "createFolder" ? `Create folder ${o.path}` : o.op === "delete" ? `Delete ${o.path}` : o.op === "move" ? describe({ status: "R", from: o.from, path: o.to }) : ""));
-    if (kind === "move") {
+    const first = main[0]!;
+    const kind = kinds.size === 1 && !(first.op === "visibility" && main.some((o) => o.op === "visibility" && o.to !== first.to)) ? first.op : "mixed";
+    lines = main.map(line);
+    if (kind === "visibility" && first.op === "visibility") subject = `Make ${plural(main.length, "item", "items")} ${first.to}`;
+    else if (kind === "import") subject = `Import ${plural(main.length, "note", "notes")}`;
+    else if (kind === "move") {
       const dests = new Set(main.map((o) => (o.op === "move" ? parent(o.to) : "")));
       subject = dests.size === 1 ? `Move ${plural(main.length, "item", "items")} to ${[...dests][0] || "the top"}` : `Move ${plural(main.length, "item", "items")}`;
     } else if (kind === "delete") subject = `Delete ${plural(main.length, "item", "items")}`;

@@ -35,11 +35,20 @@ contextBridge.exposeInMainWorld("focusNotes", {
     writeFormat: (text: string) => ipcRenderer.invoke("workspace:writeFormat", text),
     renameNote: (from: string, to: string) => ipcRenderer.invoke("workspace:rename", from, to),
     apply: (ops: unknown[]) => ipcRenderer.invoke("workspace:apply", ops),
+    // Import notes (FRE-10): the main process shows the open dialog and reads the bundle itself.
+    chooseBundle: () => ipcRenderer.invoke("bundle:choose"),
+    importBundle: (id: string, to: "private" | "public") => ipcRenderer.invoke("bundle:import", id, to),
     onChange: (listener: (changes: unknown[]) => void) => {
       const handler = (_e: unknown, changes: unknown[]) => listener(changes);
       ipcRenderer.on("workspace:changed", handler);
       return () => ipcRenderer.removeListener("workspace:changed", handler);
     },
+  },
+  // Synced settings in the private repository (PRV-03): the main process checks what it writes.
+  settings: {
+    load: () => ipcRenderer.invoke("settings:load"),
+    save: (text: string) => ipcRenderer.invoke("settings:save", text),
+    remove: () => ipcRenderer.invoke("settings:remove"),
   },
   // Save and sync with the user's own Git (WP-3.3): intent-level only, never a Git command.
   sync: {
