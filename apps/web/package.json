@@ -1,0 +1,29 @@
+{
+  "name": "@focus-notes/web",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Focus Notes in the browser, deployed by each user's copy of the repository to their own GitHub Pages",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/entry.mjs && vite build --config vite.config.ts",
+    "dev": "node scripts/entry.mjs && vite --config vite.config.ts",
+    "preview": "vite preview --config vite.config.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@focus-notes/core": "workspace:*",
+    "@focus-notes/github": "workspace:*",
+    "@focus-notes/ui": "workspace:*",
+    "@focus-notes/ui-runtime": "workspace:*",
+    "@focus-notes/views": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@vanilla-extract/vite-plugin": "5.2.6",
+    "@vitejs/plugin-react": "6.1.2",
+    "axe-core": "4.14.0",
+    "vite": "8.3.3"
+  }
+}

@@ -24,6 +24,53 @@ export interface PlatformBridge {
   onSystemSchemeChange(listener: (scheme: "light" | "dark") => void): () => void;
   /** Marks the moment the caret is ready, for the start-time budget (PRF-02). */
   markReady?(): void;
+  /** Notes the shell keeps itself (the web app's IndexedDB). When present, Open… shows them in-app. */
+  listNotes?(): Promise<NoteSummary[]>;
+  /** Opens a page in a new tab or the default browser (GitHub's pre-filled pages). */
+  openExternal?(url: string): void;
+  /** Sync with the user's notes repository from the browser (PKG-08, FRE-09). */
+  github?: GitHubBridge;
+}
+
+export interface NoteSummary {
+  path: string;
+  updated: number;
+}
+
+export type SyncState = "local" | "idle" | "syncing" | "offline" | "error" | "signedOut";
+
+export interface SyncStatus {
+  state: SyncState;
+  login?: string;
+  /** owner/name of the notes repository. */
+  repo?: string;
+  /** Notes changed here and not yet on GitHub. */
+  pending: number;
+  /** For error states: what went wrong, in words. */
+  message?: string;
+}
+
+export class ConnectError extends Error {
+  /** badToken, noAccess, notFound, readOnly, offline, other */
+  readonly code: string;
+  constructor(code: string, message = code) {
+    super(message);
+    this.code = code;
+  }
+}
+
+export interface GitHubBridge {
+  status(): SyncStatus;
+  onStatus(listener: (s: SyncStatus) => void): () => void;
+  /** Checks the token and repository, stores the token (encrypted), and starts syncing. */
+  connect(repo: string, token: string): Promise<{ login: string; repo: string }>;
+  /** Deletes the token from this browser. Notes stay. */
+  disconnect(): Promise<void>;
+  syncNow(): Promise<void>;
+  /** Notes a pull changed here, so an open note can reload. */
+  onNotesChanged(listener: (paths: string[]) => void): () => void;
+  /** Conflict copies a pull made: [original, copy]. */
+  onConflict(listener: (original: string, copy: string) => void): () => void;
 }
 
 /** Per-device app state, stored in the app's data folder (see the data inventory). */
@@ -38,4 +85,6 @@ export interface AppStateFile {
   darkTheme?: string;
   contentFont?: string;
   uiScale?: number;
+  /** The web first run has been seen (FRE-09). */
+  webWelcomed?: boolean;
 }

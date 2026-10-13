@@ -75,6 +75,40 @@ importers:
         specifier: 8.3.3
         version: 8.3.3(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)
 
+  apps/web:
+    dependencies:
+      '@focus-notes/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@focus-notes/github':
+        specifier: workspace:*
+        version: link:../../packages/github
+      '@focus-notes/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@focus-notes/ui-runtime':
+        specifier: workspace:*
+        version: link:../../packages/ui-runtime
+      '@focus-notes/views':
+        specifier: workspace:*
+        version: link:../../packages/views
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.63.0
+        version: 1.63.0
+      '@vanilla-extract/vite-plugin':
+        specifier: 5.2.6
+        version: 5.2.6(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)(vite@8.3.3(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0))
+      '@vitejs/plugin-react':
+        specifier: 6.1.2
+        version: 6.1.2(vite@8.3.3(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0))
+      axe-core:
+        specifier: 4.14.0
+        version: 4.14.0
+      vite:
+        specifier: 8.3.3
+        version: 8.3.3(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)
+
   packages/core:
     dependencies:
       '@focus-notes/tokens':
@@ -116,6 +150,8 @@ importers:
       prosemirror-search:
         specifier: ^1.1.1
         version: 1.1.1
+
+  packages/github: {}
 
   packages/markdown:
     dependencies:
@@ -4695,7 +4731,7 @@ snapshots:
       es6-error: 4.1.1
       matcher: 3.0.0
       roarr: 2.15.4
-      semver: 7.7.4
+      semver: 7.8.5
       serialize-error: 7.0.1
     optional: true
 
@@ -5402,11 +5438,11 @@ snapshots:
 
   node-abi@4.36.0:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.5
 
   node-api-version@0.2.1:
     dependencies:
-      semver: 7.7.4
+      semver: 7.8.5
 
   node-gyp@12.4.0:
     dependencies:
@@ -5415,7 +5451,7 @@ snapshots:
       graceful-fs: 4.2.11
       nopt: 9.0.0
       proc-log: 6.1.0
-      semver: 7.7.4
+      semver: 7.8.5
       tar: 7.5.22
       tinyglobby: 0.2.17
       undici: 6.29.0

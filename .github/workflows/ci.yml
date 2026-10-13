@@ -41,6 +41,11 @@ jobs:
       - name: Journey tests
         if: runner.os != 'Linux'
         run: pnpm test:e2e
+      - name: Web app journeys (Chromium)
+        if: runner.os == 'Linux'
+        run: |
+          pnpm --filter @focus-notes/web exec playwright install --with-deps chromium
+          pnpm test:web
       - name: Keep test results
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

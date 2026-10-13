@@ -1,0 +1,78 @@
+{
+  "cmp": {
+    "textField": {
+      "gap": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
+      },
+      "height": {
+        "$type": "dimension",
+        "$value": "{size.controlL}"
+      },
+      "paddingInline": {
+        "$type": "dimension",
+        "$value": "{space.m}"
+      },
+      "radius": {
+        "$type": "dimension",
+        "$value": "{radius.control}"
+      },
+      "borderWidth": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      },
+      "border": {
+        "$type": "color",
+        "$value": "{color.borderStrong}"
+      },
+      "borderFocus": {
+        "$type": "color",
+        "$value": "{color.focusRing}"
+      },
+      "borderInvalid": {
+        "$type": "color",
+        "$value": "{color.danger}"
+      },
+      "background": {
+        "$type": "color",
+        "$value": "{color.surface}"
+      },
+      "text": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "placeholder": {
+        "$type": "color",
+        "$value": "{color.textPlaceholder}"
+      },
+      "label": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "description": {
+        "$type": "color",
+        "$value": "{color.textMuted}"
+      },
+      "font": {
+        "$type": "fontFamily",
+        "$value": "{font.ui}"
+      },
+      "fontSize": {
+        "$type": "dimension",
+        "$value": "{font.uiBody}"
+      },
+      "labelSize": {
+        "$type": "dimension",
+        "$value": "{font.uiBody}"
+      },
+      "labelWeight": {
+        "$type": "fontWeight",
+        "$value": "{font.weightSemibold}"
+      },
+      "captionSize": {
+        "$type": "dimension",
+        "$value": "{font.uiCaption}"
+      }
+    }
+  }
+}

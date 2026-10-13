@@ -1388,7 +1388,7 @@
         "architecture/web-app.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-6.2",
@@ -1415,7 +1415,7 @@
         "experience/first-run.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-7.1",

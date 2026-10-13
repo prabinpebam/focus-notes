@@ -8,7 +8,10 @@
     "vm.toolbar",
     "vm.shortcuts",
     "vm.find",
-    "vm.feedback"
+    "vm.feedback",
+    "vm.picker",
+    "vm.connect",
+    "vm.sync"
   ],
   "focus": "editor",
   "root": {
@@ -56,10 +59,10 @@
                 "t": "trigger.label"
               },
               "problemLabel": {
-                "t": "trigger.saveProblem"
+                "get": "vm.canvas.problemLabel"
               },
               "problem": {
-                "get": "vm.canvas.saveProblem"
+                "get": "vm.canvas.problem"
               },
               "shortcut": {
                 "get": "vm.toolbar.triggerShortcut"
@@ -789,6 +792,503 @@
                 }
               }
             ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "picker",
+        "when": {
+          "get": "vm.picker.open"
+        },
+        "props": {
+          "title": {
+            "t": "picker.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.picker.open"
+          },
+          "size": "s"
+        },
+        "on": {
+          "openChange": {
+            "run": "picker.setOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "slots": {
+          "toolbar": [
+            {
+              "type": "Stack",
+              "props": {
+                "gap": "s"
+              },
+              "children": [
+                {
+                  "type": "SearchField",
+                  "props": {
+                    "label": {
+                      "t": "picker.search"
+                    },
+                    "placeholder": {
+                      "t": "picker.search"
+                    },
+                    "clearLabel": {
+                      "t": "field.clear"
+                    },
+                    "autoFocus": true,
+                    "value": {
+                      "bind": "vm.picker.query"
+                    },
+                    "focusRequest": {
+                      "get": "vm.picker.focus"
+                    },
+                    "keyScope": "pickerField",
+                    "controls": "pickerList",
+                    "activeId": {
+                      "get": "vm.picker.activeId"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "get": "vm.picker.summary"
+                    },
+                    "role": "caption",
+                    "tone": "muted",
+                    "announce": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "ResultList",
+            "id": "pickerList",
+            "props": {
+              "label": {
+                "t": "picker.list"
+              },
+              "items": {
+                "get": "vm.picker.items"
+              },
+              "activeId": {
+                "get": "vm.picker.activeId"
+              }
+            },
+            "on": {
+              "action": {
+                "run": "picker.choose",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              },
+              "activeChange": {
+                "run": "picker.setActive",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "connect",
+        "when": {
+          "get": "vm.connect.open"
+        },
+        "props": {
+          "title": {
+            "get": "vm.connect.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.connect.open"
+          },
+          "size": "s"
+        },
+        "on": {
+          "openChange": {
+            "run": "connect.setOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "switch": {
+              "get": "vm.connect.step"
+            },
+            "cases": {
+              "welcome": {
+                "type": "Stack",
+                "props": {
+                  "gap": "l"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "connect.welcome"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s",
+                      "justify": "end",
+                      "wrap": true
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.github.connect"
+                          },
+                          "variant": "secondary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "connect.begin"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.connect.startWriting"
+                          },
+                          "variant": "primary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "connect.startWriting"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "repo": {
+                "type": "Stack",
+                "props": {
+                  "gap": "l"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "connect.repoIntro"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s"
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.connect.openRepoPage"
+                          },
+                          "icon": "open"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "connect.openRepoPage"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "TextField",
+                    "props": {
+                      "label": {
+                        "t": "connect.repoLabel"
+                      },
+                      "description": {
+                        "t": "connect.repoHelp"
+                      },
+                      "value": {
+                        "bind": "vm.connect.repo"
+                      },
+                      "invalid": {
+                        "get": "vm.connect.hasError"
+                      },
+                      "focusRequest": {
+                        "get": "vm.connect.focus"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "when": {
+                      "get": "vm.connect.hasError"
+                    },
+                    "props": {
+                      "value": {
+                        "get": "vm.connect.error"
+                      },
+                      "tone": "danger",
+                      "announce": true
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s",
+                      "justify": "end"
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.connect.back"
+                          },
+                          "variant": "secondary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "connect.back"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.connect.next"
+                          },
+                          "variant": "primary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "connect.toToken"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "token": {
+                "type": "Stack",
+                "props": {
+                  "gap": "l"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "connect.tokenIntro"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s"
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.connect.openTokenPage"
+                          },
+                          "icon": "open"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "connect.openTokenPage"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.connect.tokenHelp"
+                      },
+                      "tone": "muted"
+                    }
+                  },
+                  {
+                    "type": "TextField",
+                    "props": {
+                      "label": {
+                        "t": "connect.tokenLabel"
+                      },
+                      "type": "password",
+                      "value": {
+                        "bind": "vm.connect.token"
+                      },
+                      "invalid": {
+                        "get": "vm.connect.hasError"
+                      },
+                      "focusRequest": {
+                        "get": "vm.connect.focus"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "when": {
+                      "get": "vm.connect.hasError"
+                    },
+                    "props": {
+                      "value": {
+                        "get": "vm.connect.error"
+                      },
+                      "tone": "danger",
+                      "announce": true
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s",
+                      "justify": "end"
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.connect.back"
+                          },
+                          "variant": "secondary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "connect.back"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.connect.verify"
+                          },
+                          "variant": "primary",
+                          "busy": {
+                            "get": "vm.connect.busy"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "connect.verify"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "check": {
+                "type": "Inline",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Spinner",
+                    "props": {
+                      "label": {
+                        "t": "connect.checking"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "connect.checking"
+                      }
+                    }
+                  }
+                ]
+              },
+              "done": {
+                "type": "Stack",
+                "props": {
+                  "gap": "l"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.connect.doneText"
+                      },
+                      "announce": true
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "justify": "end"
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.connect.startWriting"
+                          },
+                          "variant": "primary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "connect.setOpen",
+                            "args": {
+                              "open": false
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
           }
         ]
       },

@@ -73,6 +73,9 @@
         1.25,
         1.5
       ]
+    },
+    "webWelcomed": {
+      "type": "boolean"
     }
   },
   "additionalProperties": false

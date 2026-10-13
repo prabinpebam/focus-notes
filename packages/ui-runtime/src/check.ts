@@ -51,7 +51,6 @@ export function checkUi(inputs: CheckInputs): Problem[] {
     if (doc.id !== name) add("references", "/id", `id "${doc.id}" should match the registered name "${name}"`);
     for (const vm of doc.viewModels) if (!inputs.viewModels.has(vm)) add("references", "/viewModels", `unknown view model ${vm}`);
     const ids = new Set<string>();
-    let primaryButtons = 0;
 
     // Types a read can resolve to, by scope.
     const typeOfRead = (path: string, scope: Record<string, JsonSchema>): JsonSchema | undefined | "unknown-scope" => {
@@ -132,7 +131,9 @@ export function checkUi(inputs: CheckInputs): Problem[] {
       }
     };
 
-    const walk = (node: Node, at: string, scope: Record<string, JsonSchema>, parent?: Contract) => {
+    // A view surface is the view itself, each dialog or layer, and each case of a switch (they never show together).
+    const primaries = new Map<string, number>();
+    const walk = (node: Node, at: string, scope: Record<string, JsonSchema>, parent?: Contract, surface = "/root") => {
       if ("when" in node && node.when !== undefined) checkValue(node.when as Value, { kind: "boolean" }, `${at}/when`, scope);
       if (isSlot(node)) { add("references", at, "slot outlets are only allowed in fragments"); return; }
       if (isFragment(node)) { if (!(node.use in inputs.fragments)) add("references", at, `unknown fragment ${node.use}`); return; }
@@ -140,8 +141,8 @@ export function checkUi(inputs: CheckInputs): Problem[] {
         const t = checkRead(node.each.get, `${at}/each`, scope);
         if (t && t.type !== "array") add("types", `${at}/each`, `"${node.each.get}" isn't a list`);
         if (!node.empty) add("accessibility", at, "a repeat needs an empty case");
-        walk(node.render, `${at}/render`, { ...scope, [node.as]: t?.items ?? {} }, parent);
-        if (node.empty) walk(node.empty, `${at}/empty`, scope, parent);
+        walk(node.render, `${at}/render`, { ...scope, [node.as]: t?.items ?? {} }, parent, surface);
+        if (node.empty) walk(node.empty, `${at}/empty`, scope, parent, `${at}/empty`);
         return;
       }
       if (isSwitch(node)) {
@@ -151,7 +152,7 @@ export function checkUi(inputs: CheckInputs): Problem[] {
           const t = typeOfRead(v.get, scope);
           if (t && t !== "unknown-scope" && t.enum) for (const e of t.enum) if (!(String(e) in node.cases)) add("accessibility", `${at}/cases`, `no case for "${e}"`);
         }
-        for (const [k, n] of Object.entries(node.cases)) walk(n, `${at}/cases/${k}`, scope, parent);
+        for (const [k, n] of Object.entries(node.cases)) walk(n, `${at}/cases/${k}`, scope, parent, `${at}/cases/${k}`);
         return;
       }
       if (!isComponent(node)) return;
@@ -172,7 +173,8 @@ export function checkUi(inputs: CheckInputs): Problem[] {
       }
       if (c.a11y.name && c.props[c.a11y.name] && "required" in c.props[c.a11y.name]! && (c.props[c.a11y.name] as { required?: boolean }).required && props[c.a11y.name] === undefined)
         add("accessibility", at, `${node.type} needs an accessible name (${c.a11y.name})`);
-      if (node.type === "Button" && props.variant === "primary") primaryButtons++;
+      const here = node.type === "Dialog" || node.type === "DialogPanel" || node.type === "Layer" ? at : surface;
+      if (node.type === "Button" && props.variant === "primary") primaries.set(here, (primaries.get(here) ?? 0) + 1);
       for (const [e, actions] of Object.entries(node.on ?? {})) checkActions(actions, `${at}/on/${e}`, scope, c.events[e]?.payload);
       const kids = node.children ?? [];
       const slot = c.slots.default;
@@ -180,15 +182,15 @@ export function checkUi(inputs: CheckInputs): Problem[] {
         if (slot.min !== undefined && kids.length < slot.min) add("design", `${at}/children`, `${node.type} needs at least ${slot.min} child`);
         if (slot.max !== undefined && kids.length > slot.max) add("design", `${at}/children`, `${node.type} takes at most ${slot.max} children`);
       }
-      kids.forEach((k, i) => walk(k, `${at}/children/${i}`, scope, c));
-      for (const [name, nodes] of Object.entries(node.slots ?? {})) nodes.forEach((k, i) => walk(k, `${at}/slots/${name}/${i}`, scope, undefined));
+      kids.forEach((k, i) => walk(k, `${at}/children/${i}`, scope, c, here));
+      for (const [name, nodes] of Object.entries(node.slots ?? {})) nodes.forEach((k, i) => walk(k, `${at}/slots/${name}/${i}`, scope, undefined, here));
     };
 
     walk(doc.root, "/root", {});
     if (!isComponent(doc.root) || doc.root.type !== "AppRoot") add("design", "/root", "a view's root is AppRoot");
     if (!doc.focus) add("accessibility", "/focus", "every view says where focus goes when it opens");
     else if (!ids.has(doc.focus)) add("references", "/focus", `focus target "${doc.focus}" isn't an id in this view`);
-    if (primaryButtons > 1) add("design", "/root", "at most one primary button per view surface");
+    for (const [where, n] of primaries) if (n > 1) add("design", where, "at most one primary button per view surface");
   }
   return problems;
 }

@@ -4,7 +4,8 @@ import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, UI_SCALES, themeById, t
 import { cheatSheet, displayPlatform, EDITOR_COMMANDS, NATIVE_KEYS, type CheatSheetLayer, type CheatSheetPlatform } from "./keymap.ts";
 import { ViewModelRegistry } from "./view-models.ts";
 import { MessageCatalog, type Messages } from "./messages.ts";
-import type { PlatformBridge, AppStateFile } from "./bridge.ts";
+import type { PlatformBridge, AppStateFile, SyncStatus } from "./bridge.ts";
+import { registerBrowserFeatures, PICKER_CLOSED, CONNECT_CLOSED, type PickerState, type ConnectState } from "./browser.ts";
 import type { Platform } from "./commands.ts";
 import { waits } from "@focus-notes/tokens";
 import { TaskTracker, type Clock, type TaskView } from "./tasks.ts";
@@ -42,7 +43,13 @@ export interface AppState {
     toasts: ToastState[];
     /** Bumped to move focus to the newest toast's action (F6). */
     toastFocus: number;
+    /** Open… for notes the shell keeps itself (the web app). */
+    picker: PickerState;
+    /** The web first run and Connect GitHub (FRE-09). */
+    connect: ConnectState;
   };
+  /** Sync with GitHub from the browser (PKG-08); "local" when not connected or not in a browser. */
+  sync: SyncStatus;
   /** Waits a person started (PRF-08). */
   tasks: TaskView[];
   /** The latest polite announcement for screen readers; `n` makes repeats announce again. */
@@ -141,7 +148,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0 },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, connect: CONNECT_CLOSED },
+    sync: bridge.github?.status() ?? { state: "local", pending: 0 },
     tasks: [],
     announcement: { text: "", n: 0 },
   });
@@ -235,7 +243,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     icon: "open",
     shortcut: { default: "Mod+O" },
     layer: "basic", group: "app",
-    run: async () => {
+    run: async (_a, ctx) => {
+      // Shells that keep notes themselves (the web app) show them in an in-app dialog.
+      if (bridge.listNotes) return ctx.run("picker.open");
       const path = await bridge.chooseNote();
       if (path) await load(path);
     },
@@ -550,6 +560,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     run: () => bridge.markReady?.(),
   });
 
+  // Menu groups only some shells have (the web app's GitHub group), placed before Help.
+  const extraMenu: { id: string; label: string; items: MenuEntry[] }[] = [];
+  const browser = registerBrowserFeatures({
+    store, commands, viewModels, catalog, bridge, load, toast, tracker, menu: extraMenu,
+    appState: () => appState, persistAppState,
+  });
+
   // ---- view models ----
   // A command's busy sign and words come from the task tracker (PRF-08).
   const busyOf = (id: string) => {
@@ -615,7 +632,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     select: (s) => ({
       open: s.ui.toolbarOpen,
       items: DEFAULT_TOOLBAR.map(describeItem),
-      more: MORE_MENU.map((g) => ({
+      more: [...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({
         id: g.id, label: catalog.format(g.label),
         items: g.items.map((e) => (typeof e === "string" ? describeItem(e) : { id: e.submenu, label: catalog.format(e.label), items: e.items.map(describeItem) })),
       })),
@@ -744,6 +761,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         status: { type: "string", enum: ["loading", "ready", "error"] },
         saveState: { type: "string", enum: ["saved", "saving", "unsaved", "error"] },
         saveProblem: { type: "boolean" },
+        problem: { type: "boolean" },
+        problemLabel: { type: "string" },
       },
     },
     select: (s) => ({
@@ -752,6 +771,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       status: s.note.status,
       saveState: s.note.saveState,
       saveProblem: s.note.saveState === "error",
+      // The trigger's dot shows a save problem first, then a sync problem (Feedback → Save and sync status).
+      problem: s.note.saveState === "error" || s.sync.state === "error" || s.sync.state === "signedOut",
+      problemLabel: s.note.saveState === "error" ? (catalog.has("trigger.saveProblem") ? catalog.format("trigger.saveProblem") : "")
+        : s.sync.state === "error" || s.sync.state === "signedOut" ? catalog.format(`sync.state.${s.sync.state}`, { pending: s.sync.pending, repo: s.sync.repo ?? "", message: s.sync.message ?? "" }) : "",
     }),
   });
 
@@ -783,6 +806,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const path = appState.lastNotePath ?? (await bridge.defaultNotePath());
       await load(path);
       if (store.state.note.status === "error" && appState.lastNotePath) await load(await bridge.defaultNotePath());
+      browser.start();
     },
   };
 }
