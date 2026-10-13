@@ -81,10 +81,29 @@ describe("saving (EDT-11 write-to-disk part, QLT-03)", () => {
     const app = createApp(f.bridge, messages);
     await app.start();
     await app.commands.run("note.setContent", { value: "keep me" });
-    await app.flush();
+    expect(await app.flush()).toBe(false);
     expect(app.store.state.note.saveState).toBe("error");
     expect(app.store.state.note.markdown).toBe("keep me");
     expect(app.viewModels.select("vm.canvas", app.store.state).saveProblem).toBe(true);
+  });
+  it("retries a failed save on flush, and never switches notes while unsaved (review issue 3)", async () => {
+    let fail = true;
+    const f = fakeBridge({ "/other.md": "Other" }, {});
+    const realWrite = f.bridge.writeNote;
+    f.bridge.writeNote = async (p, c) => { if (fail) throw new Error("locked"); await realWrite(p, c); };
+    f.bridge.chooseNote = async () => "/other.md";
+    const app = createApp(f.bridge, messages);
+    await app.start();
+    await app.commands.run("note.setContent", { value: "precious" });
+    expect(await app.flush()).toBe(false);
+    await app.commands.run("note.open");
+    expect(app.store.state.note.path).toBe("/notes/Welcome.md");
+    expect(app.store.state.note.markdown).toBe("precious");
+    fail = false;
+    expect(await app.flush()).toBe(true);
+    expect(f.files["/notes/Welcome.md"]).toBe("precious");
+    await app.commands.run("note.open");
+    expect(app.store.state.note.path).toBe("/other.md");
   });
 });
 

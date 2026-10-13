@@ -5,7 +5,7 @@ import { views, messages } from "@focus-notes/views";
 
 interface DesktopBridge extends PlatformBridge {
   setWindowScheme(s: "light" | "dark"): void;
-  onFlushRequest(listener: () => Promise<void>): void;
+  onFlushRequest(listener: () => Promise<boolean>): void;
 }
 declare global {
   interface Window {

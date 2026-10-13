@@ -19,5 +19,7 @@
       "noiseAbsolute": 12,
       "unit": "%"
     }
-  }
+  },
+  "baselinePlatform": "win32",
+  "ciMargin": 1.5
 }

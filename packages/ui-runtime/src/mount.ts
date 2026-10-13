@@ -29,11 +29,17 @@ export function mountApp(el: Element, { app, views, view = "canvas" }: MountOpti
     e.preventDefault();
     void app.commands.run(id);
   });
+  // A file dropped outside the editor must never navigate the window away from the app.
+  const stopNavigation = (e: DragEvent) => {
+    if (e.dataTransfer?.types.includes("Files")) e.preventDefault();
+  };
+  window.addEventListener("dragover", stopNavigation);
+  window.addEventListener("drop", stopNavigation);
   return root;
 }
 
-/** Collects pending text from every surface, then writes it (QLT-03). Shells call this before closing. */
-export async function flushApp(app: App): Promise<void> {
+/** Collects pending text from every surface, then writes it (QLT-03). Resolves to whether it's saved. */
+export async function flushApp(app: App): Promise<boolean> {
   window.dispatchEvent(new Event(FLUSH_EVENT));
-  await app.flush();
+  return app.flush();
 }

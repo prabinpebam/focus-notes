@@ -2,10 +2,11 @@
  * The Electron main process (PKG-03, SEC-01, PKG-06, PRV-01): a hardened shell that owns the
  * window, the file system, and nothing else. It makes no network requests and allows none.
  */
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, session, shell } from "electron";
-import { mkdir, readFile, rename, writeFile, stat } from "node:fs/promises";
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { mkdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 const customWindow = process.argv.includes("--custom-window") && platform !== "macos";
@@ -34,27 +35,54 @@ async function atomicWrite(path: string, content: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   const tmp = `${path}.${process.pid}.${Date.now()}.tmp`;
   await writeFile(tmp, content, "utf8");
-  await rename(tmp, path);
+  // On Windows, sync clients and antivirus briefly lock files; retry before reporting a failure.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await rename(tmp, path);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (attempt < 4 && (code === "EPERM" || code === "EBUSY" || code === "EACCES")) {
+        await new Promise((r) => setTimeout(r, 50 * 2 ** attempt));
+        continue;
+      }
+      await rm(tmp, { force: true });
+      throw error;
+    }
+  }
+}
+
+/** The renderer page every IPC request must come from (review issue 4). */
+const appPageUrl = () => pathToFileURL(join(import.meta.dirname, "..", "renderer", "index.html")).href;
+function fromApp(e: IpcMainInvokeEvent | IpcMainEvent): boolean {
+  const url = e.senderFrame?.url ?? "";
+  return url.split("?")[0]!.split("#")[0] === appPageUrl();
+}
+function handle(channel: string, fn: (...args: any[]) => unknown): void {
+  ipcMain.handle(channel, (e, ...args) => {
+    if (!fromApp(e)) throw new Error("Refused: request didn't come from the app");
+    return fn(...args);
+  });
 }
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
-  ipcMain.handle("note:read", async (_e, p) => readFile(notePath(p), "utf8"));
-  ipcMain.handle("note:write", async (_e, p, content) => {
+  handle("note:read", async (p) => readFile(notePath(p), "utf8"));
+  handle("note:write", async (p, content) => {
     if (typeof content !== "string") throw new Error("Content must be text");
     await atomicWrite(notePath(p), content);
   });
-  ipcMain.handle("note:choose", async () => {
+  handle("note:choose", async () => {
     const w = win();
     const opts = { properties: ["openFile" as const], defaultPath: notesHome(), filters: [{ name: "Markdown", extensions: ["md", "markdown"] }] };
     const res = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
     return res.canceled ? undefined : res.filePaths[0];
   });
-  ipcMain.handle("note:default", async () => {
+  handle("note:default", async () => {
     const p = join(notesHome(), "Welcome.md");
     if (!existsSync(p)) await atomicWrite(p, WELCOME);
     return p;
   });
-  ipcMain.handle("state:load", async () => {
+  handle("state:load", async () => {
     try {
       const s = JSON.parse(await readFile(stateFile(), "utf8"));
       return s && s.version === 1 ? s : { version: 1 };
@@ -62,11 +90,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       return { version: 1 };
     }
   });
-  ipcMain.handle("state:save", async (_e, s) => {
+  handle("state:save", async (s) => {
     if (!s || s.version !== 1) throw new Error("Unknown state version");
     await atomicWrite(stateFile(), JSON.stringify(s, null, 2));
   });
-  ipcMain.on("app:ready", () => {
+  ipcMain.on("app:ready", (e) => {
+    if (!fromApp(e)) return;
     // From process start (PRF-02: "desktop start to an editable caret"), including Electron's own startup.
     const ms = Math.round(process.uptime() * 1000);
     process.stdout.write(`[focus-notes] ready-ms=${ms}\n`);
@@ -112,19 +141,43 @@ function createWindow(): BrowserWindow {
   win.once("ready-to-show", () => win.show());
   void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform } });
 
-  // Ask the renderer to save pending changes before the window closes (QLT-03).
-  let flushed = false;
+  // Ask the renderer to save pending changes before the window closes (QLT-03). If saving fails,
+  // the person decides; text is never discarded silently.
+  let closing = false;
+  let allowClose = false;
   win.on("close", (e) => {
-    if (flushed) return;
+    if (allowClose) return;
     e.preventDefault();
-    const done = () => {
-      flushed = true;
-      win.close();
+    if (closing) return;
+    closing = true;
+    const decide = async (ok: boolean) => {
+      if (ok) {
+        allowClose = true;
+        win.close();
+        return;
+      }
+      const { response } = await dialog.showMessageBox(win, {
+        type: "warning",
+        message: "Couldn't save your latest changes",
+        detail: "Your text is still in the window. If you close now, the changes since the last save will be lost.",
+        buttons: ["Keep the window open", "Close without saving"],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true,
+      });
+      closing = false;
+      if (response === 1) {
+        allowClose = true;
+        win.close();
+      }
     };
-    const timer = setTimeout(done, 2000);
-    ipcMain.once("app:flushed", () => {
+    const timer = setTimeout(() => {
+      ipcMain.removeAllListeners("app:flushed");
+      void decide(false);
+    }, 5000);
+    ipcMain.once("app:flushed", (_e, ok: unknown) => {
       clearTimeout(timer);
-      done();
+      void decide(ok === true);
     });
     win.webContents.send("app:flush");
   });
@@ -141,9 +194,9 @@ function createWindow(): BrowserWindow {
 }
 
 app.on("web-contents-created", (_e, contents) => {
-  contents.on("will-navigate", (e, url) => {
-    if (!url.startsWith("file:")) e.preventDefault();
-  });
+  // The app never navigates: dropped files, links, and redirects can't replace it (review issue 4).
+  contents.on("will-navigate", (e) => e.preventDefault());
+  contents.on("will-redirect", (e) => e.preventDefault());
   contents.setWindowOpenHandler(({ url }) => {
     // Links open in the user's browser, only for https and mailto (Views as data → Security).
     if (/^(https|mailto):/i.test(url)) void shell.openExternal(url);

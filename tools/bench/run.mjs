@@ -60,18 +60,23 @@ mkdirSync(join(root, "test-results"), { recursive: true });
 writeFileSync(join(root, "test-results", "bench.json"), JSON.stringify(report, null, 2));
 
 const against = arg("--compare") ? JSON.parse(readFileSync(argValue("--compare"), "utf8")).measures : undefined;
+// Budgets are set for reference hardware; CI runners get the margin the spec allows (Performance and quality).
+const margin = process.env.CI ? (budgets.ciMargin ?? 1.5) : 1;
+// Baselines only mean something on the machine that recorded them.
+const baselinesApply = !process.env.CI && budgets.baselinePlatform === process.platform;
 let failed = false;
 for (const [name, value] of Object.entries(report.measures)) {
   const b = budgets.measures[name];
-  const base = against?.[name] ?? b?.baseline;
+  const base = against?.[name] ?? (baselinesApply ? b?.baseline : undefined);
   const change = base != null ? ` (${value >= base ? "+" : ""}${(((value - base) / Math.abs(base || 1)) * 100).toFixed(1)}% vs ${base})` : "";
-  const over = b && value > b.budget;
+  const over = b && value > b.budget * margin;
   const regressed = b && base != null && !arg("--write-baseline") && (b.noiseAbsolute != null ? value - base > b.noiseAbsolute : value > base * (1 + b.noise));
   if (over || regressed) failed = true;
-  console.log(`${over || regressed ? "✗" : "✓"} ${name}: ${value}${b?.unit ?? ""} (budget ${b?.budget}${b?.unit ?? ""})${change}`);
+  console.log(`${over || regressed ? "✗" : "✓"} ${name}: ${value}${b?.unit ?? ""} (budget ${b?.budget * margin}${b?.unit ?? ""}${margin !== 1 ? ", CI margin" : ""})${change}`);
 }
 if (arg("--write-baseline")) {
   for (const [name, value] of Object.entries(report.measures)) if (budgets.measures[name]) budgets.measures[name].baseline = value;
+  budgets.baselinePlatform = process.platform;
   writeFileSync(budgetsPath, JSON.stringify(budgets, null, 2) + "\n");
   console.log("Baselines written to tools/bench/budgets.json.");
 }

@@ -11,6 +11,7 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkFrontmatter from "remark-frontmatter";
+import remarkDirective from "remark-directive";
 import { toMarkdown, type Options as ToMarkdownOptions } from "mdast-util-to-markdown";
 import { gfmToMarkdown } from "mdast-util-gfm";
 import type * as Md from "mdast";
@@ -34,10 +35,15 @@ export interface SourceBlock {
 export interface Parsed {
   doc: PMNode;
   blocks: SourceBlock[];
+  /** The source without a leading byte-order mark. */
   source: string;
+  /** Whether the file started with a byte-order mark, written back on save. */
+  bom: boolean;
+  /** The file's line ending, used for any text the serializer generates. */
+  eol: "\n" | "\r\n";
 }
 
-const processor = unified().use(remarkParse).use(remarkGfm).use(remarkFrontmatter, ["yaml"]);
+const processor = unified().use(remarkParse).use(remarkGfm).use(remarkFrontmatter, ["yaml"]).use(remarkDirective);
 
 const MARK_ORDER = ["link", "bold", "italic", "strike", "code"];
 const KEPT_ATTRS: Record<string, string[]> = {
@@ -45,6 +51,7 @@ const KEPT_ATTRS: Record<string, string[]> = {
   orderedList: ["start"],
   codeBlock: ["language"],
   rawMarkdown: ["source"],
+  taskItem: ["checked"],
   link: ["href", "title"],
 };
 
@@ -61,7 +68,14 @@ export const fingerprint = (node: PMNode): string => JSON.stringify(canonical(no
 
 // ---------------- parse ----------------
 
-export function parseMarkdown(source: string): Parsed {
+let currentSource = "";
+type SourcePosition = { start: { offset?: number }; end: { offset?: number } };
+
+export function parseMarkdown(input: string): Parsed {
+  const bom = input.startsWith("\uFEFF");
+  const source = bom ? input.slice(1) : input;
+  const eol = /\r\n/.test(source) ? "\r\n" : "\n";
+  currentSource = source;
   const tree = processor.parse(source) as Md.Root;
   const content: PMNode[] = [];
   const blocks: SourceBlock[] = [];
@@ -73,7 +87,7 @@ export function parseMarkdown(source: string): Parsed {
     blocks.push({ fingerprint: fingerprint(node), start, end });
   }
   if (content.length === 0) content.push({ type: "paragraph" });
-  return { doc: { type: "doc", content }, blocks, source };
+  return { doc: { type: "doc", content }, blocks, source, bom, eol };
 }
 
 const raw = (src: string): PMNode => ({ type: "rawMarkdown", attrs: { source: src } });
@@ -104,14 +118,17 @@ function convertBlock(node: Md.RootContent): PMNode | undefined {
       return { type: "blockquote", content: kids as PMNode[] };
     }
     case "list": {
-      if (node.children.some((i) => i.checked !== null && i.checked !== undefined)) return undefined;
+      const checks = node.children.map((i) => i.checked);
+      const isTask = checks.every((c) => c === true || c === false);
+      if (!isTask && checks.some((c) => c === true || c === false)) return undefined; // mixed lists stay verbatim
       const items: PMNode[] = [];
       for (const item of node.children) {
         const kids = item.children.map((c) => convertBlock(c));
         if (kids.some((k) => !k)) return undefined;
         if (kids.length === 0 || kids[0]!.type !== "paragraph") kids.unshift({ type: "paragraph" });
-        items.push({ type: "listItem", content: kids as PMNode[] });
+        items.push(isTask ? { type: "taskItem", attrs: { checked: item.checked === true }, content: kids as PMNode[] } : { type: "listItem", content: kids as PMNode[] });
       }
+      if (isTask) return node.ordered ? undefined : { type: "taskList", content: items };
       return node.ordered
         ? { type: "orderedList", attrs: { start: node.start ?? 1 }, content: items }
         : { type: "bulletList", content: items };
@@ -133,9 +150,33 @@ function convertBlock(node: Md.RootContent): PMNode | undefined {
 const para = (content: PMNode[]): PMNode => (content.length ? { type: "paragraph", content } : { type: "paragraph" });
 
 function convertInline(nodes: Md.PhrasingContent[], marks: PMMark[]): PMNode[] | undefined {
+  const out = convertInlineRaw(nodes, marks);
+  return out ? mergeText(out) : undefined;
+}
+
+/** ProseMirror merges adjacent text with the same marks; do the same so fingerprints match. */
+function mergeText(nodes: PMNode[]): PMNode[] {
   const out: PMNode[] = [];
   for (const n of nodes) {
+    const prev = out.at(-1);
+    if (prev && prev.type === "text" && n.type === "text" && JSON.stringify(prev.marks ?? []) === JSON.stringify(n.marks ?? [])) {
+      out[out.length - 1] = { ...prev, text: (prev.text ?? "") + (n.text ?? "") };
+    } else out.push(n);
+  }
+  return out;
+}
+
+function convertInlineRaw(nodes: Md.PhrasingContent[], marks: PMMark[]): PMNode[] | undefined {
+  const out: PMNode[] = [];
+  for (const n of nodes as (Md.PhrasingContent | { type: "textDirective"; position?: SourcePosition })[]) {
     switch (n.type) {
+      case "textDirective": {
+        // Ordinary text that happens to look like `:name`, kept as the text it is.
+        const p = (n as { position?: SourcePosition }).position;
+        if (!p) return undefined;
+        out.push(textNode(currentSource.slice(p.start.offset, p.end.offset), marks));
+        break;
+      }
       case "text":
         if (n.value) out.push(textNode(n.value, marks));
         break;
@@ -153,7 +194,8 @@ function convertInline(nodes: Md.PhrasingContent[], marks: PMMark[]): PMNode[] |
         break;
       case "link": {
         const inner = convertInline(n.children, [...marks, { type: "link", attrs: { href: n.url, title: n.title ?? null } }]);
-        if (!inner) return undefined;
+        // A link with no visible text can't be edited; keep its block verbatim instead of losing it.
+        if (!inner || inner.length === 0) return undefined;
         out.push(...inner);
         break;
       }
@@ -184,28 +226,34 @@ const MD_OPTIONS: ToMarkdownOptions = {
 };
 
 export function serializeMarkdown(doc: PMNode, original?: Parsed): string {
-  const nodes = (doc.content ?? []).filter((n) => !(n.type === "paragraph" && !n.content?.length));
   const src = original?.source ?? "";
   const blocks = original?.blocks ?? [];
+  const eol = original?.eol ?? "\n";
+  const bom = original?.bom ? "\uFEFF" : "";
+  const generated = (text: string) => (eol === "\n" ? text : text.replace(/\r?\n/g, eol));
   let out = "";
+  let written = 0;
   let prev = -1; // index of the previous original block that was reused
   let prevWasReused = false;
-  nodes.forEach((node, i) => {
+  for (const node of doc.content ?? []) {
     const fp = fingerprint(node);
     let match = -1;
     for (let k = prev + 1; k < blocks.length; k++) if (blocks[k]!.fingerprint === fp) { match = k; break; }
-    const text = match >= 0 ? src.slice(blocks[match]!.start, blocks[match]!.end) : blockToMarkdown(node);
-    if (i === 0) out += match === 0 ? src.slice(0, blocks[0]!.start) : "";
+    // Markdown can't hold an empty paragraph, so new ones are dropped. Ones that came from the file are kept.
+    if (match < 0 && node.type === "paragraph" && !node.content?.length) continue;
+    const text = match >= 0 ? src.slice(blocks[match]!.start, blocks[match]!.end) : generated(blockToMarkdown(node));
+    if (written === 0) out += match === 0 ? src.slice(0, blocks[0]!.start) : "";
     else if (match >= 0 && prevWasReused && match === prev + 1) out += src.slice(blocks[prev]!.end, blocks[match]!.start);
-    else out += "\n\n";
+    else out += eol + eol;
     out += text;
+    written++;
     prevWasReused = match >= 0;
     if (match >= 0) prev = match;
-  });
-  if (nodes.length === 0) return blocks.length === 0 ? src : "";
+  }
+  if (written === 0) return bom + (blocks.length === 0 ? src : "");
   const lastIsOriginalLast = prevWasReused && prev === blocks.length - 1;
-  out += lastIsOriginalLast ? src.slice(blocks[prev]!.end) : "\n";
-  return out;
+  out += lastIsOriginalLast ? src.slice(blocks[prev]!.end) : eol;
+  return bom + out;
 }
 
 export function blockToMarkdown(node: PMNode): string {
@@ -232,6 +280,18 @@ function toMdastBlock(node: PMNode): Md.RootContent {
         children: (node.content ?? []).map((li) => ({
           type: "listItem",
           spread: false,
+          children: (li.content ?? []).map(toMdastBlock) as Md.BlockContent[],
+        })),
+      };
+    case "taskList":
+      return {
+        type: "list",
+        ordered: false,
+        spread: false,
+        children: (node.content ?? []).map((li) => ({
+          type: "listItem",
+          spread: false,
+          checked: Boolean(li.attrs?.checked),
           children: (li.content ?? []).map(toMdastBlock) as Md.BlockContent[],
         })),
       };

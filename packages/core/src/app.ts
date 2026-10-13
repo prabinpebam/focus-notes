@@ -29,8 +29,8 @@ export interface App {
   messages: MessageCatalog;
   bridge: PlatformBridge;
   start(): Promise<void>;
-  /** Writes any pending change now. Called before the window closes. */
-  flush(): Promise<void>;
+  /** Writes any pending or failed change now. Resolves to false if the note couldn't be saved. */
+  flush(): Promise<boolean>;
 }
 
 export const resolvedScheme = (s: AppState): Scheme =>
@@ -79,7 +79,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
 
   async function load(path: string): Promise<void> {
-    await flush();
+    // Never replace a note whose latest text isn't on disk (data safety, QLT-03).
+    if (!(await flush())) return;
     setNote({ status: "loading" });
     try {
       const md = await bridge.readNote(path);
@@ -90,9 +91,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     }
   }
 
-  async function flush(): Promise<void> {
-    if (saveTimer) saving = saving.then(writeNow);
+  /** Writes any unsaved or previously failed change now. Resolves to whether the note is saved. */
+  async function flush(): Promise<boolean> {
+    if (saveTimer || store.state.note.saveState === "unsaved" || store.state.note.saveState === "error") saving = saving.then(writeNow);
     await saving;
+    return store.state.note.saveState === "saved" || !store.state.note.path;
   }
 
   // ---- commands (the M0 set) ----

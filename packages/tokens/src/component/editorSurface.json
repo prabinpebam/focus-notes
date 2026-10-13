@@ -27,5 +27,8 @@
   "quoteBorder": { "$type": "color", "$value": "{color.borderStrong}" },
   "quoteText": { "$type": "color", "$value": "{color.textMuted}" },
   "quoteBorderWidth": { "$type": "dimension", "$value": "{border.focus}" },
+  "checkbox": { "$type": "color", "$value": "{color.accent}" },
+  "checkedText": { "$type": "color", "$value": "{color.textMuted}" },
+  "checkboxSize": { "$type": "dimension", "$value": "{size.iconS}" },
   "space": { "$type": "dimension", "s": { "$value": "{space.s}" }, "m": { "$value": "{space.m}" }, "l": { "$value": "{space.l}" } }
 } } }

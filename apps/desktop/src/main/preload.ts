@@ -24,9 +24,11 @@ contextBridge.exposeInMainWorld("focusNotes", {
   },
   markReady: () => ipcRenderer.send("app:ready"),
   setWindowScheme: (s: "light" | "dark") => ipcRenderer.send("window:scheme", s),
-  onFlushRequest: (listener: () => Promise<void>) => {
+  onFlushRequest: (listener: () => Promise<boolean>) => {
     ipcRenderer.on("app:flush", () => {
-      void listener().finally(() => ipcRenderer.send("app:flushed"));
+      void listener()
+        .catch(() => false)
+        .then((ok) => ipcRenderer.send("app:flushed", ok));
     });
   },
 });

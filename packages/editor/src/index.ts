@@ -3,9 +3,10 @@
  * and the Markdown session that keeps files byte-identical where untouched (EDT-10).
  * Rendering lives in packages/ui (block components and the EditorSurface host).
  */
-import { Node, mergeAttributes, type AnyExtension } from "@tiptap/core";
+import { Extension, Node, mergeAttributes, type AnyExtension } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
+import { TaskList, TaskItem } from "@tiptap/extension-list";
 import { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
 
 export { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
@@ -36,6 +37,8 @@ registerBlock({ name: "heading", title: "block.heading", markdown: "native", ins
 registerBlock({ name: "bulletList", title: "block.bulletList", markdown: "native", insertable: true, inputRule: "- " });
 registerBlock({ name: "orderedList", title: "block.orderedList", markdown: "native", insertable: true, inputRule: "1. " });
 registerBlock({ name: "listItem", title: "block.listItem", markdown: "native", insertable: false });
+registerBlock({ name: "taskList", title: "block.taskList", markdown: "native", insertable: true, inputRule: "[ ] " });
+registerBlock({ name: "taskItem", title: "block.taskItem", markdown: "native", insertable: false });
 registerBlock({ name: "blockquote", title: "block.blockquote", markdown: "native", insertable: true, inputRule: "> " });
 registerBlock({ name: "codeBlock", title: "block.codeBlock", markdown: "native", insertable: true, inputRule: "```" });
 registerBlock({ name: "horizontalRule", title: "block.horizontalRule", markdown: "native", insertable: true, inputRule: "---" });
@@ -66,12 +69,51 @@ export const MarkdownLink = Link.extend({
   },
 }).configure({ openOnClick: false, autolink: true, linkOnPaste: true, defaultProtocol: "https" });
 
+/** Pressing Enter after ``` (optionally with a language) starts a code block, like typing a space (EDT-05). */
+export const FenceOnEnter = Extension.create({
+  name: "fenceOnEnter",
+  priority: 1000,
+  addKeyboardShortcuts() {
+    return {
+      Enter: ({ editor }) => {
+        const { $from, empty } = editor.state.selection;
+        if (!empty || $from.parent.type.name !== "paragraph") return false;
+        const m = /^(```|~~~)([\w+#.-]*)$/.exec($from.parent.textContent);
+        if (!m || $from.parentOffset !== $from.parent.content.size) return false;
+        return editor
+          .chain()
+          .command(({ tr }) => {
+            tr.delete($from.start(), $from.end());
+            return true;
+          })
+          .setNode("codeBlock", { language: m[2] || null })
+          .run();
+      },
+    };
+  },
+});
+
+/** Every block picks its own text direction, so notes in any script read correctly (I18N-02). */
+export const AutoDirection = Extension.create({
+  name: "autoDirection",
+  addGlobalAttributes() {
+    return [{
+      types: ["paragraph", "heading", "blockquote", "listItem", "taskItem", "codeBlock"],
+      attributes: { dir: { default: "auto", parseHTML: () => "auto", renderHTML: () => ({ dir: "auto" }), keepOnSplit: true } },
+    }];
+  },
+});
+
 /** The schema shared by the editor surface, tests, and (later) the publisher. */
 export function coreExtensions(): AnyExtension[] {
   return [
     StarterKit.configure({ underline: false, link: false, trailingNode: false }),
     MarkdownLink,
+    TaskList,
+    TaskItem.configure({ nested: true }),
     RawMarkdown,
+    AutoDirection,
+    FenceOnEnter,
   ];
 }
 

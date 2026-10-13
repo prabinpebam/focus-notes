@@ -18,6 +18,34 @@ describe("round-trip corpus (EDT-10)", () => {
 });
 
 describe("editing keeps untouched blocks verbatim", () => {
+  const edit = (src: string, f: (doc: PMNode) => void) => {
+    const parsed = parseMarkdown(src);
+    const doc = structuredClone(parsed.doc);
+    f(doc);
+    return serializeMarkdown(doc, parsed);
+  };
+  const para = (text: string): PMNode => ({ type: "paragraph", content: [{ type: "text", text }] });
+
+  it("keeps a byte-order mark and every neighbouring character when editing (review issue 1)", () => {
+    const src = "\uFEFF# Title\n\nHello world\n\nThird para\n";
+    expect(serializeMarkdown(parseMarkdown(src).doc, parseMarkdown(src))).toBe(src);
+    expect(edit(src, (d) => { d.content![2] = para("Third para!"); })).toBe("\uFEFF# Title\n\nHello world\n\nThird para!\n");
+    expect(edit(src, (d) => { d.content!.splice(1, 1); })).toBe("\uFEFF# Title\n\nThird para\n");
+  });
+
+  it("never drops a paragraph holding only an empty link (review issue 2)", () => {
+    const src = "Intro\n\n[](https://example.com/anchor)\n\nOutro\n";
+    expect(serializeMarkdown(parseMarkdown(src).doc, parseMarkdown(src))).toBe(src);
+    expect(edit(src, (d) => { d.content![2] = para("Outro!"); })).toBe("Intro\n\n[](https://example.com/anchor)\n\nOutro!\n");
+  });
+
+  it("keeps the file's line endings in generated text (review issue 6)", () => {
+    const src = "# Title\r\n\r\nHello\r\nworld\r\n\r\nLast\r\n";
+    expect(edit(src, (d) => { d.content![1] = para("Hello world!"); })).toBe("# Title\r\n\r\nHello world!\r\n\r\nLast\r\n");
+    expect(edit(src, (d) => { d.content!.push({ type: "bulletList", content: [{ type: "listItem", content: [para("a")] }, { type: "listItem", content: [para("b")] }] }); }))
+      .toBe("# Title\r\n\r\nHello\r\nworld\r\n\r\nLast\r\n\r\n- a\r\n- b\r\n");
+  });
+
   it("rewrites only the changed block", () => {
     const src = "Intro with *star* emphasis.\n\n* star list\n* item\n\nOld text.\n";
     const parsed = parseMarkdown(src);
