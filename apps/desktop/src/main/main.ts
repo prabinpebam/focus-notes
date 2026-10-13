@@ -1,6 +1,7 @@
 /**
  * The Electron main process (PKG-03, SEC-01, PKG-06, PRV-01): a hardened shell that owns the
- * window, the file system, and nothing else. It makes no network requests and allows none.
+ * window, the file system, and the user's own `git`. It makes no network requests of its own and
+ * allows none from the renderer; Git talks to the workspace's remotes (WP-3.3).
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
@@ -9,6 +10,8 @@ import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } 
 import { pathToFileURL } from "node:url";
 import { readWorkspaceFormat } from "@focus-notes/core/workspace-format";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
+import { GitSync, NO_GIT } from "./git/sync.ts";
+import type { BatchOp } from "./git/message.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 const customWindow = process.argv.includes("--custom-window") && platform !== "macos";
@@ -23,6 +26,51 @@ Everything you write here is saved as plain Markdown on your computer.
 `;
 
 if (!app.requestSingleInstanceLock()) app.quit();
+
+// ---- save and sync with Git (WP-3.3, D-23) ----
+// The workspace folder's own repository, if it is one; otherwise saving stays local, with no Git UI.
+// The delays are configurable (D-23), which also lets the journeys use short ones.
+const envMs = (name: string) => {
+  const v = Number(process.env[name]);
+  return Number.isFinite(v) && v >= 0 ? v : undefined;
+};
+let gitSync: GitSync | undefined;
+let gitOpened = false;
+const gitWaiting: ((g: GitSync) => void)[] = [];
+/** Runs now if Git is open, or once it opens (a note written before then is still committed). */
+const withGit = (fn: (g: GitSync) => void) => {
+  if (gitSync) fn(gitSync);
+  else if (!gitOpened) gitWaiting.push(fn);
+};
+let startGit: () => void = () => {};
+/** Opened once the caret is ready, so Git never competes with the first frame (PRF-02, PRF-07). */
+const gitOpening = new Promise<GitSync | undefined>((resolve) => {
+  startGit = () => {
+    startGit = () => {};
+    const idleMs = envMs("FOCUS_NOTES_IDLE_COMMIT_MS");
+    const pointerGapMs = envMs("FOCUS_NOTES_POINTER_GAP_MS");
+    resolve(GitSync.open({
+      folder: notesHome(),
+      ...(idleMs !== undefined ? { idleMs } : {}),
+      ...(pointerGapMs !== undefined ? { pointerGapMs } : {}),
+      // After the window closes, the final sync on quit still runs; there's just no one to tell.
+      onReport: (r) => {
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("sync:status", r);
+      },
+      // Counts and problems only: note names are private.
+      log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
+    }).then((g) => {
+      gitSync = g;
+      gitOpened = true;
+      for (const fn of gitWaiting.splice(0)) if (g) fn(g);
+      return g;
+    }, () => {
+      gitOpened = true;
+      gitWaiting.length = 0;
+      return undefined;
+    }));
+  };
+});
 
 // ---- the workspace (WP-2.3) ----
 // The notes folder is the workspace. With .focus-notes/workspace.json it has the repository's
@@ -115,6 +163,8 @@ async function renameRetrying(from: string, to: string): Promise<void> {
 
 async function writeNow(path: string, content: string): Promise<void> {
   await assertWritable(path);
+  // A pull rewriting files finishes first, so a save never lands in the middle of it.
+  await gitSync?.writable();
   await mkdir(dirname(path), { recursive: true });
   const tmp = `${path}.${process.pid}.${Date.now()}.${tmpCounter++}.tmp`;
   await writeFile(tmp, content, "utf8");
@@ -159,7 +209,7 @@ const writesDone = (p: string) => Promise.allSettled([...writeQueues].filter(([k
  * system trash, until Git keeps them (FIL-10).
  * A move between roots changes visibility, which arrives with Git (WP-3.4), so it's refused here.
  */
-async function applyOps(raw: unknown): Promise<void> {
+async function applyOps(raw: unknown): Promise<BatchOp[]> {
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > 5000) throw refuse("invalid");
   type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string }
     | { op: "write"; path: string; text: string; root: string };
@@ -225,6 +275,8 @@ async function applyOps(raw: unknown): Promise<void> {
     for (const u of undo.reverse()) await u().catch(() => {});
     throw error instanceof Refused ? error : refuse("failed");
   }
+  // What was done, for the batch's one commit.
+  return ops.map((op): BatchOp => (op.op === "move" ? { op: "move", from: op.path, to: op.to } : { op: op.op, path: op.path }));
 }
 
 /** Addresses a note's link may open in the browser: http, https, and mailto, well formed (EDT-13). */
@@ -254,7 +306,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("note:read", async (p) => readFile(notePath(p), "utf8"));
   handle("note:write", async (p, content) => {
     if (typeof content !== "string") throw new Error("Content must be text");
-    await atomicWrite(notePath(p), content);
+    const path = notePath(p);
+    await atomicWrite(path, content);
+    // Committed on the cadence: Mod+S, switching notes, quitting, or 60 s with no typing (D-23).
+    withGit((g) => g.written(path));
   });
   handle("note:choose", async () => {
     const w = win();
@@ -305,8 +360,22 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       await renameRetrying(a, tmp);
       await renameRetrying(tmp, b);
     } else await renameRetrying(a, b);
+    withGit((g) => g.renamed(a, b));
   });
-  handle("workspace:apply", (ops) => applyOps(ops));
+  // Each batch is one commit (FIL-05, D-94): resolved after the commit, so "saved" means saved (PRF-09).
+  // A commit that fails leaves the files as the batch made them and is reported as a sync problem.
+  handle("workspace:apply", async (ops) => {
+    const done = await applyOps(ops);
+    await (await gitOpening)?.commitBatch(done);
+  });
+  handle("sync:now", async (reason) => {
+    const g = await gitOpening;
+    return g ? g.request(reason === "switch" ? "switch" : "save") : NO_GIT;
+  });
+  handle("sync:status", async () => {
+    const g = await gitOpening;
+    return g ? g.status() : NO_GIT;
+  });
   handle("window:fullScreen", async () => {
     const w = win();
     if (w) w.setFullScreen(!w.isFullScreen());
@@ -338,6 +407,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     // From process start (PRF-02: "desktop start to an editable caret"), including Electron's own startup.
     const ms = Math.round(process.uptime() * 1000);
     process.stdout.write(`[focus-notes] ready-ms=${ms}\n`);
+    startGit();
   });
 }
 
@@ -478,6 +548,8 @@ function watchWorkspace(win: () => BrowserWindow | undefined): FSWatcher | undef
       }
     }
     if (!changes.length) return;
+    // Anything that changed on disk changes the Git status cache's key (PRF-07).
+    gitSync?.changed();
     win()?.webContents.send("workspace:changed", changes);
     // Counts and times only: note names are private.
     process.stdout.write(`[focus-notes] workspace-changed n=${changes.length} at=${Date.now()}\n`);
@@ -508,6 +580,11 @@ app.whenReady().then(async () => {
   await stat(notesHome()).catch(() => mkdir(notesHome(), { recursive: true }));
   mainWindow = createWindow();
   watcher = watchWorkspace(() => mainWindow);
+  // Never on the path of the first frame: Git answers when it answers (PRF-07).
+  // Git opens once the caret is ready, or after 3 s if the note never becomes ready.
+  setTimeout(() => startGit(), 3000);
+  // Fetching when the window becomes active (Desktop and Git → Save and sync, step 5).
+  mainWindow.on("focus", () => gitSync?.focused());
   app.on("second-instance", () => {
     if (mainWindow?.isMinimized()) mainWindow.restore();
     mainWindow?.focus();
@@ -517,9 +594,17 @@ app.on("window-all-closed", () => {
   watcher?.close();
   app.quit();
 });
-// Quitting waits for writes already under way, so a preference saved just before closing is kept.
+// Quitting waits for writes already under way, so a preference saved just before closing is kept,
+// then commits and pushes (D-23) and releases the workspace's lock.
+let gitQuit = false;
 app.on("will-quit", (e) => {
-  if (writeQueues.size === 0) return;
+  if (writeQueues.size === 0 && (gitQuit || !gitSync)) return;
   e.preventDefault();
-  void Promise.allSettled([...writeQueues.values()]).then(() => app.quit());
+  void Promise.allSettled([...writeQueues.values()])
+    .then(async () => {
+      if (gitQuit) return;
+      gitQuit = true;
+      await gitSync?.quit().catch(() => {});
+    })
+    .then(() => app.quit());
 });

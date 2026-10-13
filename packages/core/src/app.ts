@@ -14,6 +14,7 @@ import { TaskTracker, type Clock, type TaskView } from "./tasks.ts";
 import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts";
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
 import { joinPath } from "./workspace.ts";
+import { registerSync, NO_SYNC, SyncFailed, type SyncState } from "./sync-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -63,6 +64,8 @@ export interface AppState {
   instance: InstanceState;
   /** The workspace: its tree of notes and folders, and whether this app may write it (DST-05). */
   workspace: WorkspaceState;
+  /** Save and sync with Git: whether there's a repository, and the problem to show if any (EDT-11). */
+  sync: SyncState;
   /** Waits a person started (PRF-08). */
   tasks: TaskView[];
   /** The latest polite announcement for screen readers; `n` makes repeats announce again. */
@@ -101,6 +104,8 @@ export interface ToastState {
 }
 
 export const SAVE_DELAY_MS = 400;
+/** The editor action that asks the editor to hand over text it hasn't sent yet (the runtime's flush). */
+export const FLUSH_EDITOR = "note.flush";
 /** Note text sizes in px (THM-06). */
 export const FONT_STEPS = [14, 15, 16, 17, 18, 20, 22, 24, 28, 32] as const;
 export const DEFAULT_FONT_SIZE = 16;
@@ -166,6 +171,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED },
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
+    sync: NO_SYNC,
     tasks: [],
     announcement: { text: "", n: 0 },
   });
@@ -209,6 +215,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
 
   const setNote = (patch: Partial<AppState["note"]>) =>
     store.update((s) => ({ ...s, note: { ...s.note, ...patch } }));
+  const sync = registerSync({ store, bridge, catalog, toast });
   const workspace = registerWorkspaceFeatures({ store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}) });
 
   async function writeNow(): Promise<void> {
@@ -245,7 +252,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
 
   async function load(path: string): Promise<void> {
     // Never replace a note whose latest text isn't on disk (data safety, QLT-03).
+    editorAction(FLUSH_EDITOR);
     if (!(await flush())) return;
+    // Switching notes commits and pushes the one being left (D-23).
+    const leaving = store.state.note.path;
+    if (leaving && leaving !== path) sync.switched();
     setNote({ status: "loading" });
     // The toolbar and link editor belong to the note that was open.
     store.update((s) => ({ ...s, ui: { ...s.ui, format: FORMAT_CLOSED } }));
@@ -289,15 +300,20 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     icon: "save",
     shortcut: { default: "Mod+S" },
     layer: "basic", group: "app",
-    // Saving is a wait the person started, so it goes through the task tracker (PRF-08).
+    // Saving is a wait the person started, so it goes through the task tracker (PRF-08). With Git,
+    // it also commits and pushes now, and says "Saved and synced" or why it couldn't (D-23).
     run: () => tracker.run("note.save", "task.saving", async () => {
+      // What's on screen is what's saved: the editor hands over text it hasn't sent yet.
+      editorAction(FLUSH_EDITOR);
       clearTimeout(saveTimer);
       saveTimer = undefined;
       saving = saving.then(writeNow);
       await saving;
       if (store.state.note.saveState === "error") throw new Error("save failed");
-    }, "task.saved").catch(() => {
-      toast(catalog.format("toast.saveFailed"), { tone: "error", action: { command: "note.save", label: catalog.format("toast.retry") } });
+      await sync.saveNow();
+    }, store.state.sync.git ? "task.synced" : "task.saved").catch((e: unknown) => {
+      const retry = { command: "note.save", label: catalog.format("toast.retry") };
+      toast(e instanceof SyncFailed ? e.message : catalog.format("toast.saveFailed"), { tone: "error", action: retry });
     }),
   });
   commands.register<{ value: string }>({
@@ -821,7 +837,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       },
     },
     // Not note.markdown: typing never re-selects the canvas (PRF-11). It shows one note, by path.
-    reads: ["note.key", "note.initialMarkdown", "note.status", "note.saveState", "note.path", "workspace.access", "workspace.folder"],
+    reads: ["note.key", "note.initialMarkdown", "note.status", "note.saveState", "note.path", "workspace.access", "workspace.folder", "sync"],
     shows: (s) => (s.note.path ? [{ kind: "note", path: s.note.path }] : []),
     select: (s) => ({
       noteKey: s.note.key,
@@ -830,9 +846,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       saveState: s.note.saveState,
       saveProblem: s.note.saveState === "error",
       readOnly: noteReadOnly(s),
-      // The trigger's dot shows a save problem (Feedback → Save and sync status).
-      problem: s.note.saveState === "error",
-      problemLabel: s.note.saveState === "error" ? (catalog.has("trigger.saveProblem") ? catalog.format("trigger.saveProblem") : "") : "",
+      // The trigger's dot shows a save or sync problem (Feedback → Save and sync status).
+      problem: s.note.saveState === "error" || Boolean(s.sync.problem),
+      problemLabel: s.note.saveState === "error" ? (catalog.has("trigger.saveProblem") ? catalog.format("trigger.saveProblem") : "")
+        : s.sync.problem && catalog.has("trigger.syncProblem") ? catalog.format("trigger.syncProblem") : "",
     }),
   });
 
@@ -868,6 +885,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       await load(path);
       if (store.state.note.status === "error" && appState.lastNotePath) await load(await bridge.defaultNotePath());
       workspace.start();
+      sync.start();
       await browser.start();
     },
   };

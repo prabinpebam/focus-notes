@@ -19,3 +19,4 @@ export * from "./files.ts";
 export * from "./flat-store.ts";
 export * from "./files-app.ts";
 export * from "./links.ts";
+export * from "./sync-app.ts";

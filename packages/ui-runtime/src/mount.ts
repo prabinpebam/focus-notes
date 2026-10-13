@@ -1,7 +1,7 @@
 /** Mounting the app and the global keyboard handler. The only entry point shells call. */
 import { createElement, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { App } from "@focus-notes/core";
+import { FLUSH_EDITOR, type App } from "@focus-notes/core";
 import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT } from "@focus-notes/ui";
 import { ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
 
@@ -44,7 +44,8 @@ export function mountApp(el: Element, { app, views, view = "canvas" }: MountOpti
     void app.commands.run(id);
   }, true);
   // Editor commands run from menus and Spotlight reach the editor surface through a window event.
-  app.onEditorAction((id, args) => window.dispatchEvent(new CustomEvent(EDITOR_ACTION_EVENT, { detail: { id, args } })));
+  // Saving and switching notes first collect text the editor hasn't sent yet (QLT-03, D-23).
+  app.onEditorAction((id, args) => window.dispatchEvent(id === FLUSH_EDITOR ? new Event(FLUSH_EVENT) : new CustomEvent(EDITOR_ACTION_EVENT, { detail: { id, args } })));
   // A file dropped outside the editor must never navigate the window away from the app.
   const stopNavigation = (e: DragEvent) => {
     if (e.dataTransfer?.types.includes("Files")) e.preventDefault();
