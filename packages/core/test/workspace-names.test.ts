@@ -32,14 +32,21 @@ describe("file names from titles (FIL-07)", () => {
     expect(fileStemForTitle("con.backup")).toBe("con-note.backup");
     expect(fileStemForTitle("console")).toBe("console");
   });
+  it("turns punctuation and symbols into hyphens, so names read well in links and URLs", () => {
+    expect(fileNameForTitle("On focus, again!")).toBe("on-focus-again.md");
+    expect(fileNameForTitle("Q&A #3 (draft) 50% done")).toBe("q-a-3-draft-50-done.md");
+    expect(fileNameForTitle("v1.2_notes")).toBe("v1.2_notes.md");
+    expect(fileNameForTitle("Ideas 💡")).toBe("ideas.md");
+  });
   it("keeps at most 80 characters, never splits a character, and stays under Linux's 255-byte limit", () => {
     expect([...fileStemForTitle("a".repeat(200))]).toHaveLength(80);
     expect(fileStemForTitle(`${"a".repeat(79)} b`)).toBe("a".repeat(79));
-    const family = "👨‍👩‍👧";
-    const stem = fileStemForTitle(family.repeat(40));
-    expect(stem.length % family.length).toBe(0);
+    // g + a combining tilde has no single code point: one character, two code points, three bytes.
+    const stem = fileStemForTitle("g\u0303".repeat(100));
+    expect(stem).toBe("g\u0303".repeat(80));
     expect(bytes(`${stem}-99.md`)).toBeLessThanOrEqual(255);
-    expect(bytes(fileNameForTitle("😀".repeat(80)))).toBeLessThanOrEqual(255);
+    expect(bytes(fileNameForTitle("日".repeat(100)))).toBeLessThanOrEqual(255);
+    expect(bytes(fileNameForTitle("\u{10900}".repeat(80)))).toBeLessThanOrEqual(255);
   });
 });
 

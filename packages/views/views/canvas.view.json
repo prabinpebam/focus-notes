@@ -1296,7 +1296,7 @@
                 },
                 "on": {
                   "press": {
-                    "run": "note.copyToLocal"
+                    "run": "note.readOnlyAction"
                   }
                 }
               }

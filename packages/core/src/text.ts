@@ -25,12 +25,13 @@ export function clipName(name: string, maxChars = MAX_NAME_CHARS): string {
 }
 
 /**
- * A note's file name, without ".md", from its title (FIL-07): lowercase, spaces become hyphens,
- * letters in any language kept, characters a file system rejects removed, no leading or trailing
+ * A note's file name, without ".md", from its title (FIL-07): lowercase, spaces and punctuation
+ * become hyphens, letters in any language kept, characters a file system rejects removed, no leading or trailing
  * dots, spaces, or hyphens, reserved Windows names suffixed, NFC, and at most 80 characters.
  */
 export function fileStemForTitle(title: string, maxChars = MAX_NAME_CHARS): string {
-  let s = title.normalize("NFC").toLowerCase().normalize("NFC").replace(FORBIDDEN, " ").trim().replace(/\s+/gu, "-").replace(/-{2,}/g, "-");
+  // Letters, marks, and numbers in any script are kept, with "." and "_"; anything else separates words (D-92).
+  let s = title.normalize("NFC").toLowerCase().normalize("NFC").replace(FORBIDDEN, " ").replace(/[^\p{L}\p{M}\p{N}._]+/gu, "-");
   s = clipName(trimEnds(s).replace(/-{2,}/g, "-"), maxChars);
   if (!s) return "untitled";
   const dot = s.indexOf(".");

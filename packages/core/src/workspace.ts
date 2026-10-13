@@ -72,6 +72,8 @@ function within(base: string, path: string): boolean {
   if (path === base) return true;
   return path.startsWith(base) && (/[:\\/]$/.test(base) || path[base.length] === "/" || path[base.length] === "\\");
 }
+/** Whether a path is in a folder (or is it), for the shell's own paths. */
+export const isWithin = within;
 const partsOf = (base: string, path: string) => path.slice(base.length).split(/[\\/]/).filter(Boolean);
 const pathOf = (root: { path: string }, parts: readonly string[]) => parts.reduce(joinPath, root.path);
 
