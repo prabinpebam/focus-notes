@@ -9,6 +9,7 @@ export const contract = defineContract({
     shape: { kind: "enum", values: ["none", "window", "sheet", "popover", "control", "round"], default: "none" },
     elevation: { kind: "enum", values: ["0", "1", "2", "3"], default: "0" },
     padding: { kind: "token", group: "space", default: "none" },
+    keyScope: { kind: "enum", values: ["none", "findBar", "findField", "replaceField"], default: "none", description: "Keys registered for this scope work while focus is inside." },
   },
   events: {},
   slots: { default: { accepts: "any" } },
@@ -21,6 +22,9 @@ export const contract = defineContract({
     })),
     ...["none", "window", "sheet", "popover", "control", "round"].map((shape) => ({
       name: `shape ${shape}`, props: { shape, padding: "l" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
+    })),
+    ...["none", "findBar", "findField", "replaceField"].map((keyScope) => ({
+      name: `keyScope ${keyScope}`, props: { keyScope, padding: "l", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
     })),
     ...["0", "1", "2", "3"].map((elevation) => ({
       name: `elevation ${elevation}`, props: { elevation, padding: "l", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],

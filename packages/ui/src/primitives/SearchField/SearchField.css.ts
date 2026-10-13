@@ -20,6 +20,7 @@ export const root = style({
   boxSizing: "border-box",
   selectors: {
     "&:focus-within": { borderColor: t.borderFocus, boxShadow: `0 0 0 ${t.borderWidth} ${t.borderFocus}` },
+    "&[data-invalid]": { borderColor: t.borderInvalid },
   },
 });
 

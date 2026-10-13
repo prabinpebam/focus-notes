@@ -9,7 +9,7 @@ A full keymap, from the shortcuts everyone knows to niche ones for heavy users. 
 
 1. **Borrow, don't invent.** Each default comes from a widely used app. The *Precedent* column below names it. A new binding is invented only when no precedent exists.
 2. **Commands first.** Every action is a named command, such as `note.new` or `focus.toggle`. The [trigger toolbar](main-ui.html), the ⋯ menu, the macOS menu bar, [Spotlight](spotlight.html), and keys all run the same commands, so there's nothing a shortcut can do that a pointer user can't, and the other way round.
-3. **Contexts decide.** Bindings carry a `when` context (`editor`, `table`, `findBar`, `spotlight`, `files`, `toolbar`, `global`). The most specific context wins. For example, <kbd>Mod</kbd>+<kbd>Enter</kbd> adds a table row inside a table and checks a task elsewhere.
+3. **Contexts decide.** Bindings carry a `when` context (`editor`, `table`, `findBar`, `spotlight`, `files`, `toolbar`, `global`). The most specific context wins. In the build, a context is a *key scope*: primitives and layouts mark one with `keyScope`, and keys registered for it work only while focus is inside (the find bar's Enter, Esc, and toggles). For example, <kbd>Mod</kbd>+<kbd>Enter</kbd> adds a table row inside a table and checks a task elsewhere.
 4. **Four layers, learnable in order.**
 
 | Layer | Who | Examples |

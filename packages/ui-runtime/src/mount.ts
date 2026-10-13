@@ -27,10 +27,15 @@ export function mountApp(el: Element, { app, views, view = "canvas" }: MountOpti
   window.addEventListener("keydown", (e) => {
     // keyCode 229 is the IME's own keydown on some platforms, before isComposing is set (KEY-06).
     if (e.defaultPrevented || e.isComposing || e.keyCode === 229) return;
+    // Key scopes focus is inside, innermost first (data-key-scope on primitives and layouts).
+    const scopes: string[] = [];
+    for (let el = e.target instanceof Element ? e.target.closest("[data-key-scope]") : null; el; el = el.parentElement?.closest("[data-key-scope]") ?? null) {
+      scopes.push((el as HTMLElement).dataset.keyScope!);
+    }
     const id = app.commands.match({
       key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey,
       altGraph: e.getModifierState?.("AltGraph") ?? false,
-    });
+    }, scopes);
     if (!id) return;
     e.preventDefault();
     e.stopPropagation();

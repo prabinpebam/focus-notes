@@ -154,7 +154,7 @@ Compounds compose primitives, layouts, and other compounds. They hold behavior (
 | **Toast**, **ToastRegion** | Layer, Surface, Inline, Text, Button | IA-CMP-TOAST | A live region. One toast at a time, with an optional action and Undo. |
 | **Banner** | Surface, Inline, Icon, Text, Button | Note history, sync problems | Inline, persistent until resolved. |
 | **EmptyState** | Center, Stack, Icon, Text, Button | Files, Spotlight, Sharing | One sentence and at most one action. |
-| **FindBar** | Surface, Inline, SearchField, TextField, IconButton, SegmentedControl, Text | IA-CMP-FINDBAR | Match count is a live region. |
+| **FindBar** | Surface (`keyScope` findBar), Stack, Inline, SearchField (`keyScope` findField and replaceField), IconButton, Button, Text | IA-CMP-FINDBAR | Composed in the canvas view document rather than as a compound (D-76). Match count and notices are live regions. |
 | **FormattingToolbar** | Layer, Positioner, Toolbar | IA-CMP-FORMAT | Follows the selection. Its items are commands. |
 | **LinkEditor** | Popover, TextField, Inline, IconButton | IA-CMP-LINK | Opens with <kbd>Mod</kbd>+<kbd>K</kbd>. |
 | **SlashMenu** | Layer, Positioner, ResultList | IA-CMP-SLASH | Items come from the block registry. |

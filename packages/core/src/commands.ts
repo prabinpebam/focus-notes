@@ -22,8 +22,12 @@ export interface Shortcut {
   alternates?: { default?: string[]; macos?: string[]; windows?: string[]; linux?: string[] };
   /** Chords that also run the command but are never listed (keyboard variants of the same key). */
   quiet?: string[];
-  /** The editor's keymap runs these keys while typing, so the global handler leaves them alone. */
-  handledBy?: "editor";
+  /**
+   * Where the key works. "editor": the editor's keymap runs it while typing, so the global handler
+   * leaves it alone. Any other name is a key scope (Keyboard shortcuts → Contexts decide): it works only
+   * while focus is inside an element marked with that scope, such as the find bar.
+   */
+  handledBy?: string;
 }
 
 /** What a key event looks like to the matcher. */
@@ -86,7 +90,7 @@ export interface Binding {
   layer: KeyLayer;
   group: KeyGroup;
   chords: string[];
-  handledBy?: "editor";
+  handledBy?: string;
 }
 
 export interface CommandDescription {
@@ -164,12 +168,22 @@ export class CommandRegistry<S> {
    * while an IME is composing or AltGr is typing a character. The character the key types wins
    * (layout-aware); the physical key is the fallback, for punctuation, digits, and non-Latin layouts.
    */
-  match(event: KeyEventLike): string | undefined {
+  match(event: KeyEventLike, scopes: readonly string[] = []): string | undefined {
     if (event.isComposing) return undefined;
+    // The most specific context wins: keys of the scopes focus is in, then app-wide keys.
+    for (const scoped of [true, false]) {
+      const id = this.#matchIn(event, scoped ? scopes : []);
+      if (id) return id;
+    }
+    return undefined;
+  }
+
+  #matchIn(event: KeyEventLike, scopes: readonly string[]): string | undefined {
     // With AltGr held the key types a character, so only that character can match.
     for (const byCode of event.altGraph ? [false] : [false, true]) {
       for (const [id, def] of this.#commands) {
-        if (def.shortcut?.handledBy === "editor") continue;
+        const where = def.shortcut?.handledBy;
+        if (scopes.length ? !where || !scopes.includes(where) : where) continue;
         for (const chord of [...chordsFor(def.shortcut, this.platform), ...(def.shortcut?.quiet ?? [])]) if (chordMatches(chord, event, this.platform, byCode)) return id;
       }
     }
@@ -209,8 +223,9 @@ export function shortcutFor(s: Shortcut | undefined, platform: Platform): string
 export function chordMatches(chord: string, e: KeyEventLike, platform: Platform, byCode = false): boolean {
   const parts = chord.split("+");
   const named = parts.pop()!.toLowerCase();
-  // "Plus" names the + key, which can't be written inside a chord.
-  const key = named === "plus" ? "+" : named;
+  // "Plus" names the + key, which can't be written inside a chord; arrows and Space have short names.
+  const ALIAS: Record<string, string> = { plus: "+", up: "arrowup", down: "arrowdown", left: "arrowleft", right: "arrowright", space: " ", esc: "escape" };
+  const key = ALIAS[named] ?? named;
   const want = new Set(parts.map((p) => p.toLowerCase()));
   if (platform === "macos") {
     if (want.has("mod") !== e.metaKey || want.has("ctrl") !== e.ctrlKey) return false;

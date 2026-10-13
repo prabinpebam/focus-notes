@@ -12,6 +12,8 @@ import { TaskList, TaskItem } from "@tiptap/extension-list";
 import { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
 
 export { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
+export * from "./find.ts";
+import { Find, FIND_ACTIONS } from "./find.ts";
 
 /** One registration per block type, built-in or future (Editor engine → Block registry contract). */
 export interface BlockRegistration {
@@ -127,6 +129,7 @@ export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor) => boolean
   "block.taskList": (e) => e.commands.toggleTaskList(),
   "block.quote": (e) => e.commands.toggleBlockquote(),
   "block.codeBlock": (e) => e.commands.toggleCodeBlock(),
+  ...FIND_ACTIONS,
   "task.toggle": (e) => {
     const { $from } = e.state.selection;
     for (let d = $from.depth; d > 0; d--) {
@@ -139,6 +142,15 @@ export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor) => boolean
     return false;
   },
 };
+
+/**
+ * Input events outrank selectionchange in Chromium, so a key pressed right after moving the selection
+ * (fast typists, macros, a double-click then a shortcut) can arrive before ProseMirror has read it.
+ * Commands that act on the selection read it first.
+ */
+export function syncSelection(editor: Editor): void {
+  (editor.view as unknown as { domObserver?: { flush?: () => void } }).domObserver?.flush?.();
+}
 
 /** A registry chord ("Mod+Shift+X") as a ProseMirror key name ("Mod-Shift-x"). */
 export function toKeyName(chord: string): string {
@@ -169,9 +181,7 @@ export const CommandKeymap = Extension.create<{ bindings: KeyBinding[] }>({
       const action = EDITOR_ACTIONS[id];
       if (!action) continue;
       map[toKeyName(chord)] = () => {
-        // Input events outrank selectionchange in Chromium, so a key pressed right after moving the
-        // selection (fast typists, macros) can arrive before ProseMirror has read it. Read it first.
-        (this.editor.view as unknown as { domObserver?: { flush?: () => void } }).domObserver?.flush?.();
+        syncSelection(this.editor);
         return action(this.editor);
       };
     }
@@ -191,6 +201,7 @@ export function coreExtensions(bindings: KeyBinding[] = []): AnyExtension[] {
       },
     }),
     CommandKeymap.configure({ bindings }),
+    Find,
     MarkdownLink,
     TaskList,
     TaskItem.configure({ nested: true }),

@@ -58,6 +58,7 @@
     "dialogS": { "$value": "{ref.size.480}" },
     "dialogL": { "$value": "{ref.size.760}" },
     "dialogMaxHeight": { "$value": "{ref.size.85vh}" },
+    "findBarClearance": { "$value": "{ref.size.64}" },
     "blockGap": { "$value": "{ref.size.12}" },
     "editorEndPadding": { "$value": "{ref.size.40vh}" },
     "editorMinHeight": { "$value": "{ref.size.60vh}" }

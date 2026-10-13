@@ -19,6 +19,7 @@
     "@tiptap/extension-placeholder": "3.31.4",
     "@tiptap/extension-strike": "3.31.4",
     "@tiptap/pm": "3.31.4",
-    "@tiptap/starter-kit": "3.31.4"
+    "@tiptap/starter-kit": "3.31.4",
+    "prosemirror-search": "^1.1.1"
   }
 }

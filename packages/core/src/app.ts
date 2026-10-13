@@ -34,8 +34,32 @@ export interface AppState {
     toolbarOpen: boolean;
     /** The keyboard shortcut cheat sheet (IA-VIEW-SHORTCUTS). */
     shortcuts: { open: boolean; query: string; layer: CheatSheetLayer; platform: CheatSheetPlatform };
+    /** The find bar (IA-CMP-FINDBAR, FND-01, FND-02). */
+    find: FindState;
   };
 }
+
+export interface FindState {
+  open: boolean;
+  replaceOpen: boolean;
+  query: string;
+  replace: string;
+  caseSensitive: boolean;
+  wholeWord: boolean;
+  regex: boolean;
+  count: number;
+  current: number;
+  invalid: boolean;
+  /** A short notice for the live region: "Wrapped to top", "Replaced 12 matches". */
+  notice: string;
+  /** Bumped to move focus into the find field (or the replace field). */
+  focusFind: number;
+  focusReplace: number;
+}
+const FIND_CLOSED: FindState = {
+  open: false, replaceOpen: false, query: "", replace: "", caseSensitive: false, wholeWord: false, regex: false,
+  count: 0, current: 0, invalid: false, notice: "", focusFind: 0, focusReplace: 0,
+};
 
 export const SAVE_DELAY_MS = 400;
 /** Note text sizes in px (THM-06). */
@@ -60,6 +84,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
       { submenu: "theme.dark", label: "menu.darkTheme", items: BUILT_IN_THEMES.filter((t) => t.kind === "dark").map((t) => `theme.dark.${t.id}`) },
     ],
   },
+  { id: "edit", label: "menu.edit", items: ["find.open", "find.replace"] },
   { id: "help", label: "menu.help", items: ["shortcuts.open"] },
 ];
 
@@ -90,7 +115,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "sans", uiScale: 1,
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" } },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED },
   });
   const commands = new CommandRegistry<AppState>(() => store.state, (r) => store.update(r), bridge.platform);
   const viewModels = new ViewModelRegistry<AppState>();
@@ -318,6 +343,85 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     });
   }
 
+  // ---- find and replace (FND-01, FND-02) ----
+  const setFind = (patch: Partial<FindState>) => store.update((s) => ({ ...s, ui: { ...s.ui, find: { ...s.ui.find, ...patch } } }));
+  const editorAction = (id: string) => { for (const l of editorListeners) l(id); };
+  const findHistory: string[] = [];
+  let historyAt = -1;
+  const remember = () => {
+    const q = store.state.ui.find.query;
+    if (q && findHistory[0] !== q) findHistory.unshift(q);
+    findHistory.length = Math.min(findHistory.length, 20);
+    historyAt = -1;
+  };
+  const openFind = (replace: boolean) => {
+    const f = store.state.ui.find;
+    setFind({
+      open: true, replaceOpen: replace || (f.open && f.replaceOpen), notice: "",
+      ...(replace && f.query ? { focusReplace: f.focusReplace + 1 } : { focusFind: f.focusFind + 1 }),
+    });
+    store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
+    // A selection fills the field, as in VS Code and browsers.
+    editorAction("find.prefill");
+  };
+  const ready = (s: AppState) => s.note.status === "ready";
+  const findCmd = (id: string, title: string, extra: Partial<Parameters<typeof commands.register>[0]>, run: () => void) =>
+    commands.register({ id, title, enabled: ready, ...extra, run });
+  findCmd("find.open", "command.find.open", { icon: "search", shortcut: { default: "Mod+F" }, layer: "basic", group: "find" }, () => openFind(false));
+  findCmd("find.replace", "command.find.replace", { shortcut: { macos: "Mod+Alt+F", default: "Mod+H" }, layer: "power", group: "find" }, () => openFind(true));
+  const findStep = (id: "find.next" | "find.prev") => () => {
+    if (!store.state.ui.find.open) return openFind(false);
+    remember();
+    setFind({ notice: "" });
+    editorAction(id);
+  };
+  findCmd("find.next", "command.find.next", { shortcut: { macos: "Mod+G", default: "F3" }, layer: "basic", group: "find" }, findStep("find.next"));
+  findCmd("find.prev", "command.find.prev", { shortcut: { macos: "Mod+Shift+G", default: "Shift+F3" }, layer: "basic", group: "find" }, findStep("find.prev"));
+  findCmd("find.nextInField", "command.find.nextInField", { shortcut: { default: "Enter", handledBy: "findField" }, layer: "basic", group: "find" }, findStep("find.next"));
+  findCmd("find.prevInField", "command.find.prevInField", { shortcut: { default: "Shift+Enter", handledBy: "findField" }, layer: "basic", group: "find" }, findStep("find.prev"));
+  findCmd("find.replaceNext", "command.find.replaceNext", { shortcut: { default: "Enter", handledBy: "replaceField" }, layer: "power", group: "find" }, () => {
+    remember();
+    editorAction("find.replaceNext");
+  });
+  findCmd("find.replaceAll", "command.find.replaceAll", { shortcut: { macos: "Mod+Enter", default: "Ctrl+Alt+Enter", handledBy: "findBar" }, layer: "power", group: "find" }, () => {
+    remember();
+    editorAction("find.replaceAll");
+  });
+  findCmd("find.close", "command.find.close", { shortcut: { default: "Escape", handledBy: "findBar" }, layer: "basic", group: "find" }, () => {
+    remember();
+    setFind({ open: false, notice: "" });
+  });
+  findCmd("find.toggleReplace", "command.find.toggleReplace", {}, () => setFind({ replaceOpen: !store.state.ui.find.replaceOpen }));
+  for (const [opt, key, title] of [["caseSensitive", "C", "command.find.matchCase"], ["wholeWord", "W", "command.find.wholeWord"], ["regex", "R", "command.find.regex"]] as const) {
+    commands.register({
+      id: `find.toggle.${opt}`, title, enabled: ready,
+      shortcut: { macos: `Mod+Alt+${key}`, default: `Alt+${key}`, handledBy: "findBar" }, layer: "pro", group: "find",
+      checked: (s) => s.ui.find[opt],
+      run: () => setFind({ [opt]: !store.state.ui.find[opt] }),
+    });
+  }
+  const recall = (dir: 1 | -1) => () => {
+    const next = historyAt + dir;
+    if (next < -1 || next >= findHistory.length) return;
+    historyAt = next;
+    setFind({ query: next === -1 ? "" : findHistory[next]! });
+  };
+  commands.register({ id: "find.historyOlder", title: "command.find.historyOlder", shortcut: { default: "Up", handledBy: "findField" }, layer: "power", group: "find", run: recall(1) });
+  commands.register({ id: "find.historyNewer", title: "command.find.historyNewer", shortcut: { default: "Down", handledBy: "findField" }, layer: "power", group: "find", run: recall(-1) });
+  commands.register<{ value: string }>({ id: "find.setQuery", title: "command.find.setQuery", run: ({ value }) => setFind({ query: typeof value === "string" ? value : "", notice: "" }) });
+  commands.register<{ value: string }>({ id: "find.setReplace", title: "command.find.setReplace", run: ({ value }) => setFind({ replace: typeof value === "string" ? value : "" }) });
+  commands.register<{ value: string }>({
+    id: "find.prefill", title: "command.find.setQuery",
+    run: ({ value }) => { if (typeof value === "string" && value) setFind({ query: value }); },
+  });
+  commands.register<{ count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }>({
+    id: "find.setResult", title: "command.find.setResult",
+    run: ({ count, current, invalid, wrapped, replaced }) => {
+      const notice = replaced > 0 ? catalog.format("find.replaced", { count: replaced }) : wrapped ? catalog.format("find.wrapped") : store.state.ui.find.notice;
+      setFind({ count: Number(count) || 0, current: Number(current) || 0, invalid: Boolean(invalid), notice });
+    },
+  });
+
   const setShortcuts = (patch: Partial<AppState["ui"]["shortcuts"]>) =>
     store.update((s) => ({ ...s, ui: { ...s.ui, shortcuts: { ...s.ui.shortcuts, ...patch } } }));
   commands.register({
@@ -392,6 +496,44 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       triggerShortcut: formatChord("Mod+.", bridge.platform),
     }),
   });
+  viewModels.register({
+    id: "vm.find",
+    schema: {
+      type: "object",
+      properties: {
+        open: { type: "boolean" }, replaceOpen: { type: "boolean" }, query: { type: "string" }, replace: { type: "string" },
+        caseSensitive: { type: "boolean" }, wholeWord: { type: "boolean" }, regex: { type: "boolean" }, invalid: { type: "boolean" },
+        status: { type: "string" }, statusTone: { type: "string", enum: ["muted", "danger"] }, notice: { type: "string" },
+        focusFind: { type: "number" }, focusReplace: { type: "number" }, canReplace: { type: "boolean" },
+        actions: {
+          type: "object",
+          properties: Object.fromEntries(["prev", "next", "close", "case", "word", "regex", "replaceNext", "replaceAll", "toggleReplace"].map((k) => [k, {
+            type: "object" as const, properties: { label: { type: "string" as const }, shortcut: { type: "string" as const } },
+          }])),
+        },
+      },
+    },
+    setters: { query: "find.setQuery", replace: "find.setReplace" },
+    select: (s) => {
+      const f = s.ui.find;
+      if (!f.open) return { ...f, status: "", statusTone: "muted", canReplace: false, actions: {} };
+      const status = !f.query ? "" : f.invalid ? catalog.format("find.invalid") : f.count === 0 ? catalog.format("find.none") : catalog.format("find.count", { current: f.current, count: f.count });
+      // Each action's name and shortcut come from the registry, so tooltips teach the keys.
+      const action = (id: string) => {
+        const d = commands.describe(id);
+        return { label: catalog.format(d.title), shortcut: d.shortcut ? formatChord(d.shortcut, bridge.platform) : "" };
+      };
+      return {
+        ...f, status, statusTone: f.query && (f.count === 0 || f.invalid) ? "danger" : "muted", canReplace: f.count > 0,
+        actions: {
+          prev: action("find.prev"), next: action("find.next"), close: action("find.close"), case: action("find.toggle.caseSensitive"),
+          word: action("find.toggle.wholeWord"), regex: action("find.toggle.regex"), replaceNext: action("find.replaceNext"),
+          replaceAll: action("find.replaceAll"), toggleReplace: action("find.toggleReplace"),
+        },
+      };
+    },
+  });
+
   // The editor's keymap comes from the registry, so keys are defined once (KEY-02).
   const editorKeymap = commands.bindings().filter((b) => b.handledBy === "editor").flatMap((b) => b.chords.map((chord) => ({ id: b.id, chord })));
   viewModels.register({

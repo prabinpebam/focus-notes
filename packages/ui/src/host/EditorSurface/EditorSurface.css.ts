@@ -24,6 +24,10 @@ export const column = style({
   paddingInline: t.gutter,
   paddingTop: t.topBand,
   paddingBottom: t.endPadding,
+  selectors: {
+    // While the find bar is open, the top of the note sits below it, so it never covers a match.
+    "[data-find-open] > &": { paddingTop: `calc(${t.topBand} + ${t.findClearance})` },
+  },
 });
 
 // Focus mode (FOC-01 to FOC-06): a full-width mask over the content, bright only in the band.
@@ -77,3 +81,12 @@ globalStyle(p('ul[data-type="taskList"] li > label input'), { width: t.checkboxS
 globalStyle(p('ul[data-type="taskList"] li > div'), { flexGrow: 1, minWidth: 0 });
 globalStyle(p('ul[data-type="taskList"] li[data-checked="true"] > div'), { color: t.checkedText, textDecoration: "line-through" });
 globalStyle(p("::selection"), { backgroundColor: t.selection });
+
+// Find highlights (FND-01): every match, and the current one stronger and outlined.
+globalStyle(`${prose} .ProseMirror-search-match`, { backgroundColor: t.findMatch, borderRadius: t.findMatchOutlineWidth });
+globalStyle(`${prose} .ProseMirror-active-search-match`, {
+  backgroundColor: t.findMatchActive,
+  outlineStyle: "solid",
+  outlineWidth: t.findMatchOutlineWidth,
+  outlineColor: t.findMatchOutline,
+});

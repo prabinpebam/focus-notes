@@ -27,7 +27,8 @@ Find and replace text in the open note, or across every note in the workspace. I
 ### Highlights and focus mode
 
 - Every match gets a highlight from the `color.findMatch` token. The current match gets a stronger color (`color.findMatchActive`) and an outline.
-- While the find bar is open, thin tick marks along the right edge of the canvas show where matches are in the note. They're the only scroll indicator on the otherwise blank canvas, and they disappear when the bar closes.
+- While the find bar is open, the top of the note moves down below the bar, and matches scroll into view below it, so the bar never covers the current match.
+- *Planned (P1):* thin tick marks along the right edge of the canvas showing where matches are in the note (D-76).
 - With [focus mode](focus-mode.md) on, the bright row follows the **current match**. Other matches stay dimmed with the rest of their rows, but their highlight color still shows through, so you can see where they are.
 
 ## Replace in the note
@@ -37,12 +38,12 @@ Find and replace text in the open note, or across every note in the workspace. I
 | Action | Keys | Behavior |
 | --- | --- | --- |
 | Replace current | <kbd>Enter</kbd> in the replace field | Replaces the current match and moves to the next. |
-| Replace all | <kbd>⌘Enter</kbd> / <kbd>Ctrl+Alt+Enter</kbd> | Replaces every match. Always **one undo step**, and a toast says "Replaced 12 matches". |
+| Replace all | <kbd>⌘Enter</kbd> / <kbd>Ctrl+Alt+Enter</kbd> | Replaces every match. Always **one undo step**, and the bar says "Replaced 12 matches" (announced). |
 | Regex captures | `$1`, `$2`, `$&` | Available when the regex toggle is on. |
 | Preserve case (P1) | Toggle `AB` | `Note` → `Draft`, `NOTE` → `DRAFT`. |
 
 - **Formatting is kept.** The replacement takes the formatting of the first character of the match. Replacing inside a link keeps the link.
-- **Read-only parts are skipped.** Raw blocks the editor shows read-only (unknown components, raw HTML) are never changed, and the count says how many matches were skipped.
+- **Read-only parts are skipped.** Raw blocks the editor shows read-only (unknown components, raw HTML) are never searched or changed.
 
 ## Find in selection (P1)
 

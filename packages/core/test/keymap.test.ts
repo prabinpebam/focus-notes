@@ -54,7 +54,7 @@ describe("matching keys (KEY-06)", () => {
     expect(web.match(key({ key: "n", code: "KeyN", ctrlKey: true, altKey: true }))).toBe("note.new");
     expect(web.match(key({ key: "n", code: "KeyN", ctrlKey: true }))).toBeUndefined();
     expect(mac.match(key({ key: "f", code: "KeyF", ctrlKey: true, metaKey: true }))).toBe("window.fullScreen");
-    expect(mac.match(key({ key: "f", code: "KeyF", metaKey: true }))).toBeUndefined();
+    expect(mac.match(key({ key: "f", code: "KeyF", metaKey: true }))).toBe("find.open");
   });
   it("leaves editor keys to the editor", () => {
     expect(win.match(key({ key: "b", code: "KeyB", ctrlKey: true }))).toBeUndefined();
@@ -69,11 +69,13 @@ describe("the default keymap (KEY-02, KEY-06)", () => {
   for (const platform of PLATFORMS) {
     const app = appFor(platform);
     const all = app.commands.bindings(platform);
-    it(`${platform}: no chord runs two commands`, () => {
+    it(`${platform}: no chord runs two commands in the same context`, () => {
       const seen = new Map<string, string>();
       for (const b of all) for (const c of b.chords) {
-        expect(seen.get(c), `${c} is bound to ${seen.get(c)} and ${b.id}`).toBeUndefined();
-        seen.set(c, b.id);
+        // Editor keys and app keys share a context (the app resolves first); other scopes are their own.
+        const k = `${b.handledBy && b.handledBy !== "editor" ? b.handledBy : "app"}:${c}`;
+        expect(seen.get(k), `${c} is bound to ${seen.get(k)} and ${b.id}`).toBeUndefined();
+        seen.set(k, b.id);
       }
     });
     it(`${platform}: no OS-reserved or browser-reserved keys`, () => {
@@ -126,7 +128,7 @@ describe("the cheat sheet (KEY-05)", () => {
     const app = appFor("windows");
     expect((app.viewModels.select("vm.shortcuts", app.store.state) as { groups: unknown[] }).groups).toEqual([]);
     const { vm } = await open();
-    expect(vm().groups.map((g) => g.id)).toEqual(["app", "editing", "formatting", "blocks"]);
+    expect(vm().groups.map((g) => g.id)).toEqual(["app", "editing", "formatting", "blocks", "find"]);
     expect(ids(vm().groups)).toEqual(expect.arrayContaining(["note.save", "format.bold", "block.heading1", "keys.cutCopyPaste", "shortcuts.open"]));
     expect(ids(vm().groups)).not.toContain("spotlight.open"); // planned for M4
     expect(vm().summary).toBe(`${vm().count} shortcuts`);

@@ -4,6 +4,7 @@
   "background": { "$type": "color", "$value": "{color.surfaceSunken}" },
   "border": { "$type": "color", "$value": "{color.border}" },
   "borderFocus": { "$type": "color", "$value": "{color.focusRing}" },
+  "borderInvalid": { "$type": "color", "$value": "{color.danger}" },
   "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
   "text": { "$type": "color", "$value": "{color.text}" },
