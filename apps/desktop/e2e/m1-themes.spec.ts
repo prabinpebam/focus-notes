@@ -115,8 +115,13 @@ test("forced colors: every color becomes a system color and the scrollbar thumb 
   const { page } = l;
   await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
   await page.emulateMedia({ forcedColors: "active" });
-  const v = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--fn-color-canvas").trim());
-  expect(v).toBe("Canvas");
+  const canvasVar = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--fn-color-canvas").trim());
+  expect(await canvasVar()).toBe("Canvas");
+  // It wins over every theme, not just the base one (review of WP-1.9).
+  await page.keyboard.press(`${mod}+Shift+L`);
+  await expect.poll(() => attr(page, "data-theme")).toBe("ink");
+  expect(await canvasVar()).toBe("Canvas");
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--fn-color-focus-ring").trim())).toBe("Highlight");
   await page.waitForTimeout(1200);
   const thumb = await page.locator("[data-editor-scroller]").evaluate((el) => getComputedStyle(el, "::-webkit-scrollbar-thumb").backgroundColor);
   expect(thumb).not.toBe("rgba(0, 0, 0, 0)");

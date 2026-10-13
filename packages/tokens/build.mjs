@@ -23,7 +23,8 @@ const MODES = {
   '[data-transparency="reduced"]': join(src, "modes", "reduced-transparency.json"),
   '[data-pointer="coarse"]': join(src, "modes", "coarse-pointer.json"),
   '[data-platform="macos"]': join(src, "modes", "platform-macos.json"),
-  // Windows contrast themes: every color becomes a system color (A11Y-02). Last, so it wins.
+  // Windows contrast themes: every color becomes a system color (A11Y-02). Media queries add no
+  // specificity, so its selector is raised above the theme and mode blocks (:root[data-…]).
   "@media (forced-colors: active)": join(src, "modes", "forced-colors.json"),
 };
 
@@ -107,7 +108,7 @@ const blocks = [];
 blocks.push(await css(BASE, ":root"));
 for (const [name, file] of Object.entries(THEMES)) blocks.push(await css([...BASE, file], `:root[data-theme="${name}"]`, file));
 for (const [sel, file] of Object.entries(MODES)) {
-  if (sel.startsWith("@media")) blocks.push(`${sel} {\n${await css([...BASE, file], ":root", file)}}\n`);
+  if (sel.startsWith("@media")) blocks.push(`${sel} {\n${await css([...BASE, file], ":root:root:root", file)}}\n`);
   else blocks.push(await css([...BASE, file], `:root${sel}`, file));
 }
 // UI scale (DSY-03): interface sizes, spacing, and type are multiplied by --fn-ui-scale. Note text
