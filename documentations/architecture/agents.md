@@ -98,6 +98,7 @@ Deep links never write content, delete, or change visibility, and they only work
 
 - **`AGENTS.md`** at the root of every workspace (from the template) explains the layout, front matter, link style, that `private/` must be pulled on its own, that `access.json` mustn't be edited by hand, and the commit message style. The product repository has its own `AGENTS.md` for contributors.
 - **JSON Schemas** (JSON Schema 2020-12) for note front matter, `.focus-notes/workspace.json`, `settings.json`, theme files, `keybindings.json`, `access.json`, and `access-message.json`. They live in the product repository's `schemas/` folder and are published on the product site with stable `$id` URLs (AGT-08).
+- **The design system's vocabulary**: component contracts, the UI schema, token names, and fragments, published as JSON (DSY-13). Agents contributing to Focus Notes write views as data and get precise errors from `ui:check` ([Views as data](../design/system/views-as-data.md)).
 - **`llms.txt`** at the product site root lists these docs for language models, following the emerging `llms.txt` convention.
 
 ## Risks specific to agents

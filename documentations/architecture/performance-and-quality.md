@@ -18,6 +18,7 @@ How fast Focus Notes must be, how big a workspace it must handle, how it's teste
 | Focus band update | Within the same frame as the caret move | Frame timeline | FOC-05 |
 | Memory | ≤ 350 MB resident with a 10,000-note workspace open | Process metrics after 10 minutes of use | PRF-04 |
 | Idle CPU | Near zero when not typing or syncing. No polling except the 5-minute fetch. | OS process sampling | PRF-04 |
+| View rendering | ≤ 100 ms to a view's first frame, ≤ 10% overhead from the UI runtime | Benchmarks on Settings, Files, and Spotlight | DSY-11 |
 | Installer size | ≤ 150 MB per platform | Release assets | PRF-05 |
 | Web app first load (M6) | ≤ 300 KB JavaScript compressed for the reader page. ≤ 1.5 MB for the editor. | Build report | PRF-05 |
 | Publish (CI) | ≤ 5 minutes for 1,000 public notes and 200 shared notes | Workflow duration | PRF-06 |
@@ -49,7 +50,8 @@ How fast Focus Notes must be, how big a workspace it must handle, how it's teste
 | Integration | Vitest with real Git in temporary folders | Save and sync, conflicts, submodule rules, rename and link updates, Recently deleted, the lock file |
 | End-to-end, web | Playwright (Apache-2.0) | Editor, Spotlight, find, tables, theme manager, sharing reader, in Chromium, WebKit, and Firefox |
 | End-to-end, desktop | Playwright's Electron support | First run (against a test GitHub organization), window management on Windows, menus, deep links |
-| Visual regression | Playwright screenshots | Every view and component in light, dark, high contrast, and compact layouts |
+| Visual regression | Playwright screenshots of the gallery | Every component variant and state, and every view with each view-model fixture, in light, dark, high contrast, compact, and reduced transparency (DSY-09) |
+| View documents | `ui:check` | Schema, references, binding types, accessibility and design rules for every view (DSY-08) |
 | Accessibility | axe-core (MPL-2.0, test-only) plus manual passes | Automated checks on every view, and manual screen-reader passes before each release |
 | Input | Playwright plus manual | IME (Japanese, Chinese, Korean), dead keys, AltGr layouts (German, Polish), non-Latin layouts, macOS Emacs-style keys |
 | Performance | Playwright traces plus benchmarks | The budgets above |

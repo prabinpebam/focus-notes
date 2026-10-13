@@ -19,8 +19,9 @@ The planned code layout (a pnpm monorepo) is in [`documentations/plan/distributi
 3. **Record decisions.** Any assumption beyond the seed spec goes into [`documentations/plan/decisions.md`](documentations/plan/decisions.md) with an ID, a status, and the pages it affects.
 4. **Follow Slate.** One H1 per page, a TL;DR on every page, Slate components only, SVG figures that use tokens and prefixed IDs, and no meta-documents (put findings into the durable page they belong to). Register every page in `documentations/docs-manifest.json`.
 5. **Every requirement is on the roadmap.** Each requirement ID in `product/requirements.md` must appear in exactly one milestone in `plan/roadmap.md`.
-6. **Licenses.** The app is MIT. Only permissive dependencies are allowed (see the licensing policy in `plan/decisions.md`).
-7. **Package sources.** Use the package sources and registries your environment requires. Never commit secrets or tokens.
+6. **Design system.** The app's interface is data. When code arrives, markup and styles may exist only in `packages/ui` primitives and layouts, every visual value is a token, and views are JSON documents validated by `ui:check`. Never add HTML, CSS, inline styles, or literal UI strings anywhere else. See [`documentations/design/system/overview.html`](documentations/design/system/overview.html).
+7. **Licenses.** The app is MIT. Only permissive dependencies are allowed (see the licensing policy in `plan/decisions.md`).
+8. **Package sources.** Use the package sources and registries your environment requires. Never commit secrets or tokens.
 
 ## Validate before committing
 

@@ -3,7 +3,7 @@
 Every assumption and design choice these docs make beyond the literal [seed spec](../seed-specs.md), in one place, so any of them can be revisited deliberately.
 
 > [!NOTE]
-> **TL;DR.** 55 decisions. D-01 to D-44 are settled by the owner; D-45 to D-55 are proposals from the gap review that stand as the plan until changed. The newest owner decisions: **D-41/D-42**: private sharing with named audiences through magic links and passcodes, in the first release. **D-43**: download first, browser second. **D-44**: agent-friendly through MCP, a command-line tool, deep links, and AGENTS.md. Key owner decisions: **D-14**: 20 px corners on Windows (and Linux) by drawing the window and rebuilding window management; macOS uses its native window. **D-16**: Spotlight is <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd>, and <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> is the link key. **D-19**: support every platform possible. **D-21**: no OAuth app, no registration, and no hosting by the project. Sign-in goes through Git's own sign-in tools that the user owns (with device codes), and each user's Focus Notes is an isolated instance in their own GitHub account (**D-38**). The owner accepted every remaining proposal on 2026-10-13.
+> **TL;DR.** 61 decisions. D-01 to D-44, D-56, and D-57 are settled by the owner. D-45 to D-55 and D-58 to D-61 are proposals that stand as the plan until changed. **D-56/D-57**: a strict, layered design system, and an interface defined entirely as data, with no HTML or CSS in the app. The newest owner decisions: **D-41/D-42**: private sharing with named audiences through magic links and passcodes, in the first release. **D-43**: download first, browser second. **D-44**: agent-friendly through MCP, a command-line tool, deep links, and AGENTS.md. Key owner decisions: **D-14**: 20 px corners on Windows (and Linux) by drawing the window and rebuilding window management; macOS uses its native window. **D-16**: Spotlight is <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd>, and <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> is the link key. **D-19**: support every platform possible. **D-21**: no OAuth app, no registration, and no hosting by the project. Sign-in goes through Git's own sign-in tools that the user owns (with device codes), and each user's Focus Notes is an isolated instance in their own GitHub account (**D-38**). The owner accepted every remaining proposal on 2026-10-13.
 
 ## Status legend
 
@@ -38,6 +38,8 @@ Every assumption and design choice these docs make beyond the literal [seed spec
 | D-42 | **Private sharing is part of the first release (P0)**, not a later addition, because the owner asked for it as a core capability. | Decided (owner) | [Roadmap → M5](roadmap.md) |
 | D-43 | **Getting started: download first, browser second.** The product site's Get started page leads with the desktop download, and the app runs setup. *Start in your browser* (M6) is a secondary path that uses only GitHub's own pages and a token. | Decided (owner) | [Get started](../design/views/get-started.md) |
 | D-44 | **Agent-friendly by design:** a local MCP server, a command-line tool with JSON output, `focus-notes://` deep links, an `AGENTS.md` in every workspace, published JSON Schemas, and `llms.txt` on the product site. | Decided (owner) | [Agents and automation](../architecture/agents.md) |
+| D-56 | **A strict, layered design system:** tokens, primitives, layouts, compound components, fragments, and views, each using only the layers below it. Every visual value is a token. | Decided (owner) | [Design system](../design/system/overview.html) |
+| D-57 | **The app's interface is data.** Every view is a JSON document mapped onto design-system components, so the app has no HTML or CSS of its own. Markup and styles exist only in the design system's primitives and layouts. | Decided (owner) | [Views as data](../design/system/views-as-data.md) |
 
 ## Accepted proposals
 
@@ -68,7 +70,7 @@ Every assumption and design choice these docs make beyond the literal [seed spec
 | D-39 | **Cheat sheet key:** <kbd>Ctrl/⌘</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> (<kbd>Ctrl/⌘</kbd>+<kbd>?</kbd>), because <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> is now Spotlight (D-16). | Decided (accepted) | [Keyboard shortcuts](../experience/keyboard-shortcuts.md#app-and-window) |
 | D-40 | **This documentation is published on the project's own GitHub Pages site** (with the download page), not inside each user's notes site. | Decided (accepted) | [Repository and publishing](../architecture/repository-and-publishing.html#who-owns-what) |
 
-## Proposed in the gap review (2026-10-14)
+## Proposed
 
 | ID | Decision | Status | Affects |
 | --- | --- | --- | --- |
@@ -83,6 +85,10 @@ Every assumption and design choice these docs make beyond the literal [seed spec
 | D-53 | **Theme files use the W3C Design Tokens (DTCG) format** (`$value`, `$type`), so they can be exchanged with design tools. | Proposed | [Standards](../architecture/standards.md), [Theme manager](../design/views/theme-manager.html) |
 | D-54 | **The web app is hosted on the product site at `/app/`**, not in each user's notes site, so one build serves everyone and users' sites stay read-only. | Proposed | [Distribution → Product site](distribution.md#the-product-site) |
 | D-55 | **No telemetry.** Diagnostics stay on the computer. *Copy diagnostic report* and *Report a problem* (a pre-filled GitHub issue the user reviews) are the only ways information leaves. | Proposed | [Performance and quality](../architecture/performance-and-quality.md), [Security and privacy](../architecture/security-and-privacy.md) |
+| D-58 | **Design system implementation:** React (MIT) with React Aria Components (Apache-2.0) for accessible behavior, vanilla-extract (MIT) for build-time, token-typed styles, Style Dictionary (Apache-2.0) for tokens, Ajv for view validation, and Storybook for the gallery. The rules don't depend on these choices. | Proposed | [Design system → Implementation stack](../design/system/overview.html) |
+| D-59 | **Compound components never render elements or declare styles.** Only primitives and layouts do. | Proposed | [Design system → The layers](../design/system/overview.html) |
+| D-60 | **No logic in views:** a restricted JSON Logic subset for conditions, and everything else in typed view-model selectors and commands. | Proposed | [Views as data](../design/system/views-as-data.md) |
+| D-61 | **Views ship inside the app.** No remote, user-supplied, or agent-supplied views in this version. The format is designed so that could be allowed safely later. | Proposed | [Views as data → Versions](../design/system/views-as-data.md#versions-and-migration) |
 
 ## Licensing policy (D-20 details)
 

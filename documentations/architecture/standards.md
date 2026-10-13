@@ -12,7 +12,9 @@ The established standards, specifications, and conventions Focus Notes follows, 
 | Components | Generic directives proposal (`remark-directive`) | Future image and gallery blocks (D-11) |
 | IDs and dates | ULID for note IDs. ISO 8601 with time zone for every timestamp. | Front matter, grants, logs |
 | Configuration files | JSON Schema 2020-12 | Settings, themes, keybindings, `access.json`, invite template (AGT-08) |
-| Theme tokens | W3C Design Tokens Community Group format (`$value`, `$type`) | Theme files (D-53) |
+| Design tokens | W3C Design Tokens Community Group format (`$value`, `$type`) | Every token in the design system, and theme files (D-53, [Tokens](../design/system/tokens.md)) |
+| View documents | JSON Schema 2020-12, with a restricted JSON Logic subset for conditions | [Views as data](../design/system/views-as-data.md) |
+| Component names and anatomy | Open UI research, where it covers a component | [Components](../design/system/components.md) |
 | Unicode | NFC for file names and text comparison. NFKC with case folding for audience names. | Files, search, share lookup |
 | Accessibility | WCAG 2.2 AA, WAI-ARIA 1.2, ARIA Authoring Practices Guide | Every view and component |
 | Platform conventions | Apple Human Interface Guidelines, Windows app design guidelines, GNOME HIG (Linux) | Keyboard, window behavior, menus |
@@ -33,6 +35,7 @@ The established standards, specifications, and conventions Focus Notes follows, 
 These have no external standard, so the spec owns them:
 
 - [The articulation chain](../product/spec/chain.md) and its ID scheme
+- The UI schema, component contracts, and fragment format ([Views as data](../design/system/views-as-data.md))
 - Command IDs (`note.new`, `focus.toggle`) and keybinding contexts ([Keyboard shortcuts](../experience/keyboard-shortcuts.md))
 - The workspace layout and `.focus-notes/` folder ([Content model](content-model.md))
 - The sealing format and keyring envelope, adapted from `personal-site`

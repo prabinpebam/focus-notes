@@ -20,7 +20,7 @@ A full keymap, from the shortcuts everyone knows to niche ones for heavy users. 
 | **Pro** | Heavy keyboard users | Block selection mode, table cell selection, replace across notes, find in selection, Spotlight action keys, expand selection, reveal in Finder/Explorer |
 
 5. **Discoverable.** Tooltips show each shortcut. Spotlight lists the shortcut next to every command, so using it teaches the key. <kbd>Mod</kbd>+<kbd>/</kbd> opens a cheat sheet that can be searched and filtered by layer. The first-run experience teaches exactly one: <kbd>Mod</kbd>+<kbd>/</kbd> for Spotlight.
-6. **Customizable (P1).** A `keybindings.json` file (per device, or synced in `.focus-notes/`) can override any binding. It warns on conflicts, can reset everything, and shows the effective binding in Spotlight.
+6. **Customizable (P1).** A `keybindings.json` file (per device, or synced in `private/.focus-notes/`, D-46) can override any binding. It warns on conflicts, can reset everything, and shows the effective binding in Spotlight.
 
 ## Platforms
 

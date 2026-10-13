@@ -1,0 +1,215 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Design system</p>
+  <h1 class="slate-hero__title">Design system</h1>
+  <p class="slate-hero__summary">One strict, layered system builds every pixel of Focus Notes: tokens, primitives, layouts, compound components, fragments, and views. The app's interface is data. JSON view documents are mapped onto the catalog's components, so no app code contains HTML or CSS.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>Six layers, each allowed to use only the layers below it. <strong>Tokens</strong> (data) hold every visual value. <strong>Primitives</strong> and <strong>layouts</strong> are the <em>only</em> code that renders DOM elements or carries styles, and they style themselves only with tokens. <strong>Compound components</strong> are code that composes primitives and layouts, with no markup or styles of their own. <strong>Fragments</strong> and <strong>views</strong> are JSON documents that place components, bind them to typed <em>view models</em>, and run <em>commands</em>. Every component publishes a machine-readable contract, and the view schema is generated from those contracts, so a view that names an unknown component, prop, token, command, or string fails the build. There is no escape hatch: a need the catalog can't meet becomes a new component, reviewed and tested, never inline markup. The owner set this direction (D-56, D-57). The rules below are what make it hold.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 610" role="img"
+       aria-labelledby="dsy-title dsy-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="dsy-title">The six layers of the Focus Notes design system</title>
+    <desc id="dsy-desc">A stack of six layers. From the top: views and fragments, which are JSON data; compound components, layouts, and primitives, which are code inside the design system package; and tokens at the bottom, which are data. To the right, view models feed the views, messages feed the fragments, commands feed compound components such as toolbars and menus, and theme files override the tokens.</desc>
+    <g id="dsy-bands" data-slate-svg-step="0" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)">
+      <rect id="dsy-b1" x="40" y="30" width="580" height="80" rx="14" fill="var(--color-brand-bg)"/>
+      <rect id="dsy-b2" x="40" y="124" width="580" height="80" rx="14" fill="var(--color-brand-bg)"/>
+      <rect id="dsy-b3" x="40" y="218" width="580" height="80" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <rect id="dsy-b4" x="40" y="312" width="580" height="80" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <rect id="dsy-b5" x="40" y="406" width="580" height="80" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <rect id="dsy-b6" x="40" y="500" width="580" height="80" rx="14" fill="var(--color-brand-bg)"/>
+      <g fill="none">
+        <rect id="dsy-t1" x="60" y="38" width="440" height="64"/>
+        <rect id="dsy-t2" x="60" y="132" width="440" height="64"/>
+        <rect id="dsy-t3" x="60" y="226" width="440" height="64"/>
+        <rect id="dsy-t4" x="60" y="320" width="440" height="64"/>
+        <rect id="dsy-t5" x="60" y="414" width="440" height="64"/>
+        <rect id="dsy-t6" x="60" y="508" width="440" height="64"/>
+      </g>
+      <g font-size="20" font-weight="700">
+        <text x="64" y="64" fill="var(--color-on-brand)" data-slate-fit-target="dsy-t1" data-slate-fit-padding="4">6. Views</text>
+        <text x="64" y="158" fill="var(--color-on-brand)" data-slate-fit-target="dsy-t2" data-slate-fit-padding="4">5. Fragments</text>
+        <text x="64" y="252" fill="var(--color-neutral-fg-1)" data-slate-fit-target="dsy-t3" data-slate-fit-padding="4">4. Compound components</text>
+        <text x="64" y="346" fill="var(--color-neutral-fg-1)" data-slate-fit-target="dsy-t4" data-slate-fit-padding="4">3. Layouts</text>
+        <text x="64" y="440" fill="var(--color-neutral-fg-1)" data-slate-fit-target="dsy-t5" data-slate-fit-padding="4">2. Primitives</text>
+        <text x="64" y="534" fill="var(--color-on-brand)" data-slate-fit-target="dsy-t6" data-slate-fit-padding="4">1. Tokens</text>
+      </g>
+      <g font-size="16">
+        <text x="64" y="90" fill="var(--color-on-brand)" data-slate-fit-target="dsy-t1" data-slate-fit-padding="4">One JSON document per view: Canvas, Files, Settings…</text>
+        <text x="64" y="184" fill="var(--color-on-brand)" data-slate-fit-target="dsy-t2" data-slate-fit-padding="4">Reusable JSON layouts: dialog, side sheet, settings row</text>
+        <text x="64" y="278" fill="var(--color-neutral-fg-2)" data-slate-fit-target="dsy-t3" data-slate-fit-padding="4">Toolbar, Menu, Dialog, Tree: compose only, no markup</text>
+        <text x="64" y="372" fill="var(--color-neutral-fg-2)" data-slate-fit-target="dsy-t4" data-slate-fit-padding="4">Stack, Inline, Grid, Surface, Layer, Positioner</text>
+        <text x="64" y="466" fill="var(--color-neutral-fg-2)" data-slate-fit-target="dsy-t5" data-slate-fit-padding="4">Text, Icon, Button, TextField, Switch, Slider</text>
+        <text x="64" y="560" fill="var(--color-on-brand)" data-slate-fit-target="dsy-t6" data-slate-fit-padding="4">Reference, semantic, and component values</text>
+      </g>
+    </g>
+    <g id="dsy-tags" data-slate-svg-step="1" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)" font-size="14" font-weight="700" text-anchor="middle">
+      <g fill="var(--color-neutral-bg-1)">
+        <rect id="dsy-g1" x="516" y="56" width="88" height="28" rx="14"/>
+        <rect id="dsy-g2" x="516" y="150" width="88" height="28" rx="14"/>
+        <rect id="dsy-g6" x="516" y="526" width="88" height="28" rx="14"/>
+      </g>
+      <g fill="var(--color-brand-bg)">
+        <rect id="dsy-g3" x="516" y="244" width="88" height="28" rx="14"/>
+        <rect id="dsy-g4" x="516" y="338" width="88" height="28" rx="14"/>
+        <rect id="dsy-g5" x="516" y="432" width="88" height="28" rx="14"/>
+      </g>
+      <text x="560" y="75" fill="var(--color-neutral-fg-1)" data-slate-fit-target="dsy-g1" data-slate-fit-padding="6">DATA</text>
+      <text x="560" y="169" fill="var(--color-neutral-fg-1)" data-slate-fit-target="dsy-g2" data-slate-fit-padding="6">DATA</text>
+      <text x="560" y="263" fill="var(--color-on-brand)" data-slate-fit-target="dsy-g3" data-slate-fit-padding="6">CODE</text>
+      <text x="560" y="357" fill="var(--color-on-brand)" data-slate-fit-target="dsy-g4" data-slate-fit-padding="6">CODE</text>
+      <text x="560" y="451" fill="var(--color-on-brand)" data-slate-fit-target="dsy-g5" data-slate-fit-padding="6">CODE</text>
+      <text x="560" y="545" fill="var(--color-neutral-fg-1)" data-slate-fit-target="dsy-g6" data-slate-fit-padding="6">DATA</text>
+    </g>
+    <g id="dsy-links" data-slate-svg-step="2" data-slate-svg-effect="draw" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="2.5" stroke-linecap="round">
+      <path d="M690 70 H626"/><path d="M634 64 L626 70 L634 76"/>
+      <path d="M690 164 H626"/><path d="M634 158 L626 164 L634 170"/>
+      <path d="M690 258 H626"/><path d="M634 252 L626 258 L634 264"/>
+      <path d="M690 540 H626"/><path d="M634 534 L626 540 L634 546"/>
+    </g>
+    <g id="dsy-inputs" data-slate-svg-step="3" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)" text-anchor="middle">
+      <g fill="var(--color-neutral-bg-3)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5">
+        <rect id="dsy-r1" x="690" y="30" width="240" height="80" rx="14"/>
+        <rect id="dsy-r2" x="690" y="124" width="240" height="80" rx="14"/>
+        <rect id="dsy-r3" x="690" y="218" width="240" height="80" rx="14"/>
+        <rect id="dsy-r4" x="690" y="500" width="240" height="80" rx="14"/>
+      </g>
+      <g font-size="18" font-weight="700" fill="var(--color-neutral-fg-1)">
+        <text x="810" y="64" data-slate-fit-target="dsy-r1" data-slate-fit-padding="12">View models</text>
+        <text x="810" y="158" data-slate-fit-target="dsy-r2" data-slate-fit-padding="12">Messages</text>
+        <text x="810" y="252" data-slate-fit-target="dsy-r3" data-slate-fit-padding="12">Commands</text>
+        <text x="810" y="534" data-slate-fit-target="dsy-r4" data-slate-fit-padding="12">Theme files</text>
+      </g>
+      <g font-size="15" fill="var(--color-neutral-fg-2)">
+        <text x="810" y="88" data-slate-fit-target="dsy-r1" data-slate-fit-padding="12">typed state, read-only</text>
+        <text x="810" y="182" data-slate-fit-target="dsy-r2" data-slate-fit-padding="12">ICU strings, no literals</text>
+        <text x="810" y="276" data-slate-fit-target="dsy-r3" data-slate-fit-padding="12">the only way to act</text>
+        <text x="810" y="558" data-slate-fit-target="dsy-r4" data-slate-fit-padding="12">override semantic tokens</text>
+      </g>
+    </g>
+  </svg>
+  <figcaption>Data on the outside, code in the middle. App code (and agents) only writes the top two layers. The middle three live in one package, <code>packages/ui</code>, and the bottom layer is the token source.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>Layer</th><th>Form</th><th>Examples</th><th>Fed by</th></tr></thead>
+    <tbody>
+      <tr><td>6. Views</td><td>JSON data</td><td>Canvas, Files, Settings</td><td>View models</td></tr>
+      <tr><td>5. Fragments</td><td>JSON data</td><td>Dialog layout, side sheet, settings row</td><td>Messages</td></tr>
+      <tr><td>4. Compound components</td><td>Code, composition only</td><td>Toolbar, Menu, Dialog, Tree</td><td>Commands</td></tr>
+      <tr><td>3. Layouts</td><td>Code with DOM and styles</td><td>Stack, Inline, Grid, Surface, Layer, Positioner</td><td>None</td></tr>
+      <tr><td>2. Primitives</td><td>Code with DOM and styles</td><td>Text, Icon, Button, TextField, Switch, Slider</td><td>None</td></tr>
+      <tr><td>1. Tokens</td><td>JSON data (DTCG)</td><td>Reference, semantic, and component values</td><td>Theme files</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2 data-reader-personas="design engineering">The layers</h2>
+
+<table>
+  <thead><tr><th>Layer</th><th>What it is</th><th>May use</th><th>May never contain</th><th>Detail</th></tr></thead>
+  <tbody>
+    <tr><td><strong>1. Tokens</strong></td><td>Every visual value, as named data in three tiers: reference, semantic, component.</td><td>Other tokens (aliases), within the tier rules</td><td>Anything but values</td><td><a href="tokens.md">Tokens</a></td></tr>
+    <tr><td><strong>2. Primitives</strong></td><td>The smallest components with their own look and behavior. They render DOM elements and own their styles.</td><td>Their own component tokens, the accessible behavior library, and other primitives (an IconButton includes a Tooltip)</td><td>Raw values, layouts, or compound components</td><td><a href="components.md#primitives">Components → Primitives</a></td></tr>
+    <tr><td><strong>3. Layouts</strong></td><td>Components that arrange other components: spacing, alignment, surfaces, layering, scrolling, and positioning.</td><td>Semantic space, size, radius, elevation, and layer tokens</td><td>Raw values, or decoration beyond what <code>Surface</code> offers</td><td><a href="components.md#layouts">Components → Layouts</a></td></tr>
+    <tr><td><strong>4. Compound components</strong></td><td>Reusable pieces with behavior, built by composing primitives and layouts: Toolbar, Menu, Dialog, Tree, CommandPalette.</td><td>Primitives, layouts, other compounds, commands, and view-model types</td><td><strong>Any DOM element or style.</strong> A compound that needs a new look gets a new primitive or variant.</td><td><a href="components.md#compound-components">Components → Compounds</a></td></tr>
+    <tr><td><strong>5. Fragments</strong></td><td>Reusable JSON arrangements with parameters and slots: the dialog layout, the side sheet layout, a settings row.</td><td>Components, other fragments, and messages</td><td>Code, markup, styles, literal strings</td><td><a href="views-as-data.md#fragments">Views as data → Fragments</a></td></tr>
+    <tr><td><strong>6. Views</strong></td><td>One JSON document per view in the <a href="../information-architecture.html">information architecture</a>, plus the published pages and the Get started page.</td><td>Fragments, components, view models, commands, and messages</td><td>Code, markup, styles, literal strings, raw values</td><td><a href="views-as-data.md">Views as data</a></td></tr>
+  </tbody>
+</table>
+
+<p>Two kinds of code sit beside the stack and never produce UI. <strong>View models</strong> are typed, read-only state with named selectors (the file tree, the current theme, the save state). <strong>Commands</strong> are the single registry of actions that the keyboard, Spotlight, menus, agents, and deep links already share (<a href="../../experience/keyboard-shortcuts.md">Keyboard shortcuts</a>). A view reads view models and runs commands. It never computes, fetches, or decides anything itself.</p>
+
+<h2 data-reader-personas="design engineering">The rules</h2>
+
+<ol class="slate-steps">
+  <li class="slate-step"><p class="slate-step__title">Every visual value is a token</p><p>Color, size, space, radius, type, line height, shadow, blur, opacity, border width, motion, layer order, and breakpoints are all tokens. The only values that aren't tokens are measured at run time (an anchor's position, the focus band's height), and only primitives and layouts may apply them (DSY-02).</p></li>
+  <li class="slate-step"><p class="slate-step__title">Tokens alias down, never across or up</p><p>Component tokens alias semantic tokens, and semantic tokens alias reference tokens. Components read only their own component tokens. Themes override semantic tokens only (DSY-01).</p></li>
+  <li class="slate-step"><p class="slate-step__title">Only primitives and layouts touch the DOM and styles</p><p>They are the only files that render elements or declare styles, and they all live in <code>packages/ui</code>. Compound components compose them and nothing else (DSY-04).</p></li>
+  <li class="slate-step"><p class="slate-step__title">Every component has a closed contract</p><p>Props are typed and enumerated: variants by name, sizes and spacing by token name, text as message keys, and actions as events. There's no <code>className</code>, no <code>style</code>, no pass-through of raw attributes, and no children of undeclared types (DSY-05).</p></li>
+  <li class="slate-step"><p class="slate-step__title">The app's interface is data</p><p>Every view, including the published pages and the product site, is a JSON document rendered by the UI runtime. Application code is view models, commands, and services, with no markup or styles (DSY-06).</p></li>
+  <li class="slate-step"><p class="slate-step__title">Views carry no logic</p><p>A view may bind, repeat, show conditionally through a small set of expressions, and run commands or set local state. Anything more becomes a view-model selector or a command, which can be tested on its own (DSY-07).</p></li>
+  <li class="slate-step"><p class="slate-step__title">Actions are commands</p><p>Toolbar, menu, and Spotlight items reference command IDs. The label, icon, shortcut, and enabled or checked state come from the command registry, so a command reads the same everywhere (DSY-12).</p></li>
+  <li class="slate-step"><p class="slate-step__title">Accessibility is built in, not added</p><p>Components implement the ARIA Authoring Practices patterns. Contracts make the accessible name required (an icon button needs a label, a dialog needs a title, a field needs a label), so a view can't leave it out.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Nothing ships unvalidated</p><p>The build validates every view against the generated schema, resolves every reference, type-checks every binding, and runs the accessibility and design rules. Any failure stops the build (DSY-08).</p></li>
+  <li class="slate-step"><p class="slate-step__title">No escape hatch</p><p>There is no raw-HTML component, no style override prop, and no "custom" node type. A need the catalog can't meet goes through <a href="#adding-or-changing-a-component">the component process</a>.</p></li>
+</ol>
+
+<h2 data-reader-personas="engineering">Where HTML and CSS may exist</h2>
+
+<p>This is the complete list. Anything else that produces markup or styles fails the build.</p>
+
+<table>
+  <thead><tr><th>Place</th><th>What it holds</th><th>Why it's allowed</th></tr></thead>
+  <tbody>
+    <tr><td><code>packages/tokens</code></td><td>The token source (DTCG JSON) and the generated CSS custom properties</td><td>Generated from data, never edited by hand.</td></tr>
+    <tr><td><code>packages/ui</code> primitives and layouts</td><td>Element rendering and token-only styles</td><td>The single place the look is implemented.</td></tr>
+    <tr><td><code>packages/ui</code> host components</td><td>Primitives that wrap imperative DOM: the editor surface, the focus mask, the window frame, the color area, and virtual lists</td><td>Their libraries need direct DOM access. They're still catalog components with contracts.</td></tr>
+    <tr><td><code>packages/ui</code> block components</td><td>How note content renders (paragraphs, headings, lists, tables, code) in the editor and on published pages</td><td>The editor's node views and the publisher both use them, so a note looks the same everywhere.</td></tr>
+    <tr><td>The generated entry document</td><td>One HTML file per app, with the root element and the Content Security Policy</td><td>Built from a template in <code>packages/ui</code>, with no content.</td></tr>
+    <tr><td>Generated output</td><td>Published pages, which the publisher renders from views to static HTML</td><td>Output, not source.</td></tr>
+  </tbody>
+</table>
+
+<p>Outside the app: the native macOS menu bar and the desktop context menus come from the command registry, which is data. These docs (Slate) aren't app UI.</p>
+
+<h2 data-reader-personas="engineering">Enforcement</h2>
+
+<table>
+  <thead><tr><th>Rule</th><th>Check</th><th>Fails when</th></tr></thead>
+  <tbody>
+    <tr><td>Markup only in <code>packages/ui</code></td><td>ESLint bans JSX and DOM-creation APIs outside <code>packages/ui</code>. dependency-cruiser allows only <code>packages/ui-runtime</code> to import <code>packages/ui</code>.</td><td>Any <code>.tsx</code> file, JSX, <code>document.createElement</code>, or <code>innerHTML</code> outside the allowed places</td></tr>
+    <tr><td>Styles only in primitives and layouts</td><td>Style files may exist only under <code>packages/ui/src/primitives</code> and <code>packages/ui/src/layouts</code>. Compound component files may not import a style API.</td><td>A <code>.css</code> file or style definition anywhere else</td></tr>
+    <tr><td>Only tokens in styles</td><td>Style values are typed to token variables, and a lint rule rejects color, length, duration, and number literals (except 0).</td><td>A hex color, a <code>px</code> value, or a duration literal in a style</td></tr>
+    <tr><td>Token tiers</td><td>The token build checks every alias: component → semantic → reference only.</td><td>An alias that skips or reverses a tier, or a cycle</td></tr>
+    <tr><td>Closed contracts</td><td>TypeScript types generated from each contract, with no index signatures</td><td>A prop that isn't declared</td></tr>
+    <tr><td>Valid views</td><td><code>pnpm ui:check</code>: schema, references, binding types, and the accessibility and design rules (<a href="views-as-data.md#validation">Views as data → Validation</a>)</td><td>Any error</td></tr>
+    <tr><td>Complete fixtures</td><td>The gallery build lists every component variant and state, and every view state</td><td>A variant or state without a fixture</td></tr>
+    <tr><td>Visual and accessibility regressions</td><td>Playwright screenshots and axe on every fixture, in light, dark, high contrast, compact, and reduced transparency</td><td>An unapproved pixel change or any axe violation</td></tr>
+  </tbody>
+</table>
+
+<h2 id="adding-or-changing-a-component" data-reader-personas="design engineering">Adding or changing a component</h2>
+
+<ol class="slate-steps">
+  <li class="slate-step"><p class="slate-step__title">Prove the need</p><p>Show the view that can't be built from the catalog and the user-can it serves. Prefer a composition over a new variant, and a new variant over a new component.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Write the contract and the decision</p><p>The contract (props, variants, events, slots, states, tokens, accessibility pattern) and a design decision that traces to the user-can, both added to <a href="components.md">Components</a>.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Add tokens first</p><p>New component tokens alias existing semantic tokens. A new semantic token needs its own decision, because every theme then has to set it or inherit it.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Build, fixture, and test</p><p>The implementation in the right layer, a fixture for every variant and state, keyboard and screen-reader behavior, and visual baselines.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Version the schema</p><p>Additions are a minor change. Removing or renaming anything is a major change to the UI schema version, and it ships with an automatic migration for every view document (DSY-10).</p></li>
+</ol>
+
+<h2 data-reader-personas="engineering">Implementation stack</h2>
+
+<table>
+  <thead><tr><th>Need</th><th>Choice</th><th>License</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Component framework</td><td>React</td><td>MIT</td><td>Tiptap has first-class React node views, rendering to static HTML for published pages is built in, and its ecosystem is the largest.</td></tr>
+    <tr><td>Accessible behavior for primitives</td><td>React Aria Components</td><td>Apache-2.0</td><td>Unstyled ARIA Authoring Practices behavior for buttons, menus, list boxes, trees, dialogs, sliders, color pickers, and more, with no visual opinions to fight.</td></tr>
+    <tr><td>Styles in primitives and layouts</td><td>vanilla-extract</td><td>MIT</td><td>Type-checked styles compiled to static CSS at build time. Nothing is injected at run time, so the strict Content Security Policy holds, and style values can be typed to tokens only.</td></tr>
+    <tr><td>Token build</td><td>Style Dictionary</td><td>Apache-2.0</td><td>Reads the DTCG format (D-53) and generates the CSS variables, the TypeScript types, and the JSON Schema enums that views and themes are validated against.</td></tr>
+    <tr><td>View validation</td><td>Ajv with JSON Schema 2020-12</td><td>MIT</td><td>The same standard as every other file format (D-50).</td></tr>
+    <tr><td>Expressions in views</td><td>A restricted subset of JSON Logic</td><td>MIT (json-logic-js)</td><td>Declarative and serializable, with no code execution.</td></tr>
+    <tr><td>Component and view gallery</td><td>Storybook</td><td>MIT</td><td>Every fixture is a story, and the gallery also runs the visual and accessibility tests.</td></tr>
+  </tbody>
+</table>
+
+<p>These choices are proposals (D-58). The rules above don't depend on them: a different framework would change the primitives and the renderer, never the tokens, fragments, or views.</p>
+
+<h2 data-reader-personas="product design engineering">Design decisions</h2>
+
+<table>
+  <thead><tr><th>ID</th><th>Decision</th><th>Serves</th><th>Rationale</th><th>Alternatives rejected</th></tr></thead>
+  <tbody>
+    <tr><td>DD-DSY-01</td><td>Six layers, each using only the layers below it, with markup and styles confined to primitives and layouts.</td><td>UC-THEME-09, UC-CANVAS-02</td><td>With one place for the look, a theme, a contrast fix, or a platform tweak changes every surface at once. That keeps the interface calm and consistent (CP-CALM-01).</td><td>Shared CSS plus conventions, which drifts as soon as a deadline arrives.</td></tr>
+    <tr><td>DD-DSY-02</td><td>Views are JSON documents, not code.</td><td>UC-AGENT-06, UC-READ-01</td><td>Data can be validated completely, diffed, migrated, read by agents, and rendered to static pages, and it can't hide one-off styling (D-57).</td><td>Views as components in code, which allows exactly the exceptions the owner wants ruled out.</td></tr>
+    <tr><td>DD-DSY-03</td><td>Compound components may not render elements or declare styles.</td><td>UC-CANVAS-02</td><td>It closes the gap where most design systems leak: a compound adding a margin or a color "just this once".</td><td>Letting compounds style their own parts, the common pattern.</td></tr>
+    <tr><td>DD-DSY-04</td><td>No escape hatch in views.</td><td>UC-CANVAS-02</td><td>Under pressure, an escape hatch becomes the main path. The component process is short enough to use instead.</td><td>A <code>RawHtml</code> component or a <code>style</code> prop for emergencies.</td></tr>
+    <tr><td>DD-DSY-05</td><td>Command-driven controls: toolbar, menu, and Spotlight items name a command, never their own label and icon.</td><td>UC-KEY-02, UC-CANVAS-05</td><td>The same action reads the same on every surface, with its real shortcut and state (CP-FLOW-01).</td><td>Labels written in each view, which drift from the shortcut and from each other.</td></tr>
+  </tbody>
+</table>

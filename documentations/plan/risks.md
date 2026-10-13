@@ -3,7 +3,7 @@
 What could make Focus Notes fail, how likely and how bad each risk is, and what the plan does about it. Review this register at the end of every milestone.
 
 > [!NOTE]
-> **TL;DR.** The biggest risks are **scope** (a large product for a small team), the **custom window management on Windows**, **Markdown round-trip fidelity** with a rich editor, **supply-chain trust** (users' publish workflows run project code with their secrets), **share passcodes** that can be attacked offline, **onboarding friction** (Git, sign-in helpers, unsigned builds), and **dependence on GitHub**. Each has a mitigation and an early check in the roadmap.
+> **TL;DR.** The biggest risks are **scope** (a large product for a small team), the **custom window management on Windows**, **Markdown round-trip fidelity** with a rich editor, **supply-chain trust** (users' publish workflows run project code with their secrets), **share passcodes** that can be attacked offline, **onboarding friction** (Git, sign-in helpers, unsigned builds), **dependence on GitHub**, and the **data-driven interface** turning into an inner platform or slowing feature work. Each has a mitigation and an early check in the roadmap.
 
 | ID | Risk | Likelihood | Impact | Mitigation | Checked in |
 | --- | --- | --- | --- | --- | --- |
@@ -22,3 +22,6 @@ What could make Focus Notes fail, how likely and how bad each risk is, and what 
 | R-13 | **Licensing changes upstream** (for example Tiptap) | Low | Medium | Pinned versions (MIT releases stay MIT), the license check in CI, a plain ProseMirror fallback | Ongoing |
 | R-14 | **Accessibility gaps** in custom widgets (the trigger, tables, window controls) | Medium | High | ARIA Authoring Practices patterns, automated and manual screen-reader passes every release | M2 onward |
 | R-15 | **Workspace format drift** between app versions on different computers | Medium | Medium | `formatVersion`, migrations, and older apps refusing to write newer formats | M3 |
+| R-16 | **The view format becomes an inner platform**: views need logic the format can't express, and pressure builds to add scripting | Medium | High | Logic belongs in view-model selectors and commands by design. The expression subset is fixed and growing it needs a decision. The M0 spike builds the three hardest views (Settings, Files, Spotlight) before the format is frozen. | M0 |
+| R-17 | **Strictness slows feature work**: every new look needs a component change | Medium | Medium | A short component process, a broad initial catalog, variants before new components, and the gallery so changes are cheap to review | M2 |
+| R-18 | **Renderer overhead** on large views | Low | Medium | Per-field subscriptions, virtual lists, fragments expanded at build time, the typing path outside the renderer, and DSY-11 budgets measured in the M0 spike | M0 |

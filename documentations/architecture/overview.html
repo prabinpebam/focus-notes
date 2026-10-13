@@ -99,6 +99,8 @@
   <dd>A MiniSearch index in a Web Worker covering notes, headings, full text, folders, commands, and settings. It's kept on the device only (<a href="../experience/spotlight.html">Spotlight</a>).</dd>
   <dt>Focus mode</dt>
   <dd>A self-contained module that watches the editor's selection and writes the mask band (<a href="../experience/focus-mode.md">Focus mode</a>).</dd>
+  <dt>Design system and UI runtime</dt>
+  <dd>Tokens, primitives, layouts, and compound components in <code>packages/ui</code>, and the renderer that turns JSON view documents into the interface, binding them to view models and commands. No other code renders markup or styles (<a href="../design/system/overview.html">Design system</a>, D-56, D-57).</dd>
   <dt>Theme engine</dt>
   <dd>Loads, validates, and merges theme JSON, then applies tokens as CSS custom properties (<a href="../experience/theming.md">Theming</a>).</dd>
   <dt>Workspace</dt>
@@ -133,6 +135,7 @@
     <tr><td>Language</td><td>TypeScript</td><td>Apache-2.0</td><td>Proposed</td></tr>
     <tr><td>Build</td><td>Vite, static output</td><td>MIT</td><td>Proposed</td></tr>
     <tr><td>Editor engine</td><td>Tiptap on ProseMirror, MIT packages only (<a href="editor-engine.md">Editor engine</a>)</td><td>MIT</td><td><strong>Decided</strong> (D-01)</td></tr>
+    <tr><td>Interface</td><td>React, React Aria Components, vanilla-extract, and Style Dictionary, rendering JSON view documents (<a href="../design/system/overview.html#implementation-stack">Design system</a>)</td><td>MIT, Apache-2.0</td><td>Proposed (D-58)</td></tr>
     <tr><td>Find and replace</td><td><code>prosemirror-search</code></td><td>MIT</td><td>Proposed</td></tr>
     <tr><td>Search index</td><td>MiniSearch in a Web Worker</td><td>MIT</td><td>Proposed</td></tr>
     <tr><td>Desktop</td><td>Electron with context isolation, sandbox, and a typed preload bridge</td><td>MIT</td><td>Required by the seed spec</td></tr>
@@ -147,6 +150,7 @@
 
 <h2>Security baseline</h2>
 <ul>
+  <li>The interface is rendered only from validated view documents through a closed component registry. No code path sets <code>innerHTML</code>.</li>
   <li>A strict Content Security Policy: no inline scripts, and connections only to <code>api.github.com</code> and the app's own origin.</li>
   <li>Markdown is sanitized when rendered, both in the editor and on published pages. Raw HTML in notes is shown as text, not run.</li>
   <li>Access tokens never go into the repository, URLs, process arguments, or logs. In Electron they go in the OS's secure storage and git's credential helper (never the plaintext <code>store</code> helper). On the web they are held in memory, with an optional encrypted local copy.</li>

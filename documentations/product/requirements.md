@@ -3,7 +3,7 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 168 requirements in 24 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 181 requirements in 25 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
@@ -135,7 +135,7 @@ Seed: *"ability to change theme — Colors, fonts."* The owner confirmed Light, 
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| THM-01 | All UI and content colors come from semantic design tokens. | P0 |
+| THM-01 | All UI and content colors come from semantic design tokens (see DSY-01). | P0 |
 | THM-02 | Built-in Light and Dark themes, plus "System" (follows the OS and switches live). This includes the desktop window's native parts. | P0 |
 | THM-03 | The writer can change the content font (serif, sans, mono, or a custom stack) and size. | P0 |
 | THM-04 | Themes are JSON documents, and custom themes can be added without code changes. | P1 |
@@ -334,6 +334,26 @@ Cross-cutting requirements serving CP-YOURS-01 and CP-OWN-01.
 | I18N-01 | Interface strings are externalized in ICU MessageFormat. English ships first. | P0 |
 | I18N-02 | Notes in any script: `dir="auto"` for each block, NFC file names, locale-aware sorting, and `Intl` dates and numbers. | P0 |
 | I18N-03 | More interface languages. | P1 |
+
+## Design system (DSY)
+
+Owner: *"Make sure we are extremely strict about Design system. Purely driven by tokens, fundamental components, compound components, layouts etc. … the whole app should be possible to be made with data driven UI where something like a json file can serve as the UI code … So actual app UI won't have a single html and css code."* Cross-cutting requirements serving CP-CALM-01, CP-YOURS-01, and CP-AGENT-01. Detailed in [Design system](../design/system/overview.html), [Tokens](../design/system/tokens.md), [Components](../design/system/components.md), and [Views as data](../design/system/views-as-data.md).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| DSY-01 | Three token tiers (reference, semantic, component) in the DTCG format. Component tokens alias semantic tokens, semantic tokens alias reference tokens, and components read only their own component tokens. Themes may override only the themeable semantic groups. | P0 |
+| DSY-02 | Every visual value (color, size, space, radius, type, line height, shadow, blur, opacity, border width, motion, layer order, breakpoint) is a token. A raw value outside the token source fails CI. Geometry measured at run time, applied by primitives and layouts, is the only exception. | P0 |
+| DSY-03 | Tokens resolve by mode: color scheme, contrast, forced colors, reduced motion, reduced transparency, pointer, platform, and UI scale. Components never check modes themselves. | P0 |
+| DSY-04 | Only primitive and layout components in `packages/ui` render DOM elements or declare styles. Compound components compose primitives, layouts, and other compounds only. | P0 |
+| DSY-05 | Every component has a closed, machine-readable contract (typed props, enumerated variants, events, slots, states, tokens, and accessibility pattern with a required accessible name). No `className`, `style`, or attribute pass-through. | P0 |
+| DSY-06 | All app UI is defined as JSON view documents rendered by the UI runtime: every IA view, the published reader and share pages, and the Get started page. Application code contains no markup or styles. | P0 |
+| DSY-07 | View documents contain only component and fragment references, registry-checked literals, message keys, reads and bindings to view models, local state, and the environment, a restricted expression subset, and actions that run commands or set local state. | P0 |
+| DSY-08 | `ui:check` validates every view and fragment (schema, references, binding types, accessibility rules, design rules) on every build, and any failure blocks it. | P0 |
+| DSY-09 | Every component variant and state, and every view with each of its view-model fixtures, is in the gallery and covered by visual regression, keyboard, and axe tests in light, dark, high contrast, compact, and reduced transparency. | P0 |
+| DSY-10 | Components change only through the component process (need, contract, design decision, tokens, fixtures, tests). Breaking changes bump the UI schema's major version and ship with an automatic migration for every view document. | P0 |
+| DSY-11 | Renderer overhead is 10% or less compared with an equivalent hand-written tree, any view opens to its first frame in 100 ms or less, and the typing path never goes through the renderer. | P0 |
+| DSY-12 | Toolbar, menu, Spotlight, and other action items reference command IDs. Their labels, icons, shortcuts, and enabled and checked states come from the command registry. | P0 |
+| DSY-13 | The component contracts, UI schema, token names, and fragment list are published as JSON on the product site for agents and tools. | P1 |
 
 ## Distribution (DST)
 

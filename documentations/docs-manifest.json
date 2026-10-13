@@ -172,13 +172,49 @@
       "group": "Design"
     },
     {
+      "path": "design/system/overview.html",
+      "title": "Design system",
+      "order": 301,
+      "icon": "category",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design/System"
+    },
+    {
+      "path": "design/system/tokens.md",
+      "title": "Tokens",
+      "order": 302,
+      "icon": "token",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design/System"
+    },
+    {
       "path": "design/foundations.md",
       "title": "Foundations",
-      "order": 310,
+      "order": 303,
       "icon": "design_services",
       "status": "draft",
       "updated": "2026-10-13",
-      "group": "Design"
+      "group": "Design/System"
+    },
+    {
+      "path": "design/system/components.md",
+      "title": "Component catalog",
+      "order": 304,
+      "icon": "widgets",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design/System"
+    },
+    {
+      "path": "design/system/views-as-data.md",
+      "title": "Views as data",
+      "order": 305,
+      "icon": "data_object",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design/System"
     },
     {
       "path": "design/views/files.html",

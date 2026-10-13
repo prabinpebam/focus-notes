@@ -23,7 +23,11 @@ focus-notes/
 │  └─ site/           # Product site: Get started, download page, privacy statement, schema hosting
 ├─ packages/
 │  ├─ core/           # Commands, keybindings, focus mode, themes, Spotlight index, workspace model
-│  ├─ editor/         # Tiptap extensions, block registry, UI components
+│  ├─ tokens/         # Design tokens (DTCG source) and the generated CSS, types, and schema
+│  ├─ ui/             # Design system: primitives, layouts, host and block components, compounds, contracts
+│  ├─ ui-runtime/     # Renderer: maps view documents to components, bindings, and commands
+│  ├─ views/          # View and fragment documents (JSON) for the app; the only UI the app defines
+│  ├─ editor/         # Tiptap extensions and block registry (node views come from packages/ui)
 │  ├─ markdown/       # Markdown bridge and round-trip corpus
 │  ├─ git/            # Local Git adapter (desktop)
 │  ├─ github/         # GitHub API adapter and setup engine (shared by desktop and web setup)
@@ -47,6 +51,8 @@ Today the repository holds the documentation only. Code arrives milestone by mil
 | Package manager and workspaces | pnpm workspaces (MIT) |
 | Language and build | TypeScript (Apache-2.0), Vite (MIT) |
 | Desktop packaging and updates | electron-builder, electron-updater (MIT) |
+| Interface | React (MIT), React Aria Components (Apache-2.0), vanilla-extract (MIT), Style Dictionary (Apache-2.0), Ajv (MIT) |
+| Component gallery | Storybook (MIT) |
 | Tests | Vitest (MIT), Playwright (Apache-2.0), axe-core (MPL-2.0, tests only) |
 | Lint and format | ESLint (MIT), Prettier (MIT) |
 | Versions and changelog | Changesets (MIT), Conventional Commits |

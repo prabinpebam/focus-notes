@@ -68,7 +68,7 @@ The full allow-list and deny-list are in [Decisions → Licensing policy](../pla
 | --- | --- |
 | `name` | Unique block name (also the directive name for components, such as `image`). |
 | `schema` | Node attributes, content expression, and grouping (block, inline, or atom). |
-| `view` | How it renders and edits on the canvas (a node view for rich components). |
+| `view` | How it renders and edits on the canvas: a [block component](../design/system/components.md#block-components) from the design system, used as the node view and by the publisher. |
 | `markdown.parse` | Which mdast node(s) or directive it comes from. |
 | `markdown.serialize` | How it writes back to Markdown. |
 | `inputRules` | Optional Markdown shortcuts that create it (`# `, `- `, …). |
