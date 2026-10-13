@@ -19,7 +19,7 @@ How this repository becomes the product people install: the repository layout, w
 focus-notes/
 ├─ apps/
 │  ├─ desktop/        # Electron main process, preload bridge, window management, installers
-│  ├─ web/            # Static web app: editor (M6) and web setup (/app/)
+│  ├─ web/            # Static web app, deployed by each user's copy to their own Pages (MW, D-80)
 │  └─ site/           # Product site: Get started, download page, privacy statement, schema hosting
 ├─ packages/
 │  ├─ core/           # Commands, keybindings, focus mode, themes, Spotlight index, workspace model
@@ -70,7 +70,7 @@ CI installs from lockfiles with frozen versions.
 | Linux app | AppImage and `.deb` (x64, arm64) | GitHub Releases, Flathub (later) |
 | Update metadata | `latest*.yml` files | GitHub Releases (read by electron-updater) |
 | Reader bundle | `reader-<version>.tgz`: static renderer, sealer, and reader assets | GitHub Releases (downloaded by users' publish workflows) |
-| Web app | Static files | Product site `/app/` (M6) |
+| Web app | Static files | Each user's own GitHub Pages site, built from their copy of this repository (MW, D-80) |
 | Command-line tool and MCP server | Inside the desktop app. Also `@focus-notes/cli` on npm (P1). | Installers, npm |
 | Integrity | `SHA256SUMS`, CycloneDX SBOM, GitHub artifact attestations | GitHub Releases |
 
@@ -127,7 +127,7 @@ The product's own GitHub Pages site (D-40, D-54):
 | Path | Serves |
 | --- | --- |
 | `/` | [Get started](../design/views/get-started.md): downloads, how it works, privacy |
-| `/app/` | The web app: web setup and browser editing (M6) |
+| `/` | The web app (on every copy of the repository, including the project's own, D-80) |
 | `/docs/` | This documentation |
 | `/schemas/` | The JSON Schemas, at stable `$id` URLs |
 | `/llms.txt` | A map of these docs for language models |

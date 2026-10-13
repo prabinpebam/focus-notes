@@ -56,7 +56,7 @@ Find and replace text in the open note, or across every note in the workspace. I
 1. Results are grouped by note: title, path, whether it's public or private, and the number of matches. Each note expands to show its matching lines with the match highlighted.
 2. The same toggles apply (case, word, regex), along with filters: `in:essays/`, `is:private`, `is:public`.
 3. <kbd>Enter</kbd> on a matching line opens that note at the match with the find bar open, so <kbd>Enter</kbd> then steps through its other matches. <kbd>F4</kbd> / <kbd>Shift</kbd>+<kbd>F4</kbd> jump to the next or previous result across notes without reopening the panel.
-4. **Desktop** searches the files on disk, so results are always complete and current. **Web** (M6) searches the local index, which is complete for note titles and covers note text as fast as notes can be cached.
+4. **Desktop** searches the files on disk, so results are always complete and current. **Web** (MW) searches the local index, which is complete for note titles and covers note text as fast as notes can be cached.
 
 ## Replace in all notes (P1)
 

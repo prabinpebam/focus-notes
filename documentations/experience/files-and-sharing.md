@@ -67,5 +67,5 @@ A private note or folder can be shared with an **audience**: a person or group i
 ## Conflicts and offline
 
 - **Desktop (primary):** the app works on a local clone, so reading and writing work fully offline. Commits are made locally and pushed when the network is back. Before pushing it fetches, and if the same note changed elsewhere the writer chooses between **Keep mine**, **Take theirs**, and **Save mine as a copy**. Nothing is merged silently, and the repository is never left half-rebased ([Desktop and Git](../architecture/desktop-and-git.md#save-and-sync)).
-- **Web (M6):** every save carries the version (Git blob SHA) the edit started from. If the remote file has changed since then, the save is rejected and the same three choices appear. While offline, edits are queued in IndexedDB and synced in order when the connection returns.
+- **Web (MW):** every save carries the version (Git blob SHA) the edit started from. If the remote file has changed since then, the save is rejected and the same three choices appear. While offline, edits are queued in IndexedDB and synced in order when the connection returns.
 - In both, the trigger shows the save-problem state while changes are waiting, and *Save* (<kbd>Ctrl/⌘</kbd>+<kbd>S</kbd>) retries right away.

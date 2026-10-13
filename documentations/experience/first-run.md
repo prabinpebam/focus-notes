@@ -98,6 +98,19 @@ After cloning, the app checks out the private submodule on `main` instead of a d
 
 **Writing starts before setup finishes.** As soon as the workspace is on this computer, [Start writing] is available. Turning on GitHub Pages, the first publish (which can take a few minutes), and the share-link key carry on in the background, with progress in **Settings → Workspace**. A failure there never blocks writing.
 
+## The web first run
+
+On a user's own GitHub Pages site the first run is shorter, because there's nothing to install and no Git (FRE-09, [D-81](../plan/decisions.md)). It's a small dialog over the canvas:
+
+| Screen | Content |
+| --- | --- |
+| **Welcome** | "Focus Notes runs entirely in your browser and saves to your own GitHub." [Start writing] [Connect GitHub] |
+| **Notes repository** | "Your notes live in a repository you own." [Create it on GitHub] (opens `github.com/new` pre-filled: `notes`, private) and a field for the repository name, filled with `notes`. |
+| **Token** | "Let Focus Notes write to that repository." [Create a token on GitHub] (opens the pre-filled fine-grained token page), with the one thing the form can't pre-fill: *choose Only select repositories, then your notes repository*. A field to paste the token. |
+| **Check** | Busy sign while it checks, then "Connected as ⟨login⟩ to ⟨owner/notes⟩" and [Start writing]. Errors say what to fix: wrong repository name, token without access, expired token, offline. |
+
+*Start writing* skips everything; the canvas opens on a new local note, and the trigger's ⋯ menu offers **Connect GitHub…** at any time. Details of storage, sync, and the token are on [Web app](../architecture/web-app.md).
+
 ## Account settings later
 
 **Settings → Account** shows the signed-in account, which helper holds the credential, and the workspace, with:

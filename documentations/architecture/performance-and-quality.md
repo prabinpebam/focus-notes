@@ -27,7 +27,7 @@ How fast Focus Notes must be, how big a workspace it must handle, how it's teste
 | External change | Affected views update ≤ 500 ms after the file watcher reports it. Unaffected views do no work. | A scripted edit from outside the app | PRF-11 |
 | Published pages (M5) | LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1, in lab runs only | Playwright lab runs in CI on a throttled profile | PRF-12 |
 | Installer size | ≤ 150 MB per platform | Release assets | PRF-05 |
-| Web app first load (M6) | ≤ 300 KB JavaScript compressed for the reader page. ≤ 1.5 MB for the editor. | Build report | PRF-05 |
+| Web app first load (MW) | ≤ 300 KB JavaScript compressed for the reader page. ≤ 1.5 MB for the editor. | Build report | PRF-05 |
 | Publish (CI) | ≤ 5 minutes for 1,000 public notes and 200 shared notes | Workflow duration | PRF-06 |
 
 **Reference hardware:** a mid-range laptop (4 cores, 8 GB, SSD) on Windows 11 and macOS. CI enforces the same budgets with a margin, on a fixed runner type. A regression beyond a measure's noise allowance (10% unless the budgets file says otherwise) fails the build.
@@ -126,7 +126,7 @@ Measure before fixing anything. Guesses about what's slow are usually wrong: in 
 | Area | Versions |
 | --- | --- |
 | Desktop OS | Windows 11 and Windows 10 22H2. The two latest macOS versions (on Apple silicon and Intel where Electron supports it). Ubuntu LTS (current and previous). |
-| Browsers (web build, M6) | The two latest versions of Chrome, Edge, Firefox, and Safari. Safari on iPadOS. |
+| Browsers (web build, MW) | The two latest versions of Chrome, Edge, Firefox, and Safari. Safari on iPadOS. |
 | Screen readers | NVDA and Narrator (Windows), VoiceOver (macOS and iPadOS) |
 | Keyboard layouts | US, UK, German, French AZERTY, Polish, Japanese IME, Chinese Pinyin, Korean, Arabic, Hebrew, Cyrillic |
 

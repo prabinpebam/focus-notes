@@ -99,6 +99,33 @@ Work packages off this path run in parallel when their dependencies are Done and
 - Every M1 surface is a view document. The gallery covers every component and view state, with no unapproved visual differences and no axe violations.
 - The owner writes at least three real documents in it before exit.
 
+<h2 id="mw" data-reader-personas="product design engineering">MW: Your app on GitHub Pages</h2>
+
+**You can:** open your own Focus Notes at your GitHub Pages address and write at once, with notes kept in your browser and working offline. Connect GitHub once, and every note syncs to your own notes repository (D-80 to D-82).
+
+**Used by:** The owner first, then anyone with a GitHub account. **Delivered as:** Preview 0.2.x, the first build most people use.
+
+**Demo script** (run by the owner on clean machines at the gate, then automated):
+
+1. *Use this template* on the Focus Notes repository, turn on GitHub Pages with GitHub Actions, and open the site when the workflow finishes.
+2. Write a note with no account, reload the page, and find it still there. Go offline, keep writing, and reload again.
+3. Choose *Connect GitHub*: make the notes repository and the token from the pre-filled GitHub pages, paste the token, and see the first sync finish.
+4. Edit the note in github.dev, return to the app, and see the change arrive. Edit it in both places, and see both versions kept.
+5. Open the site in a second browser, connect, and see the same notes.
+
+**Work packages**
+
+| ID | Work package | Requirements | Depends on | Reviews |
+| --- | --- | --- | --- | --- |
+| WP-6.1 | **Web app on your own Pages, local first, with GitHub sync**. The web build deployed by each user's copy of the repository to their GitHub Pages; IndexedDB storage and the outbox; the sync engine on the Git Data API; the encrypted token store. | PKG-05, PKG-07, PKG-08 | WP-1.4 | code, security |
+| WP-6.2 | **Start in the browser and connect GitHub**. Template or fork, turn on Pages, open your site; the web first run with the pre-filled notes repository and fine-grained token. | DST-02, FRE-09 | WP-6.1 | code, security, accessibility |
+
+**Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
+
+- Browser journeys pass in Chromium, Firefox, and WebKit against the built site, with GitHub mocked at the network layer.
+- A live smoke test on the project's own Pages site writes, syncs, and reads back a note in a test repository.
+- The token never leaves for any host but `api.github.com`, checked by a network capture.
+
 <h2 id="m2" data-reader-personas="product design engineering">M2: Desktop and local folders</h2>
 
 **You can:** The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format.
@@ -225,29 +252,6 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 - The [release definition of done](definition-of-done.md#release-definition-of-done) is met for everything in M0 to M5.
 - A moderated usability test with five writers new to the app: at least four finish setup and their first shared note unaided.
-
-<h2 id="m6" data-reader-personas="product design engineering">M6: The browser</h2>
-
-**You can:** The web app at the product site's `/app/` edits and syncs your workspace through the GitHub API with a token you create, and new users can start in the browser.
-
-**Used by:** Anyone. **Delivered as:** 1.1.
-
-**Demo script** (run by the owner on clean machines at the gate, then automated):
-
-1. Open `/app/` in Chrome, Firefox, and Safari, sign in with a fine-grained token, and edit and sync a note.
-2. Go offline, keep writing, and reconnect: the queue syncs.
-3. On a fresh GitHub account, start in the browser and finish setup using only GitHub's own pages and the token.
-
-**Work packages**
-
-| ID | Work package | Requirements | Depends on | Reviews |
-| --- | --- | --- | --- | --- |
-| WP-6.1 | **GitHub API adapter and web app**. The web build with the API adapter, token sign-in, and the offline queue. | PKG-05 | WP-3.1 | code, security |
-| WP-6.2 | **Start in the browser**. Web setup through GitHub's own pages and a repository-scoped token. | DST-02 | WP-6.1, WP-5.6 | code, security |
-
-**Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
-
-- Browser end-to-end journeys pass in Chromium, WebKit, and Firefox.
 
 <h2 id="m7" data-reader-personas="product design engineering">M7: Agents</h2>
 

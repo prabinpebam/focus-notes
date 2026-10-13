@@ -52,7 +52,7 @@ Focus Notes is a calm, Markdown-native writing app: an empty page, one small tri
 
 ### Planned extension points (not in the first release)
 
-- Editing and setup in the browser (M6, the web app at the product site's `/app/`).
+- The web app on each user's own GitHub Pages site is the primary way to use Focus Notes (MW, D-80); the desktop app is for a dedicated desktop experience.
 - Agents: a local MCP server, a command-line tool, and deep links (M7).
 - Custom keybindings, multiple windows, replace across notes.
 - Rich components such as image and gallery, added through the block registry.

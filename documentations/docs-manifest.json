@@ -316,6 +316,15 @@
       "group": "Architecture"
     },
     {
+      "path": "architecture/web-app.md",
+      "title": "Web app",
+      "order": 425,
+      "icon": "terminal",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Architecture"
+    },
+    {
       "path": "architecture/desktop-and-git.md",
       "title": "Desktop and Git",
       "order": 430,

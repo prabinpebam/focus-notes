@@ -18,6 +18,13 @@
       "gate": "GATE-M1"
     },
     {
+      "id": "MW",
+      "title": "Your app on GitHub Pages",
+      "outcome": "Write in any browser from your own GitHub Pages site, locally first, syncing to your own repository.",
+      "channel": "1.1",
+      "gate": "GATE-M6"
+    },
+    {
       "id": "M2",
       "title": "Desktop and local folders",
       "outcome": "The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format.",
@@ -44,13 +51,6 @@
       "outcome": "The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. The Get started page offers the downloads, and every release ships with checksums, an SBOM, and attestations.",
       "channel": "1.0 stable on GitHub Releases",
       "gate": "GATE-M5"
-    },
-    {
-      "id": "M6",
-      "title": "The browser",
-      "outcome": "The web app at the product site's `/app/` edits and syncs your workspace through the GitHub API with a token you create, and new users can start in the browser.",
-      "channel": "1.1",
-      "gate": "GATE-M6"
     },
     {
       "id": "M7",
@@ -1364,40 +1364,43 @@
     },
     {
       "id": "WP-6.1",
-      "stage": "M6",
-      "title": "GitHub API adapter and web app",
-      "summary": "The web build with the API adapter, token sign-in, and the offline queue.",
+      "stage": "MW",
+      "title": "Web app on your own Pages, local first, with GitHub sync",
+      "summary": "The web build deployed by each user's copy of the repository to their GitHub Pages; IndexedDB storage and the outbox; the sync engine on the Git Data API; the encrypted token store.",
       "requirements": [
-        "PKG-05"
+        "PKG-05",
+        "PKG-07",
+        "PKG-08"
       ],
       "dependsOn": [
-        "WP-3.1"
+        "WP-1.4"
       ],
       "touches": [
         "github",
-        "web"
+        "web",
+        "ci"
       ],
       "reviews": [
         "code",
         "security"
       ],
       "specs": [
-        "architecture/overview.html"
+        "architecture/web-app.md"
       ],
       "lookahead": false,
       "status": "planned"
     },
     {
       "id": "WP-6.2",
-      "stage": "M6",
-      "title": "Start in the browser",
-      "summary": "Web setup through GitHub's own pages and a repository-scoped token.",
+      "stage": "MW",
+      "title": "Start in the browser and connect GitHub",
+      "summary": "Template or fork, turn on Pages, open your site; the web first run: start writing, or connect GitHub with a pre-filled notes repository and a pre-filled fine-grained token.",
       "requirements": [
-        "DST-02"
+        "DST-02",
+        "FRE-09"
       ],
       "dependsOn": [
-        "WP-6.1",
-        "WP-5.6"
+        "WP-6.1"
       ],
       "touches": [
         "web",
@@ -1408,7 +1411,8 @@
         "security"
       ],
       "specs": [
-        "design/views/get-started.md"
+        "architecture/web-app.md",
+        "experience/first-run.md"
       ],
       "lookahead": false,
       "status": "planned"

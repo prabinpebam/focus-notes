@@ -103,7 +103,7 @@
 <p>The desktop app works on a local clone and runs the user's own <code>git</code>: commit in <code>private/</code> and push, then commit and push the notes repository (moving the pointer only as D-07 describes). <code>push.recurseSubmodules=check</code> stops a public push whose pointer refers to an unpushed private commit. Details are in <a href="desktop-and-git.md#save-and-sync">Desktop and Git</a>.</p>
 
 <h3>How the web app writes</h3>
-<p>The web app (M6) can't run Git, so the GitHub API adapter does the same thing through the REST API:</p>
+<p>The web app (MW, the primary client, D-80) can't run Git, so the GitHub API adapter does the same thing through the REST API:</p>
 <ol>
   <li><strong>Public note change:</strong> one commit to the notes repository (contents API for single files, git trees and commits API for batched moves).</li>
   <li><strong>Private note change:</strong> a commit to the private repository, then a commit to the notes repository that updates the <code>private</code> gitlink (tree entry mode <code>160000</code>) to the new private commit SHA.</li>

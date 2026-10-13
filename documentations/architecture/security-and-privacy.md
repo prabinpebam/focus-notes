@@ -13,7 +13,7 @@ What Focus Notes protects, from whom, and how. It also covers what's stored wher
 | GitHub credential | Git's credential helper (OS keychain or Credential Manager) | Account takeover of repositories |
 | Share secrets and passcodes | `private/access.json` (private repository) | Shared notes opened by people who weren't given access |
 | Share-link deploy key | The notes repository's Actions secret | Private repository read by a malicious workflow |
-| Browser token (web, M6) | The browser, encrypted (see below) | Same as the GitHub credential, limited to two repositories |
+| Browser token (web, MW) | IndexedDB, encrypted with a non-extractable WebCrypto key (D-81) | Contents read and write, limited to the notes repositories the user selects |
 | The writer's identity | Commit author (the noreply address by default) | Personal email exposed in public history |
 
 ## Threats and controls

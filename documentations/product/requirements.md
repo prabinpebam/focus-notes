@@ -3,7 +3,7 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 191 requirements in 25 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 194 requirements in 25 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
@@ -160,10 +160,12 @@ Seed: *"managed as a github repo… hosted in github pages… web or an electron
 | --- | --- | --- |
 | PKG-01 | The product repository holds the app source, documentation, releases, and the reusable publish workflow. A separate template repository provides the starting layout for each user's notes repository (D-38). | P0 |
 | PKG-02 | Each user's notes repository builds and deploys their public pages to their own GitHub Pages with GitHub Actions, through the reusable publish workflow at a pinned release. In the first release it serves public note pages and share links. | P0 |
-| PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access. It is the primary writing client (D-10). | P0 |
+| PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access, for people who want a dedicated desktop experience (D-80). | P0 |
 | PKG-04 | The product repository builds and tests without any user workspace, credentials, or secrets. | P0 |
-| PKG-05 | Editing in the browser (web build) through the GitHub API, with a fine-grained token the user creates (D-13). | P1 |
+| PKG-05 | The web app is the primary way to use Focus Notes: each user's copy of the Focus Notes repository builds and deploys it to their own GitHub Pages site, and it runs in any modern browser with nothing to download (D-80). | P0 |
 | PKG-06 | Nothing hosted or registered by the project: no OAuth app, client ID, server, or telemetry. Each user's instance needs only their own GitHub account plus the public release files on GitHub (D-21). | P0 |
+| PKG-07 | Local first in the browser: notes, settings, and the queue of unsynced changes live in IndexedDB, survive reloads, work offline, and need no account to start writing. The app asks the browser to keep its storage (`navigator.storage.persist`) (D-82). | P0 |
+| PKG-08 | Sync from the browser: changes are committed to the user's notes repository through the GitHub REST API, several files in one commit, and pulled on open, on focus, and every few minutes. A note changed in both places keeps both versions, so no text is ever lost (D-82). | P0 |
 
 ## Desktop app (DSK)
 
@@ -194,6 +196,7 @@ Owner: *"We need a sign in and setup flow for the electron app… device sign in
 | FRE-06 | Workspace: create a new one (FRE-08), clone an existing one from GitHub (with the private submodule when the account can reach it), or open a local clone. | P0 |
 | FRE-07 | Settings → Account: switch account, sign out (optionally removing Git's saved credential), and run setup again. | P0 |
 | FRE-08 | *Create my workspace*: in the user's own GitHub account, create the notes repository from the template, the private repository, the submodule link, the read-only deploy key and Actions secret for share links, and GitHub Pages, each step retryable on its own. | P0 |
+| FRE-09 | Web first run: *Start writing* at once (notes stay in this browser), or *Connect GitHub*: make the notes repository from a pre-filled GitHub page, make a fine-grained token limited to it from a pre-filled GitHub link, paste it, and the app checks it. Resumable, skippable, and reversible from Settings (sign out removes the token) (D-81). | P0 |
 
 ## Keyboard shortcuts (KEY)
 
@@ -372,7 +375,7 @@ Owner: *"How do we package and distribute this?… It would be ideal if people c
 | ID | Requirement | Priority |
 | --- | --- | --- |
 | DST-01 | A Get started page on the product site: OS-detected download from GitHub's latest-release links, how it works, the privacy statement, and requirements. | P0 |
-| DST-02 | Start in the browser: the same setup engine at the product site's `/app/`, creating repositories through GitHub's own pages and using a token limited to those two repositories. | P1 |
+| DST-02 | Start in the browser: *Use this template* (or fork), turn on GitHub Pages with GitHub Actions, and open your site. The README and the Get started page say exactly that, and the app's first run does the rest (D-80). | P0 |
 | DST-03 | A release pipeline that builds installers for Windows, macOS, and Linux, plus the reader bundle, checksums, SBOM, and attestations, into a draft GitHub Release with smoke tests. | P0 |
 | DST-04 | Store listings: winget and Homebrew cask (and Flathub later), updated automatically from releases. | P1 |
 | DST-05 | `.focus-notes/workspace.json` with `formatVersion`. Migrations ask first, and older apps refuse to write newer formats. | P0 |

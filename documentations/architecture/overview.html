@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Focus Notes is a client-side app with no server of its own. The <strong>same web build</strong> runs inside an <strong>Electron</strong> desktop shell, which is the primary writing client (D-10), and from GitHub Pages in the browser. A shared core (Tiptap editor and block registry, focus mode, theme engine, command and keybinding service, Spotlight index, workspace) talks to storage through one <strong>workspace adapter</strong> interface. The desktop runs the user's own <code>git</code> on a local clone, signed in once through Git's own sign-in helper (Git Credential Manager or the GitHub CLI, with a device code) or a token the user creates. The web build uses the GitHub REST API (M6). All of a user's content lives in <em>their</em> two GitHub repositories, a public notes repository and a private one mounted as a submodule, and publishes to <em>their</em> GitHub Pages. The project registers no OAuth app and runs no server (D-21, D-38). Everything is MIT-licensed or uses a compatible license.</p>
+  <p>Focus Notes is a client-side app with no server of its own. The <strong>same web build</strong> runs from each user's own <strong>GitHub Pages</strong> site in the browser, the primary way to use it (D-80), and inside an <strong>Electron</strong> desktop shell for a dedicated desktop experience. A shared core (Tiptap editor and block registry, focus mode, theme engine, command and keybinding service, Spotlight index, workspace) talks to storage through one <strong>workspace adapter</strong> interface. The desktop runs the user's own <code>git</code> on a local clone, signed in once through Git's own sign-in helper (Git Credential Manager or the GitHub CLI, with a device code) or a token the user creates. The web build keeps notes in IndexedDB and syncs them through the GitHub REST API ([Web app](web-app.md)). All of a user's content lives in <em>their</em> two GitHub repositories, a public notes repository and a private one mounted as a submodule, and publishes to <em>their</em> GitHub Pages. The project registers no OAuth app and runs no server (D-21, D-38). Everything is MIT-licensed or uses a compatible license.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -113,7 +113,7 @@
 <table>
   <thead><tr><th>Concern</th><th>Desktop (Electron, primary, P0)</th><th>Web (GitHub Pages)</th></tr></thead>
   <tbody>
-    <tr><td>Role</td><td>Writing and managing notes</td><td>First release: public note pages and share links. Editing follows in M6 (P1)</td></tr>
+    <tr><td>Role</td><td>Writing and managing notes</td><td>The primary client: writing and syncing from each user's own Pages site (MW, D-80)</td></tr>
     <tr><td>Delivery</td><td>Signed installers for Windows, macOS, and Linux, wrapping the same build</td><td>Static files built and deployed by GitHub Actions</td></tr>
     <tr><td>Storage</td><td>Local clone with the private submodule. Commits, pushes, and pulls with the user's own <code>git</code></td><td>GitHub REST API (contents, git trees and commits)</td></tr>
     <tr><td>Sign-in</td><td>Through Git's credential helper, owned by the user: Git Credential Manager or the GitHub CLI (device code or browser), or a fine-grained token they create. One credential serves the app and the terminal (D-21)</td><td>A fine-grained token the user creates for their two repositories, kept in the browser (D-13)</td></tr>

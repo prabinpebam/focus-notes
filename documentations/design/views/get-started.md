@@ -3,7 +3,7 @@
 The product site's front door: download the desktop app (the main path) or start in the browser. Both lead to a workspace in the person's own GitHub account.
 
 > [!NOTE]
-> **TL;DR.** A calm, single page on the product's GitHub Pages site (IA-VIEW-GETSTARTED). It detects the visitor's OS and offers one primary button, **Download for Windows** (or macOS or Linux), linking straight to the latest GitHub Release. The desktop app then does all setup ([First run](../../experience/first-run.md)), the path the owner prefers (D-43). A secondary link, **Start in your browser** (from M6), runs the same setup in the web app at `/app/`. Below that: how it works in three steps, what Focus Notes does and doesn't do with your data, system requirements, and links to the source and docs. Serves UC-SETUP-06 and SC-SETUP-05.
+> **TL;DR.** A calm, single page on the product's GitHub Pages site (IA-VIEW-GETSTARTED). It detects the visitor's OS and offers one primary button, **Download for Windows** (or macOS or Linux), linking straight to the latest GitHub Release. **Superseded in part by D-80:** the primary path is now **Start in your browser**: *Use this template*, turn on GitHub Pages, and open your own site, where the app's first run does the rest ([Web app](../../architecture/web-app.md)). The desktop download is the secondary path. Below that: how it works in three steps, what Focus Notes does and doesn't do with your data, system requirements, and links to the source and docs. Serves UC-SETUP-06 and SC-SETUP-05.
 
 ## Page anatomy
 
@@ -12,7 +12,7 @@ The product site's front door: download the desktop app (the main path) or start
 | **Hero** | The trigger motif (red dot in a frosted circle), the name, one line: "A calm place to write. Your notes stay in your own GitHub." |
 | **Primary action** | **Download for ⟨detected OS⟩**, with the version and size under it ("v1.2.0 · 112 MB · Windows 10 and 11"). Detection uses `navigator.userAgentData` where available, otherwise the user agent. Links are GitHub's stable `releases/latest/download/<asset>` URLs, so the page never needs updating for a release. |
 | **Other downloads** | macOS (universal), Windows (x64 and Arm), Linux (AppImage and .deb), checksums, and *All releases* |
-| **Secondary action** | *Start in your browser*: opens `/app/` setup. Hidden until M6. |
+| **Secondary action** | *Download the desktop app* (D-80 makes the browser the primary path). |
 | **How it works** | 1. Install the app. 2. Sign in with GitHub (through Git's own sign-in, with a code). 3. The app creates your notes in your GitHub account, and you write. |
 | **Your data** | "Focus Notes never sees your notes. They're Markdown files in your GitHub repositories. Public notes go on your own GitHub Pages site. Shared notes are encrypted. There's no account with us, no tracking, and no server." Links to the privacy statement and [Security and privacy](../../architecture/security-and-privacy.md). |
 | **Requirements** | Supported OS versions, Git (the app helps install it), a GitHub account (free works) |
@@ -20,7 +20,7 @@ The product site's front door: download the desktop app (the main path) or start
 
 Mobile visitors get "Read notes on any device. Writing is on desktop and in the browser" with the browser path once it exists, and a "Send this page to my computer" share button (the system share sheet, with no service involved).
 
-## Starting in the browser (M6)
+## Starting in the browser (MW)
 
 The same setup engine as the desktop app (`packages/github`), driven through the GitHub API instead of local Git:
 
