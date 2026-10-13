@@ -25,11 +25,17 @@ import { SearchField } from "./primitives/SearchField/SearchField.tsx";
 import { SegmentedControl } from "./primitives/SegmentedControl/SegmentedControl.tsx";
 import { DialogPanel } from "./primitives/DialogPanel/DialogPanel.tsx";
 import { Dialog } from "./compounds/Dialog/Dialog.tsx";
+import { Spinner } from "./primitives/Spinner/Spinner.tsx";
+import { LiveRegion } from "./primitives/LiveRegion/LiveRegion.tsx";
+import { Toast } from "./primitives/Toast/Toast.tsx";
+import { ResultList } from "./primitives/ResultList/ResultList.tsx";
+import { Tabs } from "./primitives/Tabs/Tabs.tsx";
+import { Field } from "./layouts/Field/Field.tsx";
 
 /** The closed registry: the renderer can create these and nothing else (DSY-06). */
 export const registry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel,
-  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs,
+  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field,
   EditorSurface,
   Trigger, Toolbar, Dialog,
 });

@@ -50,7 +50,7 @@ The complete semantic tier. Adding to it needs a decision (see [Adding or changi
 | **Elevation** | `shadow.0` to `shadow.3`, `frost.opacity` (0.78), `frost.blur` (24) | No |
 | **Opacity** | `opacity.disabled` (0.4), `opacity.hover` (0.06), `opacity.pressed` (0.10), `opacity.muted` (0.75) | No |
 | **Motion** | `motion.micro`, `motion.enter`, `motion.sheet`, `motion.exit`, `motion.theme` (durations), `easing.standard`, `easing.decelerate`, `easing.accelerate` | No |
-| **Wait timing** | `wait.signDelay` (300 ms), `wait.signMinimum` (500 ms), `wait.announceDelay` (1 s), `wait.elapsedDelay` (3 s), `wait.doneDuration` (1.5 s). Used by the task tracker and every component's busy state ([Waits](../components/feedback-and-dialogs.md#waits)). | No |
+| **Wait timing** | `wait.signDelay` (300 ms), `wait.signMinimum` (500 ms), `wait.announceDelay` (1 s), `wait.elapsedDelay` (3 s), `wait.doneDuration` (1.5 s), `wait.toastDuration` (6 s), `wait.toastUndoDuration` (10 s). The build also exports them as resolved milliseconds for the task tracker. Used by the task tracker and every component's busy state ([Waits](../components/feedback-and-dialogs.md#waits)). | No |
 | **Layer order** | `layer.canvas` (0), `layer.mask` (1), `layer.contextual` (2), `layer.trigger` (3), `layer.panel` (4), `layer.dialog` (5), `layer.toast` (6), `layer.tooltip` (7) | No |
 | **Breakpoints** | `breakpoint.medium` (600), `breakpoint.wide` (1024). Size classes are *compact*, *medium*, and *wide*. | No |
 | **Window** (desktop) | `window.radius`, `window.titleBarHeight`, `window.shadow` | `window.radius` only, and only on Windows and Linux |

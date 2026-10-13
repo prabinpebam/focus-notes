@@ -1,0 +1,10 @@
+{
+  "cmp": {
+    "liveRegion": {
+      "srOnlySize": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      }
+    }
+  }
+}

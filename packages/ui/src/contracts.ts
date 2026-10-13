@@ -26,10 +26,16 @@ import { contract as SearchField } from "./primitives/SearchField/contract.ts";
 import { contract as SegmentedControl } from "./primitives/SegmentedControl/contract.ts";
 import { contract as DialogPanel } from "./primitives/DialogPanel/contract.ts";
 import { contract as Dialog } from "./compounds/Dialog/contract.ts";
+import { contract as Spinner } from "./primitives/Spinner/contract.ts";
+import { contract as LiveRegion } from "./primitives/LiveRegion/contract.ts";
+import { contract as Toast } from "./primitives/Toast/contract.ts";
+import { contract as ResultList } from "./primitives/ResultList/contract.ts";
+import { contract as Tabs } from "./primitives/Tabs/contract.ts";
+import { contract as Field } from "./layouts/Field/contract.ts";
 
 export const contracts: readonly Contract[] = [
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel,
-  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs,
+  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field,
   EditorSurface,
   Trigger, Toolbar, Dialog,
 ];

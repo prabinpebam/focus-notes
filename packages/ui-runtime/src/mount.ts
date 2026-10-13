@@ -54,8 +54,9 @@ export function mountApp(el: Element, { app, views, view = "canvas" }: MountOpti
   let toolbarWasOpen = app.store.state.ui.toolbarOpen;
   let sheetWasOpen = app.store.state.ui.shortcuts.open;
   app.store.subscribe(() => {
-    const { toolbarOpen, shortcuts } = app.store.state.ui;
-    if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open) || (sheetWasOpen && !shortcuts.open)) {
+    const { toolbarOpen, shortcuts, find } = app.store.state.ui;
+    // Not when the toolbar closed because the find bar or the cheat sheet took focus.
+    if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open) || (sheetWasOpen && !shortcuts.open)) {
       setTimeout(() => window.dispatchEvent(new Event(REFOCUS_EVENT)), 0);
     }
     toolbarWasOpen = toolbarOpen;

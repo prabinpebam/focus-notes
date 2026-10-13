@@ -1,0 +1,35 @@
+{
+  "cmp": {
+    "spinner": {
+      "size": {
+        "$type": "dimension",
+        "s": {
+          "$value": "{size.iconS}"
+        },
+        "m": {
+          "$value": "{size.iconM}"
+        }
+      },
+      "width": {
+        "$type": "dimension",
+        "$value": "{border.focus}"
+      },
+      "color": {
+        "$type": "color",
+        "$value": "{color.textMuted}"
+      },
+      "track": {
+        "$type": "color",
+        "$value": "{color.border}"
+      },
+      "duration": {
+        "$type": "duration",
+        "$value": "{motion.spin}"
+      },
+      "srOnlySize": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      }
+    }
+  }
+}

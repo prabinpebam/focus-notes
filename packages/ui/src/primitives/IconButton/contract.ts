@@ -13,10 +13,12 @@ export const contract = defineContract({
     pressed: { kind: "boolean", default: false },
     disabled: { kind: "boolean", default: false },
     disabledReason: { kind: "message", requiredWhen: "disabled" },
+    busy: { kind: "boolean", default: false },
+    busyLabel: { kind: "text" },
   },
   events: { press: {} },
   slots: {},
-  states: ["rest", "hover", "pressed", "selected", "focusVisible", "disabled"],
+  states: ["rest", "hover", "pressed", "selected", "focusVisible", "disabled", "busy"],
   tokens: "cmp.iconButton.*",
   a11y: { pattern: "button", name: "label" },
   fixtures: [
@@ -24,6 +26,7 @@ export const contract = defineContract({
     { name: "tone muted", props: { icon: "more", label: { t: "gallery.action" }, tone: "muted" } },
     { name: "toggle off", props: { icon: "focus", label: { t: "gallery.action" }, toggle: true, pressed: false } },
     { name: "toggle on", props: { icon: "focus", label: { t: "gallery.action" }, toggle: true, pressed: true } },
+    { name: "busy", props: { icon: "save", label: { t: "gallery.action" }, busy: true, busyLabel: { get: "vm.gallery.query" } } },
     { name: "disabled with reason", props: { icon: "save", label: { t: "gallery.action" }, disabled: true, disabledReason: { t: "gallery.reason" } } },
   ],
 });

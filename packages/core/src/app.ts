@@ -6,6 +6,8 @@ import { ViewModelRegistry } from "./view-models.ts";
 import { MessageCatalog, type Messages } from "./messages.ts";
 import type { PlatformBridge, AppStateFile } from "./bridge.ts";
 import type { Platform } from "./commands.ts";
+import { waits } from "@focus-notes/tokens";
+import { TaskTracker, type Clock, type TaskView } from "./tasks.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -36,7 +38,15 @@ export interface AppState {
     shortcuts: { open: boolean; query: string; layer: CheatSheetLayer; platform: CheatSheetPlatform };
     /** The find bar (IA-CMP-FINDBAR, FND-01, FND-02). */
     find: FindState;
+    /** Toasts, newest last; at most two show (IA-CMP-TOAST). */
+    toasts: ToastState[];
+    /** Bumped to move focus to the newest toast's action (F6). */
+    toastFocus: number;
   };
+  /** Waits a person started (PRF-08). */
+  tasks: TaskView[];
+  /** The latest polite announcement for screen readers; `n` makes repeats announce again. */
+  announcement: { text: string; n: number };
 }
 
 export interface FindState {
@@ -60,6 +70,15 @@ const FIND_CLOSED: FindState = {
   open: false, replaceOpen: false, query: "", replace: "", caseSensitive: false, wholeWord: false, regex: false,
   count: 0, current: 0, invalid: false, notice: "", focusFind: 0, focusReplace: 0,
 };
+
+export interface ToastState {
+  id: number;
+  message: string;
+  tone: "info" | "error";
+  /** A command the toast offers ([Undo], [Retry]) and its label. */
+  action?: { command: string; label: string };
+  paused: boolean;
+}
 
 export const SAVE_DELAY_MS = 400;
 /** Note text sizes in px (THM-06). */
@@ -99,6 +118,8 @@ export interface App {
   flush(): Promise<boolean>;
   /** Editor commands are delivered to the editor surface through this. */
   onEditorAction(listener: (id: string) => void): () => void;
+  /** Resolves when no wait is running or showing (PRF-08), so tests never race a save. */
+  idle(): Promise<void>;
 }
 
 export const resolvedScheme = (s: AppState): Scheme =>
@@ -107,7 +128,12 @@ export const resolvedScheme = (s: AppState): Scheme =>
 export const resolvedTheme = (s: AppState): string =>
   resolvedScheme(s) === "dark" ? s.appearance.darkTheme : s.appearance.lightTheme;
 
-export function createApp(bridge: PlatformBridge, messages: Messages, locale = "en"): App {
+export interface AppOptions {
+  /** A clock for the task tracker and toasts; tests pass a fake one. */
+  clock?: Clock;
+}
+
+export function createApp(bridge: PlatformBridge, messages: Messages, locale = "en", options: AppOptions = {}): App {
   const store = new Store<AppState>({
     note: { key: "none", initialMarkdown: "", markdown: "", status: "loading", saveState: "saved" },
     appearance: {
@@ -115,11 +141,39 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "sans", uiScale: 1,
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0 },
+    tasks: [],
+    announcement: { text: "", n: 0 },
   });
   const commands = new CommandRegistry<AppState>(() => store.state, (r) => store.update(r), bridge.platform);
   const viewModels = new ViewModelRegistry<AppState>();
   const catalog = new MessageCatalog(locale, messages);
+  const announce = (text: string) => store.update((s) => ({ ...s, announcement: { text, n: s.announcement.n + 1 } }));
+  const tracker = new TaskTracker(waits, {
+    change: (tasks) => store.update((s) => ({ ...s, tasks })),
+    announce: (key, args) => announce(catalog.has(key) ? catalog.format(key, args) : key),
+  }, options.clock);
+  const clock = options.clock ?? { now: () => Date.now(), setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms), clearTimeout: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) };
+
+  // ---- toasts (IA-CMP-TOAST) ----
+  let toastId = 1;
+  const toastTimers = new Map<number, { handle: unknown; remaining: number; started: number }>();
+  const setToasts = (fn: (t: ToastState[]) => ToastState[]) => store.update((s) => ({ ...s, ui: { ...s.ui, toasts: fn(s.ui.toasts) } }));
+  const dismissToast = (id: number) => {
+    const t = toastTimers.get(id);
+    if (t) clock.clearTimeout(t.handle);
+    toastTimers.delete(id);
+    setToasts((ts) => ts.filter((x) => x.id !== id));
+  };
+  const arm = (id: number, ms: number) => toastTimers.set(id, { handle: clock.setTimeout(() => dismissToast(id), ms), remaining: ms, started: clock.now() });
+  /** Shows a toast: one past-tense sentence, an optional action. At most two show; older ones go early. */
+  const toast = (message: string, opts: { tone?: ToastState["tone"]; action?: ToastState["action"] } = {}) => {
+    const id = toastId++;
+    setToasts((ts) => [...ts, { id, message, tone: opts.tone ?? "info", paused: false, ...(opts.action ? { action: opts.action } : {}) }]);
+    for (const old of store.state.ui.toasts.slice(0, -2)) dismissToast(old.id);
+    arm(id, opts.action ? waits.toastUndoDuration : waits.toastDuration);
+    return id;
+  };
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let saving: Promise<void> = Promise.resolve();
   let appState: AppStateFile = { version: 1 };
@@ -192,13 +246,16 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     icon: "save",
     shortcut: { default: "Mod+S" },
     layer: "basic", group: "app",
-    run: async () => {
-      if (store.state.note.saveState !== "saved") {
-        clearTimeout(saveTimer);
-        saving = saving.then(writeNow);
-        await saving;
-      }
-    },
+    // Saving is a wait the person started, so it goes through the task tracker (PRF-08).
+    run: () => tracker.run("note.save", "task.saving", async () => {
+      clearTimeout(saveTimer);
+      saveTimer = undefined;
+      saving = saving.then(writeNow);
+      await saving;
+      if (store.state.note.saveState === "error") throw new Error("save failed");
+    }, "task.saved").catch(() => {
+      toast(catalog.format("toast.saveFailed"), { tone: "error", action: { command: "note.save", label: catalog.format("toast.retry") } });
+    }),
   });
   commands.register<{ value: string }>({
     id: "note.setContent",
@@ -329,8 +386,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     // Runs a command chosen from a registry-built list (toolbar, menus). Unknown IDs are refused.
     run: async ({ id }, ctx) => {
       if (typeof id !== "string" || id === "command.run" || !commands.has(id)) return;
+      // The command runs first, so one that opens a panel (find, the cheat sheet) owns focus
+      // before the toolbar closes and would hand the caret back to the note.
+      const done = ctx.run(id);
       store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
-      await ctx.run(id);
+      await done;
     },
   });
   // Editor commands: the editor's keymap runs their keys; menus and Spotlight run them through here.
@@ -361,8 +421,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       ...(replace && f.query ? { focusReplace: f.focusReplace + 1 } : { focusFind: f.focusFind + 1 }),
     });
     store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
-    // A selection fills the field, as in VS Code and browsers.
-    editorAction("find.prefill");
+    // A selection in the note fills the field, as in VS Code and browsers; not when the bar is
+    // already open, where the selection is just the current match.
+    if (!f.open) editorAction("find.prefill");
   };
   const ready = (s: AppState) => s.note.status === "ready";
   const findCmd = (id: string, title: string, extra: Partial<Parameters<typeof commands.register>[0]>, run: () => void) =>
@@ -379,11 +440,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   findCmd("find.prev", "command.find.prev", { shortcut: { macos: "Mod+Shift+G", default: "Shift+F3" }, layer: "basic", group: "find" }, findStep("find.prev"));
   findCmd("find.nextInField", "command.find.nextInField", { shortcut: { default: "Enter", handledBy: "findField" }, layer: "basic", group: "find" }, findStep("find.next"));
   findCmd("find.prevInField", "command.find.prevInField", { shortcut: { default: "Shift+Enter", handledBy: "findField" }, layer: "basic", group: "find" }, findStep("find.prev"));
-  findCmd("find.replaceNext", "command.find.replaceNext", { shortcut: { default: "Enter", handledBy: "replaceField" }, layer: "power", group: "find" }, () => {
+  // Replacing works only with the replace row showing and something to replace (never by accident).
+  const canReplace = (s: AppState) => ready(s) && s.ui.find.open && s.ui.find.replaceOpen && s.ui.find.count > 0;
+  findCmd("find.replaceNext", "command.find.replaceNext", { enabled: canReplace, shortcut: { default: "Enter", handledBy: "replaceField" }, layer: "power", group: "find" }, () => {
     remember();
     editorAction("find.replaceNext");
   });
-  findCmd("find.replaceAll", "command.find.replaceAll", { shortcut: { macos: "Mod+Enter", default: "Ctrl+Alt+Enter", handledBy: "findBar" }, layer: "power", group: "find" }, () => {
+  findCmd("find.replaceAll", "command.find.replaceAll", { enabled: canReplace, shortcut: { macos: "Mod+Enter", default: "Ctrl+Alt+Enter", handledBy: "findBar" }, layer: "power", group: "find" }, () => {
     remember();
     editorAction("find.replaceAll");
   });
@@ -417,9 +480,40 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   commands.register<{ count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }>({
     id: "find.setResult", title: "command.find.setResult",
     run: ({ count, current, invalid, wrapped, replaced }) => {
-      const notice = replaced > 0 ? catalog.format("find.replaced", { count: replaced }) : wrapped ? catalog.format("find.wrapped") : store.state.ui.find.notice;
+      // Replace all is confirmed by a toast; wrapping is a short notice in the bar.
+      if (replaced > 0) toast(catalog.format("find.replaced", { count: replaced }));
+      const notice = wrapped ? catalog.format("find.wrapped") : replaced > 0 ? "" : store.state.ui.find.notice;
       setFind({ count: Number(count) || 0, current: Number(current) || 0, invalid: Boolean(invalid), notice });
     },
+  });
+
+  // Toast commands: dismiss, the toast's action, pausing while hovered or focused, and F6 to reach it.
+  commands.register<{ id: number }>({ id: "toast.dismiss", title: "command.toast.dismiss", run: ({ id }) => dismissToast(Number(id)) });
+  commands.register<{ id: number }>({
+    id: "toast.action", title: "command.toast.action",
+    run: async ({ id }, ctx) => {
+      const t = store.state.ui.toasts.find((x) => x.id === Number(id));
+      if (!t?.action) return;
+      dismissToast(t.id);
+      await ctx.run(t.action.command);
+    },
+  });
+  commands.register<{ id: number; paused: boolean }>({
+    id: "toast.setPaused", title: "command.toast.setPaused",
+    run: ({ id, paused }) => {
+      const t = toastTimers.get(Number(id));
+      if (!t) return;
+      if (paused) {
+        clock.clearTimeout(t.handle);
+        t.remaining = Math.max(0, t.remaining - (clock.now() - t.started));
+      } else arm(Number(id), Math.max(t.remaining, 1500));
+      setToasts((ts) => ts.map((x) => (x.id === Number(id) ? { ...x, paused: Boolean(paused) } : x)));
+    },
+  });
+  commands.register({
+    id: "toast.focus", title: "command.toast.focus", shortcut: { default: "F6" }, layer: "power", group: "app",
+    enabled: (s) => s.ui.toasts.length > 0,
+    run: () => store.update((s) => ({ ...s, ui: { ...s.ui, toastFocus: s.ui.toastFocus + 1 } })),
   });
 
   const setShortcuts = (patch: Partial<AppState["ui"]["shortcuts"]>) =>
@@ -457,9 +551,17 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
 
   // ---- view models ----
+  // A command's busy sign and words come from the task tracker (PRF-08).
+  const busyOf = (id: string) => {
+    const t = store.state.tasks.find((x) => x.target === id && x.phase !== "ack");
+    if (!t) return {};
+    const words = t.phase === "done" ? catalog.format(t.doneMessage ?? "task.done") : catalog.format(t.message);
+    return { busy: t.phase === "on", busyLabel: t.elapsed ? catalog.format("task.elapsed", { words, seconds: t.elapsed }) : words };
+  };
   const describeItem = (id: string) => {
     const d = commands.describe(id);
     return {
+      ...busyOf(id),
       id,
       label: catalog.format(d.title),
       ...(d.icon ? { icon: d.icon } : {}),
@@ -473,8 +575,32 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     properties: {
       id: { type: "string" as const }, label: { type: "string" as const }, icon: { type: "string" as const },
       shortcut: { type: "string" as const }, checked: { type: "boolean" as const }, disabled: { type: "boolean" as const }, reason: { type: "string" as const },
+      busy: { type: "boolean" as const }, busyLabel: { type: "string" as const },
     },
   };
+  viewModels.register({
+    id: "vm.feedback",
+    schema: {
+      type: "object",
+      properties: {
+        announcement: { type: "string" },
+        announcementKey: { type: "number" },
+        toasts: { type: "array", items: { type: "object", properties: {
+          id: { type: "number" }, message: { type: "string" }, tone: { type: "string", enum: ["info", "error"] },
+          actionLabel: { type: "string" }, hasAction: { type: "boolean" }, paused: { type: "boolean" },
+        } } },
+        toastFocus: { type: "number" },
+        dismissLabel: { type: "string" },
+      },
+    },
+    select: (s) => ({
+      announcement: s.announcement.text,
+      announcementKey: s.announcement.n,
+      toasts: s.ui.toasts.map((t) => ({ id: t.id, message: t.message, tone: t.tone, actionLabel: t.action?.label ?? "", hasAction: Boolean(t.action), paused: t.paused })),
+      toastFocus: s.ui.toastFocus,
+      dismissLabel: catalog.has("toast.dismiss") ? catalog.format("toast.dismiss") : "",
+    }),
+  });
   viewModels.register({
     id: "vm.toolbar",
     schema: {
@@ -631,6 +757,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
 
   return {
     store, commands, viewModels, messages: catalog, bridge, flush,
+    idle: () => tracker.idle(),
     onEditorAction(listener) {
       editorListeners.add(listener);
       return () => editorListeners.delete(listener);

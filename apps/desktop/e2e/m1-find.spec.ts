@@ -104,7 +104,11 @@ test("FND-02: replace current and replace all, one undo step, formatting kept, a
 
   // Replace all: one step, announced.
   await page.keyboard.press(mac ? "Meta+Enter" : "Control+Alt+Enter");
-  await expect(bar.getByText("Replaced 99 matches")).toBeVisible();
+  // Confirmed by a toast (IA-CMP-TOAST), announced politely, with a close button.
+  const toast = page.getByRole("status").filter({ hasText: "Replaced 99 matches" });
+  await expect(toast).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+  await page.screenshot({ path: "../../test-results/screens/toast.png" });
   await expect(bar.getByRole("status").first()).toHaveText("No results");
   await page.keyboard.press("Escape");
   await expect(editor).toBeFocused();
@@ -128,6 +132,16 @@ test("find is in the ⋯ menu, and the close button returns focus to the note", 
   await page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: /^Find/ }).first().click();
   const bar = page.getByRole("region", { name: "Find in note" });
   await expect(bar.getByRole("searchbox", { name: "Find" })).toBeFocused();
+  // Focus stays in the field (the closing toolbar doesn't pull it back), so typing searches.
+  await page.waitForTimeout(300);
+  await page.keyboard.type("zz");
+  await expect(bar.getByRole("searchbox", { name: "Find" })).toHaveValue("zz");
+  // Mod+F again keeps the query.
+  await page.keyboard.press(`${mod}+f`);
+  await expect(bar.getByRole("searchbox", { name: "Find" })).toHaveValue("zz");
+  // Replace keys do nothing while the replace row is hidden.
+  await page.keyboard.press(mac ? "Meta+Enter" : "Control+Alt+Enter");
+  await expect(page.getByRole("status").filter({ hasText: /Replaced/ })).toHaveCount(0);
   await bar.getByRole("button", { name: "Close find" }).click();
   await expect(bar).toBeHidden();
   await expect(editor).toBeFocused();

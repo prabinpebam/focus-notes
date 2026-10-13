@@ -137,5 +137,18 @@
   "find.wrapped": "Wrapped around",
   "find.replaced": "{count, plural, one {Replaced # match} other {Replaced # matches}}",
   "find.noReplace": "No matches to replace",
-  "menu.edit": "Edit"
+  "menu.edit": "Edit",
+  "task.saving": "Saving…",
+  "task.saved": "Saved",
+  "task.done": "Done",
+  "task.failed": "Didn't finish",
+  "task.elapsed": "{words} {seconds} s",
+  "toast.saveFailed": "Couldn't save your latest changes. Your text is still here.",
+  "toast.retry": "Retry",
+  "toast.dismiss": "Dismiss",
+  "command.toast.dismiss": "Dismiss the message",
+  "command.toast.action": "Run the message's action",
+  "command.toast.setPaused": "Pause the message",
+  "command.toast.focus": "Go to the message",
+  "toasts.label": "Messages"
 }

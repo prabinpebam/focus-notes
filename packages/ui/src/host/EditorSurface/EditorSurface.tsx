@@ -32,6 +32,8 @@ export interface EditorSurfaceProps {
   onReady?: () => void;
 }
 
+/** Find waits this long after the last keystroke in its field before searching (FND-01). */
+const FIND_DEBOUNCE_MS = 60;
 /** Serializing is kept off the typing path: it runs after a short pause (PRF-01). */
 const SERIALIZE_DELAY_MS = 150;
 /** Dispatched on window by the runtime before a flush; surfaces hand over pending text synchronously. */
@@ -55,6 +57,11 @@ export function EditorSurface({
   onChangeRef.current = onChange;
   const findRef = useRef({ onFindResult, onFindPrefill, findOpen });
   findRef.current = { onFindResult, onFindPrefill, findOpen };
+  const replaceRef = useRef(findReplace);
+  replaceRef.current = findReplace;
+  const findOptions = () => ({ query: findOpen ? findQuery : "", replace: replaceRef.current, caseSensitive: findCase, wholeWord: findWord, regex: findRegex });
+  const findOptionsRef = useRef(findOptions);
+  findOptionsRef.current = findOptions;
   const lastFind = useRef("");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const last = useRef(initialValue);
@@ -110,14 +117,21 @@ export function EditorSurface({
   }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The find query lives in the app; the editor highlights it and jumps to the first match at the caret.
+  // Searching waits for a short pause in typing (FND-01: 60 ms), so long notes stay responsive.
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
-    setFind(editor, { query: findOpen ? findQuery : "", replace: findReplace, caseSensitive: findCase, wholeWord: findWord, regex: findRegex });
-    if (findOpen && findQuery) findFromCaret(editor);
-    const st = findStatus(editor.state);
-    lastFind.current = `${st.count}:${st.current}:${st.invalid}`;
-    if (findOpen) findRef.current.onFindResult?.({ ...st, wrapped: false, replaced: 0 });
-  }, [editor, findOpen, findQuery, findReplace, findCase, findWord, findRegex]);
+    const apply = () => {
+      if (editor.isDestroyed) return;
+      setFind(editor, findOptionsRef.current());
+      if (findOpen && findQuery) findFromCaret(editor);
+      const st = findStatus(editor.state);
+      lastFind.current = `${st.count}:${st.current}:${st.invalid}`;
+      if (findOpen) findRef.current.onFindResult?.({ ...st, wrapped: false, replaced: 0 });
+    };
+    if (!findOpen || !findQuery) return apply();
+    const h = setTimeout(apply, FIND_DEBOUNCE_MS);
+    return () => clearTimeout(h);
+  }, [editor, findOpen, findQuery, findCase, findWord, findRegex]);
 
   // While find is open, matches scroll into view below the bar, not under it.
   useEffect(() => {
@@ -179,6 +193,9 @@ export function EditorSurface({
       const action = EDITOR_ACTIONS[id];
       if (!action || (!editor.isEditable && id !== "find.next" && id !== "find.prev")) return;
       if (id.startsWith("find.")) {
+        // Apply the latest query and replacement first: Enter right after typing must not use a
+        // stale search, and the replacement is read only here, so typing it never re-searches.
+        setFind(editor, findOptionsRef.current());
         // Focus stays in the find bar; the editor moves its selection to the match.
         const before = editor.state.selection.from;
         const count = findStatus(editor.state).count;

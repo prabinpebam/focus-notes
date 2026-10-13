@@ -451,7 +451,7 @@
         "design/components/feedback-and-dialogs.md"
       ],
       "lookahead": false,
-      "status": "building"
+      "status": "verifying"
     },
     {
       "id": "WP-1.5",

@@ -1,135 +1,373 @@
 {
   "font": {
-    "content": { "$type": "fontFamily", "$value": "{ref.font.sans}" },
-    "ui": { "$type": "fontFamily", "$value": "{ref.font.system}" },
-    "mono": { "$type": "fontFamily", "$value": "{ref.font.mono}" },
-    "size": { "$type": "dimension", "$value": "{ref.size.18}" },
-    "lineHeight": { "$type": "number", "$value": 1.6 },
-    "contentH1": { "$type": "number", "$value": 1.75 },
-    "contentH2": { "$type": "number", "$value": 1.4 },
-    "contentH3": { "$type": "number", "$value": 1.15 },
-    "uiCaption": { "$type": "dimension", "$value": "{ref.size.12}" },
-    "uiSecondary": { "$type": "dimension", "$value": "{ref.size.13}" },
-    "uiBody": { "$type": "dimension", "$value": "{ref.size.14}" },
-    "uiEmphasis": { "$type": "dimension", "$value": "{ref.size.16}" },
-    "uiTitle": { "$type": "dimension", "$value": "{ref.size.20}" },
-    "uiLineHeight": { "$type": "number", "$value": 1.4 },
-    "headingLineHeight": { "$type": "number", "$value": 1.25 },
-    "codeRatio": { "$type": "number", "$value": 0.9 },
-    "weightRegular": { "$type": "fontWeight", "$value": 400 },
-    "weightSemibold": { "$type": "fontWeight", "$value": 600 },
-    "weightBold": { "$type": "fontWeight", "$value": 700 }
+    "content": {
+      "$type": "fontFamily",
+      "$value": "{ref.font.sans}"
+    },
+    "ui": {
+      "$type": "fontFamily",
+      "$value": "{ref.font.system}"
+    },
+    "mono": {
+      "$type": "fontFamily",
+      "$value": "{ref.font.mono}"
+    },
+    "size": {
+      "$type": "dimension",
+      "$value": "{ref.size.18}"
+    },
+    "lineHeight": {
+      "$type": "number",
+      "$value": 1.6
+    },
+    "contentH1": {
+      "$type": "number",
+      "$value": 1.75
+    },
+    "contentH2": {
+      "$type": "number",
+      "$value": 1.4
+    },
+    "contentH3": {
+      "$type": "number",
+      "$value": 1.15
+    },
+    "uiCaption": {
+      "$type": "dimension",
+      "$value": "{ref.size.12}"
+    },
+    "uiSecondary": {
+      "$type": "dimension",
+      "$value": "{ref.size.13}"
+    },
+    "uiBody": {
+      "$type": "dimension",
+      "$value": "{ref.size.14}"
+    },
+    "uiEmphasis": {
+      "$type": "dimension",
+      "$value": "{ref.size.16}"
+    },
+    "uiTitle": {
+      "$type": "dimension",
+      "$value": "{ref.size.20}"
+    },
+    "uiLineHeight": {
+      "$type": "number",
+      "$value": 1.4
+    },
+    "headingLineHeight": {
+      "$type": "number",
+      "$value": 1.25
+    },
+    "codeRatio": {
+      "$type": "number",
+      "$value": 0.9
+    },
+    "weightRegular": {
+      "$type": "fontWeight",
+      "$value": 400
+    },
+    "weightSemibold": {
+      "$type": "fontWeight",
+      "$value": 600
+    },
+    "weightBold": {
+      "$type": "fontWeight",
+      "$value": 700
+    }
   },
   "space": {
     "$type": "dimension",
-    "none": { "$value": "{ref.size.0}" },
-    "xs": { "$value": "{ref.size.4}" },
-    "s": { "$value": "{ref.size.8}" },
-    "m": { "$value": "{ref.size.12}" },
-    "l": { "$value": "{ref.size.16}" },
-    "xl": { "$value": "{ref.size.24}" },
-    "xxl": { "$value": "{ref.size.32}" },
-    "xxxl": { "$value": "{ref.size.48}" }
+    "none": {
+      "$value": "{ref.size.0}"
+    },
+    "xs": {
+      "$value": "{ref.size.4}"
+    },
+    "s": {
+      "$value": "{ref.size.8}"
+    },
+    "m": {
+      "$value": "{ref.size.12}"
+    },
+    "l": {
+      "$value": "{ref.size.16}"
+    },
+    "xl": {
+      "$value": "{ref.size.24}"
+    },
+    "xxl": {
+      "$value": "{ref.size.32}"
+    },
+    "xxxl": {
+      "$value": "{ref.size.48}"
+    }
   },
   "size": {
     "$type": "dimension",
-    "hit": { "$value": "{ref.size.32}" },
-    "iconS": { "$value": "{ref.size.16}" },
-    "iconM": { "$value": "{ref.size.20}" },
-    "iconL": { "$value": "{ref.size.24}" },
-    "controlS": { "$value": "{ref.size.28}" },
-    "controlM": { "$value": "{ref.size.32}" },
-    "controlL": { "$value": "{ref.size.40}" },
-    "triggerDot": { "$value": "{ref.size.10}" },
-    "triggerRing": { "$value": "{ref.size.30}" },
-    "scrollbar": { "$value": "{ref.size.10}" }
+    "hit": {
+      "$value": "{ref.size.32}"
+    },
+    "iconS": {
+      "$value": "{ref.size.16}"
+    },
+    "iconM": {
+      "$value": "{ref.size.20}"
+    },
+    "iconL": {
+      "$value": "{ref.size.24}"
+    },
+    "controlS": {
+      "$value": "{ref.size.28}"
+    },
+    "controlM": {
+      "$value": "{ref.size.32}"
+    },
+    "controlL": {
+      "$value": "{ref.size.40}"
+    },
+    "triggerDot": {
+      "$value": "{ref.size.10}"
+    },
+    "triggerRing": {
+      "$value": "{ref.size.30}"
+    },
+    "scrollbar": {
+      "$value": "{ref.size.10}"
+    }
   },
   "layout": {
     "$type": "dimension",
-    "topBand": { "$value": "{ref.size.44}" },
-    "measure": { "$value": "{ref.size.70ch}" },
-    "gutter": { "$value": "{ref.size.48}" },
-    "gutterCompact": { "$value": "{ref.size.24}" },
-    "wideContent": { "$value": "{ref.size.1040}" },
-    "sheetFiles": { "$value": "{ref.size.320}" },
-    "sheetTheme": { "$value": "{ref.size.380}" },
-    "popover": { "$value": "{ref.size.360}" },
-    "menuMinWidth": { "$value": "{ref.size.240}" },
-    "dialogS": { "$value": "{ref.size.480}" },
-    "dialogL": { "$value": "{ref.size.760}" },
-    "dialogMaxHeight": { "$value": "{ref.size.85vh}" },
-    "findBarClearance": { "$value": "{ref.size.64}" },
-    "blockGap": { "$value": "{ref.size.12}" },
-    "editorEndPadding": { "$value": "{ref.size.40vh}" },
-    "editorMinHeight": { "$value": "{ref.size.60vh}" }
+    "topBand": {
+      "$value": "{ref.size.44}"
+    },
+    "measure": {
+      "$value": "{ref.size.70ch}"
+    },
+    "gutter": {
+      "$value": "{ref.size.48}"
+    },
+    "gutterCompact": {
+      "$value": "{ref.size.24}"
+    },
+    "wideContent": {
+      "$value": "{ref.size.1040}"
+    },
+    "sheetFiles": {
+      "$value": "{ref.size.320}"
+    },
+    "sheetTheme": {
+      "$value": "{ref.size.380}"
+    },
+    "popover": {
+      "$value": "{ref.size.360}"
+    },
+    "menuMinWidth": {
+      "$value": "{ref.size.240}"
+    },
+    "dialogS": {
+      "$value": "{ref.size.480}"
+    },
+    "dialogL": {
+      "$value": "{ref.size.760}"
+    },
+    "dialogMaxHeight": {
+      "$value": "{ref.size.85vh}"
+    },
+    "findBarClearance": {
+      "$value": "{ref.size.64}"
+    },
+    "blockGap": {
+      "$value": "{ref.size.12}"
+    },
+    "editorEndPadding": {
+      "$value": "{ref.size.40vh}"
+    },
+    "editorMinHeight": {
+      "$value": "{ref.size.60vh}"
+    }
   },
   "radius": {
     "$type": "dimension",
-    "window": { "$value": "{ref.size.20}" },
-    "sheet": { "$value": "{ref.size.16}" },
-    "popover": { "$value": "{ref.size.12}" },
-    "control": { "$value": "{ref.size.8}" },
-    "small": { "$value": "{ref.size.4}" },
-    "round": { "$value": "{ref.size.round}" }
+    "window": {
+      "$value": "{ref.size.20}"
+    },
+    "sheet": {
+      "$value": "{ref.size.16}"
+    },
+    "popover": {
+      "$value": "{ref.size.12}"
+    },
+    "control": {
+      "$value": "{ref.size.8}"
+    },
+    "small": {
+      "$value": "{ref.size.4}"
+    },
+    "round": {
+      "$value": "{ref.size.round}"
+    }
   },
   "border": {
     "$type": "dimension",
-    "hairline": { "$value": "{ref.size.1}" },
-    "focus": { "$value": "{ref.size.2}" },
-    "focusOffset": { "$value": "{ref.size.2}" },
-    "selectedBar": { "$value": "{ref.size.2}" },
-    "scrollbarInset": { "$value": "{ref.size.2}" }
+    "hairline": {
+      "$value": "{ref.size.1}"
+    },
+    "focus": {
+      "$value": "{ref.size.2}"
+    },
+    "focusOffset": {
+      "$value": "{ref.size.2}"
+    },
+    "selectedBar": {
+      "$value": "{ref.size.2}"
+    },
+    "scrollbarInset": {
+      "$value": "{ref.size.2}"
+    }
   },
   "shadow": {
     "$type": "shadow",
-    "0": { "$value": "{ref.shadow.0}" },
-    "1": { "$value": "{ref.shadow.1}" },
-    "2": { "$value": "{ref.shadow.2}" },
-    "3": { "$value": "{ref.shadow.3}" }
+    "0": {
+      "$value": "{ref.shadow.0}"
+    },
+    "1": {
+      "$value": "{ref.shadow.1}"
+    },
+    "2": {
+      "$value": "{ref.shadow.2}"
+    },
+    "3": {
+      "$value": "{ref.shadow.3}"
+    }
   },
   "frost": {
-    "opacity": { "$type": "number", "$value": 0.78 },
-    "blur": { "$type": "dimension", "$value": "{ref.size.24}" }
+    "opacity": {
+      "$type": "number",
+      "$value": 0.78
+    },
+    "blur": {
+      "$type": "dimension",
+      "$value": "{ref.size.24}"
+    }
   },
   "opacity": {
     "$type": "number",
-    "disabled": { "$value": 0.4 },
-    "hover": { "$value": 0.06 },
-    "pressed": { "$value": 0.1 },
-    "muted": { "$value": 0.75 }
+    "disabled": {
+      "$value": 0.4
+    },
+    "hover": {
+      "$value": 0.06
+    },
+    "pressed": {
+      "$value": 0.1
+    },
+    "muted": {
+      "$value": 0.75
+    }
   },
   "motion": {
     "$type": "duration",
-    "micro": { "$value": "{ref.duration.80}" },
-    "enter": { "$value": "{ref.duration.150}" },
-    "sheet": { "$value": "{ref.duration.200}" },
-    "exit": { "$value": "{ref.duration.120}" },
-    "theme": { "$value": "{ref.duration.180}" }
+    "micro": {
+      "$value": "{ref.duration.80}"
+    },
+    "enter": {
+      "$value": "{ref.duration.150}"
+    },
+    "sheet": {
+      "$value": "{ref.duration.200}"
+    },
+    "exit": {
+      "$value": "{ref.duration.120}"
+    },
+    "theme": {
+      "$value": "{ref.duration.180}"
+    },
+    "spin": {
+      "$value": "{ref.duration.900}"
+    }
   },
   "easing": {
     "$type": "cubicBezier",
-    "standard": { "$value": "{ref.easing.standard}" },
-    "decelerate": { "$value": "{ref.easing.decelerate}" },
-    "accelerate": { "$value": "{ref.easing.accelerate}" }
+    "standard": {
+      "$value": "{ref.easing.standard}"
+    },
+    "decelerate": {
+      "$value": "{ref.easing.decelerate}"
+    },
+    "accelerate": {
+      "$value": "{ref.easing.accelerate}"
+    }
   },
   "layer": {
     "$type": "number",
-    "canvas": { "$value": 0 },
-    "mask": { "$value": 1 },
-    "contextual": { "$value": 2 },
-    "trigger": { "$value": 3 },
-    "panel": { "$value": 4 },
-    "dialog": { "$value": 5 },
-    "toast": { "$value": 6 },
-    "tooltip": { "$value": 7 }
+    "canvas": {
+      "$value": 0
+    },
+    "mask": {
+      "$value": 1
+    },
+    "contextual": {
+      "$value": 2
+    },
+    "trigger": {
+      "$value": 3
+    },
+    "panel": {
+      "$value": 4
+    },
+    "dialog": {
+      "$value": 5
+    },
+    "toast": {
+      "$value": 6
+    },
+    "tooltip": {
+      "$value": 7
+    }
   },
   "breakpoint": {
     "$type": "dimension",
-    "medium": { "$value": "{ref.size.600}" },
-    "wide": { "$value": "{ref.size.1024}" }
+    "medium": {
+      "$value": "{ref.size.600}"
+    },
+    "wide": {
+      "$value": "{ref.size.1024}"
+    }
   },
   "window": {
-    "radius": { "$type": "dimension", "$value": "{ref.size.20}" },
-    "titleBarHeight": { "$type": "dimension", "$value": "{ref.size.44}" }
+    "radius": {
+      "$type": "dimension",
+      "$value": "{ref.size.20}"
+    },
+    "titleBarHeight": {
+      "$type": "dimension",
+      "$value": "{ref.size.44}"
+    }
+  },
+  "wait": {
+    "$type": "duration",
+    "signDelay": {
+      "$value": "{ref.duration.300}"
+    },
+    "signMinimum": {
+      "$value": "{ref.duration.500}"
+    },
+    "announceDelay": {
+      "$value": "{ref.duration.1000}"
+    },
+    "elapsedDelay": {
+      "$value": "{ref.duration.3000}"
+    },
+    "doneDuration": {
+      "$value": "{ref.duration.1500}"
+    },
+    "toastDuration": {
+      "$value": "{ref.duration.6000}"
+    },
+    "toastUndoDuration": {
+      "$value": "{ref.duration.10000}"
+    }
   }
 }

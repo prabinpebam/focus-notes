@@ -7,7 +7,8 @@
     "vm.canvas",
     "vm.toolbar",
     "vm.shortcuts",
-    "vm.find"
+    "vm.find",
+    "vm.feedback"
   ],
   "focus": "editor",
   "root": {
@@ -790,6 +791,99 @@
             ]
           }
         ]
+      },
+      {
+        "type": "Layer",
+        "id": "toasts",
+        "props": {
+          "layer": "toast",
+          "position": "bottomCenter"
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "s",
+              "align": "center"
+            },
+            "children": [
+              {
+                "each": {
+                  "get": "vm.feedback.toasts"
+                },
+                "as": "toast",
+                "key": "toast.id",
+                "render": {
+                  "type": "Toast",
+                  "props": {
+                    "message": {
+                      "get": "toast.message"
+                    },
+                    "tone": {
+                      "get": "toast.tone"
+                    },
+                    "actionLabel": {
+                      "get": "toast.actionLabel"
+                    },
+                    "dismissLabel": {
+                      "t": "toast.dismiss"
+                    },
+                    "focusRequest": {
+                      "get": "vm.feedback.toastFocus"
+                    }
+                  },
+                  "on": {
+                    "action": {
+                      "run": "toast.action",
+                      "args": {
+                        "id": {
+                          "get": "toast.id"
+                        }
+                      }
+                    },
+                    "dismiss": {
+                      "run": "toast.dismiss",
+                      "args": {
+                        "id": {
+                          "get": "toast.id"
+                        }
+                      }
+                    },
+                    "pausedChange": {
+                      "run": "toast.setPaused",
+                      "args": {
+                        "id": {
+                          "get": "toast.id"
+                        },
+                        "paused": {
+                          "get": "event.paused"
+                        }
+                      }
+                    }
+                  }
+                },
+                "empty": {
+                  "type": "Stack",
+                  "props": {
+                    "gap": "none"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "LiveRegion",
+        "id": "announcer",
+        "props": {
+          "message": {
+            "get": "vm.feedback.announcement"
+          },
+          "announceKey": {
+            "get": "vm.feedback.announcementKey"
+          }
+        }
       }
     ]
   }

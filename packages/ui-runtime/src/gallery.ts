@@ -78,6 +78,11 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     keysMacSpoken: "Shift Command L",
     keysPc: ["Ctrl", "Shift", "L"],
     keysPcSpoken: "Control Shift L",
+    results: [
+      { id: "all", label: "Heading 1", description: "Big section heading", icon: "heading1", shortcut: "Ctrl+Alt+1" },
+      { id: "basic", label: "Bulleted list", icon: "bulletList" },
+      { id: "writer", label: "Table", description: "Unavailable here", icon: "table", disabled: true },
+    ],
   };
   const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, icon: { type: "string" as const }, shortcut: { type: "string" as const }, checked: { type: "boolean" as const }, disabled: { type: "boolean" as const }, reason: { type: "string" as const } } };
   app.viewModels.register({
@@ -96,6 +101,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         keysMacSpoken: { type: "string" },
         keysPc: { type: "array", items: { type: "string" } },
         keysPcSpoken: { type: "string" },
+        results: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, description: { type: "string" }, icon: { type: "string" }, shortcut: { type: "string" }, disabled: { type: "boolean" } } } },
       },
     },
     select: () => ({ fixtures, toolbar, menu, ...extras }),

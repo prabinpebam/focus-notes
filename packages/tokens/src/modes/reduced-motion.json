@@ -1,3 +1,23 @@
-{ "motion": { "$type": "duration",
-  "micro": { "$value": "{ref.duration.0}" }, "enter": { "$value": "{ref.duration.0}" }, "sheet": { "$value": "{ref.duration.0}" },
-  "exit": { "$value": "{ref.duration.0}" }, "theme": { "$value": "{ref.duration.0}" } } }
+{
+  "motion": {
+    "$type": "duration",
+    "micro": {
+      "$value": "{ref.duration.0}"
+    },
+    "enter": {
+      "$value": "{ref.duration.0}"
+    },
+    "sheet": {
+      "$value": "{ref.duration.0}"
+    },
+    "exit": {
+      "$value": "{ref.duration.0}"
+    },
+    "theme": {
+      "$value": "{ref.duration.0}"
+    },
+    "spin": {
+      "$value": "{ref.duration.0}"
+    }
+  }
+}

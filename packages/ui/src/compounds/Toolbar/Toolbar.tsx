@@ -31,6 +31,8 @@ export function Toolbar({ label, items, more, moreLabel, onAction }: ToolbarProp
           {...(item.shortcut ? { shortcut: item.shortcut } : {})}
           {...(item.checked !== undefined ? { toggle: true, pressed: item.checked } : {})}
           {...(item.disabled ? { disabled: true, ...(item.reason ? { disabledReason: item.reason } : {}) } : {})}
+          {...(item.busy ? { busy: true } : {})}
+          {...(item.busyLabel ? { busyLabel: item.busyLabel } : {})}
           onPress={() => onAction?.({ id: item.id })}
         />
       ))}

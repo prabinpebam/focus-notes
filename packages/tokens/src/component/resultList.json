@@ -1,0 +1,90 @@
+{
+  "cmp": {
+    "resultList": {
+      "gap": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
+      },
+      "padding": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
+      },
+      "itemHeight": {
+        "$type": "dimension",
+        "$value": "{size.controlL}"
+      },
+      "itemPaddingInline": {
+        "$type": "dimension",
+        "$value": "{space.m}"
+      },
+      "itemRadius": {
+        "$type": "dimension",
+        "$value": "{radius.control}"
+      },
+      "itemGap": {
+        "$type": "dimension",
+        "$value": "{space.m}"
+      },
+      "text": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "textMuted": {
+        "$type": "color",
+        "$value": "{color.textMuted}"
+      },
+      "active": {
+        "$type": "color",
+        "$value": "{color.hover}"
+      },
+      "activeBar": {
+        "$type": "color",
+        "$value": "{color.accent}"
+      },
+      "barWidth": {
+        "$type": "dimension",
+        "$value": "{border.selectedBar}"
+      },
+      "font": {
+        "$type": "fontFamily",
+        "$value": "{font.ui}"
+      },
+      "fontSize": {
+        "$type": "dimension",
+        "$value": "{font.uiBody}"
+      },
+      "captionSize": {
+        "$type": "dimension",
+        "$value": "{font.uiCaption}"
+      },
+      "maxHeight": {
+        "$type": "dimension",
+        "$value": "{layout.popover}"
+      },
+      "scrollbarSize": {
+        "$type": "dimension",
+        "$value": "{size.scrollbar}"
+      },
+      "scrollbarInset": {
+        "$type": "dimension",
+        "$value": "{border.scrollbarInset}"
+      },
+      "scrollbarThumb": {
+        "$type": "color",
+        "$value": "{color.scrollbar}"
+      },
+      "scrollbarThumbHover": {
+        "$type": "color",
+        "$value": "{color.scrollbarHover}"
+      },
+      "scrollbarTrack": {
+        "$type": "color",
+        "$value": "{color.none}"
+      },
+      "disabledOpacity": {
+        "$type": "number",
+        "$value": "{opacity.disabled}"
+      }
+    }
+  }
+}

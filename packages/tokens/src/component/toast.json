@@ -1,0 +1,78 @@
+{
+  "cmp": {
+    "toast": {
+      "background": {
+        "$type": "color",
+        "$value": "{color.surface}"
+      },
+      "opacity": {
+        "$type": "number",
+        "$value": "{frost.opacity}"
+      },
+      "blur": {
+        "$type": "dimension",
+        "$value": "{frost.blur}"
+      },
+      "border": {
+        "$type": "color",
+        "$value": "{color.border}"
+      },
+      "borderError": {
+        "$type": "color",
+        "$value": "{color.danger}"
+      },
+      "borderWidth": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      },
+      "radius": {
+        "$type": "dimension",
+        "$value": "{radius.popover}"
+      },
+      "shadow": {
+        "$type": "shadow",
+        "$value": "{shadow.2}"
+      },
+      "paddingBlock": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "paddingInline": {
+        "$type": "dimension",
+        "$value": "{space.m}"
+      },
+      "gap": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "maxWidth": {
+        "$type": "dimension",
+        "$value": "{layout.dialogS}"
+      },
+      "text": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "font": {
+        "$type": "fontFamily",
+        "$value": "{font.ui}"
+      },
+      "fontSize": {
+        "$type": "dimension",
+        "$value": "{font.uiBody}"
+      },
+      "errorIcon": {
+        "$type": "color",
+        "$value": "{color.danger}"
+      },
+      "duration": {
+        "$type": "duration",
+        "$value": "{motion.enter}"
+      },
+      "easing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.decelerate}"
+      }
+    }
+  }
+}

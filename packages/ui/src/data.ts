@@ -10,6 +10,19 @@ export interface CommandItem {
   reason?: string;
   /** A submenu: this item opens these items instead of running a command. */
   items?: CommandItem[];
+  /** A wait it started is showing its sign (PRF-08), and what it's doing. */
+  busy?: boolean;
+  busyLabel?: string;
+}
+
+/** A result in a ResultList (Spotlight, the slash menu, Move to). */
+export interface ResultItem {
+  id: string;
+  label: string;
+  description?: string;
+  icon?: string;
+  shortcut?: string;
+  disabled?: boolean;
 }
 
 /** Key scopes (Keyboard shortcuts → Contexts decide): keys registered for a scope work only inside it. */
