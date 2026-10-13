@@ -817,7 +817,7 @@
         "$value": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif"
       },
       "serif": {
-        "$value": "\"Source Serif 4\", Georgia, \"Times New Roman\", serif"
+        "$value": "Newsreader, Georgia, \"Times New Roman\", serif"
       },
       "mono": {
         "$value": "\"Roboto Mono\", ui-monospace, \"Cascadia Code\", Consolas, monospace"
@@ -827,6 +827,9 @@
       },
       "dyslexic": {
         "$value": "OpenDyslexic, \"Comic Sans MS\", sans-serif"
+      },
+      "display": {
+        "$value": "Fraunces, Newsreader, Georgia, serif"
       }
     },
     "system": {

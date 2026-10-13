@@ -62,7 +62,7 @@ export const prose = style({
 const p = (sel: string) => `${prose} ${sel}`;
 globalStyle(p("> * + *"), { marginTop: t.blockGap });
 globalStyle(`:where(${prose}) :where(p)`, { margin: 0 });
-globalStyle(`:where(${prose}) :where(h1, h2, h3, h4, h5, h6)`, { margin: 0, fontWeight: t.headingWeight, lineHeight: t.headingLineHeight });
+globalStyle(`:where(${prose}) :where(h1, h2, h3, h4, h5, h6)`, { margin: 0, fontFamily: t.headingFont, fontWeight: t.headingWeight, lineHeight: t.headingLineHeight });
 // The heading ramp and the space above each heading, in its own em (D-78).
 const ramp = [[t.h1, t.h1Before], [t.h2, t.h2Before], [t.h3, t.h3Before], [t.h4, t.h4Before], [t.h5, t.h5Before], [t.h6, t.h6Before]] as const;
 ramp.forEach(([size, before], i) => {

@@ -111,6 +111,10 @@
     "contentH6Before": {
       "$type": "number",
       "$value": 0.5
+    },
+    "contentHeading": {
+      "$type": "fontFamily",
+      "$value": "{ref.font.mono}"
     }
   },
   "space": {

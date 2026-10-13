@@ -78,7 +78,7 @@ The same rules apply on every platform. On macOS they match the system's overlay
 
 <h2 data-reader-personas="design">Type</h2>
 
-**Note text** follows the content font, **Roboto Mono** by default (see [Theming](../experience/theming.md#fonts) and [D-78](../plan/decisions.md)). Sizes are relative to `font.size`, default 16 px. Blocks are 1.5 em apart, and headings have their own space above them:
+**Note text** follows the content font preset, **Roboto Mono** by default; headings use the preset's heading font (`font.contentHeading`), which differs only in the Serif preset (Fraunces over Newsreader, [D-79](../plan/decisions.md)) (see [Theming](../experience/theming.md#fonts) and [D-78](../plan/decisions.md)). Sizes are relative to `font.size`, default 16 px. Blocks are 1.5 em apart, and headings have their own space above them:
 
 | Role | Size | Line height | Weight | Space above |
 | --- | --- | --- | --- | --- |
@@ -102,7 +102,7 @@ The same rules apply on every platform. On macOS they match the system's overlay
 | Emphasis | 16 px | Spotlight field, dialog field |
 | Title | 20 px | Dialog and sheet titles |
 
-**Bundled fonts** are self-hosted and licensed under the SIL Open Font License, which D-29 proposes adding to the allowed list for fonts: Roboto Mono (mono, the default for note text and code), Inter (sans), Source Serif 4 (serif), Atkinson Hyperlegible (a highly legible font designed for low vision), and OpenDyslexic (an option for some dyslexic readers). License checks in CI confirm each one.
+**Bundled fonts** are self-hosted and licensed under the SIL Open Font License, which D-29 proposes adding to the allowed list for fonts: Roboto Mono (mono, the default for note text and code), Newsreader and Fraunces (the serif preset: Newsreader for text, Fraunces for headings), Inter (sans), Atkinson Hyperlegible (a highly legible font designed for low vision), and OpenDyslexic (an option for some dyslexic readers). License checks in CI confirm each one.
 
 <h2 data-reader-personas="design">Icons</h2>
 

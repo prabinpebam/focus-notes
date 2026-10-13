@@ -54,7 +54,7 @@ The change applies instantly with a short cross-fade (none with reduced motion).
 
 The seed lists fonts as a theming dimension. Fonts can be set separately from the color theme:
 
-- **Content font:** Mono (Roboto Mono, the default, D-78), Sans (Inter), Serif (Source Serif 4), Hyperlegible (Atkinson Hyperlegible), OpenDyslexic, System, or a custom CSS font stack (THM-03). Bundled fonts use the SIL Open Font License (D-29).
+- **Content font:** Mono (Roboto Mono, the default, D-78), Serif (Newsreader for text with Fraunces for headings, D-79), Sans (Inter), Hyperlegible (Atkinson Hyperlegible), OpenDyslexic, System, or a custom CSS font stack (THM-03). Bundled fonts use the SIL Open Font License (D-29).
 - **Size:** steps of 14, 15, 16 (default, D-78), 17, 18, 20, 22, 24, 28, and 32 px, with line height scaled to match. <kbd>Mod</kbd>+<kbd>=</kbd> goes up a step, <kbd>Mod</kbd>+<kbd>-</kbd> goes down, and <kbd>Mod</kbd>+<kbd>0</kbd> resets. The ⋯ menu has a single − 16 + row that does the same (THM-06). A small "16 px" readout appears briefly near the trigger after each change. Only the note text changes; interface size is a separate *UI scale* setting.
 - **Line spacing, reading width, paragraph spacing, and focus dim** are set in the theme manager's Reading tab. Reading settings are separate from color themes, so switching theme never resets them.
 - **UI font:** follows the system UI font by default, and can be overridden.

@@ -97,9 +97,11 @@ test("the content font changes only the note text, and the bundled font loads of
   const family = () => editor.evaluate((el) => getComputedStyle(el).fontFamily);
   expect(await family()).toMatch(/^"Roboto Mono"/);
   await expect.poll(() => page.evaluate(() => document.fonts.check('16px "Roboto Mono"'))).toBe(true);
-  await pick(page, "Font", "Serif (Source Serif 4)");
-  await expect.poll(family).toMatch(/^"Source Serif 4"/);
-  await expect.poll(() => page.evaluate(() => document.fonts.check('16px "Source Serif 4"'))).toBe(true);
+  // Serif pairs Newsreader for the body with Fraunces for headings (D-79).
+  await pick(page, "Font", "Serif (Fraunces and Newsreader)");
+  await expect.poll(family).toMatch(/^Newsreader/);
+  await expect.poll(() => editor.locator("h1").evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/^Fraunces/);
+  await expect.poll(() => page.evaluate(async () => (await document.fonts.load("16px Newsreader")).length > 0 && (await document.fonts.load("700 32px Fraunces")).length > 0)).toBe(true);
   await pick(page, "Font", "OpenDyslexic");
   await expect.poll(family).toMatch(/^OpenDyslexic/);
   await expect.poll(() => page.evaluate(async () => (await document.fonts.load("16px OpenDyslexic")).length > 0)).toBe(true);

@@ -1,7 +1,10 @@
 {
   "font": {
+    "$type": "fontFamily",
     "content": {
-      "$type": "fontFamily",
+      "$value": "{ref.font.dyslexic}"
+    },
+    "contentHeading": {
       "$value": "{ref.font.dyslexic}"
     }
   }

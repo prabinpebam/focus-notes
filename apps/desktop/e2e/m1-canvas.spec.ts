@@ -29,8 +29,12 @@ test("UI-10: the trigger sits 40 px down, its dot grows on hover, and it morphs 
   expect(Math.round(ring.y)).toBe(40);
   const dot = () => trigger.locator("span").first().evaluate((el) => el.getBoundingClientRect().width);
   expect(Math.round(await dot())).toBe(10);
-  await trigger.hover();
-  await expect.poll(async () => Math.round(await dot())).toBe(28);
+  // Hovering can race the window becoming hoverable after launch, so it retries until the pointer lands.
+  await expect(async () => {
+    await page.mouse.move(10, 400);
+    await trigger.hover();
+    expect(Math.round(await dot())).toBe(28);
+  }).toPass({ timeout: 5000 });
   await page.screenshot({ path: "../../test-results/screens/trigger-hover.png", clip: { x: ring.x - 40, y: 0, width: ring.width + 80, height: 110 } });
   await page.mouse.move(10, 400);
   await expect.poll(async () => Math.round(await dot())).toBe(10);

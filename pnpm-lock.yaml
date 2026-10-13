@@ -165,16 +165,19 @@ importers:
       '@fontsource/atkinson-hyperlegible':
         specifier: 5.3.0
         version: 5.3.0
+      '@fontsource/fraunces':
+        specifier: 5.3.0
+        version: 5.3.0
       '@fontsource/inter':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/newsreader':
         specifier: 5.3.0
         version: 5.3.0
       '@fontsource/opendyslexic':
         specifier: 5.3.0
         version: 5.3.0
       '@fontsource/roboto-mono':
-        specifier: 5.3.0
-        version: 5.3.0
-      '@fontsource/source-serif-4':
         specifier: 5.3.0
         version: 5.3.0
       '@tiptap/extension-placeholder':
@@ -548,17 +551,20 @@ packages:
   '@fontsource/atkinson-hyperlegible@5.3.0':
     resolution: {integrity: sha1-pAo4u39D/xmk0uSVrO8DmwL69mw=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/atkinson-hyperlegible/-/atkinson-hyperlegible-5.3.0.tgz}
 
+  '@fontsource/fraunces@5.3.0':
+    resolution: {integrity: sha1-jvk8cN2/D+0OgB15J9MkIpxkboA=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/fraunces/-/fraunces-5.3.0.tgz}
+
   '@fontsource/inter@5.3.0':
     resolution: {integrity: sha1-hmJ43CNXZZ+L4XVci2fynTaXtEA=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/inter/-/inter-5.3.0.tgz}
+
+  '@fontsource/newsreader@5.3.0':
+    resolution: {integrity: sha1-WsItJrDf6/VmJk1hA5GWQWoX0Y4=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/newsreader/-/newsreader-5.3.0.tgz}
 
   '@fontsource/opendyslexic@5.3.0':
     resolution: {integrity: sha512-BVYIW/ghc1U2iAghhYTN+GFWiZ3lnCy8Jf2KkZC23aHQHBNcMqKT718zckfqVxRx4qsXJmIMPWvczirRuhmtsg==, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/opendyslexic/-/opendyslexic-5.3.0.tgz}
 
   '@fontsource/roboto-mono@5.3.0':
     resolution: {integrity: sha1-3hxY1JCkKFM4nK7KBTduzbKV5+M=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/roboto-mono/-/roboto-mono-5.3.0.tgz}
-
-  '@fontsource/source-serif-4@5.3.0':
-    resolution: {integrity: sha1-iCSkoxNpwAcEVbF6rJ09B/FJjes=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@fontsource/source-serif-4/-/source-serif-4-5.3.0.tgz}
 
   '@formatjs/fast-memoize@3.1.7':
     resolution: {integrity: sha1-X3mzdW5Ly1+u5Hs6LwEhbhISyeQ=, tarball: https://ms-feed-25.pkgs.visualstudio.com/1es-public/_packaging/npm-public/npm/registry/@formatjs/fast-memoize/-/fast-memoize-3.1.7.tgz}
@@ -3373,13 +3379,15 @@ snapshots:
 
   '@fontsource/atkinson-hyperlegible@5.3.0': {}
 
+  '@fontsource/fraunces@5.3.0': {}
+
   '@fontsource/inter@5.3.0': {}
+
+  '@fontsource/newsreader@5.3.0': {}
 
   '@fontsource/opendyslexic@5.3.0': {}
 
   '@fontsource/roboto-mono@5.3.0': {}
-
-  '@fontsource/source-serif-4@5.3.0': {}
 
   '@formatjs/fast-memoize@3.1.7': {}
 

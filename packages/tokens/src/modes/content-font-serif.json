@@ -1,8 +1,11 @@
 {
   "font": {
+    "$type": "fontFamily",
     "content": {
-      "$type": "fontFamily",
       "$value": "{ref.font.serif}"
+    },
+    "contentHeading": {
+      "$value": "{ref.font.display}"
     }
   }
 }
