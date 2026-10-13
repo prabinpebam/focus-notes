@@ -12,7 +12,7 @@ export const contract = defineContract({
     autoFocus: { kind: "boolean", default: false },
     focusRequest: { kind: "number", min: 0, description: "Each new value moves focus into the field." },
     invalid: { kind: "boolean", default: false },
-    keyScope: { kind: "enum", values: ["none", "findBar", "findField", "replaceField", "pickerField"], default: "none" },
+    keyScope: { kind: "enum", values: ["none", "findBar", "findField", "replaceField", "pickerField", "moveField"], default: "none" },
     controls: { kind: "ref", description: "The ResultList this field drives." },
     activeId: { kind: "text", description: "The active item in that list." },
   },
@@ -25,6 +25,6 @@ export const contract = defineContract({
     { name: "empty", props: { label: { t: "shortcuts.search" }, placeholder: { t: "shortcuts.searchPlaceholder" }, clearLabel: { t: "field.clear" } } },
     { name: "filled", props: { label: { t: "shortcuts.search" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" } } },
     { name: "invalid", props: { label: { t: "shortcuts.search" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" }, invalid: true } },
-    ...["none", "findBar", "findField", "replaceField", "pickerField"].map((keyScope) => ({ name: `keyScope ${keyScope}`, props: { label: { t: "shortcuts.search" }, clearLabel: { t: "field.clear" }, keyScope } })),
+    ...["none", "findBar", "findField", "replaceField", "pickerField", "moveField"].map((keyScope) => ({ name: `keyScope ${keyScope}`, props: { label: { t: "shortcuts.search" }, clearLabel: { t: "field.clear" }, keyScope } })),
   ],
 });

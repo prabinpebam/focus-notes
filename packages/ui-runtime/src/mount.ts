@@ -33,8 +33,10 @@ export function mountApp(el: Element, { app, views, view = "canvas" }: MountOpti
     if (e.defaultPrevented || e.isComposing || e.keyCode === 229) return;
     // Key scopes focus is inside, innermost first (data-key-scope on primitives and layouts).
     const scopes: string[] = [];
+    // A scope marked data-key-scope-stop (a name field inside a tree) hides the scopes around it.
     for (let el = e.target instanceof Element ? e.target.closest("[data-key-scope]") : null; el; el = el.parentElement?.closest("[data-key-scope]") ?? null) {
       scopes.push((el as HTMLElement).dataset.keyScope!);
+      if (el.hasAttribute("data-key-scope-stop")) break;
     }
     const id = app.commands.match({
       key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey,
@@ -57,14 +59,16 @@ export function mountApp(el: Element, { app, views, view = "canvas" }: MountOpti
   // The same when a dialog closes: its saved focus target may be gone (opened from the ⋯ menu).
   let toolbarWasOpen = app.store.state.ui.toolbarOpen;
   let sheetWasOpen = app.store.state.ui.shortcuts.open;
+  let filesWereOpen = app.store.state.ui.files.open;
   app.store.subscribe(() => {
-    const { toolbarOpen, shortcuts, find } = app.store.state.ui;
-    // Not when the toolbar closed because the find bar or the cheat sheet took focus.
-    if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open) || (sheetWasOpen && !shortcuts.open)) {
+    const { toolbarOpen, shortcuts, find, files } = app.store.state.ui;
+    // Not when the toolbar closed because the find bar, the cheat sheet, or the Files panel took focus.
+    if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open && !files.open) || (sheetWasOpen && !shortcuts.open) || (filesWereOpen && !files.open)) {
       setTimeout(() => window.dispatchEvent(new Event(REFOCUS_EVENT)), 0);
     }
     toolbarWasOpen = toolbarOpen;
     sheetWasOpen = shortcuts.open;
+    filesWereOpen = files.open;
   });
   return root;
 }

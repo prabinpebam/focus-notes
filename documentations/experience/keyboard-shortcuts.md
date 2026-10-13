@@ -195,12 +195,16 @@ The keys follow each platform's file manager (Finder or Explorer), because that'
 | Rename | <kbd>Enter</kbd> | <kbd>F2</kbd> | Basic | Finder, Explorer |
 | Preview without opening | <kbd>Space</kbd> | <kbd>Space</kbd> | Pro | Finder Quick Look |
 | Jump to an item by typing its name | Type letters | Type letters | Basic | Finder, Explorer |
+| Select a range / add or remove one | <kbd>Shift</kbd>+<kbd>↑</kbd> <kbd>↓</kbd> or <kbd>Shift</kbd>+click / <kbd>⌘</kbd>+click | <kbd>Shift</kbd>+<kbd>↑</kbd> <kbd>↓</kbd> or <kbd>Shift</kbd>+click / <kbd>Ctrl</kbd>+click, <kbd>Ctrl</kbd>+<kbd>Space</kbd> | Basic | Finder, Explorer |
+| Select everything shown | <kbd>⌘A</kbd> | <kbd>Ctrl+A</kbd> | Basic | Finder, Explorer |
 | New note in this folder / new folder | <kbd>⌘N</kbd> / <kbd>⇧⌘N</kbd> | <kbd>Ctrl+N</kbd> / <kbd>Ctrl+Shift+N</kbd> | Writer | Finder, Explorer |
 | Delete (with confirmation and Undo) | <kbd>⌘⌫</kbd> | <kbd>Delete</kbd> | Basic | Finder, Explorer |
 | Move: cut, then paste in the destination | <kbd>⌘C</kbd> then <kbd>⌥⌘V</kbd> (also <kbd>⌘X</kbd> / <kbd>⌘V</kbd>) | <kbd>Ctrl+X</kbd> / <kbd>Ctrl+V</kbd> | Power | Finder, Explorer |
 | Move to… picker | <kbd>⇧⌘M</kbd> | <kbd>Ctrl+Shift+M</kbd> | Power | No common standard |
 | Show the current note in the panel | <kbd>⇧⌘E</kbd> | <kbd>Ctrl+Shift+E</kbd> | Power | VS Code |
 | Show in Finder / Explorer (desktop) | <kbd>⌥⌘R</kbd> | <kbd>Shift+Alt+R</kbd> | Pro | VS Code |
+
+The tree's keys work while focus is in the tree, and New folder and Move to… anywhere in the panel; in a row's name field, <kbd>Enter</kbd> saves the name and <kbd>Esc</kbd> cancels, and the tree's other keys (<kbd>Delete</kbd>, <kbd>F2</kbd>, <kbd>Ctrl+A</kbd>) edit the text instead. Browsers keep <kbd>Ctrl+Shift+N</kbd>, so New folder is <kbd>Ctrl+Alt+Shift+N</kbd> in the web app. Preview, cut and paste, and Show in Finder / Explorer aren't built yet ([Files → What's built](../design/views/files.html#whats-built)).
 
 ## Toolbar and menus
 

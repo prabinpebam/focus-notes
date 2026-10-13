@@ -145,10 +145,10 @@ Compounds compose primitives, layouts, and other compounds. They hold behavior (
 | **HoverCard** | Popover | IA-CMP-LINK | Opens on hover or focus after a delay, never on its own. The link hover card is composed in the canvas view document instead (D-91). |
 | **Dialog** | DialogPanel, Heading, IconButton (close), Inline | IA-VIEW-SETTINGS, IA-VIEW-SHORTCUTS | `title` and `closeLabel` are required. `size` s or l. A `toolbar` slot holds controls that stay put above the scrolling body. Full-screen in the compact size class. |
 | **ConfirmDialog** | Dialog | IA-CMP-DIALOG | Takes the object's name and a verb. The confirm button names the action (Foundations → Words). |
-| **Sheet** | Layer, Surface, Stack, Heading, IconButton | IA-VIEW-FILES, IA-VIEW-THEME, IA-VIEW-HISTORY | `side` start or end. `width` is a `layout.sheet.*` token. |
+| **Sheet** | Built as a layout (D-94), holding its own frosted surface | IA-VIEW-FILES, IA-VIEW-THEME, IA-VIEW-HISTORY | `label`, `side` start or end, `width` files or theme (a `layout.sheet*` token), `keyScope`; slots `header` and the body; event `close` (<kbd>Esc</kbd>, or a click on the note). A complementary landmark, not modal. Tokens `cmp.sheet.*`. |
 | **CommandPalette** | Layer, Surface, SearchField, ResultList, Inline, Shortcut | IA-VIEW-SPOTLIGHT | Modes and prefixes come from a view model. Results use ResultItem. |
 | **ResultList**, **ResultItem** | VirtualList, Inline, Icon, Text, Badge, Shortcut | Spotlight, Move to, slash menu | List box pattern, with sections and per-item actions. Built as a primitive (WP-1.4): its owner keeps focus and points at the active item, and the list is also a tab stop that takes the arrow keys, Home, End, and Enter itself (WP-1.3). `width` fill or menu (the slash menu's 320 px). |
-| **FileTree**, **FileTreeItem** | VirtualList, Inline, Icon, Text, Badge, TextField (rename) | IA-VIEW-FILES | Tree pattern, with type-ahead, multiple selection, drag and drop, and inline rename. |
+| **FileTree** | Built as one primitive that draws its rows (D-94): Icon, Spinner, and its own name field | IA-VIEW-FILES | Tree pattern on a flat list of rows with `aria-level` and `aria-multiselectable`, with type-ahead, multiple selection, drag and drop, and inline naming. `items` (tree items from a view model), `focusId`, `focusRequest`, `editValue` (bindable), `editLabel`, `editError`; events `select`, `expand`, `action`, `drop`, `editChange`, `editBlur`. Its keys are commands scoped to `filesTree` and `filesEdit`. Tokens `cmp.fileTree.*`; its code loads when first shown. Paging through VirtualList comes with long trees. |
 | **Tabs** | Inline, Text, Stack | Theme manager, Settings (compact) | Tabs pattern. |
 | **NavList** | Stack, Icon, Text | Settings categories | Navigation list with the current item marked. |
 | **Field** | Stack, Text | Every form | Label, control, description, and error in one consistent arrangement. |
@@ -162,7 +162,7 @@ Compounds compose primitives, layouts, and other compounds. They hold behavior (
 | **SlashMenu** | Positioner (`anchor` caret, `align` start, region "Block menu"), Surface, ResultList (`width` menu), Text | IA-CMP-SLASH | Composed in the canvas view document, like the formatting toolbar (D-91, D-93). Items come from the block registry through `vm.slash`; the editor surface reports the `/query` with its `slash` event and drives the list while focus stays in the note. |
 | **BlockHandle** | Positioner, IconButton, Menu | IA-CMP-HANDLE | Drag handle and block menu. |
 | **TableControls** | Positioner, IconButton, Menu | IA-CMP-TABLE | Row and column grips, insert lines, and the cell menu. |
-| **MovePicker** | Dialog, SearchField, FileTree | IA-CMP-MOVE | Folder picker. |
+| **MovePicker** | Dialog, SearchField, ResultList | IA-CMP-MOVE | Folder picker. Composed in the canvas view document from these parts, like the find bar (D-76, D-91, D-94). |
 | **ConflictResolver** | Dialog, Split, DiffView, Button | IA-CMP-CONFLICT | Side-by-side choice with a merged preview. |
 | **DiffView** | Stack, block components (read-only), Badge | IA-VIEW-HISTORY, IA-CMP-CONFLICT | Highlights changed blocks with `color.findMatch` style tokens. |
 | **TitleBar**, **WindowControls** | Inline, IconButton, Show, WindowFrame | IA-CMP-TITLEBAR | Platform variants. Hidden on macOS, which draws its own. |

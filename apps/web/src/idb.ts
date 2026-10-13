@@ -5,7 +5,10 @@ export interface NoteRecord {
   path: string;
   text: string;
   updated: number;
-  /** Set by older versions for deletions waiting to sync (D-82); such notes are treated as gone. */
+  /**
+   * Deleted in the Files panel (D-94), or by older versions for deletions waiting to sync (D-82).
+   * Such notes are treated as gone; the Files panel's deletions are kept for Recently deleted.
+   */
   deleted?: boolean;
 }
 
@@ -57,6 +60,21 @@ export class WebDb {
     if (!note) throw new Error(`No note at ${from}`);
     store.delete(from);
     store.put({ ...note, path: to, updated });
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = tx.onabort = () => reject(tx.error);
+    });
+  }
+  /**
+   * A Files panel batch in one transaction (D-94): notes put and removed, and the folder list, so
+   * the batch is never half applied.
+   */
+  async applyBatch(put: readonly NoteRecord[], remove: readonly string[], folders?: { key: string; value: string[] }): Promise<void> {
+    const tx = this.#db.transaction(["notes", "meta"], "readwrite");
+    const notes = tx.objectStore("notes");
+    for (const p of remove) notes.delete(p);
+    for (const n of put) notes.put(n);
+    if (folders) tx.objectStore("meta").put(folders.value, folders.key);
     await new Promise<void>((resolve, reject) => {
       tx.oncomplete = () => resolve();
       tx.onerror = tx.onabort = () => reject(tx.error);

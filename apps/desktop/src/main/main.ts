@@ -3,11 +3,12 @@
  * window, the file system, and nothing else. It makes no network requests and allows none.
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
-import { mkdir, readdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
+import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
 import { existsSync, realpathSync, watch, type FSWatcher } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { readWorkspaceFormat } from "@focus-notes/core/workspace-format";
+import { titleOfMarkdown } from "@focus-notes/core/workspace";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 const customWindow = process.argv.includes("--custom-window") && platform !== "macos";
@@ -46,17 +47,34 @@ async function assertWritable(p: string): Promise<void> {
   if (!inside(notesHome(), p) || p === formatFile()) return;
   if (readWorkspaceFormat(await readFormat()).access !== "write") throw new Error("This workspace is read-only for this version of Focus Notes");
 }
-/** Every note and folder under a root; folders and files starting with a dot are skipped. */
-async function listTree(dir: string, out: { path: string; kind: "note" | "folder" }[] = []) {
+/** A note's title from its first 16 KB, so the Files panel shows titles without reading whole notes. */
+async function readTitle(p: string): Promise<string | undefined> {
+  const h = await open(p, "r").catch(() => undefined);
+  if (!h) return undefined;
+  try {
+    const buf = Buffer.alloc(16 * 1024);
+    const { bytesRead } = await h.read(buf, 0, buf.length, 0);
+    return titleOfMarkdown(buf.subarray(0, bytesRead).toString("utf8"));
+  } catch {
+    return undefined;
+  } finally {
+    await h.close();
+  }
+}
+type Entry = { path: string; kind: "note" | "folder"; title?: string };
+/** Every note (with its title) and folder under a root; folders and files starting with a dot are skipped. */
+async function listTree(dir: string, out: Entry[] = []): Promise<Entry[]> {
   const items = await readdir(dir, { withFileTypes: true }).catch(() => []);
+  const notes: Promise<Entry>[] = [];
   for (const d of items) {
     if (d.name.startsWith(".") || d.name === "node_modules") continue;
     const p = join(dir, d.name);
     if (d.isDirectory()) {
       out.push({ path: p, kind: "folder" });
       await listTree(p, out);
-    } else if (d.isFile() && isMarkdown(d.name)) out.push({ path: p, kind: "note" });
+    } else if (d.isFile() && isMarkdown(d.name)) notes.push(readTitle(p).then((title) => ({ path: p, kind: "note", ...(title ? { title } : {}) })));
   }
+  out.push(...(await Promise.all(notes)));
   return out;
 }
 
@@ -114,6 +132,84 @@ async function writeNow(path: string, content: string): Promise<void> {
       await rm(tmp, { force: true });
       throw error;
     }
+  }
+}
+
+// ---- file operations from the Files panel (WP-2.4, D-94) ----
+
+/** A refusal the renderer explains: the message is the reason's code (OpErrorCode in core). */
+class Refused extends Error {}
+const refuse = (code: "notFound" | "taken" | "readOnly" | "invalid" | "intoItself" | "trash" | "failed") => new Refused(code);
+/** A path the Files panel may change: absolute, inside a writable root (not the root itself), no dot folders. */
+function opPath(p: unknown): { path: string; root: string } {
+  if (typeof p !== "string" || !p || !isAbsolute(p) || resolve(p) !== p) throw refuse("invalid");
+  const root = roots().find((r) => p !== r.path && inside(r.path, p));
+  if (!root || relative(root.path, p).split(sep).some((part) => part.startsWith("."))) throw refuse("invalid");
+  return { path: p, root: root.path };
+}
+const isDir = (p: string) => stat(p).then((s) => s.isDirectory(), () => false);
+/** Writes already under way to anything inside a path finish first, so none lands in the old place. */
+const writesDone = (p: string) => Promise.allSettled([...writeQueues].filter(([k]) => inside(p, k)).map(([, v]) => v));
+
+/**
+ * A batch from the Files panel, all or nothing (Desktop and Git → Changes shown before they're
+ * saved): every operation is checked, folders are created and items moved in order, and if any step
+ * fails the earlier ones are undone. Deletes go last, to the system trash, until Git keeps them (FIL-10).
+ * A move between roots changes visibility, which arrives with Git (WP-3.4), so it's refused here.
+ */
+async function applyOps(raw: unknown): Promise<void> {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > 5000) throw refuse("invalid");
+  type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string };
+  const ops = raw.map((op: unknown): Op => {
+    const o = op as Record<string, unknown>;
+    if (o?.op === "createFolder" || o?.op === "delete") return { op: o.op, ...opPath(o.path) };
+    if (o?.op === "move") {
+      const from = opPath(o.from);
+      const to = opPath(o.to);
+      if (from.root !== to.root) throw refuse("invalid");
+      return { op: "move" as const, path: from.path, to: to.path, root: from.root };
+    }
+    throw refuse("invalid");
+  });
+  for (const op of ops) await assertWritable(op.path).catch(() => { throw refuse("readOnly"); });
+  // Deletes are checked before anything changes, because the trash can't be undone from here.
+  for (const op of ops) if (op.op === "delete" && !existsSync(op.path)) throw refuse("notFound");
+  const undo: (() => Promise<unknown>)[] = [];
+  try {
+    for (const op of ops) {
+      if (op.op === "createFolder") {
+        if (existsSync(op.path)) throw refuse("taken");
+        if (!(await isDir(dirname(op.path)))) throw refuse("notFound");
+        await mkdir(op.path);
+        undo.push(() => rm(op.path, { recursive: true, force: true }));
+        // Git tracks folders only through files (Files and sharing → Operations).
+        await writeFile(join(op.path, ".gitkeep"), "");
+      } else if (op.op === "move") {
+        const { path: from, to } = op;
+        const st = await stat(from).catch(() => undefined);
+        if (!st) throw refuse("notFound");
+        if (st.isFile() && (!isMarkdown(from) || !isMarkdown(to))) throw refuse("invalid");
+        if (st.isDirectory() && inside(from, to)) throw refuse("intoItself");
+        const caseOnly = from.toLowerCase() === to.toLowerCase();
+        if (!caseOnly && existsSync(to)) throw refuse("taken");
+        if (!(await isDir(dirname(to)))) throw refuse("notFound");
+        await writesDone(from);
+        if (caseOnly && from !== to) {
+          const tmp = `${from}.${process.pid}.move.tmp`;
+          await renameRetrying(from, tmp);
+          await renameRetrying(tmp, to);
+        } else await renameRetrying(from, to);
+        undo.push(() => renameRetrying(to, from));
+      }
+    }
+    for (const op of ops) {
+      if (op.op !== "delete") continue;
+      await writesDone(op.path);
+      await shell.trashItem(op.path).catch(() => { throw refuse("trash"); });
+    }
+  } catch (error) {
+    for (const u of undo.reverse()) await u().catch(() => {});
+    throw error instanceof Refused ? error : refuse("failed");
   }
 }
 
@@ -196,6 +292,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       await renameRetrying(tmp, b);
     } else await renameRetrying(a, b);
   });
+  handle("workspace:apply", (ops) => applyOps(ops));
   handle("window:fullScreen", async () => {
     const w = win();
     if (w) w.setFullScreen(!w.isFullScreen());
@@ -356,7 +453,7 @@ function watchWorkspace(win: () => BrowserWindow | undefined): FSWatcher | undef
     timer = undefined;
     const rels = [...pending];
     pending.clear();
-    const changes: { path: string; kind: "note" | "folder" | "format"; exists: boolean }[] = [];
+    const changes: { path: string; kind: "note" | "folder" | "format"; exists: boolean; title?: string }[] = [];
     for (const rel of rels) {
       const p = join(home, rel);
       if (rel === formatRel) {
@@ -368,7 +465,10 @@ function watchWorkspace(win: () => BrowserWindow | undefined): FSWatcher | undef
       else if (st.isDirectory()) {
         changes.push({ path: p, kind: "folder", exists: true });
         for (const e of await listTree(p)) changes.push({ ...e, exists: true });
-      } else if (isMarkdown(p)) changes.push({ path: p, kind: "note", exists: true });
+      } else if (isMarkdown(p)) {
+        const title = await readTitle(p);
+        changes.push({ path: p, kind: "note", exists: true, ...(title ? { title } : {}) });
+      }
     }
     if (!changes.length) return;
     win()?.webContents.send("workspace:changed", changes);

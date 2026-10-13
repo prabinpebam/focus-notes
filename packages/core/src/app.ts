@@ -12,6 +12,8 @@ import type { Platform } from "./commands.ts";
 import { waits } from "@focus-notes/tokens";
 import { TaskTracker, type Clock, type TaskView } from "./tasks.ts";
 import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts";
+import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
+import { joinPath } from "./workspace.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -54,6 +56,8 @@ export interface AppState {
     aboutOpen: boolean;
     /** The formatting toolbar, link editor, and link hover card (EDT-12, EDT-13). */
     format: FormatState;
+    /** The Files panel, Move to…, and delete confirmations (IA-VIEW-FILES, WP-2.4). */
+    files: FilesState;
   };
   /** The instance this web app was deployed with, read-only (PKG-08, PKG-10). */
   instance: InstanceState;
@@ -159,7 +163,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED },
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
     tasks: [],
@@ -225,6 +229,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       setNote({ saveState: "error" });
     }
   }
+  /** Runs a file operation after pending edits are written, holding later saves until it's done. */
+  const exclusive = async <T,>(fn: () => Promise<T>): Promise<T> => {
+    await flush();
+    const run = saving.then(fn);
+    saving = run.then(() => {}, () => {});
+    return run;
+  };
   const schedule = () => {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
@@ -264,7 +275,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     shortcut: { default: "Mod+O" },
     layer: "basic", group: "app",
     run: async (_a, ctx) => {
-      // Shells that keep notes themselves (the web app) show them in an in-app dialog.
+      // Open… is the Files panel wherever there's a workspace (IA-VIEW-FILES).
+      if (bridge.workspace) return ctx.run("files.open");
+      // Shells that keep notes themselves show them in an in-app dialog.
       if (bridge.listNotes) return ctx.run("picker.open");
       const path = await bridge.chooseNote();
       if (path) await load(path);
@@ -388,8 +401,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     disabledReason: "command.note.new.readOnly",
     run: async () => {
       const current = store.state.note.path;
-      const path = await bridge.newNotePath(isReadOnlyPath(current) ? undefined : current);
+      // With the Files panel open, the note goes into the selected folder (Files → Creating).
+      const folder = files.newNoteFolder();
+      const near = folder !== undefined ? joinPath(folder, "untitled.md") : isReadOnlyPath(current) ? undefined : current;
+      const path = await bridge.newNotePath(near);
       if (!(await flush())) return;
+      files.created(path);
       await bridge.writeNote(path, "");
       await load(path);
     },
@@ -618,6 +635,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
   };
   registerFormatting({ store, commands, viewModels, catalog, bridge, editorAction, toast: (m) => void toast(m) });
+  const files = registerFiles({
+    store, commands, viewModels, catalog, bridge, toast, announce, load, exclusive, setNote, persistAppState,
+    loaded: (path, md) => workspace.loaded(path, md), describeItem, itemSchema: ITEM_SCHEMA,
+  });
   const browser = registerBrowserFeatures({
     store, commands, viewModels, catalog, bridge, load, flush, toast, tracker, menu: extraMenu,
     appState: () => appState, persistAppState, itemSchema: ITEM_SCHEMA, describeItem,

@@ -106,8 +106,8 @@ Why: a static site has no simple, consumer-grade way to save to GitHub. A token 
 
 | Store | Holds |
 | --- | --- |
-| `notes` | One record per note written in this browser: path, text, and when it changed. |
-| `meta` | `workspaceFormat` (the format of the notes in this browser, as the text of a `workspace.json`, DST-05), `appState` (the last note, appearance, and other per-device state; `schemas/app-state.schema.json`). Its `lastNotePath` is saved only for the browser's own notes and public notes, never a private note's path, so a reload doesn't reopen a private note and, only with *Remember on this browser*, the vault key (a non-extractable `CryptoKey`) and its salt. |
+| `notes` | One record per note written in this browser: path, text, and when it changed. A note deleted in the Files panel is kept, marked `deleted`, and treated as gone (D-94). |
+| `meta` | `workspaceFormat` (the format of the notes in this browser, as the text of a `workspace.json`, DST-05), `folders` (folders made in the Files panel, so empty ones are kept; written once there is one), `appState` (the last note, appearance, and other per-device state; `schemas/app-state.schema.json`). Its `lastNotePath` is saved only for the browser's own notes and public notes, never a private note's path, so a reload doesn't reopen a private note and, only with *Remember on this browser*, the vault key (a non-extractable `CryptoKey`) and its salt. |
 
 The instance's notes aren't stored in IndexedDB: public notes are read from the site, and decrypted private text is held only in memory while unlocked. The code is `apps/web` (the same app on a browser bridge) and `packages/seal` (the vault's format and reader); `packages/github` keeps the REST client that the desktop setup uses (D-83).
 

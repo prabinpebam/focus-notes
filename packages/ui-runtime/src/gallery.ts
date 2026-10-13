@@ -83,6 +83,24 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
       { id: "basic", label: "Bulleted list", icon: "bulletList" },
       { id: "writer", label: "Table", description: "Unavailable here", icon: "table", disabled: true },
     ],
+    tree: [
+      { id: "root:private", kind: "section", level: 1, label: "Private", expanded: true, hasChildren: true },
+      { id: "journal", kind: "folder", level: 2, label: "journal", parent: "root:private", expanded: true, hasChildren: true, draggable: true, droppable: true },
+      { id: "journal/2026-10-13.md", kind: "note", level: 3, label: "2026-10-13", parent: "journal", title: "2026-10-13.md", selected: true, draggable: true },
+      { id: "journal/2026-10-12.md", kind: "note", level: 3, label: "2026-10-12", parent: "journal", title: "2026-10-12.md", selected: true, pending: true, draggable: true },
+      { id: "drafts", kind: "folder", level: 2, label: "drafts", parent: "root:private", expanded: false, hasChildren: true, draggable: true, droppable: true },
+      { id: "spec-ideas.md", kind: "note", level: 2, label: "Spec ideas", parent: "root:private", title: "spec-ideas.md", current: true, draggable: true },
+      { id: "root:public", kind: "section", level: 1, label: "Public", expanded: true, hasChildren: true },
+      { id: "public:About.md", kind: "note", level: 2, label: "About", parent: "root:public", description: "read-only", readOnly: true },
+    ],
+    treeFocus: "journal/2026-10-12.md",
+    treeEditing: [
+      { id: "root:private", kind: "section", level: 1, label: "Private", expanded: true, hasChildren: true },
+      { id: "new:", kind: "folder", level: 2, label: "bold", parent: "root:private", editing: true },
+      { id: "spec-ideas.md", kind: "note", level: 2, label: "Spec ideas", parent: "root:private" },
+    ],
+    treeEditLabel: "Folder name",
+    treeEditError: "That name is taken here.",
   };
   const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, icon: { type: "string" as const }, shortcut: { type: "string" as const }, checked: { type: "boolean" as const }, disabled: { type: "boolean" as const }, reason: { type: "string" as const } } };
   app.viewModels.register({
@@ -102,6 +120,11 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         keysPc: { type: "array", items: { type: "string" } },
         keysPcSpoken: { type: "string" },
         results: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, description: { type: "string" }, icon: { type: "string" }, shortcut: { type: "string" }, disabled: { type: "boolean" } } } },
+        tree: { type: "array", items: { type: "object" } },
+        treeFocus: { type: "string" },
+        treeEditing: { type: "array", items: { type: "object" } },
+        treeEditLabel: { type: "string" },
+        treeEditError: { type: "string" },
       },
     },
     select: () => ({ fixtures, toolbar, menu, ...extras }),

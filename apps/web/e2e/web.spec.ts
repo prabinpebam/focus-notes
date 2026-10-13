@@ -74,7 +74,8 @@ test("your notes stay in this browser: written with no account, kept across relo
   await context.setOffline(false);
   await page.reload();
   await expect(editor(page)).toContainText("Offline thoughts");
-  await page.keyboard.press(`${mod}+o`);
+  // Quick open (Mod+P) finds this browser's notes by name; Open… (Mod+O) is the Files panel.
+  await page.keyboard.press(`${mod}+p`);
   const open = page.getByRole("dialog", { name: "Open a note" });
   await expect(open.getByRole("option")).toHaveCount(2);
   await open.getByRole("combobox", { name: "Find a note" }).fill("welc");
@@ -108,8 +109,8 @@ test("a visitor sees the public notes read-only and how to use the app for thems
   expect(await settledAxe(page)).toEqual([]);
   await page.screenshot({ path: "../../test-results/screens/web-visitor.png" });
 
-  // Open… lists the public notes, marked as such; private ones stay hidden until unlocked.
-  await page.keyboard.press(`${mod}+o`);
+  // Quick open lists the public notes, marked as such; private ones stay hidden until unlocked.
+  await page.keyboard.press(`${mod}+p`);
   const open = page.getByRole("dialog", { name: "Open a note" });
   await expect(open.getByRole("option")).toHaveCount(2);
   await expect(open.getByRole("option", { name: /Garden log/ })).toContainText("Public · Guides");
@@ -174,7 +175,7 @@ test("the owner unlocks private notes read-only; the page forgets them unless as
   await expect(pill).toHaveText("octo");
   await expect(corner(page).getByRole("button", { name: "Use this app for yourself" })).toHaveCount(0);
 
-  await page.keyboard.press(`${mod}+o`);
+  await page.keyboard.press(`${mod}+p`);
   const open = page.getByRole("dialog", { name: "Open a note" });
   await expect(open.getByRole("option")).toHaveCount(3);
   await open.getByRole("option", { name: /Launch/ }).click();
@@ -237,7 +238,7 @@ test("export your notes, and import them into another browser without losing any
   const [chooser] = await Promise.all([p2.waitForEvent("filechooser"), p2.getByRole("menuitem", { name: "Import notes…" }).click()]);
   await chooser.setFiles(file);
   await expect(p2.getByText("Imported 1 note; 1 kept with a new name, because its name was taken.")).toBeVisible();
-  await p2.keyboard.press(`${mod}+o`);
+  await p2.keyboard.press(`${mod}+p`);
   const open = p2.getByRole("dialog", { name: "Open a note" });
   await expect(open.getByRole("option")).toHaveCount(2);
   await open.getByRole("option", { name: /Welcome 2/ }).click();
@@ -303,4 +304,61 @@ test("DST-05: notes a newer Focus Notes saved in this browser open read-only and
   await expect(editor(page)).not.toContainText("Typed anyway.");
   expect(await notePaths(page)).toEqual(["Welcome.md"]);
   expect(await meta()).toBe('{"formatVersion":99}');
+});
+
+test("Files on the web: this browser's notes go in folders and move by drag and drop; the instance's notes are read-only (FIL-01, FIL-02, FIL-03)", async ({ page }) => {
+  const hosts = await watch(page);
+  await page.goto("./");
+  await expect(editor(page)).toContainText(/Garden log|Reading list/);
+  // A note of this browser's own.
+  await page.keyboard.press(`${mod}+Alt+n`);
+  await expect(editor(page)).toBeFocused();
+  await page.keyboard.type("# Local idea");
+  await expect.poll(() => notePaths(page), { timeout: 5000 }).toEqual(["local-idea.md"]);
+
+  // Open… is the Files panel: this browser's notes first, then the instance's, read-only (D-90).
+  await page.keyboard.press(`${mod}+o`);
+  const files = page.getByRole("complementary", { name: "Files" });
+  const tree = files.getByRole("tree", { name: "Notes and folders" });
+  const row = (name: string) => tree.getByRole("treeitem", { name, exact: true });
+  await expect(row("Local idea")).toBeFocused();
+  await expect(row("This browser")).toHaveAttribute("aria-level", "1");
+  await expect(row("Public, read-only")).toHaveAttribute("aria-level", "1");
+  const reading = row("Reading list, read-only");
+  await expect(reading).toBeVisible();
+  await expect(reading).not.toHaveAttribute("draggable", "true");
+  expect(await settledAxe(page)).toEqual([]);
+  await page.screenshot({ path: "../../test-results/screens/web-files.png" });
+
+  // A folder, named in place (the web keeps Ctrl+Shift+N for itself, so it's Ctrl+Alt+Shift+N here).
+  await page.keyboard.press(`${mod}+Alt+Shift+N`);
+  const name = tree.getByRole("textbox", { name: "Folder name" });
+  await expect(name).toBeFocused();
+  await page.keyboard.type("Projects");
+  await page.keyboard.press("Enter");
+  await expect(row("Projects")).toBeFocused();
+
+  // Dragging the note into it moves it, in this browser's storage, in one go.
+  await row("Local idea").dragTo(row("Projects"));
+  await expect.poll(() => notePaths(page)).toEqual(["Projects/local-idea.md"]);
+  await expect(row("Local idea")).toHaveAttribute("aria-level", "3");
+
+  // The instance's notes can't be deleted, renamed, or moved here, and the panel says why.
+  await reading.click();
+  await page.keyboard.press("Delete");
+  await expect(page.locator("#toasts").getByText("Couldn't delete “Reading list”: these notes are read-only here.")).toBeVisible();
+  await page.keyboard.press("F2");
+  await expect(tree.getByRole("textbox")).toHaveCount(0);
+  // It can't be dragged: it stays in Public, and nothing changes here.
+  await reading.dragTo(row("Projects"));
+  await expect(reading).toHaveAttribute("aria-level", "2");
+  expect(await notePaths(page)).toEqual(["Projects/local-idea.md"]);
+
+  // Kept across a reload, the empty-folder list included; and nothing left the browser.
+  await page.reload();
+  await expect(editor(page)).toContainText("Local idea");
+  await page.keyboard.press(`${mod}+o`);
+  await expect(row("Local idea")).toBeFocused();
+  await expect(row("Projects")).toHaveAttribute("aria-expanded", "true");
+  expect([...hosts].filter((h) => h !== SITE)).toEqual([]);
 });
