@@ -13,8 +13,8 @@ The views people open now and then: Settings, Share and visibility, the keyboard
 
 | Category | Settings |
 | --- | --- |
-| **Account** | Avatar, name, and @login. *Git on this computer:* "Signed in" or "Not signed in", with a [Sign in Git] fix. [Switch account], [Sign out] (asks whether to also remove Git's saved credential), and a link to GitHub → Applications to fully revoke access. |
-| **Workspace** | Folder location ([Show in Finder/Explorer], [Change…], which moves or re-clones). Public and private repository status (reachable, branch, last sync). *Sync:* automatically after 30 s, 60 s (default), or 5 min without typing, or only when I press <kbd>Mod</kbd>+<kbd>S</kbd>. [Sync now]. [Run setup again]. |
+| **Account** | Avatar, name, and @login. *Signed in through:* Git Credential Manager, GitHub CLI, or a token, with what that means ("Also used by Git in your terminal"). [Switch account] and [Sign out] (signs Git out too, and says so). A link to GitHub's settings to revoke a token or authorization fully. |
+| **Workspace** | Folder location ([Show in Finder/Explorer], [Change…], which moves or re-clones). The notes and private repositories in the user's account (reachable, branch, last sync). *Publishing:* the GitHub Pages address and status, with [Turn on] if it was skipped. *Private share links:* on or off, with [Set up] if skipped. *Sync:* automatically after 30 s, 60 s (default), or 5 min without typing, or only when I press <kbd>Mod</kbd>+<kbd>S</kbd>. [Sync now]. [Run setup again]. |
 | **Editor** | *New notes go in:* the current folder (default) or the Private root. *Open focus mode on start* (on). *Markdown shortcuts while typing* (on). *Smart punctuation* (on: curly quotes and dashes). *Spelling:* uses the OS spell checker, with a language list. *Paste:* keep formatting (default) or always paste as plain text. |
 | **Appearance** | A summary ("System · Paper / Ink · 18 px Serif") with [Open theme manager]. *Interface size:* 90–150%. *Transparency:* follow the system (default) or always solid. *Sync appearance across computers* (off). |
 | **Keyboard** | Search bindings. Every command with its keys, with [Change] (P1) and per-row Reset. [Reset all]. [Open cheat sheet]. Conflicts are flagged inline ("Also used by Duplicate block"). |
@@ -27,7 +27,7 @@ The views people open now and then: Settings, Share and visibility, the keyboard
 | DD-SET-01 | Changes apply immediately, with no Save or Cancel. | UC-KEY-03 | Settings are reversible preferences. A Save step only adds a way to lose changes. | OK and Cancel buttons. |
 | DD-SET-02 | Appearance in Settings is a summary that links to the theme manager. | UC-THEME-01 | Theme choice has one real home (DD-IA-03). Duplicating its controls here would drift. | Full theme controls inside Settings. |
 | DD-SET-03 | Every setting is also a Spotlight result. | UC-FIND-03 | Most people search before they browse (CP-REACH-01). | Settings reachable only through the dialog. |
-| DD-SET-04 | Account shows Git's sign-in state separately from the app's. | UC-SETUP-01 | The owner wants commits and pushes to work from the terminal too, so a broken Git sign-in must be visible and fixable here. | A single "Signed in" status. |
+| DD-SET-04 | Account shows which of the user's own tools holds the sign-in, and that it's shared with the terminal. | UC-SETUP-01 | There's exactly one credential, in Git's helper (D-21), so signing out affects the terminal too. Saying so avoids surprises. | Hiding where the credential lives. |
 
 <h2 id="share-and-visibility" data-reader-personas="design product">Share and visibility</h2>
 
@@ -52,11 +52,11 @@ The views people open now and then: Settings, Share and visibility, the keyboard
 
 <h2 id="keyboard-shortcut-cheat-sheet" data-reader-personas="design product">Keyboard shortcut cheat sheet</h2>
 
-**IA-VIEW-SHORTCUTS.** Serves UC-KEY-01. It opens with <kbd>Mod</kbd>+<kbd>/</kbd>, ⋯ → Keyboard shortcuts, or Spotlight.
+**IA-VIEW-SHORTCUTS.** Serves UC-KEY-01. It opens with <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> (<kbd>⌘?</kbd> / <kbd>Ctrl+?</kbd>), ⋯ → Keyboard shortcuts, or Spotlight.
 
 - **Layout:** a centered dialog, 760 px wide. A search field (focused on open) and filter chips: All, Basic, Writer, Power, Pro. Groups follow [Keyboard shortcuts](../../experience/keyboard-shortcuts.md): App and window, Editing, Formatting, Blocks, Tables, Find, Spotlight, Files.
 - **Rows:** the action name on the left, key caps on the right (12 px, `radius.small`) in the current platform's symbols. A platform switch ("Show keys for: macOS | Windows and Linux") helps people who use both.
-- **Search** matches action names, synonyms, and keys (typing "⌘K" or "ctrl k" finds what uses those keys).
+- **Search** matches action names, synonyms, and keys (typing "⌘/" or "ctrl /" finds what uses those keys).
 - **Customized bindings** (P1) are marked with a dot and "Changed". [Customize…] opens Settings → Keyboard.
 - <kbd>Esc</kbd> closes it. Rows aren't actionable, because this is a reference. Spotlight is where commands are run.
 

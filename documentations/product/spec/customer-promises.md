@@ -15,7 +15,7 @@ The ten promises Focus Notes makes. Every scenario, capability, screen, and deci
 | `CP-REACH-01` | Anything is a few keystrokes away | Owner: Spotlight, find, keyboard | SC-FIND-01 to SC-FIND-05 |
 | `CP-ORDER-01` | Organized your way, safely reorganized | Seed: file and folder CRUD with moves | SC-FILE-01 to SC-FILE-04 |
 | `CP-SAFE-01` | Never lose, never leak | Seed: public/private; derived from Git storage | SC-FILE-05, SC-SAFE-01 to SC-SAFE-04 |
-| `CP-OWN-01` | Yours to keep | Seed: Markdown in a GitHub repo | SC-TABLE-05, SC-OWN-01 |
+| `CP-OWN-01` | Yours to keep | Seed: Markdown in a GitHub repo; owner: no hosting, no registration | SC-TABLE-05, SC-OWN-01, SC-SETUP-04 |
 | `CP-SHARE-01` | Sharing is deliberate | Seed: public links, private content | SC-FILE-06, SC-SHARE-01 to SC-SHARE-03 |
 | `CP-YOURS-01` | Comfortable and yours in a minute | Seed: change theme, colors, fonts; owner: light/dark/system, theme management | SC-THEME-01 to SC-THEME-07 |
 | `CP-READY-01` | Ready in minutes | Owner: device sign-in, first-run, Git works from the terminal | SC-SETUP-01 to SC-SETUP-03 |
@@ -86,11 +86,11 @@ The ten promises Focus Notes makes. Every scenario, capability, screen, and deci
 
 | Field | Value |
 | --- | --- |
-| Customer promise | Your notes are plain Markdown in your own GitHub repository; you can leave any time and take everything. |
+| Customer promise | Your notes are plain Markdown in your own GitHub repository, running on nothing but your own account; you can leave any time and take everything. |
 | Why it matters | Notes outlive apps. Lock-in is a hidden cost people resent later. |
-| Breaks when | The app writes anything a plain Markdown viewer can't show, or rewrites files it didn't need to touch. |
+| Breaks when | The app writes anything a plain Markdown viewer can't show, rewrites files it didn't need to touch, or depends on any service other than the user's own GitHub account. |
 | Signals | Round-trip test corpus passes. Notes render the same on GitHub. |
-| Scenarios | SC-TABLE-05, SC-OWN-01 |
+| Scenarios | SC-TABLE-05, SC-OWN-01, SC-SETUP-04 |
 
 ### CP-SHARE-01 — Deliberate sharing
 
@@ -128,7 +128,7 @@ Promises sometimes pull against each other. These are the agreed tie-breakers.
 
 | Tension | Tie-breaker | Example |
 | --- | --- | --- |
-| Calm against reach | Calm wins at rest; reach wins on request. | Nothing is permanently visible, but <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> reaches everything. |
+| Calm against reach | Calm wins at rest; reach wins on request. | Nothing is permanently visible, but <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> reaches everything. |
 | Fluent editing against ownership | Ownership wins. | Loop-style table column types aren't offered because Markdown can't keep them (UNSUP-TABLE-02). |
 | Comfort against safety | Safety wins on readability. | A custom theme can be anything except unreadable; the contrast guard warns and offers a fix (DD-THEME-05). |
 | Fluent editing against calm | Context decides. | The formatting toolbar appears on selection and disappears when typing resumes. |

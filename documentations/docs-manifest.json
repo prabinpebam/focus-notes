@@ -149,7 +149,7 @@
       "title": "Desktop app",
       "order": 28,
       "icon": "desktop_windows",
-      "status": "deciding",
+      "status": "draft",
       "updated": "2026-10-13",
       "group": "Experience"
     },
@@ -293,7 +293,7 @@
       "title": "Decisions",
       "order": 51,
       "icon": "rule",
-      "status": "deciding",
+      "status": "stable",
       "updated": "2026-10-13",
       "group": "Plan"
     }

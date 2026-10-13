@@ -3,7 +3,7 @@
 The situations in which each [customer promise](customer-promises.md) matters, written as jobs to be done. Each scenario names the behavior people should see and the user-can capabilities that deliver it.
 
 > [!NOTE]
-> **TL;DR.** 41 scenarios in nine areas (writing, tables, files, sharing, find, theme, setup, safety, ownership), plus 9 **unsupported boundaries** where we deliberately say no and offer something else instead. Each row reads *When ⟨situation⟩, I want to ⟨motivation⟩, so I can ⟨outcome⟩*. The column order (ID, promise, situation, persona, expected behavior, user can, views) follows the Slate spec convention. Personas are the working personas in [The articulation chain](chain.md#personas-used-in-scenarios).
+> **TL;DR.** 42 scenarios in nine areas (writing, tables, files, sharing, find, theme, setup, safety, ownership), plus 9 **unsupported boundaries** where we deliberately say no and offer something else instead. Each row reads *When ⟨situation⟩, I want to ⟨motivation⟩, so I can ⟨outcome⟩*. The column order (ID, promise, situation, persona, expected behavior, user can, views) follows the Slate spec convention. Personas are the working personas in [The articulation chain](chain.md#personas-used-in-scenarios).
 
 <h2 data-reader-personas="product design">Writing</h2>
 
@@ -74,7 +74,7 @@ These scenarios answer the owner's questions: **when and why** people change the
 
 | ID | Promise | Situation | Persona | Expected behavior | User can | Views |
 | --- | --- | --- | --- | --- | --- | --- |
-| SC-SETUP-01 | CP-READY-01 | When I install the app, I want to sign in once and have Git just work, so I can start writing without touching the terminal. | Writer | A device code sign-in also signs in Git. Seven screens or fewer from install to typing. | UC-SETUP-01, UC-SETUP-02 | IA-VIEW-FRE |
+| SC-SETUP-01 | CP-READY-01 | When I install the app, I want to sign in once and have Git just work, so I can start writing without touching the terminal. | Writer | One sign-in through Git's own sign-in helper (with a device code) or a token signs in both the app and Git. Seven screens or fewer from install to typing. | UC-SETUP-01, UC-SETUP-02 | IA-VIEW-FRE |
 | SC-SETUP-02 | CP-READY-01 | When I set up another computer, I want to reuse what I already have, so the second setup is even faster. | Writer | Existing Git credentials and existing clones are found and offered. | UC-SETUP-03 | IA-VIEW-FRE |
 | SC-SETUP-03 | CP-READY-01 | When I'm away from my computer, I want to open and edit my notes in a browser, so I'm never cut off from them. | Writer | The web build signs in with a scoped token and edits through GitHub, with the same editor and views. | UC-SETUP-04 | IA-VIEW-FRE, IA-VIEW-CANVAS |
 | SC-SAFE-01 | CP-SAFE-01 | When I close the laptop mid-sentence, I want everything saved and synced without thinking, so I never worry about losing work. | Writer | Saved within a second, synced on its own schedule, and synced on quit. | UC-SAFE-01 | IA-CMP-SAVESTATE |
@@ -82,6 +82,7 @@ These scenarios answer the owner's questions: **when and why** people change the
 | SC-SAFE-03 | CP-SAFE-01 | When I'm offline, I want to keep writing and trust that it syncs later, so the network never stops me. | Writer | Writing continues. The trigger shows that changes are waiting, and they sync in order when back online. | UC-SAFE-03 | IA-CMP-SAVESTATE |
 | SC-SAFE-04 | CP-SAFE-01 | When a new version comes out, I want it installed without effort or risk, so I always have the latest fixes. | Writer | Signed updates download in the background and install on quit. Nothing interrupts writing. | UC-SAFE-04 | IA-VIEW-SETTINGS |
 | SC-OWN-01 | CP-OWN-01 | When I open my notes in another editor or on GitHub, I want clean, familiar Markdown, so I'm never locked in. | Writer | Files contain standard Markdown, and untouched parts are never rewritten. | UC-OWN-01 | None (file format) |
+| SC-SETUP-04 | CP-OWN-01 | When I start using Focus Notes, I want my own setup created in my own GitHub account, so my notes never depend on anyone else's servers or permission. | Writer | *Create my workspace* makes the notes repository, the private repository, publishing, and share-link keys in my account. Nothing is hosted or registered by the project. | UC-SETUP-05 | IA-VIEW-FRE |
 
 <h2 id="unsupported-boundaries" data-reader-personas="product design">Unsupported boundaries</h2>
 

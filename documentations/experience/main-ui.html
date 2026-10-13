@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>The window shows only the note and the <strong>trigger</strong>: a red dot 10 px across inside a frosted circle 30 px across, at the top center (owner decision D-03). Activating it opens a minimal <strong>toolbar</strong> that shows <strong>at most six actions</strong> (New, Open, Search, Save, Focus, Theme). Everything else goes into a <strong>⋯</strong> menu in the seventh slot. Formatting controls appear only in context, and <a href="spotlight.html">Spotlight</a> (<kbd>Ctrl/⌘</kbd>+<kbd>K</kbd>) reaches every command. Covers UI-01 to UI-08 in the <a href="../product/requirements.md">requirements</a>.</p>
+  <p>The window shows only the note and the <strong>trigger</strong>: a red dot 10 px across inside a frosted circle 30 px across, at the top center (owner decision D-03). Activating it opens a minimal <strong>toolbar</strong> that shows <strong>at most six actions</strong> (New, Open, Search, Save, Focus, Theme). Everything else goes into a <strong>⋯</strong> menu in the seventh slot. Formatting controls appear only in context, and <a href="spotlight.html">Spotlight</a> (<kbd>Ctrl/⌘</kbd>+<kbd>/</kbd>) reaches every command. Covers UI-01 to UI-08 in the <a href="../product/requirements.md">requirements</a>.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -92,7 +92,7 @@
   <li><strong>No persistent chrome.</strong> No sidebar, tab strip, visible title bar, status bar, or word count. On the desktop, the top 44 px are an invisible title bar for dragging the window, and the window controls appear only on hover (see <a href="desktop-app.html#title-bar">Desktop app</a>).</li>
   <li><strong>Reading column.</strong> Text sits in a centered column. Its width is a theme token (<code>layout.measure</code>, default 70 characters) so line length stays comfortable on wide screens.</li>
   <li><strong>Top clearance.</strong> The column starts below the 44 px top band, so the trigger never covers text at scroll position zero. Scrolled text passes under the trigger and is blurred by it, which is why it's frosted rather than opaque.</li>
-  <li><strong>Empty note.</strong> A new note shows one placeholder line in the subdued text color: "Start writing, type / for blocks, or press ⌘K / Ctrl+K". Nothing else appears.</li>
+  <li><strong>Empty note.</strong> A new note shows one placeholder line in the subdued text color: "Start writing, type / for blocks, or press ⌘/ or Ctrl+/". Nothing else appears.</li>
   <li><strong>Save state</strong> is never a permanent indicator. See <a href="#states">trigger states</a> for how unsaved or failed saves surface.</li>
 </ul>
 
@@ -132,7 +132,7 @@
   <tbody>
     <tr><td>1</td><td>New</td><td>Creates an untitled private note in the current folder and puts the caret in it.</td><td><kbd>⌘N</kbd> / <kbd>Ctrl+N</kbd></td></tr>
     <tr><td>2</td><td>Open</td><td>The Files panel: the folder and note tree, with create, rename, move, and delete (see <a href="files-and-sharing.md">Files and sharing</a>).</td><td><kbd>⌘O</kbd> / <kbd>Ctrl+O</kbd></td></tr>
-    <tr><td>3</td><td>Search</td><td>Opens <a href="spotlight.html">Spotlight</a>.</td><td><kbd>⌘K</kbd> / <kbd>Ctrl+K</kbd></td></tr>
+    <tr><td>3</td><td>Search</td><td>Opens <a href="spotlight.html">Spotlight</a>.</td><td><kbd>⌘/</kbd> / <kbd>Ctrl+/</kbd></td></tr>
     <tr><td>4</td><td>Save</td><td>Saves, commits, and pushes now. Its tooltip shows the sync state ("Synced 2 min ago", "3 changes waiting").</td><td><kbd>⌘S</kbd> / <kbd>Ctrl+S</kbd></td></tr>
     <tr><td>5</td><td>Focus</td><td>Turns <a href="focus-mode.md">focus mode</a> on or off, and shows which.</td><td><kbd>⇧⌘D</kbd> / <kbd>Ctrl+Shift+D</kbd>, or <kbd>F8</kbd></td></tr>
     <tr><td>6</td><td>Theme</td><td>Switches between your chosen light and dark themes. Its icon shows the current one. Right-click or long-press it to open the <a href="../design/views/theme-manager.html">theme manager</a>. <em>System</em> (follow the OS) is in ⋯ → Theme and in the theme manager.</td><td><kbd>⇧⌘L</kbd> / <kbd>Ctrl+Shift+L</kbd></td></tr>
@@ -148,7 +148,7 @@
     <tr><td>View</td><td>Font size: Smaller (<kbd>Mod</kbd>+<kbd>-</kbd>) · Larger (<kbd>Mod</kbd>+<kbd>=</kbd>) · Reset (<kbd>Mod</kbd>+<kbd>0</kbd>), shown as one row with − and +. Full screen (<kbd>⌃⌘F</kbd> / <kbd>F11</kbd>). Theme: System / Light / Dark, and Theme… (opens the theme manager).</td></tr>
     <tr><td>Edit</td><td>Find (<kbd>Mod</kbd>+<kbd>F</kbd>) · Find and replace (<kbd>⌥⌘F</kbd> / <kbd>Ctrl+H</kbd>) · Find in all notes (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>)</td></tr>
     <tr><td>Note</td><td>Share and visibility… · Copy public link · Rename · Move to… · Show in Files (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd>) · Show in Finder / Explorer (desktop) · Print · Delete</td></tr>
-    <tr><td>App</td><td>Settings (<kbd>Mod</kbd>+<kbd>,</kbd>) · Keyboard shortcuts (<kbd>Mod</kbd>+<kbd>/</kbd>) · Help and docs · About</td></tr>
+    <tr><td>App</td><td>Settings (<kbd>Mod</kbd>+<kbd>,</kbd>) · Keyboard shortcuts (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd>) · Help and docs · About</td></tr>
   </tbody>
 </table>
 <p>Items that toggle show their current state, for example a check next to the active theme. The menu also shows each shortcut, so it doubles as a way to learn them.</p>

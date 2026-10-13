@@ -3,18 +3,19 @@
 This page defines what's on disk: how notes and folders are laid out, what a note file contains, how future components are written in Markdown, and the rules that keep files from changing behind the writer's back.
 
 > [!NOTE]
-> **TL;DR.** A note is one `.md` file of CommonMark + GFM. The first H1 is its title, and YAML front matter is optional and minimal. Folders are real folders. Public notes live under `content/` in the public repository; private notes live in the private repository, mounted at `private/`. Future components (image, gallery) use **generic directive syntax** (`::image{…}`, `:::gallery … :::`), which stays readable as plain text anywhere. Untouched blocks are written back byte-for-byte.
+> **TL;DR.** A note is one `.md` file of CommonMark + GFM. The first H1 is its title, and YAML front matter is optional and minimal. Folders are real folders. Public notes live under `content/` in the user's own notes repository; private notes live in their private repository, mounted at `private/`. Future components (image, gallery) use **generic directive syntax** (`::image{…}`, `:::gallery … :::`), which stays readable as plain text anywhere. Untouched blocks are written back byte-for-byte.
 
 ## Workspace layout
 
+Each user's workspace is **their own notes repository**, created from the Focus Notes workspace template in their GitHub account (see [Repository and publishing → Who owns what](repository-and-publishing.html#who-owns-what)):
+
 ```text
-focus-notes/                     # public repository (this repo)
-├─ app/                          # application source (future)
-├─ content/                      # PUBLIC notes, published on GitHub Pages
+notes/                           # the user's notes repository (public, their account)
+├─ content/                      # PUBLIC notes, published on their GitHub Pages
 │  ├─ ideas.md
 │  └─ essays/
 │     └─ on-focus.md
-├─ private/                      # git submodule -> private content repository
+├─ private/                      # git submodule -> their private repository
 │  ├─ journal/
 │  │  └─ 2026-10-13.md
 │  ├─ access.json                # private share grants (never published in plaintext)
@@ -22,10 +23,12 @@ focus-notes/                     # public repository (this repo)
 ├─ .focus-notes/
 │  ├─ themes/                    # custom themes (JSON)
 │  └─ settings.json              # opt-in synced settings
-├─ documentations/               # this Slate documentation host
-└─ slate/                        # Slate package (git submodule)
+├─ .github/workflows/publish.yml # calls the Focus Notes reusable publish workflow
+├─ .gitmodules
+└─ README.md
 ```
 
+The app source, this documentation, and the releases live in the separate product repository, never in a user's workspace.
 The two roots, `content/` and `private/`, are what the [Files panel](../experience/files-and-sharing.md) shows as *Public* and *Private*. Folder structure inside each root is entirely up to the writer.
 
 ## A note file

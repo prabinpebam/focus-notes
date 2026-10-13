@@ -3,7 +3,7 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 117 requirements in 16 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 120 requirements in 16 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
@@ -149,11 +149,12 @@ Seed: *"managed as a github repo… hosted in github pages… web or an electron
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| PKG-01 | One GitHub repository holds the app source, public content, and documentation. | P0 |
-| PKG-02 | The web build is built and deployed to GitHub Pages by GitHub Actions. In the first release it serves public note pages and share links. | P0 |
+| PKG-01 | The product repository holds the app source, documentation, releases, and the reusable publish workflow. A separate template repository provides the starting layout for each user's notes repository (D-38). | P0 |
+| PKG-02 | Each user's notes repository builds and deploys their public pages to their own GitHub Pages with GitHub Actions, through the reusable publish workflow at a pinned release. In the first release it serves public note pages and share links. | P0 |
 | PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access. It is the primary writing client (D-10). | P0 |
 | PKG-04 | Developers without access to the private repository can still build and run the app. | P0 |
-| PKG-05 | Editing in the browser (web build) through the GitHub API, with a personal access token (D-13). | P1 |
+| PKG-05 | Editing in the browser (web build) through the GitHub API, with a fine-grained token the user creates (D-13). | P1 |
+| PKG-06 | Nothing hosted or registered by the project: no OAuth app, client ID, server, or telemetry. Each user's instance needs only their own GitHub account plus the public release files on GitHub (D-21). | P0 |
 
 ## Desktop app (DSK)
 
@@ -161,27 +162,29 @@ Owner: *"Our electron app will have 20px rounded corners with custom title bar."
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| DSK-01 | The window has 20 px rounded corners, or square corners when maximized, snapped, or full screen. | P0 |
+| DSK-01 | On Windows and Linux the window has 20 px rounded corners, or square corners when maximized, snapped, or full screen. On macOS the window is native, with the system's own corners (D-14). | P0 |
 | DSK-02 | A custom title bar: the top 44 px are a drag region with the trigger centered. Window controls (macOS traffic lights, app-drawn buttons on Windows and Linux) appear on hover or keyboard focus. | P0 |
-| DSK-03 | Full window behavior is kept: resizing from every edge and corner, double-click to maximize, minimize, maximize, close, and remembered size and position. | P0 |
+| DSK-03 | Full window behavior: native on macOS. On Windows and Linux rebuilt by the app: moving, resizing from every edge and corner, double-click and drag-to-top maximize, restore by dragging, minimize, close, and remembered size and position. | P0 |
 | DSK-04 | Full-screen mode (<kbd>⌃⌘F</kbd> / <kbd>F11</kbd>, and in ⋯). The title bar reappears when the pointer reaches the top edge. | P0 |
 | DSK-05 | A full native menu bar on macOS that lists every command with its shortcut. | P0 |
 | DSK-06 | Multiple windows, one note per window. | P1 |
 | DSK-07 | Signed builds and automatic updates from GitHub Releases. | P1 |
+| DSK-08 | Windows and Linux: edge and corner snapping with previews, a Snap Layouts picker on the maximize button, an app-drawn system menu (<kbd>Alt</kbd>+<kbd>Space</kbd>), a drawn shadow with a click-through margin, and correct behavior across monitors with different scaling. See [Desktop app](../experience/desktop-app.html#window-management-on-windows-and-linux). | P0 |
 
 ## First run and sign-in (FRE)
 
-Owner: *"We need a sign in and setup flow for the electron app… device sign in… proper intuitive FRE… sign-in at the CLI level so that all the commit and push work."* Detailed in [First run and sign-in](../experience/first-run.md) and [Desktop and Git](../architecture/desktop-and-git.md).
+Owner: *"We need a sign in and setup flow for the electron app… device sign in… proper intuitive FRE… sign-in at the CLI level so that all the commit and push work."* Later: *"no hosting overhead… if OAuth requires developer app registration, it's a dealbreaker… everything owned by the end user."* Detailed in [First run and sign-in](../experience/first-run.md) and [Desktop and Git](../architecture/desktop-and-git.md).
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
 | FRE-01 | A guided first run (Welcome, Git, Sign in, Identity, Workspace, Make it yours, Ready) that can be done entirely by keyboard and resumed after quitting. | P0 |
-| FRE-02 | GitHub sign-in with the OAuth device flow inside the app (code shown, browser opened, approval waited for), recovering from declined, expired, and offline states. | P0 |
-| FRE-03 | The credential is saved in git's credential helper, so commits and pushes work in the app and from the user's terminal with one sign-in. | P0 |
+| FRE-02 | Sign-in goes through Git's own sign-in helpers that the user owns, Git Credential Manager or GitHub CLI (both with a device code option), or a fine-grained token the user creates from a pre-filled GitHub link. There's no OAuth app and no registration (D-21). Declined, expired, and offline states recover. | P0 |
+| FRE-03 | The credential lives only in Git's credential helper, so commits and pushes work in the app and from the user's terminal with one sign-in. The app keeps no copy of its own and holds API tokens in memory only. | P0 |
 | FRE-04 | An existing working Git credential or GitHub CLI session is found and offered, skipping the device code. | P0 |
 | FRE-05 | Git identity (name and email) is checked and, if missing, filled in from GitHub with the private noreply address. | P0 |
-| FRE-06 | Workspace: clone from GitHub (with the private submodule when the account can reach it) or open a local clone. Creating a new workspace from a template is P1. | P0 |
+| FRE-06 | Workspace: create a new one (FRE-08), clone an existing one from GitHub (with the private submodule when the account can reach it), or open a local clone. | P0 |
 | FRE-07 | Settings → Account: switch account, sign out (optionally removing Git's saved credential), and run setup again. | P0 |
+| FRE-08 | *Create my workspace*: in the user's own GitHub account, create the notes repository from the template, the private repository, the submodule link, the read-only deploy key and Actions secret for share links, and GitHub Pages, each step retryable on its own. | P0 |
 
 ## Keyboard shortcuts (KEY)
 
@@ -193,7 +196,7 @@ Owner: *"A solid keyboard shortcut strategy… same as the most popular apps… 
 | KEY-02 | The default keymap follows platform conventions and well-known app precedent on macOS, iPadOS and iOS with a hardware keyboard, Windows, and Linux. | P0 |
 | KEY-03 | The Basic, Writer, and Power layers of the keymap are complete. | P0 |
 | KEY-04 | The Pro layer (block selection mode, cell selection mode, expand selection, Spotlight action keys, reveal in Finder or Explorer) is complete. | P1 |
-| KEY-05 | A searchable cheat sheet (<kbd>Mod</kbd>+<kbd>/</kbd>) shows the right symbols for the platform. | P0 |
+| KEY-05 | A searchable cheat sheet (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd>) shows the right symbols for the platform. | P0 |
 | KEY-06 | OS-reserved keys are never bound. Web substitutes exist for browser-reserved keys. AltGr characters, IME composition, and non-Latin layouts are handled. | P0 |
 | KEY-07 | Custom keybindings (`keybindings.json`) with conflict warnings and reset. | P1 |
 
@@ -211,11 +214,11 @@ Owner: *"Find and find-and-replace."* Detailed in [Find and replace](../experien
 
 ## Spotlight (SPT)
 
-Owner: *"Powerful search-and-act… Ctrl+K can trigger a macOS Spotlight-like UI that can search for stuff and can even show some quick actions."* Detailed in [Spotlight](../experience/spotlight.html).
+Owner: *"Powerful search-and-act… Ctrl+K can trigger a macOS Spotlight-like UI that can search for stuff and can even show some quick actions."* The owner later corrected the key to <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> (D-16). Detailed in [Spotlight](../experience/spotlight.html).
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| SPT-01 | <kbd>Mod</kbd>+<kbd>K</kbd> opens Spotlight from anywhere in the app. With text selected in the editor, it adds a link instead (D-16). | P0 |
+| SPT-01 | <kbd>Mod</kbd>+<kbd>/</kbd> opens Spotlight from anywhere in the app. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> also opens it on every keyboard layout (D-16). | P0 |
 | SPT-02 | One ranked list covering notes (title, path, headings, full text), folders, commands, and settings. | P0 |
 | SPT-03 | Quick actions for the selected result (<kbd>→</kbd> or <kbd>Mod</kbd>+<kbd>K</kbd>): open in a new window, copy link, move, rename, make public or private, delete, and more. | P0 |
 | SPT-04 | Commands and settings show their current state. The empty field shows recent notes and suggestions. No match offers create and find-in-all-notes. | P0 |
@@ -226,7 +229,7 @@ Owner: *"Powerful search-and-act… Ctrl+K can trigger a macOS Spotlight-like UI
 
 ## Licensing (LIC)
 
-Owner: *"We need MIT licence, our app itself will be MIT."* Detailed in [Decisions → Licensing policy](../plan/decisions.md#licensing-policy-d-20-details-proposed).
+Owner: *"We need MIT licence, our app itself will be MIT."* Detailed in [Decisions → Licensing policy](../plan/decisions.md#licensing-policy-d-20-details).
 
 | ID | Requirement | Priority |
 | --- | --- | --- |

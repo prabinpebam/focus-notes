@@ -50,7 +50,7 @@
       <text x="76" y="498" font-size="15" fill="var(--color-neutral-fg-2)">Recently deleted · 3</text>
     </g>
   </svg>
-  <figcaption>The Files panel floats inset from the window edges, so the 20 px window corners stay clean. The note stays visible beside it.</figcaption>
+  <figcaption>The Files panel floats inset from the window edges, so the window's rounded corners stay clean. The note stays visible beside it.</figcaption>
 </figure>
 <details class="slate-figure-data">
   <summary>Data</summary>
@@ -81,7 +81,7 @@
   <dt>Header</dt>
   <dd>The title "Files" (20 px), a sort button (⇅: Name or Last changed), and <strong>New ▾</strong> (New note <kbd>Mod</kbd>+<kbd>N</kbd>, New folder <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd>). With several items selected, the header changes to "3 selected" with Move to…, Make public/private, Delete, and a Clear selection button.</dd>
   <dt>Filter field</dt>
-  <dd>Filters the tree by name as you type, keeping the ancestors of matches. It doesn't search inside notes: the empty-result line offers "Search inside notes with ⌘K / Ctrl+K".</dd>
+  <dd>Filters the tree by name as you type, keeping the ancestors of matches. It doesn't search inside notes: the empty-result line offers "Search inside notes with ⌘/ or Ctrl+/".</dd>
   <dt>Sections</dt>
   <dd><strong>Private</strong> first, because it's the default for new notes (D-05), then <strong>Public</strong>. Each has an uppercase 13 px label and a count on hover, and can be collapsed.</dd>
   <dt>Rows</dt>
@@ -188,7 +188,7 @@
 <table>
   <thead><tr><th>ID</th><th>Decision</th><th>Serves</th><th>Rationale</th><th>Alternatives rejected</th></tr></thead>
   <tbody>
-    <tr><td>DD-FILES-01</td><td>A floating, inset left sheet that closes when a note opens.</td><td>UC-FILE-03</td><td>Organizing is an occasional task, so it shouldn't occupy the canvas (CP-CALM-01). Insetting keeps the 20 px window corners clean.</td><td>A permanent sidebar. A full-window file browser that loses sight of the note.</td></tr>
+    <tr><td>DD-FILES-01</td><td>A floating, inset left sheet that closes when a note opens.</td><td>UC-FILE-03</td><td>Organizing is an occasional task, so it shouldn't occupy the canvas (CP-CALM-01). Insetting keeps the window's rounded corners clean.</td><td>A permanent sidebar. A full-window file browser that loses sight of the note.</td></tr>
     <tr><td>DD-FILES-02</td><td>Private comes first, and is the default destination.</td><td>UC-FILE-01, UC-SHARE-01</td><td>The safe default should also be the most visible (CP-SAFE-01).</td><td>Alphabetical sections, which would put Private second.</td></tr>
     <tr><td>DD-FILES-03</td><td>Rows show note titles, not file names.</td><td>UC-FILE-03</td><td>People recognize what they wrote, not slugs.</td><td>Showing file names, as Finder does.</td></tr>
     <tr><td>DD-FILES-04</td><td>The file name follows the title until publishing, then freezes.</td><td>UC-FILE-02</td><td>New notes need no naming step (SC-FILE-01), and public URLs stay stable once shared (CP-SHARE-01).</td><td>Asking for a name when creating (friction). Never renaming (stale "untitled-3.md" files). Always renaming (breaks shared URLs).</td></tr>

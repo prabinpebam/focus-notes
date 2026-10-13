@@ -1,12 +1,12 @@
 <header class="slate-hero">
   <p class="slate-hero__eyebrow">Experience</p>
   <h1 class="slate-hero__title">Desktop app</h1>
-  <p class="slate-hero__summary">A borderless window with 20 px corners, a title bar you can't see until you need it, and the trigger sitting in the middle of it.</p>
+  <p class="slate-hero__summary">A title bar you can't see until you need it, with the trigger in the middle. On Windows and Linux the window has 20 px corners and app-built window management; on macOS it's a native window.</p>
 </header>
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>The Electron app is the main writing client (<a href="../plan/decisions.md">D-10</a>). Its window has <strong>20 px rounded corners</strong> and a <strong>custom title bar</strong>: the top 44 px are a drag area with the <a href="main-ui.html">trigger</a> centered in it, and the window controls appear only on hover or keyboard focus. Getting exact 20 px corners needs a transparent window. Electron documents that such windows lose native resizing, double-click maximize on Windows, and the macOS shadow, so the app provides all of those itself (<a href="../plan/decisions.md">D-14</a>, open). Covers DSK-01 to DSK-07 in the <a href="../product/requirements.md">requirements</a>.</p>
+  <p>The Electron app is the main writing client (<a href="../plan/decisions.md">D-10</a>). On every platform the top 44 px is an invisible title bar with the <a href="main-ui.html">trigger</a> centered in it, and the window controls appear only on hover or keyboard focus. <strong>Windows and Linux:</strong> a transparent, frameless window with <strong>20 px rounded corners</strong>. Electron's transparent windows lose native resizing, snapping, maximize, and the shadow, so the app <strong>rebuilds all of window management itself</strong>: moving, resizing, maximize and restore, edge and corner snapping, a Snap Layouts picker, a system menu, the shadow, and multi-monitor handling. <strong>macOS:</strong> a <strong>native window</strong> with the system's own corners, shadow, resizing, full screen, and tiling, and no 20 px requirement (owner decision D-14). Covers DSK-01 to DSK-08 in the <a href="../product/requirements.md">requirements</a>.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -14,11 +14,11 @@
        aria-labelledby="dsk-title dsk-desc" preserveAspectRatio="xMidYMid meet"
        data-slate-svg-motion="viewport">
     <title id="dsk-title">Desktop window chrome on macOS and on Windows and Linux</title>
-    <desc id="dsk-desc">Two windows with large rounded corners. Each has a 44 pixel title bar band at the top, marked with a dashed line, which is the drag region. The trigger sits at the center of the band. On macOS the three traffic-light buttons sit at the top left. On Windows and Linux, app-drawn minimize, maximize and close buttons sit at the top right. In both, the controls appear on hover.</desc>
+    <desc id="dsk-desc">Two windows. The macOS window has the system's standard corners; the Windows and Linux window has larger 20 pixel corners. Each has a 44 pixel title bar band at the top, marked with a dashed line, which is the drag region. The trigger sits at the center of the band. On macOS the native traffic-light buttons sit at the top left. On Windows and Linux, app-drawn minimize, maximize and close buttons sit at the top right. In both, the controls appear on hover.</desc>
     <g id="dsk-windows" data-slate-svg-step="0" data-slate-svg-effect="fade">
-      <text x="40" y="50" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700">macOS</text>
-      <rect x="40" y="70" width="420" height="370" rx="28" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="2"/>
-      <text x="500" y="50" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700">Windows and Linux</text>
+      <text x="40" y="50" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700">macOS: native window</text>
+      <rect x="40" y="70" width="420" height="370" rx="12" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="2"/>
+      <text x="500" y="50" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700">Windows and Linux: custom</text>
       <rect x="500" y="70" width="420" height="370" rx="28" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="2"/>
       <g fill="var(--color-neutral-fg-3)">
         <rect x="90" y="190" width="320" height="10" rx="5"/><rect x="90" y="218" width="290" height="10" rx="5"/><rect x="90" y="246" width="200" height="10" rx="5"/>
@@ -26,8 +26,8 @@
         <rect x="550" y="190" width="320" height="10" rx="5"/><rect x="550" y="218" width="290" height="10" rx="5"/><rect x="550" y="246" width="200" height="10" rx="5"/>
         <rect x="550" y="292" width="320" height="10" rx="5"/><rect x="550" y="320" width="250" height="10" rx="5"/>
       </g>
-      <text x="250" y="414" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="17">20 px corners</text>
-      <text x="710" y="414" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="17">20 px corners</text>
+      <text x="250" y="414" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="17">System corners and shadow</text>
+      <text x="710" y="414" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="17">20 px corners, drawn shadow</text>
     </g>
     <g id="dsk-titlebar" data-slate-svg-step="1" data-slate-svg-effect="draw" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="2" stroke-dasharray="6 5">
       <path d="M40 132 H460"/><path d="M500 132 H920"/>
@@ -39,9 +39,9 @@
       <circle cx="710" cy="101" r="5" fill="var(--color-status-danger-fg)"/>
     </g>
     <g id="dsk-controls" data-slate-svg-step="3" data-slate-svg-effect="fade">
-      <circle cx="72" cy="101" r="7" fill="var(--color-status-danger-fg)"/>
-      <circle cx="96" cy="101" r="7" fill="var(--color-status-warning-fg)"/>
-      <circle cx="120" cy="101" r="7" fill="var(--color-status-success-fg)"/>
+      <circle cx="68" cy="101" r="7" fill="var(--color-status-danger-fg)"/>
+      <circle cx="92" cy="101" r="7" fill="var(--color-status-warning-fg)"/>
+      <circle cx="116" cy="101" r="7" fill="var(--color-status-success-fg)"/>
       <g fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="20" text-anchor="middle">
         <text x="820" y="108">–</text>
         <text x="856" y="108">□</text>
@@ -51,18 +51,20 @@
     <g id="dsk-labels" data-slate-svg-step="4" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)" font-size="17" fill="var(--color-neutral-fg-1)">
       <text x="250" y="160" text-anchor="middle">Drag region: top 44 px</text>
       <text x="710" y="160" text-anchor="middle">Drag region: top 44 px</text>
-      <text x="250" y="476" text-anchor="middle">Traffic lights appear on hover</text>
-      <text x="710" y="476" text-anchor="middle">App-drawn controls appear on hover</text>
+      <text x="250" y="476" text-anchor="middle">Native traffic lights, shown on hover</text>
+      <text x="710" y="476" text-anchor="middle">App-drawn controls, shown on hover</text>
     </g>
   </svg>
-  <figcaption>Window chrome at rest is just the trigger. The window controls appear when the pointer enters the title bar band or a control gets keyboard focus.</figcaption>
+  <figcaption>The window chrome at rest is just the trigger on both platforms. The window controls appear when the pointer enters the title bar band or a control gets keyboard focus.</figcaption>
 </figure>
 <details class="slate-figure-data">
   <summary>Data</summary>
   <table>
     <thead><tr><th>Element</th><th>macOS</th><th>Windows and Linux</th></tr></thead>
     <tbody>
-      <tr><td>Corner radius</td><td>20 px (0 when full screen)</td><td>20 px (0 when maximized, snapped, or full screen)</td></tr>
+      <tr><td>Window</td><td>Native window with a hidden title bar</td><td>Transparent, frameless window drawn by the app</td></tr>
+      <tr><td>Corner radius</td><td>The system's own</td><td>20 px (0 when maximized, snapped, or full screen)</td></tr>
+      <tr><td>Window management</td><td>Native: resizing, full screen, tiling, shadow</td><td>Rebuilt by the app (see below)</td></tr>
       <tr><td>Title bar band</td><td>Top 44 px, drag region</td><td>Top 44 px, drag region</td></tr>
       <tr><td>Trigger</td><td>Centered in the band</td><td>Centered in the band</td></tr>
       <tr><td>Window controls</td><td>Native traffic lights, top left, shown on hover</td><td>App-drawn minimize, maximize, close, top right, shown on hover</td></tr>
@@ -70,70 +72,93 @@
   </table>
 </details>
 
-<h2>Window shape</h2>
+<h2 data-reader-personas="design product">Window shape by platform</h2>
+<table>
+  <thead><tr><th>Platform</th><th>Window</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td><strong>macOS</strong></td><td>A native window with a hidden title bar style, so the canvas stays blank and the traffic lights stay native. Corners, shadow, resizing, full screen (its own Space), Stage Manager, and window tiling are all the system's.</td><td>Owner decision D-14: macOS's own windows are kept, without the 20 px requirement. Mac users get every system window behavior for free.</td></tr>
+    <tr><td><strong>Windows</strong></td><td>A transparent, frameless window with 20 px corners, and window management rebuilt by the app (next section).</td><td>Owner decision D-14 (D-24): native Windows corners can't be 20 px, so the app draws the window and takes on everything the system no longer does.</td></tr>
+    <tr><td><strong>Linux</strong></td><td>Same as Windows when a compositor is running. Without one, transparency isn't possible, so the window falls back to an opaque, square, frameless window with the same title bar and window management.</td><td>Follows the Windows design wherever the system allows it.</td></tr>
+  </tbody>
+</table>
 <ul>
-  <li><strong>20 px corners</strong> (owner decision D-24), clipped cleanly with anti-aliased edges in both themes. The value is the <code>window.radius</code> token.</li>
-  <li><strong>Square when it touches the screen edges:</strong> radius 0 when maximized, snapped to a screen edge (Windows), or full screen, matching how native windows behave.</li>
-  <li><strong>Linux without a compositor</strong> can't draw transparency. There the window falls back to an opaque, square frameless window with the same title bar.</li>
-  <li>The canvas inside is the theme's opaque canvas color. The desktop behind the window is never blurred through it, which keeps text contrast predictable. The "frost" is used only on the trigger and the panels.</li>
+  <li>The canvas inside is always the theme's opaque canvas color. The desktop behind the window is never blurred through it, which keeps text contrast predictable. The "frost" is only used on the trigger and the panels.</li>
+  <li>On Windows and Linux, corners become square (radius 0) when the window is maximized, snapped to an edge, or full screen, matching how native windows behave there.</li>
 </ul>
 
-<h2 id="how-the-corners-are-made">How the corners are made</h2>
-<p>Native window corners can't be set to 20 px. Windows 11 offers only its own rounding (about 8 px) or none, and macOS draws its own radius. So the window is created <code>transparent</code> and <code>frameless</code>, and the 20 px shape is drawn with CSS. Electron's documentation lists what that costs. Each cost has a counter-measure:</p>
+<h2 id="window-management-on-windows-and-linux" data-reader-personas="design engineering">Window management on Windows and Linux</h2>
+<p>Electron documents that transparent windows aren't natively resizable, can't be maximized from the Windows system menu or by double-clicking the title bar, have no native shadow, and can't use the native title-bar overlay. Native edge snapping and Snap Layouts don't apply to them either. The app rebuilds each of these (DSK-03, DSK-08):</p>
 <table>
-  <thead><tr><th>Documented limitation of transparent windows</th><th>Counter-measure in Focus Notes</th></tr></thead>
+  <thead><tr><th>Behavior</th><th>How the app provides it</th></tr></thead>
   <tbody>
-    <tr><td>Not natively resizable</td><td>The app draws its own resize handles: 6 px edges and 14 px corners on all sides. Dragging updates the window bounds once per animation frame. Minimum size is 480 &times; 360.</td></tr>
-    <tr><td>On Windows, can't be maximized from the system menu or by double-clicking the title bar</td><td>The app handles double-click itself and the maximize button calls maximize and restore directly. On macOS, double-click follows the user's system setting (zoom or minimize).</td></tr>
-    <tr><td>No native shadow on macOS (and none on Windows with transparency)</td><td>A soft CSS shadow is drawn in a 16 px transparent margin around the window. That margin passes clicks through to whatever is behind it, using forwarded mouse events, so it never blocks other apps. The margin disappears when maximized or full screen.</td></tr>
-    <tr><td>Can't click through transparent areas</td><td>Handled by the click-through margin above.</td></tr>
-    <tr><td>Not transparent while DevTools is open</td><td>Development only. Doesn't matter in release builds.</td></tr>
+    <tr><td><strong>Move</strong></td><td>Dragging anywhere in the title bar band moves the window. The app handles the drag itself (pointer capture, with the new position applied once per frame) so it can detect screen edges for snapping.</td></tr>
+    <tr><td><strong>Resize</strong></td><td>Invisible handles on all four edges (6 px) and corners (14 px), with the right resize cursors. Minimum size is 480 &times; 360. Holding <kbd>Shift</kbd> while resizing keeps the proportions.</td></tr>
+    <tr><td><strong>Maximize and restore</strong></td><td>The maximize button, double-clicking the band, dragging to the top edge of the screen, or <code>&gt; Maximize window</code>. Dragging the band of a maximized window restores it under the pointer at the same relative position, as Windows does.</td></tr>
+    <tr><td><strong>Minimize</strong></td><td>The minimize button, or clicking the taskbar button (system).</td></tr>
+    <tr><td><strong>Edge snapping</strong></td><td>Dragging to the left or right screen edge previews a half-screen zone, a corner previews a quarter, and the top previews maximize. The preview is a translucent accent rectangle, and releasing applies it. The zones use the display's work area, so the taskbar is never covered.</td></tr>
+    <tr><td><strong>Snap Layouts picker</strong></td><td>Hovering the maximize button for 400 ms (or pressing <kbd>↓</kbd> while it has keyboard focus) shows a small picker modeled on Windows 11: halves, thirds (on wide displays), quarters, and maximize. Choosing a zone places this window there. It doesn't form a snap group with other apps' windows, which only Windows can do.</td></tr>
+    <tr><td><strong>System menu</strong></td><td><kbd>Alt</kbd>+<kbd>Space</kbd>, or right-clicking the band, opens an app-drawn window menu: Restore, Move, Size, Minimize, Maximize, Snap left, Snap right, Close. Move and Size work with the arrow keys and <kbd>Enter</kbd>, like the Windows system menu.</td></tr>
+    <tr><td><strong>Keyboard snapping</strong></td><td><kbd>Win</kbd>+arrow keys belong to Windows, and the M0 spike checks whether Windows applies them to this window. If not, the same moves are commands (<code>&gt; Snap window left</code>, …) in the system menu and Spotlight, because the app can't take over the <kbd>Win</kbd> key.</td></tr>
+    <tr><td><strong>Shadow</strong></td><td>A soft CSS shadow drawn in a 16 px transparent margin around the window. The margin passes clicks through to whatever is behind it, using forwarded mouse events, so it never blocks other apps. It goes away when maximized, snapped, or full screen.</td></tr>
+    <tr><td><strong>Multiple monitors and scaling</strong></td><td>Positions and sizes are calculated for each display's work area and scale factor. Moving to a display with a different scale re-measures the window so it keeps its physical size. A window that would open off-screen is moved onto the nearest display.</td></tr>
+    <tr><td><strong>Full screen</strong></td><td><kbd>F11</kbd>: the window covers the whole display, corners and shadow go away, and the title bar band hides until the pointer reaches the top edge. The trigger stays visible.</td></tr>
   </tbody>
 </table>
 <div class="slate-callout slate-callout--warning" role="note">
   <p class="slate-callout__title">Spike first</p>
-  <p>M0 includes a window spike on Windows 11, macOS, and Ubuntu that tests: smooth resizing from every edge, maximize and restore, <kbd>Win</kbd>+arrow snapping, moving between monitors with different scaling, the shadow, and the click-through margin. If resizing doesn't feel native, the fallback is native corners. That trade-off is open question <a href="../plan/decisions.md">D-14</a>.</p>
+  <p>M0 builds this window on Windows 11, Windows 10, and Ubuntu, and checks smooth resizing from every edge, moving and snapping (including across monitors with different scaling), the Snap Layouts picker, the system menu, the shadow, and the click-through margin. The owner chose this approach (D-14), so the spike is about getting it right, not about choosing.</p>
 </div>
 
-<h2 id="title-bar">Title bar</h2>
+<h2 id="title-bar" data-reader-personas="design product">Title bar</h2>
 <dl class="slate-defs">
   <dt>Band</dt>
   <dd>The top 44 px of the window. It's invisible: the same color as the canvas, with no line under it. When the note scrolls, its text passes under the band and the frosted trigger.</dd>
   <dt>Drag</dt>
-  <dd>The whole band is a drag region (<code>-webkit-app-region: drag</code>), except the trigger, the window controls, and any open panel.</dd>
+  <dd>The whole band moves the window, except the trigger, the window controls, and any open panel. On macOS this is the system's drag region. On Windows and Linux it's the app's own move handling (above).</dd>
   <dt>Trigger</dt>
-  <dd>Centered in the band and vertically centered in it (see <a href="main-ui.html#the-trigger">Main UI</a>). This is its only position, and it doesn't move when the window is resized.</dd>
+  <dd>Centered horizontally and vertically in the band (see <a href="main-ui.html#the-trigger">Main UI</a>). This is its only position, and it doesn't move when the window is resized.</dd>
   <dt>macOS controls</dt>
-  <dd>The native traffic lights (the title bar style is hidden), placed 18 px from the top-left corner so they sit comfortably inside the 20 px curve. They're hidden at rest and appear when the pointer enters the band, when the toolbar is open, or when the window isn't the active one. The window-button visibility setting does this.</dd>
+  <dd>The native traffic lights, positioned to sit comfortably in the band. They're hidden at rest and appear when the pointer enters the band, when the toolbar is open, or when the window isn't the active one (the native window-button visibility setting does this). Double-clicking the band follows the user's system setting (zoom or minimize).</dd>
   <dt>Windows and Linux controls</dt>
-  <dd>Minimize, maximize/restore, and close, drawn by the app at the top right in theme colors, with a red hover state on close following the Windows convention. They follow the same show-on-hover rules as on macOS. They're real buttons that can be focused and have accessible names. Electron's native title-bar overlay can't be used with transparent windows, so the Windows 11 Snap Layouts flyout isn't available (<a href="../plan/decisions.md">D-15</a>).</dd>
+  <dd>Minimize, maximize/restore, and close, drawn by the app at the top right in theme colors, with a red hover state on close following the Windows convention. They follow the same show-on-hover rules as on macOS. They're real buttons that can be focused and have accessible names. Hovering maximize opens the Snap Layouts picker (D-15).</dd>
   <dt>Keyboard</dt>
-  <dd>Every window action is also a command: <code>> Minimize window</code>, <code>> Maximize window</code>, <code>> Close window</code>, <code>> Toggle full screen</code>, with the usual shortcuts (<a href="keyboard-shortcuts.md#app-and-window">App and window</a>).</dd>
+  <dd>Every window action is also a command: <code>&gt; Minimize window</code>, <code>&gt; Maximize window</code>, <code>&gt; Snap window left</code>, <code>&gt; Close window</code>, <code>&gt; Toggle full screen</code>, with the usual shortcuts (<a href="keyboard-shortcuts.md#app-and-window">App and window</a>).</dd>
 </dl>
 
-<h2>Window behavior</h2>
+<h2 data-reader-personas="design product">Window behavior</h2>
 <table>
   <thead><tr><th>Behavior</th><th>Specification</th></tr></thead>
   <tbody>
-    <tr><td>Full screen</td><td><kbd>⌃⌘F</kbd> (macOS, native full-screen Space) or <kbd>F11</kbd> (Windows, Linux). Corners and the shadow margin go away. The title bar band collapses and comes back when the pointer reaches the top edge. The trigger stays visible.</td></tr>
-    <tr><td>Remembered state</td><td>Size, position, maximized and full-screen state are remembered per window and restored at launch. A window that would open off-screen (for example after a monitor is unplugged) is moved onto the nearest display.</td></tr>
+    <tr><td>Full screen</td><td><kbd>⌃⌘F</kbd> on macOS (native full-screen Space), <kbd>F11</kbd> on Windows and Linux. The title bar band collapses and comes back when the pointer reaches the top edge. The trigger stays visible.</td></tr>
+    <tr><td>Remembered state</td><td>Size, position, maximized, snapped, and full-screen state are remembered per window and restored at launch.</td></tr>
     <tr><td>Multiple windows (P1)</td><td>One note per window. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> opens a new one. Spotlight's alternative action (<kbd>Mod</kbd>+<kbd>Enter</kbd>) opens a note in a new window.</td></tr>
-    <tr><td>Menus</td><td>macOS: a full native menu bar at the top of the screen lists every command and shortcut. Windows and Linux: no menu bar. Commands are in the toolbar, the ⋯ menu, Spotlight, and context menus.</td></tr>
+    <tr><td>Menus</td><td>macOS: a full native menu bar at the top of the screen lists every command and shortcut. Windows and Linux: no menu bar. Commands are in the toolbar, the ⋯ menu, Spotlight, context menus, and the system menu.</td></tr>
     <tr><td>External links</td><td>Open in the default browser. The app window never navigates away from the app.</td></tr>
     <tr><td>Single instance</td><td>Opening the app again focuses the existing window instead of starting a second copy.</td></tr>
   </tbody>
 </table>
 
-<h2>Light, dark, and system</h2>
-<p>The window follows the same three-way theme choice as the rest of the app (<a href="theming.md">Theming</a>): <strong>System</strong> (default, follows the OS live), <strong>Light</strong>, or <strong>Dark</strong>. The native parts (macOS traffic lights, menus, context menus, the Windows taskbar thumbnail) follow it too, because the app sets Electron's native theme to match.</p>
+<h2 data-reader-personas="design">Light, dark, and system</h2>
+<p>The window follows the same three-way theme choice as the rest of the app (<a href="theming.md">Theming</a>): <strong>System</strong> (default, follows the OS live), <strong>Light</strong>, or <strong>Dark</strong>. The native parts (macOS traffic lights and menus, context menus, the Windows taskbar thumbnail) follow it too, because the app sets Electron's native theme to match.</p>
 
-<h2>Distribution</h2>
+<h2 data-reader-personas="engineering">Distribution</h2>
 <table>
   <thead><tr><th>Concern</th><th>Approach</th><th>Priority</th></tr></thead>
   <tbody>
-    <tr><td>Builds</td><td>electron-builder (MIT): Windows (NSIS installer), macOS (DMG, universal), Linux (AppImage)</td><td>P0</td></tr>
-    <tr><td>Signing</td><td>Apple Developer ID with notarization; Windows code signing</td><td>P1</td></tr>
-    <tr><td>Updates</td><td>electron-updater (MIT) from GitHub Releases, checked at launch and every day, installed on quit</td><td>P1</td></tr>
+    <tr><td>Builds</td><td>electron-builder (MIT): Windows (NSIS installer), macOS (DMG, universal), Linux (AppImage), published on the project's GitHub Releases page</td><td>P0</td></tr>
+    <tr><td>Signing</td><td>Apple Developer ID with notarization. Windows code signing.</td><td>P1</td></tr>
+    <tr><td>Updates</td><td>electron-updater (MIT) checks GitHub Releases at launch and once a day, and installs on quit. No other update server.</td><td>P1</td></tr>
   </tbody>
 </table>
 <p>Process model, security settings, sign-in, and Git integration are described in <a href="../architecture/desktop-and-git.md">Desktop and Git</a>. The first launch is described in <a href="first-run.md">First run and sign-in</a>.</p>
+
+<h2 data-reader-personas="product design">Design decisions</h2>
+<table>
+  <thead><tr><th>ID</th><th>Decision</th><th>Serves</th><th>Rationale</th><th>Alternatives rejected</th></tr></thead>
+  <tbody>
+    <tr><td>DD-DSK-01</td><td>Native windows on macOS. Transparent 20 px windows with app-built window management on Windows and Linux.</td><td>UC-CANVAS-03</td><td>Owner decision D-14. macOS users keep every system behavior. Windows gets the signature 20 px look, which native Windows corners can't provide.</td><td>Transparent windows everywhere (loses macOS tiling, shadow, and Stage Manager behavior). Native corners everywhere (no 20 px on Windows).</td></tr>
+    <tr><td>DD-DSK-02</td><td>The app handles window moves itself on Windows and Linux.</td><td>UC-CANVAS-03</td><td>Edge snapping needs to know where the pointer is during a move, which the system drag region doesn't report.</td><td>The system drag region (no snapping for transparent windows).</td></tr>
+    <tr><td>DD-DSK-03</td><td>An app-built Snap Layouts picker and system menu.</td><td>UC-CANVAS-03</td><td>Windows 11 users expect both, and neither is available to transparent windows.</td><td>Leaving them out (feels broken to Windows users).</td></tr>
+    <tr><td>DD-DSK-04</td><td>Window controls are hidden until hover or keyboard focus, on every platform.</td><td>UC-CANVAS-01</td><td>Keeps the blank canvas (CP-CALM-01) without hiding anything from keyboard users.</td><td>Always-visible controls.</td></tr>
+  </tbody>
+</table>

@@ -3,7 +3,7 @@
 A full keymap, from the shortcuts everyone knows to niche ones for heavy users. Each binding copies the most widely used app that already has it, so existing muscle memory works on day one.
 
 > [!NOTE]
-> **TL;DR.** Every action is a named **command**. Shortcuts are bindings from keys to commands, scoped by **context** (editor, table, find bar, Spotlight, files, global), and each one follows a well-known precedent (VS Code, Notion, Google Docs, Word, Typora, macOS, Windows). **Mod** means <kbd>⌘</kbd> on macOS and iPadOS and <kbd>Ctrl</kbd> on Windows and Linux. The keymap is in four layers: **Basic**, **Writer**, **Power**, and **Pro**. Every command is also reachable from [Spotlight](spotlight.html), which shows its shortcut. <kbd>Mod</kbd>+<kbd>/</kbd> opens a searchable cheat sheet. Custom keybindings follow in P1. Covers KEY-01 to KEY-07 in the [requirements](../product/requirements.md).
+> **TL;DR.** Every action is a named **command**. Shortcuts are bindings from keys to commands, scoped by **context** (editor, table, find bar, Spotlight, files, global), and each one follows a well-known precedent (VS Code, Notion, Google Docs, Word, Typora, macOS, Windows). **Mod** means <kbd>⌘</kbd> on macOS and iPadOS and <kbd>Ctrl</kbd> on Windows and Linux. The keymap is in four layers: **Basic**, **Writer**, **Power**, and **Pro**. Every command is also reachable from [Spotlight](spotlight.html) (<kbd>Mod</kbd>+<kbd>/</kbd>), which shows its shortcut. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> opens a searchable cheat sheet. Custom keybindings follow in P1. Covers KEY-01 to KEY-07 in the [requirements](../product/requirements.md).
 
 ## Strategy
 
@@ -19,12 +19,12 @@ A full keymap, from the shortcuts everyone knows to niche ones for heavy users. 
 | **Power** | Daily users | Spotlight, quick open, replace, move blocks, back and forward, go to heading |
 | **Pro** | Heavy keyboard users | Block selection mode, table cell selection, replace across notes, find in selection, Spotlight action keys, expand selection, reveal in Finder/Explorer |
 
-5. **Discoverable.** Tooltips show each shortcut. Spotlight lists the shortcut next to every command, so using it teaches the key. <kbd>Mod</kbd>+<kbd>/</kbd> opens a cheat sheet that can be searched and filtered by layer. The first-run experience teaches exactly one: <kbd>Mod</kbd>+<kbd>K</kbd>.
+5. **Discoverable.** Tooltips show each shortcut. Spotlight lists the shortcut next to every command, so using it teaches the key. <kbd>Mod</kbd>+<kbd>/</kbd> opens a cheat sheet that can be searched and filtered by layer. The first-run experience teaches exactly one: <kbd>Mod</kbd>+<kbd>/</kbd> for Spotlight.
 6. **Customizable (P1).** A `keybindings.json` file (per device, or synced in `.focus-notes/`) can override any binding. It warns on conflicts, can reset everything, and shows the effective binding in Spotlight.
 
 ## Platforms
 
-The owner asked for this to work on "mac and iOS". This is read as **macOS** plus **iPadOS and iOS with a hardware keyboard** (the web build in Safari). **Windows and Linux** are covered too, because the desktop app ships on them ([D-19](../plan/decisions.md)).
+The keymap supports as many platforms as possible ([D-19](../plan/decisions.md)): **macOS**, **Windows**, **Linux**, and **iPadOS and iOS with a hardware keyboard** (the web build in Safari).
 
 | Symbol | macOS, iPadOS, iOS | Windows, Linux |
 | --- | --- | --- |
@@ -56,7 +56,7 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 
 | Action | macOS / iPadOS | Windows / Linux | Web substitute | Layer | Precedent |
 | --- | --- | --- | --- | --- | --- |
-| Open Spotlight | <kbd>⌘K</kbd> | <kbd>Ctrl+K</kbd> |  | Power | GitHub, Linear, Slack |
+| Open Spotlight | <kbd>⌘/</kbd> | <kbd>Ctrl+/</kbd> | | Power | Owner decision (D-16) |
 | Spotlight: commands only | <kbd>⇧⌘P</kbd> | <kbd>Ctrl+Shift+P</kbd> |  | Power | VS Code |
 | Quick open a note | <kbd>⌘P</kbd> | <kbd>Ctrl+P</kbd> |  | Power | VS Code |
 | Open… (Files panel) | <kbd>⌘O</kbd> | <kbd>Ctrl+O</kbd> |  | Basic | Universal |
@@ -68,7 +68,7 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 | Back / forward between notes | <kbd>⌘[</kbd> / <kbd>⌘]</kbd> | <kbd>Alt+←</kbd> / <kbd>Alt+→</kbd> |  | Power | Notion, browsers, Finder |
 | Open the trigger toolbar | <kbd>⌘.</kbd> | <kbd>Ctrl+.</kbd> or <kbd>F10</kbd> |  | Writer | Windows (F10 menu) |
 | Settings | <kbd>⌘,</kbd> | <kbd>Ctrl+,</kbd> |  | Basic | Universal |
-| Keyboard shortcut cheat sheet | <kbd>⌘/</kbd> | <kbd>Ctrl+/</kbd> |  | Writer | Google Docs |
+| Keyboard shortcut cheat sheet | <kbd>⇧⌘/</kbd> (⌘?) | <kbd>Ctrl+Shift+/</kbd> (Ctrl+?) | | Writer | GitHub, Gmail (<kbd>?</kbd>) |
 | Toggle focus mode | <kbd>⇧⌘D</kbd> or <kbd>F8</kbd> | <kbd>Ctrl+Shift+D</kbd> or <kbd>F8</kbd> |  | Writer | Typora (F8) |
 | Toggle light / dark | <kbd>⇧⌘L</kbd> | <kbd>Ctrl+Shift+L</kbd> | Spotlight if the browser keeps it | Writer | No common standard |
 | Larger / smaller / reset font size | <kbd>⌘=</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | <kbd>Ctrl+=</kbd> / <kbd>Ctrl+-</kbd> / <kbd>Ctrl+0</kbd> |  | Writer | Browsers, VS Code |
@@ -99,7 +99,7 @@ The standard OS text keys work as expected and aren't listed one by one: moving 
 | Italic | <kbd>⌘I</kbd> | <kbd>Ctrl+I</kbd> | Basic | Universal |
 | Strikethrough | <kbd>⇧⌘X</kbd> | <kbd>Ctrl+Shift+X</kbd> | Writer | Slack, Teams |
 | Inline code | <kbd>⌘E</kbd> | <kbd>Ctrl+E</kbd> | Writer | Notion, Tiptap |
-| Add or edit link (with text selected) | <kbd>⌘K</kbd> | <kbd>Ctrl+K</kbd> | Writer | Notion, Google Docs, GitHub ([D-16](../plan/decisions.md)) |
+| Add or edit link | <kbd>⌘K</kbd> | <kbd>Ctrl+K</kbd> | Writer | Notion, Google Docs, Word |
 | Clear formatting | <kbd>⌘\</kbd> | <kbd>Ctrl+\</kbd> | Writer | Google Docs, Notion |
 | Move focus into the [formatting toolbar](../design/components/text-formatting.html) | <kbd>⌥F10</kbd> | <kbd>Alt+F10</kbd> | Power | Web rich-text editors |
 | Underline | <kbd>⌘U</kbd> shows a one-time hint that Markdown has no underline | <kbd>Ctrl+U</kbd>, same | Basic | Not supported ([D-12](../plan/decisions.md)) |
@@ -212,7 +212,8 @@ These are the deliberate trade-offs. Each one is the choice the most popular pre
 
 | Keys | Meaning here | Gives up | Why |
 | --- | --- | --- | --- |
-| <kbd>Mod</kbd>+<kbd>K</kbd> | Spotlight. With text selected: add a link | Link as the only meaning | The owner asked for Spotlight on this key. GitHub handles the same conflict this way ([D-16](../plan/decisions.md)). |
+| <kbd>Mod</kbd>+<kbd>/</kbd> | Spotlight | The key often used for a cheat sheet, so the cheat sheet moves to <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> | Owner decision ([D-16](../plan/decisions.md)). <kbd>Mod</kbd>+<kbd>K</kbd> stays the universal link key. |
+| <kbd>Mod</kbd>+<kbd>/</kbd> on layouts where <kbd>/</kbd> needs <kbd>Shift</kbd> (for example German, <kbd>Shift</kbd>+<kbd>7</kbd>) | Spotlight wins | The numbered-list key (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>7</kbd>) on those layouts | Shortcuts match the character produced. Numbered lists stay available through `1. `, the formatting toolbar, and Spotlight. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> opens Spotlight on every layout. |
 | <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> | Find in all notes | Focus mode on this key | VS Code convention. Focus moved to <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> / <kbd>F8</kbd> ([D-17](../plan/decisions.md)). |
 | <kbd>⌘E</kbd> (macOS) | Inline code | macOS "use selection for find" | Notion and Tiptap. The find bar fills in the selected text anyway. |
 | <kbd>Mod</kbd>+<kbd>D</kbd> | Duplicate block | The browser's bookmark key (web) | Notion. |

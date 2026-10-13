@@ -32,7 +32,7 @@ Lists nest with <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>. Pressing <kb
 | Italic | <kbd>Ctrl/Cmd</kbd>+<kbd>I</kbd> | `*text*` or `_text_` | `*text*` |
 | Strikethrough | <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> | `~~text~~` | `~~text~~` |
 | Inline code | <kbd>Ctrl/Cmd</kbd>+<kbd>E</kbd> | `` `code` `` | `` `code` `` |
-| Link | <kbd>Ctrl/Cmd</kbd>+<kbd>K</kbd> with text selected (with nothing selected, the same keys open [Spotlight](spotlight.html); D-16) | `[text](url)`, or paste a URL over selected text | `[text](url)` |
+| Link | <kbd>Ctrl/Cmd</kbd>+<kbd>K</kbd> (with nothing selected, it inserts a new link at the caret) | `[text](url)`, or paste a URL over selected text | `[text](url)` |
 
 Underline, text color, and highlight aren't offered because CommonMark/GFM can't represent them. Adding them would break the "Markdown is the source of truth" principle (see [Vision](../product/vision.md)). The full keymap, including block, table, and pro shortcuts, is on [Keyboard shortcuts](keyboard-shortcuts.md).
 

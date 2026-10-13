@@ -8,7 +8,7 @@ The order in which the documented features get built. Each milestone leaves a wo
 <ol class="slate-steps slate-steps--timeline">
 <li class="slate-step">
 <p class="slate-step__title">M0 - Foundations and spikes</p>
-<p>Documentation (this site). MIT <code>LICENSE</code> and the CI license check. Repository layout, private repository and submodule, CI skeleton with the Pages deploy. <strong>Editor spike</strong>: Tiptap with <code>@tiptap/markdown</code> versus a remark bridge on the round-trip corpus. <strong>Window spike</strong>: 20 px transparent window resizing, maximizing, shadow, and snapping on three OSes (D-14). Register the GitHub OAuth App with device flow enabled. The <a href="../product/spec/chain.md#checking-the-chain">chain check</a> script. LIC-01, LIC-02.</p>
+<p>Documentation (this site). MIT <code>LICENSE</code> and the CI license check. Repository layout, private repository and submodule, CI skeleton with the Pages deploy. <strong>Editor spike</strong>: Tiptap with <code>@tiptap/markdown</code> versus a remark bridge on the round-trip corpus. <strong>Window spike</strong>: the 20 px transparent window with app-built resizing, moving, snapping, Snap Layouts picker, system menu, and shadow on Windows and Linux (D-14). The <strong>workspace template</strong> repository and the <strong>reusable publish workflow</strong>. No OAuth app and no server, now or later (PKG-06). The <a href="../product/spec/chain.md#checking-the-chain">chain check</a> script. LIC-01, LIC-02, PKG-06.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M1 - Editor core</p>
@@ -20,7 +20,7 @@ The order in which the documented features get built. Each milestone leaves a wo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M3 - Desktop app, first run, and Git</p>
-<p>The Electron window (20 px corners, custom title bar, resizing, full screen, macOS menu bar). The first run: Git check, device-flow sign-in, git credential helper, identity, workspace clone. The local Git adapter with save and sync, Files panel, file operations, public and private roots, conflict handling. DSK-01 to DSK-05, FRE-01 to FRE-07, PKG-03, FIL-01 to FIL-03, FIL-05 to FIL-10, FIL-12, EDT-11, SHR-01, SHR-02.</p>
+<p>The Electron window (native on macOS; 20 px corners and app-built window management on Windows and Linux; custom title bar, full screen, macOS menu bar). The first run: Git check, sign-in through Git Credential Manager, the GitHub CLI, or a token, identity, and <em>Create my workspace</em> or clone. The local Git adapter with save and sync, Files panel, file operations, public and private roots, conflict handling. DSK-01 to DSK-05, DSK-08, FRE-01 to FRE-08, PKG-03, FIL-01 to FIL-03, FIL-05 to FIL-10, FIL-12, EDT-11, SHR-01, SHR-02.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M4 - Spotlight</p>
@@ -32,7 +32,7 @@ The order in which the documented features get built. Each milestone leaves a wo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M6 - Editing in the browser</p>
-<p>GitHub API adapter, personal access token sign-in, IndexedDB offline queue, and web substitutes for browser-reserved keys. PKG-05.</p>
+<p>GitHub API adapter, sign-in with a user-created fine-grained token, IndexedDB offline queue, and web substitutes for browser-reserved keys. PKG-05.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M7 - Private share links</p>

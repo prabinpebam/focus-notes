@@ -26,7 +26,7 @@ The shared building blocks every view and component uses: layout, spacing, shape
 
 | Radius token | Value | Used by |
 | --- | --- | --- |
-| `radius.window` | 20 px | Desktop window |
+| `radius.window` | 20 px | Desktop window on Windows and Linux (macOS uses the native window) |
 | `radius.sheet` | 16 px | Side sheets (inner edge only), dialogs, Spotlight |
 | `radius.popover` | 12 px | Toolbar, menus, popovers, toasts, contextual toolbar |
 | `radius.control` | 8 px | Buttons, fields, chips, list rows |

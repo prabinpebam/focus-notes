@@ -1,18 +1,18 @@
 # Vision and principles
 
-Focus Notes is a calm, Markdown-native writing app: an empty page, one small trigger for everything else, and a focus mode that lights up only the line you are writing. Your notes live in a GitHub repository you own. The main way to write is a desktop app (Electron) with soft 20 px corners; the web (GitHub Pages) serves published notes, and browser editing comes later. The app is open source under the MIT license.
+Focus Notes is a calm, Markdown-native writing app: an empty page, one small trigger for everything else, and a focus mode that lights up only the line you are writing. Your notes live in a GitHub repository you own. The main way to write is a desktop app (Electron), with soft 20 px corners on Windows and Linux and a native window on macOS. Each user's own GitHub Pages site serves their published notes, and browser editing comes later. Every user's Focus Notes runs entirely on their own GitHub account. The app is open source under the MIT license.
 
 > [!NOTE]
-> **TL;DR.** A Notion/Loop-style block editor that saves **Markdown** to **GitHub**, wrapped in an almost empty UI. The two signature features are the **trigger** (a red dot in a frosted circle at the top center that opens a toolbar of at most six actions) and **focus mode** (only the caret's row is fully visible). A Spotlight-style **search-and-act** panel on <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> and a thorough **keyboard** design make it fast for heavy users. Sign-in is one GitHub device code that also signs in the computer's `git`. Theming, public/private content, and shareable links follow. Pluggable components such as images and galleries come later, but the editor's design must allow for them from the start.
+> **TL;DR.** A Notion/Loop-style block editor that saves **Markdown** to **GitHub**, wrapped in an almost empty UI. The two signature features are the **trigger** (a red dot in a frosted circle at the top center that opens a toolbar of at most six actions) and **focus mode** (only the caret's row is fully visible). A Spotlight-style **search-and-act** panel on <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> and a thorough **keyboard** design make it fast for heavy users. Sign-in goes through Git's own sign-in tools (with a device code), so one sign-in serves the app and the terminal. Every user's Focus Notes lives entirely in their own GitHub account, with nothing hosted by the project. Theming, public/private content, and shareable links follow. Pluggable components such as images and galleries come later, but the editor's design must allow for them from the start.
 
 ## What makes it different
 
 | Signature | What the writer sees | Why it matters |
 | --- | --- | --- |
-| **The blank canvas** | Nothing but text and a single trigger at the top center. On the desktop, a frameless window with 20 px corners and an invisible title bar. | Takes away the visual noise that competes with writing. |
+| **The blank canvas** | Nothing but text and a single trigger at the top center. On the desktop, an invisible title bar (with 20 px corners on Windows and Linux). | Takes away the visual noise that competes with writing. |
 | **The trigger** | A red dot 10 px across inside a frosted circle 30 px across. One click opens a toolbar of at most six actions, plus a ⋯ menu. | Every non-writing action sits one step away but stays out of sight. |
 | **Focus mode** | The row under the caret is fully visible and every other row is dimmed. | Keeps attention on the sentence being written. |
-| **Spotlight and the keyboard** | <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> finds any note, heading, or command and acts on it. The full keymap follows the shortcuts people already know. | Power without chrome. The keyboard reaches everything. |
+| **Spotlight and the keyboard** | <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> finds any note, heading, or command and acts on it. The full keymap follows the shortcuts people already know. | Power without chrome. The keyboard reaches everything. |
 | **Notion/Loop-grade editing** | Familiar block editing, inline formatting, real table editing, and find and replace. | Calm doesn't mean less capable. |
 | **Markdown in your own GitHub repo** | Plain `.md` files in a repository, public or private, committed and pushed by your own `git`. | No lock-in. Notes stay portable, diffable, and versioned. |
 
@@ -34,12 +34,12 @@ Focus Notes is a calm, Markdown-native writing app: an empty page, one small tri
 
 ### In scope for the first release
 
-- The desktop app (Electron): a 20 px rounded, frameless window with a custom title bar, a guided first run, and GitHub device sign-in that also signs in the computer's `git`.
+- The desktop app (Electron): a custom title bar on every platform, 20 px rounded corners with app-built window management on Windows and Linux, native windows on macOS, and a guided first run that signs in through Git's own tools and creates the user's own workspace in their GitHub account.
 - Markdown text editing with standard formatting, Notion/Loop-style block interactions, and table editing.
 - The blank canvas, the trigger, and the toolbar (six actions plus ⋯).
 - Focus mode.
 - Find, find and replace, and find in all notes.
-- Spotlight search-and-act on <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd>, including quick open and commands.
+- Spotlight search-and-act on <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd>, including quick open and commands.
 - A full keyboard shortcut system for macOS, iPadOS, Windows, and Linux.
 - Create, read, update, and delete for files and folders, including moves.
 - Public and private content, plus sharing public links.
@@ -66,12 +66,13 @@ Focus Notes is a calm, Markdown-native writing app: an empty page, one small tri
 | **Trigger** | A red dot 10 px across inside a frosted circle 30 px across, at the top center. It opens the toolbar. |
 | **Toolbar** | The transient panel opened from the trigger. At most six actions, with everything else in ⋯. |
 | **⋯ (more) menu** | The seventh slot in the toolbar, holding every action that isn't one of the six. |
-| **Spotlight** | The search-and-act panel on <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd>, covering notes, headings, full text, folders, commands, and settings. |
+| **Spotlight** | The search-and-act panel on <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd>, covering notes, headings, full text, folders, commands, and settings. |
 | **Command** | A named action (for example `focus.toggle`) that a shortcut, menu, toolbar, or Spotlight can run. |
 | **Find bar** | The compact bar for finding and replacing in the open note. |
 | **Title bar band** | The invisible top 44 px of the desktop window, used to drag it. The trigger sits in its center. |
 | **First run** | The guided setup on first launch: Git, sign-in, identity, workspace, preferences. |
-| **Device flow** | GitHub's sign-in where the app shows a short code that the writer approves on github.com. |
+| **Device code** | A short code the writer approves on github.com to sign in. Shown by Git Credential Manager or the GitHub CLI, the sign-in tools Focus Notes relies on. |
+| **Workspace** (instance) | A user's own notes repository, private repository, and GitHub Pages site, all in their GitHub account. |
 | **Focus mode** | A reading treatment where only the caret's visual row is at full strength and other rows are subdued. |
 | **Row** | One *rendered* (visually wrapped) line of text, not a paragraph or a source line. |
 | **Block** | A unit of document structure: paragraph, heading, list item, table, code block, or a future component. |

@@ -1,6 +1,6 @@
 # Focus Notes
 
-A calm, Markdown-native writing app: a blank canvas, a single red trigger at the top center, and a focus mode that highlights only the row you are writing. Notes are plain Markdown in GitHub, public or private. You write in a desktop app (Electron); public notes are published on GitHub Pages.
+A calm, Markdown-native writing app: a blank canvas, a single red trigger at the top center, and a focus mode that highlights only the row you are writing. Notes are plain Markdown in GitHub, public or private. You write in a desktop app (Electron). Every user's Focus Notes is their own isolated instance in their own GitHub account (their repositories, their GitHub Pages site, their sign-in), with nothing hosted by this project.
 
 **Status:** documentation only. No application code yet.
 

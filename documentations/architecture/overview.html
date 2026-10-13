@@ -1,12 +1,12 @@
 <header class="slate-hero">
   <p class="slate-hero__eyebrow">Architecture</p>
   <h1 class="slate-hero__title">Architecture overview</h1>
-  <p class="slate-hero__summary">One web app core, two thin shells, and GitHub as the only backend.</p>
+  <p class="slate-hero__summary">One web app core, two thin shells, and the user's own GitHub account as the only backend.</p>
 </header>
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Focus Notes is a client-side app with no server of its own. The <strong>same web build</strong> runs inside an <strong>Electron</strong> desktop shell, which is the primary writing client (D-10), and from GitHub Pages in the browser. A shared core (Tiptap editor and block registry, focus mode, theme engine, command and keybinding service, Spotlight index, workspace) talks to storage through one <strong>workspace adapter</strong> interface. The desktop runs the user's own <code>git</code> on a local clone, signed in once through GitHub's device flow. The web build uses the GitHub REST API (M6). All content lives in two GitHub repositories, a public one and a private one mounted as a submodule. Everything is MIT-licensed or uses a compatible license.</p>
+  <p>Focus Notes is a client-side app with no server of its own. The <strong>same web build</strong> runs inside an <strong>Electron</strong> desktop shell, which is the primary writing client (D-10), and from GitHub Pages in the browser. A shared core (Tiptap editor and block registry, focus mode, theme engine, command and keybinding service, Spotlight index, workspace) talks to storage through one <strong>workspace adapter</strong> interface. The desktop runs the user's own <code>git</code> on a local clone, signed in once through Git's own sign-in helper (Git Credential Manager or the GitHub CLI, with a device code) or a token the user creates. The web build uses the GitHub REST API (M6). All of a user's content lives in <em>their</em> two GitHub repositories, a public notes repository and a private one mounted as a submodule, and publishes to <em>their</em> GitHub Pages. The project registers no OAuth app and runs no server (D-21, D-38). Everything is MIT-licensed or uses a compatible license.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -63,8 +63,8 @@
       <rect x="60" y="466" width="840" height="146" rx="18" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="2"/>
       <text x="84" y="500" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="20" font-weight="700">GitHub</text>
       <rect id="arch-public" x="100" y="516" width="320" height="76" rx="12" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="1.5"/>
-      <text x="260" y="546" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="19" font-weight="700">Public repository</text>
-      <text x="260" y="574" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="17">app, docs, public notes</text>
+      <text x="260" y="546" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="19" font-weight="700">Notes repository</text>
+      <text x="260" y="574" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="17">public notes, workflow</text>
       <rect id="arch-private" x="540" y="516" width="320" height="76" rx="12" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5"/>
       <text x="700" y="546" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="19" font-weight="700">Private repository</text>
       <text x="700" y="574" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="17">private notes, grants</text>
@@ -82,7 +82,7 @@
       <tr><td>Shells</td><td>Web app on GitHub Pages; Electron desktop app wrapping the same build</td></tr>
       <tr><td>Shared core</td><td>Editor engine and block registry; focus mode; theme engine; workspace (files, visibility, sharing)</td></tr>
       <tr><td>Storage adapters</td><td>GitHub API adapter (web); local Git adapter (Electron)</td></tr>
-      <tr><td>GitHub</td><td>Public repository (app, docs, public notes); private repository as a submodule (private notes, share grants)</td></tr>
+      <tr><td>GitHub (the user's account)</td><td>Notes repository (public notes, publish workflow); private repository as a submodule (private notes, share grants)</td></tr>
     </tbody>
   </table>
 </details>
@@ -90,7 +90,7 @@
 <h2>Layers</h2>
 <dl class="slate-defs">
   <dt>Shells</dt>
-  <dd>Startup, window chrome, and access to platform services. The Electron shell adds a frameless 20 px-rounded window with a custom title bar, a native menu bar on macOS, file-system access, sign-in, and Git, all exposed through a narrow, typed preload bridge (<a href="desktop-and-git.md">Desktop and Git</a>, <a href="../experience/desktop-app.html">Desktop app</a>). The web shell is a static page.</dd>
+  <dd>Startup, window chrome, and access to platform services. The Electron shell adds the window (native on macOS; a frameless 20 px-rounded window with app-built window management on Windows and Linux) with a custom title bar, a native menu bar on macOS, file-system access, sign-in, and Git, all exposed through a narrow, typed preload bridge (<a href="desktop-and-git.md">Desktop and Git</a>, <a href="../experience/desktop-app.html">Desktop app</a>). The web shell is a static page.</dd>
   <dt>Editor engine and block registry</dt>
   <dd>The Tiptap block editor, Markdown parse and serialize, input rules, find and replace, and the plugin registry for block types (<a href="editor-engine.md">Editor engine</a>).</dd>
   <dt>Commands and keybindings</dt>
@@ -114,7 +114,7 @@
     <tr><td>Role</td><td>Writing and managing notes</td><td>First release: public note pages and share links. Editing follows in M6 (P1)</td></tr>
     <tr><td>Delivery</td><td>Signed installers for Windows, macOS, and Linux, wrapping the same build</td><td>Static files built and deployed by GitHub Actions</td></tr>
     <tr><td>Storage</td><td>Local clone with the private submodule. Commits, pushes, and pulls with the user's own <code>git</code></td><td>GitHub REST API (contents, git trees and commits)</td></tr>
-    <tr><td>Sign-in</td><td>GitHub OAuth device flow during the first run. The token goes in the OS's secure storage <em>and</em> git's credential helper, so the terminal works too (D-02)</td><td>Fine-grained personal access token limited to the two content repositories (D-13)</td></tr>
+    <tr><td>Sign-in</td><td>Through Git's credential helper, owned by the user: Git Credential Manager or the GitHub CLI (device code or browser), or a fine-grained token they create. One credential serves the app and the terminal (D-21)</td><td>A fine-grained token the user creates for their two repositories, kept in the browser (D-13)</td></tr>
     <tr><td>Offline</td><td>Fully offline. Commits pile up and push later</td><td>Local edit queue in IndexedDB that syncs when back online</td></tr>
     <tr><td>Full-text search</td><td>Files on disk (ripgrep) plus the Spotlight index</td><td>The Spotlight index over cached notes</td></tr>
     <tr><td>Visitors without an account</td><td>Not applicable</td><td>Read-only public pages and private share links</td></tr>
@@ -122,8 +122,8 @@
 </table>
 
 <div class="slate-callout slate-callout--info" role="note">
-  <p class="slate-callout__title">Why device sign-in only works on the desktop</p>
-  <p>GitHub's device-flow endpoints don't send cross-origin (CORS) headers, and the standard OAuth code exchange needs a client secret. Neither can run from a static GitHub Pages page without a server in between. The desktop app calls GitHub directly, so device flow works there with only the public client ID. Browser editing in M6 starts with a scoped personal access token. A small token-exchange function could add one-click browser sign-in later.</p>
+  <p class="slate-callout__title">No OAuth app, no server</p>
+  <p>An OAuth app would need the project to register it, and browser sign-in would also need a token-exchange server. Both are ruled out (D-21). So the desktop app asks Git, and Git uses whatever sign-in helper the user has installed (Git Credential Manager and the GitHub CLI both offer device codes). In the browser, the user pastes a fine-grained token created from a pre-filled GitHub link. Every credential belongs to the user and lives on their computer.</p>
 </div>
 
 <h2>Tech stack</h2>
@@ -141,6 +141,7 @@
     <tr><td>Local cache (web)</td><td>IndexedDB</td><td>Not applicable</td><td>Proposed</td></tr>
     <tr><td>CI/CD</td><td>GitHub Actions to GitHub Pages and GitHub Releases, with a license check</td><td>Not applicable</td><td>Required by the seed spec</td></tr>
     <tr><td>App license</td><td>MIT</td><td>MIT</td><td><strong>Decided</strong> (D-20)</td></tr>
+    <tr><td>Hosting</td><td>None run by the project. Each user's GitHub account (repositories, Actions, Pages). Releases on GitHub.</td><td>Not applicable</td><td><strong>Decided</strong> (D-21, D-38)</td></tr>
   </tbody>
 </table>
 

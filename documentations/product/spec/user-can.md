@@ -3,7 +3,7 @@
 Every capability Focus Notes provides, written as what a person can do. Each one names the scenarios it serves, where it lives, the requirements that build it, and how we check it.
 
 > [!NOTE]
-> **TL;DR.** 68 user-can capabilities: 50 are P0 (the first release), 17 are P1, and 1 comes later. Every row traces up to at least one [scenario](scenarios.md) and down to the [views and components](../../design/information-architecture.html) that deliver it and the [requirements](../requirements.md) that make it testable. The column order (ID, user can, scenarios, priority, views, requirements, acceptance) follows the Slate spec convention. The acceptance column is the observable check: what a person sees, not how it's built.
+> **TL;DR.** 69 user-can capabilities: 51 are P0 (the first release), 17 are P1, and 1 comes later. Every row traces up to at least one [scenario](scenarios.md) and down to the [views and components](../../design/information-architecture.html) that deliver it and the [requirements](../requirements.md) that make it testable. The column order (ID, user can, scenarios, priority, views, requirements, acceptance) follows the Slate spec convention. The acceptance column is the observable check: what a person sees, not how it's built.
 
 <h2 data-reader-personas="product design">Canvas and focus</h2>
 
@@ -11,7 +11,7 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 | --- | --- | --- | --- | --- | --- | --- |
 | UC-CANVAS-01 | open the app straight into writing, with the caret in the last note or a new one | SC-WRITE-01 | P0 | IA-VIEW-CANVAS | UI-01, PKG-03 | From launch, typing lands in a note with no click, and nothing but text and the trigger is visible. |
 | UC-CANVAS-02 | reach every app action from the trigger without any persistent chrome | SC-WRITE-01 | P0 | IA-CMP-TRIGGER, IA-CMP-TOOLBAR, IA-CMP-OVERFLOW | UI-02, UI-03, UI-04, UI-05, UI-07, UI-06 | At most six toolbar actions plus ⋯. Every action can be reached by keyboard, pointer, and touch. |
-| UC-CANVAS-03 | move, resize, maximize, and full-screen a borderless desktop window just like any native window | SC-WRITE-01 | P0 | IA-CMP-TITLEBAR | DSK-01, DSK-02, DSK-03, DSK-04, DSK-05 | Resizing from every edge and corner, double-click maximize, and full screen all work. Corners are 20 px, or square when maximized. |
+| UC-CANVAS-03 | move, resize, maximize, snap, and full-screen the desktop window just like any native window | SC-WRITE-01 | P0 | IA-CMP-TITLEBAR | DSK-01, DSK-02, DSK-03, DSK-04, DSK-05, DSK-08 | macOS: every native window behavior works. Windows and Linux: resizing from every edge and corner, edge snapping, the Snap Layouts picker, double-click maximize, and full screen all work. Corners are 20 px, or square when maximized or snapped. |
 | UC-CANVAS-04 | open notes in separate windows side by side | SC-FILE-02 | P1 | IA-VIEW-CANVAS | DSK-06 | <kbd>Mod</kbd>+<kbd>Enter</kbd> in Spotlight opens a note in a new window. Each window remembers its note. |
 | UC-CANVAS-05 | choose which six actions sit on the toolbar | SC-FIND-05 | P1 | IA-CMP-TOOLBAR, IA-CMP-OVERFLOW | UI-08 | Unpinned actions appear in ⋯ automatically, and the toolbar never shows more than six. |
 | UC-FOCUS-01 | turn focus mode on or off from the toolbar, a shortcut, or Spotlight | SC-WRITE-02 | P0 | IA-VIEW-CANVAS, IA-CMP-TOOLBAR | FOC-03 | All three ways toggle it, and the setting survives a restart. |
@@ -80,7 +80,7 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 | UC-FIND-03 | run any command or change any setting by name, and act on any result | SC-FIND-02 | P0 | IA-VIEW-SPOTLIGHT | SPT-03, SPT-04, SPT-05, KEY-01 | Every command is listed with its shortcut. Toggles show their current state. |
 | UC-FIND-04 | find and replace in the open note | SC-FIND-03 | P0 | IA-CMP-FINDBAR | FND-01, FND-02, FND-03 | Replace-all is one undo step and keeps formatting. |
 | UC-FIND-05 | replace across notes with a preview and a one-step revert | SC-FIND-03 | P1 | IA-VIEW-SPOTLIGHT | FND-05 | One commit per repository. *Revert* restores every file exactly. |
-| UC-KEY-01 | look up any shortcut in a searchable cheat sheet | SC-FIND-02 | P0 | IA-VIEW-SHORTCUTS | KEY-05 | <kbd>Mod</kbd>+<kbd>/</kbd> opens it, typing filters it, and it shows the right symbols for the platform. |
+| UC-KEY-01 | look up any shortcut in a searchable cheat sheet | SC-FIND-02 | P0 | IA-VIEW-SHORTCUTS | KEY-05 | <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> opens it, typing filters it, and it shows the right symbols for the platform. |
 | UC-KEY-02 | use platform-correct shortcuts for every common action | SC-FIND-04 | P0 | All views | KEY-02, KEY-03, KEY-06 | The Basic, Writer, and Power layers work as listed on [Keyboard shortcuts](../../experience/keyboard-shortcuts.md). |
 | UC-KEY-03 | change any key binding | SC-FIND-04 | P1 | IA-VIEW-SETTINGS | KEY-04, KEY-07 | A conflicting binding warns before saving. *Reset* restores the defaults. |
 
@@ -103,10 +103,11 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 
 | ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
 | --- | --- | --- | --- | --- | --- | --- |
-| UC-SETUP-01 | sign in with a device code and have Git signed in too | SC-SETUP-01 | P0 | IA-VIEW-FRE | FRE-02, FRE-03 | After sign-in, `git push` from a terminal in the workspace works without a prompt. |
+| UC-SETUP-01 | sign in once through Git's own sign-in helper (device code or browser) or a token they create, and have Git signed in too | SC-SETUP-01 | P0 | IA-VIEW-FRE | FRE-02, FRE-03 | After sign-in, `git push` from a terminal in the workspace works without a prompt. |
 | UC-SETUP-02 | get from install to writing in seven screens or fewer | SC-SETUP-01 | P0 | IA-VIEW-FRE | FRE-01, FRE-05 | Measured on a clean computer with Git installed. |
 | UC-SETUP-03 | reuse existing Git credentials and an existing clone on another computer | SC-SETUP-02 | P0 | IA-VIEW-FRE | FRE-04, FRE-06, FRE-07 | No device code is shown when working credentials already exist. |
 | UC-SETUP-04 | write and edit notes in a browser, signed in with a scoped token | SC-SETUP-03 | P1 | IA-VIEW-FRE, IA-VIEW-CANVAS | PKG-05 | The same editor and views work in the browser. Saves commit through the GitHub API. |
+| UC-SETUP-05 | create their own isolated workspace (notes repository, private repository, publishing, and share-link keys) in their own GitHub account, with nothing hosted by anyone else | SC-SETUP-04 | P0 | IA-VIEW-FRE | FRE-08, PKG-01, PKG-06 | Everything created is in the user's account, and the app made no network request except to GitHub. |
 | UC-SAFE-01 | stop thinking about saving: changes are saved within a second and synced on their own | SC-SAFE-01 | P0 | IA-CMP-SAVESTATE | EDT-11 | Quitting straight after typing loses nothing, and the commit is pushed before the app exits. |
 | UC-SAFE-02 | resolve a conflicting edit by keeping theirs, mine, or both | SC-SAFE-02 | P0 | IA-CMP-CONFLICT | FIL-12 | Both versions are shown side by side. No choice ever discards text without confirmation. |
 | UC-SAFE-03 | keep writing offline and see clearly when changes are waiting | SC-SAFE-03 | P0 | IA-CMP-SAVESTATE | EDT-11 | The trigger shows the waiting state. Changes push in order after reconnecting. |

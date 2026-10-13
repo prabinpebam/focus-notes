@@ -20,7 +20,7 @@ Every color and font the writer sees comes from a theme. A theme is a small JSON
 | **Code** | `code.background`, `code.text`, `code.syntax.*` | Code blocks and inline code |
 | **Typography** | `font.content`, `font.ui`, `font.mono`, `font.size`, `font.lineHeight` | Note text, UI text, code |
 | **Layout** | `layout.measure` (default 70ch), `layout.blockGap` | Reading column width, spacing between blocks |
-| **Window** (desktop) | `window.radius` (default 20 px), `window.titleBarHeight` (44 px), `window.shadow` | [Desktop app](desktop-app.html) |
+| **Window** (desktop) | `window.radius` (default 20 px, Windows and Linux), `window.titleBarHeight` (44 px), `window.shadow` | [Desktop app](desktop-app.html) |
 
 Component code never uses raw color or font values, only token names (THM-01). The app turns tokens into CSS custom properties (for example `color.textMuted` → `--fn-color-text-muted`) on the root element, so switching themes is just swapping a set of variables. No reload is needed.
 

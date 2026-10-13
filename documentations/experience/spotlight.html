@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p><kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> opens a centered, frosted panel modeled on macOS Spotlight and Raycast. It searches <strong>notes</strong> (titles, paths, headings, full text), <strong>folders</strong>, <strong>commands</strong>, and <strong>settings</strong> in one ranked list. <kbd>Enter</kbd> runs the default action; <kbd>→</kbd> or <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> opens <strong>quick actions</strong> for the selected result (open in a new window, copy link, move, rename, make public, delete…). Prefixes (<code>&gt;</code> commands, <code>#</code> headings) and filters (<code>is:private</code>, <code>in:essays/</code>) narrow the search. Quick open, the command palette, go-to-heading, and find-in-notes are all this same panel, opened in a different mode. Covers SPT-01 to SPT-08 in the <a href="../product/requirements.md">requirements</a>.</p>
+  <p><kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> opens a centered, frosted panel modeled on macOS Spotlight and Raycast. It searches <strong>notes</strong> (titles, paths, headings, full text), <strong>folders</strong>, <strong>commands</strong>, and <strong>settings</strong> in one ranked list. <kbd>Enter</kbd> runs the default action; <kbd>→</kbd> or <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> opens <strong>quick actions</strong> for the selected result (open in a new window, copy link, move, rename, make public, delete…). Prefixes (<code>&gt;</code> commands, <code>#</code> headings) and filters (<code>is:private</code>, <code>in:essays/</code>) narrow the search. Quick open, the command palette, go-to-heading, and find-in-notes are all this same panel, opened in a different mode. Covers SPT-01 to SPT-08 in the <a href="../product/requirements.md">requirements</a>.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -75,7 +75,7 @@
 <table>
   <thead><tr><th>Way in</th><th>Opens in mode</th><th>Precedent</th></tr></thead>
   <tbody>
-    <tr><td><kbd>Mod</kbd>+<kbd>K</kbd> (with no text selected in the editor)</td><td>All</td><td>GitHub, Linear, Slack</td></tr>
+    <tr><td><kbd>Mod</kbd>+<kbd>/</kbd></td><td>All</td><td>Owner decision (D-16)</td></tr>
     <tr><td><kbd>Mod</kbd>+<kbd>P</kbd></td><td>Notes (quick open)</td><td>VS Code</td></tr>
     <tr><td><kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, or typing <code>&gt;</code></td><td>Commands</td><td>VS Code</td></tr>
     <tr><td><kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>, or typing <code>#</code></td><td>Headings in this note</td><td>VS Code (go to symbol)</td></tr>
@@ -83,7 +83,7 @@
     <tr><td><strong>Search</strong> in the <a href="main-ui.html#the-minimal-toolbar">trigger toolbar</a></td><td>All</td><td>Pointer and touch users</td></tr>
   </tbody>
 </table>
-<p>With text selected in the editor, <kbd>Mod</kbd>+<kbd>K</kbd> adds a link instead, which is what every major editor does (<a href="../plan/decisions.md">D-16</a>). <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> always opens Spotlight. Pressing a mode's shortcut again while Spotlight is open switches mode and keeps the query.</p>
+<p><kbd>Mod</kbd>+<kbd>K</kbd> doesn't open Spotlight: in the editor it's the link key, as in every major editor. Inside an open Spotlight it shows the selected result's actions, as in Raycast. On keyboard layouts where <kbd>/</kbd> needs <kbd>Shift</kbd>, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> always opens Spotlight. Pressing a mode's shortcut again while Spotlight is open switches mode and keeps the query.</p>
 
 <h2>Anatomy</h2>
 <dl class="slate-defs">
@@ -163,7 +163,7 @@
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Top hit</p>
-    <p>The single best result across all groups is shown first and selected, so <kbd>Mod</kbd>+<kbd>K</kbd>, a few letters, and <kbd>Enter</kbd> is enough most of the time.</p>
+    <p>The single best result across all groups is shown first and selected, so <kbd>Mod</kbd>+<kbd>/</kbd>, a few letters, and <kbd>Enter</kbd> is enough most of the time.</p>
   </li>
 </ol>
 
@@ -209,7 +209,7 @@
 
 <h2>Acceptance checks</h2>
 <ul>
-  <li><strong>SPT-01:</strong> <kbd>Mod</kbd>+<kbd>K</kbd> opens Spotlight from the editor, the Files panel, and Settings. With text selected in the editor it opens the link editor instead.</li>
+  <li><strong>SPT-01:</strong> <kbd>Mod</kbd>+<kbd>/</kbd> opens Spotlight from the editor, the Files panel, and Settings. <kbd>Mod</kbd>+<kbd>K</kbd> never does: it always opens the link editor.</li>
   <li><strong>SPT-02, SPT-04:</strong> "foc" returns a command, notes, a full-text snippet, and create/find actions, as in the figure, and the command row shows its live state.</li>
   <li><strong>SPT-03:</strong> <kbd>→</kbd> on a note lists the actions in the table above. <em>Make public</em> asks for confirmation and then moves the note.</li>
   <li><strong>SPT-07:</strong> The performance budgets hold on the 5,000-note test workspace.</li>

@@ -51,7 +51,7 @@ Tiptap's core and its open-source extensions are MIT. In 2025 Tiptap moved ten f
 | `remark`, `remark-gfm`, `remark-directive` (unified) | Alternative Markdown bridge and plain-text extraction | MIT |
 | `prosemirror-search` | Find and replace (FND-01, FND-02) | MIT |
 
-The full allow-list and deny-list are in [Decisions → Licensing policy](../plan/decisions.md#licensing-policy-d-20-details-proposed).
+The full allow-list and deny-list are in [Decisions → Licensing policy](../plan/decisions.md#licensing-policy-d-20-details).
 
 ## Design
 
