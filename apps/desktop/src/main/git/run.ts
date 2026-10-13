@@ -15,6 +15,8 @@ export interface GitCall {
   timeoutMs?: number;
   /** A read-only command: runs with GIT_OPTIONAL_LOCKS=0, so it never rewrites the index. */
   read?: boolean;
+  /** Variables set for this call only, after the scrubbing: a temporary index while resolving (FIL-12). */
+  env?: Record<string, string>;
 }
 export interface GitResult {
   /** The exit code; -1 when Git couldn't start or was stopped by its timeout. */
@@ -40,7 +42,7 @@ export function createRunner(options: { git?: string; env?: NodeJS.ProcessEnv; o
   const git = options.git ?? "git";
   return (call) => new Promise((resolve) => {
     const args = ["-C", call.cwd, ...call.args];
-    const env = gitEnv(options.env ?? process.env, call.read === true);
+    const env = { ...gitEnv(options.env ?? process.env, call.read === true), ...call.env };
     options.onSpawn?.(args, env);
     const child = execFile(git, args, { env, timeout: call.timeoutMs ?? DEFAULT_TIMEOUT_MS, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
       if (!error) return resolve({ code: 0, stdout, stderr });

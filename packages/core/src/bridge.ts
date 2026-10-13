@@ -1,5 +1,6 @@
 import type { Platform } from "./commands.ts";
 import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
+import type { ConflictChoiceKind, DeletedNote } from "./history.ts";
 
 /**
  * Services a shell provides. The Electron preload implements this as `window.focusNotes`;
@@ -85,6 +86,31 @@ export interface SyncBridge {
   /** The latest report, from the cached Git status (PRF-07): never waits for a commit. */
   status(): Promise<SyncReport>;
   onStatus(listener: (report: SyncReport) => void): () => void;
+  /** Notes changed both here and elsewhere, with both versions (FIL-12). Empty when nothing conflicts. */
+  conflicts?(): Promise<NoteConflict[]>;
+  /**
+   * Settles conflicts as chosen, then syncs (FIL-12, DD-FB-04). A note without a choice stays in
+   * conflict, and so does its repository: its commits wait until it's settled.
+   */
+  resolve?(choices: ConflictChoice[]): Promise<SyncReport>;
+}
+
+/** A note changed both on this computer and elsewhere since they last synced (FIL-12). */
+export interface NoteConflict {
+  /** The note's path, in the shell's own spelling. */
+  path: string;
+  /** This computer's version, or undefined where it was deleted here. */
+  mine?: string;
+  /** The other version, or undefined where it was deleted there. */
+  theirs?: string;
+  /** When the other version was made, in ms. */
+  theirsAt?: number;
+}
+/** How to settle one conflicting note. `copyTitle` names the copy of this computer's version, when one is kept. */
+export interface ConflictChoice {
+  path: string;
+  choice: ConflictChoiceKind;
+  copyTitle?: string;
 }
 
 /**
@@ -116,6 +142,14 @@ export interface WorkspaceBridge {
   chooseBundle?(): Promise<{ id: string; name: string; notes: number } | undefined>;
   /** Adds the chosen bundle's notes to a root as one batch and one commit, replacing nothing (FRE-10). */
   importBundle?(id: string, to: "private" | "public"): Promise<{ added: number; renamed: number }>;
+  /** Notes deleted in the last 30 days, found from Git history (FIL-10). Absent without Git. */
+  deleted?(): Promise<DeletedNote[]>;
+  /**
+   * Puts deleted notes back as one batch and one commit (FIL-10): where they were (or in their
+   * root if that folder is gone), or in `folder` of the same root; a taken name is numbered.
+   * Resolves to where each went. Rejects like `apply`.
+   */
+  restore?(ids: string[], folder?: string): Promise<{ path: string; title: string }[]>;
   /** Changes made outside the app, in batches (the desktop's file watcher). */
   onChange?(listener: (changes: WorkspaceChange[]) => void): () => void;
 }

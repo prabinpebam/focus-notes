@@ -13,8 +13,10 @@ import { readWorkspaceFormat } from "@focus-notes/core/workspace-format";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
 import { BUNDLE_MAX_BYTES, parseBundle, planImport, safeWorkspacePath, type Bundle } from "@focus-notes/core/notes";
 import { parseSettings } from "@focus-notes/core/settings";
+import { restorePlace, titleOrName } from "@focus-notes/core/history";
 import { GitSync, NO_GIT } from "./git/sync.ts";
 import type { BatchOp } from "./git/message.ts";
+import type { ConflictChoice } from "@focus-notes/core";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 const customWindow = process.argv.includes("--custom-window") && platform !== "macos";
@@ -289,6 +291,64 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
   return ops.map((op): BatchOp => (op.op === "move" ? { op: "move", from: op.path, to: op.to } : { op: op.op, path: op.path }));
 }
 
+// ---- Recently deleted and conflicts (FIL-10, FIL-12) ----
+
+/** A folder deleted notes may be restored into: a root, or a folder in one, that's there. */
+async function restoreFolder(p: unknown): Promise<string> {
+  if (typeof p !== "string" || !p || !isAbsolute(p) || resolve(p) !== p) throw refuse("invalid");
+  const root = roots().find((r) => inside(r.path, p));
+  if (!root || relative(root.path, p).split(sep).some((part) => part.startsWith(".")) || !(await isDir(p))) throw refuse("notFound");
+  return p;
+}
+/**
+ * Puts deleted notes back from Git history (FIL-10), all or nothing and never over a file (`wx`):
+ * where each was, in its root when its folder is gone, or in the chosen folder of the same root
+ * (Restore to… doesn't change who can see a note). One commit, like any batch.
+ */
+async function restoreNotes(rawIds: unknown, rawFolder: unknown): Promise<{ path: string; title: string }[]> {
+  const g = await gitOpening;
+  if (!g || !isWorkspace()) throw refuse("notFound");
+  if (!Array.isArray(rawIds) || !rawIds.length || rawIds.length > 1000 || rawIds.some((i) => typeof i !== "string")) throw refuse("invalid");
+  const folder = rawFolder === undefined || rawFolder === null ? undefined : await restoreFolder(rawFolder);
+  const planned: { path: string; text: string; title: string }[] = [];
+  const names = new Map<string, string[]>();
+  for (const id of rawIds as string[]) {
+    const d = await g.readDeleted(id);
+    if (!d) throw refuse("notFound");
+    const root = roots().find((r) => r.id === d.root);
+    if (!root || !inside(root.path, d.path) || d.path === root.path || (folder && !inside(root.path, folder))) throw refuse("invalid");
+    await assertWritable(d.path).catch(() => { throw refuse("readOnly"); });
+    const dir = folder ?? ((await isDir(dirname(d.path))) ? dirname(d.path) : root.path);
+    const taken = names.get(dir) ?? (await readdir(dir).catch(() => [] as string[]));
+    names.set(dir, taken);
+    const path = restorePlace({ original: d.path, root: root.path, folder: dir, folderExists: true, taken });
+    taken.push(basename(path));
+    planned.push({ path, text: d.text, title: titleOrName(d.text, path) });
+  }
+  const written: string[] = [];
+  try {
+    for (const p of planned) {
+      await writeFile(p.path, p.text, { encoding: "utf8", flag: "wx" });
+      written.push(p.path);
+    }
+  } catch (error) {
+    for (const w of written.reverse()) await rm(w, { force: true }).catch(() => {});
+    throw refuse((error as NodeJS.ErrnoException).code === "EEXIST" ? "taken" : "failed");
+  }
+  await g.commitBatch(planned.map((p) => ({ op: "restore", path: p.path })));
+  return planned.map(({ path, title }) => ({ path, title }));
+}
+/** The resolver's choices, checked: notes in the workspace, one of three outcomes, a short copy title. */
+function conflictChoices(raw: unknown): ConflictChoice[] {
+  if (!Array.isArray(raw) || raw.length > 1000) throw new Error("invalid");
+  return raw.map((c: unknown) => {
+    const o = c as Record<string, unknown>;
+    if (typeof o?.path !== "string" || !isAbsolute(o.path) || !inside(notesHome(), o.path) || !["mine", "theirs", "both"].includes(String(o.choice))) throw new Error("invalid");
+    if (o.copyTitle !== undefined && (typeof o.copyTitle !== "string" || o.copyTitle.length > 300)) throw new Error("invalid");
+    return { path: resolve(o.path), choice: o.choice as ConflictChoice["choice"], ...(typeof o.copyTitle === "string" ? { copyTitle: o.copyTitle } : {}) };
+  });
+}
+
 // ---- importing browser notes (FRE-10, D-90) ----
 // Only this process reads the bundle: the renderer gets a handle and a count, never the file.
 let chosenBundle: { id: string; bundle: Bundle } | undefined;
@@ -481,6 +541,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const g = await gitOpening;
     return g ? g.status() : NO_GIT;
   });
+  handle("sync:conflicts", async () => (await gitOpening)?.conflicts() ?? []);
+  handle("sync:resolve", async (choices) => {
+    const checked = conflictChoices(choices);
+    const g = await gitOpening;
+    return g ? g.resolve(checked) : NO_GIT;
+  });
+  handle("history:deleted", async () => (isWorkspace() ? (await gitOpening)?.deleted() ?? [] : []));
+  handle("history:restore", (ids, folder) => restoreNotes(ids, folder));
   handle("window:fullScreen", async () => {
     const w = win();
     if (w) w.setFullScreen(!w.isFullScreen());

@@ -38,6 +38,9 @@ contextBridge.exposeInMainWorld("focusNotes", {
     // Import notes (FRE-10): the main process shows the open dialog and reads the bundle itself.
     chooseBundle: () => ipcRenderer.invoke("bundle:choose"),
     importBundle: (id: string, to: "private" | "public") => ipcRenderer.invoke("bundle:import", id, to),
+    // Recently deleted (FIL-10): found from Git history, put back by the main process.
+    deleted: () => ipcRenderer.invoke("history:deleted"),
+    restore: (ids: string[], folder?: string) => ipcRenderer.invoke("history:restore", ids, folder),
     onChange: (listener: (changes: unknown[]) => void) => {
       const handler = (_e: unknown, changes: unknown[]) => listener(changes);
       ipcRenderer.on("workspace:changed", handler);
@@ -54,6 +57,9 @@ contextBridge.exposeInMainWorld("focusNotes", {
   sync: {
     now: (reason: "save" | "switch") => ipcRenderer.invoke("sync:now", reason),
     status: () => ipcRenderer.invoke("sync:status"),
+    // The conflict resolver (FIL-12): both versions, and the choices; the main process checks them.
+    conflicts: () => ipcRenderer.invoke("sync:conflicts"),
+    resolve: (choices: unknown[]) => ipcRenderer.invoke("sync:resolve", choices),
     onStatus: (listener: (report: unknown) => void) => {
       const handler = (_e: unknown, report: unknown) => listener(report);
       ipcRenderer.on("sync:status", handler);
