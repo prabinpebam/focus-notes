@@ -10,6 +10,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { sourceOf } from "./notes.ts";
+import { planLinkWrites, rewriteLinks, type LinkWrite, type PathMove } from "./links.ts";
 import {
   actedOn, ancestorsOf, destinations, isRootRow, keepShowing, NO_SELECTION, rebase, rootRowId, select, selectAll, targetFolder, titleOfNode,
   topLevel, visibleRows, type FileRow, type Selection,
@@ -165,6 +166,24 @@ export function registerFiles(ctx: Ctx) {
     run: () => activate(files().selection.focus),
   });
 
+  // ---- links that follow renames and moves (FIL-09, D-95) ----
+  /** A note's text for link updates. The open note's is the editor's: by now, what's saved. */
+  const readForLinks = (own?: { path: string; text: string }) => (p: string): Promise<string> =>
+    own && p === own.path ? Promise.resolve(own.text) : p === store.state.note.path ? Promise.resolve(store.state.note.markdown) : bridge.readNote(p);
+  const writeOps = (writes: readonly LinkWrite[]): WorkspaceOp[] => writes.map((w) => ({ op: "write", path: w.path, text: w.text }));
+  /** After the batch, the open note shows its new links, keeping anything typed while it was written. */
+  const followLinks = (writes: readonly LinkWrite[], moves: readonly PathMove[]) => {
+    const n = store.state.note;
+    const w = writes.find((x) => x.path === n.path);
+    if (!w) return;
+    const same = n.markdown === w.before;
+    const text = same ? w.text : rewriteLinks(n.markdown, w.from, w.path, moves).text;
+    ctx.setNote({ key: `${w.path}#links-${Date.now()}`, initialMarkdown: text, markdown: text, saveState: same ? "saved" : "unsaved" });
+    ctx.loaded(w.path, text);
+  };
+  /** The toast says how many other notes changed (UC-FILE-07). */
+  const withLinks = (done: string, writes: readonly LinkWrite[]) => (writes.length ? catalog.format("files.linksUpdated", { done, count: writes.length }) : done);
+
   // ---- showing changes at once (PRF-09) ----
   let queue: Promise<unknown> = Promise.resolve();
   const rescan = async () => {
@@ -187,8 +206,10 @@ export function registerFiles(ctx: Ctx) {
         : moves.length ? { selected: moves.map((m) => m.to), anchor: moves[0]!.to, focus: moves[0]!.to } : f.selection,
     }));
     setFiles((f) => ({ selection: keepShowing(f.selection, rowsOf(store.state)) }));
-    const done = (queue = queue.catch(() => {}).then(() => ctx.exclusive(async () => {
-      await ws!.apply!(ops);
+    const done = queue.catch(() => {}).then(() => ctx.exclusive(async (): Promise<LinkWrite[]> => {
+      // Links in other notes, and in the moved notes themselves, change in the same batch (FIL-09).
+      const writes = await planLinkWrites(before, moves, readForLinks());
+      await ws!.apply!([...ops, ...writeOps(writes)]);
       // The open note follows a move; a deleted one is closed after.
       const p = store.state.note.path;
       if (p && moves.length) {
@@ -198,9 +219,12 @@ export function registerFiles(ctx: Ctx) {
           if (sourceOf(to) !== "private") await ctx.persistAppState({ lastNotePath: to });
         }
       }
-    })));
+      followLinks(writes, moves);
+      return writes;
+    }));
+    queue = done;
     try {
-      await done;
+      const writes = await done;
       setFiles((f) => ({ pending: f.pending.filter((x) => !o.touched.includes(x)) }));
       const p = store.state.note.path;
       if (p && o.deletes?.some((d) => p === d || p.startsWith(d + "/") || p.startsWith(d + "\\"))) {
@@ -208,8 +232,8 @@ export function registerFiles(ctx: Ctx) {
         ctx.setNote({ path: undefined, saveState: "saved" });
         await ctx.load(await bridge.defaultNotePath());
       }
-      toast(o.done);
-      announce(o.done);
+      toast(withLinks(o.done, writes));
+      announce(withLinks(o.done, writes));
     } catch (e) {
       // The screen as it is now: anything else that changed meanwhile is read again.
       const untouched = tree() === next;
@@ -403,30 +427,38 @@ export function registerFiles(ctx: Ctx) {
     setFiles((f) => ({ edit: undefined, focusRequest: f.focusRequest + 1 }));
     await renameNote(row.path, value);
   }
-  /** A note's name is its title: the H1 changes, and the file name follows unless published (FIL-07). */
+  /**
+   * A note's name is its title: the H1 changes, and the file name follows unless published (FIL-07).
+   * The new text, the new name, and the links to it are one batch (FIL-09).
+   */
   async function renameNote(path: string, title: string): Promise<void> {
+    let others: LinkWrite[] = [];
     try {
       await ctx.exclusive(async () => {
         const isOpen = store.state.note.path === path;
         const text = isOpen ? store.state.note.markdown : await bridge.readNote(path);
         const next = retitle(text, title);
-        await bridge.writeNote(path, next);
-        const plan = planRename(tree(), path, title);
-        let to = path;
-        if (plan?.kind === "renamed") {
-          await ws!.renameNote(path, plan.to);
-          to = plan.to;
-          setTree(plan.tree);
-        }
+        const before = tree();
+        const plan = planRename(before, path, title);
+        const to = plan?.kind === "renamed" ? plan.to : path;
+        const moves = to === path ? [] : [{ from: path, to }];
+        const writes = await planLinkWrites(before, moves, readForLinks({ path, text: next }));
+        const own = writes.find((w) => w.from === path)?.text ?? next;
+        others = writes.filter((w) => w.from !== path);
+        await ws!.apply!([...moves.map((m) => ({ op: "move" as const, ...m })), { op: "write", path: to, text: own }, ...writeOps(others)]);
+        if (plan?.kind === "renamed") setTree(plan.tree);
         setTree(applyChanges(tree(), [{ path: to, kind: "note", exists: true, title }]));
         setFiles((f) => ({ selection: { selected: [to], anchor: to, focus: to } }));
         if (isOpen) {
-          ctx.setNote({ path: to, key: `${to}#${Date.now()}`, initialMarkdown: next, markdown: next, saveState: "saved" });
-          ctx.loaded(to, next);
+          ctx.setNote({ path: to, key: `${to}#${Date.now()}`, initialMarkdown: own, markdown: own, saveState: "saved" });
+          ctx.loaded(to, own);
           if (sourceOf(to) !== "private") await ctx.persistAppState({ lastNotePath: to });
-        }
+        } else followLinks(others, moves);
       });
-      announce(catalog.format("files.renamed", { what: catalog.format("files.quoted", { name: title }) }));
+      const done = withLinks(catalog.format("files.renamed", { what: catalog.format("files.quoted", { name: title }) }), others);
+      // Other notes changed too: that's said where it's seen.
+      if (others.length) toast(done);
+      announce(done);
     } catch (e) {
       void rescan();
       toast(catalog.format("files.renameFailed", { what: whatOf([path]), reason: reason(opErrorCode(e)) }), { tone: "error" });

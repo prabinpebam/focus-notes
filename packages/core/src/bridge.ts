@@ -75,7 +75,9 @@ export type WorkspaceOp =
   | { op: "createFolder"; path: string }
   | { op: "move"; from: string; to: string }
   /** Desktop: to the system trash until Git keeps deletions (FIL-10). Browser: kept, marked deleted. */
-  | { op: "delete"; path: string };
+  | { op: "delete"; path: string }
+  /** A note's new text, at its path after the batch's moves: links that follow a rename or move (FIL-09, D-95). */
+  | { op: "write"; path: string; text: string };
 
 /** Why a batch was refused. The shell's error message ends with one of these. */
 export const OP_ERROR_CODES = ["notFound", "taken", "readOnly", "invalid", "intoItself", "trash", "failed"] as const;

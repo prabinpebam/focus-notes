@@ -317,6 +317,7 @@
   "files.folderCreated": "Created the folder {what}.",
   "files.createFailed": "Couldn't create {what}: {reason}.",
   "files.renamed": "Renamed to {what}.",
+  "files.linksUpdated": "{done} Updated links in {count, plural, one {# note} other {# notes}}.",
   "files.renameFailed": "Couldn't rename {what}: {reason}.",
   "files.visibilityLater": "Changes who can see it · arrives with sync",
   "files.reason.notFound": "it's no longer there",

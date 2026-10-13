@@ -279,3 +279,104 @@ describe("changes show before they're saved (PRF-09)", () => {
     expect(app.store.state.ui.toasts[0]!.tone).toBe("error");
   });
 });
+
+describe("links follow renames and moves (FIL-09)", () => {
+  const text = (f: ReturnType<typeof setup>, p: string) => f.notes.get(p)?.text;
+  it("a move rewrites links in other notes and in the moved note, in the same batch, and says how many", async () => {
+    const f = setup({ notes: { "a.md": "# A\n\nSee [B](b.md#part).\n", "b.md": "# B\n\nBack to [A](a.md).\n", "c.md": "# C\n\n`[b](b.md)`\n" }, folders: ["Box"] });
+    const read: string[] = [];
+    const readNote = f.bridge.readNote;
+    f.bridge.readNote = (p) => { read.push(p); return readNote(p); };
+    const app = await started(f);
+    await app.commands.run("files.open");
+    await app.commands.run("files.drop", { source: "b.md", target: "Box" });
+    await app.idle();
+    await settle();
+    expect(f.batches).toEqual([[
+      { op: "move", from: "b.md", to: "Box/b.md" },
+      { op: "write", path: "a.md", text: "# A\n\nSee [B](Box/b.md#part).\n" },
+      { op: "write", path: "Box/b.md", text: "# B\n\nBack to [A](../a.md).\n" },
+    ]]);
+    expect(text(f, "Box/b.md")).toBe("# B\n\nBack to [A](../a.md).\n");
+    expect(text(f, "c.md")).toBe("# C\n\n`[b](b.md)`\n");
+    expect(toasts(app)).toContain("Moved “B” to “Box”. Updated links in 2 notes.");
+    // The instance's read-only notes are never read, let alone rewritten (D-90).
+    expect(read.some((p) => p.startsWith("public:"))).toBe(false);
+  });
+  it("renaming a folder rewrites links into it; links between notes inside it stay as they are", async () => {
+    const f = setup({ notes: { "a.md": "[x](Box/x.md) [y](./Box/sub/y.md)\n", "Box/x.md": "# X\n\n[y](sub/y.md)\n", "Box/sub/y.md": "# Y\n" }, folders: ["Box", "Box/sub"] });
+    const app = await started(f);
+    await app.commands.run("files.open");
+    await app.commands.run("files.select", { id: "Box", mode: "replace" });
+    await app.commands.run("files.rename");
+    await app.commands.run("files.setEditValue", { value: "Crate" });
+    await app.commands.run("files.commitEdit");
+    await app.idle();
+    await settle();
+    expect(f.batches).toEqual([[{ op: "move", from: "Box", to: "Crate" }, { op: "write", path: "a.md", text: "[x](Crate/x.md) [y](./Crate/sub/y.md)\n" }]]);
+    expect(text(f, "Crate/x.md")).toBe("# X\n\n[y](sub/y.md)\n");
+  });
+  it("renaming a note by its title renames the file and rewrites links to it, all in one batch", async () => {
+    const f = setup({ notes: { "idea.md": "# Idea\n\nBody\n", "other.md": "# Other\n\n[i](idea.md) [j](<idea.md>)\n" } });
+    const app = await started(f);
+    await app.commands.run("files.open");
+    await app.commands.run("files.select", { id: "idea.md", mode: "replace" });
+    await app.commands.run("files.rename");
+    await app.commands.run("files.setEditValue", { value: "Better idea" });
+    await app.commands.run("files.commitEdit");
+    expect(f.batches).toEqual([[
+      { op: "move", from: "idea.md", to: "better-idea.md" },
+      { op: "write", path: "better-idea.md", text: "# Better idea\n\nBody\n" },
+      { op: "write", path: "other.md", text: "# Other\n\n[i](better-idea.md) [j](<better-idea.md>)\n" },
+    ]]);
+    expect(text(f, "other.md")).toBe("# Other\n\n[i](better-idea.md) [j](<better-idea.md>)\n");
+    expect(toasts(app)).toContain("Renamed to “Better idea”. Updated links in 1 note.");
+  });
+  it("a file name that follows the title as it's typed (FIL-07) rewrites links to it in the same batch", async () => {
+    const f = setup({ notes: { "idea.md": "# Idea\n", "other.md": "[i](idea.md)\n" }, open: "idea.md" });
+    const app = await started(f);
+    await app.commands.run("note.setContent", { value: "# Plan\n" });
+    await app.commands.run("note.save");
+    await settle();
+    expect(app.store.state.note.path).toBe("plan.md");
+    expect(f.batches).toEqual([[{ op: "move", from: "idea.md", to: "plan.md" }, { op: "write", path: "other.md", text: "[i](plan.md)\n" }]]);
+    expect(text(f, "plan.md")).toBe("# Plan\n");
+  });
+  it("the open note's links update in the editor, keeping what was typed before the move", async () => {
+    const f = setup({ notes: { "a.md": "# A\n\n[b](b.md)\n", "b.md": "# B\n" }, folders: ["Box"], open: "a.md" });
+    const app = await started(f);
+    await app.commands.run("note.setContent", { value: "# A\n\n[b](b.md)\n\nTyped just now.\n" });
+    await app.commands.run("files.open");
+    await app.commands.run("files.drop", { source: "b.md", target: "Box" });
+    await app.idle();
+    await settle();
+    const after = "# A\n\n[b](Box/b.md)\n\nTyped just now.\n";
+    expect(text(f, "a.md")).toBe(after);
+    expect(app.store.state.note).toMatchObject({ path: "a.md", initialMarkdown: after, markdown: after, saveState: "saved" });
+  });
+  it("a refused batch writes no links, and the editor and the tree stay as they were", async () => {
+    const f = setup({ notes: { "a.md": "# A\n\n[b](b.md)\n", "b.md": "# B\n" }, folders: ["Box"], open: "a.md" });
+    const app = await started(f);
+    const key = app.store.state.note.key;
+    await app.commands.run("files.open");
+    const before = app.store.state.workspace.tree;
+    const gate = f.hold();
+    void app.commands.run("files.drop", { source: "b.md", target: "Box" });
+    await settle(); await settle();
+    gate.release(new Error("taken"));
+    await settle(); await settle();
+    expect(f.batches[0]!.map((o) => o.op)).toEqual(["move", "write"]);
+    expect(text(f, "a.md")).toBe("# A\n\n[b](b.md)\n");
+    expect(f.notes.has("b.md")).toBe(true);
+    expect(app.store.state.note).toMatchObject({ key, markdown: "# A\n\n[b](b.md)\n" });
+    expect(app.store.state.workspace.tree).toBe(before);
+  });
+  it("the flat store applies a batch's writes after its moves, and refuses the whole batch if one can't be written", () => {
+    const notes: FlatNote[] = [{ path: "a.md", text: "old", updated: 0 }, { path: "b.md", text: "b", updated: 0 }];
+    const plan = planFlatOps(notes, [], [{ op: "move", from: "b.md", to: "c.md" }, { op: "write", path: "c.md", text: "new c" }, { op: "write", path: "a.md", text: "new a" }], 5);
+    expect(plan.put).toEqual([{ path: "c.md", text: "new c", updated: 5 }, { path: "a.md", text: "new a", updated: 5 }]);
+    expect(plan.remove).toEqual(["b.md"]);
+    expect(() => planFlatOps(notes, [], [{ op: "move", from: "b.md", to: "c.md" }, { op: "write", path: "b.md", text: "x" }], 5)).toThrow("notFound");
+    expect(() => planFlatOps(notes, [], [{ op: "write", path: "public:About.md", text: "x" }], 5)).toThrow("readOnly");
+  });
+});

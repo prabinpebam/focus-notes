@@ -154,12 +154,15 @@ const writesDone = (p: string) => Promise.allSettled([...writeQueues].filter(([k
 /**
  * A batch from the Files panel, all or nothing (Desktop and Git → Changes shown before they're
  * saved): every operation is checked, folders are created and items moved in order, and if any step
- * fails the earlier ones are undone. Deletes go last, to the system trash, until Git keeps them (FIL-10).
+ * fails the earlier ones are undone. A write replaces a moved or linking note's text (links that
+ * follow the move, FIL-09), and is undone by writing the old text back. Deletes go last, to the
+ * system trash, until Git keeps them (FIL-10).
  * A move between roots changes visibility, which arrives with Git (WP-3.4), so it's refused here.
  */
 async function applyOps(raw: unknown): Promise<void> {
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > 5000) throw refuse("invalid");
-  type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string };
+  type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string }
+    | { op: "write"; path: string; text: string; root: string };
   const ops = raw.map((op: unknown): Op => {
     const o = op as Record<string, unknown>;
     if (o?.op === "createFolder" || o?.op === "delete") return { op: o.op, ...opPath(o.path) };
@@ -168,6 +171,11 @@ async function applyOps(raw: unknown): Promise<void> {
       const to = opPath(o.to);
       if (from.root !== to.root) throw refuse("invalid");
       return { op: "move" as const, path: from.path, to: to.path, root: from.root };
+    }
+    if (o?.op === "write") {
+      const at = opPath(o.path);
+      if (typeof o.text !== "string" || !isMarkdown(at.path)) throw refuse("invalid");
+      return { op: "write" as const, ...at, text: o.text };
     }
     throw refuse("invalid");
   });
@@ -200,6 +208,12 @@ async function applyOps(raw: unknown): Promise<void> {
           await renameRetrying(tmp, to);
         } else await renameRetrying(from, to);
         undo.push(() => renameRetrying(to, from));
+      } else if (op.op === "write") {
+        // Only a note that's there (after the batch's moves) is written: never a new file.
+        const old = (await isDir(op.path)) ? undefined : await readFile(op.path, "utf8").catch(() => undefined);
+        if (old === undefined) throw refuse("notFound");
+        await atomicWrite(op.path, op.text);
+        undo.push(() => atomicWrite(op.path, old));
       }
     }
     for (const op of ops) {

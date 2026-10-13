@@ -2,6 +2,7 @@
  * File operations on a flat store of notes keyed by path, with folders kept as a list: the
  * browser's IndexedDB (D-90, D-94) and the test bridges. A batch is checked whole against a
  * working copy, then returned as the records to write, so the store applies it in one transaction.
+ * Writes in a batch (links that follow a move, FIL-09) name a note by its path after the moves.
  */
 import type { WorkspaceOp, OpErrorCode } from "./bridge.ts";
 import { isReadOnlyPath } from "./notes.ts";
@@ -68,6 +69,13 @@ export function planFlatOps(notes: readonly FlatNote[], folders: readonly string
         writePut(moved);
       }
       dirs = dirs.map((d) => (inside(from, d) ? to + d.slice(from.length) : d));
+    } else if (op.op === "write") {
+      const n = live.get(op.path);
+      if (!n) throw new OpError("notFound");
+      if (typeof op.text !== "string") throw new OpError("invalid");
+      const written = { ...n, text: op.text, updated: now };
+      live.set(op.path, written);
+      writePut(written);
     } else {
       if (!exists(op.path)) throw new OpError("notFound");
       for (const [p, n] of [...live]) {

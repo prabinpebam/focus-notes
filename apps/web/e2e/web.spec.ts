@@ -362,3 +362,47 @@ test("Files on the web: this browser's notes go in folders and move by drag and 
   await expect(row("Projects")).toHaveAttribute("aria-expanded", "true");
   expect([...hosts].filter((h) => h !== SITE)).toEqual([]);
 });
+
+test("FIL-09 on the web: moving and renaming rewrite links in this browser's notes in the same batch; the instance's notes are never written", async ({ page }) => {
+  await page.goto("./");
+  await expect(editor(page)).toContainText(/Garden log|Reading list/);
+  const notes = {
+    "a.md": "# Alpha\n\nSee [Beta](beta.md#top) and [x](<Box/x.md>).\n",
+    "beta.md": "# Beta\n\n[back](a.md)\n",
+    "Box/x.md": "# Ex\n",
+  };
+  await page.evaluate(async (notes) => {
+    const db = await new Promise<IDBDatabase>((res) => { const r = indexedDB.open("focus-notes"); r.onsuccess = () => res(r.result); });
+    const store = db.transaction("notes", "readwrite").objectStore("notes");
+    for (const [path, text] of Object.entries(notes)) store.put({ path, text, updated: 1 });
+    await new Promise((res) => { store.transaction.oncomplete = res; });
+  }, notes);
+  const text = (path: string) => page.evaluate(async (path) => {
+    const db = await new Promise<IDBDatabase>((res) => { const r = indexedDB.open("focus-notes"); r.onsuccess = () => res(r.result); });
+    return new Promise<string>((res) => { const r = db.transaction("notes").objectStore("notes").get(path); r.onsuccess = () => res(r.result?.text); });
+  }, path);
+  await page.reload();
+  await expect(editor(page)).toBeVisible();
+  await page.keyboard.press(`${mod}+o`);
+  const files = page.getByRole("complementary", { name: "Files" });
+  const tree = files.getByRole("tree", { name: "Notes and folders" });
+  const row = (name: string) => tree.getByRole("treeitem", { name, exact: true });
+  const toast = (t: string) => page.locator("#toasts").getByText(t);
+
+  // Moving a note: the link to it, and its own link back, change in one batch.
+  await row("Beta").dragTo(row("Box"));
+  await expect(toast("Moved “Beta” to “Box”. Updated links in 2 notes.")).toBeVisible();
+  expect(await text("a.md")).toBe("# Alpha\n\nSee [Beta](Box/beta.md#top) and [x](<Box/x.md>).\n");
+  expect(await text("Box/beta.md")).toBe("# Beta\n\n[back](../a.md)\n");
+
+  // Renaming the folder: links into it follow; the moved note's link out of it stays.
+  await row("Box").click();
+  await page.keyboard.press("F2");
+  await tree.getByRole("textbox", { name: "Folder name" }).fill("Crate");
+  await page.keyboard.press("Enter");
+  await expect(toast("Renamed to “Crate”. Updated links in 1 note.")).toBeVisible();
+  expect(await text("a.md")).toBe("# Alpha\n\nSee [Beta](Crate/beta.md#top) and [x](<Crate/x.md>).\n");
+  expect(await text("Crate/beta.md")).toBe("# Beta\n\n[back](../a.md)\n");
+  // Nothing of the instance's is ever kept or written here.
+  expect((await notePaths(page)).filter((p) => p.includes(":"))).toEqual([]);
+});
