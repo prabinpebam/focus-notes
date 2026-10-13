@@ -18,15 +18,17 @@ Opened from **Open** in the [trigger toolbar](main-ui.html) (<kbd>Ctrl/⌘</kbd>
 
 | Operation | How | Repository effect | Req |
 | --- | --- | --- | --- |
-| New note | Toolbar *New note*, or *New note* on a folder | Creates `untitled.md` (made unique), committed on first save | FIL-01 |
-| Rename note | Inline rename (<kbd>F2</kbd>) | Git rename. The note's title stays in its H1 / front matter (see [Content model](../architecture/content-model.md)) | FIL-01 |
-| Delete note | Context menu, then confirm | Deletes the file in a commit. A toast offers *Undo*, which restores the file. Older deletes can be recovered from Git history | FIL-01, FIL-05 |
-| New folder | *New folder* on a root or folder | Creates the folder with a `.gitkeep` file so Git can track it while it's empty | FIL-02 |
-| Rename folder | Inline rename | One commit renaming every path inside it | FIL-02 |
-| Delete folder | Context menu, then confirm, listing how many notes it holds | One commit deleting the subtree, with *Undo* | FIL-02, FIL-05 |
-| Move | Drag-and-drop in the tree, or *Move to…* picker | Git rename within the same repository | FIL-03 |
-| Move between Public and Private | Drag across roots, or *Make public* / *Make private* in Share | Delete in one repository and add in the other, plus a submodule pointer update (see below) | FIL-06, SHR-02 |
+| New note | Toolbar *New*, <kbd>Mod</kbd>+<kbd>N</kbd>, or *New note* on a folder | Nothing is written until the first character is typed. The file name follows the title until the note is published | FIL-01, FIL-07 |
+| Rename note | Inline rename (<kbd>F2</kbd> on Windows, <kbd>Enter</kbd> on macOS) | Edits the title (H1). The file is renamed too unless the note is published. Links to it in other notes are updated in the same commit | FIL-01, FIL-07, FIL-09 |
+| Delete note | Context menu or <kbd>Delete</kbd> / <kbd>⌘⌫</kbd>. Private: no dialog, *Undo* in the toast. Public: confirm first | Deletes the file in a commit. Recoverable from *Recently deleted* for 30 days, and from Git history after that | FIL-01, FIL-05, FIL-10 |
+| New folder | *New folder* on a root or folder, named inline | Creates the folder with a `.gitkeep` file so Git can track it while it's empty | FIL-02 |
+| Rename folder | Inline rename | One commit renaming every path inside it and updating links | FIL-02, FIL-09 |
+| Delete folder | Context menu, then confirm, listing how many notes it holds (empty folders don't ask) | One commit deleting the subtree, with *Undo* | FIL-02, FIL-05 |
+| Move | Drag-and-drop, cut and paste, or the *Move to…* picker, for one item or a multi-selection | Git rename within the same repository, links updated, one commit | FIL-03, FIL-08, FIL-09 |
+| Move between Public and Private | Drag across sections, or *Make public* / *Make private* in Share, always confirmed | Delete in one repository and add in the other, plus a submodule pointer update (see below) | FIL-06, SHR-02 |
+| Restore | *Recently deleted* → Restore or Restore to… | Re-adds the file from Git history in a new commit | FIL-10 |
 
+The full interaction design (anatomy, states, naming rules, multi-select, and the reasoning behind each choice) is in [Files panel](../design/views/files.html).
 Commit messages are readable and consistent. For example: `Create notes/ideas.md`, `Move drafts/a.md → archive/a.md`, `Make private: journal/2026-10-13.md`.
 
 ## Public and private

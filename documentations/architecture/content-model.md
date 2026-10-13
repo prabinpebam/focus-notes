@@ -46,11 +46,11 @@ Writing happens one line at a time.
 | Part | Rule |
 | --- | --- |
 | **Encoding** | UTF-8, LF line endings, one trailing newline. |
-| **Title** | The first H1. A note without an H1 is titled after its file name. Renaming a note in the Files panel renames the file; editing the H1 doesn't. |
+| **Title** | The first H1. A note without an H1 is titled after its file name. Renaming a note in the Files panel edits its title (the H1). See *File name* for when the file follows. |
 | **Front matter** | Optional. The app only writes `id` (a stable ULID, used for redirects and share links when the path changes). Any other keys the writer adds are kept as they are. |
 | **Body** | CommonMark + GFM (tables, task lists, strikethrough, autolinks). |
 | **Links between notes** | Relative Markdown links (`[see](../ideas.md)`), so they work on GitHub, in any editor, and on the published site. |
-| **File name** | Derived from the title when a note is first saved (`On focus` → `on-focus.md`). Lowercase, hyphenated, unique within its folder. |
+| **File name** | Follows the title until the note is first published (`On focus` → `on-focus.md`), then stays fixed so its public URL is stable, unless renamed on purpose (FIL-07, D-30). Lowercase, hyphenated, letters in any language kept, characters not allowed on Windows or macOS removed, at most 80 characters, unique within its folder (`-2`, `-3` on clashes). Renames and moves update relative links in other notes in the same commit (FIL-09). Full rules: [Files panel → Names and titles](../design/views/files.html#names-and-titles). |
 
 ## Components
 

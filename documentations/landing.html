@@ -11,19 +11,25 @@
 
 <div class="slate-metrics">
   <div class="slate-metric">
-    <p class="slate-metric__value">96</p>
-    <p class="slate-metric__label">Requirements in 16 areas</p>
+    <p class="slate-metric__value">10</p>
+    <p class="slate-metric__label">Customer promises</p>
   </div>
   <div class="slate-metric">
-    <p class="slate-metric__value">9</p>
-    <p class="slate-metric__label">Milestones, M0 to M8</p>
+    <p class="slate-metric__value">41</p>
+    <p class="slate-metric__label">Scenarios (jobs to be done)</p>
   </div>
   <div class="slate-metric">
-    <p class="slate-metric__value">4</p>
-    <p class="slate-metric__label">Open decisions needing the owner</p>
+    <p class="slate-metric__value">68</p>
+    <p class="slate-metric__label">User-can capabilities</p>
+  </div>
+  <div class="slate-metric">
+    <p class="slate-metric__value">117</p>
+    <p class="slate-metric__label">Requirements, all traced</p>
   </div>
 </div>
 
+<h2>How decisions are grounded</h2>
+<p>Every screen, control, and behavior traces through <a href="product/spec/chain.md">the articulation chain</a>: a <a href="product/spec/customer-promises.md">customer promise</a>, the <a href="product/spec/scenarios.md">scenario</a> where it matters, what the <a href="product/spec/user-can.md">user can</a> do, the <a href="design/information-architecture.html">view or component</a> that delivers it, the design decision and why, and the <a href="product/requirements.md">requirement</a> that tests it. Use <strong>View for</strong> in the header to focus on the sections for product, design, or engineering.</p>
 <h2>Signature experience</h2>
 <div class="slate-card-grid" data-cols="3">
   <article class="slate-card slate-card--interactive">
@@ -68,19 +74,23 @@
 <ol class="slate-steps">
   <li class="slate-step">
     <p class="slate-step__title">Product</p>
-    <p><a href="seed-specs.md">Seed spec</a>, <a href="product/vision.md">Vision and principles</a>, <a href="product/requirements.md">Requirements</a>.</p>
+    <p><a href="seed-specs.md">Seed spec</a>, <a href="product/vision.md">Vision and principles</a>, then the chain: <a href="product/spec/chain.md">how it works</a>, <a href="product/spec/customer-promises.md">promises</a>, <a href="product/spec/scenarios.md">scenarios</a>, <a href="product/spec/user-can.md">user can</a>. Then <a href="product/requirements.md">Requirements</a>.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Experience</p>
     <p><a href="experience/main-ui.html">Main UI and trigger</a>, <a href="experience/focus-mode.md">Focus mode</a>, <a href="experience/editing.md">Editing</a>, <a href="experience/find-and-replace.md">Find and replace</a>, <a href="experience/spotlight.html">Spotlight</a>, <a href="experience/keyboard-shortcuts.md">Keyboard shortcuts</a>, <a href="experience/files-and-sharing.md">Files and sharing</a>, <a href="experience/theming.md">Theming</a>, <a href="experience/desktop-app.html">Desktop app</a>, <a href="experience/first-run.md">First run and sign-in</a>.</p>
   </li>
+      <li class="slate-step">
+        <p class="slate-step__title">Design</p>
+        <p><a href="design/information-architecture.html">Information architecture</a>, <a href="design/foundations.md">Foundations</a>, views (<a href="design/views/files.html">Files panel</a>, <a href="design/views/theme-manager.html">Theme manager</a>, <a href="design/views/secondary-views.md">Secondary views</a>) and components (<a href="design/components/text-formatting.html">Text formatting</a>, <a href="design/components/tables.html">Tables</a>, <a href="design/components/feedback-and-dialogs.md">Feedback and dialogs</a>).</p>
+      </li>
   <li class="slate-step">
     <p class="slate-step__title">Architecture</p>
     <p><a href="architecture/overview.html">Overview</a>, <a href="architecture/content-model.md">Content model</a>, <a href="architecture/editor-engine.md">Editor engine</a>, <a href="architecture/desktop-and-git.md">Desktop and Git</a>, <a href="architecture/repository-and-publishing.html">Repository and publishing</a>.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Plan</p>
-    <p><a href="plan/roadmap.md">Roadmap</a> and <a href="plan/decisions.md">Decisions</a>. Start with the four open decisions.</p>
+    <p><a href="plan/roadmap.md">Roadmap</a> and <a href="plan/decisions.md">Decisions</a>. Start with the five open decisions.</p>
   </li>
 </ol>
 
@@ -89,7 +99,7 @@
   <thead><tr><th>Source</th><th>Used for</th></tr></thead>
   <tbody>
     <tr><td><a href="seed-specs.md">Seed spec</a></td><td>The original requirements. Written by a person; never edited by tooling or agents.</td></tr>
-    <tr><td><a href="plan/decisions.md">Owner decisions, 2026-10-13</a></td><td>Trigger size, Tiptap and MIT, device sign-in, the desktop window, toolbar cap, keyboard strategy, find, and Spotlight.</td></tr>
+    <tr><td><a href="plan/decisions.md">Owner decisions, 2026-10-13</a></td><td>Trigger size, Tiptap and MIT, device sign-in, the desktop window, toolbar cap, keyboard strategy, find, Spotlight, the articulation chain, Loop-style tables, the contextual toolbar, and theme management.</td></tr>
     <tr><td><a href="https://github.com/prabinpebam/markdown-focus-editor">markdown-focus-editor</a></td><td>Focus mode only: the visual-row unit and the mask technique.</td></tr>
     <tr><td><code>personal-site</code> (local project)</td><td>Private content as a submodule, sealed publishing, and share links.</td></tr>
     <tr><td><a href="https://www.electronjs.org/docs/latest/tutorial/custom-window-styles">Electron: custom window styles</a></td><td>What transparent windows can't do, which drives the 20 px corner design.</td></tr>

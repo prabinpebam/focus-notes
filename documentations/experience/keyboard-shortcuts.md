@@ -101,6 +101,7 @@ The standard OS text keys work as expected and aren't listed one by one: moving 
 | Inline code | <kbd>⌘E</kbd> | <kbd>Ctrl+E</kbd> | Writer | Notion, Tiptap |
 | Add or edit link (with text selected) | <kbd>⌘K</kbd> | <kbd>Ctrl+K</kbd> | Writer | Notion, Google Docs, GitHub ([D-16](../plan/decisions.md)) |
 | Clear formatting | <kbd>⌘\</kbd> | <kbd>Ctrl+\</kbd> | Writer | Google Docs, Notion |
+| Move focus into the [formatting toolbar](../design/components/text-formatting.html) | <kbd>⌥F10</kbd> | <kbd>Alt+F10</kbd> | Power | Web rich-text editors |
 | Underline | <kbd>⌘U</kbd> shows a one-time hint that Markdown has no underline | <kbd>Ctrl+U</kbd>, same | Basic | Not supported ([D-12](../plan/decisions.md)) |
 
 Markdown typing shortcuts (`**bold**`, `# `, `- `, …) are listed on [Editing](editing.md#blocks-and-their-markdown).

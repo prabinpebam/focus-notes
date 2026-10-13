@@ -58,6 +58,13 @@
         </div>
         <div class="search-results" role="listbox"></div>
       </div>
+      <div class="reader-persona hidden" id="reader-persona">
+        <label for="reader-persona-select">View for</label>
+        <select id="reader-persona-select" aria-describedby="reader-persona-status">
+          <option value="all">All readers</option>
+        </select>
+        <span class="sr-only" id="reader-persona-status" aria-live="polite"></span>
+      </div>
       <button class="theme-toggle" aria-label="Toggle color theme">
         <span class="material-symbols-outlined" aria-hidden="true">brightness_auto</span>
       </button>

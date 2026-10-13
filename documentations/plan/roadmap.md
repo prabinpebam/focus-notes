@@ -8,19 +8,19 @@ The order in which the documented features get built. Each milestone leaves a wo
 <ol class="slate-steps slate-steps--timeline">
 <li class="slate-step">
 <p class="slate-step__title">M0 - Foundations and spikes</p>
-<p>Documentation (this site). MIT <code>LICENSE</code> and the CI license check. Repository layout, private repository and submodule, CI skeleton with the Pages deploy. <strong>Editor spike</strong>: Tiptap with <code>@tiptap/markdown</code> versus a remark bridge on the round-trip corpus. <strong>Window spike</strong>: 20 px transparent window resizing, maximizing, shadow, and snapping on three OSes (D-14). Register the GitHub OAuth App with device flow enabled. LIC-01, LIC-02.</p>
+<p>Documentation (this site). MIT <code>LICENSE</code> and the CI license check. Repository layout, private repository and submodule, CI skeleton with the Pages deploy. <strong>Editor spike</strong>: Tiptap with <code>@tiptap/markdown</code> versus a remark bridge on the round-trip corpus. <strong>Window spike</strong>: 20 px transparent window resizing, maximizing, shadow, and snapping on three OSes (D-14). Register the GitHub OAuth App with device flow enabled. The <a href="../product/spec/chain.md#checking-the-chain">chain check</a> script. LIC-01, LIC-02.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M1 - Editor core</p>
-<p>Block registry, built-in blocks, inline formatting, input rules, slash menu, formatting bubble, table editing, Markdown bridge, round-trip test corpus, undo and redo, paste. EDT-01 to EDT-06, EDT-08 to EDT-10, TBL-01 to TBL-03, TBL-05, TBL-06, EXT-01, EXT-02, EXT-05.</p>
+<p>Block registry, built-in blocks, inline formatting, input rules, slash menu, formatting bubble, table editing, Markdown bridge, round-trip test corpus, undo and redo, paste. EDT-01 to EDT-06, EDT-08 to EDT-10, TBL-01 to TBL-03, TBL-05, TBL-06, EXT-01, EXT-02, EXT-05, EDT-12, EDT-13, TBL-07, TBL-08, TBL-10, TBL-11.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M2 - Canvas, toolbar, focus, theming, keyboard, find</p>
-<p>Blank canvas, trigger (10 px dot, 30 px circle), toolbar with six actions and ⋯, contextual UI. Focus mode with all edge cases. Light, Dark, and System themes, font choice and font size steps. The command and keybinding service with the Basic, Writer, and Power layers and the cheat sheet. Browser shortcut test pass (including Safari on iPad). Find and replace in a note. UI-01 to UI-07, FOC-01 to FOC-06, THM-01 to THM-03, THM-06, KEY-01 to KEY-03, KEY-05, KEY-06, FND-01, FND-02.</p>
+<p>Blank canvas, trigger (10 px dot, 30 px circle), toolbar with six actions and ⋯, contextual UI. Focus mode with all edge cases. Light, Dark, and System themes, font choice and font size steps. The command and keybinding service with the Basic, Writer, and Power layers and the cheat sheet. Browser shortcut test pass (including Safari on iPad). Find and replace in a note. UI-01 to UI-07, FOC-01 to FOC-06, THM-01 to THM-03, THM-06, KEY-01 to KEY-03, KEY-05, KEY-06, FND-01, FND-02, THM-07, THM-08, THM-13.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M3 - Desktop app, first run, and Git</p>
-<p>The Electron window (20 px corners, custom title bar, resizing, full screen, macOS menu bar). The first run: Git check, device-flow sign-in, git credential helper, identity, workspace clone. The local Git adapter with save and sync, Files panel, file operations, public and private roots, conflict handling. DSK-01 to DSK-05, FRE-01 to FRE-07, PKG-03, FIL-01 to FIL-03, FIL-05, FIL-06, EDT-11, SHR-01, SHR-02.</p>
+<p>The Electron window (20 px corners, custom title bar, resizing, full screen, macOS menu bar). The first run: Git check, device-flow sign-in, git credential helper, identity, workspace clone. The local Git adapter with save and sync, Files panel, file operations, public and private roots, conflict handling. DSK-01 to DSK-05, FRE-01 to FRE-07, PKG-03, FIL-01 to FIL-03, FIL-05 to FIL-10, FIL-12, EDT-11, SHR-01, SHR-02.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M4 - Spotlight</p>
@@ -28,7 +28,7 @@ The order in which the documented features get built. Each milestone leaves a wo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M5 - Publishing (first release)</p>
-<p>Static public note pages, Copy public link, deploy pipeline with leak check, installers for all three OSes, developer setup without private access. SHR-03, SHR-04, PKG-01, PKG-02, PKG-04, DOC-01, DOC-02.</p>
+<p>Static public note pages, Copy public link, deploy pipeline with leak check, installers for all three OSes, developer setup without private access. SHR-03, SHR-04, SHR-06, PKG-01, PKG-02, PKG-04, DOC-01, DOC-02.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M6 - Editing in the browser</p>
@@ -40,7 +40,7 @@ The order in which the documented features get built. Each milestone leaves a wo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M8 - Polish and pro features</p>
-<p>Block handle, column alignment, custom themes, synced appearance, pinned toolbar choice, Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, multiple windows, signed builds and automatic updates. EDT-07, TBL-04, THM-04, THM-05, UI-08, KEY-04, KEY-07, FND-03, FND-05, SPT-06, DSK-06, DSK-07.</p>
+<p>Block handle, column alignment, custom themes, synced appearance, pinned toolbar choice, Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, multiple windows, signed builds and automatic updates. EDT-07, TBL-04, THM-04, THM-05, UI-08, KEY-04, KEY-07, FND-03, FND-05, SPT-06, DSK-06, DSK-07, TBL-09, FIL-11, THM-09 to THM-12.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later - Components</p>

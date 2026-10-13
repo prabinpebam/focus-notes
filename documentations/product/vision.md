@@ -28,6 +28,7 @@ Focus Notes is a calm, Markdown-native writing app: an empty page, one small tri
 8. **Borrow conventions.** Shortcuts, file-manager keys, and window behavior copy the most popular apps on each platform, so nothing has to be learned twice.
 9. **Open and permissive.** The app is MIT-licensed, and so is everything it ships with, or it uses a compatible permissive license ([D-20](../plan/decisions.md)).
 10. **Start clean.** The earlier `markdown-focus-editor` project is the reference for **focus mode only**. None of its other concepts are carried over.
+11. **Every decision has a reason.** Each screen, control, and behavior traces through [the articulation chain](spec/chain.md) (promise → scenario → user can → view or component → design decision → requirement). Anything that can't be traced isn't built.
 
 ## Scope
 

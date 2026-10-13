@@ -1,0 +1,205 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Design · Components</p>
+  <h1 class="slate-hero__title">Text formatting</h1>
+  <p class="slate-hero__summary">A simple contextual toolbar that appears where you selected, plus the link editor, slash menu, and block handle.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>Select text and a small frosted toolbar appears just above it with six controls: <strong>Turn into ▾</strong>, <strong>Bold</strong>, <strong>Italic</strong>, <strong>Strikethrough</strong>, <strong>Code</strong>, and <strong>Link</strong>. That's everything Markdown can store for a selection, and nothing more. It never covers the selection, hides as soon as you type, flips below the selection near the top of the window or on touch screens, and is fully usable from the keyboard (<kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd>). Links get an inline editor and a hover card. <code>/</code> opens a filtered block menu. A handle in the margin moves and converts blocks. Components IA-CMP-FORMAT, IA-CMP-LINK, IA-CMP-SLASH, and IA-CMP-HANDLE serve UC-FMT-01 to UC-FMT-05 and UC-BLOCK-01 to UC-BLOCK-03.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 330" role="img"
+       aria-labelledby="fmt-title fmt-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="fmt-title">The contextual formatting toolbar above a text selection</title>
+    <desc id="fmt-desc">A line of note text, "Writing happens one line at a time, quietly", with the words "one line at a time" selected. Centered just above the selection floats a toolbar with a Turn into menu labeled Text, then Bold shown pressed, Italic, Strikethrough, Code, and Link. A short gap separates the toolbar from the selection, so the selected words stay visible.</desc>
+    <g id="fmt-text" data-slate-svg-step="0" data-slate-svg-effect="fade" font-family="var(--font-family-base)" font-size="26">
+      <rect id="fmt-sel" x="384" y="162" width="240" height="50" rx="4" fill="var(--color-brand-bg)" fill-opacity="0.22"/>
+      <text x="376" y="197" text-anchor="end" fill="var(--color-neutral-fg-1)">Writing happens</text>
+      <text x="392" y="197" fill="var(--color-neutral-fg-1)" font-weight="700" data-slate-fit-target="fmt-sel" data-slate-fit-padding="6">one line at a time</text>
+      <text x="632" y="197" fill="var(--color-neutral-fg-1)">, quietly.</text>
+      <rect x="120" y="248" width="640" height="10" rx="5" fill="var(--color-neutral-fg-3)"/>
+      <rect x="120" y="276" width="460" height="10" rx="5" fill="var(--color-neutral-fg-3)"/>
+    </g>
+    <g id="fmt-toolbar" data-slate-svg-step="1" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)">
+      <rect x="250" y="56" width="508" height="60" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <rect id="fmt-btn-turn" x="262" y="66" width="104" height="40" rx="8" fill="var(--color-neutral-bg-3)"/>
+      <text x="314" y="92" text-anchor="middle" font-size="17" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fmt-btn-turn" data-slate-fit-padding="8">Text ▾</text>
+      <path d="M378 72 V100" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5"/>
+      <rect id="fmt-btn-b" x="390" y="66" width="44" height="40" rx="8" fill="var(--color-neutral-bg-4)" stroke="var(--color-brand-stroke)" stroke-width="1.5"/>
+      <text x="412" y="93" text-anchor="middle" font-size="20" font-weight="700" fill="var(--color-neutral-fg-1)" data-slate-fit-target="fmt-btn-b" data-slate-fit-padding="6">B</text>
+      <text x="464" y="93" text-anchor="middle" font-size="20" font-style="italic" fill="var(--color-neutral-fg-1)">I</text>
+      <text x="516" y="93" text-anchor="middle" font-size="20" text-decoration="line-through" fill="var(--color-neutral-fg-1)">S</text>
+      <text x="574" y="92" text-anchor="middle" font-size="17" font-family="var(--font-family-mono, monospace)" fill="var(--color-neutral-fg-1)">&lt;/&gt;</text>
+      <path d="M616 72 V100" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5"/>
+      <text x="680" y="92" text-anchor="middle" font-size="17" fill="var(--color-neutral-fg-1)">Link</text>
+    </g>
+    <g id="fmt-gap" data-slate-svg-step="2" data-slate-svg-effect="draw" fill="none" stroke="var(--color-brand-fg-1)" stroke-width="2" stroke-dasharray="4 4">
+      <path d="M504 120 V158"/>
+    </g>
+  </svg>
+  <figcaption>The toolbar centers over the selection with an 8 px gap, so the selected words stay visible. Bold shows as pressed because the whole selection is already bold.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>Control</th><th>Shortcut (Apple / Windows)</th><th>State shown</th></tr></thead>
+    <tbody>
+      <tr><td>Turn into ▾ (shows the current block type)</td><td><kbd>⌥⌘0</kbd>–<kbd>⌥⌘3</kbd> / <kbd>Ctrl+Alt+0</kbd>–<kbd>3</kbd>, list keys</td><td>Current block type label</td></tr>
+      <tr><td>Bold</td><td><kbd>⌘B</kbd> / <kbd>Ctrl+B</kbd></td><td>Pressed (as shown)</td></tr>
+      <tr><td>Italic</td><td><kbd>⌘I</kbd> / <kbd>Ctrl+I</kbd></td><td>Not pressed</td></tr>
+      <tr><td>Strikethrough</td><td><kbd>⇧⌘X</kbd> / <kbd>Ctrl+Shift+X</kbd></td><td>Not pressed</td></tr>
+      <tr><td>Code</td><td><kbd>⌘E</kbd> / <kbd>Ctrl+E</kbd></td><td>Not pressed</td></tr>
+      <tr><td>Link</td><td><kbd>⌘K</kbd> / <kbd>Ctrl+K</kbd> with a selection</td><td>Not pressed</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2 data-reader-personas="design product">Contextual formatting toolbar</h2>
+
+<p><strong>IA-CMP-FORMAT.</strong> Serves UC-FMT-01, UC-FMT-02, UC-FMT-04, UC-TABLE-07. The owner asked for formatting through a "simple contextual toolbar". Simple here means one row, six controls, no ⋯, and no settings.</p>
+
+<h3>When it appears and disappears</h3>
+<table>
+  <thead><tr><th>Event</th><th>Toolbar</th></tr></thead>
+  <tbody>
+    <tr><td>Mouse or pen selection ends (pointer up) with at least one character selected</td><td>Appears after 150 ms</td></tr>
+    <tr><td>Keyboard selection (<kbd>Shift</kbd>+arrows, <kbd>Mod</kbd>+<kbd>A</kbd>, double-click)</td><td>Appears 300 ms after the last selection change, so it doesn't flicker while the selection grows</td></tr>
+    <tr><td>Touch selection</td><td>Appears <em>below</em> the selection when the selection handles are released, because the OS menu takes the space above</td></tr>
+    <tr><td>Typing, or a collapsed selection</td><td>Hides at once (120 ms fade)</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Hides and stays hidden until the selection changes. The selection is kept.</td></tr>
+    <tr><td>Scrolling</td><td>Follows the selection. Hides while the selection is off-screen.</td></tr>
+    <tr><td>Selection inside a raw (read-only) block or a future component</td><td>Doesn't appear</td></tr>
+    <tr><td>Find bar, Spotlight, or a panel opens</td><td>Hides</td></tr>
+  </tbody>
+</table>
+
+<h3>Anatomy</h3>
+<dl class="slate-defs">
+  <dt>Container</dt>
+  <dd>Frosted popover (<a href="../foundations.md#surfaces-and-elevation">layer 2</a>), <code>radius.popover</code>, 6 px padding, 40 px tall controls, 4 px between controls, a 1 px divider after Turn into and before Link. About 500 px wide at the default UI scale.</dd>
+  <dt>Turn into ▾</dt>
+  <dd>A text button showing the current block type ("Text", "Heading 2", "Bulleted list", or "Mixed" for several types). It opens the Turn into menu below it.</dd>
+  <dt>Mark toggles</dt>
+  <dd>Bold, Italic, Strikethrough, Code. Icon buttons, 40 &times; 40 px, Fluent Regular icons, filled when pressed. Their tooltips include the shortcut.</dd>
+  <dt>Link</dt>
+  <dd>Icon and the word "Link", because it opens something rather than toggling. Pressed when the selection is entirely inside one link, where it opens the link editor pre-filled.</dd>
+</dl>
+
+<h3>What it shows in each context</h3>
+<table>
+  <thead><tr><th>Selection is in…</th><th>Turn into</th><th>Marks</th><th>Link</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Paragraph, heading, list, quote</td><td>Shown</td><td>All four</td><td>Shown</td><td>The full set.</td></tr>
+    <tr><td>Several blocks</td><td>Shown, applies to every block</td><td>All four, applied across blocks</td><td>Shown when the selection is inside one block, disabled across blocks</td><td>A link can't span blocks.</td></tr>
+    <tr><td>Table cells (text or a cell range)</td><td>Hidden</td><td>All four, applied to every selected cell</td><td>Shown when within one cell</td><td>Cells can only hold inline content (UNSUP-TABLE-01).</td></tr>
+    <tr><td>Code block</td><td>Shown (to turn it back into text)</td><td>Hidden</td><td>Hidden</td><td>Markdown code blocks can't hold formatting.</td></tr>
+    <tr><td>Inline code</td><td>Shown</td><td>Only Code (to remove it)</td><td>Hidden</td><td>Markdown can't format inside inline code.</td></tr>
+  </tbody>
+</table>
+
+<h3>Placement</h3>
+<ol class="slate-steps">
+  <li class="slate-step">
+    <p class="slate-step__title">Anchor</p>
+    <p>The first line rectangle of the selection. For a selection that starts above the visible area, the first visible line.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Above by default</p>
+    <p>Centered on the anchor's horizontal middle, with its bottom 8 px above the anchor's top.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Flip below</p>
+    <p>If that would overlap the 44 px top band or the trigger, or on touch screens, it goes 8 px below the selection's <em>last</em> line instead.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Clamp</p>
+    <p>Kept at least 12 px inside the canvas edges. A small caret on the toolbar's edge still points at the selection when it had to slide sideways.</p>
+  </li>
+</ol>
+
+<h3>States and behavior</h3>
+<ul>
+  <li><strong>Pressed</strong> when the whole selection has that format. <strong>Mixed</strong> (part of the selection has it) shows a half-fill, and clicking applies the format to all of it, as Word and Google Docs do.</li>
+  <li>Each click is one undo step. The selection stays the same, so several formats can be applied in a row.</li>
+  <li>The toolbar sits above the focus-mode mask and is never dimmed.</li>
+  <li><kbd>Mod</kbd>+<kbd>U</kbd> isn't in the toolbar (UNSUP-FMT-01). The first time it's pressed, a toast explains that Markdown has no underline.</li>
+</ul>
+
+<h3>Keyboard and accessibility</h3>
+<ul>
+  <li><kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd> moves focus into the toolbar. This is the established rich-text-editor convention, since <kbd>Tab</kbd> already indents lists.</li>
+  <li><kbd>←</kbd>/<kbd>→</kbd> move between controls, <kbd>Home</kbd>/<kbd>End</kbd> jump to the ends, and <kbd>Enter</kbd> or <kbd>Space</kbd> activates. <kbd>↓</kbd> on Turn into opens its menu.</li>
+  <li><kbd>Esc</kbd> returns focus to the text with the selection unchanged.</li>
+  <li>The toolbar has <code>role="toolbar"</code> and <code>aria-label="Text formatting"</code>. Toggles use <code>aria-pressed</code> (<code>mixed</code> for partial). Opening it doesn't move focus or announce anything, so screen-reader users aren't interrupted mid-selection.</li>
+</ul>
+
+<h3>Turn into menu</h3>
+<table>
+  <thead><tr><th>Item</th><th>Shortcut (Apple / Windows)</th><th>Markdown</th></tr></thead>
+  <tbody>
+    <tr><td>Text</td><td><kbd>⌥⌘0</kbd> / <kbd>Ctrl+Alt+0</kbd></td><td>Paragraph</td></tr>
+    <tr><td>Heading 1 / 2 / 3</td><td><kbd>⌥⌘1</kbd>–<kbd>3</kbd> / <kbd>Ctrl+Alt+1</kbd>–<kbd>3</kbd></td><td><code>#</code>, <code>##</code>, <code>###</code></td></tr>
+    <tr><td>Bulleted list</td><td><kbd>⇧⌘8</kbd> / <kbd>Ctrl+Shift+8</kbd></td><td><code>- </code></td></tr>
+    <tr><td>Numbered list</td><td><kbd>⇧⌘7</kbd> / <kbd>Ctrl+Shift+7</kbd></td><td><code>1. </code></td></tr>
+    <tr><td>To-do list</td><td><kbd>⇧⌘9</kbd> / <kbd>Ctrl+Shift+9</kbd></td><td><code>- [ ] </code></td></tr>
+    <tr><td>Quote</td><td><kbd>⇧⌘B</kbd> / <kbd>Ctrl+Shift+B</kbd></td><td><code>&gt; </code></td></tr>
+    <tr><td>Code block</td><td><kbd>⌥⌘C</kbd> / <kbd>Ctrl+Alt+C</kbd></td><td>Fenced code</td></tr>
+  </tbody>
+</table>
+<p>The current type is checked. The menu is a standard <code>menu</code> with arrow-key navigation and type-ahead. Converting several blocks is one undo step.</p>
+
+<h2 id="link-editor-and-hover-card" data-reader-personas="design product">Link editor and hover card</h2>
+<p><strong>IA-CMP-LINK.</strong> Serves UC-FMT-03.</p>
+<table>
+  <thead><tr><th>Moment</th><th>Design</th></tr></thead>
+  <tbody>
+    <tr><td>Create (Link button, or <kbd>Mod</kbd>+<kbd>K</kbd> with a selection)</td><td>The toolbar turns into a one-line editor in the same spot: a URL field (focused, pre-filled from the clipboard if it holds a URL), [Apply] and [Cancel]. <kbd>Enter</kbd> applies and <kbd>Esc</kbd> cancels, both keeping the selection.</td></tr>
+    <tr><td>Paste a URL over selected text</td><td>Makes a link right away (Notion, Google Docs, Slack). <kbd>Mod</kbd>+<kbd>Z</kbd> straight after pastes the URL as text instead.</td></tr>
+    <tr><td>Type or paste a bare URL</td><td>Becomes an autolink when followed by a space or <kbd>Enter</kbd>.</td></tr>
+    <tr><td>Hover a link (500 ms) or put the caret in it</td><td>A small hover card: the shortened address, then [Open], [Copy], [Edit], [Remove]. It leaves after 200 ms when the pointer moves away.</td></tr>
+    <tr><td>Open a link</td><td><kbd>Mod</kbd>+click, or [Open] on the card. A plain click places the caret, because this is an editor. Links to other notes open in the app, and web links open in the default browser.</td></tr>
+    <tr><td>Link to another note</td><td>Typing in the URL field also searches note titles (the same index as Spotlight) and inserts a relative Markdown link.</td></tr>
+    <tr><td>Invalid address</td><td>Shown inline under the field: "Use a full web address (https://…) or pick a note." The field stays open.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="slash-menu" data-reader-personas="design product">Slash menu</h2>
+<p><strong>IA-CMP-SLASH.</strong> Serves UC-BLOCK-01, UC-BLOCK-02, UC-TABLE-01.</p>
+<ul>
+  <li><strong>Opens</strong> when <code>/</code> is typed at the start of an empty block, or after a space. It doesn't open inside a word, so <code>and/or</code> stays text, and it doesn't open in code blocks or table cells.</li>
+  <li><strong>Placement:</strong> a popover 8 px below the caret (above it when there's no room), 320 px wide, showing up to 8 rows before scrolling.</li>
+  <li><strong>Groups:</strong> <em>Text</em> (Text, Heading 1–3, Quote), <em>Lists</em> (Bulleted, Numbered, To-do), <em>Insert</em> (Table, Divider, Code block). Future components (Image, Gallery) join <em>Insert</em> through the block registry.</li>
+  <li><strong>Rows:</strong> 16 px icon, name, a one-line hint on the selected row only, and on the right the Markdown shortcut (<code>##</code>) or key (<kbd>⌥⌘2</kbd>).</li>
+  <li><strong>Filtering:</strong> characters typed after <code>/</code> filter by name and synonyms ("h2", "title", "grid" → Table, "checkbox" → To-do). Matching letters are bold. With no match: "No blocks match ‘xyz’. Press Esc to keep the text."</li>
+  <li><strong>Keyboard:</strong> <kbd>↑</kbd>/<kbd>↓</kbd> move, <kbd>Enter</kbd> or <kbd>Tab</kbd> inserts, and <kbd>Esc</kbd> closes and leaves the typed <code>/query</code> as text. <kbd>Backspace</kbd> past the <code>/</code> closes it.</li>
+  <li><strong>Result:</strong> the current block becomes the chosen block, or a new block is inserted below if the current one has text. The caret lands inside the new block (in a table, the first header cell).</li>
+</ul>
+
+<h2 id="block-handle" data-reader-personas="design product">Block handle</h2>
+<p><strong>IA-CMP-HANDLE.</strong> Serves UC-BLOCK-03. Priority P1. It uses Tiptap's MIT DragHandle extension.</p>
+<ul>
+  <li><strong>Where:</strong> in the left gutter, 24 px outside the reading column, level with the block's first line. A six-dot grip, 20 &times; 24 px visible, with a 32 px hit area.</li>
+  <li><strong>When:</strong> shown while the pointer is over the block (fade in 80 ms), and for the caret's block during keyboard block-selection mode. Never shown while typing. On touch screens it's shown for the focused block only.</li>
+  <li><strong>Click:</strong> opens the block menu: Turn into ›, Duplicate (<kbd>Mod</kbd>+<kbd>D</kbd>), Move up or down, Copy link to block, Delete (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd>).</li>
+  <li><strong>Drag:</strong> the block lifts at 60% opacity, and a 2 px accent drop line shows where it will land, between blocks only. Near the window's top or bottom edge the note scrolls automatically. <kbd>Esc</kbd> during a drag cancels it.</li>
+  <li><strong>Keyboard path:</strong> block selection mode (<kbd>Esc</kbd> while typing) and <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd>, so the handle is never the only way.</li>
+</ul>
+
+<h2 data-reader-personas="product design">Design decisions</h2>
+<table>
+  <thead><tr><th>ID</th><th>Decision</th><th>Serves</th><th>Rationale</th><th>Alternatives rejected</th></tr></thead>
+  <tbody>
+    <tr><td>DD-FMT-01</td><td>Formatting lives in a toolbar at the selection, shown only when there's a selection.</td><td>UC-FMT-01</td><td>The eye and the pointer are already at the text. Nothing is visible at rest (CP-CALM-01).</td><td>A fixed toolbar at the top (pulls the eye away and is always visible). Formatting only from the right-click menu (hard to discover).</td></tr>
+    <tr><td>DD-FMT-02</td><td>Exactly six controls: Turn into, Bold, Italic, Strikethrough, Code, Link.</td><td>UC-FMT-01, UC-FMT-02</td><td>That's every inline and block format Markdown can store for a selection (CP-OWN-01), and it matches the owner's "simple".</td><td>Underline, color, alignment (UNSUP-FMT-01). A ⋯ inside the toolbar (adds a decision for rare items).</td></tr>
+    <tr><td>DD-FMT-03</td><td>Above the selection, flipped below near the top band and on touch screens.</td><td>UC-FMT-01</td><td>It must never cover the selected text or the trigger. On iPad and iPhone the OS selection menu sits above the selection.</td><td>Always below (covers the next lines while reading back). Following the pointer (jumpy).</td></tr>
+    <tr><td>DD-FMT-04</td><td>A 150 ms delay after pointer selection and 300 ms after keyboard selection. Hidden immediately when typing starts.</td><td>UC-FMT-01</td><td>Avoids flicker while a selection is still growing, and keeps typing free of anything floating.</td><td>Showing it immediately (flickers during <kbd>Shift</kbd>+arrows).</td></tr>
+    <tr><td>DD-FMT-05</td><td><kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd> moves focus into the toolbar.</td><td>UC-FMT-04</td><td>It's the convention used by established web rich-text editors. <kbd>Tab</kbd> is taken by list indentation.</td><td><kbd>Tab</kbd>, or automatic focus (interrupts screen-reader selection).</td></tr>
+    <tr><td>DD-FMT-06</td><td>A mixed selection shows a half-pressed state, and clicking applies the format to all of it.</td><td>UC-FMT-01</td><td>Matches Word and Google Docs. One click always ends in a consistent state.</td><td>Toggling off when any part has the format (surprising).</td></tr>
+    <tr><td>DD-FMT-07</td><td>Pasting a URL over selected text makes a link, and one undo pastes plain text instead.</td><td>UC-FMT-03</td><td>The fastest path that people already know from Notion, Docs, and Slack, with a cheap way out.</td><td>Always asking, which adds a dialog.</td></tr>
+    <tr><td>DD-FMT-08</td><td>The slash menu offers only blocks that are valid at the caret, and <kbd>Esc</kbd> keeps the typed text.</td><td>UC-BLOCK-01, UC-BLOCK-02</td><td>An invalid choice that then fails is worse than not offering it. <kbd>Esc</kbd> never loses what was typed.</td><td>Showing everything and refusing afterwards.</td></tr>
+    <tr><td>DD-FMT-09</td><td>The block handle sits in the gutter, appears on hover, and always has a keyboard equivalent.</td><td>UC-BLOCK-03</td><td>Keeps the column clean (CP-CALM-01) while giving pointer users a familiar Notion/Loop grip.</td><td>Handles always visible (visual noise).</td></tr>
+  </tbody>
+</table>

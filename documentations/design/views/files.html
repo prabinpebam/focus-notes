@@ -1,0 +1,201 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Design · Views</p>
+  <h1 class="slate-hero__title">Files panel</h1>
+  <p class="slate-hero__summary">Create, find, rename, move, delete, and restore notes and folders, with nothing broken and nothing lost.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>A floating left sheet over the canvas. It has <strong>Private</strong> and <strong>Public</strong> sections, a filter field, a <strong>New</strong> menu, and <strong>Recently deleted</strong> at the bottom. Rows show note <em>titles</em>, and the current note is revealed and selected. Everything is direct: rename inline, drag to move (or cut and paste, or Move to…), multi-select to act in bulk. Every operation is one Git commit with an <strong>Undo</strong> toast, and links in other notes are updated automatically. Deleting a single private note doesn't ask, because it can be undone and restored. Deleting folders, many items, or public notes asks first. View IA-VIEW-FILES serves UC-FILE-01 to UC-FILE-10.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img"
+       aria-labelledby="files-title files-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="files-title">The Files panel floating over the canvas</title>
+    <desc id="files-desc">A window with the trigger at the top center. A sheet floats over the left side of the canvas, inset from the window edges. It has the title Files, a New menu button, and a filter field. The Private section lists an expanded journal folder with two dated notes, a collapsed drafts folder, and the current note, Spec ideas, which is selected. The Public section lists an essays folder and an About note. Recently deleted, with a count of 3, sits at the bottom. The note text stays visible to the right.</desc>
+    <g id="files-window" data-slate-svg-step="0" data-slate-svg-effect="fade">
+      <rect x="40" y="30" width="880" height="500" rx="28" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <circle cx="480" cy="52" r="15" fill="var(--color-neutral-bg-4)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <circle cx="480" cy="52" r="5" fill="var(--color-status-danger-fg)"/>
+      <g fill="var(--color-neutral-fg-3)">
+        <rect x="450" y="130" width="400" height="12" rx="6"/><rect x="450" y="160" width="380" height="10" rx="5"/><rect x="450" y="186" width="300" height="10" rx="5"/>
+        <rect x="450" y="230" width="400" height="10" rx="5"/><rect x="450" y="256" width="360" height="10" rx="5"/><rect x="450" y="282" width="390" height="10" rx="5"/>
+        <rect x="450" y="308" width="220" height="10" rx="5"/><rect x="450" y="352" width="400" height="10" rx="5"/><rect x="450" y="378" width="340" height="10" rx="5"/>
+      </g>
+    </g>
+    <g id="files-sheet" data-slate-svg-step="1" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)">
+      <rect x="52" y="78" width="330" height="440" rx="16" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <text x="76" y="114" font-size="20" font-weight="700" fill="var(--color-neutral-fg-1)">Files</text>
+      <rect id="files-new" x="284" y="92" width="80" height="32" rx="8" fill="var(--color-neutral-bg-3)"/>
+      <text x="324" y="113" text-anchor="middle" font-size="15" fill="var(--color-neutral-fg-1)" data-slate-fit-target="files-new" data-slate-fit-padding="8">New ▾</text>
+      <rect x="72" y="136" width="292" height="32" rx="8" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1"/>
+      <text x="88" y="157" font-size="15" fill="var(--color-neutral-fg-2)">Filter by name</text>
+      <text x="76" y="198" font-size="13" font-weight="700" letter-spacing="1" fill="var(--color-neutral-fg-2)">PRIVATE</text>
+      <g font-size="15" fill="var(--color-neutral-fg-1)">
+        <text x="76" y="226">▾  journal</text>
+        <text x="104" y="256">2026-10-13</text>
+        <text x="104" y="286">2026-10-12</text>
+        <text x="76" y="316">▸  drafts</text>
+      </g>
+      <rect id="files-current" x="64" y="328" width="306" height="32" rx="8" fill="var(--color-neutral-bg-3)" stroke="var(--color-brand-stroke)" stroke-width="1.5"/>
+      <text x="92" y="349" font-size="15" font-weight="700" fill="var(--color-neutral-fg-1)" data-slate-fit-target="files-current" data-slate-fit-padding="8">Spec ideas</text>
+      <text x="76" y="392" font-size="13" font-weight="700" letter-spacing="1" fill="var(--color-neutral-fg-2)">PUBLIC</text>
+      <g font-size="15" fill="var(--color-neutral-fg-1)">
+        <text x="76" y="420">▸  essays</text>
+        <text x="92" y="450">About</text>
+      </g>
+      <path d="M72 470 H364" stroke="var(--color-neutral-stroke-2)" stroke-width="1"/>
+      <text x="76" y="498" font-size="15" fill="var(--color-neutral-fg-2)">Recently deleted · 3</text>
+    </g>
+  </svg>
+  <figcaption>The Files panel floats inset from the window edges, so the 20 px window corners stay clean. The note stays visible beside it.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>Section</th><th>Rows shown</th></tr></thead>
+    <tbody>
+      <tr><td>Header</td><td>Files, New ▾, Filter by name</td></tr>
+      <tr><td>Private</td><td>journal (expanded): 2026-10-13, 2026-10-12. drafts (collapsed). Spec ideas (current note, selected).</td></tr>
+      <tr><td>Public</td><td>essays (collapsed). About.</td></tr>
+      <tr><td>Footer</td><td>Recently deleted · 3</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2 data-reader-personas="design product">Opening and closing</h2>
+<table>
+  <thead><tr><th>Opens with</th><th>Closes with</th></tr></thead>
+  <tbody>
+    <tr><td><em>Open</em> in the toolbar, <kbd>Mod</kbd>+<kbd>O</kbd>, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> (reveals the current note), Spotlight's "Show in Files" action</td><td>Opening a note, <kbd>Esc</kbd>, clicking the canvas, or <kbd>Mod</kbd>+<kbd>O</kbd> again. With <em>Keep open</em> (P1), only <kbd>Esc</kbd> or the pin closes it.</td></tr>
+  </tbody>
+</table>
+<p>It opens with the current note revealed (ancestor folders expanded) and focused, so <kbd>↑</kbd>/<kbd>↓</kbd> works straight away. Expanded folders are remembered per device.</p>
+
+<h2 data-reader-personas="design">Anatomy</h2>
+<dl class="slate-defs">
+  <dt>Sheet</dt>
+  <dd>Frosted, 330 px wide, inset 12 px from the window's left, top band, and bottom, with <code>radius.sheet</code> on every corner. The canvas behind it isn't dimmed, so the note stays readable.</dd>
+  <dt>Header</dt>
+  <dd>The title "Files" (20 px), a sort button (⇅: Name or Last changed), and <strong>New ▾</strong> (New note <kbd>Mod</kbd>+<kbd>N</kbd>, New folder <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd>). With several items selected, the header changes to "3 selected" with Move to…, Make public/private, Delete, and a Clear selection button.</dd>
+  <dt>Filter field</dt>
+  <dd>Filters the tree by name as you type, keeping the ancestors of matches. It doesn't search inside notes: the empty-result line offers "Search inside notes with ⌘K / Ctrl+K".</dd>
+  <dt>Sections</dt>
+  <dd><strong>Private</strong> first, because it's the default for new notes (D-05), then <strong>Public</strong>. Each has an uppercase 13 px label and a count on hover, and can be collapsed.</dd>
+  <dt>Rows</dt>
+  <dd>32 px tall (44 px on touch). 16 px indent per level. A chevron for folders, the note's <em>title</em>, and on hover the time it last changed ("2 h") and a ⋯ button. Public notes add a small status: <em>Live</em>, <em>Publishing…</em>, or <em>Not published</em>.</dd>
+  <dt>Footer</dt>
+  <dd><strong>Recently deleted · n</strong>, which opens that list in place. The <em>Keep open</em> pin is here in P1.</dd>
+</dl>
+
+<h3>Row states</h3>
+<table>
+  <thead><tr><th>State</th><th>Look</th></tr></thead>
+  <tbody>
+    <tr><td>Rest</td><td>Title in <code>color.text</code>, folders in medium weight</td></tr>
+    <tr><td>Hover</td><td><code>color.hover</code> fill. The time and ⋯ button appear.</td></tr>
+    <tr><td>Current note</td><td><code>color.selection</code> fill, accent outline, semibold</td></tr>
+    <tr><td>Multi-selected</td><td><code>color.selection</code> fill without the outline. The header shows the count.</td></tr>
+    <tr><td>Renaming</td><td>The row becomes a text field with the name selected (without the extension)</td></tr>
+    <tr><td>Cut (waiting to be pasted)</td><td>50% opacity until pasted or <kbd>Esc</kbd></td></tr>
+    <tr><td>Drop target</td><td>Accent outline. A collapsed folder expands after 600 ms of hovering.</td></tr>
+    <tr><td>Not synced yet</td><td>A small dot after the title, with the tooltip "Not synced yet"</td></tr>
+  </tbody>
+</table>
+
+<h2 data-reader-personas="design product">Creating</h2>
+<table>
+  <thead><tr><th>Action</th><th>Flow</th><th>Serves</th></tr></thead>
+  <tbody>
+    <tr><td>New note</td><td>From the toolbar, <kbd>Mod</kbd>+<kbd>N</kbd>, New ▾, or a folder's ⋯. It's created in the selected folder (or the folder of the current note, or the Private root), the panel closes, and the caret lands in an empty title. Nothing is written to disk until the first character is typed, so abandoned empty notes leave no files.</td><td>UC-FILE-01</td></tr>
+    <tr><td>New folder</td><td>A new row appears in place with an inline name field ("New folder" selected). <kbd>Enter</kbd> creates it, <kbd>Esc</kbd> or clicking away with an empty name cancels. A duplicate or invalid name shows an inline error under the field, and the field stays open.</td><td>UC-FILE-04</td></tr>
+    <tr><td>Duplicate (P1)</td><td>⋯ → Duplicate creates "⟨title⟩ copy" next to the original and opens it.</td><td>UC-FILE-10</td></tr>
+  </tbody>
+</table>
+
+<h3>Names and titles</h3>
+<ul>
+  <li><strong>Rows show titles, not file names.</strong> The title is the note's first H1, falling back to the file name. The file name shows in the row's tooltip and in Rename.</li>
+  <li><strong>The file name follows the title until the note is published</strong> (FIL-07). Typing the title "On focus" saves as <code>on-focus.md</code>. Once published, the file name is frozen so the public URL stays stable (D-08). It can still be renamed on purpose, with a URL warning.</li>
+  <li><strong>File name rules:</strong> lowercase, spaces become hyphens, letters in any language are kept, characters that aren't allowed on Windows or macOS (<code>\ / : * ? " &lt; &gt; |</code>) are removed, as are leading and trailing dots and spaces. Reserved Windows names (<code>CON</code>, <code>NUL</code>, …) get a suffix. At most 80 characters. A clash adds <code>-2</code>, <code>-3</code>.</li>
+  <li>Changing only the capitalization of a name works on case-insensitive file systems: the app renames in two steps through a temporary name.</li>
+</ul>
+
+<h2 data-reader-personas="design product">Renaming</h2>
+<ul>
+  <li><kbd>F2</kbd> (Windows and Linux), <kbd>Enter</kbd> (macOS), ⋯ → Rename, or a slow second click on a selected row.</li>
+  <li><strong>Note:</strong> the field edits the <em>title</em>. The H1 inside the note is updated, and the file name follows if it isn't frozen. For a published note, the field shows "Also rename the file and change its public link (the old link will redirect)", unchecked by default.</li>
+  <li><strong>Folder:</strong> the field edits the folder name.</li>
+  <li><kbd>Enter</kbd> saves and <kbd>Esc</kbd> cancels. Links to the note, or to anything in the folder, are updated in the same commit (FIL-09), and the toast says "Renamed. Updated links in 4 notes." with <strong>Undo</strong>.</li>
+</ul>
+
+<h2 data-reader-personas="design product">Moving</h2>
+<table>
+  <thead><tr><th>Way</th><th>Behavior</th></tr></thead>
+  <tbody>
+    <tr><td>Drag and drop</td><td>Drag one row or a selection. A ghost shows the first title and a count ("3 items"). Drop onto a folder or a section label (the root of that section). Folders expand after 600 ms of hovering, and the list scrolls near its edges. Dropping into its own subfolder isn't allowed (not-allowed cursor, no outline).</td></tr>
+    <tr><td>Cut and paste</td><td><kbd>Ctrl+X</kbd> / <kbd>Ctrl+V</kbd> on Windows and Linux. <kbd>⌘C</kbd> then <kbd>⌥⌘V</kbd> on macOS, as in Finder (<kbd>⌘X</kbd>/<kbd>⌘V</kbd> also work). Cut items show at 50% until pasted. <kbd>Esc</kbd> cancels.</td></tr>
+    <tr><td>Move to… picker</td><td><kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> or ⋯ → Move to… opens the <a href="../components/feedback-and-dialogs.md#move-to-picker">Move to picker</a>: a searchable folder list with recent destinations first.</td></tr>
+    <tr><td>Across Public and Private</td><td>Any of these into the other section changes visibility, so it shows the visibility <a href="../components/feedback-and-dialogs.md#confirmation-dialog">confirmation</a> first (UC-SHARE-01). Nothing moves until confirmed.</td></tr>
+  </tbody>
+</table>
+<p>Every move is one commit that updates links. The toast says "Moved 3 notes to drafts." with <strong>Undo</strong>. The list keeps the moved items selected and scrolls to them.</p>
+
+<h2 data-reader-personas="design product">Deleting and restoring</h2>
+<table>
+  <thead><tr><th>What's deleted</th><th>Asks first?</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>One private note</td><td>No. The toast "Deleted “Spec ideas”." offers <strong>Undo</strong>.</td><td>Fast, and fully recoverable (Undo, then Recently deleted for 30 days).</td></tr>
+    <tr><td>A folder with notes, or 5 or more items</td><td>Yes: "Delete “drafts” and the 12 notes in it?" [Cancel] [Delete 12 notes]</td><td>The scale isn't obvious from the row.</td></tr>
+    <tr><td>Any public note</td><td>Yes: "Delete “About”? Its public page will go offline after the next publish." [Cancel] [Delete and unpublish]</td><td>It changes what other people can see (CP-SHARE-01).</td></tr>
+    <tr><td>An empty folder</td><td>No</td><td>Nothing to lose.</td></tr>
+  </tbody>
+</table>
+<p><strong>Recently deleted</strong> (FIL-10) lists notes deleted in the last 30 days, found from Git history. Notes are grouped by day and show their title, original folder, and time. <strong>Restore</strong> puts a note back where it was (or in its section's root if the folder is gone), and <strong>Restore to…</strong> opens the Move to picker. The list explains: "Notes stay in Git history even after 30 days. Older ones can be recovered with Git." Nothing here deletes permanently.</p>
+
+<h2 data-reader-personas="design">Selection</h2>
+<ul>
+  <li><strong>Click</strong> selects one item, <kbd>Mod</kbd>+click adds or removes, and <kbd>Shift</kbd>+click selects a range. <kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> extends the selection, and <kbd>Mod</kbd>+<kbd>A</kbd> selects everything visible.</li>
+  <li>With several items selected, the header becomes an action bar. Right-click offers the same actions for the selection.</li>
+  <li>Opening a note (<kbd>Enter</kbd> on Windows, <kbd>⌘↓</kbd> on macOS, or a double-click) acts on the focused row only.</li>
+</ul>
+
+<h2 data-reader-personas="design">Empty, filtered, and error states</h2>
+<table>
+  <thead><tr><th>Situation</th><th>Shown</th></tr></thead>
+  <tbody>
+    <tr><td>No notes yet</td><td>"Your notes will appear here." and a [New note] button with its shortcut.</td></tr>
+    <tr><td>Empty folder</td><td>An indented, muted "Empty" row.</td></tr>
+    <tr><td>No public notes</td><td>"Nothing is public. Notes you publish appear here."</td></tr>
+    <tr><td>Filter finds nothing</td><td>"No notes named ‘xyz’." and a link, "Search inside notes", that opens Spotlight with the query.</td></tr>
+    <tr><td>Private repository not accessible</td><td>The Private section shows "Private notes aren't available to this account." with a link to Settings → Account.</td></tr>
+    <tr><td>An operation fails (for example, a Git error)</td><td>Nothing changes on disk. A toast gives the reason and a [Details] link.</td></tr>
+    <tr><td>Offline</td><td>Operations go ahead locally and sync later. Affected rows show the "not synced yet" dot.</td></tr>
+  </tbody>
+</table>
+
+<h2 data-reader-personas="design engineering">Accessibility</h2>
+<ul>
+  <li>The list is a <code>tree</code> with <code>aria-multiselectable</code>. Rows carry <code>aria-level</code>, <code>aria-expanded</code>, and <code>aria-selected</code>, and their accessible names include visibility ("About, public, live").</li>
+  <li>Type-ahead jumps to matching rows. Arrow keys follow the standard tree pattern.</li>
+  <li>Operations are announced politely ("Moved 3 notes to drafts"). Drag and drop always has a keyboard equivalent (cut and paste, Move to…).</li>
+  <li>In compact windows (under 600 px), the sheet is full-width, and long-press opens the row menu.</li>
+</ul>
+
+<h2 data-reader-personas="product design">Design decisions</h2>
+<table>
+  <thead><tr><th>ID</th><th>Decision</th><th>Serves</th><th>Rationale</th><th>Alternatives rejected</th></tr></thead>
+  <tbody>
+    <tr><td>DD-FILES-01</td><td>A floating, inset left sheet that closes when a note opens.</td><td>UC-FILE-03</td><td>Organizing is an occasional task, so it shouldn't occupy the canvas (CP-CALM-01). Insetting keeps the 20 px window corners clean.</td><td>A permanent sidebar. A full-window file browser that loses sight of the note.</td></tr>
+    <tr><td>DD-FILES-02</td><td>Private comes first, and is the default destination.</td><td>UC-FILE-01, UC-SHARE-01</td><td>The safe default should also be the most visible (CP-SAFE-01).</td><td>Alphabetical sections, which would put Private second.</td></tr>
+    <tr><td>DD-FILES-03</td><td>Rows show note titles, not file names.</td><td>UC-FILE-03</td><td>People recognize what they wrote, not slugs.</td><td>Showing file names, as Finder does.</td></tr>
+    <tr><td>DD-FILES-04</td><td>The file name follows the title until publishing, then freezes.</td><td>UC-FILE-02</td><td>New notes need no naming step (SC-FILE-01), and public URLs stay stable once shared (CP-SHARE-01).</td><td>Asking for a name when creating (friction). Never renaming (stale "untitled-3.md" files). Always renaming (breaks shared URLs).</td></tr>
+    <tr><td>DD-FILES-05</td><td>Renames and moves update links in other notes in the same commit.</td><td>UC-FILE-07</td><td>Reorganizing must never break anything (CP-ORDER-01). One commit makes Undo exact.</td><td>Leaving links broken. A separate "fix links" command.</td></tr>
+    <tr><td>DD-FILES-06</td><td>Deleting one private note uses Undo instead of a confirmation. Folders, bulk deletes, and public notes are confirmed.</td><td>UC-FILE-08, UC-FILE-09</td><td>Confirm only where the impact is big or affects other people. Everything else is recoverable, so a dialog would only slow people down.</td><td>Confirming every delete (people learn to click through it). Never confirming (risky for public notes).</td></tr>
+    <tr><td>DD-FILES-07</td><td>Recently deleted lives inside the Files panel and is built from Git history.</td><td>UC-FILE-09</td><td>People look for lost files where files are. Git already keeps everything, so no separate trash folder is needed in the repository.</td><td>A Settings page. A <code>.trash/</code> folder in the repository (clutters the repository and GitHub).</td></tr>
+    <tr><td>DD-FILES-08</td><td>Moving across Public and Private always asks for confirmation, whichever way it's done.</td><td>UC-SHARE-01</td><td>Changing the audience is never a side effect of tidying up (CP-SHARE-01).</td><td>Treating it as an ordinary move.</td></tr>
+    <tr><td>DD-FILES-09</td><td>No manual ordering. Sort by name or by last change.</td><td>UC-FILE-10</td><td>Git and the file system have no order to store, and the Markdown files stay portable (CP-OWN-01).</td><td>Drag to reorder with an order file in the repository.</td></tr>
+  </tbody>
+</table>

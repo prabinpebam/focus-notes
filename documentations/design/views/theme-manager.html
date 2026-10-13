@@ -1,0 +1,251 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Design · Views</p>
+  <h1 class="slate-hero__title">Theme manager</h1>
+  <p class="slate-hero__summary">Pick a look in seconds, bring a scheme you already love, or build your own, and never end up with something unreadable.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>People change themes at <strong>setup</strong>, when their <strong>surroundings or comfort</strong> change, and when they want the tool to feel <strong>theirs</strong>. They arrive with a <strong>named scheme</strong>, a <strong>color</strong>, a <strong>font</strong>, a <strong>theme file</strong> from another app, an <strong>accessibility need</strong>, or nothing at all. Most pick a preset, some tweak one or two things, and a few import, generate, or shuffle. The manager is a right side sheet with the real note as the live preview, built in that order: <strong>Themes</strong> (gallery), <strong>Reading</strong> (font, size, spacing, width), and <strong>Edit colors</strong>. The <strong>New ▾</strong> menu offers <em>From a color</em>, <em>Shuffle</em>, <em>Import</em>, and <em>Duplicate</em>. Appearance is <strong>System, Light, or Dark</strong>, with one chosen light theme and one chosen dark theme. A <strong>contrast guard</strong> checks every theme. View IA-VIEW-THEME serves UC-THEME-01, UC-THEME-02, and UC-THEME-04 to UC-THEME-10.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img"
+       aria-labelledby="thm-title thm-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="thm-title">The theme manager sheet beside the live note</title>
+    <desc id="thm-desc">A window whose note stays visible on the left. On the right, a sheet titled Theme shows an appearance switch set to System, with Light and Dark beside it. Below are three tabs, Themes, Reading and Edit colors, with Themes selected, and a search field. A grid of six theme tiles follows, each with a large Aa sample and a name: Paper, marked as the chosen light theme; Ink, marked as the chosen dark theme; Sepia; Harbor; Forest; and High contrast.</desc>
+    <g id="thm-window" data-slate-svg-step="0" data-slate-svg-effect="fade">
+      <rect x="40" y="30" width="880" height="545" rx="28" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <circle cx="480" cy="52" r="15" fill="var(--color-neutral-bg-4)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <circle cx="480" cy="52" r="5" fill="var(--color-status-danger-fg)"/>
+      <g fill="var(--color-neutral-fg-2)">
+        <rect x="90" y="120" width="300" height="18" rx="9"/>
+        <rect x="90" y="168" width="400" height="10" rx="5"/><rect x="90" y="194" width="380" height="10" rx="5"/><rect x="90" y="220" width="300" height="10" rx="5"/>
+        <rect x="90" y="264" width="400" height="10" rx="5"/><rect x="90" y="290" width="360" height="10" rx="5"/><rect x="90" y="316" width="390" height="10" rx="5"/>
+        <rect x="90" y="342" width="220" height="10" rx="5"/><rect x="90" y="386" width="400" height="10" rx="5"/><rect x="90" y="412" width="340" height="10" rx="5"/>
+      </g>
+    </g>
+    <g id="thm-sheet" data-slate-svg-step="1" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)">
+      <rect x="538" y="78" width="370" height="485" rx="16" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <text x="562" y="114" font-size="20" font-weight="700" fill="var(--color-neutral-fg-1)">Theme</text>
+      <rect x="558" y="130" width="330" height="36" rx="8" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1"/>
+      <rect id="thm-seg-system" x="561" y="133" width="108" height="30" rx="6" fill="var(--color-neutral-bg-4)"/>
+      <g font-size="15" text-anchor="middle" fill="var(--color-neutral-fg-1)">
+        <text x="615" y="153" font-weight="700" data-slate-fit-target="thm-seg-system" data-slate-fit-padding="6">System</text>
+        <text x="723" y="153">Light</text>
+        <text x="833" y="153">Dark</text>
+      </g>
+      <g font-size="15" fill="var(--color-neutral-fg-2)">
+        <text x="562" y="196" font-weight="700" fill="var(--color-neutral-fg-1)">Themes</text>
+        <text x="640" y="196">Reading</text>
+        <text x="722" y="196">Edit colors</text>
+      </g>
+      <path d="M562 204 H620" stroke="var(--color-brand-fg-1)" stroke-width="3" stroke-linecap="round"/>
+      <rect x="558" y="214" width="330" height="32" rx="8" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1"/>
+      <text x="574" y="235" font-size="14" fill="var(--color-neutral-fg-2)">Search themes</text>
+    </g>
+    <g id="thm-tiles" data-slate-svg-step="2" data-slate-svg-effect="scale-in" font-family="var(--font-family-base)">
+      <rect x="558" y="262" width="158" height="86" rx="10" fill="#FAF7F2" stroke="var(--color-brand-stroke)" stroke-width="3"/>
+      <text x="572" y="302" font-size="24" fill="#1F1F1F">Aa</text>
+      <text x="572" y="334" font-size="14" fill="#1F1F1F">Paper</text>
+      <text x="702" y="334" font-size="13" text-anchor="end" fill="#4A4A4A">Light ✓</text>
+      <circle cx="698" cy="282" r="5" fill="#C4262E"/>
+      <rect x="730" y="262" width="158" height="86" rx="10" fill="#1E1E1E" stroke="var(--color-brand-stroke)" stroke-width="3"/>
+      <text x="744" y="302" font-size="24" fill="#EDEDED">Aa</text>
+      <text x="744" y="334" font-size="14" fill="#EDEDED">Ink</text>
+      <text x="874" y="334" font-size="13" text-anchor="end" fill="#BDBDBD">Dark ✓</text>
+      <circle cx="870" cy="282" r="5" fill="#F25A5F"/>
+      <rect x="558" y="362" width="158" height="86" rx="10" fill="#F4ECD8" stroke="#D8C9A8" stroke-width="1.5"/>
+      <text x="572" y="402" font-size="24" fill="#3B2F1E">Aa</text>
+      <text x="572" y="434" font-size="14" fill="#3B2F1E">Sepia</text>
+      <rect x="730" y="362" width="158" height="86" rx="10" fill="#E8EEF3" stroke="#B9C7D3" stroke-width="1.5"/>
+      <text x="744" y="402" font-size="24" fill="#1F3346">Aa</text>
+      <text x="744" y="434" font-size="14" fill="#1F3346">Harbor</text>
+      <rect x="558" y="462" width="158" height="86" rx="10" fill="#E7EFE6" stroke="#B7CBB4" stroke-width="1.5"/>
+      <text x="572" y="502" font-size="24" fill="#1F3A24">Aa</text>
+      <text x="572" y="534" font-size="14" fill="#1F3A24">Forest</text>
+      <rect x="730" y="462" width="158" height="86" rx="10" fill="#FFFFFF" stroke="#000000" stroke-width="3"/>
+      <text x="744" y="502" font-size="24" font-weight="700" fill="#000000">Aa</text>
+      <text x="744" y="534" font-size="14" font-weight="700" fill="#000000">High contrast</text>
+    </g>
+  </svg>
+  <figcaption>The sheet leaves the note's left-aligned text visible, so every choice is previewed on your own writing. Tiles show which theme fills the light slot and which fills the dark slot. Tile colors are fixed samples of each theme, so they look the same whatever theme these docs are shown in.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>Part</th><th>Shown</th></tr></thead>
+    <tbody>
+      <tr><td>Appearance</td><td>System (selected), Light, Dark</td></tr>
+      <tr><td>Tabs</td><td>Themes (selected), Reading, Edit colors</td></tr>
+      <tr><td>Tiles</td><td>Paper (chosen light theme), Ink (chosen dark theme), Sepia, Harbor, Forest, High contrast</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2 data-reader-personas="product design">Why, when, and with what people change themes</h2>
+<p>These are design assumptions drawn from the seed spec, the owner's questions, and common behavior in writing and developer tools. They aren't research findings. Each one is the reason for a part of the design, so revisit the design if one turns out to be wrong.</p>
+<table>
+  <thead><tr><th>Moment</th><th>Why</th><th>What they bring</th><th>What they expect</th><th>Designed answer</th></tr></thead>
+  <tbody>
+    <tr><td><strong>First run</strong></td><td>To make it feel like theirs before writing</td><td>Usually nothing. Maybe a light or dark preference.</td><td>Pick from a few good options, fast</td><td>Six presets in the first run and the full gallery later (UC-THEME-01)</td></tr>
+    <tr><td><strong>Surroundings change</strong> (night, bright room, screen sharing)</td><td>Eye comfort, or legibility for others</td><td>Nothing. It's a quick need.</td><td>One click, or to follow the OS automatically</td><td>System mode with a light and a dark slot. The toolbar toggle and shortcut. The manager isn't needed (UC-THEME-02, UC-THEME-03)</td></tr>
+    <tr><td><strong>Comfort or accessibility need</strong></td><td>Low vision, light sensitivity, dyslexia, long sessions</td><td>A requirement: larger text, more contrast, a specific font, warmer colors</td><td>Precise control they can trust</td><td>The Reading tab, high-contrast presets, legible font options, and the contrast guard (UC-THEME-08, UC-THEME-09)</td></tr>
+    <tr><td><strong>Consistency with other tools</strong></td><td>Their editor, terminal, and notes should feel like one set</td><td>A <strong>named scheme</strong> (Solarized, Nord, Dracula, Gruvbox, Catppuccin) or a <strong>theme file</strong> (VS Code, base16)</td><td>Find it by name, or import it, not rebuild it</td><td>Named presets (P1) and import (UC-THEME-04, UC-THEME-05)</td></tr>
+    <tr><td><strong>Taste and expression</strong></td><td>Make it personal or match a brand</td><td>A <strong>color</strong> (brand hex, favorite hue), a <strong>font</strong> name</td><td>Get a whole theme from one choice</td><td>From a color (UC-THEME-06), then Edit colors to fine-tune</td></tr>
+    <tr><td><strong>Exploring or bored</strong></td><td>Novelty and play</td><td>Nothing, just curiosity</td><td>Something new each try, without breaking readability</td><td>Shuffle, with locks and history (UC-THEME-07)</td></tr>
+    <tr><td><strong>New computer</strong></td><td>Same look everywhere</td><td>Their previous themes</td><td>It's already there</td><td>Custom themes sync through the repository (UC-THEME-10)</td></tr>
+  </tbody>
+</table>
+
+<h3>Manual, preset, or random?</h3>
+<p>The design assumes a funnel. <strong>Most</strong> people pick a preset and maybe switch light and dark. <strong>Many</strong> adjust one or two reading settings (size, font). <strong>Some</strong> start from a color or import a scheme. <strong>Few</strong> edit individual colors or shuffle for fun. So the Themes tab opens first, Reading is one tap away, and the deep tools sit behind <em>New ▾</em> and <em>Edit colors</em>. They're never in the way, and always reachable.</p>
+
+<h2 data-reader-personas="product design engineering">The model</h2>
+<dl class="slate-defs">
+  <dt>Appearance</dt>
+  <dd><strong>System</strong> (default, follows the OS live), <strong>Light</strong>, or <strong>Dark</strong>.</dd>
+  <dt>Light slot and dark slot</dt>
+  <dd>One chosen light theme and one chosen dark theme. System mode swaps between them. Defaults are <em>Paper</em> and <em>Ink</em>.</dd>
+  <dt>Theme</dt>
+  <dd>A named set of color tokens of one kind, light or dark (see <a href="../../experience/theming.md#custom-themes-p1">Theming → Custom themes</a>). A <em>family</em> groups a light and a dark variant (for example Solarized Light and Solarized Dark). Choosing one variant offers to fill the other slot too.</dd>
+  <dt>Reading settings</dt>
+  <dd>Font, size, line height, reading width, paragraph spacing, and focus-mode dim strength. They're <strong>separate from colors</strong> and apply to every theme, so changing theme never resets your font size.</dd>
+</dl>
+
+<h2 data-reader-personas="design">Opening and the sheet</h2>
+<ul>
+  <li><strong>Opens from:</strong> ⋯ → Theme…, right-click or long-press the toolbar's Theme button, Settings → Appearance, Spotlight (<code>&gt; Theme…</code>), and the first-run "Make it yours" step (a reduced version).</li>
+  <li><strong>Sheet:</strong> frosted, 380 px wide, inset 12 px from the right edge, with <code>radius.sheet</code>. The canvas isn't dimmed. If the note is empty, a faint sample paragraph (heading, text, list, link, code, table) is shown in the canvas while the sheet is open, so there's something to preview on. It's removed on close and never saved.</li>
+  <li><strong>Header:</strong> "Theme", a close button, and the <strong>Appearance</strong> switch (System / Light / Dark).</li>
+  <li><strong>Tabs:</strong> <strong>Themes</strong>, <strong>Reading</strong>, <strong>Edit colors</strong>.</li>
+  <li><strong>Footer:</strong> the contrast status for the active theme ("Text contrast 9.8:1 · AAA") and <strong>Revert</strong>, which brings back exactly what was active when the sheet opened.</li>
+</ul>
+
+<h2 data-reader-personas="design product">Themes tab (gallery)</h2>
+<ul>
+  <li><strong>Search</strong> by name or tag ("warm", "dark", "nord"). <strong>Filter chips:</strong> All, Light, Dark, High contrast, Yours.</li>
+  <li><strong>Groups:</strong> <em>Yours</em> (custom themes, shown first when there are any), <em>Focus Notes</em> (built-in), and <em>Classic schemes</em> (named schemes, P1).</li>
+  <li><strong>Tile</strong> (158 &times; 86 px): the theme's canvas color, an "Aa" in its text color and font, the accent and trigger-dot colors, the name, a slot label ("Light ✓", "Dark ✓") when chosen, and a contrast badge (AA or AAA) on hover or focus. The tile's ⋯ menu offers Duplicate and edit, Export, and for custom themes Rename and Delete.</li>
+  <li><strong>Choosing:</strong> click or <kbd>Enter</kbd> fills that tile's slot (light or dark) and applies it at once. If the appearance is showing the other kind, it switches to show the choice. Toggle back with the switch.</li>
+  <li><strong>Previewing with the keyboard:</strong> moving focus through tiles with arrow keys previews each one on the real note, like VS Code's theme picker. <kbd>Esc</kbd> returns to the chosen theme. Hovering with a pointer <em>doesn't</em> preview, because the whole window flashing while you move the mouse is unpleasant.</li>
+</ul>
+
+<h3>Built-in themes</h3>
+<table>
+  <thead><tr><th>Theme</th><th>Kind</th><th>Character</th></tr></thead>
+  <tbody>
+    <tr><td>Paper</td><td>Light</td><td>Warm off-white, near-black text. Default light.</td></tr>
+    <tr><td>Ink</td><td>Dark</td><td>Deep neutral, soft off-white text. Default dark.</td></tr>
+    <tr><td>Sepia</td><td>Light</td><td>Warm paper tone that's gentle in long sessions.</td></tr>
+    <tr><td>Dusk</td><td>Dark</td><td>Warm dark, for writing late without a cold blue cast.</td></tr>
+    <tr><td>Harbor</td><td>Light and dark</td><td>Cool blue-grey family.</td></tr>
+    <tr><td>Forest</td><td>Light and dark</td><td>Muted green family.</td></tr>
+    <tr><td>High contrast</td><td>Light and dark</td><td>At least 7:1 everywhere, heavier focus outlines. For low vision.</td></tr>
+  </tbody>
+</table>
+<p><strong>Classic schemes (P1):</strong> Solarized, Nord, Dracula, Gruvbox, and Catppuccin, in the variants each publishes. Their published palettes are MIT-licensed, which is checked again when they're added (D-20). Any preset that wouldn't meet the contrast guard for body text is adjusted slightly (and labeled "adapted") rather than shipped unreadable.</p>
+
+<h2 data-reader-personas="design product">Reading tab</h2>
+<table>
+  <thead><tr><th>Control</th><th>Range</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Font</td><td>Sans (Inter), Serif (Source Serif 4), Mono (JetBrains Mono), Hyperlegible (Atkinson Hyperlegible), OpenDyslexic, System, or a custom font stack</td><td>Each option is shown in its own font. Custom accepts a CSS font list and falls back safely if the font isn't installed.</td></tr>
+    <tr><td>Size</td><td>14–32 px in steps (see <a href="../../experience/theming.md#fonts">Theming → Fonts</a>)</td><td>A − 18 px + stepper. The same steps as <kbd>Mod</kbd>+<kbd>=</kbd> / <kbd>-</kbd>.</td></tr>
+    <tr><td>Line spacing</td><td>1.3–2.0</td><td>A slider showing its value. Default 1.6.</td></tr>
+    <tr><td>Reading width</td><td>50–100 characters</td><td>A slider. The canvas column resizes live.</td></tr>
+    <tr><td>Paragraph spacing</td><td>Compact, Comfortable, Airy</td><td>A segmented control.</td></tr>
+    <tr><td>Focus dim</td><td>15–60%</td><td>A slider, previewed with focus mode briefly on.</td></tr>
+  </tbody>
+</table>
+<p>A <strong>Reset reading settings</strong> link restores all defaults. Reading settings are stored per device, and synced only if <em>Sync appearance</em> is on (THM-05).</p>
+
+<h2 data-reader-personas="design product">Edit colors tab</h2>
+<ul>
+  <li><strong>Built-in themes are never edited in place.</strong> The first change makes a copy named "⟨Theme⟩ (custom)" in <em>Yours</em> and says so in one line at the top of the tab.</li>
+  <li><strong>Simple view</strong> (default): five key colors, which are <em>Background</em>, <em>Surface</em>, <em>Text</em>, <em>Muted text</em>, and <em>Accent</em>. Every other token is derived from them (hover, borders, selection, find highlights, focus ring, code colors).</li>
+  <li><strong>All colors</strong> (disclosure): every token, grouped as in <a href="../../experience/theming.md#what-a-theme-controls">Theming</a>. Edited tokens get a dot and a per-token Reset.</li>
+  <li><strong>A color row:</strong> swatch, name, hex value, and the contrast it's checked against ("on Background 8.2:1"). Clicking the swatch opens a picker popover with a lightness, chroma, and hue picker (OKLCH, so lightness changes look even), a hex field, and an eyedropper on the desktop.</li>
+  <li><strong>The trigger dot</strong> is limited to red hues and enough saturation to stay a recognizable red dot. It's the product's signature (seed spec), so a theme can retune it but never remove it.</li>
+  <li><strong>Name</strong> field at the top. Changes save as you go, and <kbd>Mod</kbd>+<kbd>Z</kbd> undoes inside the editor.</li>
+</ul>
+
+<h2 data-reader-personas="design product">New ▾: creating themes</h2>
+<table>
+  <thead><tr><th>Path</th><th>Flow</th><th>Serves</th></tr></thead>
+  <tbody>
+    <tr><td><strong>From a color…</strong></td><td>Pick or paste one seed color (or use the eyedropper). A matching light theme and dark theme are generated as tonal palettes in OKLCH, keeping the seed's hue for the accent and tinting the neutrals slightly toward it. Both are shown side by side. [Save both] adds them to <em>Yours</em> and fills both slots.</td><td>UC-THEME-06</td></tr>
+    <tr><td><strong>Shuffle…</strong></td><td>Each <kbd>Space</kbd> or [Shuffle] makes a new, readable theme of the current kind. Mood chips (Warm, Cool, Muted, Vivid) steer it. A lock beside Background, Text, and Accent keeps that color on the next shuffle. <kbd>←</kbd>/<kbd>→</kbd> step through the last 20. [Keep this one] saves it to <em>Yours</em>.</td><td>UC-THEME-07</td></tr>
+    <tr><td><strong>Import…</strong></td><td>Drop a file or choose one: a <strong>VS Code theme</strong> (<code>.json</code>), a <strong>base16 scheme</strong> (<code>.yaml</code> or <code>.json</code>), or a <strong>Focus Notes theme</strong> (<code>.json</code>). Pasting JSON also works. A report lists what was <em>mapped</em> (for example editor background → Background), <em>derived</em>, and <em>ignored</em>, plus the contrast check, before [Add theme].</td><td>UC-THEME-05</td></tr>
+    <tr><td><strong>Duplicate current</strong></td><td>Copies the active theme into <em>Yours</em> and opens Edit colors.</td><td>UC-THEME-10</td></tr>
+  </tbody>
+</table>
+
+<h3>Import mapping (examples)</h3>
+<table>
+  <thead><tr><th>Focus Notes token</th><th>VS Code theme key</th><th>base16 slot</th></tr></thead>
+  <tbody>
+    <tr><td>Background (<code>color.canvas</code>)</td><td><code>editor.background</code></td><td><code>base00</code></td></tr>
+    <tr><td>Surface (<code>color.surface</code>)</td><td><code>editorWidget.background</code>, else derived</td><td><code>base01</code></td></tr>
+    <tr><td>Text (<code>color.text</code>)</td><td><code>editor.foreground</code></td><td><code>base05</code></td></tr>
+    <tr><td>Muted text</td><td><code>descriptionForeground</code>, else derived</td><td><code>base04</code></td></tr>
+    <tr><td>Accent</td><td><code>focusBorder</code> or <code>button.background</code></td><td><code>base0D</code></td></tr>
+    <tr><td>Selection</td><td><code>editor.selectionBackground</code></td><td><code>base02</code></td></tr>
+    <tr><td>Link</td><td><code>textLink.foreground</code></td><td><code>base0D</code></td></tr>
+    <tr><td>Code syntax</td><td><code>tokenColors</code> (keywords, strings, comments)</td><td><code>base08</code>–<code>base0F</code></td></tr>
+  </tbody>
+</table>
+<p>Whether the imported theme is light or dark is worked out from the background's lightness. Missing values are derived from the five key colors. The importer never runs code from the file.</p>
+
+<h2 id="contrast-guard" data-reader-personas="design product">Contrast guard</h2>
+<table>
+  <thead><tr><th>Pair checked</th><th>Minimum</th><th>Target badge</th></tr></thead>
+  <tbody>
+    <tr><td>Body text on the canvas</td><td>4.5:1</td><td>AAA at 7:1</td></tr>
+    <tr><td>Muted text on the canvas and surfaces</td><td>4.5:1</td><td>AA</td></tr>
+    <tr><td>Link and accent text</td><td>4.5:1</td><td>AA</td></tr>
+    <tr><td>Focus ring, control borders, and the frosted circle edge against their background</td><td>3:1</td><td>AA (non-text)</td></tr>
+    <tr><td>Trigger dot against the frosted circle</td><td>3:1</td><td>AA (non-text)</td></tr>
+    <tr><td>Selection and find highlight against the text on them</td><td>4.5:1</td><td>AA</td></tr>
+  </tbody>
+</table>
+<ul>
+  <li>Failing pairs show inline beside the color ("Text on Background 3.1:1, needs 4.5") with <strong>Fix</strong>. Fix changes only the lightness of the edited color, by the smallest amount needed, keeping its hue.</li>
+  <li>Tiles and the footer show the badge. Built-in themes never fail (enforced by a test).</li>
+  <li>A failing custom theme <em>can</em> be saved, after "This theme has 2 hard-to-read pairs. Save anyway?" (UNSUP-THEME-02). It's marked "Low contrast" in the gallery.</li>
+  <li>Focus-mode dimmed text is deliberately excluded from the guard (see <a href="../../experience/focus-mode.md#accessibility">Focus mode → Accessibility</a>).</li>
+</ul>
+
+<h2 data-reader-personas="design engineering">Saving, syncing, and sharing</h2>
+<ul>
+  <li>Custom themes are saved as <code>.focus-notes/themes/&lt;name&gt;.json</code> in the public repository, so they sync to every computer (UC-THEME-10). They only contain colors and font names, never personal content.</li>
+  <li>The chosen appearance, slots, and reading settings are per device. Turning on <em>Sync appearance</em> stores them in <code>.focus-notes/settings.json</code> instead (THM-05).</li>
+  <li><strong>Export:</strong> the tile's ⋯ → Export saves a <code>.json</code> file or copies it.</li>
+  <li><strong>Delete:</strong> a custom theme that's in use falls back to the default for that slot, and a toast offers <strong>Undo</strong>.</li>
+</ul>
+
+<h2 data-reader-personas="design engineering">Keyboard and accessibility</h2>
+<ul>
+  <li>Tabs use the <code>tablist</code> pattern. The gallery is a <code>grid</code> where arrow keys move in two dimensions, <kbd>Enter</kbd> chooses, and moving focus previews. Previews are announced ("Previewing Sepia, light, AAA").</li>
+  <li>Every color can be set by typing a hex value, so pointer-only pickers are never required. Contrast results are written out in text, not just colored.</li>
+  <li>The appearance switch is a radio group. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> works while the sheet is open.</li>
+  <li>The sheet respects reduced transparency and reduced motion (theme changes cross-fade only when motion is allowed).</li>
+</ul>
+
+<h2 data-reader-personas="product design">Design decisions</h2>
+<table>
+  <thead><tr><th>ID</th><th>Decision</th><th>Serves</th><th>Rationale</th><th>Alternatives rejected</th></tr></thead>
+  <tbody>
+    <tr><td>DD-THEME-01</td><td>A right side sheet, with the real note as the preview.</td><td>UC-THEME-01, UC-THEME-08</td><td>A theme is judged on your own writing, at your size, in your window. Mock previews mislead.</td><td>A modal with a sample card. A separate settings page.</td></tr>
+    <tr><td>DD-THEME-02</td><td>Appearance (System, Light, Dark) plus a light slot and a dark slot.</td><td>UC-THEME-02, UC-THEME-03</td><td>Makes System mode meaningful with any themes, and lets the one-click toggle swap between two looks the writer chose.</td><td>A single active theme (System can't follow it). Light and dark versions that must come from the same family.</td></tr>
+    <tr><td>DD-THEME-03</td><td>Reading settings are separate from colors and apply to every theme.</td><td>UC-THEME-08</td><td>Comfort settings are about the person, not the palette. Changing theme must not reset them.</td><td>Fonts and sizes stored inside each theme.</td></tr>
+    <tr><td>DD-THEME-04</td><td>Ordered by how many people need each part: gallery, then reading, then editing. Creation tools sit behind New ▾.</td><td>UC-THEME-01, UC-THEME-06, UC-THEME-07</td><td>The common path stays short, and the deep tools stay one step away.</td><td>A single page of every control.</td></tr>
+    <tr><td>DD-THEME-05</td><td>The contrast guard warns and fixes, but doesn't block saving.</td><td>UC-THEME-09</td><td>It protects readability (CP-YOURS-01) while respecting choice. Silent auto-correction would surprise people.</td><td>Blocking failing themes. No checking at all.</td></tr>
+    <tr><td>DD-THEME-06</td><td>Keyboard focus previews, pointer hover doesn't.</td><td>UC-THEME-01</td><td>Arrowing through tiles is deliberate browsing. A pointer passing over tiles isn't, and flashing the whole app would be jarring.</td><td>Hover preview everywhere.</td></tr>
+    <tr><td>DD-THEME-07</td><td>Five key colors, with everything else derived. All tokens are behind a disclosure.</td><td>UC-THEME-06, UC-THEME-10</td><td>Five choices give a coherent theme. Forty tokens up front is a chore.</td><td>Showing every token by default.</td></tr>
+    <tr><td>DD-THEME-08</td><td>Import supports VS Code themes, base16 schemes, and Focus Notes JSON, with a mapping report.</td><td>UC-THEME-05</td><td>These are the most common portable formats people already own. The report explains what was guessed.</td><td>Only Focus Notes JSON (forces manual recreation). Silent mapping.</td></tr>
+    <tr><td>DD-THEME-09</td><td>Shuffle has locks, history, and moods, and only produces readable results.</td><td>UC-THEME-07</td><td>Playfulness without losing a good find or landing on an unreadable palette.</td><td>Fully random palettes.</td></tr>
+    <tr><td>DD-THEME-10</td><td>The trigger dot stays red within a limited range.</td><td>UC-THEME-10</td><td>The red dot is the seed spec's signature. Themes may tune it, not remove it.</td><td>A fully themeable trigger color.</td></tr>
+  </tbody>
+</table>

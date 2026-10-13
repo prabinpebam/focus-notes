@@ -1,0 +1,114 @@
+# User can…
+
+Every capability Focus Notes provides, written as what a person can do. Each one names the scenarios it serves, where it lives, the requirements that build it, and how we check it.
+
+> [!NOTE]
+> **TL;DR.** 68 user-can capabilities: 50 are P0 (the first release), 17 are P1, and 1 comes later. Every row traces up to at least one [scenario](scenarios.md) and down to the [views and components](../../design/information-architecture.html) that deliver it and the [requirements](../requirements.md) that make it testable. The column order (ID, user can, scenarios, priority, views, requirements, acceptance) follows the Slate spec convention. The acceptance column is the observable check: what a person sees, not how it's built.
+
+<h2 data-reader-personas="product design">Canvas and focus</h2>
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-CANVAS-01 | open the app straight into writing, with the caret in the last note or a new one | SC-WRITE-01 | P0 | IA-VIEW-CANVAS | UI-01, PKG-03 | From launch, typing lands in a note with no click, and nothing but text and the trigger is visible. |
+| UC-CANVAS-02 | reach every app action from the trigger without any persistent chrome | SC-WRITE-01 | P0 | IA-CMP-TRIGGER, IA-CMP-TOOLBAR, IA-CMP-OVERFLOW | UI-02, UI-03, UI-04, UI-05, UI-07, UI-06 | At most six toolbar actions plus ⋯. Every action can be reached by keyboard, pointer, and touch. |
+| UC-CANVAS-03 | move, resize, maximize, and full-screen a borderless desktop window just like any native window | SC-WRITE-01 | P0 | IA-CMP-TITLEBAR | DSK-01, DSK-02, DSK-03, DSK-04, DSK-05 | Resizing from every edge and corner, double-click maximize, and full screen all work. Corners are 20 px, or square when maximized. |
+| UC-CANVAS-04 | open notes in separate windows side by side | SC-FILE-02 | P1 | IA-VIEW-CANVAS | DSK-06 | <kbd>Mod</kbd>+<kbd>Enter</kbd> in Spotlight opens a note in a new window. Each window remembers its note. |
+| UC-CANVAS-05 | choose which six actions sit on the toolbar | SC-FIND-05 | P1 | IA-CMP-TOOLBAR, IA-CMP-OVERFLOW | UI-08 | Unpinned actions appear in ⋯ automatically, and the toolbar never shows more than six. |
+| UC-FOCUS-01 | turn focus mode on or off from the toolbar, a shortcut, or Spotlight | SC-WRITE-02 | P0 | IA-VIEW-CANVAS, IA-CMP-TOOLBAR | FOC-03 | All three ways toggle it, and the setting survives a restart. |
+| UC-FOCUS-02 | keep writing while the bright row follows the caret through typing, wrapping, tables, and IME input | SC-WRITE-02 | P0 | IA-VIEW-CANVAS | FOC-01, FOC-02, FOC-04, FOC-05, FOC-06 | The band never trails the caret by a visible frame. Edge cases behave as specified on [Focus mode](../../experience/focus-mode.md). |
+
+<h2 data-reader-personas="product design">Formatting and blocks</h2>
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-FMT-01 | format selected text (bold, italic, strikethrough, inline code) from a toolbar that appears at the selection | SC-WRITE-03 | P0 | IA-CMP-FORMAT | EDT-03, EDT-12 | The toolbar appears within 150 ms of the selection settling, never covers the selected text, and shows which formats are already applied. |
+| UC-FMT-02 | turn the selected block or blocks into another block type from the same toolbar | SC-WRITE-03 | P0 | IA-CMP-FORMAT | EDT-04, EDT-12 | Converting several blocks is one undo step, and the selection stays on the converted text. |
+| UC-FMT-03 | add, edit, open, and remove links without leaving the text | SC-WRITE-03 | P0 | IA-CMP-LINK | EDT-03, EDT-13 | Pasting a URL over a selection makes a link. Hovering or focusing a link shows its address and actions. |
+| UC-FMT-04 | use the formatting toolbar entirely from the keyboard | SC-WRITE-03, SC-FIND-04 | P0 | IA-CMP-FORMAT | EDT-12, KEY-03 | <kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd> moves focus into the toolbar. Arrows move between buttons. <kbd>Esc</kbd> returns to the text with the selection kept. |
+| UC-FMT-05 | format with Markdown typing habits and undo a conversion they didn't want | SC-WRITE-04 | P0 | IA-VIEW-CANVAS | EDT-05, EDT-02 | <kbd>Mod</kbd>+<kbd>Z</kbd> straight after an automatic conversion brings back the typed characters. |
+| UC-FMT-06 | undo and redo any change, including structural and table edits | SC-WRITE-04, SC-WRITE-06 | P0 | IA-VIEW-CANVAS | EDT-08 | Every toolbar, menu, and keyboard action is one undo step. Typing undoes word by word. |
+| UC-FMT-07 | paste from the web, Office, or Markdown and get clean, structured text | SC-WRITE-07 | P0 | IA-VIEW-CANVAS | EDT-09 | Headings, lists, links, and tables survive the paste. Unsupported styling is dropped. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> pastes plain text. |
+| UC-BLOCK-01 | insert any block type from `/` at the caret | SC-WRITE-05 | P0 | IA-CMP-SLASH | EDT-06, EXT-01 | Typing filters by name and synonyms. <kbd>Enter</kbd> inserts, and <kbd>Esc</kbd> leaves the `/` as typed text. |
+| UC-BLOCK-02 | see only the block types that are valid where the caret is | SC-WRITE-05 | P0 | IA-CMP-SLASH | EDT-06 | In a table cell or code block, the menu offers no block types that can't go there. |
+| UC-BLOCK-03 | move, duplicate, delete, or convert a block with its handle or with shortcuts | SC-WRITE-06 | P1 | IA-CMP-HANDLE | EDT-07 | Dragging shows a drop line. Every handle action also has a keyboard path. |
+| UC-BLOCK-04 | add images and galleries to a note | SC-WRITE-05 | Later | IA-CMP-SLASH | EXT-03, EXT-04 | Added through the block registry, with no change to the editor core (see [Editor engine](../../architecture/editor-engine.md)). |
+
+<h2 data-reader-personas="product design">Tables</h2>
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-TABLE-01 | insert a table and start typing in its first header cell | SC-TABLE-01 | P0 | IA-CMP-TABLE, IA-CMP-SLASH | TBL-01 | After `/table` and <kbd>Enter</kbd>, the caret is in the top-left header cell. |
+| UC-TABLE-02 | move through cells with <kbd>Tab</kbd> and the arrow keys, and grow the table by tabbing past the end | SC-TABLE-01 | P0 | IA-CMP-TABLE | TBL-03 | <kbd>Tab</kbd> in the last cell adds a row and moves into it. |
+| UC-TABLE-03 | insert a row or column at any boundary, from a hover + point or a handle menu | SC-TABLE-02 | P0 | IA-CMP-TABLE | TBL-02, TBL-07 | The new row or column appears exactly at the chosen boundary, the caret moves into it, and it takes one undo step. |
+| UC-TABLE-04 | reorder rows and columns by dragging their handles or with the keyboard | SC-TABLE-03 | P0 | IA-CMP-TABLE | TBL-02, TBL-08 | A drop line shows the target. The header row can't be moved below the body. |
+| UC-TABLE-05 | sort a table by one column, once, with undo | SC-TABLE-03 | P1 | IA-CMP-TABLE | TBL-09 | Rows reorder A→Z or Z→A, numbers and dates in natural order. The header stays put, and one undo restores the order. |
+| UC-TABLE-06 | paste spreadsheet data as a new table, or into existing cells | SC-TABLE-04 | P0 | IA-CMP-TABLE | TBL-10 | A 5 &times; 4 range pasted into cell B2 of a 3 &times; 3 table grows the table to fit and fills from B2. |
+| UC-TABLE-07 | select cells, rows, or columns and format, clear, copy, or delete them together | SC-TABLE-01 | P0 | IA-CMP-TABLE, IA-CMP-FORMAT | TBL-11, TBL-05 | Dragging across cells selects a range. Bold applies to every selected cell. Copy puts both tab-separated text and Markdown on the clipboard. |
+| UC-TABLE-08 | set a column's alignment and have the table saved as clean GFM | SC-TABLE-05 | P1 | IA-CMP-TABLE | TBL-04, TBL-06 | The saved file has `:---`, `:---:` or `---:` markers, and GitHub renders the same alignment. |
+
+<h2 data-reader-personas="product design">Files and folders</h2>
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-FILE-01 | create a note in one action, without choosing a name or place first | SC-FILE-01 | P0 | IA-VIEW-CANVAS, IA-VIEW-FILES | FIL-01 | <kbd>Mod</kbd>+<kbd>N</kbd> or *New* opens an empty note with the caret in its title, in under 200 ms. |
+| UC-FILE-02 | have the file name follow the note's title until the note is published | SC-FILE-01, SC-FILE-04 | P0 | IA-VIEW-FILES | FIL-07 | Typing the title "On focus" saves the file as `on-focus.md`. After publishing, changing the title no longer renames the file. |
+| UC-FILE-03 | browse the Public and Private trees, see what changed recently, and open a note | SC-FILE-02 | P0 | IA-VIEW-FILES | FIL-01, FIL-02, FIL-03 | The panel opens with the current note revealed and selected. <kbd>Enter</kbd> or a click opens a note and closes the panel. |
+| UC-FILE-04 | create, rename, and delete folders, including nested ones | SC-FILE-03 | P0 | IA-VIEW-FILES | FIL-02 | A new folder is named inline in place. Deleting a folder with notes says how many before confirming. |
+| UC-FILE-05 | select several notes and folders and act on them together | SC-FILE-03 | P0 | IA-VIEW-FILES | FIL-08 | <kbd>Mod</kbd>+click, <kbd>Shift</kbd>+click, and <kbd>Shift</kbd>+arrows select. Move, delete, and change visibility work on the whole selection as one commit. |
+| UC-FILE-06 | move items by dragging, by cut and paste, or with a Move to… picker | SC-FILE-03 | P0 | IA-VIEW-FILES, IA-CMP-MOVE | FIL-03 | All three ways produce the same single commit. Dropping on a folder expands it after 600 ms of hovering. |
+| UC-FILE-07 | rename or move notes without breaking links to them from other notes | SC-FILE-04 | P0 | IA-VIEW-FILES | FIL-09 | Relative links in other notes are updated in the same commit, and a toast says how many were updated. |
+| UC-FILE-08 | undo a delete, move, or rename straight away from a toast | SC-FILE-05 | P0 | IA-CMP-TOAST | FIL-05 | *Undo* restores the previous state exactly, including updated links, as a new commit. |
+| UC-FILE-09 | restore notes deleted in the last 30 days from Recently deleted | SC-FILE-05 | P0 | IA-VIEW-FILES | FIL-10 | A deleted note appears there with its folder and deletion date. *Restore* puts it back where it was, or in the root if its folder is gone. |
+| UC-FILE-10 | sort the tree by name or by last change, and duplicate a note | SC-FILE-02 | P1 | IA-VIEW-FILES | FIL-11 | The sort choice is remembered. A duplicate is named "⟨title⟩ copy" and opens straight away. |
+
+<h2 data-reader-personas="product design">Sharing and reading</h2>
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-SHARE-01 | make a note public or private, seeing exactly what will change before confirming | SC-FILE-06 | P0 | IA-VIEW-SHARE, IA-CMP-DIALOG | FIL-06, SHR-01, SHR-02 | The confirmation names the note, the new audience, and the URL. Making a note private warns that Git history keeps the old public version. |
+| UC-SHARE-02 | copy a public note's link and see whether the page is live yet | SC-SHARE-01 | P0 | IA-VIEW-SHARE | SHR-03, PKG-02 | The link is copied in one action. The status reads *Live*, *Publishing…*, or *Not published yet*. |
+| UC-SHARE-03 | share a private note with one person through an expiring link | SC-SHARE-02 | P1 | IA-VIEW-SHARE | SHR-05 | The link opens for the recipient until its expiry, and not after. |
+| UC-SHARE-04 | see active private links and revoke any of them | SC-SHARE-02 | P1 | IA-VIEW-SHARE | SHR-05 | A revoked link stops working after the next deploy, and the list says so. |
+| UC-READ-01 | read a shared note without an account, in light or dark | SC-SHARE-03 | P0 | IA-VIEW-PUBLIC | SHR-03, SHR-04, SHR-06 | The page follows the reader's color scheme and is readable at 320 px wide. |
+
+<h2 data-reader-personas="product design">Find and keyboard</h2>
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-FIND-01 | open any note by typing part of its title or path | SC-FIND-01, SC-FILE-02 | P0 | IA-VIEW-SPOTLIGHT | FIL-04, SPT-02, SPT-01, SPT-07 | Within the Spotlight performance budget, the intended note is the top hit after three letters for most notes. |
+| UC-FIND-02 | find text across all notes and jump to the match | SC-FIND-01 | P0 | IA-VIEW-SPOTLIGHT | FND-04, SPT-02, SPT-06, SPT-08 | Selecting a result opens the note scrolled to the match, with the find bar ready. |
+| UC-FIND-03 | run any command or change any setting by name, and act on any result | SC-FIND-02 | P0 | IA-VIEW-SPOTLIGHT | SPT-03, SPT-04, SPT-05, KEY-01 | Every command is listed with its shortcut. Toggles show their current state. |
+| UC-FIND-04 | find and replace in the open note | SC-FIND-03 | P0 | IA-CMP-FINDBAR | FND-01, FND-02, FND-03 | Replace-all is one undo step and keeps formatting. |
+| UC-FIND-05 | replace across notes with a preview and a one-step revert | SC-FIND-03 | P1 | IA-VIEW-SPOTLIGHT | FND-05 | One commit per repository. *Revert* restores every file exactly. |
+| UC-KEY-01 | look up any shortcut in a searchable cheat sheet | SC-FIND-02 | P0 | IA-VIEW-SHORTCUTS | KEY-05 | <kbd>Mod</kbd>+<kbd>/</kbd> opens it, typing filters it, and it shows the right symbols for the platform. |
+| UC-KEY-02 | use platform-correct shortcuts for every common action | SC-FIND-04 | P0 | All views | KEY-02, KEY-03, KEY-06 | The Basic, Writer, and Power layers work as listed on [Keyboard shortcuts](../../experience/keyboard-shortcuts.md). |
+| UC-KEY-03 | change any key binding | SC-FIND-04 | P1 | IA-VIEW-SETTINGS | KEY-04, KEY-07 | A conflicting binding warns before saving. *Reset* restores the defaults. |
+
+<h2 data-reader-personas="product design">Theme and comfort</h2>
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-THEME-01 | choose a theme from a gallery and see it on the real note before committing | SC-THEME-01 | P0 | IA-VIEW-THEME, IA-VIEW-FRE | THM-07, THM-01 | Moving through the gallery restyles the actual note at once. <kbd>Esc</kbd> brings back the previous theme. |
+| UC-THEME-02 | set appearance to System, Light, or Dark, with a separately chosen light theme and dark theme | SC-THEME-01, SC-THEME-02 | P0 | IA-VIEW-THEME | THM-02, THM-08 | In System mode, switching the OS appearance swaps between the two chosen themes live. |
+| UC-THEME-03 | switch between light and dark in one click or shortcut | SC-THEME-02 | P0 | IA-CMP-TOOLBAR | THM-06 | The toolbar Theme button or <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> swaps to the other chosen theme in under 100 ms. |
+| UC-THEME-04 | pick well-known color schemes by name | SC-THEME-03 | P1 | IA-VIEW-THEME | THM-09 | Searching "nord" or "solarized" in the gallery finds the scheme, in light and dark where the scheme has both. |
+| UC-THEME-05 | import a theme from a VS Code theme file, a base16 scheme, or a Focus Notes theme file | SC-THEME-03 | P1 | IA-VIEW-THEME | THM-10 | The import shows a preview, lists which colors were mapped or derived, and saves as a new custom theme. |
+| UC-THEME-06 | generate a full light and dark theme from one color | SC-THEME-04 | P1 | IA-VIEW-THEME | THM-11 | Any seed color produces a light theme and a dark theme that both pass the contrast guard. |
+| UC-THEME-07 | shuffle generated themes, lock colors they want to keep, and step back through what they've seen | SC-THEME-05 | P1 | IA-VIEW-THEME | THM-12 | Locked colors never change on shuffle. The last 20 shuffles can be revisited. Every result passes the contrast guard. |
+| UC-THEME-08 | adjust font, size, line spacing, and reading width with a live preview | SC-THEME-06 | P0 | IA-VIEW-THEME | THM-03, THM-06 | Every control restyles the real note as it moves. *Reset* brings back the defaults. |
+| UC-THEME-09 | trust that any theme keeps text readable | SC-THEME-06 | P0 | IA-VIEW-THEME | THM-13 | Pairs below the contrast target are flagged with a one-click fix. Built-in themes never fail. |
+| UC-THEME-10 | save, duplicate, rename, export, delete, and sync custom themes | SC-THEME-07 | P1 | IA-VIEW-THEME | THM-04, THM-05 | A theme saved on one computer appears on another after sync. Export produces a valid theme file. |
+
+<h2 data-reader-personas="product design">Setup, safety, and ownership</h2>
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-SETUP-01 | sign in with a device code and have Git signed in too | SC-SETUP-01 | P0 | IA-VIEW-FRE | FRE-02, FRE-03 | After sign-in, `git push` from a terminal in the workspace works without a prompt. |
+| UC-SETUP-02 | get from install to writing in seven screens or fewer | SC-SETUP-01 | P0 | IA-VIEW-FRE | FRE-01, FRE-05 | Measured on a clean computer with Git installed. |
+| UC-SETUP-03 | reuse existing Git credentials and an existing clone on another computer | SC-SETUP-02 | P0 | IA-VIEW-FRE | FRE-04, FRE-06, FRE-07 | No device code is shown when working credentials already exist. |
+| UC-SETUP-04 | write and edit notes in a browser, signed in with a scoped token | SC-SETUP-03 | P1 | IA-VIEW-FRE, IA-VIEW-CANVAS | PKG-05 | The same editor and views work in the browser. Saves commit through the GitHub API. |
+| UC-SAFE-01 | stop thinking about saving: changes are saved within a second and synced on their own | SC-SAFE-01 | P0 | IA-CMP-SAVESTATE | EDT-11 | Quitting straight after typing loses nothing, and the commit is pushed before the app exits. |
+| UC-SAFE-02 | resolve a conflicting edit by keeping theirs, mine, or both | SC-SAFE-02 | P0 | IA-CMP-CONFLICT | FIL-12 | Both versions are shown side by side. No choice ever discards text without confirmation. |
+| UC-SAFE-03 | keep writing offline and see clearly when changes are waiting | SC-SAFE-03 | P0 | IA-CMP-SAVESTATE | EDT-11 | The trigger shows the waiting state. Changes push in order after reconnecting. |
+| UC-SAFE-04 | receive app updates automatically, verified as genuine | SC-SAFE-04 | P1 | IA-VIEW-SETTINGS | DSK-07 | Updates install on quit. Settings → About shows the version and update status. |
+| UC-OWN-01 | open any note in another editor and find clean, unchanged Markdown | SC-OWN-01, SC-TABLE-05 | P0 | None (file format) | EDT-01, EDT-10, EXT-02, EXT-05, PKG-01 | The round-trip test corpus passes byte for byte. |

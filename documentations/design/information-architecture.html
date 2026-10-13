@@ -1,0 +1,152 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Design</p>
+  <h1 class="slate-hero__title">Information architecture</h1>
+  <p class="slate-hero__summary">Every view and component in Focus Notes, where it opens from, which capabilities it serves, and where its detailed design lives.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>One home view, the <strong>canvas</strong>, with eight views reachable from it and 16 reusable components. Each surface type has one job: <strong>side sheets</strong> for things you work in while the note stays visible (Files on the left, Theme on the right), a <strong>centered panel</strong> for Spotlight, <strong>dialogs</strong> for rare, focused tasks (Settings, Shortcuts, confirmations), and <strong>popovers</strong> for small, anchored tasks (Share, link editing). Only one panel is open at a time, and <kbd>Esc</kbd> always closes the top one and puts the caret back. Every entry traces to the <a href="../product/spec/user-can.md">user-can</a> capabilities it serves.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img"
+       aria-labelledby="ia-title ia-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="ia-title">Views reachable from the canvas, and the surface each one uses</title>
+    <desc id="ia-desc">The canvas sits in the center. Spotlight, a centered panel, is above it. Files, a left sheet, is to its left, and the theme manager, a right sheet, is to its right. Below are Settings as a dialog, Share as a popover, and Shortcuts as a dialog. First run, shown once as a full window, leads into the canvas from the top left. The public page, a separate web page for readers, is linked by a dashed line from the top right.</desc>
+    <g id="ia-links" data-slate-svg-step="1" data-slate-svg-effect="draw" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="2.5" stroke-linecap="round">
+      <path d="M480 230 V110"/>
+      <path d="M370 280 H260"/>
+      <path d="M590 280 H700"/>
+      <path d="M410 330 L170 440"/>
+      <path d="M480 330 V440"/>
+      <path d="M550 330 L790 440"/>
+      <path d="M260 75 L400 230"/>
+      <path d="M700 75 L560 230" stroke-dasharray="7 6"/>
+    </g>
+    <g id="ia-canvas" data-slate-svg-step="0" data-slate-svg-effect="scale-in" font-family="var(--font-family-base)" text-anchor="middle">
+      <rect id="ia-box-canvas" x="370" y="230" width="220" height="100" rx="16" fill="var(--color-brand-bg)"/>
+      <text x="480" y="274" fill="var(--color-on-brand)" font-size="21" font-weight="700" data-slate-fit-target="ia-box-canvas" data-slate-fit-padding="12">Canvas</text>
+      <text x="480" y="302" fill="var(--color-on-brand)" font-size="15" data-slate-fit-target="ia-box-canvas" data-slate-fit-padding="12">home view</text>
+    </g>
+    <g id="ia-views" data-slate-svg-step="2" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)" text-anchor="middle">
+      <g fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5">
+        <rect id="ia-box-spot" x="380" y="40" width="200" height="70" rx="14"/>
+        <rect id="ia-box-files" x="40" y="245" width="220" height="70" rx="14"/>
+        <rect id="ia-box-theme" x="700" y="245" width="220" height="70" rx="14"/>
+        <rect id="ia-box-settings" x="60" y="440" width="220" height="70" rx="14"/>
+        <rect id="ia-box-share" x="370" y="440" width="220" height="70" rx="14"/>
+        <rect id="ia-box-keys" x="680" y="440" width="220" height="70" rx="14"/>
+        <rect id="ia-box-fre" x="40" y="40" width="220" height="70" rx="14"/>
+        <rect id="ia-box-public" x="700" y="40" width="220" height="70" rx="14" stroke-dasharray="6 5"/>
+      </g>
+      <g fill="var(--color-neutral-fg-1)" font-size="18" font-weight="700">
+        <text x="480" y="70" data-slate-fit-target="ia-box-spot" data-slate-fit-padding="10">Spotlight</text>
+        <text x="150" y="275" data-slate-fit-target="ia-box-files" data-slate-fit-padding="10">Files</text>
+        <text x="810" y="275" data-slate-fit-target="ia-box-theme" data-slate-fit-padding="10">Theme manager</text>
+        <text x="170" y="470" data-slate-fit-target="ia-box-settings" data-slate-fit-padding="10">Settings</text>
+        <text x="480" y="470" data-slate-fit-target="ia-box-share" data-slate-fit-padding="10">Share</text>
+        <text x="790" y="470" data-slate-fit-target="ia-box-keys" data-slate-fit-padding="10">Shortcuts</text>
+        <text x="150" y="70" data-slate-fit-target="ia-box-fre" data-slate-fit-padding="10">First run</text>
+        <text x="810" y="70" data-slate-fit-target="ia-box-public" data-slate-fit-padding="10">Public page</text>
+      </g>
+      <g fill="var(--color-neutral-fg-2)" font-size="15">
+        <text x="480" y="95" data-slate-fit-target="ia-box-spot" data-slate-fit-padding="10">centered panel</text>
+        <text x="150" y="300" data-slate-fit-target="ia-box-files" data-slate-fit-padding="10">left sheet</text>
+        <text x="810" y="300" data-slate-fit-target="ia-box-theme" data-slate-fit-padding="10">right sheet</text>
+        <text x="170" y="495" data-slate-fit-target="ia-box-settings" data-slate-fit-padding="10">dialog</text>
+        <text x="480" y="495" data-slate-fit-target="ia-box-share" data-slate-fit-padding="10">popover</text>
+        <text x="790" y="495" data-slate-fit-target="ia-box-keys" data-slate-fit-padding="10">dialog</text>
+        <text x="150" y="95" data-slate-fit-target="ia-box-fre" data-slate-fit-padding="10">full window, once</text>
+        <text x="810" y="95" data-slate-fit-target="ia-box-public" data-slate-fit-padding="10">web, for readers</text>
+      </g>
+    </g>
+  </svg>
+  <figcaption>The canvas is home. Every other view opens over it, and closing that view returns you to the same caret position.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>View</th><th>Surface</th><th>Opened from</th></tr></thead>
+    <tbody>
+      <tr><td>Canvas</td><td>Full window</td><td>Launch</td></tr>
+      <tr><td>Spotlight</td><td>Centered panel</td><td>Search, <kbd>Mod</kbd>+<kbd>K</kbd></td></tr>
+      <tr><td>Files</td><td>Left side sheet</td><td>Open, <kbd>Mod</kbd>+<kbd>O</kbd></td></tr>
+      <tr><td>Theme manager</td><td>Right side sheet</td><td>⋯ → Theme…, right-click Theme</td></tr>
+      <tr><td>Settings</td><td>Dialog</td><td>⋯ → Settings, <kbd>Mod</kbd>+<kbd>,</kbd></td></tr>
+      <tr><td>Share</td><td>Popover</td><td>⋯ → Share and visibility</td></tr>
+      <tr><td>Shortcuts</td><td>Dialog</td><td><kbd>Mod</kbd>+<kbd>/</kbd></td></tr>
+      <tr><td>First run</td><td>Full window</td><td>First launch</td></tr>
+      <tr><td>Public page</td><td>Separate web page</td><td>A shared link</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2 data-reader-personas="product design engineering">Views</h2>
+
+<table>
+  <thead><tr><th>IA ID</th><th>View</th><th>Surface</th><th>Opens from</th><th>Serves</th><th>Detailed design</th></tr></thead>
+  <tbody>
+    <tr><td>IA-VIEW-CANVAS</td><td>Canvas: the note, the trigger, and contextual UI</td><td>Full window</td><td>Launch, opening a note</td><td>UC-CANVAS-01, UC-CANVAS-02, UC-CANVAS-04, UC-FOCUS-01, UC-FOCUS-02, UC-FMT-05, UC-FMT-06, UC-FMT-07, UC-FILE-01, UC-SETUP-04</td><td><a href="../experience/main-ui.html">Main UI and trigger</a>, <a href="../experience/focus-mode.md">Focus mode</a></td></tr>
+    <tr><td>IA-VIEW-FILES</td><td>Files: Public and Private trees, Recently deleted</td><td>Left side sheet</td><td>Open, <kbd>Mod</kbd>+<kbd>O</kbd>, Spotlight</td><td>UC-FILE-01 to UC-FILE-10</td><td><a href="views/files.html">Files panel</a></td></tr>
+    <tr><td>IA-VIEW-THEME</td><td>Theme manager: gallery, customize, create, import</td><td>Right side sheet</td><td>⋯ → Theme…, right-click or long-press Theme, Settings → Appearance, Spotlight</td><td>UC-THEME-01, UC-THEME-02, UC-THEME-04 to UC-THEME-10</td><td><a href="views/theme-manager.html">Theme manager</a></td></tr>
+    <tr><td>IA-VIEW-SPOTLIGHT</td><td>Spotlight: search and act</td><td>Centered command panel</td><td>Search, <kbd>Mod</kbd>+<kbd>K</kbd>, <kbd>Mod</kbd>+<kbd>P</kbd>, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td>UC-FIND-01, UC-FIND-02, UC-FIND-03, UC-FIND-05</td><td><a href="../experience/spotlight.html">Spotlight</a></td></tr>
+    <tr><td>IA-VIEW-SETTINGS</td><td>Settings: account, workspace, editor, keyboard, about</td><td>Centered dialog</td><td>⋯ → Settings, <kbd>Mod</kbd>+<kbd>,</kbd></td><td>UC-KEY-03, UC-SETUP-03, UC-SAFE-04</td><td><a href="views/secondary-views.md#settings">Secondary views → Settings</a></td></tr>
+    <tr><td>IA-VIEW-SHARE</td><td>Share and visibility</td><td>Popover, anchored to the trigger</td><td>⋯ → Share and visibility, Spotlight, Files context menu</td><td>UC-SHARE-01 to UC-SHARE-04</td><td><a href="views/secondary-views.md#share-and-visibility">Secondary views → Share</a></td></tr>
+    <tr><td>IA-VIEW-SHORTCUTS</td><td>Keyboard shortcut cheat sheet</td><td>Centered dialog</td><td><kbd>Mod</kbd>+<kbd>/</kbd>, ⋯ → Keyboard shortcuts</td><td>UC-KEY-01</td><td><a href="views/secondary-views.md#keyboard-shortcut-cheat-sheet">Secondary views → Shortcuts</a></td></tr>
+    <tr><td>IA-VIEW-FRE</td><td>First run: setup steps</td><td>Full window, centered step card</td><td>First launch, Settings → Run setup again</td><td>UC-SETUP-01, UC-SETUP-02, UC-SETUP-03, UC-SETUP-04, UC-THEME-01</td><td><a href="../experience/first-run.md">First run and sign-in</a></td></tr>
+    <tr><td>IA-VIEW-PUBLIC</td><td>Public note page and private share reader</td><td>Separate web page</td><td>A shared link</td><td>UC-READ-01</td><td><a href="views/secondary-views.md#public-note-page">Secondary views → Public page</a></td></tr>
+  </tbody>
+</table>
+
+<h2 data-reader-personas="product design engineering">Components</h2>
+
+<table>
+  <thead><tr><th>IA ID</th><th>Component</th><th>Appears</th><th>Serves</th><th>Detailed design</th></tr></thead>
+  <tbody>
+    <tr><td>IA-CMP-TRIGGER</td><td>Trigger (red dot in a frosted circle)</td><td>Always, top center</td><td>UC-CANVAS-02</td><td><a href="../experience/main-ui.html#the-trigger">Main UI → Trigger</a></td></tr>
+    <tr><td>IA-CMP-TOOLBAR</td><td>Minimal toolbar (six actions)</td><td>When the trigger is activated</td><td>UC-CANVAS-02, UC-CANVAS-05, UC-FOCUS-01, UC-THEME-03</td><td><a href="../experience/main-ui.html#the-minimal-toolbar">Main UI → Toolbar</a></td></tr>
+    <tr><td>IA-CMP-OVERFLOW</td><td>⋯ (more) menu</td><td>From the toolbar's seventh slot</td><td>UC-CANVAS-02, UC-CANVAS-05</td><td><a href="../experience/main-ui.html#the-menu">Main UI → ⋯ menu</a></td></tr>
+    <tr><td>IA-CMP-TITLEBAR</td><td>Desktop title bar band and window controls</td><td>Desktop, top 44 px</td><td>UC-CANVAS-01, UC-CANVAS-03</td><td><a href="../experience/desktop-app.html#title-bar">Desktop app → Title bar</a></td></tr>
+    <tr><td>IA-CMP-FORMAT</td><td>Contextual formatting toolbar</td><td>Over a non-empty text selection</td><td>UC-FMT-01, UC-FMT-02, UC-FMT-04, UC-TABLE-07</td><td><a href="components/text-formatting.html">Text formatting</a></td></tr>
+    <tr><td>IA-CMP-LINK</td><td>Link editor and link hover card</td><td>From the toolbar, <kbd>Mod</kbd>+<kbd>K</kbd> with a selection, hovering a link</td><td>UC-FMT-03</td><td><a href="components/text-formatting.html#link-editor-and-hover-card">Text formatting → Links</a></td></tr>
+    <tr><td>IA-CMP-SLASH</td><td>Slash menu</td><td>Typing <code>/</code></td><td>UC-BLOCK-01, UC-BLOCK-02, UC-BLOCK-04, UC-TABLE-01</td><td><a href="components/text-formatting.html#slash-menu">Text formatting → Slash menu</a></td></tr>
+    <tr><td>IA-CMP-HANDLE</td><td>Block handle and block menu</td><td>Hover or keyboard focus on a block</td><td>UC-BLOCK-03</td><td><a href="components/text-formatting.html#block-handle">Text formatting → Block handle</a></td></tr>
+    <tr><td>IA-CMP-TABLE</td><td>Table, Loop-style</td><td>In the note</td><td>UC-TABLE-01 to UC-TABLE-08</td><td><a href="components/tables.html">Tables</a></td></tr>
+    <tr><td>IA-CMP-FINDBAR</td><td>Find and replace bar</td><td><kbd>Mod</kbd>+<kbd>F</kbd>, <kbd>⌥⌘F</kbd> / <kbd>Ctrl+H</kbd></td><td>UC-FIND-04</td><td><a href="../experience/find-and-replace.md">Find and replace</a></td></tr>
+    <tr><td>IA-CMP-TOAST</td><td>Toast, with an optional action</td><td>After an operation, bottom center</td><td>UC-FILE-08</td><td><a href="components/feedback-and-dialogs.md#toast">Feedback and dialogs → Toast</a></td></tr>
+    <tr><td>IA-CMP-SAVESTATE</td><td>Save and sync status</td><td>On the trigger, only when there's a problem</td><td>UC-SAFE-01, UC-SAFE-03</td><td><a href="components/feedback-and-dialogs.md#save-and-sync-status">Feedback and dialogs → Save status</a></td></tr>
+    <tr><td>IA-CMP-DIALOG</td><td>Confirmation dialog</td><td>Before risky or audience-changing actions</td><td>UC-SHARE-01, UC-FILE-04</td><td><a href="components/feedback-and-dialogs.md#confirmation-dialog">Feedback and dialogs → Confirmation</a></td></tr>
+    <tr><td>IA-CMP-CONTEXTMENU</td><td>Context menu</td><td>Right-click, <kbd>Shift</kbd>+<kbd>F10</kbd>, long-press</td><td>UC-FILE-05, UC-FILE-06, UC-TABLE-03</td><td><a href="components/feedback-and-dialogs.md#context-menu">Feedback and dialogs → Context menu</a></td></tr>
+    <tr><td>IA-CMP-MOVE</td><td>Move to… picker</td><td>From Files, Spotlight, or the ⋯ menu</td><td>UC-FILE-06</td><td><a href="components/feedback-and-dialogs.md#move-to-picker">Feedback and dialogs → Move to</a></td></tr>
+    <tr><td>IA-CMP-CONFLICT</td><td>Conflict resolver</td><td>When sync finds conflicting edits</td><td>UC-SAFE-02</td><td><a href="components/feedback-and-dialogs.md#conflict-resolver">Feedback and dialogs → Conflict resolver</a></td></tr>
+  </tbody>
+</table>
+
+<h2 data-reader-personas="product design">Surface rules</h2>
+
+<table>
+  <thead><tr><th>Surface</th><th>Use it when</th><th>Behavior</th><th>Used by</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Popover</strong>, anchored</td><td>A small task tied to one thing on screen</td><td>Anchored to its source, at most 360 px wide. Closes on <kbd>Esc</kbd>, an outside click, or finishing the task.</td><td>Toolbar, ⋯ menu, Share, link editor, contextual formatting toolbar</td></tr>
+    <tr><td><strong>Side sheet</strong></td><td>A task you do <em>while seeing the note</em></td><td>Slides over the canvas from one edge without moving the reading column. Closes on <kbd>Esc</kbd> or when the task ends. Can be pinned open (P1).</td><td>Files (left), Theme manager (right)</td></tr>
+    <tr><td><strong>Command panel</strong></td><td>Typing to find or run something</td><td>Centered, dims the canvas, opens instantly, focus stays in the field.</td><td>Spotlight</td></tr>
+    <tr><td><strong>Dialog</strong></td><td>A rare or focused task that deserves full attention</td><td>Centered and modal, with focus trapped inside. The primary action is on the right on every platform.</td><td>Settings, Shortcuts, confirmations, conflict resolver, Move to…</td></tr>
+    <tr><td><strong>Toast</strong></td><td>Telling someone what just happened, with an undo</td><td>Bottom center, not modal, gone after 6 s (longer while hovered or focused). Announced politely to screen readers.</td><td>Undo, published, copied</td></tr>
+  </tbody>
+</table>
+
+<h2 data-reader-personas="product design">Design decisions</h2>
+
+<table>
+  <thead><tr><th>ID</th><th>Decision</th><th>Serves</th><th>Rationale</th><th>Alternatives rejected</th></tr></thead>
+  <tbody>
+    <tr><td>DD-IA-01</td><td>The canvas is the only home view. Everything else opens over it and returns to the same caret.</td><td>UC-CANVAS-01, UC-CANVAS-02</td><td>Keeps the promise that writing is the default state (CP-CALM-01). Returning to the exact caret position removes the cost of looking something up.</td><td>A dashboard or home screen listing notes. It adds a step before writing.</td></tr>
+    <tr><td>DD-IA-02</td><td>Files is a <strong>left</strong> side sheet over the canvas.</td><td>UC-FILE-03</td><td>Trees need height. People expect file trees on the left (Finder, Explorer, VS Code). Overlaying instead of pushing keeps the reading column from jumping.</td><td>A popover (too short for a tree), a permanent sidebar (breaks CP-CALM-01), a full-screen browser (loses context).</td></tr>
+    <tr><td>DD-IA-03</td><td>The theme manager is a <strong>right</strong> side sheet, and the note stays visible as the live preview.</td><td>UC-THEME-01, UC-THEME-08</td><td>The best preview is your own note at your own size. A right sheet leaves the left-aligned start of the text visible.</td><td>A modal with a sample paragraph (not your content, and it hides the result), a separate settings page.</td></tr>
+    <tr><td>DD-IA-04</td><td>Only one panel is open at a time. Opening another replaces it.</td><td>UC-CANVAS-02</td><td>Stacked panels turn a calm canvas into a dashboard and complicate <kbd>Esc</kbd>.</td><td>Allowing several sheets at once (except pinned Files in P1).</td></tr>
+    <tr><td>DD-IA-05</td><td><kbd>Esc</kbd> closes the topmost surface and puts the caret and selection back exactly as they were.</td><td>UC-KEY-02</td><td>A single, predictable exit makes it safe to explore any surface.</td><td><kbd>Esc</kbd> closing everything at once, which loses intermediate state such as a half-typed query.</td></tr>
+    <tr><td>DD-IA-06</td><td>Settings is a dialog with categories, not the place for frequent tasks.</td><td>UC-KEY-03, UC-SETUP-03</td><td>Frequent tasks already have direct homes (toolbar, Theme manager, Spotlight). Settings holds the rare ones, so it can be complete without crowding.</td><td>Putting theme choice only in Settings, which buries a frequent task.</td></tr>
+  </tbody>
+</table>

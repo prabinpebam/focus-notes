@@ -135,17 +135,17 @@
     <tr><td>3</td><td>Search</td><td>Opens <a href="spotlight.html">Spotlight</a>.</td><td><kbd>⌘K</kbd> / <kbd>Ctrl+K</kbd></td></tr>
     <tr><td>4</td><td>Save</td><td>Saves, commits, and pushes now. Its tooltip shows the sync state ("Synced 2 min ago", "3 changes waiting").</td><td><kbd>⌘S</kbd> / <kbd>Ctrl+S</kbd></td></tr>
     <tr><td>5</td><td>Focus</td><td>Turns <a href="focus-mode.md">focus mode</a> on or off, and shows which.</td><td><kbd>⇧⌘D</kbd> / <kbd>Ctrl+Shift+D</kbd>, or <kbd>F8</kbd></td></tr>
-    <tr><td>6</td><td>Theme</td><td>Switches between light and dark. Its icon shows the current one. <em>System</em> (follow the OS) is in ⋯ → Theme and in Settings.</td><td><kbd>⇧⌘L</kbd> / <kbd>Ctrl+Shift+L</kbd></td></tr>
+    <tr><td>6</td><td>Theme</td><td>Switches between your chosen light and dark themes. Its icon shows the current one. Right-click or long-press it to open the <a href="../design/views/theme-manager.html">theme manager</a>. <em>System</em> (follow the OS) is in ⋯ → Theme and in the theme manager.</td><td><kbd>⇧⌘L</kbd> / <kbd>Ctrl+Shift+L</kbd></td></tr>
     <tr><td>7</td><td>⋯ (more)</td><td>Opens the menu below.</td><td><kbd>→</kbd> to it, then <kbd>Enter</kbd></td></tr>
   </tbody>
 </table>
 <p>The six defaults are a proposal (<a href="../plan/decisions.md">D-18</a>). In P1 the writer can pin any six commands (UI-08). Anything unpinned moves into ⋯ automatically, so the six-action cap always holds.</p>
 
-<h3>The ⋯ menu</h3>
+<h3 id="the-menu">The ⋯ menu</h3>
 <table>
   <thead><tr><th>Group</th><th>Items (shortcut)</th></tr></thead>
   <tbody>
-    <tr><td>View</td><td>Font size: Smaller (<kbd>Mod</kbd>+<kbd>-</kbd>) · Larger (<kbd>Mod</kbd>+<kbd>=</kbd>) · Reset (<kbd>Mod</kbd>+<kbd>0</kbd>), shown as one row with − and +. Full screen (<kbd>⌃⌘F</kbd> / <kbd>F11</kbd>). Theme: System / Light / Dark.</td></tr>
+    <tr><td>View</td><td>Font size: Smaller (<kbd>Mod</kbd>+<kbd>-</kbd>) · Larger (<kbd>Mod</kbd>+<kbd>=</kbd>) · Reset (<kbd>Mod</kbd>+<kbd>0</kbd>), shown as one row with − and +. Full screen (<kbd>⌃⌘F</kbd> / <kbd>F11</kbd>). Theme: System / Light / Dark, and Theme… (opens the theme manager).</td></tr>
     <tr><td>Edit</td><td>Find (<kbd>Mod</kbd>+<kbd>F</kbd>) · Find and replace (<kbd>⌥⌘F</kbd> / <kbd>Ctrl+H</kbd>) · Find in all notes (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>)</td></tr>
     <tr><td>Note</td><td>Share and visibility… · Copy public link · Rename · Move to… · Show in Files (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd>) · Show in Finder / Explorer (desktop) · Print · Delete</td></tr>
     <tr><td>App</td><td>Settings (<kbd>Mod</kbd>+<kbd>,</kbd>) · Keyboard shortcuts (<kbd>Mod</kbd>+<kbd>/</kbd>) · Help and docs · About</td></tr>
@@ -179,10 +179,10 @@
 </div>
 
 <h2>Contextual editing UI</h2>
-<p>Text-level controls show up only when they apply and fade away when they don't (UI-06). Details are on <a href="editing.md">Editing</a>.</p>
+<p>Text-level controls show up only when they apply and fade away when they don't (UI-06). Behavior is on <a href="editing.md">Editing</a>. Detailed design is on <a href="../design/components/text-formatting.html">Text formatting</a>.</p>
 <div class="slate-card-grid" data-cols="3">
   <article class="slate-card">
-    <h3 class="slate-card__title">Formatting bubble</h3>
+    <h3 class="slate-card__title">Formatting toolbar</h3>
     <p class="slate-card__body">Appears above a non-empty text selection: bold, italic, strikethrough, code, link, and turn into.</p>
   </article>
   <article class="slate-card">

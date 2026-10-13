@@ -1,0 +1,191 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Design · Components</p>
+  <h1 class="slate-hero__title">Tables</h1>
+  <p class="slate-hero__summary">Table editing modeled on Microsoft Loop: hover to insert, handles to move and act, drag to select, all saved as a plain GFM table.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>Insert with <code>/table</code>. Hover near a row or column boundary at the table's edge to get a <strong>+ insertion point</strong>. Hover a row or column to get its <strong>handle</strong>: click for a menu (insert, move, sort, align, delete), or drag to reorder. Hover the bottom or right edge for <strong>+ New row</strong> and <strong>+ New column</strong>. Drag across cells to select a range, then format, clear, copy, or paste over it. Loop's interaction patterns are kept. Loop features that GFM can't store (column types, widths, formulas, views) are explicit boundaries. Component IA-CMP-TABLE serves UC-TABLE-01 to UC-TABLE-08.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 420" role="img"
+       aria-labelledby="tbl-title tbl-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="tbl-title">Table editing affordances on hover</title>
+    <desc id="tbl-desc">A four-column table with a header row and three rows. A column handle sits above the hovered Owner column. A row handle sits left of the first body row. On the left edge between the second and third body rows, a plus button and an accent line mark where a new row would be inserted. A dashed New row bar runs along the bottom edge, and a dashed plus bar runs along the right edge for a new column.</desc>
+    <g id="tbl-grid" data-slate-svg-step="0" data-slate-svg-effect="fade" font-family="var(--font-family-base)" font-size="17">
+      <rect x="330" y="110" width="150" height="200" fill="var(--color-neutral-bg-3)"/>
+      <rect x="180" y="110" width="600" height="50" fill="var(--color-neutral-bg-2)"/>
+      <rect x="180" y="110" width="600" height="200" fill="none" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <path d="M180 160 H780 M180 210 H780 M330 110 V310 M480 110 V310 M630 110 V310" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5"/>
+      <g fill="var(--color-neutral-fg-1)" font-weight="700">
+        <text x="196" y="141">Task</text><text x="346" y="141">Owner</text><text x="496" y="141">Status</text><text x="646" y="141">Due</text>
+      </g>
+      <g fill="var(--color-neutral-fg-1)">
+        <text x="196" y="191">Draft intro</text><text x="346" y="191">Me</text><text x="496" y="191">Doing</text><text x="646" y="191">Mon</text>
+        <text x="196" y="241">Edit tables</text><text x="346" y="241">Me</text><text x="496" y="241">Next</text><text x="646" y="241">Wed</text>
+        <text x="196" y="291">Publish</text><text x="346" y="291">Me</text><text x="496" y="291">Later</text><text x="646" y="291">Fri</text>
+      </g>
+    </g>
+    <g id="tbl-handles" data-slate-svg-step="1" data-slate-svg-effect="scale-in">
+      <rect x="385" y="84" width="40" height="18" rx="9" fill="var(--color-neutral-bg-1)" stroke="var(--color-brand-stroke)" stroke-width="1.5"/>
+      <g fill="var(--color-brand-fg-1)"><circle cx="397" cy="93" r="2.2"/><circle cx="405" cy="93" r="2.2"/><circle cx="413" cy="93" r="2.2"/></g>
+      <rect x="150" y="169" width="18" height="32" rx="9" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <g fill="var(--color-neutral-fg-2)"><circle cx="159" cy="178" r="2"/><circle cx="159" cy="185" r="2"/><circle cx="159" cy="192" r="2"/></g>
+    </g>
+    <g id="tbl-insert" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
+      <path d="M180 260 H780" stroke="var(--color-brand-fg-1)" stroke-width="3"/>
+      <circle cx="160" cy="260" r="11" fill="var(--color-brand-bg)"/>
+      <path d="M154 260 H166 M160 254 V266" stroke="var(--color-on-brand)" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+    <g id="tbl-edges" data-slate-svg-step="3" data-slate-svg-effect="fade" font-family="var(--font-family-base)">
+      <rect id="tbl-newrow" x="180" y="318" width="600" height="30" rx="6" fill="none" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" stroke-dasharray="6 5"/>
+      <text x="480" y="338" text-anchor="middle" font-size="15" fill="var(--color-neutral-fg-2)" data-slate-fit-target="tbl-newrow" data-slate-fit-padding="6">+ New row</text>
+      <rect id="tbl-newcol" x="788" y="110" width="28" height="200" rx="6" fill="none" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" stroke-dasharray="6 5"/>
+      <text x="802" y="216" text-anchor="middle" font-size="17" fill="var(--color-neutral-fg-2)" data-slate-fit-target="tbl-newcol" data-slate-fit-padding="4">+</text>
+    </g>
+    <g id="tbl-labels" data-slate-svg-step="4" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)" font-size="16" fill="var(--color-neutral-fg-2)">
+      <text x="405" y="66" text-anchor="middle">Column handle</text>
+      <text x="140" y="190" text-anchor="end">Row handle</text>
+      <text x="140" y="266" text-anchor="end">Insert row</text>
+      <text x="480" y="384" text-anchor="middle">Hover the bottom or right edge to add a row or column</text>
+    </g>
+  </svg>
+  <figcaption>Hover affordances. The hovered column is tinted. The + insertion point appears only at the boundary nearest the pointer, on the table's edge.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>Affordance</th><th>Where</th><th>Does</th></tr></thead>
+    <tbody>
+      <tr><td>Column handle</td><td>Above the hovered column</td><td>Click: column menu and select column. Drag: reorder.</td></tr>
+      <tr><td>Row handle</td><td>Left of the hovered row</td><td>Click: row menu and select row. Drag: reorder.</td></tr>
+      <tr><td>+ insertion point</td><td>On the left or top edge, at the boundary nearest the pointer</td><td>Inserts a row or column at that boundary.</td></tr>
+      <tr><td>+ New row / + New column</td><td>Along the bottom and right edges</td><td>Appends a row or column.</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2 data-reader-personas="design product">Inserting a table</h2>
+<ul>
+  <li><code>/table</code> (or "grid", "columns") from the <a href="text-formatting.html#slash-menu">slash menu</a> inserts a 3 &times; 3 table: a header row plus two body rows, with the caret in the first header cell (UC-TABLE-01).</li>
+  <li>Typing a GFM header row and delimiter row (<code>| a | b |</code> then <code>|---|---|</code>) converts to a table on <kbd>Enter</kbd>.</li>
+  <li>Pasting a spreadsheet range or an HTML table on an empty line creates a table of that shape (UC-TABLE-06).</li>
+</ul>
+
+<h2 data-reader-personas="design">Anatomy</h2>
+<dl class="slate-defs">
+  <dt>Frame</dt>
+  <dd>1 px <code>color.border</code> outer border with <code>radius.small</code> corners, and 1 px inner rules. No zebra striping (calm). Cell padding is 8 px &times; 12 px.</dd>
+  <dt>Header row</dt>
+  <dd>Always present (GFM requires it). <code>color.surface</code> fill and semibold text. It can be emptied but not deleted or moved into the body.</dd>
+  <dt>Column handle</dt>
+  <dd>A 40 &times; 18 px pill with three dots, centered 8 px above the hovered column. Its hit area is 32 px tall. Pressed and focused states use the accent.</dd>
+  <dt>Row handle</dt>
+  <dd>An 18 &times; 32 px pill with three dots, 12 px left of the hovered row, in the gutter. Hit area 32 &times; 32 px.</dd>
+  <dt>Table handle</dt>
+  <dd>At the top-left corner where the handles meet. Opens the table menu and selects the whole table.</dd>
+  <dt>+ insertion point</dt>
+  <dd>A 22 px accent circle with a plus, on the left edge (rows) or top edge (columns). It appears when the pointer is within 8 px of an inner boundary at the table's edge, and is drawn together with a 3 px accent line across the table at that boundary.</dd>
+  <dt>Edge bars</dt>
+  <dd>Dashed bars along the bottom edge ("+ New row", 30 px tall) and right edge ("+", 28 px wide), shown while the pointer is over the table or within 24 px below or right of it.</dd>
+  <dt>Cell selection</dt>
+  <dd>Selected cells get a <code>color.selection</code> fill, and the range gets a 2 px accent outline. The active cell keeps its caret.</dd>
+</dl>
+
+<h2 data-reader-personas="design product">Interactions</h2>
+<table>
+  <thead><tr><th>Do this</th><th>Get this</th><th>Serves</th></tr></thead>
+  <tbody>
+    <tr><td>Hover a row or column</td><td>Its handle fades in (80 ms) and the column gets a faint tint. Only one row handle and one column handle show at a time.</td><td>UC-TABLE-03, UC-TABLE-04</td></tr>
+    <tr><td>Hover near a boundary on the left or top edge for 150 ms</td><td>A + insertion point and an accent line at that boundary.</td><td>UC-TABLE-03</td></tr>
+    <tr><td>Click a + insertion point</td><td>A new empty row or column at exactly that boundary. The caret moves into its first cell. One undo step.</td><td>UC-TABLE-03</td></tr>
+    <tr><td>Click + New row or + New column</td><td>Appends one, with the caret in its first cell.</td><td>UC-TABLE-03</td></tr>
+    <tr><td>Click a handle</td><td>Selects that whole row or column and opens its menu below the handle.</td><td>UC-TABLE-03, UC-TABLE-07</td></tr>
+    <tr><td>Drag a handle</td><td>The row or column lifts (60% opacity), and an accent drop line follows the nearest boundary. Release to move it, or <kbd>Esc</kbd> to cancel. The header row can't move, and nothing can be dropped above it.</td><td>UC-TABLE-04</td></tr>
+    <tr><td>Drag across cells, or <kbd>Shift</kbd>+click</td><td>Selects a rectangular range. The <a href="text-formatting.html">formatting toolbar</a> appears above it with marks only.</td><td>UC-TABLE-07</td></tr>
+    <tr><td>Right-click a cell</td><td>A context menu with the row and column actions for that cell, plus Copy, Cut, Paste, and Clear cells.</td><td>UC-TABLE-03, UC-TABLE-07</td></tr>
+  </tbody>
+</table>
+
+<h3>Menus</h3>
+<table>
+  <thead><tr><th>Menu</th><th>Items</th></tr></thead>
+  <tbody>
+    <tr><td>Column</td><td>Insert left · Insert right · Move left · Move right · Sort A→Z · Sort Z→A · Align: left / center / right · Clear contents · Delete column</td></tr>
+    <tr><td>Row</td><td>Insert above · Insert below · Move up · Move down · Duplicate row · Clear contents · Delete row. Header row: only Insert below and Clear contents.</td></tr>
+    <tr><td>Table</td><td>Select table · Copy as Markdown · Copy as tab-separated text · Duplicate table · Delete table</td></tr>
+  </tbody>
+</table>
+<p>Destructive items are last, separated by a divider, in danger color, and undoable without a dialog. Deleting the last body row leaves an empty one, because a table always has at least one.</p>
+
+<h3>Keyboard</h3>
+<p>The full table keymap is in <a href="../../experience/keyboard-shortcuts.md#tables">Keyboard shortcuts → Tables</a>. In short: <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd> move between cells (<kbd>Tab</kbd> in the last cell adds a row), <kbd>Enter</kbd> and <kbd>Shift</kbd>+<kbd>Enter</kbd> move down and up, <kbd>Mod</kbd>+<kbd>Enter</kbd> adds a row below, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> moves a row, and <kbd>Esc</kbd> enters cell selection mode. In cell selection mode, <kbd>Shift</kbd>+arrows extend the selection, <kbd>Backspace</kbd> clears, and <kbd>Shift</kbd>+<kbd>F10</kbd> (or the Menu key) opens the context menu for the selected cells, rows, or columns, so every pointer action has a keyboard path.</p>
+
+<h2 data-reader-personas="design product">Copy, paste, and sort</h2>
+<table>
+  <thead><tr><th>Action</th><th>Behavior</th></tr></thead>
+  <tbody>
+    <tr><td>Copy a cell range</td><td>The clipboard gets tab-separated text (pastes into spreadsheets), a GFM Markdown table, and HTML (pastes into documents).</td></tr>
+    <tr><td>Paste a range into a cell</td><td>Fills from that cell right and down, overwriting, and adds rows and columns if the range doesn't fit. One undo step. A toast says "Pasted 5 &times; 4. Table grew by 2 rows."</td></tr>
+    <tr><td>Paste text with line breaks into one cell</td><td>The line breaks become spaces (UNSUP-TABLE-01), with a toast the first time.</td></tr>
+    <tr><td>Sort A→Z or Z→A (P1)</td><td>Reorders the body rows once by that column, using natural order (numbers by value, ISO dates by date, text case-insensitively). The header stays. One undo step. Nothing is remembered as a "sorted view", because Markdown keeps only the order.</td></tr>
+  </tbody>
+</table>
+
+<h2 data-reader-personas="design engineering">Size and wide tables</h2>
+<ul>
+  <li><strong>Column widths are automatic</strong>, based on content, with text wrapping inside cells. There's no column resizing, because GFM can't save widths (UNSUP-TABLE-03).</li>
+  <li>A table may grow wider than the reading column, up to <code>layout.wideContent</code>, centered on the column so its first cells stay near the text.</li>
+  <li>Beyond that, it scrolls sideways inside its frame. A soft fade on the edge shows there's more, and the first column doesn't stay pinned. Arrow-key navigation scrolls the active cell into view.</li>
+</ul>
+
+<h2 data-reader-personas="engineering">What's saved</h2>
+<pre><code>| Task        | Owner | Status | Due |
+| :---------- | :---: | ------ | --: |
+| Draft intro | Me    | Doing  | Mon |</code></pre>
+<p>A GFM pipe table with padded, aligned columns (TBL-06). Alignment markers come from the column menu (TBL-04). Pipes in cell text are escaped as <code>\|</code>. Untouched tables are written back exactly as they were (<a href="../../architecture/content-model.md#round-trip-fidelity">round-trip fidelity</a>).</p>
+
+<h2 data-reader-personas="design">With focus mode, find, and touch</h2>
+<ul>
+  <li><strong>Focus mode:</strong> the bright row is the caret's wrapped line inside its cell, spanning the canvas width (see <a href="../../experience/focus-mode.md#edge-cases">Focus mode → Edge cases</a>). Handles and insertion points draw above the mask.</li>
+  <li><strong>Find:</strong> matches in cells are highlighted the same way, and the current match's cell scrolls into view.</li>
+  <li><strong>Touch and pen:</strong> handles show for the row and column of the focused cell (no hover). Tapping a handle opens its menu, and long-pressing starts a drag. + insertion points appear on the focused cell's edges.</li>
+</ul>
+
+<h2 data-reader-personas="design engineering">Accessibility</h2>
+<ul>
+  <li>A native table with <code>th</code> header cells, so screen readers announce headers as people move between cells.</li>
+  <li>Handles are buttons named for what they control ("Column 2, Owner, options" or "Row 3 options"). Insertion points are named "Insert row between rows 2 and 3".</li>
+  <li>Structural changes are announced politely ("Row inserted below row 2", "Column moved to position 1").</li>
+  <li>The hover tint and insertion line are never the only signal: the menus and keyboard paths do everything they do.</li>
+</ul>
+
+<h2 data-reader-personas="product design">Compared with Microsoft Loop</h2>
+<table>
+  <thead><tr><th>Loop table behavior</th><th>Focus Notes</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>+ to insert between rows or columns on hover</td><td><strong>Same</strong>, on the table's edge only</td><td>UC-TABLE-03. Keeping it on the edge stops + buttons from appearing over text.</td></tr>
+    <tr><td>Column header menu (sort, insert, delete)</td><td><strong>Same</strong>, plus move and align</td><td>UC-TABLE-03, UC-TABLE-05, UC-TABLE-08</td></tr>
+    <tr><td>Drag a row handle to reorder</td><td><strong>Same</strong>, for rows and columns</td><td>UC-TABLE-04</td></tr>
+    <tr><td>Column types (text, number, date, person, label, voting)</td><td><strong>Not offered</strong></td><td>UNSUP-TABLE-02. GFM stores text only.</td></tr>
+    <tr><td>Resizing columns</td><td><strong>Not offered</strong>. Widths are automatic.</td><td>UNSUP-TABLE-03</td></tr>
+    <tr><td>Row detail view, board view, rules and automation</td><td><strong>Not offered</strong></td><td>UNSUP-TABLE-02. These need data Markdown can't hold.</td></tr>
+  </tbody>
+</table>
+
+<h2 data-reader-personas="product design">Design decisions</h2>
+<table>
+  <thead><tr><th>ID</th><th>Decision</th><th>Serves</th><th>Rationale</th><th>Alternatives rejected</th></tr></thead>
+  <tbody>
+    <tr><td>DD-TABLE-01</td><td>Follow Loop's model: hover handles, edge insertion, handle menus, drag to reorder.</td><td>UC-TABLE-03, UC-TABLE-04</td><td>The owner asked for Loop-style editing. Its direct manipulation keeps structure changes at the point of attention (CP-FLOW-01).</td><td>A table toolbar above the table (always-visible chrome). Dialogs for adding rows.</td></tr>
+    <tr><td>DD-TABLE-02</td><td>Show the + insertion point only at the boundary nearest the pointer, on the table's edge, after 150 ms.</td><td>UC-TABLE-03</td><td>One clear target at a time, and no + buttons appearing over text while moving the pointer across the table.</td><td>+ buttons at every boundary at once (noisy). Showing it instantly (flickers as the pointer passes).</td></tr>
+    <tr><td>DD-TABLE-03</td><td>Clicking a handle selects the row or column <em>and</em> opens its menu.</td><td>UC-TABLE-07</td><td>The selection previews what the menu will act on, so "Delete row" has an obvious target.</td><td>Separate select and menu affordances (more targets).</td></tr>
+    <tr><td>DD-TABLE-04</td><td>Automatic column widths, wrapping text, and sideways scroll for very wide tables.</td><td>UC-TABLE-08</td><td>Anything a writer sets must survive saving (CP-OWN-01), and GFM has no widths.</td><td>Session-only resizing, which is lost on reopen and feels broken.</td></tr>
+    <tr><td>DD-TABLE-05</td><td>Sorting reorders rows once and can be undone. There's no persistent sorted view.</td><td>UC-TABLE-05</td><td>What you see is what's saved. A hidden view state would make GitHub show a different order.</td><td>A sort indicator that stays on the column header.</td></tr>
+    <tr><td>DD-TABLE-06</td><td>Destructive table actions are undoable rather than confirmed.</td><td>UC-TABLE-03</td><td>Undo is faster and just as safe for local structure edits. Confirmations are kept for audience changes and file deletes.</td><td>Confirmation dialogs for deleting rows and columns.</td></tr>
+    <tr><td>DD-TABLE-07</td><td>Copy writes tab-separated text, Markdown, and HTML. Paste fills from the active cell and grows the table.</td><td>UC-TABLE-06</td><td>Works with spreadsheets in both directions, as Loop and Excel users expect.</td><td>Markdown-only copy (useless in spreadsheets).</td></tr>
+  </tbody>
+</table>

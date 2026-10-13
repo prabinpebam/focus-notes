@@ -38,26 +38,26 @@ Underline, text color, and highlight aren't offered because CommonMark/GFM can't
 
 ## Contextual controls
 
-- **Formatting bubble.** Appears above any non-empty selection with Bold, Italic, Strikethrough, Code, Link, and *Turn into…*. It disappears when the selection collapses.
-- **Slash menu.** Typing `/` at any position opens a filterable list of every registered block (EDT-06). The list comes from the block registry, so new components show up on their own.
+- **Contextual formatting toolbar.** Appears just above any non-empty selection with *Turn into ▾*, Bold, Italic, Strikethrough, Code, and Link. It never covers the selection, hides when typing resumes, and is reachable with <kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd> (EDT-12).
+- **Slash menu.** Typing `/` at the start of a block or after a space opens a filterable list of the registered blocks that are valid at the caret (EDT-06). The list comes from the block registry, so new components show up on their own.
 - **Block handle.** On hover or keyboard focus, a handle appears in the left margin. Drag it to reorder; click it for Duplicate, Delete, Turn into, and Copy link to block (EDT-07).
 
-All three use the theme's surface tokens and stay quiet. None of them appear while you're just typing, which keeps the [blank-canvas](main-ui.html) promise.
+All three use the theme's surface tokens and stay quiet. None of them appear while you're just typing, which keeps the [blank-canvas](main-ui.html) promise. The detailed design (anatomy, placement, states, keyboard, and rationale) is in [Text formatting](../design/components/text-formatting.html).
 
 ## Tables
 
-Tables get first-class editing (TBL-01 to TBL-06), but they always save as GFM pipe tables, so they stay readable on GitHub and in any Markdown viewer.
+Tables are edited the way Microsoft Loop tables are: hover + insertion points, row and column handles with menus, drag to reorder, and drag to select cells. They always save as GFM pipe tables, so they stay readable on GitHub and in any Markdown viewer. The full design is in [Tables](../design/components/tables.html). In summary:
 
 | Interaction | Behavior |
 | --- | --- |
 | Insert | `/table` inserts a 3 &times; 3 table with a header row. Typing a valid GFM header and delimiter row also converts it. |
 | Move between cells | <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>. <kbd>Tab</kbd> in the last cell adds a row. Arrow keys cross cell edges at the start or end of a cell's text. |
-| Rows and columns | Hovering a row or column edge shows an insert (+) affordance. A row or column handle offers Insert before/after, Move, and Delete. |
-| Alignment | The column handle sets left, center, or right, saved as `:---`, `:---:`, `---:` (TBL-04). |
-| Cell content | Inline formatting only. <kbd>Enter</kbd> moves to the cell below, and <kbd>Shift</kbd>+<kbd>Enter</kbd> is blocked, because a GFM cell can't hold multiple paragraphs (TBL-06). |
+| Rows and columns | Hovering near a row or column boundary on the table's edge shows a + insertion point (TBL-07). Row and column handles open menus and drag to reorder (TBL-08). |
+| Alignment | The column menu sets left, center, or right, saved as `:---`, `:---:`, `---:` (TBL-04). |
+| Cell content | Inline formatting only. <kbd>Enter</kbd> and <kbd>Shift</kbd>+<kbd>Enter</kbd> move down and up, because a GFM cell can't hold line breaks or paragraphs (UNSUP-TABLE-01). |
 | Header row | Always present (GFM requires one). It can be emptied but not removed. |
-| Delete table | Through the block handle, or <kbd>Backspace</kbd> on an empty, fully selected table. |
-| Paste | A tab-separated or HTML table pasted from a spreadsheet or the web becomes a table block. |
+| Delete table | Through the table handle, or <kbd>Backspace</kbd> on an empty, fully selected table. |
+| Paste | A spreadsheet range or HTML table becomes a table, or fills cells from the active cell (TBL-10). |
 
 ## Paste and drop
 

@@ -28,9 +28,45 @@
       "group": "Product"
     },
     {
+      "path": "product/spec/chain.md",
+      "title": "The articulation chain",
+      "order": 12,
+      "icon": "account_tree",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Product/Spec chain"
+    },
+    {
+      "path": "product/spec/customer-promises.md",
+      "title": "Customer promises",
+      "order": 13,
+      "icon": "handshake",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Product/Spec chain"
+    },
+    {
+      "path": "product/spec/scenarios.md",
+      "title": "Scenarios",
+      "order": 14,
+      "icon": "auto_stories",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Product/Spec chain"
+    },
+    {
+      "path": "product/spec/user-can.md",
+      "title": "User can",
+      "order": 15,
+      "icon": "task_alt",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Product/Spec chain"
+    },
+    {
       "path": "product/requirements.md",
       "title": "Requirements",
-      "order": 12,
+      "order": 16,
       "icon": "checklist",
       "status": "draft",
       "updated": "2026-10-13",
@@ -127,9 +163,81 @@
       "group": "Experience"
     },
     {
+      "path": "design/information-architecture.html",
+      "title": "Information architecture",
+      "order": 30,
+      "icon": "lan",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design"
+    },
+    {
+      "path": "design/foundations.md",
+      "title": "Foundations",
+      "order": 31,
+      "icon": "design_services",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design"
+    },
+    {
+      "path": "design/views/files.html",
+      "title": "Files panel",
+      "order": 32,
+      "icon": "folder_open",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design/Views"
+    },
+    {
+      "path": "design/views/theme-manager.html",
+      "title": "Theme manager",
+      "order": 33,
+      "icon": "format_paint",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design/Views"
+    },
+    {
+      "path": "design/views/secondary-views.md",
+      "title": "Secondary views",
+      "order": 34,
+      "icon": "tune",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design/Views"
+    },
+    {
+      "path": "design/components/text-formatting.html",
+      "title": "Text formatting",
+      "order": 35,
+      "icon": "format_bold",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design/Components"
+    },
+    {
+      "path": "design/components/tables.html",
+      "title": "Tables",
+      "order": 36,
+      "icon": "table",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design/Components"
+    },
+    {
+      "path": "design/components/feedback-and-dialogs.md",
+      "title": "Feedback and dialogs",
+      "order": 37,
+      "icon": "chat_info",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Design/Components"
+    },
+    {
       "path": "architecture/overview.html",
       "title": "Architecture overview",
-      "order": 30,
+      "order": 40,
       "icon": "schema",
       "status": "draft",
       "updated": "2026-10-13",
@@ -138,7 +246,7 @@
     {
       "path": "architecture/content-model.md",
       "title": "Content model",
-      "order": 31,
+      "order": 41,
       "icon": "data_object",
       "status": "draft",
       "updated": "2026-10-13",
@@ -147,7 +255,7 @@
     {
       "path": "architecture/editor-engine.md",
       "title": "Editor engine",
-      "order": 32,
+      "order": 42,
       "icon": "extension",
       "status": "stable",
       "updated": "2026-10-13",
@@ -156,7 +264,7 @@
     {
       "path": "architecture/desktop-and-git.md",
       "title": "Desktop and Git",
-      "order": 33,
+      "order": 43,
       "icon": "terminal",
       "status": "draft",
       "updated": "2026-10-13",
@@ -165,7 +273,7 @@
     {
       "path": "architecture/repository-and-publishing.html",
       "title": "Repository and publishing",
-      "order": 34,
+      "order": 44,
       "icon": "publish",
       "status": "draft",
       "updated": "2026-10-13",
@@ -174,7 +282,7 @@
     {
       "path": "plan/roadmap.md",
       "title": "Roadmap",
-      "order": 40,
+      "order": 50,
       "icon": "timeline",
       "status": "draft",
       "updated": "2026-10-13",
@@ -183,7 +291,7 @@
     {
       "path": "plan/decisions.md",
       "title": "Decisions",
-      "order": 41,
+      "order": 51,
       "icon": "rule",
       "status": "deciding",
       "updated": "2026-10-13",

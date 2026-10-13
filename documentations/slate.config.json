@@ -3,5 +3,11 @@
   "defaultTheme": "auto",
   "density": "comfortable",
   "landing": "landing.html",
-  "themeStylesheet": "project.theme.css"
+  "themeStylesheet": "project.theme.css",
+  "readerPersonas": [
+    { "id": "product", "label": "Product and UX", "description": "Promises, scenarios, rationale, and trade-offs." },
+    { "id": "design", "label": "UI design", "description": "Anatomy, measurements, states, tokens, and motion." },
+    { "id": "engineering", "label": "Engineering", "description": "Data, implementation constraints, and acceptance checks." }
+  ],
+  "defaultReaderPersona": "all"
 }

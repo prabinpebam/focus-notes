@@ -3,7 +3,7 @@
 Every assumption and design choice these docs make beyond the literal [seed spec](../seed-specs.md), so they can be confirmed or overturned in one place.
 
 > [!NOTE]
-> **TL;DR.** 28 decisions. The owner settled the trigger size (**D-03**), the editor (**D-01**, Tiptap under MIT), desktop sign-in (**D-02**, GitHub device flow saved into git's credential store), and the license (**D-20**, the app is MIT). The docs now treat the **desktop app as the primary authoring client** (**D-10**). Four proposals need the owner's attention most: the 20 px window-corner trade-offs (**D-14**), the double meaning of <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> (**D-16**), the OAuth scope (**D-21**), and how "mac and iOS" was read (**D-19**).
+> **TL;DR.** 37 decisions. The owner settled the trigger size (**D-03**), the editor (**D-01**, Tiptap under MIT), desktop sign-in (**D-02**, GitHub device flow saved into git's credential store), and the license (**D-20**, the app is MIT). The docs now treat the **desktop app as the primary authoring client** (**D-10**). Four proposals need the owner's attention most: the 20 px window-corner trade-offs (**D-14**), the double meaning of <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> (**D-16**), the OAuth scope (**D-21**), and how "mac and iOS" was read (**D-19**).
 
 ## Status legend
 
@@ -26,6 +26,8 @@ Every assumption and design choice these docs make beyond the literal [seed spec
 | D-26 | **Toolbar:** at most 6 entries. Anything beyond that goes into a ⋯ (more) menu. | [Main UI](../experience/main-ui.html#the-minimal-toolbar) |
 | D-27 | **Keyboard:** a thorough shortcut strategy that follows the most popular apps, from basic to niche pro shortcuts, on Apple platforms and others. | [Keyboard shortcuts](../experience/keyboard-shortcuts.md) |
 | D-28 | **Find, find and replace, and a Spotlight-style search-and-act panel on <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd>.** | [Find and replace](../experience/find-and-replace.md), [Spotlight](../experience/spotlight.html) |
+| D-35 | **Every UX and UI decision is grounded in a chain:** customer promise → scenario (job to be done) → user can → view or component → design decision → requirement. | [The articulation chain](../product/spec/chain.md) |
+| D-36 | **Tables are edited the way Microsoft Loop tables are, and text is formatted with a simple contextual toolbar.** The theme manager answers when and why people theme, what they bring, and preset, random, or manual choice. | [Tables](../design/components/tables.html), [Text formatting](../design/components/text-formatting.html), [Theme manager](../design/views/theme-manager.html) |
 
 ## Proposed and open
 
@@ -50,6 +52,13 @@ Every assumption and design choice these docs make beyond the literal [seed spec
 | D-21 | **Sign-in uses a GitHub OAuth App with the `repo` scope.** It works directly with git's credential store and the token doesn't expire. The cost is that the scope covers every repository the user can reach. A GitHub App (fine-grained, limited to chosen repositories, tokens that expire every 8 hours and need refreshing) is the later alternative. | **Open** | [Desktop and Git](../architecture/desktop-and-git.md#sign-in) |
 | D-22 | **System Git is required, not bundled.** The app runs the user's own `git`, so configuration, hooks, commit signing, and credentials are the same as in the terminal. The first-run experience checks for Git and helps install it. | Proposed | [First run and sign-in](../experience/first-run.md) |
 | D-23 | **Save and sync:** edits are written to disk within 1 second. A commit and push happens when the writer presses <kbd>Ctrl/⌘</kbd>+<kbd>S</kbd>, switches or closes a note, quits, or stops typing for 60 seconds (configurable). This avoids a commit for every pause in typing. | Proposed | [Editing](../experience/editing.md#undo-redo-and-saving), [Desktop and Git](../architecture/desktop-and-git.md#save-and-sync) |
+| D-29 | **Fonts may use the SIL Open Font License (OFL-1.1).** Bundled fonts: Inter, Source Serif 4, JetBrains Mono, Atkinson Hyperlegible, OpenDyslexic. The licenses are confirmed in CI. | Proposed | [Design foundations](../design/foundations.md#type) |
+| D-30 | **A note's file name follows its title until the note is first published, then stays fixed** unless renamed on purpose (with a URL warning). | Proposed | [Files panel](../design/views/files.html#names-and-titles) |
+| D-31 | **Appearance has a light slot and a dark slot.** System swaps between the two chosen themes. Reading settings are separate from color themes. | Proposed | [Theme manager](../design/views/theme-manager.html#the-model) |
+| D-32 | **One icon family: Fluent UI System Icons (MIT).** | Proposed | [Design foundations](../design/foundations.md#icons) |
+| D-33 | **Undo instead of confirmation**, except for changes of audience, deletes at scale, deleting public notes, and discarding text in a conflict. | Proposed | [Feedback and dialogs](../design/components/feedback-and-dialogs.md) |
+| D-34 | **Recently deleted is built from Git history** (30 days shown), not a trash folder in the repository. | Proposed | [Files panel](../design/views/files.html#deleting-and-restoring) |
+| D-37 | **Working personas** (Writer, Power user, Tinkerer, Comfort-sensitive writer, Reader) are assumptions until checked with real users. | Open | [The articulation chain](../product/spec/chain.md#personas-used-in-scenarios) |
 
 ## Licensing policy (D-20 details, proposed)
 
@@ -68,3 +77,4 @@ A license check runs in CI from M0 onward. Development-only tools follow the sam
 3. **D-21:** Is the broad `repo` scope acceptable for the first release?
 4. **D-19:** Did "mac and iOS" mean macOS and iPadOS, or macOS and Windows? Both are covered either way, but this sets which platforms are tested first.
 5. Should the generated documentation also be published with the app at `/docs/`?
+6. **D-37:** Do the working personas match the people this is for? In particular, is the Tinkerer (who brings color schemes and theme files) worth the P1 import and shuffle work?

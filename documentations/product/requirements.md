@@ -1,9 +1,9 @@
 # Requirements
 
-This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail.
+This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 96 requirements in 16 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 117 requirements in 16 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
@@ -30,6 +30,8 @@ Seed: *"a simple text editor that works with markdown… very similar to how Not
 | EDT-09 | Paste: Markdown text is parsed into blocks; HTML is converted to the nearest supported Markdown; unsupported content degrades to plain text. | P0 |
 | EDT-10 | Round-trip fidelity: opening and saving a note without edits doesn't change the file (see [Content model](../architecture/content-model.md)). | P0 |
 | EDT-11 | Saving happens on its own (write to disk within 1 s; commit and push on <kbd>Mod</kbd>+<kbd>S</kbd>, switching or closing a note, quit, or 60 s with no typing). Only problems are shown. *(derived from EDT-01 and FIL-*; cadence in D-23)* | P0 |
+| EDT-12 | A contextual formatting toolbar appears on any non-empty text selection: Turn into, Bold, Italic, Strikethrough, Code, Link. It never covers the selection and can be used from the keyboard (<kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd>). See [Text formatting](../design/components/text-formatting.html). | P0 |
+| EDT-13 | Link editor and link hover card: create, edit, open, copy, and remove links in place. Pasting a URL over selected text makes a link. | P0 |
 
 ## Table editing (TBL)
 
@@ -43,6 +45,11 @@ Seed: *"table editing capabilities."* Detailed in [Editing → Tables](../experi
 | TBL-04 | Column alignment (left, center, right), saved as GFM alignment markers. | P1 |
 | TBL-05 | Inline formatting inside cells. | P0 |
 | TBL-06 | Tables are saved as GFM pipe tables. Content Markdown can't represent (multiple paragraphs in one cell) is prevented in the UI. | P0 |
+| TBL-07 | Hover insertion points: a + appears at the row or column boundary nearest the pointer on the table's edge, plus "New row" and "New column" bars on the bottom and right edges. See [Tables](../design/components/tables.html). | P0 |
+| TBL-08 | Row and column handles: click for a menu (insert, move, align, clear, delete), drag to reorder. | P0 |
+| TBL-09 | Sort the body rows by a column (A→Z, Z→A, natural order) as a one-time, undoable reorder. | P1 |
+| TBL-10 | Pasting a spreadsheet range creates a table, or fills existing cells from the active cell and grows the table to fit. | P0 |
+| TBL-11 | Select a range of cells, whole rows, or whole columns to format, clear, copy (as tab-separated text, Markdown, and HTML), or delete. | P0 |
 
 ## Extensibility (EXT)
 
@@ -96,6 +103,12 @@ Seed: *"CRUD files and folders, including moves."* Detailed in [Files and sharin
 | FIL-04 | Quick open: fuzzy search notes by title or path (<kbd>Mod</kbd>+<kbd>P</kbd>, part of [Spotlight](../experience/spotlight.html)). | P0 |
 | FIL-05 | Every file operation is a Git commit with a readable message. Deletes can be recovered from history. | P0 |
 | FIL-06 | Moving a note between public and private changes its storage repository (see SHR-02). | P0 |
+| FIL-07 | A note's file name follows its title until the note is first published, then stays fixed unless renamed on purpose. See [Files panel](../design/views/files.html). | P0 |
+| FIL-08 | Multi-select in the Files panel (<kbd>Mod</kbd>/<kbd>Shift</kbd>+click, <kbd>Shift</kbd>+arrows), with move, delete, and visibility changes applied as one commit. | P0 |
+| FIL-09 | Renaming or moving notes and folders updates relative links in other notes in the same commit. | P0 |
+| FIL-10 | Recently deleted: notes deleted in the last 30 days, found from Git history, can be restored in place or to a chosen folder. | P0 |
+| FIL-11 | Sort the tree by name or last change. Duplicate a note. | P1 |
+| FIL-12 | Conflict resolver: when sync finds the same note changed elsewhere, show both versions and offer keep mine, take theirs (keeping a recoverable copy of mine), or keep both. | P0 |
 
 ## Sharing and visibility (SHR)
 
@@ -108,6 +121,7 @@ Seed: *"Sharing of public links… content can be made public or private… Priv
 | SHR-03 | A public note has a stable, read-only public URL on GitHub Pages. "Copy public link" (in ⋯, Share, and Spotlight) copies it. | P0 |
 | SHR-04 | Private notes are never published in plaintext. | P0 |
 | SHR-05 | A private note can be shared with a specific person through an expiring, revocable link (sealed content plus a key in the URL fragment). | P1 |
+| SHR-06 | Public and share-link pages follow the reader's light or dark preference and are readable from 320 px wide. Share-link errors never reveal whether a note exists. | P0 |
 
 ## Theming (THM)
 
@@ -121,6 +135,13 @@ Seed: *"ability to change theme — Colors, fonts."* The owner confirmed Light, 
 | THM-04 | Themes are JSON documents, and custom themes can be added without code changes. | P1 |
 | THM-05 | Theme choice persists per device and syncs through the repository if the writer opts in. | P1 |
 | THM-06 | Font size can be made larger, smaller, or reset with <kbd>Mod</kbd>+<kbd>=</kbd> / <kbd>-</kbd> / <kbd>0</kbd> and from the ⋯ menu, in steps. Light/dark can be toggled with one shortcut. | P0 |
+| THM-07 | Theme manager gallery with live preview on the real note. Keyboard focus previews, <kbd>Esc</kbd> reverts. See [Theme manager](../design/views/theme-manager.html). | P0 |
+| THM-08 | Appearance (System, Light, Dark) with a separately chosen light theme and dark theme. | P0 |
+| THM-09 | Well-known color schemes (for example Solarized, Nord, Dracula, Gruvbox, Catppuccin) offered by name, under compatible licenses. | P1 |
+| THM-10 | Import themes from a VS Code theme file, a base16 scheme, or a Focus Notes theme file, with a mapping report. | P1 |
+| THM-11 | Generate a matching light and dark theme from one seed color. | P1 |
+| THM-12 | Shuffle generated themes with mood options, color locks, and a history of the last 20. | P1 |
+| THM-13 | Contrast guard: check every theme's key color pairs, offer a one-click fix, warn before saving a failing custom theme, and never ship a failing built-in. | P0 |
 
 ## Packaging and distribution (PKG)
 
