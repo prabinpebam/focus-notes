@@ -86,13 +86,17 @@ In one place: **Git's credential helper**, owned by the user (the OS keychain, W
 
 ## Step 5: workspace
 
+People who started on the web ([Get started](../design/views/get-started.md)) already have a workspace. The app finds it among their repositories and offers it first.
+
 | Option | What happens |
 | --- | --- |
 | **Create my workspace** (default for new users) | Asks for two names: the notes repository (default `notes`, public, because GitHub Pages on free accounts needs it) and the private repository (default `notes-private`). Two toggles, both on: *Publish public notes on GitHub Pages* and *Enable private share links*. [Create] then shows a checklist that ticks off as it goes: Create notes repository · Create private repository · Link them · Set up share-link key · Turn on GitHub Pages · Download to this computer (default folder `Documents/Focus Notes`). Each item can be retried on its own. When it finishes, it shows the public site address. |
 | **Open my workspace from GitHub** | Search the user's repositories. Repositories created from the Focus Notes template are listed first. Choose a local folder and clone with submodules. If the private repository isn't accessible to this account: "Private notes aren't available to this account. You can still work with public notes." |
 | **Open a folder on this computer** | Pick an existing clone. The app checks that it's a Git repository with the expected layout ([Content model](../architecture/content-model.md#workspace-layout)) and fetches any missing submodule. |
 
-After cloning, the app applies the submodule settings from `personal-site`: `submodule.recurse=true`, `push.recurseSubmodules=check`, and the private submodule checked out on `main` instead of a detached HEAD ([Repository and publishing](../architecture/repository-and-publishing.html#working-with-the-submodule)).
+After cloning, the app checks out the private submodule on `main` instead of a detached HEAD and sets `push.recurseSubmodules=check`. It leaves `submodule.recurse` off and syncs `private/` as its own repository, so a recursive pull can't reset it to the older publishing pointer (D-47, [Repository and publishing](../architecture/repository-and-publishing.html#working-with-the-submodule)).
+
+**Writing starts before setup finishes.** As soon as the workspace is on this computer, [Start writing] is available. Turning on GitHub Pages, the first publish (which can take a few minutes), and the share-link key carry on in the background, with progress in **Settings → Workspace**. A failure there never blocks writing.
 
 ## Account settings later
 

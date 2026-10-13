@@ -3,7 +3,7 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 120 requirements in 16 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 168 requirements in 24 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
@@ -109,6 +109,7 @@ Seed: *"CRUD files and folders, including moves."* Detailed in [Files and sharin
 | FIL-10 | Recently deleted: notes deleted in the last 30 days, found from Git history, can be restored in place or to a chosen folder. | P0 |
 | FIL-11 | Sort the tree by name or last change. Duplicate a note. | P1 |
 | FIL-12 | Conflict resolver: when sync finds the same note changed elsewhere, show both versions and offer keep mine, take theirs (keeping a recoverable copy of mine), or keep both. | P0 |
+| FIL-13 | Note history: a note's versions from Git, with time and author (agent changes labeled), comparison, and restore as a new commit. | P1 |
 
 ## Sharing and visibility (SHR)
 
@@ -116,12 +117,17 @@ Seed: *"Sharing of public links… content can be made public or private… Priv
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| SHR-01 | Every note is either **public** or **private**. New notes are private by default. *(derived: safe default)* | P0 |
+| SHR-01 | Every note is **Private**, **Shared** (with named audiences), or **Public**. New notes are private by default. *(derived: safe default)* | P0 |
 | SHR-02 | Public notes are stored in the public repository; private notes are stored in the private content repository, mounted as a submodule. | P0 |
 | SHR-03 | A public note has a stable, read-only public URL on GitHub Pages. "Copy public link" (in ⋯, Share, and Spotlight) copies it. | P0 |
 | SHR-04 | Private notes are never published in plaintext. | P0 |
-| SHR-05 | A private note can be shared with a specific person through an expiring, revocable link (sealed content plus a key in the URL fragment). | P1 |
+| SHR-05 | Private notes and folders can be shared with an **audience identified only by a name**, through a magic link, a passcode, or both (D-41). See [Sharing and visibility](../design/views/sharing.md). | P0 |
 | SHR-06 | Public and share-link pages follow the reader's light or dark preference and are readable from 320 px wide. Share-link errors never reveal whether a note exists. | P0 |
+| SHR-07 | Passcodes are generated (four EFF words, about 52 bits) or chosen by the owner. Custom passcodes must be at least 12 characters and rated strong. Keys are derived with PBKDF2-SHA256 at 600,000 iterations and a salt per grant. | P0 |
+| SHR-08 | Audiences can be listed, with what they open, their expiry (default 30 days), and their state, then extended, withdrawn (keeping the record), or deleted. | P0 |
+| SHR-09 | A copyable invite built from an editable template (`{name}`, `{title}`, `{link}`, `{passcode}`, `{expires}`, `{site}`), stored in the private repository. | P0 |
+| SHR-10 | The share reader opens with a magic link (the fragment is removed at once), or with name plus passcode. The session is per tab by default, remembered on the device on request, and Sign out reaches every tab. Errors are generic. | P0 |
+| SHR-11 | Sealing per build: fresh keys every build, keyrings only for active grants, name lookup by salted hash, a nightly deploy for expiry, and a warning before GitHub's 60-day schedule shutoff. | P0 |
 
 ## Theming (THM)
 
@@ -152,7 +158,7 @@ Seed: *"managed as a github repo… hosted in github pages… web or an electron
 | PKG-01 | The product repository holds the app source, documentation, releases, and the reusable publish workflow. A separate template repository provides the starting layout for each user's notes repository (D-38). | P0 |
 | PKG-02 | Each user's notes repository builds and deploys their public pages to their own GitHub Pages with GitHub Actions, through the reusable publish workflow at a pinned release. In the first release it serves public note pages and share links. | P0 |
 | PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access. It is the primary writing client (D-10). | P0 |
-| PKG-04 | Developers without access to the private repository can still build and run the app. | P0 |
+| PKG-04 | The product repository builds and tests without any user workspace, credentials, or secrets. | P0 |
 | PKG-05 | Editing in the browser (web build) through the GitHub API, with a fine-grained token the user creates (D-13). | P1 |
 | PKG-06 | Nothing hosted or registered by the project: no OAuth app, client ID, server, or telemetry. Each user's instance needs only their own GitHub account plus the public release files on GitHub (D-21). | P0 |
 
@@ -244,3 +250,101 @@ Seed: *"Use slate for documentation."*
 | --- | --- | --- |
 | DOC-01 | Project documentation is a Slate host in `documentations/`, with Slate pinned as the `slate/` submodule. | P0 |
 | DOC-02 | `seed-specs.md` is human-authored and is never edited or deleted by tooling or agents. | P0 |
+
+## Agents and automation (AGT)
+
+Owner: *"I want this whole thing to be agent-friendly also, so we can have MCPs and agent friendly interfacing."* Detailed in [Agents and automation](../architecture/agents.md).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| AGT-01 | A local MCP server (`focus-notes mcp`, stdio) with the tools, resources, and prompts listed on the Agents page. Writes go through the app when it's running. | P1 |
+| AGT-02 | Settings → Agents shows connection snippets for common MCP hosts, with copy buttons. | P1 |
+| AGT-03 | Agent permissions: read public (on once connected), read private (off), create and edit (off), create public (off), and folder limits. Deleting, visibility changes, and sharing are never available to agents. | P1 |
+| AGT-04 | Every agent write is its own commit with a `Focus-Notes-Agent` trailer, announced with Review and Undo, and listed under Recent agent changes. | P1 |
+| AGT-05 | A `focus-notes` command-line tool with `--json` output, `--workspace`, and documented exit codes. | P1 |
+| AGT-06 | `focus-notes://` deep links for open, new, and search. They never write, delete, or change visibility. | P1 |
+| AGT-07 | `AGENTS.md` in the workspace template (layout, front matter, links, `private/` rules, commit style) and in the product repository. | P0 |
+| AGT-08 | JSON Schemas (2020-12) for front matter, settings, themes, keybindings, `access.json`, and the invite template, published with stable `$id` URLs. | P0 |
+| AGT-09 | MCP safety: note content is returned as labeled, untrusted data, there are rate and size limits, and private content is never returned without permission. | P1 |
+
+## Security (SEC)
+
+Cross-cutting requirements serving CP-SAFE-01 and CP-OWN-01 across every capability. Detailed in [Security and privacy](../architecture/security-and-privacy.md).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| SEC-01 | The Electron hardening checklist: context isolation, sandbox, no Node in the renderer, a validated preload bridge, navigation and permissions denied, no remote content, strict CSP, fuses (`RunAsNode` off, only load from ASAR, ASAR integrity on). | P0 |
+| SEC-02 | Markdown and HTML are sanitized everywhere they're rendered. Raw HTML in notes is shown as text. Only safe URL schemes are allowed. Trusted Types in the app. | P0 |
+| SEC-03 | Credentials live only in Git's credential helper. API tokens are held in memory. Browser tokens are encrypted with a non-extractable key, or kept for the session. Tokens never appear in logs, URLs, or process arguments. | P0 |
+| SEC-04 | Supply chain: lockfiles, Dependabot, CodeQL, secret scanning with push protection, actions pinned by SHA, release SBOM, checksums, and artifact attestations. | P0 |
+| SEC-05 | Users' publish workflows pin the reusable workflow by commit SHA and verify the reader bundle by SHA-256 and attestation. Updates arrive only as pull requests. | P0 |
+| SEC-06 | Every Pages deploy runs the leak check and fails if private text or file names appear in the output. | P0 |
+| SEC-07 | `SECURITY.md` and GitHub private vulnerability reporting, with acknowledgement within 7 days. Documented responses for leaked share secrets, keys, and tokens. | P0 |
+
+## Privacy (PRV)
+
+Cross-cutting requirements serving CP-OWN-01 and CP-SHARE-01. Detailed in [Security and privacy → Privacy commitments](../architecture/security-and-privacy.md#privacy-commitments).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| PRV-01 | No telemetry, analytics, crash reporting services, or third-party requests in the app, users' sites, or the product site. | P0 |
+| PRV-02 | A documented data inventory. Signing out or removing a workspace deletes the local index, recent items, and logs. | P0 |
+| PRV-03 | Synced settings and custom themes are stored in the private repository when there is one (D-46). | P0 |
+| PRV-04 | Public and shared pages set no cookies and load nothing from other origins. Public notes can opt out of search indexing (`noindex`). | P0 |
+
+## Performance (PRF)
+
+Cross-cutting requirements serving CP-CALM-01, CP-FOCUS-01, and CP-REACH-01. Detailed in [Performance and quality](../architecture/performance-and-quality.md).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| PRF-01 | Keystroke to paint: p95 16 ms or less and p99 33 ms or less, in a 50,000-word note with focus mode on. | P0 |
+| PRF-02 | Desktop start to an editable caret: 2.5 s or less cold, 1.5 s or less warm. | P0 |
+| PRF-03 | Opening a 10,000-word note in 150 ms or less. Saving to disk within 1 s of the last keystroke, off the typing path. | P0 |
+| PRF-04 | 350 MB or less resident memory with 10,000 notes. Near-zero idle CPU, with no polling except the 5-minute fetch. | P0 |
+| PRF-05 | Installers of 150 MB or less. The web reader page loads 300 KB or less of compressed JavaScript. | P0 |
+| PRF-06 | Publishing 1,000 public and 200 shared notes takes 5 minutes or less. | P0 |
+
+## Quality (QLT)
+
+Cross-cutting requirements serving CP-SAFE-01.
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| QLT-01 | The testing strategy runs in CI: unit, round-trip corpus, integration with real Git, end-to-end (web and Electron), visual regression, automated accessibility, input methods, and performance budgets. | P0 |
+| QLT-02 | Every release is tested on the support matrix (OS versions, browsers, screen readers, keyboard layouts). | P0 |
+| QLT-03 | A recovery journal means a crash loses at most about one second of typing, restored at next launch. | P0 |
+| QLT-04 | Local diagnostics: redacted, rotated logs, *Copy diagnostic report*, and *Report a problem* (a pre-filled GitHub issue the user reviews). Nothing is sent automatically. | P0 |
+
+## Accessibility (A11Y)
+
+Cross-cutting requirements serving CP-YOURS-01.
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| A11Y-01 | WCAG 2.2 AA for the app, users' public and shared pages, and the product site, with ARIA Authoring Practices patterns for every custom widget. | P0 |
+| A11Y-02 | Windows contrast themes (`forced-colors`), 200% interface zoom, and reflow at 320 px are supported. | P0 |
+
+## Language and text (I18N)
+
+Cross-cutting requirements serving CP-YOURS-01 and CP-OWN-01.
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| I18N-01 | Interface strings are externalized in ICU MessageFormat. English ships first. | P0 |
+| I18N-02 | Notes in any script: `dir="auto"` for each block, NFC file names, locale-aware sorting, and `Intl` dates and numbers. | P0 |
+| I18N-03 | More interface languages. | P1 |
+
+## Distribution (DST)
+
+Owner: *"How do we package and distribute this?… It would be ideal if people can start this from the web also, from a static page… simpler if the user downloads the electron app."* Detailed in [Distribution and release](../plan/distribution.md) and [Get started](../design/views/get-started.md).
+
+| ID | Requirement | Priority |
+| --- | --- | --- |
+| DST-01 | A Get started page on the product site: OS-detected download from GitHub's latest-release links, how it works, the privacy statement, and requirements. | P0 |
+| DST-02 | Start in the browser: the same setup engine at the product site's `/app/`, creating repositories through GitHub's own pages and using a token limited to those two repositories. | P1 |
+| DST-03 | A release pipeline that builds installers for Windows, macOS, and Linux, plus the reader bundle, checksums, SBOM, and attestations, into a draft GitHub Release with smoke tests. | P0 |
+| DST-04 | Store listings: winget and Homebrew cask (and Flathub later), updated automatically from releases. | P1 |
+| DST-05 | `.focus-notes/workspace.json` with `formatVersion`. Migrations ask first, and older apps refuse to write newer formats. | P0 |
+| DST-06 | The workspace template is generated from `templates/workspace/` at each release, and the reusable workflow's SHA and the bundle checksum are recorded for update pull requests. | P0 |
+| DST-07 | Stable and Beta update channels. | P1 |

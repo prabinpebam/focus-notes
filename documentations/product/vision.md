@@ -3,7 +3,7 @@
 Focus Notes is a calm, Markdown-native writing app: an empty page, one small trigger for everything else, and a focus mode that lights up only the line you are writing. Your notes live in a GitHub repository you own. The main way to write is a desktop app (Electron), with soft 20 px corners on Windows and Linux and a native window on macOS. Each user's own GitHub Pages site serves their published notes, and browser editing comes later. Every user's Focus Notes runs entirely on their own GitHub account. The app is open source under the MIT license.
 
 > [!NOTE]
-> **TL;DR.** A Notion/Loop-style block editor that saves **Markdown** to **GitHub**, wrapped in an almost empty UI. The two signature features are the **trigger** (a red dot in a frosted circle at the top center that opens a toolbar of at most six actions) and **focus mode** (only the caret's row is fully visible). A Spotlight-style **search-and-act** panel on <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> and a thorough **keyboard** design make it fast for heavy users. Sign-in goes through Git's own sign-in tools (with a device code), so one sign-in serves the app and the terminal. Every user's Focus Notes lives entirely in their own GitHub account, with nothing hosted by the project. Theming, public/private content, and shareable links follow. Pluggable components such as images and galleries come later, but the editor's design must allow for them from the start.
+> **TL;DR.** A Notion/Loop-style block editor that saves **Markdown** to **GitHub**, wrapped in an almost empty UI. The two signature features are the **trigger** (a red dot in a frosted circle at the top center that opens a toolbar of at most six actions) and **focus mode** (only the caret's row is fully visible). A Spotlight-style **search-and-act** panel on <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> and a thorough **keyboard** design make it fast for heavy users. Sign-in goes through Git's own sign-in tools (with a device code), so one sign-in serves the app and the terminal. Every user's Focus Notes lives entirely in their own GitHub account, with nothing hosted by the project. Notes are private by default, and can be published or **shared with named audiences** through magic links and passcodes. **Agents** can help through MCP and a command-line tool, within permissions the writer grants. There is no telemetry. Pluggable components such as images and galleries come later, but the editor's design must allow for them from the start.
 
 ## What makes it different
 
@@ -28,7 +28,10 @@ Focus Notes is a calm, Markdown-native writing app: an empty page, one small tri
 8. **Borrow conventions.** Shortcuts, file-manager keys, and window behavior copy the most popular apps on each platform, so nothing has to be learned twice.
 9. **Open and permissive.** The app is MIT-licensed, and so is everything it ships with, or it uses a compatible permissive license ([D-20](../plan/decisions.md)).
 10. **Start clean.** The earlier `markdown-focus-editor` project is the reference for **focus mode only**. None of its other concepts are carried over.
-11. **Every decision has a reason.** Each screen, control, and behavior traces through [the articulation chain](spec/chain.md) (promise → scenario → user can → view or component → design decision → requirement). Anything that can't be traced isn't built.
+11. **Private unless you say otherwise.** New notes are private, settings and themes stay in the private repository, there is no telemetry, and nothing leaves the user's computer and GitHub account except what they publish or share (see [Security and privacy](../architecture/security-and-privacy.md)).
+12. **Agent-friendly, writer in charge.** Agents work through the same files, commands, and Git history as the writer, via MCP and a command-line tool, only with the permissions the writer grants, and every change can be undone (see [Agents and automation](../architecture/agents.md)).
+13. **Nothing hosted by the project.** Each user's Focus Notes runs entirely in their own GitHub account. The project only publishes the app, the docs, and a static Get started page on GitHub Pages.
+14. **Every decision has a reason.** Each screen, control, and behavior traces through [the articulation chain](spec/chain.md) (promise → scenario → user can → view or component → design decision → requirement). Anything that can't be traced isn't built.
 
 ## Scope
 
@@ -42,14 +45,16 @@ Focus Notes is a calm, Markdown-native writing app: an empty page, one small tri
 - Spotlight search-and-act on <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd>, including quick open and commands.
 - A full keyboard shortcut system for macOS, iPadOS, Windows, and Linux.
 - Create, read, update, and delete for files and folders, including moves.
-- Public and private content, plus sharing public links.
+- Public, private, and shared notes. Sharing private notes and folders with named audiences through magic links and passcodes ([Sharing and visibility](../design/views/sharing.md)).
 - Theme switching (Light, Dark, System), fonts, and font size.
-- Public note pages published on GitHub Pages.
+- Public note pages and sealed shared pages, published on the user's own GitHub Pages site.
+- The product site's [Get started page](../design/views/get-started.md), with signed downloads from GitHub Releases ([Packaging and distribution](../plan/distribution.md)).
 
 ### Planned extension points (not in the first release)
 
-- Editing in the browser (web build with a personal access token).
-- Private share links, custom keybindings, multiple windows, replace across notes.
+- Editing and setup in the browser (M6, the web app at the product site's `/app/`).
+- Agents: a local MCP server, a command-line tool, and deep links (M7).
+- Custom keybindings, multiple windows, replace across notes.
 - Rich components such as image and gallery, added through the block registry.
 
 ### Out of scope until decided otherwise
@@ -72,20 +77,14 @@ Focus Notes is a calm, Markdown-native writing app: an empty page, one small tri
 | **Title bar band** | The invisible top 44 px of the desktop window, used to drag it. The trigger sits in its center. |
 | **First run** | The guided setup on first launch: Git, sign-in, identity, workspace, preferences. |
 | **Device code** | A short code the writer approves on github.com to sign in. Shown by Git Credential Manager or the GitHub CLI, the sign-in tools Focus Notes relies on. |
-| **Workspace** (instance) | A user's own notes repository, private repository, and GitHub Pages site, all in their GitHub account. |
+| **Workspace** | A user's own Focus Notes: their notes repository, private repository, and GitHub Pages site, all in their GitHub account. Also used for the folders and notes inside it. |
 | **Focus mode** | A reading treatment where only the caret's visual row is at full strength and other rows are subdued. |
 | **Row** | One *rendered* (visually wrapped) line of text, not a paragraph or a source line. |
 | **Block** | A unit of document structure: paragraph, heading, list item, table, code block, or a future component. |
 | **Note** | One Markdown file. |
-| **Workspace** | The content tree (folders and notes) backed by a Git repository. |
 | **Public content** | Notes in the public content repository. They are published as readable pages on GitHub Pages. |
 | **Private content** | Notes in the private content repository, mounted as a Git submodule. They are never published in plaintext. |
-| **Share link** | A URL that lets someone without edit access read a note. |
-| **Focus mode** | A reading treatment where only the caret's visual row is at full strength and other rows are subdued. |
-| **Row** | One *rendered* (visually wrapped) line of text, not a paragraph or a source line. |
-| **Block** | A unit of document structure: paragraph, heading, list item, table, code block, or a future component. |
-| **Note** | One Markdown file. |
-| **Workspace** | The content tree (folders and notes) backed by a Git repository. |
-| **Public content** | Notes in the public content repository. They are published as readable pages on GitHub Pages. |
-| **Private content** | Notes in the private content repository, mounted as a Git submodule. They are never published in plaintext. |
-| **Share link** | A URL that lets someone without edit access read a note. |
+| **Audience** | A person or group, identified only by a name, that a private note or folder is shared with. |
+| **Magic link** | A share URL whose secret, after `#`, opens the shared notes without typing anything. |
+| **Passcode** | A secret the writer gives an audience. With their name, it opens the shared notes. |
+| **Agent** | An AI tool that works with notes through MCP, the command-line tool, or the files, within the writer's permissions. |

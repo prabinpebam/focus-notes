@@ -6,24 +6,24 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Notion/Loop-style editing (built on Tiptap) that saves plain Markdown to your own GitHub repository. You write in an MIT-licensed desktop app with an invisible title bar (20 px rounded on Windows and Linux, native on macOS). Sign-in goes through Git's own tools, so it covers the app and the terminal, and every user's Focus Notes lives entirely in their own GitHub account, with nothing hosted by the project. <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> opens Spotlight to find anything and act on it, and the keymap copies the apps people already use. Notes are public or private (private ones live in a submodule repository), and public notes are published on GitHub Pages. This site turns the human-written <a href="seed-specs.md">seed spec</a> and the owner's later decisions into product, experience, architecture, and delivery documentation. It is documentation only; no code has been written yet.</p>
+  <p>Notion/Loop-style editing (built on Tiptap) that saves plain Markdown to your own GitHub repository. You write in an MIT-licensed desktop app with an invisible title bar (20 px rounded on Windows and Linux, native on macOS). Sign-in goes through Git's own tools, so it covers the app and the terminal, and every user's Focus Notes lives entirely in their own GitHub account, with nothing hosted by the project. <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> opens Spotlight to find anything and act on it, and the keymap copies the apps people already use. Notes are private by default. They can be published on the user's own GitHub Pages site, or shared with named audiences through a magic link or a passcode. Agents can help through MCP and a command-line tool, within permissions the writer grants, and there is no telemetry. People start from a Get started page on GitHub Pages that leads to the download. This site turns the human-written <a href="seed-specs.md">seed spec</a> and the owner's later decisions into product, experience, architecture, and delivery documentation. It is documentation only; no code has been written yet.</p>
 </aside>
 
 <div class="slate-metrics">
   <div class="slate-metric">
-    <p class="slate-metric__value">10</p>
+    <p class="slate-metric__value">11</p>
     <p class="slate-metric__label">Customer promises</p>
   </div>
   <div class="slate-metric">
-    <p class="slate-metric__value">42</p>
+    <p class="slate-metric__value">47</p>
     <p class="slate-metric__label">Scenarios (jobs to be done)</p>
   </div>
   <div class="slate-metric">
-    <p class="slate-metric__value">69</p>
+    <p class="slate-metric__value">79</p>
     <p class="slate-metric__label">User-can capabilities</p>
   </div>
   <div class="slate-metric">
-    <p class="slate-metric__value">120</p>
+    <p class="slate-metric__value">168</p>
     <p class="slate-metric__label">Requirements, all traced</p>
   </div>
 </div>
@@ -68,6 +68,24 @@
       <p class="slate-card__body">Seven calm steps. Sign in through Git's own tools, and get your own workspace created in your GitHub account.</p>
     </a>
   </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="design/views/sharing.md">
+      <h3 class="slate-card__title">Sharing with people</h3>
+      <p class="slate-card__body">Share a private note or folder with someone by name, through a magic link or a passcode. It's published only as ciphertext and can be withdrawn at any time.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="architecture/agents.md">
+      <h3 class="slate-card__title">Agents and automation</h3>
+      <p class="slate-card__body">A local MCP server, a command-line tool, deep links, and AGENTS.md. Agents get only the permissions you grant, and every change can be undone.</p>
+    </a>
+  </article>
+  <article class="slate-card slate-card--interactive">
+    <a href="design/views/get-started.md">
+      <h3 class="slate-card__title">Get started</h3>
+      <p class="slate-card__body">A static page on GitHub Pages: download the app, and it sets up your own workspace. A browser path follows later.</p>
+    </a>
+  </article>
 </div>
 
 <h2>Read in this order</h2>
@@ -82,15 +100,15 @@
   </li>
       <li class="slate-step">
         <p class="slate-step__title">Design</p>
-        <p><a href="design/information-architecture.html">Information architecture</a>, <a href="design/foundations.md">Foundations</a>, views (<a href="design/views/files.html">Files panel</a>, <a href="design/views/theme-manager.html">Theme manager</a>, <a href="design/views/secondary-views.md">Secondary views</a>) and components (<a href="design/components/text-formatting.html">Text formatting</a>, <a href="design/components/tables.html">Tables</a>, <a href="design/components/feedback-and-dialogs.md">Feedback and dialogs</a>).</p>
+        <p><a href="design/information-architecture.html">Information architecture</a>, <a href="design/foundations.md">Foundations</a>, views (<a href="design/views/files.html">Files panel</a>, <a href="design/views/theme-manager.html">Theme manager</a>, <a href="design/views/secondary-views.md">Secondary views</a>, <a href="design/views/sharing.md">Sharing and visibility</a>, <a href="design/views/get-started.md">Get started page</a>) and components (<a href="design/components/text-formatting.html">Text formatting</a>, <a href="design/components/tables.html">Tables</a>, <a href="design/components/feedback-and-dialogs.md">Feedback and dialogs</a>).</p>
       </li>
   <li class="slate-step">
     <p class="slate-step__title">Architecture</p>
-    <p><a href="architecture/overview.html">Overview</a>, <a href="architecture/content-model.md">Content model</a>, <a href="architecture/editor-engine.md">Editor engine</a>, <a href="architecture/desktop-and-git.md">Desktop and Git</a>, <a href="architecture/repository-and-publishing.html">Repository and publishing</a>.</p>
+    <p><a href="architecture/overview.html">Overview</a>, <a href="architecture/content-model.md">Content model</a>, <a href="architecture/editor-engine.md">Editor engine</a>, <a href="architecture/desktop-and-git.md">Desktop and Git</a>, <a href="architecture/repository-and-publishing.html">Repository and publishing</a>, <a href="architecture/agents.md">Agents and automation</a>, <a href="architecture/security-and-privacy.md">Security and privacy</a>, <a href="architecture/performance-and-quality.md">Performance and quality</a>, <a href="architecture/standards.md">Standards</a>.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Plan</p>
-    <p><a href="plan/roadmap.md">Roadmap</a> and <a href="plan/decisions.md">Decisions</a>. Every decision is settled, and each one links to the pages it affects.</p>
+    <p><a href="plan/roadmap.md">Roadmap</a>, <a href="plan/distribution.md">Packaging and distribution</a>, <a href="plan/risks.md">Risks</a>, and <a href="plan/decisions.md">Decisions</a>. Each decision links to the pages it affects.</p>
   </li>
 </ol>
 
@@ -100,9 +118,12 @@
   <tbody>
     <tr><td><a href="seed-specs.md">Seed spec</a></td><td>The original requirements. Written by a person; never edited by tooling or agents.</td></tr>
     <tr><td><a href="plan/decisions.md">Owner decisions, 2026-10-13</a></td><td>Trigger size, Tiptap and MIT, device sign-in, the desktop window, toolbar cap, keyboard strategy, find, Spotlight, the articulation chain, Loop-style tables, the contextual toolbar, and theme management.</td></tr>
+    <tr><td><a href="plan/decisions.md#owner-decisions">Owner decisions, 2026-10-14</a></td><td>Sharing with named audiences through magic links and passcodes (following the access model of the owner's personal site), private sharing in the first release, download-first getting started, and agent-friendly interfaces.</td></tr>
     <tr><td><a href="https://github.com/prabinpebam/markdown-focus-editor">markdown-focus-editor</a></td><td>Focus mode only: the visual-row unit and the mask technique.</td></tr>
     <tr><td><code>personal-site</code> (local project)</td><td>Private content as a submodule, sealed publishing, and share links.</td></tr>
     <tr><td><a href="https://www.electronjs.org/docs/latest/tutorial/custom-window-styles">Electron: custom window styles</a></td><td>What transparent windows can't do, which drives the 20 px corner design.</td></tr>
+    <tr><td><a href="https://modelcontextprotocol.io/">Model Context Protocol</a></td><td>The protocol for the local agent server.</td></tr>
+    <tr><td><a href="https://agents.md/">AGENTS.md</a></td><td>The convention for instructions to coding agents, used in every workspace.</td></tr>
     <tr><td><a href="https://github.com/prabinpebam/slate">Slate</a></td><td>This documentation system, pinned as the <code>slate/</code> submodule.</td></tr>
   </tbody>
 </table>

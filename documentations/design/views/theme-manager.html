@@ -219,8 +219,8 @@
 
 <h2 data-reader-personas="design engineering">Saving, syncing, and sharing</h2>
 <ul>
-  <li>Custom themes are saved as <code>.focus-notes/themes/&lt;name&gt;.json</code> in the public repository, so they sync to every computer (UC-THEME-10). They only contain colors and font names, never personal content.</li>
-  <li>The chosen appearance, slots, and reading settings are per device. Turning on <em>Sync appearance</em> stores them in <code>.focus-notes/settings.json</code> instead (THM-05).</li>
+  <li>Custom themes are saved as <code>private/.focus-notes/themes/&lt;name&gt;.json</code> in the <strong>private</strong> repository, so they sync to every computer without becoming public (UC-THEME-10, D-46). Workspaces without a private repository use <code>.focus-notes/themes/</code> in the notes repository, and the app says that these are public.</li>
+  <li>The chosen appearance, slots, and reading settings are per device. Turning on <em>Sync appearance</em> stores them in <code>private/.focus-notes/settings.json</code> instead (THM-05, D-46).</li>
   <li><strong>Export:</strong> the tile's ⋯ → Export saves a <code>.json</code> file or copies it.</li>
   <li><strong>Delete:</strong> a custom theme that's in use falls back to the default for that slot, and a toast offers <strong>Undo</strong>.</li>
 </ul>

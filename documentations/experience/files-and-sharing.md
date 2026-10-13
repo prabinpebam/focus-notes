@@ -35,13 +35,12 @@ Commit messages are readable and consistent. For example: `Create notes/ideas.md
 
 Seed: *"The content can be made public or private. Private content are hosted in a private repo which is a submodule of the parent repo."*
 
-| | Public note | Private note |
-| --- | --- | --- |
-| Stored in | Public repository, `content/` | Private content repository, mounted at `private/` as a Git submodule |
-| Published on GitHub Pages | Yes, as a read-only page | Never in plaintext. It only appears as sealed (encrypted) files if it's shared |
-| Readable without signing in | Yes, by anyone with the URL | Only through a private share link |
-| Default for new notes | No | **Yes** (SHR-01, safe by default) |
-
+| | Public note | Shared note | Private note |
+| --- | --- | --- | --- |
+| Stored in | The notes repository, `content/` | The private repository, `private/` | The private repository, `private/` |
+| Published on GitHub Pages | Yes, as a read-only page | Only as sealed (encrypted) files | Never |
+| Who can read it | Anyone with the URL | Named audiences, with a magic link or their name and passcode | Only you |
+| Default for new notes | No | No | **Yes** (SHR-01, safe by default) |
 ### Changing visibility
 
 1. The user picks **Share → Make public** (or *Make private*). Making a note public asks for confirmation: *"Anyone with the link will be able to read this note."*
@@ -61,19 +60,9 @@ Seed: *"The content can be made public or private. Private content are hosted in
 - The URL is stable for as long as the note's path doesn't change. Renames and moves leave a redirect stub at the old path (proposed; see [decisions](../plan/decisions.md) D-08).
 - The public page appears after the next GitHub Pages deploy, usually within minutes. The Share panel shows *"Publishing…"* until the deploy for that commit is done.
 
-### Private share link (SHR-05, P1)
+### Sharing with people (SHR-05)
 
-This follows the sealed-content approach proven in the `personal-site` project:
-
-1. **Share → Share privately…** asks for a recipient label and an expiry date.
-2. The app adds a **grant** to `access.json` in the private repository (recipient, scope, expiry, random secret).
-3. On the next deploy, CI encrypts the note (AES-256-GCM) and publishes only ciphertext and a keyring.
-4. The app shows a link in the form `…/s/<opaque-token>/#a=<grant-id>.<secret>`. The part after `#` is never sent to the server.
-5. The recipient's browser uses the fragment to unlock the keyring and decrypt the note locally.
-6. **Revoke** removes the grant. Expired grants stop working at the next deploy (a nightly deploy enforces expiry).
-
-> [!WARNING]
-> Sealed sharing protects against crawlers and casual discovery. It doesn't stop a recipient from passing the link on or saving the text. The full threat model is in [Repository and publishing](../architecture/repository-and-publishing.html#threat-model).
+A private note or folder can be shared with an **audience**: a person or group identified only by a **name**, using a **magic link**, a **passcode** (your own or generated), or both, until an expiry or until you withdraw it. Shared notes stay in the private repository and are published only as ciphertext that the link or the name plus passcode opens. The full design is in [Sharing and visibility](../design/views/sharing.md), and the cryptography is in [Repository and publishing → Sealing](../architecture/repository-and-publishing.html#sealing-and-share-links).
 
 ## Conflicts and offline
 

@@ -3,7 +3,7 @@
 The views people open now and then: Settings, Share and visibility, the keyboard shortcut cheat sheet, and the public page readers see.
 
 > [!NOTE]
-> **TL;DR.** **Settings** (IA-VIEW-SETTINGS) is a dialog with six categories. It holds the rare choices, and every change applies at once. **Share and visibility** (IA-VIEW-SHARE) is a popover with a Private/Public switch, the public link with its live status, and private links (P1). Changing the audience always asks first. The **cheat sheet** (IA-VIEW-SHORTCUTS) is a searchable, filterable dialog in the platform's own key symbols. The **public page** (IA-VIEW-PUBLIC) is a calm, read-only reading view that follows the reader's light or dark preference. Each section ends with its design decisions.
+> **TL;DR.** **Settings** (IA-VIEW-SETTINGS) is a dialog with eight categories. It holds the rare choices, and every change applies at once. **Share and visibility** (IA-VIEW-SHARE) is a popover with a Private/Public switch, the public link with its live status, and private links (P1). Changing the audience always asks first. The **cheat sheet** (IA-VIEW-SHORTCUTS) is a searchable, filterable dialog in the platform's own key symbols. The **public page** (IA-VIEW-PUBLIC) is a calm, read-only reading view that follows the reader's light or dark preference. Each section ends with its design decisions.
 
 <h2 id="settings" data-reader-personas="design product">Settings</h2>
 
@@ -17,8 +17,10 @@ The views people open now and then: Settings, Share and visibility, the keyboard
 | **Workspace** | Folder location ([Show in Finder/Explorer], [Change…], which moves or re-clones). The notes and private repositories in the user's account (reachable, branch, last sync). *Publishing:* the GitHub Pages address and status, with [Turn on] if it was skipped. *Private share links:* on or off, with [Set up] if skipped. *Sync:* automatically after 30 s, 60 s (default), or 5 min without typing, or only when I press <kbd>Mod</kbd>+<kbd>S</kbd>. [Sync now]. [Run setup again]. |
 | **Editor** | *New notes go in:* the current folder (default) or the Private root. *Open focus mode on start* (on). *Markdown shortcuts while typing* (on). *Smart punctuation* (on: curly quotes and dashes). *Spelling:* uses the OS spell checker, with a language list. *Paste:* keep formatting (default) or always paste as plain text. |
 | **Appearance** | A summary ("System · Paper / Ink · 18 px Serif") with [Open theme manager]. *Interface size:* 90–150%. *Transparency:* follow the system (default) or always solid. *Sync appearance across computers* (off). |
+| **Sharing** | *All people with access*: every audience with its name, ways in, what it opens, expiry, and state, with filters and actions. The invite template. Share-link publishing status, with [Set up] if skipped. See [Sharing and visibility](sharing.md#settings-sharing). |
+| **Agents** | *Agents can connect*, read and edit permissions, folder limits, *Connect an agent* snippets, *Install command-line tool*, and *Recent agent changes*. See [Agents and automation](../../architecture/agents.md#permissions). |
 | **Keyboard** | Search bindings. Every command with its keys, with [Change] (P1) and per-row Reset. [Reset all]. [Open cheat sheet]. Conflicts are flagged inline ("Also used by Duplicate block"). |
-| **About** | Version, update status (P1), license (MIT), third-party notices, links to these docs and to the issue tracker. |
+| **About** | Version, update status and channel (Stable or Beta, P1), license (MIT), third-party notices, *Copy diagnostic report*, *Report a problem* (a pre-filled GitHub issue), and links to these docs and the privacy statement. |
 
 **Design decisions**
 
@@ -31,24 +33,24 @@ The views people open now and then: Settings, Share and visibility, the keyboard
 
 <h2 id="share-and-visibility" data-reader-personas="design product">Share and visibility</h2>
 
-**IA-VIEW-SHARE.** Serves UC-SHARE-01 to UC-SHARE-04. It opens from ⋯ → Share and visibility, Spotlight (`> Share`), or a Files row's ⋯.
+**IA-VIEW-SHARE** now has its own page: [Sharing and visibility](sharing.md). It covers the three visibility levels, audiences with magic links and passcodes, the invite, withdraw and extend, and the share reader.
 
-**Layout:** a frosted popover, 360 px wide, anchored under the trigger. The note's title is at the top, with a **Private | Public** segmented switch under it.
+<h2 id="note-history" data-reader-personas="design product">Note history</h2>
 
-| State | Contents |
-| --- | --- |
-| **Private** (default) | "Only you, and people with access to your private repository, can read this." **Private links** (P1): a list of active links (recipient, expires in…), each with [Copy] and [Revoke]. [Share privately…] opens a small form: *For* (a label such as "Asha, editor"), *Expires* (1 day, 1 week (default), 30 days, or a date), then [Create link]. The new link is copied straight away and the list updates. |
-| **Public** | The public URL in a read-only field, with [Copy link] (UC-SHARE-02). Status: **Live** (green dot), **Publishing…** ("usually a few minutes"), or **Not published yet**. [Open page]. |
-| Changing the switch | Opens the visibility confirmation (see [Feedback and dialogs](../components/feedback-and-dialogs.md#confirmation-dialog)). Nothing changes until it's confirmed. |
-| The note isn't synced yet | The Public option waits: "Sync this note first to publish it." with [Sync now]. |
+**IA-VIEW-HISTORY.** Serves UC-SAFE-05 and UC-AGENT-03. Priority P1. It opens from ⋯ → Note history, a toast's [Review], or Spotlight (`> Note history`).
 
-**Design decisions**
+- **Layout:** a right side sheet, 380 px wide, like the theme manager, with the note staying visible on the left.
+- **List:** every saved version from Git, newest first, grouped by day. Each row shows the time, the author (the writer, another computer, or an agent with an *Agent* badge and its name), and a one-line summary of what changed ("Edited 3 paragraphs", "Renamed from Draft").
+- **Selecting a version** shows the note as it was in the canvas, read-only, with changed blocks highlighted against the current version. A banner shows "Viewing the version from 13 Oct, 14:02" with [Restore this version] and [Back to current].
+- **Restore** makes a new commit with the old content (the newer versions stay in history), and announces "Restored the version from 13 Oct, 14:02" with [Undo].
+- **Agent changes** can be undone right from their row ([Undo this change]), which reverts only that commit.
+- **Keyboard:** <kbd>↑</kbd>/<kbd>↓</kbd> move through versions, <kbd>Enter</kbd> previews, and <kbd>Esc</kbd> returns to the current version and closes the sheet.
+
+**Design decision**
 
 | ID | Decision | Serves | Rationale | Alternatives rejected |
 | --- | --- | --- | --- | --- |
-| DD-SHARE-01 | Visibility is a two-way switch at the top, and every change asks for confirmation. | UC-SHARE-01 | The audience is the most important fact about a note's sharing. It should be visible first and changed deliberately (CP-SHARE-01). | A "Publish" button hidden in a menu. Changing without confirmation. |
-| DD-SHARE-02 | The public link shows when it's live, not just the address. | UC-SHARE-02 | Pages take minutes to publish. Sharing a link that doesn't work yet breaks trust. | A copy button with no status. |
-| DD-SHARE-03 | Private links carry a label for who they're for, and a default expiry of one week. | UC-SHARE-03, UC-SHARE-04 | Labels make revoking the right link possible. Expiry by default limits forgotten access. | Anonymous links that never expire. |
+| DD-HIST-01 | Note history comes from Git and restoring is a new commit. | UC-SAFE-05, UC-AGENT-03 | Git already holds every version (CP-SAFE-01). Restoring forward never destroys anything. | A separate version store. Restoring by rewriting history. |
 
 <h2 id="keyboard-shortcut-cheat-sheet" data-reader-personas="design product">Keyboard shortcut cheat sheet</h2>
 

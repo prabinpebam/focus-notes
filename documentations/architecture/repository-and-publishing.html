@@ -91,7 +91,7 @@
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Track main</p>
-    <p>A setup script switches <code>private/</code> from detached HEAD to <code>main</code> and turns on recursive pulls and push checks (<code>submodule.recurse</code>, <code>push.recurseSubmodules=check</code>), as <code>personal-site</code> does.</p>
+    <p>The app keeps <code>private/</code> checked out on <code>main</code> and pulls and pushes it as a repository of its own (D-47). It sets <code>push.recurseSubmodules=check</code> but leaves <code>submodule.recurse</code> off. The pointer only moves for publishing (D-07), so a recursive pull would reset <code>private/</code> to an older commit and hide recent private notes. People using the terminal get the same advice in the workspace's <code>AGENTS.md</code> and README: pull <code>private/</code> on its own.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Commit private first</p>
@@ -121,7 +121,7 @@
   <dd>The Actions secret <code>PRIVATE_CONTENT_KEY</code> holds an SSH deploy key whose public half is installed <strong>read-only</strong> on the private repository. The workflow rewrites the submodule URL to SSH, runs <code>git submodule update --init --depth 1 private</code>, checks that <code>private/access.json</code> exists (refusing to deploy a half-configured site), then deletes the key from the runner.</dd>
   <dd>Build logs that could reveal private note names are sent to a runner-local file instead of the public Actions log.</dd>
   <dt>Build</dt>
-  <dd>Calls the Focus Notes <strong>reusable publish workflow</strong> at a pinned release tag (<code>uses: &lt;product repo&gt;/.github/workflows/publish.yml@v1</code>). It downloads that release's static reader bundle from GitHub Releases and renders every note in <code>content/</code> to a static page at <code>/n/&lt;path&gt;/</code>. The template ships with the current major version. Moving to a new major version is a one-line change the user makes (or accepts as a pull request from Dependabot).</dd>
+  <dd>Calls the Focus Notes <strong>reusable publish workflow</strong>, pinned by <strong>full commit SHA</strong> (not a movable tag), as GitHub's security hardening guide recommends, because the workflow runs with the user's <code>PRIVATE_CONTENT_KEY</code>. It downloads the matching release's static reader bundle from GitHub Releases, checks it against a SHA-256 recorded in the workflow file and against the release's GitHub artifact attestation, and renders every note in <code>content/</code> to a static page at <code>/n/&lt;path&gt;/</code>. Updates reach users only as a pull request in their own repository (Dependabot, or the app's <em>Update publishing</em> button) that they merge themselves (D-48).</dd>
   <dt>Seal</dt>
   <dd>For each active grant, encrypts the granted notes and their media into <code>_sealed/&lt;build&gt;/</code> and writes the grant keyrings into <code>_access/&lt;build&gt;/</code>.</dd>
   <dt>Verify</dt>
@@ -130,33 +130,52 @@
   <dd>Uploads the verified artifact to the user's own GitHub Pages site. Only <code>main</code> deploys.</dd>
 </dl>
 
-<h2>Sealing and share links</h2>
-<p>This design follows the <code>personal-site</code> access spec, scaled down to what SHR-05 needs (magic links only, no typed access codes in the first version).</p>
-<table>
-  <thead><tr><th>Aspect</th><th>Design</th></tr></thead>
-  <tbody>
-    <tr><td>Content encryption</td><td>AES-256-GCM with authenticated additional data (build ID, note ID)</td></tr>
-    <tr><td>Keys</td><td>Fresh random keys and build ID on every deploy. Per-note and keyring keys derived with HKDF</td></tr>
-    <tr><td>Link secret</td><td>32 random bytes, base64url, carried only in the URL fragment: <code>#a=&lt;grant-id&gt;.&lt;secret&gt;</code></td></tr>
-    <tr><td>Decryption</td><td>In the reader's browser with WebCrypto. The fragment is removed from the address bar right away with <code>history.replaceState</code></td></tr>
-    <tr><td>Private URLs</td><td>Opaque tokens (<code>/s/&lt;token&gt;/</code>), so note names and paths aren't exposed</td></tr>
-    <tr><td>Expiry and revoke</td><td>Grants carry <code>expiresAt</code>. Revoking deletes the grant. Both take effect at the next deploy (nightly at the latest)</td></tr>
-  </tbody>
-</table>
+<h2 id="sealing-and-share-links">Sealing and share links</h2>
+<p>This follows the <code>personal-site</code> access design (grants, keyrings, fresh keys every build, and a nightly deploy), adapted to Focus Notes: an audience is just a <strong>name</strong>, and it can have a magic link, a passcode, or both (D-41). The experience is in <a href="../design/views/sharing.md">Sharing and visibility</a>.</p>
 
 <h3>Grant record (<code>private/access.json</code>)</h3>
 <table>
   <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
   <tbody>
-    <tr><td><code>id</code></td><td>Grant identifier (appears in the link fragment)</td></tr>
-    <tr><td><code>kind</code></td><td><code>link</code> (first version). <code>code</code> is reserved for typed access codes later</td></tr>
-    <tr><td><code>recipient</code></td><td>Label for the owner's own reference (name, organisation)</td></tr>
-    <tr><td><code>purpose</code></td><td>Why it was shared</td></tr>
-    <tr><td><code>scope</code></td><td>Note IDs (and optionally folders) the grant unlocks</td></tr>
-    <tr><td><code>createdAt</code>, <code>expiresAt</code></td><td>ISO 8601 timestamps with offset</td></tr>
-    <tr><td><code>secret</code></td><td>Secret material. It exists only in the private repository and never appears in the notes repository or logs (and there's no telemetry)</td></tr>
+    <tr><td><code>id</code></td><td>Random and opaque (<code>g</code> plus 8 base32 characters). Appears in a magic link's fragment.</td></tr>
+    <tr><td><code>name</code></td><td>The audience: a person or group. The only detail recorded about who it's for. Unique among active grants.</td></tr>
+    <tr><td><code>link</code></td><td>Present if the audience has a magic link: <code>{ "secret": "&lt;32 random bytes, base64url&gt;" }</code>.</td></tr>
+    <tr><td><code>passcode</code></td><td>Present if it has a passcode: <code>{ "value": "…", "generated": true }</code>. Kept so the invite can be copied again. Never published.</td></tr>
+    <tr><td><code>salt</code></td><td>16 random bytes. Published in the keyring header (it isn't secret).</td></tr>
+    <tr><td><code>scope</code></td><td><code>{ "notes": ["&lt;note id&gt;"], "folders": ["drafts/"] }</code>. A folder includes notes added later.</td></tr>
+    <tr><td><code>createdAt</code>, <code>expiresAt</code>, <code>revokedAt</code></td><td>ISO 8601 with time zone. <code>expiresAt</code> is optional. <code>revokedAt</code> is set on withdraw, and the record stays.</td></tr>
   </tbody>
 </table>
+<p>The private repository's history is the audit trail: every grant's creation, change, withdrawal, and deletion is a commit. The JSON Schema is published with the product (AGT-08).</p>
+
+<h3>Keys</h3>
+<table>
+  <thead><tr><th>Key</th><th>Derived or made</th><th>Protects</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Passcode key</strong></td><td>PBKDF2-HMAC-SHA256 over the passcode (Unicode NFC, trimmed) with the grant's salt and 600,000 iterations, OWASP's current figure for PBKDF2-SHA256. About half a second on a phone, once per session.</td><td>The grant's passcode keyring</td></tr>
+    <tr><td><strong>Link key</strong></td><td>HKDF-SHA256 over the link's 32 random bytes, with the grant's salt and the info string <code>focus-notes/grant/v1</code>. No slow derivation is needed because the input is already random.</td><td>The grant's link keyring</td></tr>
+    <tr><td><strong>Note key</strong></td><td>Random, 256 bits, fresh every build</td><td>One sealed note (its content, title, and description)</td></tr>
+  </tbody>
+</table>
+
+<h3>Sealed files and lookup</h3>
+<ul>
+  <li>Every build has a random <strong>build ID</strong>. Sealed files live under <code>_sealed/&lt;build&gt;/</code> and keyrings under <code>_access/&lt;build&gt;/</code>, so a deploy never overwrites a file that a cached page still needs.</li>
+  <li><strong>Link keyrings</strong> are found by grant ID: <code>_access/&lt;build&gt;/l/&lt;id&gt;.json</code>.</li>
+  <li><strong>Passcode keyrings</strong> are found by name: <code>_access/&lt;build&gt;/p/&lt;lookup&gt;.json</code>, where <code>lookup</code> is the first 16 bytes of SHA-256 over <code>focus-notes/name/v1|&lt;workspace salt&gt;|&lt;name&gt;</code>. The name is normalized (Unicode NFKC, trimmed, case-folded). The workspace salt is public and stable, so remembered keys keep working across builds. The lookup only finds a keyring. Opening it still needs the passcode.</li>
+  <li>A <strong>keyring</strong> is a small JSON envelope with its derivation in clear (<code>kdf</code>, <code>iterations</code>, <code>salt</code>, <code>iv</code>), and the header is authenticated as additional data. Decrypted, it holds the grant ID, the expiry, and the note keys it opens (by per-build key IDs, never note IDs). The browser accepts only <code>pbkdf2-sha256</code> at exactly 600,000 iterations or <code>hkdf-sha256</code>, a 16-byte salt, a 12-byte IV, and files under 64 KB, so the format can't be downgraded or used to exhaust the browser.</li>
+  <li><strong>Sealed notes</strong> use AES-256-GCM with a random 96-bit IV. The additional data binds each file to its build and key ID (<code>focus-notes/note/v1|&lt;build&gt;|&lt;kid&gt;</code>), so swapped or stale files fail the authentication tag.</li>
+  <li>A sealed page's <code>&lt;title&gt;</code> is "Private note". It has no description, and adds <code>noindex, nofollow</code> and <code>referrer: same-origin</code>.</li>
+</ul>
+
+<h3>Expiry, withdrawal, and deploys</h3>
+<ul>
+  <li><strong>Fresh keys every build.</strong> Keyrings are written only for grants that are neither expired nor withdrawn, so ended grants open nothing on the live site.</li>
+  <li><strong>Publishing on change.</strong> Creating, extending, or withdrawing a grant commits to the private repository, moves the pointer (D-07), and the push starts a deploy. The change takes effect in about 15 minutes (the deploy, plus up to 10 minutes of browser caching on GitHub Pages).</li>
+  <li><strong>Nightly deploy.</strong> A scheduled run applies expiry dates. GitHub may start scheduled runs late. Keyrings also carry the expiry, and the reader page refuses expired ones itself.</li>
+  <li><strong>Inactive-repository rule.</strong> GitHub turns off scheduled workflows in public repositories after 60 days without activity. As in <code>personal-site</code>, when the last commit is 50 days old the nightly run fails on purpose with a message saying so, and the app shows a reminder (any commit resets the clock).</li>
+</ul>
+<p>The protections and limits are listed in the threat model below and in <a href="security-and-privacy.md">Security and privacy</a>.</p>
 
 <h2 id="threat-model">Threat model</h2>
 <div class="slate-compare">
@@ -164,15 +183,15 @@
     <p class="slate-compare__head">Protects against</p>
     <ul>
       <li>Crawlers, search engines, and anyone browsing the public site or repository</li>
-      <li>Wrong, expired, or revoked links (after the next deploy)</li>
-      <li>A grant for one note unlocking a different note</li>
+      <li>Wrong names or passcodes, and expired or withdrawn audiences (after the next deploy)</li>
+      <li>An audience for one note or folder opening anything else</li>
       <li>Private plaintext slipping into the Pages artifact (the leak check)</li>
     </ul>
   </div>
   <div class="slate-compare__col">
     <p class="slate-compare__head">Does not protect against</p>
     <ul>
-      <li>Recipients forwarding the link or saving the decrypted text</li>
+      <li>Readers forwarding the link or passcode, or saving the decrypted text</li>
       <li>Content already downloaded or cached before revoke or expiry</li>
       <li>Metadata: that sealed files exist, their sizes, and when they change</li>
       <li>Script injection on the site's origin, which could read keys in the browser (mitigated by CSP and sanitizing)</li>
@@ -188,6 +207,5 @@
     <tr><td><code>/</code></td><td>The user's public home page: a list of their public notes</td></tr>
     <tr><td><code>/n/&lt;path&gt;/</code></td><td>Read-only public note pages</td></tr>
     <tr><td><code>/s/&lt;token&gt;/</code></td><td>Private share-link reader (decrypts in the browser)</td></tr>
-    <tr><td><code>/app/</code> (M6)</td><td>Browser editing for the user. It asks for their fine-grained token on first use and talks only to GitHub</td></tr>
   </tbody>
 </table>

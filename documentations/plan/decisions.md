@@ -3,7 +3,7 @@
 Every assumption and design choice these docs make beyond the literal [seed spec](../seed-specs.md), in one place, so any of them can be revisited deliberately.
 
 > [!NOTE]
-> **TL;DR.** 40 decisions, all settled, with no open questions. Key owner decisions: **D-14**: 20 px corners on Windows (and Linux) by drawing the window and rebuilding window management; macOS uses its native window. **D-16**: Spotlight is <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd>, and <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> is the link key. **D-19**: support every platform possible. **D-21**: no OAuth app, no registration, and no hosting by the project. Sign-in goes through Git's own sign-in tools that the user owns (with device codes), and each user's Focus Notes is an isolated instance in their own GitHub account (**D-38**). The owner accepted every remaining proposal on 2026-10-13.
+> **TL;DR.** 55 decisions. D-01 to D-44 are settled by the owner; D-45 to D-55 are proposals from the gap review that stand as the plan until changed. The newest owner decisions: **D-41/D-42**: private sharing with named audiences through magic links and passcodes, in the first release. **D-43**: download first, browser second. **D-44**: agent-friendly through MCP, a command-line tool, deep links, and AGENTS.md. Key owner decisions: **D-14**: 20 px corners on Windows (and Linux) by drawing the window and rebuilding window management; macOS uses its native window. **D-16**: Spotlight is <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd>, and <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> is the link key. **D-19**: support every platform possible. **D-21**: no OAuth app, no registration, and no hosting by the project. Sign-in goes through Git's own sign-in tools that the user owns (with device codes), and each user's Focus Notes is an isolated instance in their own GitHub account (**D-38**). The owner accepted every remaining proposal on 2026-10-13.
 
 ## Status legend
 
@@ -11,6 +11,7 @@ Every assumption and design choice these docs make beyond the literal [seed spec
 | --- | --- |
 | **Decided (owner)** | Stated or confirmed directly by the project owner. |
 | **Decided (accepted)** | Proposed in these docs and accepted by the owner ("go with what you proposed", 2026-10-13). |
+| **Proposed** | Proposed in these docs to close a gap. Treated as the plan until the owner changes it. |
 | **Superseded** | Replaced by a later decision, kept for history. |
 
 ## Owner decisions
@@ -33,6 +34,10 @@ Every assumption and design choice these docs make beyond the literal [seed spec
 | D-35 | **Every UX and UI decision is grounded in a chain:** customer promise → scenario (job to be done) → user can → view or component → design decision → requirement. | Decided (owner) | [The articulation chain](../product/spec/chain.md) |
 | D-36 | **Tables are edited the way Microsoft Loop tables are, and text is formatted with a simple contextual toolbar.** Theme management is designed around when and why people theme, what they bring, and presets, randomizing, or manual editing. | Decided (owner) | [Tables](../design/components/tables.html), [Text formatting](../design/components/text-formatting.html), [Theme manager](../design/views/theme-manager.html) |
 | D-38 | **Every user gets an isolated instance in their own GitHub account:** a public notes repository (created from the project's template), a private repository as its submodule, their own GitHub Pages site, and their own share-link keys. The app creates all of it on their computer. The project's repository holds only the source, docs, releases, the template, and the reusable publish workflow. | Decided (owner, from D-21) | [Repository and publishing → Who owns what](../architecture/repository-and-publishing.html#who-owns-what), [Creating a workspace](../architecture/desktop-and-git.md#creating-a-workspace) |
+| D-41 | **Sharing with audiences.** A private note or folder is shared with an *audience* identified only by a **name**, through a **magic link**, a **custom passcode**, a generated passcode, or a combination. This follows the access model of the owner's personal site. Readers enter their name and passcode, or open the link. The content stays in the private repository and is published only as ciphertext. | Decided (owner) | [Sharing and visibility](../design/views/sharing.md) |
+| D-42 | **Private sharing is part of the first release (P0)**, not a later addition, because the owner asked for it as a core capability. | Decided (owner) | [Roadmap → M5](roadmap.md) |
+| D-43 | **Getting started: download first, browser second.** The product site's Get started page leads with the desktop download, and the app runs setup. *Start in your browser* (M6) is a secondary path that uses only GitHub's own pages and a token. | Decided (owner) | [Get started](../design/views/get-started.md) |
+| D-44 | **Agent-friendly by design:** a local MCP server, a command-line tool with JSON output, `focus-notes://` deep links, an `AGENTS.md` in every workspace, published JSON Schemas, and `llms.txt` on the product site. | Decided (owner) | [Agents and automation](../architecture/agents.md) |
 
 ## Accepted proposals
 
@@ -63,12 +68,28 @@ Every assumption and design choice these docs make beyond the literal [seed spec
 | D-39 | **Cheat sheet key:** <kbd>Ctrl/⌘</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd> (<kbd>Ctrl/⌘</kbd>+<kbd>?</kbd>), because <kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> is now Spotlight (D-16). | Decided (accepted) | [Keyboard shortcuts](../experience/keyboard-shortcuts.md#app-and-window) |
 | D-40 | **This documentation is published on the project's own GitHub Pages site** (with the download page), not inside each user's notes site. | Decided (accepted) | [Repository and publishing](../architecture/repository-and-publishing.html#who-owns-what) |
 
+## Proposed in the gap review (2026-10-14)
+
+| ID | Decision | Status | Affects |
+| --- | --- | --- | --- |
+| D-45 | **Agent permissions start closed.** Agents can read public notes. Reading private notes, editing, publishing, and sharing each need the writer to turn them on in Settings → Agents, optionally limited to folders. Agents can never change visibility or create audiences. Every agent edit is a separate commit with an agent trailer, and can be undone. | Proposed | [Agents → Permissions](../architecture/agents.md#permissions) |
+| D-46 | **Synced settings and custom themes live in the private repository** (`private/.focus-notes/`). Storing them in the public notes repository would publish preferences. Without a private repository they fall back to the notes repository, and the app says so. | Proposed | [Security and privacy](../architecture/security-and-privacy.md), [Content model](../architecture/content-model.md) |
+| D-47 | **`private/` tracks `main` and syncs as its own repository**, with `submodule.recurse` off. Otherwise a recursive pull would reset private notes to the older pointer the publish workflow uses (D-07). | Proposed | [Desktop and Git](../architecture/desktop-and-git.md), [Repository and publishing](../architecture/repository-and-publishing.html) |
+| D-48 | **Users' publish workflows are pinned by commit SHA** and verify the reader bundle's checksum and attestation. Updates arrive as pull requests the user merges. | Proposed | [Repository and publishing](../architecture/repository-and-publishing.html) |
+| D-49 | **This repository becomes a pnpm monorepo** (desktop, web, core, publishing, MCP and command-line tool, template source, schemas, docs), built with TypeScript, Vite, electron-builder, Changesets, Vitest, and Playwright. | Proposed | [Distribution](distribution.md#layout-of-this-repository) |
+| D-50 | **Use established standards before inventing anything:** CommonMark and GFM, YAML front matter, W3C DTCG tokens, WCAG 2.2 AA, WAI-ARIA APG, JSON Schema 2020-12, SemVer, Keep a Changelog, Conventional Commits, OpenSSF Scorecard, SLSA provenance, CycloneDX, MCP, AGENTS.md, and llms.txt. | Proposed | [Standards](../architecture/standards.md) |
+| D-51 | **Distribution:** GitHub Releases first, then winget and Homebrew (P1). Stable and Beta channels. Windows Authenticode and macOS notarization when a certificate is available. Until then, builds are labeled unsigned and ship checksums and attestations. | Proposed | [Distribution → Signing](distribution.md#signing) |
+| D-52 | **Generated passcodes use the EFF long wordlist** (CC BY 3.0 US), allowed with attribution in `THIRD_PARTY_NOTICES`. | Proposed | [Sharing and visibility](../design/views/sharing.md) |
+| D-53 | **Theme files use the W3C Design Tokens (DTCG) format** (`$value`, `$type`), so they can be exchanged with design tools. | Proposed | [Standards](../architecture/standards.md), [Theme manager](../design/views/theme-manager.html) |
+| D-54 | **The web app is hosted on the product site at `/app/`**, not in each user's notes site, so one build serves everyone and users' sites stay read-only. | Proposed | [Distribution → Product site](distribution.md#the-product-site) |
+| D-55 | **No telemetry.** Diagnostics stay on the computer. *Copy diagnostic report* and *Report a problem* (a pre-filled GitHub issue the user reviews) are the only ways information leaves. | Proposed | [Performance and quality](../architecture/performance-and-quality.md), [Security and privacy](../architecture/security-and-privacy.md) |
+
 ## Licensing policy (D-20 details)
 
 | Class | Licenses | Rule |
 | --- | --- | --- |
 | Allowed | MIT, ISC, BSD-2-Clause, BSD-3-Clause, 0BSD, Apache-2.0, Unlicense, CC0-1.0, and OFL-1.1 for fonts (D-29) | Can ship. Keep their notices in a generated `THIRD_PARTY_NOTICES`. |
-| Case by case | MPL-2.0, CC-BY-4.0 (icons and other assets) | Needs a recorded decision here. |
+| Case by case | MPL-2.0, CC-BY-4.0 (icons and other assets), CC-BY-3.0 (the EFF wordlist, D-52) | Needs a recorded decision here. |
 | Not allowed | GPL, LGPL, AGPL, SSPL, BUSL, any proprietary or paid license (including the paid Tiptap bundles) | CI fails the build. |
 
 A license check runs in CI from M0 onward. Development-only tools follow the same list, unless their output never ships. Tools the user installs themselves (Git, Git Credential Manager, GitHub CLI) aren't shipped, so they aren't covered.

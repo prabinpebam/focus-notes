@@ -115,11 +115,24 @@ typing ──► write file (atomic, ≤ 1 s after the last change)
 2. **Commit.** Changed notes are staged by path, never with `git add -A`. The commit message follows [Files and sharing](../experience/files-and-sharing.md#operations), for example `Update essays/on-focus.md`. Several notes changed in one sync window are committed together.
 3. **Private first.** If private notes changed, the private repository is committed and pushed first. The public repository's pointer to it moves only as described in D-07.
 4. **Push.** `git push` to the tracking branch. A rejected (non-fast-forward) push fetches, rebases the app's own unpushed commits, and retries once. If that conflicts, the rebase is aborted so the repository is never left mid-rebase, and the note-level conflict choice is shown ([Files and sharing](../experience/files-and-sharing.md#conflicts-and-offline)).
-5. **Pull.** A fetch runs when the window becomes active and every 5 minutes. If the branch is behind and the working tree is clean, the app pulls with rebase and submodules. Open notes reload in place, keeping the caret where possible.
+5. **Pull.** A fetch runs when the window becomes active and every 5 minutes, for the notes repository and for `private/` separately (D-47). If a branch is behind and its working tree is clean, the app pulls it with rebase. `private/` always stays on `main` and is never reset to the publishing pointer. Open notes reload in place, keeping the caret where possible.
 6. **Offline.** Commits pile up locally and the trigger shows its save-problem state (D-06). Everything pushes in order once the network is back.
 
 `Ctrl/⌘+S` runs the commit and push right away and briefly shows "Saved and synced", or the reason it couldn't.
 
+## Clones and large workspaces
+
+- Clones use `git clone --filter=blob:none` (a partial clone). History is complete, which Recently deleted and note history need, but old file contents download only when someone asks for them. Large workspaces open quickly.
+- The private submodule is cloned the same way and checked out on `main`.
+- Windows: the app sets `core.longpaths=true` in the workspace. macOS: `core.precomposeunicode=true`, so file names stay in NFC. Workspaces created from the template include `.gitattributes` with `* text=auto eol=lf`.
+
+## One writer at a time
+
+The app, the [command-line tool](agents.md#command-line-tool), and the [MCP server](agents.md#mcp-server) can all change a workspace. They coordinate through a lock file, `.git/focus-notes.lock`, holding the owning process ID:
+
+- While the desktop app is running, the MCP server and the command-line tool **send their changes through the app** over a local socket (a named pipe on Windows) instead of writing files themselves. That way the editor, the Spotlight index, and sync see each change straight away.
+- When the app isn't running, they take the lock, use the same core library and Git rules, and release it when they're done.
+- A stale lock (from a process that no longer exists) is taken over safely.
 ## External changes
 
 A file watcher (chokidar, MIT) watches the workspace, excluding `.git/`. Changes made outside the app (another editor, a terminal `git pull`) refresh the Files panel and the Spotlight index. An open note with no unsaved edits reloads quietly. If it does have unsaved edits, the writer gets the *Keep mine / Take theirs / Save mine as a copy* choice.

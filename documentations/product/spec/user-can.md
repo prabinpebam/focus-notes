@@ -3,7 +3,7 @@
 Every capability Focus Notes provides, written as what a person can do. Each one names the scenarios it serves, where it lives, the requirements that build it, and how we check it.
 
 > [!NOTE]
-> **TL;DR.** 69 user-can capabilities: 51 are P0 (the first release), 17 are P1, and 1 comes later. Every row traces up to at least one [scenario](scenarios.md) and down to the [views and components](../../design/information-architecture.html) that deliver it and the [requirements](../requirements.md) that make it testable. The column order (ID, user can, scenarios, priority, views, requirements, acceptance) follows the Slate spec convention. The acceptance column is the observable check: what a person sees, not how it's built.
+> **TL;DR.** 79 user-can capabilities: 57 are P0 (the first release), 21 are P1, and 1 comes later. Every row traces up to at least one [scenario](scenarios.md) and down to the [views and components](../../design/information-architecture.html) that deliver it and the [requirements](../requirements.md) that make it testable. The column order (ID, user can, scenarios, priority, views, requirements, acceptance) follows the Slate spec convention. The acceptance column is the observable check: what a person sees, not how it's built.
 
 <h2 data-reader-personas="product design">Canvas and focus</h2>
 
@@ -67,9 +67,11 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 | --- | --- | --- | --- | --- | --- | --- |
 | UC-SHARE-01 | make a note public or private, seeing exactly what will change before confirming | SC-FILE-06 | P0 | IA-VIEW-SHARE, IA-CMP-DIALOG | FIL-06, SHR-01, SHR-02 | The confirmation names the note, the new audience, and the URL. Making a note private warns that Git history keeps the old public version. |
 | UC-SHARE-02 | copy a public note's link and see whether the page is live yet | SC-SHARE-01 | P0 | IA-VIEW-SHARE | SHR-03, PKG-02 | The link is copied in one action. The status reads *Live*, *Publishing…*, or *Not published yet*. |
-| UC-SHARE-03 | share a private note with one person through an expiring link | SC-SHARE-02 | P1 | IA-VIEW-SHARE | SHR-05 | The link opens for the recipient until its expiry, and not after. |
-| UC-SHARE-04 | see active private links and revoke any of them | SC-SHARE-02 | P1 | IA-VIEW-SHARE | SHR-05 | A revoked link stops working after the next deploy, and the list says so. |
+| UC-SHARE-03 | share private notes or folders with an audience identified by a name, through a magic link, a passcode (their own or generated), or both | SC-SHARE-02 | P0 | IA-VIEW-SHARE | SHR-05, SHR-07, SHR-11 | After the next publish, the link, and the name plus passcode, open exactly the audience's notes and nothing else. A weak custom passcode can't be saved. |
+| UC-SHARE-04 | see every audience by name, with what it opens and when it ends, and extend or withdraw it | SC-SHARE-02 | P0 | IA-VIEW-SHARE, IA-VIEW-SETTINGS | SHR-08 | A withdrawn audience stops opening within about 15 minutes of publishing, and its record stays in the list. |
+| UC-SHARE-05 | copy a ready-to-send invite with the link, the passcode, or both | SC-SHARE-02 | P0 | IA-VIEW-SHARE | SHR-09 | The invite fills in the name, title, link, passcode, and expiry from the editable template. |
 | UC-READ-01 | read a shared note without an account, in light or dark | SC-SHARE-03 | P0 | IA-VIEW-PUBLIC | SHR-03, SHR-04, SHR-06 | The page follows the reader's color scheme and is readable at 320 px wide. |
+| UC-READ-02 | open a shared note with a magic link, or with their name and passcode, and stay signed in on that device until it ends | SC-SHARE-03 | P0 | IA-VIEW-PUBLIC | SHR-10 | Wrong details never reveal whether a name exists. Remembered access ends at expiry, and Sign out forgets it in every tab. |
 
 <h2 data-reader-personas="product design">Find and keyboard</h2>
 
@@ -99,6 +101,17 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 | UC-THEME-09 | trust that any theme keeps text readable | SC-THEME-06 | P0 | IA-VIEW-THEME | THM-13 | Pairs below the contrast target are flagged with a one-click fix. Built-in themes never fail. |
 | UC-THEME-10 | save, duplicate, rename, export, delete, and sync custom themes | SC-THEME-07 | P1 | IA-VIEW-THEME | THM-04, THM-05 | A theme saved on one computer appears on another after sync. Export produces a valid theme file. |
 
+<h2 data-reader-personas="product design">Agents and automation</h2>
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-AGENT-01 | connect an AI agent to their notes through MCP in under a minute | SC-AGENT-01 | P1 | IA-VIEW-SETTINGS | AGT-01, AGT-02 | Pasting the copied snippet into VS Code or Claude Desktop lets the agent search and read the allowed notes. |
+| UC-AGENT-02 | choose exactly what agents may do: read public notes, read private notes, create and edit, and in which folders | SC-AGENT-02 | P1 | IA-VIEW-SETTINGS | AGT-03, AGT-09 | With the defaults, an agent can't see private notes or change anything. |
+| UC-AGENT-03 | see, review, and undo every change an agent made | SC-AGENT-02 | P1 | IA-VIEW-HISTORY, IA-CMP-TOAST | AGT-04 | Each agent change is its own labeled commit, and Undo restores the note exactly. |
+| UC-AGENT-04 | script their notes from a terminal with stable JSON output | SC-AGENT-03 | P1 | None (command-line tool) | AGT-05 | Every command supports `--json`, with documented exit codes. |
+| UC-AGENT-05 | open a note, a new note, or a search from another app with a `focus-notes://` link | SC-AGENT-03 | P1 | IA-VIEW-CANVAS | AGT-06 | Links never write, delete, or change visibility. |
+| UC-AGENT-06 | let coding agents edit the notes repository correctly, guided by AGENTS.md and schemas | SC-AGENT-01 | P0 | None (file format) | AGT-07, AGT-08 | A coding agent following AGENTS.md produces files the app opens without changes. |
+
 <h2 data-reader-personas="product design">Setup, safety, and ownership</h2>
 
 | ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
@@ -106,10 +119,12 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 | UC-SETUP-01 | sign in once through Git's own sign-in helper (device code or browser) or a token they create, and have Git signed in too | SC-SETUP-01 | P0 | IA-VIEW-FRE | FRE-02, FRE-03 | After sign-in, `git push` from a terminal in the workspace works without a prompt. |
 | UC-SETUP-02 | get from install to writing in seven screens or fewer | SC-SETUP-01 | P0 | IA-VIEW-FRE | FRE-01, FRE-05 | Measured on a clean computer with Git installed. |
 | UC-SETUP-03 | reuse existing Git credentials and an existing clone on another computer | SC-SETUP-02 | P0 | IA-VIEW-FRE | FRE-04, FRE-06, FRE-07 | No device code is shown when working credentials already exist. |
-| UC-SETUP-04 | write and edit notes in a browser, signed in with a scoped token | SC-SETUP-03 | P1 | IA-VIEW-FRE, IA-VIEW-CANVAS | PKG-05 | The same editor and views work in the browser. Saves commit through the GitHub API. |
+| UC-SETUP-04 | write and edit notes in a browser, signed in with a scoped token | SC-SETUP-03, SC-SETUP-05 | P1 | IA-VIEW-FRE, IA-VIEW-CANVAS | PKG-05 | The same editor and views work in the browser. Saves commit through the GitHub API. |
 | UC-SETUP-05 | create their own isolated workspace (notes repository, private repository, publishing, and share-link keys) in their own GitHub account, with nothing hosted by anyone else | SC-SETUP-04 | P0 | IA-VIEW-FRE | FRE-08, PKG-01, PKG-06 | Everything created is in the user's account, and the app made no network request except to GitHub. |
+| UC-SETUP-06 | download the right desktop app, or start in the browser, from one page | SC-SETUP-05 | P0 | IA-VIEW-GETSTARTED | DST-01, DST-02 | The page offers the visitor's OS first and links to the latest release, so it never goes stale. |
 | UC-SAFE-01 | stop thinking about saving: changes are saved within a second and synced on their own | SC-SAFE-01 | P0 | IA-CMP-SAVESTATE | EDT-11 | Quitting straight after typing loses nothing, and the commit is pushed before the app exits. |
 | UC-SAFE-02 | resolve a conflicting edit by keeping theirs, mine, or both | SC-SAFE-02 | P0 | IA-CMP-CONFLICT | FIL-12 | Both versions are shown side by side. No choice ever discards text without confirmation. |
 | UC-SAFE-03 | keep writing offline and see clearly when changes are waiting | SC-SAFE-03 | P0 | IA-CMP-SAVESTATE | EDT-11 | The trigger shows the waiting state. Changes push in order after reconnecting. |
 | UC-SAFE-04 | receive app updates automatically, verified as genuine | SC-SAFE-04 | P1 | IA-VIEW-SETTINGS | DSK-07 | Updates install on quit. Settings → About shows the version and update status. |
+| UC-SAFE-05 | see earlier versions of a note, compare them, and restore one | SC-SAFE-05 | P1 | IA-VIEW-HISTORY | FIL-13 | Restoring makes a new commit, and the newer versions stay in history. |
 | UC-OWN-01 | open any note in another editor and find clean, unchanged Markdown | SC-OWN-01, SC-TABLE-05 | P0 | None (file format) | EDT-01, EDT-10, EXT-02, EXT-05, PKG-01 | The round-trip test corpus passes byte for byte. |

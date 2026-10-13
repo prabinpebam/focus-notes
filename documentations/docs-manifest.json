@@ -7,12 +7,12 @@
       "order": 0,
       "icon": "home",
       "status": "draft",
-      "updated": "2026-10-13"
+      "updated": "2026-10-14"
     },
     {
       "path": "seed-specs.md",
       "title": "Seed spec",
-      "order": 10,
+      "order": 100,
       "icon": "lightbulb",
       "status": "stable",
       "updated": "2026-10-13",
@@ -21,61 +21,61 @@
     {
       "path": "product/vision.md",
       "title": "Vision and principles",
-      "order": 11,
+      "order": 110,
       "icon": "flag",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Product"
     },
     {
       "path": "product/spec/chain.md",
       "title": "The articulation chain",
-      "order": 12,
+      "order": 120,
       "icon": "account_tree",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Product/Spec chain"
     },
     {
       "path": "product/spec/customer-promises.md",
       "title": "Customer promises",
-      "order": 13,
+      "order": 130,
       "icon": "handshake",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Product/Spec chain"
     },
     {
       "path": "product/spec/scenarios.md",
       "title": "Scenarios",
-      "order": 14,
+      "order": 140,
       "icon": "auto_stories",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Product/Spec chain"
     },
     {
       "path": "product/spec/user-can.md",
       "title": "User can",
-      "order": 15,
+      "order": 150,
       "icon": "task_alt",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Product/Spec chain"
     },
     {
       "path": "product/requirements.md",
       "title": "Requirements",
-      "order": 16,
+      "order": 160,
       "icon": "checklist",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Product"
     },
     {
       "path": "experience/main-ui.html",
       "title": "Main UI and trigger",
-      "order": 20,
+      "order": 200,
       "icon": "radio_button_checked",
       "status": "draft",
       "updated": "2026-10-13",
@@ -84,7 +84,7 @@
     {
       "path": "experience/focus-mode.md",
       "title": "Focus mode",
-      "order": 21,
+      "order": 210,
       "icon": "center_focus_strong",
       "status": "draft",
       "updated": "2026-10-13",
@@ -93,7 +93,7 @@
     {
       "path": "experience/editing.md",
       "title": "Editing",
-      "order": 22,
+      "order": 220,
       "icon": "edit_note",
       "status": "draft",
       "updated": "2026-10-13",
@@ -102,7 +102,7 @@
     {
       "path": "experience/find-and-replace.md",
       "title": "Find and replace",
-      "order": 23,
+      "order": 230,
       "icon": "find_replace",
       "status": "draft",
       "updated": "2026-10-13",
@@ -111,16 +111,16 @@
     {
       "path": "experience/spotlight.html",
       "title": "Spotlight",
-      "order": 24,
+      "order": 240,
       "icon": "manage_search",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Experience"
     },
     {
       "path": "experience/keyboard-shortcuts.md",
       "title": "Keyboard shortcuts",
-      "order": 25,
+      "order": 250,
       "icon": "keyboard",
       "status": "draft",
       "updated": "2026-10-13",
@@ -129,25 +129,25 @@
     {
       "path": "experience/files-and-sharing.md",
       "title": "Files and sharing",
-      "order": 26,
+      "order": 260,
       "icon": "folder_shared",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Experience"
     },
     {
       "path": "experience/theming.md",
       "title": "Theming",
-      "order": 27,
+      "order": 270,
       "icon": "palette",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Experience"
     },
     {
       "path": "experience/desktop-app.html",
       "title": "Desktop app",
-      "order": 28,
+      "order": 280,
       "icon": "desktop_windows",
       "status": "draft",
       "updated": "2026-10-13",
@@ -156,25 +156,25 @@
     {
       "path": "experience/first-run.md",
       "title": "First run and sign-in",
-      "order": 29,
+      "order": 290,
       "icon": "login",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Experience"
     },
     {
       "path": "design/information-architecture.html",
       "title": "Information architecture",
-      "order": 30,
+      "order": 300,
       "icon": "lan",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Design"
     },
     {
       "path": "design/foundations.md",
       "title": "Foundations",
-      "order": 31,
+      "order": 310,
       "icon": "design_services",
       "status": "draft",
       "updated": "2026-10-13",
@@ -183,7 +183,7 @@
     {
       "path": "design/views/files.html",
       "title": "Files panel",
-      "order": 32,
+      "order": 320,
       "icon": "folder_open",
       "status": "draft",
       "updated": "2026-10-13",
@@ -192,25 +192,43 @@
     {
       "path": "design/views/theme-manager.html",
       "title": "Theme manager",
-      "order": 33,
+      "order": 330,
       "icon": "format_paint",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Design/Views"
     },
     {
       "path": "design/views/secondary-views.md",
       "title": "Secondary views",
-      "order": 34,
+      "order": 340,
       "icon": "tune",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
+      "group": "Design/Views"
+    },
+    {
+      "path": "design/views/sharing.md",
+      "title": "Sharing and visibility",
+      "order": 341,
+      "icon": "group",
+      "status": "draft",
+      "updated": "2026-10-14",
+      "group": "Design/Views"
+    },
+    {
+      "path": "design/views/get-started.md",
+      "title": "Get started page",
+      "order": 342,
+      "icon": "rocket_launch",
+      "status": "draft",
+      "updated": "2026-10-14",
       "group": "Design/Views"
     },
     {
       "path": "design/components/text-formatting.html",
       "title": "Text formatting",
-      "order": 35,
+      "order": 350,
       "icon": "format_bold",
       "status": "draft",
       "updated": "2026-10-13",
@@ -219,7 +237,7 @@
     {
       "path": "design/components/tables.html",
       "title": "Tables",
-      "order": 36,
+      "order": 360,
       "icon": "table",
       "status": "draft",
       "updated": "2026-10-13",
@@ -228,7 +246,7 @@
     {
       "path": "design/components/feedback-and-dialogs.md",
       "title": "Feedback and dialogs",
-      "order": 37,
+      "order": 370,
       "icon": "chat_info",
       "status": "draft",
       "updated": "2026-10-13",
@@ -237,7 +255,7 @@
     {
       "path": "architecture/overview.html",
       "title": "Architecture overview",
-      "order": 40,
+      "order": 400,
       "icon": "schema",
       "status": "draft",
       "updated": "2026-10-13",
@@ -246,16 +264,16 @@
     {
       "path": "architecture/content-model.md",
       "title": "Content model",
-      "order": 41,
+      "order": 410,
       "icon": "data_object",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Architecture"
     },
     {
       "path": "architecture/editor-engine.md",
       "title": "Editor engine",
-      "order": 42,
+      "order": 420,
       "icon": "extension",
       "status": "stable",
       "updated": "2026-10-13",
@@ -264,37 +282,91 @@
     {
       "path": "architecture/desktop-and-git.md",
       "title": "Desktop and Git",
-      "order": 43,
+      "order": 430,
       "icon": "terminal",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Architecture"
     },
     {
       "path": "architecture/repository-and-publishing.html",
       "title": "Repository and publishing",
-      "order": 44,
+      "order": 440,
       "icon": "publish",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
+      "group": "Architecture"
+    },
+    {
+      "path": "architecture/agents.md",
+      "title": "Agents and automation",
+      "order": 450,
+      "icon": "smart_toy",
+      "status": "draft",
+      "updated": "2026-10-14",
+      "group": "Architecture"
+    },
+    {
+      "path": "architecture/security-and-privacy.md",
+      "title": "Security and privacy",
+      "order": 460,
+      "icon": "shield_lock",
+      "status": "draft",
+      "updated": "2026-10-14",
+      "group": "Architecture"
+    },
+    {
+      "path": "architecture/performance-and-quality.md",
+      "title": "Performance and quality",
+      "order": 470,
+      "icon": "speed",
+      "status": "draft",
+      "updated": "2026-10-14",
+      "group": "Architecture"
+    },
+    {
+      "path": "architecture/standards.md",
+      "title": "Standards",
+      "order": 480,
+      "icon": "verified",
+      "status": "draft",
+      "updated": "2026-10-14",
       "group": "Architecture"
     },
     {
       "path": "plan/roadmap.md",
       "title": "Roadmap",
-      "order": 50,
+      "order": 500,
       "icon": "timeline",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
       "group": "Plan"
     },
     {
       "path": "plan/decisions.md",
       "title": "Decisions",
-      "order": 51,
+      "order": 510,
       "icon": "rule",
       "status": "stable",
-      "updated": "2026-10-13",
+      "updated": "2026-10-14",
+      "group": "Plan"
+    },
+    {
+      "path": "plan/distribution.md",
+      "title": "Packaging and distribution",
+      "order": 520,
+      "icon": "package_2",
+      "status": "draft",
+      "updated": "2026-10-14",
+      "group": "Plan"
+    },
+    {
+      "path": "plan/risks.md",
+      "title": "Risks",
+      "order": 530,
+      "icon": "warning",
+      "status": "draft",
+      "updated": "2026-10-14",
       "group": "Plan"
     }
   ]

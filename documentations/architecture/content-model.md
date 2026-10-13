@@ -18,11 +18,14 @@ notes/                           # the user's notes repository (public, their ac
 ├─ private/                      # git submodule -> their private repository
 │  ├─ journal/
 │  │  └─ 2026-10-13.md
-│  ├─ access.json                # private share grants (never published in plaintext)
-│  └─ .focus-notes/              # private-side settings (optional)
+│  ├─ access.json                # share audiences (never published in plaintext)
+│  ├─ access-message.json        # invite template
+│  └─ .focus-notes/
+│     ├─ themes/                 # custom themes (JSON), private by design (D-46)
+│     └─ settings.json           # opt-in synced settings, private by design
 ├─ .focus-notes/
-│  ├─ themes/                    # custom themes (JSON)
-│  └─ settings.json              # opt-in synced settings
+│  └─ workspace.json             # formatVersion and template version (DST-05)
+├─ AGENTS.md                     # instructions for coding agents (AGT-07)
 ├─ .github/workflows/publish.yml # calls the Focus Notes reusable publish workflow
 ├─ .gitmodules
 └─ README.md
