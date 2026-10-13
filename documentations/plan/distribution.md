@@ -34,7 +34,7 @@ focus-notes/
 │  ├─ publish/        # Static renderer for public pages (run by the Deploy app workflow)
 │  ├─ mcp/            # MCP server
 │  └─ cli/            # focus-notes command-line tool
-├─ templates/workspace/   # Source of the template repository (AGENTS.md, README, Deploy app workflow, .gitattributes)
+├─ templates/workspace/   # Source of the template repository (notes/, .focus-notes/, AGENTS.md, README, Deploy app workflow, .gitattributes; built in WP-3.1)
 ├─ notes/                 # The owner's public notes (this repository is the owner's instance, D-87)
 ├─ private/               # The owner's private repository (submodule)
 ├─ schemas/               # JSON Schemas (front matter, settings, themes, keybindings, access, app state, export bundle)
@@ -71,7 +71,7 @@ CI installs from lockfiles with frozen versions.
 | macOS app | Universal `.dmg` and `.zip` (for updates), notarized | GitHub Releases, Homebrew cask (P1) |
 | Linux app | AppImage and `.deb` (x64, arm64) | GitHub Releases, Flathub (later) |
 | Update metadata | `latest*.yml` files | GitHub Releases (read by electron-updater) |
-| Web app bundle | The static web app plus its publish tools (renderer, sealer, leak check, reader assets) | GitHub Releases. Template instances' *Deploy app* workflows download it at their pinned version, check its SHA-256 and attestation, and deploy it to their own Pages (D-48, SEC-05). The project repository builds the same app from source (MW, D-80). |
+| Web app bundle | The static web app plus its publish tools (renderer, sealer, leak check, reader assets): `focus-notes-web-<version>.tgz`, with the app in `app/` and `packages/seal`'s command line bundled as `publish/cli.mjs` (D-98) | GitHub Releases, tag `v<version>`. Template instances' *Deploy app* workflows download it at their pinned version (`FOCUS_NOTES_VERSION`, `FOCUS_NOTES_SHA256` in the workflow), check its SHA-256 and attestation, and deploy it to their own Pages (D-48, SEC-05). Until a release has one, `templates/workspace/` pins a marked placeholder and its workflow refuses to run; the release workflow (WP-5.5, WP-5.6) fills both values in. The project repository builds the same app from source (MW, D-80). |
 | Command-line tool and MCP server | Inside the desktop app. Also `@focus-notes/cli` on npm (P1). | Installers, npm |
 | Integrity | `SHA256SUMS`, CycloneDX SBOM, GitHub artifact attestations | GitHub Releases |
 
