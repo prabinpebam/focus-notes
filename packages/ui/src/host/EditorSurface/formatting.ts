@@ -21,6 +21,8 @@ export interface FormatPayload {
   inlineCode: boolean;
   oneBlock: boolean;
   href: string;
+  /** In a table: the toolbar has marks only (TBL-05). */
+  table: boolean;
 }
 
 /** DD-FMT-04: after a pointer selection ends, and after the last keyboard selection change. */
@@ -95,7 +97,7 @@ export function trackFormatting(editor: Editor, scroller: HTMLElement, emit: (p:
     }
     const p: FormatPayload = {
       toolbar, card, bold: info.marks.bold, italic: info.marks.italic, strike: info.marks.strike, code: info.marks.code,
-      block: info.block, codeBlock: info.codeBlock, inlineCode: info.inlineCode, oneBlock: info.oneBlock, href,
+      block: info.block, codeBlock: info.codeBlock, inlineCode: info.inlineCode, oneBlock: info.oneBlock, href, table: info.table,
     };
     const key = JSON.stringify(p);
     if (key === last) return;

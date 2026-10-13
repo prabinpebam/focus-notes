@@ -10,6 +10,7 @@
     "vm.find",
     "vm.format",
     "vm.slash",
+    "vm.table",
     "vm.feedback",
     "vm.picker",
     "vm.account",
@@ -605,6 +606,9 @@
               },
               "href": {
                 "get": "event.href"
+              },
+              "table": {
+                "get": "event.table"
               }
             }
           },
@@ -654,8 +658,162 @@
             "args": {
               "kind": {
                 "get": "event.kind"
+              },
+              "rows": {
+                "get": "event.rows"
+              },
+              "cols": {
+                "get": "event.cols"
+              },
+              "addedRows": {
+                "get": "event.addedRows"
+              },
+              "addedCols": {
+                "get": "event.addedCols"
               }
             }
+          },
+          "table": {
+            "run": "table.setState",
+            "args": {
+              "inTable": {
+                "get": "event.inTable"
+              },
+              "table": {
+                "get": "event.table"
+              },
+              "row": {
+                "get": "event.row"
+              },
+              "col": {
+                "get": "event.col"
+              },
+              "rows": {
+                "get": "event.rows"
+              },
+              "cols": {
+                "get": "event.cols"
+              },
+              "header": {
+                "get": "event.header"
+              },
+              "align": {
+                "get": "event.align"
+              },
+              "insertAxis": {
+                "get": "event.insertAxis"
+              },
+              "insertIndex": {
+                "get": "event.insertIndex"
+              },
+              "selection": {
+                "get": "event.selection"
+              }
+            }
+          },
+          "tableChange": {
+            "run": "table.changed",
+            "args": {
+              "kind": {
+                "get": "event.kind"
+              },
+              "index": {
+                "get": "event.index"
+              },
+              "align": {
+                "get": "event.align"
+              }
+            }
+          },
+          "tableCopy": {
+            "run": "table.copied",
+            "args": {
+              "text": {
+                "get": "event.text"
+              },
+              "format": {
+                "get": "event.format"
+              }
+            }
+          },
+          "tableMenu": {
+            "run": "table.openMenu"
+          }
+        }
+      },
+      {
+        "type": "TableControls",
+        "id": "tableControls",
+        "when": {
+          "get": "vm.table.visible"
+        },
+        "props": {
+          "columnLabel": {
+            "get": "vm.table.columnLabel"
+          },
+          "rowLabel": {
+            "get": "vm.table.rowLabel"
+          },
+          "tableLabel": {
+            "get": "vm.table.tableLabel"
+          },
+          "insertLabel": {
+            "get": "vm.table.insertLabel"
+          },
+          "newRowLabel": {
+            "get": "vm.table.newRowLabel"
+          },
+          "newColumnLabel": {
+            "get": "vm.table.newColumnLabel"
+          },
+          "cellMenuLabel": {
+            "get": "vm.table.cellMenuLabel"
+          },
+          "columnMenu": {
+            "get": "vm.table.columnMenu"
+          },
+          "rowMenu": {
+            "get": "vm.table.rowMenu"
+          },
+          "tableMenu": {
+            "get": "vm.table.tableMenu"
+          },
+          "cellMenu": {
+            "get": "vm.table.cellMenu"
+          },
+          "menuRequest": {
+            "get": "vm.table.menuRequest"
+          }
+        },
+        "on": {
+          "action": {
+            "run": "table.action",
+            "args": {
+              "id": {
+                "get": "event.id"
+              },
+              "table": {
+                "get": "event.table"
+              },
+              "row": {
+                "get": "event.row"
+              },
+              "col": {
+                "get": "event.col"
+              },
+              "index": {
+                "get": "event.index"
+              },
+              "from": {
+                "get": "event.from"
+              },
+              "to": {
+                "get": "event.to"
+              }
+            }
+          },
+          "close": {
+            "run": "table.closeMenu"
           }
         }
       },
@@ -698,6 +856,9 @@
                 "children": [
                   {
                     "type": "MenuButton",
+                    "when": {
+                      "get": "vm.format.showTurnInto"
+                    },
                     "props": {
                       "variant": "text",
                       "text": {
@@ -725,7 +886,16 @@
                   {
                     "type": "Divider",
                     "when": {
-                      "get": "vm.format.showCode"
+                      "expr": {
+                        "and": [
+                          {
+                            "get": "vm.format.showTurnInto"
+                          },
+                          {
+                            "get": "vm.format.showCode"
+                          }
+                        ]
+                      }
                     },
                     "props": {
                       "orientation": "vertical"

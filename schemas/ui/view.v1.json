@@ -297,6 +297,9 @@
           "$ref": "#/$defs/c_EditorSurface"
         },
         {
+          "$ref": "#/$defs/c_TableControls"
+        },
+        {
           "$ref": "#/$defs/c_Trigger"
         },
         {
@@ -718,7 +721,8 @@
                     "strikethrough",
                     "text",
                     "taskList",
-                    "divider"
+                    "divider",
+                    "moreVertical"
                   ]
                 },
                 {
@@ -909,7 +913,8 @@
                     "strikethrough",
                     "text",
                     "taskList",
-                    "divider"
+                    "divider",
+                    "moreVertical"
                   ]
                 },
                 {
@@ -1108,7 +1113,8 @@
                     "strikethrough",
                     "text",
                     "taskList",
-                    "divider"
+                    "divider",
+                    "moreVertical"
                   ]
                 },
                 {
@@ -1764,7 +1770,8 @@
                     "strikethrough",
                     "text",
                     "taskList",
-                    "divider"
+                    "divider",
+                    "moreVertical"
                   ]
                 },
                 {
@@ -4623,6 +4630,193 @@
               "$ref": "#/$defs/actions"
             },
             "pasteNotice": {
+              "$ref": "#/$defs/actions"
+            },
+            "table": {
+              "$ref": "#/$defs/actions"
+            },
+            "tableChange": {
+              "$ref": "#/$defs/actions"
+            },
+            "tableCopy": {
+              "$ref": "#/$defs/actions"
+            },
+            "tableMenu": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_TableControls": {
+      "type": "object",
+      "description": "Loop-style table controls drawn over the note from the editor's geometry: row and column handles with menus and drag to reorder, the + insertion point, New row and New column bars, the column tint, the range outline, and the cell menu.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "TableControls"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "columnLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "rowLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "tableLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "insertLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "newRowLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "newColumnLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "cellMenuLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "columnMenu": {
+              "$ref": "#/$defs/read"
+            },
+            "rowMenu": {
+              "$ref": "#/$defs/read"
+            },
+            "tableMenu": {
+              "$ref": "#/$defs/read"
+            },
+            "cellMenu": {
+              "$ref": "#/$defs/read"
+            },
+            "menuRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "columnLabel",
+            "rowLabel",
+            "tableLabel",
+            "newRowLabel",
+            "newColumnLabel",
+            "cellMenuLabel",
+            "columnMenu",
+            "rowMenu",
+            "tableMenu",
+            "cellMenu"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/actions"
+            },
+            "close": {
               "$ref": "#/$defs/actions"
             }
           }

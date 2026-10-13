@@ -68,6 +68,7 @@ describe("entries come from the block registry (EDT-06, EXT-01)", () => {
       { id: "block.quote", title: "format.block.quote", group: "text", icon: "quote", markdown: ">" },
       { id: "block.codeBlock", title: "format.block.codeBlock", group: "insert", icon: "code", markdown: "```" },
       { id: "block.divider", title: "format.block.divider", group: "insert", icon: "divider", markdown: "---" },
+      { id: "block.table", title: "format.block.table", group: "insert", icon: "table", markdown: "|" },
     ]);
   });
   it("a block registered later appears by registration alone", () => {

@@ -137,18 +137,19 @@ Markdown typing shortcuts (`**bold**`, `# `, `- `, …) are listed on [Editing](
 
 ## Tables
 
-These apply when the caret is in a table and take priority over the block bindings.
+These apply when the caret is in a table and take priority over the block bindings. In the build they're the `table` key scope: outside a table each key does what it does elsewhere (<kbd>Mod</kbd>+<kbd>Enter</kbd> checks a task, <kbd>Tab</kbd> indents a list item).
 
 | Action | macOS / iPadOS | Windows / Linux | Layer | Precedent |
 | --- | --- | --- | --- | --- |
 | Next / previous cell (<kbd>Tab</kbd> in the last cell adds a row) | <kbd>Tab</kbd> / <kbd>⇧Tab</kbd> | <kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> | Basic | Word, Notion |
-| Cell below / above | <kbd>Enter</kbd> / <kbd>⇧Enter</kbd> | <kbd>Enter</kbd> / <kbd>Shift+Enter</kbd> | Writer | Spreadsheets |
+| Cell below / above (<kbd>Enter</kbd> in the last row leaves the table onto a new line) | <kbd>Enter</kbd> / <kbd>⇧Enter</kbd> | <kbd>Enter</kbd> / <kbd>Shift+Enter</kbd> | Writer | Spreadsheets |
 | Add row below / above | <kbd>⌘Enter</kbd> / <kbd>⇧⌘Enter</kbd> | <kbd>Ctrl+Enter</kbd> / <kbd>Ctrl+Shift+Enter</kbd> | Power | VS Code (insert line) |
 | Move row up / down | <kbd>⇧⌘↑</kbd> / <kbd>⇧⌘↓</kbd> | <kbd>Ctrl+Shift+↑</kbd> / <kbd>↓</kbd> | Power | Same as moving a block |
 | Delete row | <kbd>⇧⌘K</kbd> | <kbd>Ctrl+Shift+K</kbd> | Power | Same as deleting a block |
-| Cell selection mode | <kbd>Esc</kbd> | <kbd>Esc</kbd> | Pro | Spreadsheets |
+| Cell selection mode (<kbd>Esc</kbd> again goes back to typing) | <kbd>Esc</kbd> | <kbd>Esc</kbd> | Pro | Spreadsheets |
+| Cell menu: every row and column action | <kbd>⇧F10</kbd> or the Menu key | <kbd>Shift+F10</kbd> or the Menu key | Pro | Windows context menus |
 
-**Cell selection mode (Pro).** <kbd>Esc</kbd> in a cell selects the cell. Arrow keys move between cells and <kbd>Shift</kbd>+arrows select a range. <kbd>Backspace</kbd> clears the selected cells. <kbd>Mod</kbd>+<kbd>C</kbd> copies them as tab-separated text (for spreadsheets) and as a Markdown table. Column inserts, moves, deletes, and alignment are on the column handle and in Spotlight (`> Insert column right`). They don't get shortcuts because the usual candidates clash with browser tab switching and with OS screen-rotation keys.
+**Cell selection mode (Pro).** <kbd>Esc</kbd> in a cell selects the cell. Arrow keys move between cells and <kbd>Shift</kbd>+arrows select a range. <kbd>Enter</kbd> or <kbd>Esc</kbd> goes back to typing in the active cell. <kbd>Backspace</kbd> clears the selected cells. <kbd>Mod</kbd>+<kbd>C</kbd> copies them as tab-separated text (for spreadsheets), HTML (for documents), and a Markdown table; <kbd>Mod</kbd>+<kbd>X</kbd> cuts. **The cell menu** (<kbd>Shift</kbd>+<kbd>F10</kbd>, the Menu key, or a right-click) holds Copy, Cut, and Clear cells, inserting rows above and below and columns left and right, moving the row and the column, Align, Duplicate row, selecting the row, column, or table, and deleting rows, columns, or the table, so every handle action has a keyboard path (D-96). Column inserts, moves, deletes, and alignment are on the column handle, in the cell menu, and in Spotlight (`> Insert column right`, M4). They don't get shortcuts because the usual candidates clash with browser tab switching and with OS screen-rotation keys.
 
 ## Find and replace
 

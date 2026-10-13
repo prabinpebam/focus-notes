@@ -113,9 +113,10 @@ Notes are often edited elsewhere too: on GitHub, in VS Code, or on a phone. The 
 
 1. **No-op opens.** Opening and closing a note never writes a file.
 2. **Untouched blocks keep their source.** The parser records the original text range of each top-level block. When saving, blocks the user didn't edit are written back from their original text, byte-for-byte.
-3. **Edited blocks use canonical style.** `-` bullets, `1.` numbering, `*italic*`, `**bold**`, fenced code blocks, and GFM pipe tables with aligned delimiter rows.
-4. **Unsupported constructs survive.** HTML blocks, footnotes, reference-style link definitions, and unknown directives are kept as opaque raw blocks and shown read-only.
-5. **Test corpus.** A fixture set of real-world Markdown files must survive open, save, and compare unchanged, and that check runs in CI.
+3. **Edited blocks use canonical style.** `-` bullets, `1.` numbering, `*italic*`, `**bold**`, fenced code blocks, and GFM pipe tables padded to aligned columns, with alignment markers in the delimiter row and a backslash before every pipe in a cell (code included).
+4. **Tables are GFM's shape.** A table opens as a header row and body rows, each cell one line of inline content. Short rows are filled with empty cells and cells past the header are dropped, as GFM reads them; a header-only table gets an empty body row. The editor keeps every table in that shape, so it can always be written back (TBL-06, D-96). A table with something a cell can't hold in the editor (inline HTML, an image) is kept verbatim instead.
+5. **Unsupported constructs survive.** HTML blocks, footnotes, reference-style link definitions, and unknown directives are kept as opaque raw blocks and shown read-only.
+6. **Test corpus.** A fixture set of real-world Markdown files must survive open, save, and compare unchanged, and that check runs in CI.
 
 ## Public URLs
 

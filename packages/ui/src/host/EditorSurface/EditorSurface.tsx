@@ -10,6 +10,7 @@ import { trackFocusBand } from "./focus-band.ts";
 import { keepInReadingZone } from "./reading-zone.ts";
 import { trackFormatting, type FormatPayload, type FormatTracker } from "./formatting.ts";
 import { trackSlash, type SlashPayload } from "./slash-menu.ts";
+import { trackTables, type TablePayload, type TableTracker } from "./table-tracker.ts";
 import { resultItemId } from "../../primitives/ResultList/ResultList.tsx";
 import { inCompanion } from "../../behaviors/anchors.ts";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
@@ -56,8 +57,16 @@ export interface EditorSurfaceProps {
   onSlash?: (payload: SlashPayload) => void;
   /** Up or Down while the slash menu shows. */
   onSlashMove?: (payload: { delta: number }) => void;
-  /** Something pasted couldn't come in (EDT-09): images, until the image block. */
-  onPasteNotice?: (payload: { kind: string }) => void;
+  /** What a paste did that's worth saying (EDT-09, TBL-10): images left out, a range pasted into a table. */
+  onPasteNotice?: (payload: { kind: string; rows: number; cols: number; addedRows: number; addedCols: number }) => void;
+  /** The table, row, and column the table controls are for, whenever that changes (IA-CMP-TABLE). */
+  onTable?: (payload: TablePayload) => void;
+  /** A table's structure changed, to announce (Tables → Accessibility). */
+  onTableChange?: (payload: { kind: string; index: number; align: string }) => void;
+  /** A whole table was copied as Markdown or tab-separated text, for the clipboard. */
+  onTableCopy?: (payload: { text: string; format: string }) => void;
+  /** The context menu of the selected cells was asked for (right-click, Shift+F10, the Menu key). */
+  onTableMenu?: () => void;
 }
 
 /** Find waits this long after the last keystroke in its field before searching (FND-01). */
@@ -77,6 +86,7 @@ export function EditorSurface({
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, linkEditing,
   slashOpen, slashActive = "", slashList,
   id, onChange, onReady, onFindResult, onFindPrefill, onFormat, onLinkEdit, onOpenLink, onSlash, onSlashMove, onPasteNotice,
+  onTable, onTableChange, onTableCopy, onTableMenu,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
@@ -88,6 +98,9 @@ export function EditorSurface({
   findRef.current = { onFindResult, onFindPrefill, findOpen };
   const formatRef = useRef({ onFormat, onLinkEdit, onOpenLink, onPasteNotice });
   formatRef.current = { onFormat, onLinkEdit, onOpenLink, onPasteNotice };
+  const tableRef = useRef({ onTable, onTableChange, onTableCopy, onTableMenu });
+  tableRef.current = { onTable, onTableChange, onTableCopy, onTableMenu };
+  const tables = useRef<TableTracker | null>(null);
   const slashRef = useRef({ open: Boolean(slashOpen), active: slashActive, onSlash, onSlashMove });
   slashRef.current = { open: Boolean(slashOpen), active: slashActive, onSlash, onSlashMove };
   const tracker = useRef<FormatTracker | null>(null);
@@ -131,7 +144,14 @@ export function EditorSurface({
         ...coreExtensions(keymap ?? [], {
           openLink: (href) => formatRef.current.onOpenLink?.({ href }),
           ghostClass: s.ghost,
-          onPasteNotice: (kind) => formatRef.current.onPasteNotice?.({ kind }),
+          onPasteNotice: (kind, args = {}) => formatRef.current.onPasteNotice?.({ kind, rows: args.rows ?? 0, cols: args.cols ?? 0, addedRows: args.addedRows ?? 0, addedCols: args.addedCols ?? 0 }),
+          onTableChange: (c) => tableRef.current.onTableChange?.({ kind: c.kind, index: c.index ?? 0, align: c.align ?? "" }),
+          onTableCopy: (text, format) => tableRef.current.onTableCopy?.({ text, format }),
+          onTableMenu: () => {
+            // The controls follow the caret's cell while the menu is open, wherever the pointer is.
+            tables.current?.menu();
+            tableRef.current.onTableMenu?.();
+          },
         }),
         Placeholder.configure({ placeholder: placeholder ?? "" }),
       ],
@@ -257,6 +277,17 @@ export function EditorSurface({
     };
   }, [editor]);
   useEffect(() => tracker.current?.refresh(), [findOpen]);
+
+  // The table controls (IA-CMP-TABLE): handles, insertion points, and edge bars follow the pointer.
+  useEffect(() => {
+    if (!editor || !scrollerRef.current) return;
+    const t = trackTables(editor, scrollerRef.current, { gutter: s.tableGutterVar, boundary: s.tableBoundaryVar, reach: s.tableReachVar }, (p) => tableRef.current.onTable?.(p));
+    tables.current = t;
+    return () => {
+      t.dispose();
+      tables.current = null;
+    };
+  }, [editor]);
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
     setSelectionGhost(editor, Boolean(linkEditing));
@@ -317,6 +348,11 @@ export function EditorSurface({
       }
       if (runLinkAction(id, args)) return;
       const action = EDITOR_ACTIONS[id];
+      // From the table controls: they hand focus back to the note themselves once their menu closes.
+      if (id.startsWith("table.") && action) {
+        if (editor.isEditable) action(editor, args);
+        return;
+      }
       if (!action || (!editor.isEditable && id !== "find.next" && id !== "find.prev")) return;
       if (id.startsWith("find.")) {
         // Apply the latest query and replacement first: Enter right after typing must not use a

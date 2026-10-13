@@ -21,6 +21,15 @@ const ed = (id: string, chord: string | Shortcut, layer: KeyLayer, group: KeyGro
   group,
 });
 
+/** Table commands: editor commands whose keys work only with the caret in a table. */
+const tb = (id: string, chord: string | Shortcut, layer: KeyLayer): EditorCommandSpec => ({
+  id,
+  title: `command.${id}`,
+  shortcut: { ...(typeof chord === "string" ? { default: chord } : chord), handledBy: "table" },
+  layer,
+  group: "tables",
+});
+
 /** Editor commands (KEY-02). Each one is also runnable from menus and, later, Spotlight. */
 export const EDITOR_COMMANDS: readonly EditorCommandSpec[] = [
   ed("edit.undo", "Mod+Z", "basic", "editing"),
@@ -42,6 +51,18 @@ export const EDITOR_COMMANDS: readonly EditorCommandSpec[] = [
   ed("block.quote", "Mod+Shift+B", "writer", "blocks"),
   ed("block.codeBlock", "Mod+Alt+C", "writer", "blocks"),
   ed("task.toggle", "Mod+Enter", "writer", "blocks"),
+  // Tables (Keyboard shortcuts → Tables): they apply in a table and come before the block keys there.
+  tb("table.nextCell", "Tab", "basic"),
+  tb("table.prevCell", "Shift+Tab", "basic"),
+  tb("table.cellBelow", "Enter", "writer"),
+  tb("table.cellAbove", "Shift+Enter", "writer"),
+  tb("table.addRowBelow", "Mod+Enter", "power"),
+  tb("table.addRowAbove", "Mod+Shift+Enter", "power"),
+  tb("table.moveRowUp", "Mod+Shift+Up", "power"),
+  tb("table.moveRowDown", "Mod+Shift+Down", "power"),
+  tb("table.deleteRow", "Mod+Shift+K", "power"),
+  tb("table.selectCells", "Escape", "pro"),
+  tb("table.contextMenu", { default: "Shift+F10", alternates: { default: ["ContextMenu"] } }, "pro"),
 ];
 
 /** Standard OS and browser text keys. They aren't commands; the cheat sheet lists them so it's complete. */

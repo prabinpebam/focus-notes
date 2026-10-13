@@ -4,7 +4,13 @@ import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.editorSurface;
 
+/** The table controls' reach, read by the tracker in pixels (Tables → Anatomy). */
+export const tableGutterVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const tableReachVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const tableBoundaryVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+
 export const scroller = style({
+  vars: { [tableGutterVar]: t.tableGutter, [tableReachVar]: t.tableEdgeReach, [tableBoundaryVar]: t.tableBoundaryReach },
   flexGrow: 1,
   minHeight: 0,
   overflowY: "auto",
@@ -87,6 +93,42 @@ globalStyle(p('ul[data-type="taskList"] li > label input'), { width: t.checkboxS
 globalStyle(p('ul[data-type="taskList"] li > div'), { flexGrow: 1, minWidth: 0 });
 globalStyle(p('ul[data-type="taskList"] li[data-checked="true"] > div'), { color: t.checkedText, textDecoration: "line-through" });
 globalStyle(p("::selection"), { backgroundColor: t.selection });
+
+// Tables (Tables → Anatomy): a 1 px frame with small corners and 1 px inner rules, no striping,
+// a header row on the surface color in semibold. The frame scrolls sideways when the table is wide.
+// Room below for the New row bar, so it never covers the next line while the pointer is near.
+globalStyle(p("[data-table]"), { overflowX: "auto", maxWidth: "100%", paddingBlockEnd: `calc(${t.tableBarSpace} + ${t.tableBarGap})` });
+globalStyle(p("table"), {
+  borderCollapse: "separate",
+  borderSpacing: 0,
+  borderStyle: "solid",
+  borderWidth: t.tableBorderWidth,
+  borderColor: t.tableBorder,
+  borderRadius: t.tableRadius,
+});
+globalStyle(p("th, td"), {
+  paddingBlock: t.tableCellBlock,
+  paddingInline: t.tableCellInline,
+  verticalAlign: "top",
+  textAlign: "start",
+  borderStyle: "none",
+  borderInlineEndStyle: "solid",
+  borderBlockEndStyle: "solid",
+  borderInlineEndWidth: t.tableBorderWidth,
+  borderBlockEndWidth: t.tableBorderWidth,
+  borderColor: t.tableBorder,
+});
+globalStyle(p("th:last-child, td:last-child"), { borderInlineEndStyle: "none" });
+globalStyle(p("tr:last-child > th, tr:last-child > td"), { borderBlockEndStyle: "none" });
+globalStyle(p("th"), { backgroundColor: t.tableHeader, fontWeight: t.tableHeaderWeight });
+globalStyle(p("tr:first-child > th:first-child"), { borderStartStartRadius: t.tableRadius });
+globalStyle(p("tr:first-child > th:last-child"), { borderStartEndRadius: t.tableRadius });
+globalStyle(p('[data-align="center"]'), { textAlign: "center" });
+globalStyle(p('[data-align="right"]'), { textAlign: "end" });
+globalStyle(p('[data-align="left"]'), { textAlign: "start" });
+// A selected cell range (TBL-11): the selection color; TableControls outlines the range.
+globalStyle(p(".selectedCell"), { backgroundColor: t.tableSelection });
+globalStyle(p("th p, td p"), { margin: 0 });
 
 // Find highlights (FND-01): every match, and the current one stronger and outlined.
 globalStyle(`${prose} .ProseMirror-search-match`, { backgroundColor: t.findMatch, borderRadius: t.findMatchOutlineWidth });

@@ -50,14 +50,16 @@ Tables are edited the way Microsoft Loop tables are: hover + insertion points, r
 
 | Interaction | Behavior |
 | --- | --- |
-| Insert | `/table` inserts a 3 &times; 3 table with a header row. Typing a valid GFM header and delimiter row also converts it. |
-| Move between cells | <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>. <kbd>Tab</kbd> in the last cell adds a row. Arrow keys cross cell edges at the start or end of a cell's text. |
-| Rows and columns | Hovering near a row or column boundary on the table's edge shows a + insertion point (TBL-07). Row and column handles open menus and drag to reorder (TBL-08). |
-| Alignment | The column menu sets left, center, or right, saved as `:---`, `:---:`, `---:` (TBL-04). |
-| Cell content | Inline formatting only. <kbd>Enter</kbd> and <kbd>Shift</kbd>+<kbd>Enter</kbd> move down and up, because a GFM cell can't hold line breaks or paragraphs (UNSUP-TABLE-01). |
-| Header row | Always present (GFM requires one). It can be emptied but not removed. |
-| Delete table | Through the table handle, or <kbd>Backspace</kbd> on an empty, fully selected table. |
-| Paste | A spreadsheet range or HTML table becomes a table, or fills cells from the active cell (TBL-10). |
+| Insert | `/table` (or "grid", "columns") inserts a 3 &times; 3 table with a header row, the caret in its first cell. Typing a GFM header row and then its delimiter row converts them on <kbd>Enter</kbd>, the caret in the first body cell (TBL-01). |
+| Move between cells | <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>. <kbd>Tab</kbd> in the last cell adds a row. <kbd>Enter</kbd> and <kbd>Shift</kbd>+<kbd>Enter</kbd> move down and up; <kbd>Enter</kbd> in the last row leaves the table onto a new line. Arrow keys cross cell edges at the start or end of a cell's text (TBL-03). |
+| Rows and columns | Hovering near a row or column boundary on the table's edge shows a + insertion point, and New row and New column bars show along the bottom and right edges (TBL-07). Row and column handles open menus and drag to reorder (TBL-08). <kbd>Mod</kbd>+<kbd>Enter</kbd> adds a row, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> moves it, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>K</kbd> deletes it. |
+| Keyboard | <kbd>Esc</kbd> selects the cell (cell selection mode), <kbd>Shift</kbd>+arrows extend the range, and <kbd>Shift</kbd>+<kbd>F10</kbd> or the Menu key opens the cell menu with every row and column action, so nothing needs the pointer. |
+| Alignment | The column menu's Align sets left, center, or right, saved as `:---`, `:---:`, `---:`. Sorting comes with WP-8.1 (TBL-04). |
+| Cell content | Inline formatting only, from the toolbar (which has marks only in a table) or the shortcuts (TBL-05). A cell holds one line: <kbd>Enter</kbd> moves down, and a line break that arrives some other way becomes a space, because a GFM cell can't hold line breaks or paragraphs (UNSUP-TABLE-01, TBL-06). |
+| Header row | Always present (GFM requires one). It can be emptied but not removed or moved, and nothing goes above it. A table always keeps one body row. |
+| Cell ranges | Drag across cells, <kbd>Shift</kbd>+click, or a handle selects a range, rows, or columns to format, clear (<kbd>Backspace</kbd>), copy, or delete (TBL-11). Copying gives tab-separated text, HTML, and a Markdown table. |
+| Delete table | Through the table handle's menu or the cell menu. Deleting the last column deletes the table too. Undo brings any of it back. |
+| Paste | A spreadsheet range (its HTML table, or tab-separated text) fills cells from the active cell and grows the table, in one undo step; on a line of its own it becomes a table. An HTML table or GFM text pasted outside a table becomes a table (TBL-10). |
 
 ## Paste and drop
 
@@ -65,7 +67,7 @@ Pasting and dropping text work the same way (EDT-09, SEC-02):
 
 1. **Markdown text** is parsed into blocks: headings, lists, tasks, quotes, code, links, and marks. One line pasted between words joins them.
 2. **HTML** (from browsers, Word, and Google Docs) is sanitized first, then converted to the nearest Markdown: headings, nested lists (Word's list paragraphs too), quotes, code blocks with their language, links, bold, italic (including Docs' styled text), strikethrough, and inline code. Other styling is dropped. HTML that's only styled text, like Markdown copied from a code editor, is read as Markdown.
-3. **Anything not supported yet** degrades to plain text, never to a read-only block: a table becomes its GFM text, one paragraph per line, until tables arrive (WP-1.5, TBL-10). Raw HTML stays text.
+3. **Anything not supported yet** degrades to plain text, never to a read-only block (footnotes, for example). Tables are tables (TBL-10; until WP-1.5 they became their GFM text). Raw HTML stays text.
 4. **Images** are left out with a message ("Images can't be added to notes yet, so they were left out.") until the image component ships (EXT-03). An image's alt text is kept. They're never dropped silently.
 5. **Links** keep only safe addresses: http, https, mailto, and relative ones. Others become plain text.
 6. **<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd>** pastes plain text exactly as it is, one paragraph per line, with Markdown characters kept as characters. Pasting into a code block is always plain.

@@ -97,7 +97,7 @@ test("EDT-06: / opens the block menu under the caret; typing filters, arrows and
   expect(Math.abs(box.x - slash.left)).toBeLessThan(24);
   // The registry's blocks, grouped Text, Lists, Insert, the first one active, with focus still in the note.
   await expect(menu.getByRole("option")).toHaveText([
-    /^Text/, /^Heading 1/, /^Heading 2/, /^Heading 3/, /^Quote/, /^Bulleted list/, /^Numbered list/, /^To-do list/, /^Code block/, /^Divider/,
+    /^Text/, /^Heading 1/, /^Heading 2/, /^Heading 3/, /^Quote/, /^Bulleted list/, /^Numbered list/, /^To-do list/, /^Code block/, /^Divider/, /^Table/,
   ]);
   const first = menu.getByRole("option").first();
   await expect(first).toHaveAttribute("aria-selected", "true");

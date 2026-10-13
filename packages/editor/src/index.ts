@@ -18,11 +18,13 @@ export * from "./format.ts";
 export * from "./slash.ts";
 export * from "./paste.ts";
 export * from "./sanitize.ts";
+export * from "./table.ts";
 import { Find, FIND_ACTIONS } from "./find.ts";
 import { LinkOpen, LinkPaste, SelectionGhost, removeLink, selectLink } from "./format.ts";
 import { SlashMenu, blockIs, insideNode, type SlashEntry } from "./slash.ts";
 import { SmartPaste } from "./paste.ts";
 import { isSafeHref } from "./sanitize.ts";
+import { TABLE_ACTIONS, insertTable, tableExtensions, type TableChange } from "./table.ts";
 
 /** One registration per block type, built-in or future (Editor engine → Block registry contract). */
 export interface BlockRegistration {
@@ -88,6 +90,13 @@ registerBlock({
   name: "horizontalRule", title: "block.horizontalRule", markdown: "native", insertable: true, inputRule: "---",
   slash: [{ id: "block.divider", title: "format.block.divider", group: "insert", icon: "divider", markdown: "---", insert: ({ commands }) => commands.setHorizontalRule() }],
 });
+registerBlock({
+  name: "table", title: "block.table", markdown: "native", insertable: true, inputRule: "| a | b |",
+  slash: [{ id: "block.table", title: "format.block.table", group: "insert", icon: "table", markdown: "|", insert: (props) => insertTable(props) }],
+});
+registerBlock({ name: "tableRow", title: "block.tableRow", markdown: "native", insertable: false });
+registerBlock({ name: "tableHeader", title: "block.tableHeader", markdown: "native", insertable: false });
+registerBlock({ name: "tableCell", title: "block.tableCell", markdown: "native", insertable: false });
 registerBlock({ name: "rawMarkdown", title: "block.rawMarkdown", markdown: "verbatim", insertable: false });
 
 /** Markdown the editor can't represent yet, kept verbatim and read-only (EXT-05). */
@@ -161,7 +170,7 @@ export const AutoDirection = Extension.create({
  * Editor commands by ID (KEY-01, KEY-02). The keys come from the command registry; these say what
  * each command does to the document. Each returns whether it applied.
  */
-export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor) => boolean>> = {
+export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Record<string, unknown>) => boolean>> = {
   "edit.undo": (e) => e.commands.undo(),
   // Explicit, so they're reliable in long scrolled notes and scroll into the reading zone (UI-11).
   "edit.docStart": (e) => e.chain().setTextSelection(Selection.atStart(e.state.doc).from).scrollIntoView().run(),
@@ -187,6 +196,7 @@ export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor) => boolean
   "block.quote": (e) => e.commands.toggleBlockquote(),
   "block.codeBlock": (e) => e.commands.toggleCodeBlock(),
   ...FIND_ACTIONS,
+  ...TABLE_ACTIONS,
   "task.toggle": (e) => {
     const { $from } = e.state.selection;
     for (let d = $from.depth; d > 0; d--) {
@@ -234,13 +244,20 @@ export const CommandKeymap = Extension.create<{ bindings: KeyBinding[] }>({
     return { bindings: [] };
   },
   addKeyboardShortcuts() {
-    const map: Record<string, () => boolean> = {};
-    for (const { id, chord } of this.options.bindings) {
+    // One chord can run a table command in a table and another elsewhere (Mod+Enter): tables first.
+    const byKey = new Map<string, ((editor: Editor) => boolean)[]>();
+    const ordered = [...this.options.bindings].sort((a, b) => Number(!a.id.startsWith("table.")) - Number(!b.id.startsWith("table.")));
+    for (const { id, chord } of ordered) {
       const action = EDITOR_ACTIONS[id];
       if (!action) continue;
-      map[toKeyName(chord)] = () => {
+      const name = toKeyName(chord);
+      byKey.set(name, [...(byKey.get(name) ?? []), action]);
+    }
+    const map: Record<string, () => boolean> = {};
+    for (const [name, actions] of byKey) {
+      map[name] = () => {
         syncSelection(this.editor);
-        return action(this.editor);
+        return actions.some((action) => action(this.editor));
       };
     }
     return map;
@@ -252,8 +269,17 @@ export interface CoreOptions {
   openLink?: (href: string) => void;
   /** The class that keeps the selection visible while the link editor has focus. */
   ghostClass?: string;
-  /** Something pasted couldn't come in (images, until EXT-03). */
-  onPasteNotice?: (kind: "images") => void;
+  /**
+   * What a paste did that's worth saying: images left out (until EXT-03), a range pasted into a
+   * table (`tablePasted`, with its size and how the table grew), or line breaks kept off a cell.
+   */
+  onPasteNotice?: (kind: string, args?: Record<string, number>) => void;
+  /** A table's structure changed (a row inserted, a column moved), to announce (Tables → Accessibility). */
+  onTableChange?: (change: TableChange) => void;
+  /** A whole table copied as Markdown or tab-separated text, for the clipboard. */
+  onTableCopy?: (text: string, format: "markdown" | "tsv") => void;
+  /** The context menu of the selected cells was asked for (right-click, Shift+F10, or the Menu key). */
+  onTableMenu?: () => void;
 }
 
 /**
@@ -286,6 +312,12 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
     FenceOnEnter,
     SlashMenu,
     SmartPaste.configure(options.onPasteNotice ? { onNotice: options.onPasteNotice } : {}),
+    ...tableExtensions({
+      ...(options.onPasteNotice ? { onNotice: (kind: string, args: Record<string, number>) => options.onPasteNotice!(kind, args) } : {}),
+      ...(options.onTableChange ? { onChange: options.onTableChange } : {}),
+      ...(options.onTableCopy ? { onCopyText: options.onTableCopy } : {}),
+      ...(options.onTableMenu ? { onContextMenu: options.onTableMenu } : {}),
+    }),
   ];
 }
 

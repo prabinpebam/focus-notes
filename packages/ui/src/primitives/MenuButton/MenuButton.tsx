@@ -57,18 +57,14 @@ function Submenu({ item, onAction }: { item: CommandItem; onAction?: ((payload: 
   );
 }
 
-/** An icon button that opens a menu of commands, each with its state and shortcut (IA-CMP-OVERFLOW). */
-export function MenuButton({ icon = "more", label, variant = "icon", text, placement = "bottom end", sections, shortcut, onAction }: MenuButtonProps) {
+/**
+ * A menu of commands in sections, with submenus, checked states, and shortcuts: what MenuButton opens,
+ * and what other components that open menus themselves (TableControls) show.
+ */
+export function CommandMenu({ label, sections, onAction, autoFocus }: { label: string; sections: Section[]; onAction?: ((payload: { id: string }) => void) | undefined; autoFocus?: boolean }) {
   const checkable = sections.some((sec) => sec.items.some((i) => i.checked !== undefined));
   return (
-    <MenuTrigger>
-      {variant === "pill"
-        ? <Button className={s.pill} aria-label={label}>{text ?? label}</Button>
-        : variant === "text"
-          ? <Button className={s.text} aria-label={label}>{text ?? label}<Icon name="chevronDown" size="s" /></Button>
-          : <IconButton icon={icon} label={label} {...(shortcut ? { shortcut } : {})} />}
-      <Popover className={s.popover} placement={placement} offset={8} data-floating-child="">
-        <Menu className={s.menu} aria-label={label} shouldCloseOnSelect onAction={(key) => onAction?.({ id: String(key) })} disabledKeys={sections.flatMap((sec) => sec.items.filter((i) => i.disabled && !i.items).map((i) => i.id))}>
+        <Menu className={s.menu} aria-label={label} shouldCloseOnSelect {...(autoFocus ? { autoFocus: "first" as const } : {})} onAction={(key) => onAction?.({ id: String(key) })} disabledKeys={sections.flatMap((sec) => sec.items.filter((i) => i.disabled && !i.items).map((i) => i.id))}>
           {sections.map((sec, index) => (
             <Fragment key={sec.id}>
               {index > 0 ? <Separator className={s.separator} /> : null}
@@ -95,6 +91,20 @@ export function MenuButton({ icon = "more", label, variant = "icon", text, place
             </Fragment>
           ))}
         </Menu>
+  );
+}
+
+/** An icon button that opens a menu of commands, each with its state and shortcut (IA-CMP-OVERFLOW). */
+export function MenuButton({ icon = "more", label, variant = "icon", text, placement = "bottom end", sections, shortcut, onAction }: MenuButtonProps) {
+  return (
+    <MenuTrigger>
+      {variant === "pill"
+        ? <Button className={s.pill} aria-label={label}>{text ?? label}</Button>
+        : variant === "text"
+          ? <Button className={s.text} aria-label={label}>{text ?? label}<Icon name="chevronDown" size="s" /></Button>
+          : <IconButton icon={icon} label={label} {...(shortcut ? { shortcut } : {})} />}
+      <Popover className={s.popover} placement={placement} offset={8} data-floating-child="">
+        <CommandMenu label={label} sections={sections} onAction={onAction} />
       </Popover>
     </MenuTrigger>
   );

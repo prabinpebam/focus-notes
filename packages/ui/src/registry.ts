@@ -14,6 +14,7 @@ import { Layer } from "./layouts/Layer/Layer.tsx";
 import { Center } from "./layouts/Center/Center.tsx";
 import { AppRoot } from "./layouts/AppRoot/AppRoot.tsx";
 import { EditorSurface } from "./host/EditorSurface/EditorSurface.tsx";
+import { TableControls } from "./host/TableControls/TableControls.tsx";
 import { Trigger } from "./compounds/Trigger/Trigger.tsx";
 import { Divider } from "./primitives/Divider/Divider.tsx";
 import { PopoverPanel } from "./primitives/PopoverPanel/PopoverPanel.tsx";
@@ -42,6 +43,6 @@ import { Sheet } from "./layouts/Sheet/Sheet.tsx";
 export const registry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree,
   Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet,
-  EditorSurface,
+  EditorSurface, TableControls,
   Trigger, Toolbar, Dialog,
 });

@@ -252,6 +252,58 @@
       "selectionGhost": {
         "$type": "color",
         "$value": "{color.selection}"
+      },
+      "tableBorder": {
+        "$type": "color",
+        "$value": "{color.border}"
+      },
+      "tableBorderWidth": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      },
+      "tableRadius": {
+        "$type": "dimension",
+        "$value": "{radius.small}"
+      },
+      "tableHeader": {
+        "$type": "color",
+        "$value": "{color.surface}"
+      },
+      "tableHeaderWeight": {
+        "$type": "fontWeight",
+        "$value": "{font.weightSemibold}"
+      },
+      "tableCellBlock": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "tableCellInline": {
+        "$type": "dimension",
+        "$value": "{space.m}"
+      },
+      "tableSelection": {
+        "$type": "color",
+        "$value": "{color.selection}"
+      },
+      "tableGutter": {
+        "$type": "dimension",
+        "$value": "{table.gutter}"
+      },
+      "tableEdgeReach": {
+        "$type": "dimension",
+        "$value": "{table.edgeReach}"
+      },
+      "tableBoundaryReach": {
+        "$type": "dimension",
+        "$value": "{table.boundaryReach}"
+      },
+      "tableBarSpace": {
+        "$type": "dimension",
+        "$value": "{table.newRowHeight}"
+      },
+      "tableBarGap": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
       }
     }
   }

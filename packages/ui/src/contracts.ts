@@ -15,6 +15,7 @@ import { contract as Layer } from "./layouts/Layer/contract.ts";
 import { contract as Center } from "./layouts/Center/contract.ts";
 import { contract as AppRoot } from "./layouts/AppRoot/contract.ts";
 import { contract as EditorSurface } from "./host/EditorSurface/contract.ts";
+import { contract as TableControls } from "./host/TableControls/contract.ts";
 import { contract as Trigger } from "./compounds/Trigger/contract.ts";
 import { contract as Divider } from "./primitives/Divider/contract.ts";
 import { contract as PopoverPanel } from "./primitives/PopoverPanel/contract.ts";
@@ -42,7 +43,7 @@ import { contract as Sheet } from "./layouts/Sheet/contract.ts";
 export const contracts: readonly Contract[] = [
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree,
   Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet,
-  EditorSurface,
+  EditorSurface, TableControls,
   Trigger, Toolbar, Dialog,
 ];
 export const contractByType = new Map(contracts.map((c) => [c.type, c]));

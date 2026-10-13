@@ -634,7 +634,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       busy: { type: "boolean" as const }, busyLabel: { type: "string" as const },
     },
   };
-  registerFormatting({ store, commands, viewModels, catalog, bridge, editorAction, toast: (m) => void toast(m) });
+  registerFormatting({
+    store, commands, viewModels, catalog, bridge, editorAction, toast: (m) => void toast(m),
+    announce: (key, args) => announce(catalog.has(key) ? catalog.format(key, args) : key),
+  });
   const files = registerFiles({
     store, commands, viewModels, catalog, bridge, toast, announce, load, exclusive, setNote, persistAppState,
     loaded: (path, md) => workspace.loaded(path, md), describeItem, itemSchema: ITEM_SCHEMA,
@@ -730,7 +733,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
 
   // The editor's keymap comes from the registry, so keys are defined once (KEY-02).
-  const editorKeymap = commands.bindings().filter((b) => b.handledBy === "editor").flatMap((b) => b.chords.map((chord) => ({ id: b.id, chord })));
+  const editorKeymap = commands.bindings().filter((b) => b.handledBy === "editor" || b.handledBy === "table").flatMap((b) => b.chords.map((chord) => ({ id: b.id, chord })));
   viewModels.register({
     id: "vm.app",
     schema: {

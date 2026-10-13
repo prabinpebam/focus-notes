@@ -1,5 +1,5 @@
 import {
-  FolderOpen20Regular, Save20Regular, WeatherMoon20Regular, WeatherSunny20Regular, MoreHorizontal20Regular,
+  FolderOpen20Regular, Save20Regular, WeatherMoon20Regular, WeatherSunny20Regular, MoreHorizontal20Regular, MoreVertical20Regular,
   Search20Regular, Add20Regular, Dismiss20Regular, Checkmark20Regular, DocumentAdd20Regular, TextBold20Regular,
   TextItalic20Regular, Link20Regular, Subtract20Regular, SquareMultiple20Regular, Square20Regular,
   FullScreenMaximize20Regular, FullScreenMinimize20Regular, CenterVertical20Regular, TextFont20Regular,
@@ -16,7 +16,7 @@ import type { IconName } from "./icon-names.ts";
 
 export const ICONS: Record<IconName, FluentIcon> = {
   open: FolderOpen20Regular, save: Save20Regular, darkTheme: WeatherMoon20Regular, lightTheme: WeatherSunny20Regular,
-  more: MoreHorizontal20Regular, search: Search20Regular, add: Add20Regular, dismiss: Dismiss20Regular,
+  more: MoreHorizontal20Regular, moreVertical: MoreVertical20Regular, search: Search20Regular, add: Add20Regular, dismiss: Dismiss20Regular,
   check: Checkmark20Regular, newNote: DocumentAdd20Regular, bold: TextBold20Regular, italic: TextItalic20Regular,
   link: Link20Regular, minimize: Subtract20Regular, restore: SquareMultiple20Regular, maximize: Square20Regular,
   fullScreen: FullScreenMaximize20Regular, exitFullScreen: FullScreenMinimize20Regular, focus: CenterVertical20Regular,

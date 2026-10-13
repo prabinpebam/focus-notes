@@ -52,6 +52,8 @@ const KEPT_ATTRS: Record<string, string[]> = {
   codeBlock: ["language"],
   rawMarkdown: ["source"],
   taskItem: ["checked"],
+  tableHeader: ["align"],
+  tableCell: ["align"],
   link: ["href", "title"],
 };
 
@@ -142,10 +144,38 @@ function convertBlock(node: Md.RootContent): PMNode | undefined {
       };
     case "thematicBreak":
       return { type: "horizontalRule" };
+    case "table":
+      return convertTable(node);
     default:
       return undefined;
   }
 }
+
+/**
+ * A GFM table (TBL-06): a header row of header cells, then body rows, each cell one paragraph of
+ * inline content with its column's alignment. Short rows are filled and cells past the header are
+ * dropped, as GFM reads them; a table always has a body row.
+ */
+function convertTable(node: Md.Table): PMNode | undefined {
+  const width = node.children[0]?.children.length ?? 0;
+  if (!width) return undefined;
+  const align = (i: number) => node.align?.[i] ?? null;
+  const rows: PMNode[] = [];
+  for (const [r, mdRow] of node.children.entries()) {
+    const content: PMNode[] = [];
+    for (let c = 0; c < width; c++) {
+      const kids = mdRow.children[c]?.children ?? [];
+      const inline = convertInline(kids, []);
+      if (!inline) return undefined;
+      content.push(tableCell(r === 0, align(c), inline));
+    }
+    rows.push({ type: "tableRow", content });
+  }
+  if (rows.length === 1) rows.push({ type: "tableRow", content: Array.from({ length: width }, (_, c) => tableCell(false, align(c), [])) });
+  return { type: "table", content: rows };
+}
+
+const tableCell = (header: boolean, align: string | null, inline: PMNode[]): PMNode => ({ type: header ? "tableHeader" : "tableCell", attrs: { align }, content: [para(inline)] });
 
 const para = (content: PMNode[]): PMNode => (content.length ? { type: "paragraph", content } : { type: "paragraph" });
 
@@ -229,8 +259,8 @@ export function markdownToBlocks(markdown: string): PMNode[] {
 }
 
 /**
- * Markdown (as mdast, from converted HTML) as blocks. A construct the editor can't represent yet,
- * a table until WP-1.5 for example, becomes its Markdown text, one paragraph per line.
+ * Markdown (as mdast, from converted HTML) as blocks. A construct the editor can't represent yet
+ * (raw HTML, footnotes) becomes its Markdown text, one paragraph per line. Tables are tables (TBL-10).
  */
 export function blocksFromMdast(root: Md.Root): PMNode[] {
   currentSource = "";
@@ -339,9 +369,32 @@ function toMdastBlock(node: PMNode): Md.RootContent {
       return { type: "thematicBreak" };
     case "rawMarkdown":
       return { type: "html", value: String(node.attrs?.source ?? "") };
+    case "table": {
+      const rows = node.content ?? [];
+      const header = rows[0]?.content ?? [];
+      return {
+        type: "table",
+        align: header.map((c) => (["left", "center", "right"].includes(String(c.attrs?.align)) ? (c.attrs!.align as Md.AlignType) : null)),
+        children: rows.map((r) => ({
+          type: "tableRow",
+          // A GFM cell is one line: anything that would break it (a stray line break) becomes a space.
+          children: (r.content ?? []).map((c) => ({ type: "tableCell", children: toMdastInline(cellInline(c)) })),
+        })),
+      };
+    }
     default:
       return { type: "paragraph", children: toMdastInline(node.content ?? []) };
   }
+}
+
+/** A cell's inline content: its paragraphs joined by spaces, line breaks as spaces. */
+function cellInline(cell: PMNode): PMNode[] {
+  const out: PMNode[] = [];
+  for (const [i, p] of (cell.content ?? []).entries()) {
+    if (i > 0) out.push({ type: "text", text: " " });
+    for (const n of p.content ?? []) out.push(n.type === "hardBreak" ? { type: "text", text: " ", ...(n.marks ? { marks: n.marks } : {}) } : n);
+  }
+  return mergeText(out);
 }
 
 function toMdastInline(nodes: PMNode[]): Md.PhrasingContent[] {

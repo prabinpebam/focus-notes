@@ -271,7 +271,7 @@ class HtmlReader {
     return { type: "code", lang, meta: null, value: codeText(pre).replace(/\n$/, "") };
   }
 
-  /** Tables convert to GFM, which degrades to text until the editor has tables (WP-1.5). */
+  /** Tables convert to GFM tables, which open as tables (TBL-10). */
   table(el: Element): Md.Table {
     const rows: Md.TableRow[] = [];
     for (const tr of el.querySelectorAll("tr")) {
@@ -330,7 +330,7 @@ const hasImageFiles = (data: DataTransfer | null | undefined): boolean =>
 
 export interface PasteOptions {
   /** Something pasted or dropped couldn't come in: images, until the image block (EXT-03). */
-  onNotice?: (kind: "images") => void;
+  onNotice?: (kind: string, args?: Record<string, number>) => void;
 }
 
 /**

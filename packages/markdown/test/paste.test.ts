@@ -14,10 +14,14 @@ describe("pasted Markdown (EDT-09)", () => {
     expect(types(nodes)).toEqual(["heading", "bulletList", "paragraph"]);
     expect(nodes[2]!.content!.find((n) => n.marks)?.marks).toEqual([{ type: "bold" }]);
   });
-  it("degrades a table (until WP-1.5) to its text, one paragraph per line", () => {
+  it("reads a table as a table (TBL-10; it degraded to text until WP-1.5)", () => {
     const nodes = markdownToBlocks("| a | b |\n| - | - |\n| 1 | 2 |\n");
-    expect(types(nodes)).toEqual(["paragraph", "paragraph", "paragraph"]);
-    expect(nodes.map(text)).toEqual(["| a | b |", "| - | - |", "| 1 | 2 |"]);
+    expect(types(nodes)).toEqual(["table"]);
+  });
+  it("degrades what it can't represent to its text, one paragraph per line", () => {
+    const nodes = markdownToBlocks("Term[^1]\n\n[^1]: A note.\n");
+    expect(types(nodes)).toEqual(["paragraph", "paragraph"]);
+    expect(nodes.map(text)).toEqual(["Term[^1]", "[^1]: A note."]);
   });
   it("shows raw HTML as text, never as markup (SEC-02)", () => {
     const nodes = markdownToBlocks("<img src=x onerror=alert(1)>\n\nA <b>bold</b> word.\n");
@@ -45,7 +49,11 @@ describe("converted HTML as Markdown (EDT-09)", () => {
         ] },
       ],
     });
-    expect(types(nodes)).toEqual(["heading", "paragraph", "paragraph", "paragraph"]);
-    expect(nodes.slice(1).map(text)).toEqual(["| A | B |", "| - | - |", "| 1 | 2 |"]);
+    expect(types(nodes)).toEqual(["heading", "table"]);
+  });
+  it("degrades mdast it can't represent to its Markdown text", () => {
+    const nodes = blocksFromMdast({ type: "root", children: [{ type: "html", value: "<div>a</div>" }] });
+    expect(types(nodes)).toEqual(["paragraph"]);
+    expect(nodes.map(text)).toEqual(["<div>a</div>"]);
   });
 });

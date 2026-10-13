@@ -55,7 +55,7 @@ describe("editing keeps untouched blocks verbatim", () => {
   });
 
   it("keeps raw blocks it can't represent (EXT-05)", () => {
-    const src = "| a | b |\n|---|---|\n| 1 | 2 |\n\n<div>html</div>\n";
+    const src = "<!-- a comment -->\n\n<div>html</div>\n";
     const parsed = parseMarkdown(src);
     expect(parsed.doc.content!.map((n) => n.type)).toEqual(["rawMarkdown", "rawMarkdown"]);
     const doc = structuredClone(parsed.doc);

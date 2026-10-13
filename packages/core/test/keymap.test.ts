@@ -128,7 +128,7 @@ describe("the cheat sheet (KEY-05)", () => {
     const app = appFor("windows");
     expect((app.viewModels.select("vm.shortcuts", app.store.state) as { groups: unknown[] }).groups).toEqual([]);
     const { vm } = await open();
-    expect(vm().groups.map((g) => g.id)).toEqual(["app", "editing", "formatting", "blocks", "find", "files"]);
+    expect(vm().groups.map((g) => g.id)).toEqual(["app", "editing", "formatting", "blocks", "tables", "find", "files"]);
     expect(ids(vm().groups)).toEqual(expect.arrayContaining(["note.save", "format.bold", "block.heading1", "keys.cutCopyPaste", "shortcuts.open"]));
     expect(ids(vm().groups)).not.toContain("spotlight.open"); // planned for M4
     expect(vm().summary).toBe(`${vm().count} shortcuts`);

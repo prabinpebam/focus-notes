@@ -12,6 +12,7 @@ import type { AppState } from "./app.ts";
 import type { Store } from "./store.ts";
 import { isReadOnlyPath } from "./notes.ts";
 import { registerSlash, SLASH_CLOSED, type SlashMenuState } from "./slash.ts";
+import { registerTables, TABLE_CLOSED, type TableUiState } from "./table.ts";
 
 export type MarkState = "on" | "off" | "mixed";
 const MARKS = ["bold", "italic", "strike", "code"] as const;
@@ -42,6 +43,10 @@ export interface FormatState {
   link: LinkEditorState;
   /** The slash menu (EDT-06), which belongs to the open note like the toolbar. */
   slash: SlashMenuState;
+  /** The selection is in a table: cells hold inline content only, so Turn into doesn't show (TBL-05). */
+  inTable: boolean;
+  /** The table controls (IA-CMP-TABLE), which belong to the open note too. */
+  table: TableUiState;
 }
 export interface LinkEditorState {
   open: boolean;
@@ -55,6 +60,7 @@ export interface LinkEditorState {
 export const FORMAT_CLOSED: FormatState = {
   toolbar: false, card: false, bold: "off", italic: "off", strike: "off", code: "off", block: "", codeBlock: false, inlineCode: false,
   oneBlock: false, href: "", focusToolbar: 0, link: { open: false, url: "", text: "", withText: false, error: "", focus: 0 }, slash: SLASH_CLOSED,
+  inTable: false, table: TABLE_CLOSED,
 };
 
 /** A web address the shell may open in the browser: http, https, or mailto (EDT-13). */
@@ -94,10 +100,12 @@ export interface FormatDeps {
   bridge: PlatformBridge;
   editorAction: (id: string, args?: Record<string, unknown>) => void;
   toast: (message: string) => void;
+  announce: (key: string, args?: Record<string, unknown>) => void;
 }
 
-export function registerFormatting({ store, commands, viewModels, catalog, bridge, editorAction, toast }: FormatDeps): void {
+export function registerFormatting({ store, commands, viewModels, catalog, bridge, editorAction, toast, announce }: FormatDeps): void {
   registerSlash({ store, commands, viewModels, catalog, editorAction, toast });
+  registerTables({ store, commands, viewModels, catalog, bridge, editorAction, toast, announce });
   const set = (patch: Partial<FormatState>) => store.update((s) => ({ ...s, ui: { ...s.ui, format: { ...s.ui.format, ...patch } } }));
   const setLink = (patch: Partial<LinkEditorState>) => set({ link: { ...store.state.ui.format.link, ...patch } });
   const writable = (s: AppState) => s.note.status === "ready" && !isReadOnlyPath(s.note.path);
@@ -109,7 +117,7 @@ export function registerFormatting({ store, commands, viewModels, catalog, bridg
       toolbar: Boolean(a.toolbar), card: Boolean(a.card),
       bold: mark(a.bold), italic: mark(a.italic), strike: mark(a.strike), code: mark(a.code),
       block: typeof a.block === "string" ? a.block : "", codeBlock: Boolean(a.codeBlock), inlineCode: Boolean(a.inlineCode),
-      oneBlock: Boolean(a.oneBlock), href: typeof a.href === "string" ? a.href : "",
+      oneBlock: Boolean(a.oneBlock), href: typeof a.href === "string" ? a.href : "", inTable: Boolean(a.table),
     }),
   });
   commands.register({
@@ -223,7 +231,8 @@ export function registerFormatting({ store, commands, viewModels, catalog, bridg
         toolbar: f.toolbar && !f.link.open,
         card: f.card && !f.toolbar && !f.link.open && Boolean(f.href),
         linkOpen: f.link.open,
-        showTurnInto: true,
+        // A cell holds one paragraph, so in a table the toolbar has marks only (Tables → Interactions).
+        showTurnInto: !f.inTable,
         showMarks: !f.codeBlock && !f.inlineCode,
         showCode: !f.codeBlock,
         showLink: !f.codeBlock && !f.inlineCode,

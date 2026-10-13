@@ -14,7 +14,7 @@ afterEach(() => {
   editors = [];
 });
 
-function open(markdown: string, onPasteNotice?: (kind: "images") => void) {
+function open(markdown: string, onPasteNotice?: (kind: string) => void) {
   const session = new MarkdownSession(markdown);
   const editor = new Editor({ ...EDITOR_OPTIONS, extensions: coreExtensions([], onPasteNotice ? { onPasteNotice } : {}), content: session.doc as object });
   editors.push(editor);
@@ -60,11 +60,11 @@ describe("Markdown text (EDT-09)", () => {
     paste(editor, { "text/plain": "**big** " });
     expect(md()).toBe("Hello **big** world\n");
   });
-  it("degrades a table to editable text until tables ship (WP-1.5)", () => {
-    const { editor } = open("");
+  it("reads a GFM table as a table (TBL-10; it degraded to text until WP-1.5)", () => {
+    const { editor, md } = open("");
     paste(editor, { "text/plain": "| a | b |\n| - | - |\n| 1 | 2 |\n" });
-    expect(kinds(editor)).toEqual(["paragraph", "paragraph", "paragraph"]);
-    expect(editor.state.doc.textBetween(0, editor.state.doc.content.size, "\n")).toBe("| a | b |\n| - | - |\n| 1 | 2 |");
+    expect(kinds(editor)[0]).toBe("table");
+    expect(md()).toBe("| a | b |\n| - | - |\n| 1 | 2 |\n");
   });
   it("keeps raw HTML as text and drops links with unsafe schemes (SEC-02)", () => {
     const { editor, md } = open("");
@@ -132,11 +132,11 @@ describe("HTML (EDT-09)", () => {
     });
     expect(md()).toBe("# Docs title\n\n**Bold** and *italic* and ~~gone~~\n\n- Item\n");
   });
-  it("degrades a table (until WP-1.5) to editable text, one paragraph per row", () => {
-    const { editor } = open("");
+  it("reads an HTML table as a table, its first row the header (TBL-10; text until WP-1.5)", () => {
+    const { editor, md } = open("");
     paste(editor, { "text/html": "<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td><p>1</p></td><td>2</td></tr></tbody></table>" });
-    expect(kinds(editor)).toEqual(["paragraph", "paragraph", "paragraph"]);
-    expect(editor.state.doc.textBetween(0, editor.state.doc.content.size, "\n")).toBe("| A | B |\n| - | - |\n| 1 | 2 |");
+    expect(kinds(editor)[0]).toBe("table");
+    expect(md()).toBe("| A | B |\n| - | - |\n| 1 | 2 |\n");
   });
   it("keeps an image's alt text, and says images were left out (EXT-03 isn't built)", () => {
     const notice = vi.fn();

@@ -131,11 +131,20 @@ export function registerSlash({ store, commands, viewModels, catalog, editorActi
       editorAction("slash.insert", { id: chosen });
     },
   });
-  commands.register<{ kind: string }>({
+  commands.register<{ kind: string; rows?: number; cols?: number; addedRows?: number; addedCols?: number }>({
     id: "paste.notice", title: "command.paste.notice",
-    // Images wait for the image block (EXT-03): they're refused with a message, never dropped silently.
-    run: ({ kind }) => {
+    run: ({ kind, rows, cols, addedRows, addedCols }) => {
+      // Images wait for the image block (EXT-03): they're refused with a message, never dropped silently.
       if (kind === "images") toast(catalog.format("paste.imagesLeftOut"));
+      // A range pasted into a table says its size and how the table grew (Tables → Copy, paste, and sort).
+      if (kind === "tablePasted") {
+        const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+        const args = { rows: n(rows), cols: n(cols), addedRows: n(addedRows), addedCols: n(addedCols) };
+        const key = args.addedRows && args.addedCols ? "paste.tableGrewBoth" : args.addedRows ? "paste.tableGrewRows" : args.addedCols ? "paste.tableGrewColumns" : "paste.tablePasted";
+        toast(catalog.format(key, args));
+      }
+      // Line breaks pasted into a cell became spaces (UNSUP-TABLE-01); said the first time.
+      if (kind === "lineBreaks") toast(catalog.format("paste.lineBreaks"));
     },
   });
 

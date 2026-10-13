@@ -8,6 +8,7 @@ import { Plugin, PluginKey, TextSelection, type EditorState } from "@tiptap/pm/s
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { closeHistory } from "@tiptap/pm/history";
 import type { ResolvedPos } from "@tiptap/pm/model";
+import { CellSelection } from "@tiptap/pm/tables";
 
 export type MarkState = "on" | "off" | "mixed";
 /** The marks the toolbar toggles, in its order. */
@@ -29,6 +30,8 @@ export interface FormatInfo {
   oneBlock: boolean;
   /** The link the selection is entirely inside, or the caret is in. */
   link: { href: string; from: number; to: number } | null;
+  /** In a table: cells hold inline content only, so Turn into doesn't show (TBL-05, TBL-06). */
+  table: boolean;
 }
 
 /** A web address that opens in the browser and can be pasted as a link: http, https, or mailto. */
@@ -71,13 +74,20 @@ export const linkAround = (state: EditorState, pos: number) => linkAt(state, sta
 
 /** What the toolbar and hover card show for the current selection (Text formatting → What it shows). */
 export function formatState(state: EditorState): FormatInfo {
-  const { from, to, empty, $from, $to } = state.selection;
+  const { empty, $from, $to } = state.selection;
+  const cells = state.selection instanceof CellSelection;
   const oneBlock = $from.sameParent($to) && $from.parent.isTextblock;
-  const raw = $from.parent.type.name === "rawMarkdown" || $to.parent.type.name === "rawMarkdown" || !(state.selection instanceof TextSelection);
+  const raw = $from.parent.type.name === "rawMarkdown" || $to.parent.type.name === "rawMarkdown" || !(state.selection instanceof TextSelection || cells);
+  let table = false;
+  for (let d = $from.depth; d > 0; d--) if ($from.node(d).type.name === "table") table = true;
   const counts = Object.fromEntries(TOOLBAR_MARKS.map((m) => [m, 0])) as Record<ToolbarMark, number>;
   let total = 0;
   const blocks = new Set<string>();
   let codeBlock = false;
+  // A cell range is one range per cell (TBL-11); a text selection is one range.
+  for (const { $from: rangeFrom, $to: rangeTo } of state.selection.ranges) {
+  const from = rangeFrom.pos;
+  const to = rangeTo.pos;
   state.doc.nodesBetween(from, to, (node, pos) => {
     if (node.isTextblock) {
       const $p = state.doc.resolve(Math.max(from, pos + 1));
@@ -92,15 +102,16 @@ export function formatState(state: EditorState): FormatInfo {
     for (const m of node.marks) if (m.type.name in counts) counts[m.type.name as ToolbarMark] += n;
     return false;
   });
+  }
   if (blocks.size === 0) blocks.add(blockOf($from));
   const marks = Object.fromEntries(TOOLBAR_MARKS.map((m) => {
     const c = counts[m];
     return [m, total === 0 || c === 0 ? "off" : c >= total ? "on" : "mixed"];
   })) as Record<ToolbarMark, MarkState>;
   let link = null;
-  if (oneBlock) {
+  if (oneBlock && !cells) {
     const at = linkAt(state, $from);
-    if (at && at.from <= from && at.to >= to) link = at;
+    if (at && at.from <= state.selection.from && at.to >= state.selection.to) link = at;
   }
   return {
     text: !empty && !raw && total > 0,
@@ -108,8 +119,9 @@ export function formatState(state: EditorState): FormatInfo {
     block: blocks.size === 1 ? [...blocks][0]! : "mixed",
     codeBlock,
     inlineCode: marks.code === "on",
-    oneBlock,
+    oneBlock: oneBlock && !cells,
     link,
+    table,
   };
 }
 

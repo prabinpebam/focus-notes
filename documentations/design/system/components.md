@@ -3,7 +3,7 @@
 The complete catalog of design-system components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every view in Focus Notes is assembled from this list and nothing else.
 
 > [!NOTE]
-> **TL;DR.** **38 primitives** (Text, Icon, Button, TriggerButton, TextField, Switch, Slider, and so on), plus **5 host components** that wrap imperative DOM (the editor surface, the focus mask, the window frame, the color area, and a virtual list). **13 layouts** (AppRoot, Stack, Inline, Grid, Surface, Layer, Positioner, and so on). **9 block components** that render note content in the editor and on published pages, with image and gallery to come. **38 compound components** (some in pairs, like Menu and MenuItem) that compose them, from Toolbar and Menu to CommandPalette, FileTree, and ConflictResolver, each mapped to the IA components it delivers. Every component has a machine-readable **contract**, and the view schema is generated from those contracts (DSY-05).
+> **TL;DR.** **38 primitives** (Text, Icon, Button, TriggerButton, TextField, Switch, Slider, and so on), plus **6 host components** that wrap imperative DOM (the editor surface, the table controls, the focus mask, the window frame, the color area, and a virtual list). **13 layouts** (AppRoot, Stack, Inline, Grid, Surface, Layer, Positioner, and so on). **9 block components** that render note content in the editor and on published pages, with image and gallery to come. **38 compound components** (some in pairs, like Menu and MenuItem) that compose them, from Toolbar and Menu to CommandPalette, FileTree, and ConflictResolver, each mapped to the IA components it delivers. Every component has a machine-readable **contract**, and the view schema is generated from those contracts (DSY-05).
 
 <h2 id="contracts" data-reader-personas="engineering">Contracts</h2>
 
@@ -87,6 +87,7 @@ Primitives that wrap a library needing direct DOM access. They have contracts li
 | Component | Wraps | Contract highlights |
 | --- | --- | --- |
 | **EditorSurface** | Tiptap and ProseMirror. Note content renders through the [block components](#block-components). | `note` (binding), `readOnly`, `measure`, events `selectionChange`, `contextMenu` |
+| **TableControls** | The table controls drawn over the note from geometry the editor surface publishes: row, column, and table handles with menus and drag to reorder, the + insertion point, New row and New column bars, the column tint, the range outline, and the cell menu ([Tables](../components/tables.html), D-96) | Labels and menus from `vm.table`, `menuRequest`; events `action` (`id`, `table`, `row`, `col`, `index`, `from`, `to`) and `close`. Tokens `cmp.tableControls.*` |
 | **FocusMask** | The focus-mode mask that tracks the caret's visual row ([Focus mode](../../experience/focus-mode.md)) | `active` (binding), `dim` (token) |
 | **WindowFrame** | The transparent window's resize handles, drawn shadow, and snap previews on Windows and Linux | `platform`, `maximized`, `fullScreen` (bindings) |
 | **ColorArea** | The 2-D color picker | `value` (binding), `channels` |
@@ -125,7 +126,7 @@ Note content renders through these, both as editor node views and on published p
 | **ListBlock** | Bulleted, numbered, and task lists, with task checkboxes |
 | **QuoteBlock** | Block quotes |
 | **CodeBlock** | Code with syntax colors from `code.syntax.*` |
-| **TableBlock** | Loop-style tables, with grips and insert lines in the editor ([Tables](../components/tables.html)) |
+| **TableBlock** | Loop-style tables, with grips and insert lines in the editor ([Tables](../components/tables.html)). In WP-1.5 the table renders through the editor surface's own styles (`cmp.editorSurface.table*`), and its grips and insert lines are the TableControls host component (D-96). |
 | **DividerBlock** | Horizontal rules |
 | **InlineMarks** | Bold, italic, strikethrough, inline code, links, and find highlights |
 | **UnknownBlock** | Unknown component syntax, kept verbatim and shown read-only (EXT-05) |
@@ -161,7 +162,7 @@ Compounds compose primitives, layouts, and other compounds. They hold behavior (
 | **LinkEditor** | Positioner, Surface (`keyScope` linkEditor), Stack, Inline, TextField, Button, Text | IA-CMP-LINK | Composed in the canvas view document (D-91). Opens with <kbd>Mod</kbd>+<kbd>K</kbd> or the toolbar's Link. |
 | **SlashMenu** | Positioner (`anchor` caret, `align` start, region "Block menu"), Surface, ResultList (`width` menu), Text | IA-CMP-SLASH | Composed in the canvas view document, like the formatting toolbar (D-91, D-93). Items come from the block registry through `vm.slash`; the editor surface reports the `/query` with its `slash` event and drives the list while focus stays in the note. |
 | **BlockHandle** | Positioner, IconButton, Menu | IA-CMP-HANDLE | Drag handle and block menu. |
-| **TableControls** | Positioner, IconButton, Menu | IA-CMP-TABLE | Row and column grips, insert lines, and the cell menu. |
+| **TableControls** | Positioner, IconButton, Menu | IA-CMP-TABLE | Row and column grips, insert lines, and the cell menu. Built as a host component that draws them itself (see [Host components](#host-components), D-96), with the menus MenuButton opens (`CommandMenu`). |
 | **MovePicker** | Dialog, SearchField, ResultList | IA-CMP-MOVE | Folder picker. Composed in the canvas view document from these parts, like the find bar (D-76, D-91, D-94). |
 | **ConflictResolver** | Dialog, Split, DiffView, Button | IA-CMP-CONFLICT | Side-by-side choice with a merged preview. |
 | **DiffView** | Stack, block components (read-only), Badge | IA-VIEW-HISTORY, IA-CMP-CONFLICT | Highlights changed blocks with `color.findMatch` style tokens. |
