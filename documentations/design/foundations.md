@@ -1,6 +1,6 @@
 # Design foundations
 
-The shared building blocks every view and component uses: layout, spacing, shape, surfaces, type, icons, states, motion, and words. Every value here is a [token](system/tokens.md), and the [design system](system/overview.html) defines how components may use them. The values are proposals, tuned during M2.
+The shared building blocks every view and component uses: layout, spacing, shape, surfaces, type, icons, states, motion, and words. Every value here is a [token](system/tokens.md), and the [design system](system/overview.html) defines how components may use them. The values are proposals, tuned during M1.
 
 > [!NOTE]
 > **TL;DR.** A 4 px spacing grid, a 70-character reading column, and a 44 px top band. Radii step down with size: window 20, sheet and dialog 16, popover and menu 12, control 8. **Frosted** surfaces (blurred and translucent) are used only for things that float over text, and they turn solid when the OS asks for reduced transparency. Note text and interface text have separate type ramps. All icons come from **Fluent UI System Icons** (MIT). Motion is short (80–200 ms) and switches off with reduced motion. Words are plain, in sentence case, and buttons say what they do. Every value traces to a promise or user-can in the decisions at the end of the page.

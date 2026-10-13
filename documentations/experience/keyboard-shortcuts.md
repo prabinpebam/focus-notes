@@ -44,7 +44,7 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 - **Windows: follow common function keys.** <kbd>F2</kbd> renames, <kbd>F3</kbd> finds the next match, <kbd>F11</kbd> is full screen, <kbd>F10</kbd> focuses the toolbar, <kbd>Alt</kbd>+<kbd>F4</kbd> closes the window.
 - **Never bind OS-reserved keys:** <kbd>⌘Tab</kbd>, <kbd>⌘Space</kbd>, <kbd>Alt+Tab</kbd>, <kbd>Win</kbd> combinations, <kbd>Ctrl+Alt+Del</kbd>, and <kbd>Ctrl+Alt+T</kbd> (opens a terminal on Ubuntu).
 - **Web build: work around browser-reserved keys.** Browsers don't let pages use <kbd>Mod</kbd>+<kbd>N</kbd>, <kbd>Mod</kbd>+<kbd>T</kbd>, <kbd>Mod</kbd>+<kbd>W</kbd>, their <kbd>Shift</kbd> versions, or <kbd>Mod</kbd>+<kbd>Tab</kbd>. The *Web* column gives the substitute, and every such command is also in Spotlight.
-- **iPadOS and iOS.** The <kbd>⌘</kbd> bindings match macOS. Safari keeps its tab and window keys, so the web substitutes apply. Holding <kbd>⌘</kbd> only shows the system shortcut overlay for native apps, so <kbd>⌘</kbd>+<kbd>/</kbd> (the app's cheat sheet) fills that role. Bindings Safari reserves are found and documented in the M2 browser test pass.
+- **iPadOS and iOS.** The <kbd>⌘</kbd> bindings match macOS. Safari keeps its tab and window keys, so the web substitutes apply. Holding <kbd>⌘</kbd> only shows the system shortcut overlay for native apps, so <kbd>⌘</kbd>+<kbd>/</kbd> (the app's cheat sheet) fills that role. Bindings Safari reserves are found and documented in the M1 browser test pass.
 
 ### Input rules
 

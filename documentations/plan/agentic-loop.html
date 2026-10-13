@@ -1,0 +1,194 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Plan</p>
+  <h1 class="slate-hero__title">The agentic loop</h1>
+  <p class="slate-hero__summary">How AI agents, working with the owner, carry Focus Notes from this spec to the definition of done: the roles, the work graph they read, the loop each work package goes through, the evidence it leaves, and when the loop stops to ask a person.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>The plan is a graph: <a href="https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json"><code>work-graph.json</code></a> lists 59 work packages with their requirements, dependencies, code areas, and required reviews. An <strong>orchestrator</strong> agent picks a work package whose dependencies are done and briefs it against the <a href="definition-of-done.md#definition-of-ready">definition of ready</a>. A <strong>builder</strong> writes the tests first, then the code and view documents. A <strong>verifier</strong> runs every gate and checks the evidence against the <a href="definition-of-done.md#work-package-definition-of-done">definition of done</a>. Up to four <strong>reviewers</strong> (code, design system, accessibility, security) approve or send it back. After at most three rounds of fixes, or whenever a decision is needed, the loop <strong>escalates to the owner</strong>. Merged work updates the graph and the docs, and the next ready package starts. When a stage's packages are all done, the <strong>stage gate</strong> runs the demo, and the owner accepts it. The loop ends when the <a href="definition-of-done.md#project-definition-of-done">project definition of done</a> is met.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 380" role="img"
+       aria-labelledby="loop-title loop-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="loop-title">The agentic loop for one work package</title>
+    <desc id="loop-desc">Six steps in a row: select, brief, build, verify, review, and integrate. A return path from integrate goes back to select for the next ready work package. When verification fails or reviewers request changes, a fix path returns to build, at most three rounds. From that fix path, work can be escalated to the owner. When a stage is complete, integrate leads to the stage gate, and the owner accepts the demo there.</desc>
+    <g id="loop-steps" data-slate-svg-step="0" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)" text-anchor="middle">
+      <g fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5">
+        <rect id="loop-s1" x="30" y="60" width="140" height="84" rx="14"/>
+        <rect id="loop-s2" x="185" y="60" width="140" height="84" rx="14"/>
+        <rect id="loop-s3" x="340" y="60" width="140" height="84" rx="14"/>
+        <rect id="loop-s4" x="495" y="60" width="140" height="84" rx="14"/>
+        <rect id="loop-s5" x="650" y="60" width="140" height="84" rx="14"/>
+        <rect id="loop-s6" x="805" y="60" width="140" height="84" rx="14"/>
+      </g>
+      <g font-size="18" font-weight="700" fill="var(--color-neutral-fg-1)">
+        <text x="100" y="96" data-slate-fit-target="loop-s1" data-slate-fit-padding="10">1. Select</text>
+        <text x="255" y="96" data-slate-fit-target="loop-s2" data-slate-fit-padding="10">2. Brief</text>
+        <text x="410" y="96" data-slate-fit-target="loop-s3" data-slate-fit-padding="10">3. Build</text>
+        <text x="565" y="96" data-slate-fit-target="loop-s4" data-slate-fit-padding="10">4. Verify</text>
+        <text x="720" y="96" data-slate-fit-target="loop-s5" data-slate-fit-padding="10">5. Review</text>
+        <text x="875" y="96" data-slate-fit-target="loop-s6" data-slate-fit-padding="10">6. Integrate</text>
+      </g>
+      <g font-size="14" fill="var(--color-neutral-fg-2)">
+        <text x="100" y="122" data-slate-fit-target="loop-s1" data-slate-fit-padding="10">ready work</text>
+        <text x="255" y="122" data-slate-fit-target="loop-s2" data-slate-fit-padding="10">tests named first</text>
+        <text x="410" y="122" data-slate-fit-target="loop-s3" data-slate-fit-padding="10">tests, code, views</text>
+        <text x="565" y="122" data-slate-fit-target="loop-s4" data-slate-fit-padding="10">gates, evidence</text>
+        <text x="720" y="122" data-slate-fit-target="loop-s5" data-slate-fit-padding="10">up to 4 reviews</text>
+        <text x="875" y="122" data-slate-fit-target="loop-s6" data-slate-fit-padding="10">merge, nightly</text>
+      </g>
+    </g>
+    <g id="loop-flow" data-slate-svg-step="1" data-slate-svg-effect="draw" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M170 102 H183"/><path d="M177 96 L183 102 L177 108"/>
+      <path d="M325 102 H338"/><path d="M332 96 L338 102 L332 108"/>
+      <path d="M480 102 H493"/><path d="M487 96 L493 102 L487 108"/>
+      <path d="M635 102 H648"/><path d="M642 96 L648 102 L642 108"/>
+      <path d="M790 102 H803"/><path d="M797 96 L803 102 L797 108"/>
+      <path d="M875 60 V30 H100 V56"/><path d="M94 50 L100 58 L106 50"/>
+    </g>
+    <g id="loop-fix" data-slate-svg-step="2" data-slate-svg-effect="draw" fill="none" stroke="var(--color-status-warning-stroke)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M565 144 V190"/>
+      <path d="M720 144 V190 H410 V148"/><path d="M404 154 L410 146 L416 154"/>
+    </g>
+    <g id="loop-gate" data-slate-svg-step="3" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)" text-anchor="middle">
+      <path d="M875 144 V246" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M869 240 L875 248 L881 240" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M488 190 V282" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="2.5" stroke-dasharray="6 5" stroke-linecap="round"/>
+      <path d="M482 276 L488 284 L494 276" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M573 310 H799" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="2.5" stroke-dasharray="6 5" stroke-linecap="round"/>
+      <path d="M793 304 L801 310 L793 316" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect id="loop-gatebox" x="805" y="250" width="140" height="84" rx="14" fill="var(--color-brand-bg)"/>
+      <rect id="loop-owner" x="403" y="286" width="170" height="70" rx="14" fill="var(--color-neutral-bg-3)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <text x="875" y="286" font-size="18" font-weight="700" fill="var(--color-on-brand)" data-slate-fit-target="loop-gatebox" data-slate-fit-padding="10">Stage gate</text>
+      <text x="875" y="312" font-size="14" fill="var(--color-on-brand)" data-slate-fit-target="loop-gatebox" data-slate-fit-padding="10">demo, stage DoD</text>
+      <text x="488" y="316" font-size="18" font-weight="700" fill="var(--color-neutral-fg-1)" data-slate-fit-target="loop-owner" data-slate-fit-padding="10">Owner</text>
+      <text x="488" y="340" font-size="14" fill="var(--color-neutral-fg-2)" data-slate-fit-target="loop-owner" data-slate-fit-padding="10">decisions, approvals</text>
+    </g>
+    <g id="loop-labels" data-slate-svg-step="4" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)" font-size="15" fill="var(--color-neutral-fg-2)">
+      <text x="487" y="22" text-anchor="middle">next ready work package</text>
+      <text x="500" y="214">fix and retry, at most 3 rounds</text>
+      <text x="478" y="246" text-anchor="end">escalate</text>
+      <text x="865" y="200" text-anchor="end">stage complete</text>
+      <text x="689" y="300" text-anchor="middle">accepts the demo</text>
+    </g>
+  </svg>
+  <figcaption>One work package goes around the loop once when everything passes, and returns to Build for at most three rounds of fixes before a person is asked. The stage gate closes each stage with the owner.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>Step</th><th>Who</th><th>Output</th><th>On failure</th></tr></thead>
+    <tbody>
+      <tr><td>1. Select</td><td>Orchestrator</td><td>A ready work package</td><td>Nothing ready: report what's blocked</td></tr>
+      <tr><td>2. Brief</td><td>Orchestrator</td><td>A brief meeting the definition of ready, with tests named</td><td>Spec gap: escalate</td></tr>
+      <tr><td>3. Build</td><td>Builder</td><td>Tests, code, and view documents in a pull request</td><td>None</td></tr>
+      <tr><td>4. Verify</td><td>Verifier</td><td>Gate results and the evidence record</td><td>Back to Build</td></tr>
+      <tr><td>5. Review</td><td>Up to four reviewers</td><td>Approvals</td><td>Back to Build</td></tr>
+      <tr><td>6. Integrate</td><td>Docs keeper</td><td>Merged change, nightly build, updated graph and docs</td><td>Revert</td></tr>
+      <tr><td>Stage gate</td><td>Owner</td><td>Stage accepted, preview released</td><td>Back to the failing work package</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2 id="roles" data-reader-personas="engineering product">Roles</h2>
+
+<table>
+  <thead><tr><th>Role</th><th>Does</th><th>Never does</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Owner</strong> (a person)</td><td>Makes decisions, approves visual baselines and anything security-sensitive, runs and accepts each stage demo.</td><td>Has to read code to know whether something is done.</td></tr>
+    <tr><td><strong>Orchestrator</strong></td><td>Reads the work graph, picks ready work packages, writes briefs, keeps the graph's statuses current, and reports progress.</td><td>Writes product code, or starts work that isn't ready.</td></tr>
+    <tr><td><strong>Builder</strong></td><td>Writes the acceptance tests first, then the code, view documents, fixtures, and docs changes, in small pull requests.</td><td>Weakens a test, budget, or baseline to make it pass. Adds markup or styles outside <code>packages/ui</code>.</td></tr>
+    <tr><td><strong>Verifier</strong></td><td>Runs every gate, fills the evidence record, and checks it item by item against the definition of done.</td><td>Approves its own fixes, or passes an item without evidence.</td></tr>
+    <tr><td><strong>Code reviewer</strong></td><td>Reviews correctness, clarity, tests, and fit with the architecture.</td><td>Reviews work it built.</td></tr>
+    <tr><td><strong>Design-system reviewer</strong></td><td>Reviews view documents, new components and tokens, visual diffs, and conformance to the design pages.</td><td>Accepts a one-off look instead of a component change.</td></tr>
+    <tr><td><strong>Accessibility reviewer</strong></td><td>Reviews keyboard paths, names, focus, and screen-reader behavior against the ARIA Authoring Practices.</td><td>Accepts "will fix later".</td></tr>
+    <tr><td><strong>Security reviewer</strong></td><td>Reviews anything touching credentials, the network, Electron, sealing, publishing, agents, or dependencies, against the threat model.</td><td>Approves a new network destination or stored data without a decision.</td></tr>
+    <tr><td><strong>Docs keeper</strong></td><td>Updates the spec pages to match what was built, records decisions, and updates the roadmap's "what you can do now".</td><td>Edits <code>seed-specs.md</code>.</td></tr>
+  </tbody>
+</table>
+
+<p>Each role has an instruction file in <code>.github/agents/</code>, written in WP-0.1 and improved at every stage retrospective. All roles also follow the repository's <code>AGENTS.md</code>. A role can be played by different agents or models, but one agent never builds and reviews the same work.</p>
+
+<h2 id="work-graph" data-reader-personas="engineering">The work graph</h2>
+
+<p><a href="https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json"><code>work-graph.json</code></a> is the plan in machine-readable form, kept in step with the <a href="implementation-plan.md">implementation plan</a> (the plan check fails CI if they disagree). Each work package has an <code>id</code>, <code>stage</code>, <code>title</code>, <code>summary</code>, <code>requirements</code>, <code>dependsOn</code>, <code>touches</code> (code areas), <code>reviews</code>, <code>specs</code> (the pages to implement), <code>lookahead</code>, and <code>status</code>.</p>
+
+<table>
+  <thead><tr><th>Rule</th><th>Detail</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Ready</strong></td><td>Every <code>dependsOn</code> package is <em>done</em>, the previous stage's gate has passed (unless <code>lookahead</code>), and the brief meets the definition of ready.</td></tr>
+    <tr><td><strong>Parallel work</strong></td><td>Up to three work packages run at once, and only when their <code>touches</code> lists don't overlap. Work on the critical path goes first.</td></tr>
+    <tr><td><strong>Statuses</strong></td><td><code>planned</code> → <code>ready</code> → <code>building</code> → <code>verifying</code> → <code>reviewing</code> → <code>done</code>, or <code>blocked</code> with a reason and an escalation.</td></tr>
+    <tr><td><strong>Coverage</strong></td><td>The plan check fails CI unless every requirement belongs to exactly one work package, every dependency exists in the same or an earlier stage, and the graph has no cycles.</td></tr>
+    <tr><td><strong>Changes</strong></td><td>Splitting a work package keeps its ID as the parent (<code>WP-1.5a</code>, <code>WP-1.5b</code>). Moving requirements between stages follows <a href="roadmap.md#changing-the-plan">Changing the plan</a>.</td></tr>
+  </tbody>
+</table>
+
+<h2 data-reader-personas="engineering">The loop, step by step</h2>
+
+<ol class="slate-steps">
+  <li class="slate-step"><p class="slate-step__title">1. Select</p><p>The orchestrator lists ready work packages and picks the one on the critical path, or the oldest. If none are ready, it reports what's blocked and why.</p></li>
+  <li class="slate-step"><p class="slate-step__title">2. Brief</p><p>It writes the brief: the requirements with their user-can and acceptance criteria, the spec sections, the test names for every acceptance check, the view-document outlines, and any new component, token, command, dependency, or network destination. A spec gap or contradiction stops here and goes to the owner.</p></li>
+  <li class="slate-step"><p class="slate-step__title">3. Build</p><p>The builder writes the failing tests first, then the smallest code that passes them, in pull requests of about 400 lines or fewer. UI is built only as view documents and catalog components.</p></li>
+  <li class="slate-step"><p class="slate-step__title">4. Verify</p><p>The verifier runs every gate on three platforms (tests, journeys, <code>ui:check</code>, visual regression, axe, budgets, CodeQL, the license check) and fills the evidence record. Any missing evidence counts as a failure.</p></li>
+  <li class="slate-step"><p class="slate-step__title">5. Review</p><p>The reviews the work package lists run in parallel. Each approves or requests changes with specific references. Changes go back to Build.</p></li>
+  <li class="slate-step"><p class="slate-step__title">6. Integrate</p><p>The change merges to <code>main</code>, the nightly build is checked on all three platforms, the docs keeper updates the spec pages and the graph, and the orchestrator recomputes progress.</p></li>
+  <li class="slate-step"><p class="slate-step__title">Stage gate</p><p>When every work package in a stage is done, the verifier runs the <a href="definition-of-done.md#stage-definition-of-done">stage definition of done</a>, a preview release is built, and the owner runs the demo script. Acceptance opens the next stage.</p></li>
+</ol>
+
+<h2 data-reader-personas="engineering">The evidence record</h2>
+
+<p>Every pull request carries one, and the verifier checks it against the definition of done line by line:</p>
+
+<pre><code>{
+  "workPackage": "WP-1.7",
+  "requirements": {
+    "FOC-01": { "tests": ["focus/row-highlight.spec.ts"], "result": "pass" },
+    "PRF-01": { "benchmark": "typing-50k-focus", "p95Ms": 11.2, "p99Ms": 19.8, "result": "pass" }
+  },
+  "gates": { "unit": "pass", "journeys": "pass", "uiCheck": "pass", "visual": "pass, 0 unapproved",
+             "axe": "0 violations", "budgets": "pass", "codeql": "0 high", "license": "pass" },
+  "platforms": ["windows-11", "macos-15", "ubuntu-24.04"],
+  "designSystem": { "newComponents": [], "newTokens": [] },
+  "network": { "newDestinations": [] },
+  "docs": ["experience/focus-mode.md"],
+  "decisions": [],
+  "reviews": { "code": "approved", "design-system": "approved", "accessibility": "approved" }
+}</code></pre>
+
+<h2 id="escalation" data-reader-personas="engineering product">Escalation</h2>
+
+<p>The loop stops and asks the owner when:</p>
+<ul>
+  <li>The spec is missing, ambiguous, or contradicts itself, or a decision is needed. The question comes with options and a recommendation.</li>
+  <li>A work package fails verification or review three times.</li>
+  <li>A change would add a network destination, stored personal data, a permission, or a dependency under a case-by-case license.</li>
+  <li>A test, budget, or visual baseline would need to be weakened or changed.</li>
+  <li>Anything touches credentials, sealing, publishing, or agent permissions in a way the threat model doesn't already cover.</li>
+  <li>A stage is ready for its gate.</li>
+</ul>
+
+<h2 data-reader-personas="engineering product">Guardrails and progress</h2>
+
+<ul>
+  <li><strong>Never skip a gate</strong>, never merge red, and never mark something done without evidence.</li>
+  <li><strong>Never edit <code>seed-specs.md</code></strong>, and never change a requirement to match the code. Change the spec through the chain and a decision.</li>
+  <li><strong><code>main</code> is always releasable</strong>, and a change that breaks the nightly build is reverted first and fixed second.</li>
+  <li><strong>Progress is measured, not estimated</strong>: for the current stage, the share of its requirements passing their acceptance checks, the gates that are green, and the demo steps that pass as journey tests. For the project, the stages that have passed their gates.</li>
+  <li><strong>The loop ends</strong> when the <a href="definition-of-done.md#project-definition-of-done">project definition of done</a> is met, and not before.</li>
+</ul>
+
+<h2 data-reader-personas="product engineering">Plan decisions</h2>
+
+<table>
+  <thead><tr><th>ID</th><th>Decision</th><th>Rationale</th><th>Alternatives rejected</th></tr></thead>
+  <tbody>
+    <tr><td>PD-LOOP-01</td><td>The plan is a machine-readable graph, generated from one source and checked in CI.</td><td>Agents choose work from data, not from reading prose, and the plan can't silently lose a requirement.</td><td>A task list in prose.</td></tr>
+    <tr><td>PD-LOOP-02</td><td>Separate builder, verifier, and reviewer roles, never the same agent for building and reviewing.</td><td>Independent checks catch what the builder's own context hides.</td><td>One agent that builds and checks itself.</td></tr>
+    <tr><td>PD-LOOP-03</td><td>At most three fix rounds before escalating.</td><td>Repeated failure usually means a spec or design problem a person should see, and endless loops waste effort.</td><td>Unlimited retries.</td></tr>
+    <tr><td>PD-LOOP-04</td><td>Tests are named in the brief, before code.</td><td>The acceptance bar is fixed before anyone is tempted to fit it to the code.</td><td>Tests written after the code.</td></tr>
+  </tbody>
+</table>

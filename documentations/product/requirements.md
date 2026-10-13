@@ -9,7 +9,7 @@ This catalogue turns the [seed spec](../seed-specs.md) and the owner's later dec
 
 | Priority | Meaning |
 | --- | --- |
-| **P0** | Needed for the first usable release (see [Roadmap](../plan/roadmap.md) M1 to M5). |
+| **P0** | Needed for the first usable release (see [Roadmap](../plan/roadmap.md) M0 to M5). |
 | **P1** | Needed for the full vision. Ships after P0. |
 | **Later** | Extension point. The architecture must allow it, but it isn't built yet. |
 

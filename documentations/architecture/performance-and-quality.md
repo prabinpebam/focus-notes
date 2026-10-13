@@ -3,7 +3,7 @@
 How fast Focus Notes must be, how big a workspace it must handle, how it's tested, and the accessibility and language standards it meets.
 
 > [!NOTE]
-> **TL;DR.** Typing must never lag: at most **16 ms from keystroke to paint** at the 95th percentile, even in a 50,000-word note. The app opens to a usable caret in **under 1.5 s** (warm start), Spotlight answers within its budgets, and a workspace of **10,000 notes** stays fast. Every budget is measured in CI on the release build, on fixed reference hardware. Quality relies on a test pyramid (Vitest, Playwright for web and Electron, a Markdown round-trip corpus, axe and manual accessibility passes, IME and keyboard-layout tests), a tested support matrix, crash recovery that loses at most a second of typing, and **WCAG 2.2 AA**. These targets are set by this spec, not measured. They're checked from M1 onward.
+> **TL;DR.** Typing must never lag: at most **16 ms from keystroke to paint** at the 95th percentile, even in a 50,000-word note. The app opens to a usable caret in **under 1.5 s** (warm start), Spotlight answers within its budgets, and a workspace of **10,000 notes** stays fast. Every budget is measured in CI on the release build, on fixed reference hardware. Quality relies on a test pyramid (Vitest, Playwright for web and Electron, a Markdown round-trip corpus, axe and manual accessibility passes, IME and keyboard-layout tests), a tested support matrix, crash recovery that loses at most a second of typing, and **WCAG 2.2 AA**. These targets are set by this spec, not measured. They're checked from M0 onward, each from the stage that builds what it measures.
 
 ## Performance budgets
 

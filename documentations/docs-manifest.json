@@ -7,7 +7,7 @@
       "order": 0,
       "icon": "home",
       "status": "draft",
-      "updated": "2026-10-14"
+      "updated": "2026-10-13"
     },
     {
       "path": "seed-specs.md",
@@ -375,7 +375,34 @@
       "order": 500,
       "icon": "timeline",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
+      "group": "Plan"
+    },
+    {
+      "path": "plan/implementation-plan.md",
+      "title": "Implementation plan",
+      "order": 501,
+      "icon": "list_alt",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Plan"
+    },
+    {
+      "path": "plan/definition-of-done.md",
+      "title": "Definition of done",
+      "order": 502,
+      "icon": "fact_check",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Plan"
+    },
+    {
+      "path": "plan/agentic-loop.html",
+      "title": "The agentic loop",
+      "order": 503,
+      "icon": "autorenew",
+      "status": "draft",
+      "updated": "2026-10-13",
       "group": "Plan"
     },
     {
@@ -384,7 +411,7 @@
       "order": 510,
       "icon": "rule",
       "status": "stable",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Plan"
     },
     {
@@ -402,7 +429,7 @@
       "order": 530,
       "icon": "warning",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-13",
       "group": "Plan"
     }
   ]

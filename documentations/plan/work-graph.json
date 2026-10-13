@@ -1,0 +1,1756 @@
+{
+  "$comment": "The implementation plan in machine-readable form. Agents read this file to choose ready work. Keep it in step with implementation-plan.md; the plan check (WP-0.1) fails CI if they disagree.",
+  "version": 1,
+  "updated": "2026-10-13",
+  "stages": [
+    {
+      "id": "M0",
+      "title": "Walking skeleton",
+      "outcome": "A preview app for Windows, macOS, and Linux opens to the blank canvas with the trigger. You can type paragraphs and headings into a Markdown file you chose, it saves on its own, and the note is back when you reopen the app.",
+      "channel": "Preview 0.0.x on GitHub Releases (pre-release, unsigned)",
+      "gate": "GATE-M0"
+    },
+    {
+      "id": "M1",
+      "title": "Writing",
+      "outcome": "Open or create a Markdown file and write a real document: blocks, Markdown shortcuts, inline formatting with the contextual toolbar, links, the slash menu, Loop-style tables, the trigger toolbar and ⋯ menu, focus mode, Light, Dark, and System themes, font size, find and replace, and the Basic and Writer shortcut layers with the cheat sheet.",
+      "channel": "Preview 0.1.x",
+      "gate": "GATE-M1"
+    },
+    {
+      "id": "M2",
+      "title": "Desktop and local folders",
+      "outcome": "The real desktop window (20 px corners and app-built window management on Windows and Linux, the native window and full menu bar on macOS), full screen, and a folder of notes managed in the Files panel, with link updates, crash recovery, and a versioned workspace format.",
+      "channel": "Preview 0.2.x",
+      "gate": "GATE-M2"
+    },
+    {
+      "id": "M3",
+      "title": "Your notes on GitHub",
+      "outcome": "The first run signs in through Git's own tools, creates your workspace in your GitHub account (notes repository, private repository, Pages site), and from then on every change is saved as Git commits and synced. Notes are private or public, conflicts are resolved without loss, and deleted notes can be restored.",
+      "channel": "Preview 0.3.x",
+      "gate": "GATE-M3"
+    },
+    {
+      "id": "M4",
+      "title": "Find anything, make it yours",
+      "outcome": "Spotlight on <kbd>Mod</kbd>+<kbd>/</kbd> finds notes, headings, text, folders, commands, and settings, and acts on them. Quick open, find in all notes, the complete Power shortcut layer, and the theme manager with live preview and the contrast guard.",
+      "channel": "Preview 0.4.x",
+      "gate": "GATE-M4"
+    },
+    {
+      "id": "M5",
+      "title": "Publish and share",
+      "outcome": "The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. The Get started page offers the downloads, and every release ships with checksums, an SBOM, and attestations.",
+      "channel": "1.0 stable on GitHub Releases",
+      "gate": "GATE-M5"
+    },
+    {
+      "id": "M6",
+      "title": "The browser",
+      "outcome": "The web app at the product site's `/app/` edits and syncs your workspace through the GitHub API with a token you create, and new users can start in the browser.",
+      "channel": "1.1",
+      "gate": "GATE-M6"
+    },
+    {
+      "id": "M7",
+      "title": "Agents",
+      "outcome": "A local MCP server, permissions you control, attributed and undoable agent changes, the `focus-notes` command-line tool with JSON output, `focus-notes://` deep links, and the published design-system catalog.",
+      "channel": "1.2",
+      "gate": "GATE-M7"
+    },
+    {
+      "id": "M8",
+      "title": "Polish and pro features",
+      "outcome": "Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, signed builds with automatic updates and channels, store listings, and more interface languages.",
+      "channel": "1.x",
+      "gate": "GATE-M8"
+    },
+    {
+      "id": "Later",
+      "title": "Components",
+      "outcome": "Image, then gallery, each added as one block registration with directive syntax.",
+      "channel": "Later releases",
+      "gate": "GATE-Later"
+    }
+  ],
+  "implicitDependency": "Every work package depends on the gate of the previous stage, unless lookahead is true.",
+  "workPackages": [
+    {
+      "id": "WP-0.1",
+      "stage": "M0",
+      "title": "Repository, CI, and agent loop",
+      "summary": "The monorepo, toolchain, CI on three operating systems, the license check, CodeQL, Dependabot, actions pinned by SHA, branch protection, the work graph, and the agent role instructions.",
+      "requirements": [
+        "PKG-01",
+        "PKG-04",
+        "LIC-01",
+        "LIC-02",
+        "SEC-04",
+        "SEC-07",
+        "QLT-01",
+        "DOC-01",
+        "DOC-02"
+      ],
+      "dependsOn": [],
+      "touches": [
+        "repo",
+        "ci"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "plan/distribution.md",
+        "plan/agentic-loop.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-0.2",
+      "stage": "M0",
+      "title": "Editor spike and block registry",
+      "summary": "Both Markdown bridges against the round-trip corpus, the decision recorded, and the block registry contract.",
+      "requirements": [
+        "EDT-01",
+        "EXT-01"
+      ],
+      "dependsOn": [
+        "WP-0.1"
+      ],
+      "touches": [
+        "editor",
+        "markdown"
+      ],
+      "reviews": [
+        "code"
+      ],
+      "specs": [
+        "architecture/editor-engine.md",
+        "architecture/content-model.md"
+      ],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-0.3",
+      "stage": "M0",
+      "title": "Token source and build",
+      "summary": "DTCG sources for every tier, Style Dictionary output, and alias checks.",
+      "requirements": [
+        "DSY-01",
+        "DSY-02"
+      ],
+      "dependsOn": [
+        "WP-0.1"
+      ],
+      "touches": [
+        "tokens"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/system/tokens.md",
+        "design/foundations.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-0.4",
+      "stage": "M0",
+      "title": "First primitives, layouts, and contracts",
+      "summary": "Text, Icon, Button, IconButton, Tooltip, SignalDot, Stack, Inline, Surface, Layer, and Positioner, with contracts, the gallery, and the component process.",
+      "requirements": [
+        "DSY-04",
+        "DSY-05",
+        "DSY-10"
+      ],
+      "dependsOn": [
+        "WP-0.3"
+      ],
+      "touches": [
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/system/components.md",
+        "design/system/overview.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-0.5",
+      "stage": "M0",
+      "title": "UI schema, ui:check, and renderer spike",
+      "summary": "The schema generated from contracts, `ui:check`, the renderer, message keys, and the overhead benchmark on Settings, Files, and Spotlight prototypes.",
+      "requirements": [
+        "DSY-07",
+        "DSY-08",
+        "DSY-11",
+        "I18N-01"
+      ],
+      "dependsOn": [
+        "WP-0.4"
+      ],
+      "touches": [
+        "ui-runtime",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/system/views-as-data.md"
+      ],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-0.6",
+      "stage": "M0",
+      "title": "Electron shell and window spike",
+      "summary": "The hardened Electron shell with a typed preload bridge, an allow-listed network policy, and the 20 px window spike on Windows 10, Windows 11, and Ubuntu.",
+      "requirements": [
+        "PKG-03",
+        "SEC-01",
+        "PKG-06",
+        "PRV-01"
+      ],
+      "dependsOn": [
+        "WP-0.1"
+      ],
+      "touches": [
+        "desktop"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "experience/desktop-app.html",
+        "architecture/security-and-privacy.md"
+      ],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-0.7",
+      "stage": "M0",
+      "title": "Canvas skeleton",
+      "summary": "The canvas view document with the trigger and a minimal editor saving to a local file, inside the start-time budget.",
+      "requirements": [
+        "UI-01",
+        "UI-02",
+        "PRF-02"
+      ],
+      "dependsOn": [
+        "WP-0.2",
+        "WP-0.5",
+        "WP-0.6"
+      ],
+      "touches": [
+        "views",
+        "editor",
+        "desktop"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "experience/main-ui.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-0.8",
+      "stage": "M0",
+      "title": "File format schemas",
+      "summary": "JSON Schemas for front matter, settings, themes, keybindings, access, and the invite template.",
+      "requirements": [
+        "AGT-08"
+      ],
+      "dependsOn": [
+        "WP-0.1"
+      ],
+      "touches": [
+        "schemas"
+      ],
+      "reviews": [
+        "code"
+      ],
+      "specs": [
+        "architecture/agents.md",
+        "architecture/content-model.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-0.9",
+      "stage": "M0",
+      "title": "Nightly and preview builds",
+      "summary": "Unsigned nightly builds from `main`, and preview pre-releases at each stage exit.",
+      "requirements": [],
+      "dependsOn": [
+        "WP-0.6"
+      ],
+      "touches": [
+        "ci",
+        "desktop"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "plan/distribution.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-1.1",
+      "stage": "M1",
+      "title": "Block editor core",
+      "summary": "Blocks, Markdown shortcuts, undo, round-trip fidelity, the extension syntax, and text in any script.",
+      "requirements": [
+        "EDT-02",
+        "EDT-04",
+        "EDT-05",
+        "EDT-08",
+        "EDT-10",
+        "EXT-02",
+        "EXT-05",
+        "I18N-02"
+      ],
+      "dependsOn": [
+        "WP-0.7"
+      ],
+      "touches": [
+        "editor",
+        "markdown",
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/editing.md",
+        "architecture/editor-engine.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-1.2",
+      "stage": "M1",
+      "title": "Inline formatting, contextual toolbar, and links",
+      "summary": "Marks, the contextual toolbar, the link editor, and the hover card.",
+      "requirements": [
+        "EDT-03",
+        "EDT-12",
+        "EDT-13",
+        "UI-06"
+      ],
+      "dependsOn": [
+        "WP-1.1",
+        "WP-1.4"
+      ],
+      "touches": [
+        "editor",
+        "ui",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/components/text-formatting.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-1.3",
+      "stage": "M1",
+      "title": "Slash menu and paste",
+      "summary": "The slash menu from the block registry, and sanitized paste of Markdown, HTML, and plain text.",
+      "requirements": [
+        "EDT-06",
+        "EDT-09",
+        "SEC-02"
+      ],
+      "dependsOn": [
+        "WP-1.1",
+        "WP-1.4"
+      ],
+      "touches": [
+        "editor",
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "design/components/text-formatting.html",
+        "experience/editing.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-1.4",
+      "stage": "M1",
+      "title": "Compound components, first set",
+      "summary": "Menu, Popover, Dialog, Toolbar, Toast, Field, Tabs, and ResultList, with command-driven items and full gallery coverage.",
+      "requirements": [
+        "DSY-09",
+        "DSY-12"
+      ],
+      "dependsOn": [
+        "WP-0.5"
+      ],
+      "touches": [
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/system/components.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-1.5",
+      "stage": "M1",
+      "title": "Loop-style tables",
+      "summary": "Tables with hover insertion, grips, cell selection, keyboard movement, and spreadsheet paste.",
+      "requirements": [
+        "TBL-01",
+        "TBL-02",
+        "TBL-03",
+        "TBL-05",
+        "TBL-06",
+        "TBL-07",
+        "TBL-08",
+        "TBL-10",
+        "TBL-11"
+      ],
+      "dependsOn": [
+        "WP-1.1",
+        "WP-1.4"
+      ],
+      "touches": [
+        "editor",
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/components/tables.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-1.6",
+      "stage": "M1",
+      "title": "Trigger toolbar and ⋯ menu",
+      "summary": "The six-action toolbar and the ⋯ menu as view documents, keyboard and screen-reader complete.",
+      "requirements": [
+        "UI-03",
+        "UI-04",
+        "UI-05",
+        "UI-07",
+        "DSY-06"
+      ],
+      "dependsOn": [
+        "WP-1.4",
+        "WP-1.8"
+      ],
+      "touches": [
+        "views",
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/main-ui.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-1.7",
+      "stage": "M1",
+      "title": "Focus mode",
+      "summary": "The row mask with every edge case, inside the typing budget.",
+      "requirements": [
+        "FOC-01",
+        "FOC-02",
+        "FOC-03",
+        "FOC-04",
+        "FOC-05",
+        "FOC-06",
+        "PRF-01"
+      ],
+      "dependsOn": [
+        "WP-1.1"
+      ],
+      "touches": [
+        "editor",
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/focus-mode.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-1.8",
+      "stage": "M1",
+      "title": "Commands, keymap, and cheat sheet",
+      "summary": "The command registry, the Basic and Writer layers per platform, browser substitutes, and the cheat sheet.",
+      "requirements": [
+        "KEY-02",
+        "KEY-05",
+        "KEY-06"
+      ],
+      "dependsOn": [
+        "WP-1.4"
+      ],
+      "touches": [
+        "core",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/keyboard-shortcuts.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-1.9",
+      "stage": "M1",
+      "title": "Themes, appearance, and modes",
+      "summary": "Paper, Ink, and the other built-ins, System switching, fonts and size, and every token mode including forced colors.",
+      "requirements": [
+        "THM-01",
+        "THM-02",
+        "THM-03",
+        "THM-06",
+        "THM-08",
+        "DSY-03",
+        "A11Y-02"
+      ],
+      "dependsOn": [
+        "WP-1.4"
+      ],
+      "touches": [
+        "tokens",
+        "ui",
+        "core"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/theming.md",
+        "design/system/tokens.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-1.10",
+      "stage": "M1",
+      "title": "Find and replace in a note",
+      "summary": "The find bar with live count, options, replace, and replace all as one undo step.",
+      "requirements": [
+        "FND-01",
+        "FND-02"
+      ],
+      "dependsOn": [
+        "WP-1.1",
+        "WP-1.4"
+      ],
+      "touches": [
+        "editor",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/find-and-replace.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-1.11",
+      "stage": "M1",
+      "title": "Writing hardening",
+      "summary": "The stage's accessibility audit, open-note budget, and the M1 demo as an automated journey test.",
+      "requirements": [
+        "A11Y-01",
+        "PRF-03"
+      ],
+      "dependsOn": [
+        "WP-1.2",
+        "WP-1.3",
+        "WP-1.5",
+        "WP-1.6",
+        "WP-1.7",
+        "WP-1.9",
+        "WP-1.10"
+      ],
+      "touches": [
+        "all"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "architecture/performance-and-quality.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-2.1",
+      "stage": "M2",
+      "title": "Windows and Linux window",
+      "summary": "The transparent 20 px window with app-built moving, resizing, maximizing, snapping, Snap Layouts, the system menu, and DPI handling.",
+      "requirements": [
+        "DSK-01",
+        "DSK-03",
+        "DSK-08"
+      ],
+      "dependsOn": [
+        "WP-0.6",
+        "WP-1.4"
+      ],
+      "touches": [
+        "desktop",
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "experience/desktop-app.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-2.2",
+      "stage": "M2",
+      "title": "Title bar, full screen, and macOS menu",
+      "summary": "The title bar band, full screen, and the native macOS menu bar generated from commands.",
+      "requirements": [
+        "DSK-02",
+        "DSK-04",
+        "DSK-05"
+      ],
+      "dependsOn": [
+        "WP-2.1",
+        "WP-1.8"
+      ],
+      "touches": [
+        "desktop",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/desktop-app.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-2.3",
+      "stage": "M2",
+      "title": "Local workspace model",
+      "summary": "Folder workspaces, `workspace.json` with its format version and migrations, and title-based file names.",
+      "requirements": [
+        "DST-05",
+        "FIL-07"
+      ],
+      "dependsOn": [
+        "WP-1.1"
+      ],
+      "touches": [
+        "core",
+        "workspace"
+      ],
+      "reviews": [
+        "code"
+      ],
+      "specs": [
+        "architecture/content-model.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-2.4",
+      "stage": "M2",
+      "title": "Files panel and file operations",
+      "summary": "The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to….",
+      "requirements": [
+        "FIL-01",
+        "FIL-02",
+        "FIL-03",
+        "FIL-08"
+      ],
+      "dependsOn": [
+        "WP-2.3",
+        "WP-1.4"
+      ],
+      "touches": [
+        "views",
+        "ui",
+        "workspace"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/views/files.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-2.5",
+      "stage": "M2",
+      "title": "Link updates",
+      "summary": "Relative links updated on every rename and move.",
+      "requirements": [
+        "FIL-09"
+      ],
+      "dependsOn": [
+        "WP-2.4"
+      ],
+      "touches": [
+        "workspace",
+        "markdown"
+      ],
+      "reviews": [
+        "code"
+      ],
+      "specs": [
+        "experience/files-and-sharing.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-2.6",
+      "stage": "M2",
+      "title": "Recovery journal and resource budgets",
+      "summary": "The one-second recovery journal, and memory and idle CPU budgets on 10,000 notes.",
+      "requirements": [
+        "QLT-03",
+        "PRF-04"
+      ],
+      "dependsOn": [
+        "WP-2.3"
+      ],
+      "touches": [
+        "core",
+        "desktop"
+      ],
+      "reviews": [
+        "code"
+      ],
+      "specs": [
+        "architecture/performance-and-quality.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-3.1",
+      "stage": "M3",
+      "title": "Setup engine and workspace template",
+      "summary": "Create my workspace in the user's account from the template, including its AGENTS.md.",
+      "requirements": [
+        "FRE-08",
+        "AGT-07"
+      ],
+      "dependsOn": [
+        "WP-2.3"
+      ],
+      "touches": [
+        "github",
+        "template"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "experience/first-run.md",
+        "architecture/repository-and-publishing.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-3.2",
+      "stage": "M3",
+      "title": "First run and sign-in",
+      "summary": "The setup steps, sign-in through Git Credential Manager, the GitHub CLI, or a token, identity, and create or clone.",
+      "requirements": [
+        "FRE-01",
+        "FRE-02",
+        "FRE-03",
+        "FRE-04",
+        "FRE-05",
+        "FRE-06",
+        "SEC-03"
+      ],
+      "dependsOn": [
+        "WP-3.1",
+        "WP-1.4"
+      ],
+      "touches": [
+        "views",
+        "desktop",
+        "github"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "experience/first-run.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-3.3",
+      "stage": "M3",
+      "title": "Local Git adapter, save, and sync",
+      "summary": "Commits for every change, push and pull, the lock file, and readable commit messages.",
+      "requirements": [
+        "EDT-11",
+        "FIL-05"
+      ],
+      "dependsOn": [
+        "WP-2.3"
+      ],
+      "touches": [
+        "git",
+        "workspace"
+      ],
+      "reviews": [
+        "code"
+      ],
+      "specs": [
+        "architecture/desktop-and-git.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-3.4",
+      "stage": "M3",
+      "title": "Public and private roots",
+      "summary": "The private repository as a separately synced submodule, visibility per note, private by default, and private settings.",
+      "requirements": [
+        "SHR-01",
+        "SHR-02",
+        "FIL-06",
+        "PRV-03"
+      ],
+      "dependsOn": [
+        "WP-3.3"
+      ],
+      "touches": [
+        "git",
+        "workspace",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "experience/files-and-sharing.md",
+        "architecture/desktop-and-git.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-3.5",
+      "stage": "M3",
+      "title": "Conflicts and Recently deleted",
+      "summary": "The conflict resolver and restoring from Git history.",
+      "requirements": [
+        "FIL-12",
+        "FIL-10"
+      ],
+      "dependsOn": [
+        "WP-3.3",
+        "WP-2.4"
+      ],
+      "touches": [
+        "git",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/components/feedback-and-dialogs.md",
+        "design/views/files.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-3.6",
+      "stage": "M3",
+      "title": "Account settings and data inventory",
+      "summary": "Switch account, sign out, and remove a workspace, deleting exactly what the inventory lists.",
+      "requirements": [
+        "FRE-07",
+        "PRV-02"
+      ],
+      "dependsOn": [
+        "WP-3.2"
+      ],
+      "touches": [
+        "views",
+        "desktop"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "architecture/security-and-privacy.md",
+        "design/views/secondary-views.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-4.1",
+      "stage": "M4",
+      "title": "Search index",
+      "summary": "A MiniSearch index in a worker, on the device only, inside the budgets.",
+      "requirements": [
+        "SPT-07",
+        "SPT-08"
+      ],
+      "dependsOn": [
+        "WP-2.3"
+      ],
+      "touches": [
+        "core"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "experience/spotlight.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-4.2",
+      "stage": "M4",
+      "title": "Spotlight",
+      "summary": "The command palette with every result type, quick actions, modes, prefixes, and quick open.",
+      "requirements": [
+        "SPT-01",
+        "SPT-02",
+        "SPT-03",
+        "SPT-04",
+        "SPT-05",
+        "FIL-04",
+        "KEY-01"
+      ],
+      "dependsOn": [
+        "WP-4.1",
+        "WP-1.8"
+      ],
+      "touches": [
+        "views",
+        "ui",
+        "core"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/spotlight.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-4.3",
+      "stage": "M4",
+      "title": "Find in all notes",
+      "summary": "Grouped results across the workspace.",
+      "requirements": [
+        "FND-04"
+      ],
+      "dependsOn": [
+        "WP-4.1"
+      ],
+      "touches": [
+        "views",
+        "core"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/find-and-replace.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-4.4",
+      "stage": "M4",
+      "title": "Power shortcut layer",
+      "summary": "The complete Basic, Writer, and Power layers.",
+      "requirements": [
+        "KEY-03"
+      ],
+      "dependsOn": [
+        "WP-4.2"
+      ],
+      "touches": [
+        "core"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/keyboard-shortcuts.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-4.5",
+      "stage": "M4",
+      "title": "Theme manager and contrast guard",
+      "summary": "The gallery with live preview, reading settings, and the contrast guard.",
+      "requirements": [
+        "THM-07",
+        "THM-13"
+      ],
+      "dependsOn": [
+        "WP-1.9"
+      ],
+      "touches": [
+        "views",
+        "ui",
+        "tokens"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/views/theme-manager.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-5.1",
+      "stage": "M5",
+      "title": "Static renderer and public pages",
+      "summary": "Public pages rendered from the reader views and block components, deployed by the user's workflow.",
+      "requirements": [
+        "SHR-03",
+        "SHR-06",
+        "PKG-02",
+        "PRV-04",
+        "PRF-06"
+      ],
+      "dependsOn": [
+        "WP-3.4",
+        "WP-1.1"
+      ],
+      "touches": [
+        "publish",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "architecture/repository-and-publishing.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-5.2",
+      "stage": "M5",
+      "title": "Sealing, leak check, and pinned workflow",
+      "summary": "Per-build sealing, keyrings, the leak check, and the reusable workflow pinned by SHA with verification.",
+      "requirements": [
+        "SHR-04",
+        "SHR-11",
+        "SEC-05",
+        "SEC-06"
+      ],
+      "dependsOn": [
+        "WP-5.1"
+      ],
+      "touches": [
+        "publish",
+        "ci"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "architecture/repository-and-publishing.html#sealing-and-share-links"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-5.3",
+      "stage": "M5",
+      "title": "Audiences, passcodes, and invites",
+      "summary": "The Share popover, audiences, generated and custom passcodes, expiry, withdrawal, and the invite.",
+      "requirements": [
+        "SHR-05",
+        "SHR-07",
+        "SHR-08",
+        "SHR-09"
+      ],
+      "dependsOn": [
+        "WP-5.2"
+      ],
+      "touches": [
+        "views",
+        "workspace"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "design/views/sharing.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-5.4",
+      "stage": "M5",
+      "title": "Share reader",
+      "summary": "The reader with magic links, name and passcode, and the page weight budget.",
+      "requirements": [
+        "SHR-10",
+        "PRF-05"
+      ],
+      "dependsOn": [
+        "WP-5.2"
+      ],
+      "touches": [
+        "publish",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "design/views/sharing.md#the-share-reader"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-5.5",
+      "stage": "M5",
+      "title": "Release pipeline and template releases",
+      "summary": "Draft releases with installers, the reader bundle, checksums, SBOM, attestations, and template updates.",
+      "requirements": [
+        "DST-03",
+        "DST-06"
+      ],
+      "dependsOn": [
+        "WP-0.9",
+        "WP-5.1"
+      ],
+      "touches": [
+        "ci",
+        "template"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "plan/distribution.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-5.6",
+      "stage": "M5",
+      "title": "Get started page",
+      "summary": "The product site's Get started page, rendered from view documents.",
+      "requirements": [
+        "DST-01"
+      ],
+      "dependsOn": [
+        "WP-5.5"
+      ],
+      "touches": [
+        "site",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/views/get-started.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-5.7",
+      "stage": "M5",
+      "title": "Diagnostics and release qualification",
+      "summary": "Local diagnostics, Report a problem, and the full support-matrix pass for 1.0.",
+      "requirements": [
+        "QLT-04",
+        "QLT-02"
+      ],
+      "dependsOn": [
+        "WP-5.3",
+        "WP-5.4",
+        "WP-5.6"
+      ],
+      "touches": [
+        "all"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "architecture/performance-and-quality.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-6.1",
+      "stage": "M6",
+      "title": "GitHub API adapter and web app",
+      "summary": "The web build with the API adapter, token sign-in, and the offline queue.",
+      "requirements": [
+        "PKG-05"
+      ],
+      "dependsOn": [
+        "WP-3.1"
+      ],
+      "touches": [
+        "github",
+        "web"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "architecture/overview.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-6.2",
+      "stage": "M6",
+      "title": "Start in the browser",
+      "summary": "Web setup through GitHub's own pages and a repository-scoped token.",
+      "requirements": [
+        "DST-02"
+      ],
+      "dependsOn": [
+        "WP-6.1",
+        "WP-5.6"
+      ],
+      "touches": [
+        "web",
+        "site"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "design/views/get-started.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-7.1",
+      "stage": "M7",
+      "title": "Agent permissions and attribution",
+      "summary": "Permission checks in the command layer, agent trailers, the Agent badge, undo, and safety rules.",
+      "requirements": [
+        "AGT-03",
+        "AGT-04",
+        "AGT-09"
+      ],
+      "dependsOn": [
+        "WP-3.3"
+      ],
+      "touches": [
+        "core",
+        "git"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "architecture/agents.md#permissions"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-7.2",
+      "stage": "M7",
+      "title": "MCP server",
+      "summary": "The stdio MCP server with its tools, resources, and prompts.",
+      "requirements": [
+        "AGT-01"
+      ],
+      "dependsOn": [
+        "WP-7.1"
+      ],
+      "touches": [
+        "mcp"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "architecture/agents.md#mcp-server"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-7.3",
+      "stage": "M7",
+      "title": "Command-line tool and deep links",
+      "summary": "`focus-notes` with `--json`, and read-only deep links.",
+      "requirements": [
+        "AGT-05",
+        "AGT-06"
+      ],
+      "dependsOn": [
+        "WP-7.1"
+      ],
+      "touches": [
+        "cli",
+        "desktop"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "architecture/agents.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-7.4",
+      "stage": "M7",
+      "title": "Settings → Agents and the published catalog",
+      "summary": "Connection snippets, permission controls, recent agent changes, and the design-system catalog on the product site.",
+      "requirements": [
+        "AGT-02",
+        "DSY-13"
+      ],
+      "dependsOn": [
+        "WP-7.2"
+      ],
+      "touches": [
+        "views",
+        "site"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "architecture/agents.md",
+        "design/system/views-as-data.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-8.1",
+      "stage": "M8",
+      "title": "Editor pro",
+      "summary": "The block handle, column alignment, sorting, the Pro layer, and find in selection.",
+      "requirements": [
+        "EDT-07",
+        "TBL-04",
+        "TBL-09",
+        "KEY-04",
+        "FND-03"
+      ],
+      "dependsOn": [
+        "WP-1.5",
+        "WP-4.4"
+      ],
+      "touches": [
+        "editor",
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/editing.md",
+        "design/components/tables.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-8.2",
+      "stage": "M8",
+      "title": "Custom and generated themes",
+      "summary": "Custom themes, sync, named schemes, import, generation from a seed color, and shuffle.",
+      "requirements": [
+        "THM-04",
+        "THM-05",
+        "THM-09",
+        "THM-10",
+        "THM-11",
+        "THM-12"
+      ],
+      "dependsOn": [
+        "WP-4.5"
+      ],
+      "touches": [
+        "views",
+        "tokens"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/views/theme-manager.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-8.3",
+      "stage": "M8",
+      "title": "Toolbar and keybinding customization",
+      "summary": "Choosing the six toolbar actions, and `keybindings.json` with conflict warnings.",
+      "requirements": [
+        "UI-08",
+        "KEY-07"
+      ],
+      "dependsOn": [
+        "WP-4.2"
+      ],
+      "touches": [
+        "core",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/keyboard-shortcuts.md",
+        "experience/main-ui.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-8.4",
+      "stage": "M8",
+      "title": "Workspace pro",
+      "summary": "Replace across notes, Spotlight filters and preview, sorting and duplicating, and note history.",
+      "requirements": [
+        "FND-05",
+        "SPT-06",
+        "FIL-11",
+        "FIL-13"
+      ],
+      "dependsOn": [
+        "WP-4.3",
+        "WP-3.3"
+      ],
+      "touches": [
+        "views",
+        "git",
+        "core"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "experience/find-and-replace.md",
+        "design/views/secondary-views.md#note-history"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-8.5",
+      "stage": "M8",
+      "title": "Multiple windows",
+      "summary": "One note per window, with state kept per window.",
+      "requirements": [
+        "DSK-06"
+      ],
+      "dependsOn": [
+        "WP-2.2"
+      ],
+      "touches": [
+        "desktop"
+      ],
+      "reviews": [
+        "code"
+      ],
+      "specs": [
+        "experience/desktop-app.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-8.6",
+      "stage": "M8",
+      "title": "Signing, updates, channels, and stores",
+      "summary": "Code signing and notarization, automatic updates, Stable and Beta, winget, and Homebrew. Getting a certificate starts early.",
+      "requirements": [
+        "DSK-07",
+        "DST-04",
+        "DST-07"
+      ],
+      "dependsOn": [
+        "WP-5.5"
+      ],
+      "touches": [
+        "ci",
+        "desktop"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "plan/distribution.md#signing"
+      ],
+      "lookahead": true,
+      "status": "planned"
+    },
+    {
+      "id": "WP-8.7",
+      "stage": "M8",
+      "title": "More interface languages",
+      "summary": "Translations through the externalized messages, with pseudo-localization checks.",
+      "requirements": [
+        "I18N-03"
+      ],
+      "dependsOn": [
+        "WP-0.5"
+      ],
+      "touches": [
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "architecture/performance-and-quality.md#language-and-text"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-9.1",
+      "stage": "Later",
+      "title": "Image block",
+      "summary": "An image block registration.",
+      "requirements": [
+        "EXT-03"
+      ],
+      "dependsOn": [
+        "WP-1.1"
+      ],
+      "touches": [
+        "editor",
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "architecture/editor-engine.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-9.2",
+      "stage": "Later",
+      "title": "Gallery block",
+      "summary": "A gallery block registration.",
+      "requirements": [
+        "EXT-04"
+      ],
+      "dependsOn": [
+        "WP-9.1"
+      ],
+      "touches": [
+        "editor",
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "architecture/editor-engine.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    }
+  ]
+}
