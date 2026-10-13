@@ -1,33 +1,33 @@
 # Web app
 
-How Focus Notes runs from your own GitHub Pages site: one repository is your whole instance, the app writes locally first in the browser, and public and private notes sync to your repository and its private submodule. Nothing is hosted by anyone else.
+How Focus Notes runs from your own GitHub Pages site: one repository is your whole instance, the app writes locally first in the browser, public and private notes sync to your repository and its private submodule, and visitors see only your public notes. Nothing runs on a server.
 
 > [!NOTE]
-> **TL;DR.** Your copy of the Focus Notes repository is your instance ([D-84](../plan/decisions.md)): the app's source, its *Deploy app* workflow, the docs, **public notes in `notes/`**, and a **private repository linked at `private/`** as a submodule, as in the owner's personal-site. The workflow deploys the app to **your own GitHub Pages site**; nobody hosts anything for anyone else, and the owner's site is just the owner's own app ([D-86](../plan/decisions.md)). The app knows its repository from its own address. You can write at once: notes live in your browser's **IndexedDB** and work offline. **Connect GitHub** once: make the private repository and one **fine-grained token** for both repositories from pre-filled GitHub pages, and paste the token ([D-81](../plan/decisions.md)). The app then commits public notes to your repository and private notes to the private one through the **GitHub REST API**, and pulls changes made elsewhere; a note changed in two places keeps both versions ([D-82](../plan/decisions.md)). Covers PKG-05, PKG-07, PKG-08, DST-02, and FRE-09.
+> **TL;DR.** One repository is a whole instance ([D-84](../plan/decisions.md), [D-87](../plan/decisions.md)): **public notes in `notes/`**, a **private repository linked at `private/`** as a submodule (as in the owner's personal-site), and a *Deploy app* workflow that publishes the app to **its own GitHub Pages site**. People who just want to use Focus Notes make their instance from the small **template repository** (its workflow deploys the released app; nothing to build) or download the desktop app from GitHub Releases; people who want to improve it fork the project repository, which is also the owner's own instance. Anyone without the owner's token is a **visitor**: they see only public notes, plus **Use this app for yourself**. The app knows its repository from its own address. You can write at once: notes live in your browser's **IndexedDB** and work offline. **Connect GitHub** once: make the private repository and one **fine-grained token** for both repositories from pre-filled GitHub pages, and paste the token ([D-81](../plan/decisions.md)). The app then commits public notes to your repository and private notes to the private one through the **GitHub REST API**, and pulls changes made elsewhere; a note changed in two places keeps both versions ([D-82](../plan/decisions.md)). Covers PKG-05, PKG-07, PKG-08, DST-02, and FRE-09.
 
 ## The picture
 
 | Piece | Where it lives | What it does |
 | --- | --- | --- |
-| **Your repository** | `github.com/you/focus-notes` (public: GitHub Pages on free plans needs it) | The app's source, the *Deploy app* workflow, the docs, and your **public notes** in `notes/`. |
-| **Your private repository** | `github.com/you/focus-notes-private` (private), linked at `private/` | Your **private notes** in `notes/`, and synced settings in `.focus-notes/`. Never deployed. |
-| **Your site** | `https://you.github.io/focus-notes/` | Serves the app, and (from M5) your public notes as read-only pages. Static files only. |
+| **Your repository** | `github.com/you/notes`, made from the template (public: GitHub Pages on free plans needs it) | Your **public notes** in `notes/` and the *Deploy app* workflow, which deploys the released app at a pinned version. The project repository is the same shape plus the app's source, and it builds the app from source. |
+| **Your private repository** | `github.com/you/notes-private` (private), linked at `private/` | Your **private notes** in `notes/`, and synced settings in `.focus-notes/`. Never deployed. |
+| **Your site** | `https://you.github.io/notes/` | Serves the app and your public notes (for visitors, and from M5 as read-only pages too). Static files only. |
 | **Your browser** | IndexedDB, per site | Notes, settings, unsynced changes, and the encrypted token. |
 | **GitHub's API** | `api.github.com` | The only place the app sends anything. It accepts calls from web pages (CORS) with a token. |
 
-The project runs nothing, registers nothing, and distributes nothing: no OAuth app, no server, no product site, no downloads for others, no telemetry (D-21, PKG-06, D-86). The owner's own repository is simply one more instance.
+The project runs nothing and registers nothing: no OAuth app, no server, no telemetry (D-21, PKG-06). The only hosting is GitHub Pages (each instance's own site) and GitHub Releases (the desktop app and the web app bundle). The owner's Pages site is the owner's own app; others use their own instances (D-87).
 
 ## Getting your own instance
 
-1. On the Focus Notes repository, choose **Use this template** (or fork it) into your account. Keep it public.
-2. In your copy, open **Settings → Pages** and set **Source** to **GitHub Actions**.
-3. Run the **Deploy app** workflow (it also runs on every push to `main`). When it finishes, open `https://<you>.github.io/<repository>/`.
+1. On the Focus Notes **template repository**, choose **Use this template** to make your instance in your account. Keep it public.
+2. In your instance, open **Settings → Pages** and set **Source** to **GitHub Actions**.
+3. Run the **Deploy app** workflow (it also runs on every push to `main`). It downloads the released web app at the version it pins, checks its checksum and attestation, and deploys it with your public notes. When it finishes, open `https://<you>.github.io/<repository>/`.
 
-The README says exactly this; there's no other getting-started page (DST-01). The app is built with relative paths, so it works under any repository name. Updating is bringing your copy up to date with upstream Focus Notes (*Sync fork*, or a pull request for template copies); the app's code, workflows, and docs never touch `notes/` or `private/`, so updates can't change your notes (DST-06). The workflow then redeploys.
+Prefer the desktop app? Download it from the latest GitHub Release instead (or as well); it opens the same instance. Want to change the app itself? Fork the project repository; its *Deploy app* workflow builds the app from source. The *Use this app for yourself* dialog and the README give these same steps (DST-01). The app is built with relative paths, so it works under any repository name. Updates arrive as pull requests that move the pinned version (DST-06); merging one redeploys.
 
 ## Connecting GitHub
 
-The app reads its repository from its address: on `https://you.github.io/focus-notes/` it's `you/focus-notes`. The first run offers two ways to start (FRE-09):
+The app reads its repository from its address: on `https://you.github.io/notes/` it's `you/notes`. The first run offers two ways to start (FRE-09):
 
 | Choice | What happens |
 | --- | --- |
@@ -35,12 +35,22 @@ The app reads its repository from its address: on `https://you.github.io/focus-n
 | **Connect GitHub** | Three short steps, each opening a pre-filled GitHub page in a new tab and coming back. |
 
 1. **Your private repository.** Opens `github.com/new` pre-filled: `<repository>-private`, private. Already have one? Type its name instead.
-2. **Your token.** Opens `github.com/settings/personal-access-tokens/new` pre-filled: name *Focus Notes*, a description, **Contents: read and write**, and a one-year expiry. GitHub's form can't pre-select repositories, so the step says: choose **Only select repositories**, then your Focus Notes repository and your private repository.
+2. **Your token.** Opens `github.com/settings/personal-access-tokens/new` pre-filled: name *Focus Notes*, a description, **Contents: read and write**, and a one-year expiry. GitHub's form can't pre-select repositories, so the step says: choose **Only select repositories**, then your instance repository and your private repository.
 3. **Paste and check.** The app checks the token against both repositories and shows who you're signed in as. If `private/` isn't linked yet, it links it (one commit adding `.gitmodules` and the submodule entry). Errors say what to fix: a wrong name, a token without access to one of the repositories, a read-only token, an expired token, or being offline.
 
 Why a token rather than *Sign in with GitHub*: GitHub's sign-in endpoints don't accept calls from web pages, so a static site could only use them through a server or a registered app, both ruled out (D-21). github.dev and Codespaces can't be driven from another site either, so the app links to them (*Open in github.dev*) rather than writing through them.
 
 **After connecting:** the trigger's ⋯ menu has **Sync now** and **Sign out of GitHub** (deletes the token from this browser; notes stay). When the token is about to expire, the trigger offers **Renew token**, which opens the same pre-filled link.
+
+## Visitors and the owner
+
+Whoever opens an instance's site without its owner's token is a **visitor** (PKG-09). Visitors see the instance's public notes, read-only: the canvas shows a note, and *Open…* lists the public notes. They never see private notes (those aren't on the site at all), can't edit, and nothing syncs. The trigger's toolbar has **Use this app for yourself** (DST-01), a dialog that says:
+
+- Focus Notes is a writing app you run yourself: your notes live in your own GitHub repositories, your app runs on your own GitHub Pages site, and nothing goes through a server, including the person whose site you're on.
+- **Get your own:** create a GitHub account (if you don't have one), make your instance from the template, turn on GitHub Pages, open your site, and connect. Each step links to GitHub's own page.
+- **Or download the desktop app** for Windows, macOS, or Linux from the latest GitHub Release.
+
+The **owner** is whoever has connected with a token that can write to the instance repository, in this browser. The deploy publishes public notes with the site (a `notes/` folder and an index), so visitors read them without calling GitHub's API.
 
 ## Public and private notes
 

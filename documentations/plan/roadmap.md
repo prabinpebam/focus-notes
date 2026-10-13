@@ -11,9 +11,9 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | --- | --- | --- | --- | --- |
 | **M0: Walking skeleton** | It runs. | The team, on their own computers | Preview 0.0.x on GitHub Releases (pre-release, unsigned) | 29 |
 | **M1: Writing** | Write a real document. | The owner, for real documents | Preview 0.1.x | 56 |
-| **MW: Your Focus Notes on GitHub Pages** | The seed's main workflows, in any browser. | The owner, then anyone | Preview 0.2.x | 18 |
+| **MW: Your Focus Notes on GitHub Pages** | The seed's main workflows, in any browser. | The owner, then anyone | Preview 0.2.x | 20 |
 | **M4: Find anything, make it yours** | Everything is one keystroke away. | Invited testers | Preview 0.4.x | 13 |
-| **M5: Publish and share** | Version 1.0. | Anyone | 1.0 stable on GitHub Releases | 21 |
+| **M5: Publish and share** | Version 1.0. | Anyone | 1.0 stable on GitHub Releases | 20 |
 | **M2: The desktop app** | A dedicated desktop experience. | Anyone who prefers it | 1.x | 9 |
 | **M3: Desktop sign-in and Git** | Your instance on your computer. | Anyone who prefers it | 1.x | 16 |
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
@@ -50,7 +50,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 </li>
 <li class="slate-step">
 <p class="slate-step__title">MW: Your Focus Notes on GitHub Pages (The seed's main workflows, in any browser)</p>
-<p>Your copy of the Focus Notes repository deploys the app to its own GitHub Pages site. Write at once, locally and offline; connect GitHub once with a token from a pre-filled link, and public notes sync to `notes/` in your repository and private notes to its `private/` repository. Create, rename, delete, and move notes and folders in the Files panel, and make notes public or private. <a href="implementation-plan.md#mw">Details</a>. DST-02, DST-05, FIL-01 to FIL-03, FIL-06 to FIL-09, FRE-09, PKG-05, PKG-07, PKG-08, PRF-09, PRF-11, PRV-03, SHR-01, SHR-02.</p>
+<p>Your instance (made from the template, or the project repository for its owner) deploys the app to its own GitHub Pages site. Write at once, locally and offline; connect GitHub once with a token from a pre-filled link, and public notes sync to `notes/` in your repository and private notes to its `private/` repository. Visitors see only public notes and *Use this app for yourself*. Create, rename, delete, and move notes and folders in the Files panel, and make notes public or private. <a href="implementation-plan.md#mw">Details</a>. DST-01, DST-02, DST-05, FIL-01 to FIL-03, FIL-06 to FIL-09, FRE-09, PKG-05, PKG-07 to PKG-09, PRF-09, PRF-11, PRV-03, SHR-01, SHR-02.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M4: Find anything, make it yours (Everything is one keystroke away)</p>
@@ -58,7 +58,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M5: Publish and share (Version 1.0)</p>
-<p>The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. The Get started page offers the downloads, and every release ships with checksums, an SBOM, and attestations. <a href="implementation-plan.md#m5">Details</a>. DST-01, DST-03, DST-06, PKG-02, PRF-05, PRF-06, PRF-12, PRV-04, QLT-02, QLT-04, SEC-05, SEC-06, SHR-03 to SHR-11.</p>
+<p>The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. The Get started page offers the downloads, and every release ships with checksums, an SBOM, and attestations. <a href="implementation-plan.md#m5">Details</a>. DST-03, DST-06, PKG-02, PRF-05, PRF-06, PRF-12, PRV-04, QLT-02, QLT-04, SEC-05, SEC-06, SHR-03 to SHR-11.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M2: The desktop app (A dedicated desktop experience)</p>

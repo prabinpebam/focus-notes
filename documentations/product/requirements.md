@@ -3,7 +3,7 @@
 This catalogue turns the [seed spec](../seed-specs.md) and the owner's later decisions ([Decisions](../plan/decisions.md), 2026-10-13) into testable requirements. Every requirement has a stable ID, a priority, the source it comes from, and the page that specifies it in detail. Requirements are the bottom link of [the articulation chain](spec/chain.md): each one is listed against the [user-can](spec/user-can.md) capabilities it builds, which trace up through [scenarios](spec/scenarios.md) to the [customer promises](spec/customer-promises.md).
 
 > [!NOTE]
-> **TL;DR.** 194 requirements in 25 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
+> **TL;DR.** 195 requirements in 25 areas. **P0** means the first usable release, **P1** follows soon after, and **Later** marks planned extension points. Requirements marked *(derived)* aren't stated by the owner but are needed to meet one of their requirements, and each one says which. The owner's 2026-10-13 decisions added the desktop window and title bar (DSK), first run and sign-in (FRE), keyboard shortcuts (KEY), find and replace (FND), Spotlight (SPT), and licensing (LIC).
 
 ## Priority legend
 
@@ -158,14 +158,15 @@ Seed: *"managed as a github repo… hosted in github pages… web or an electron
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| PKG-01 | One repository is a whole Focus Notes instance, as the seed spec says: the app's source, its *Deploy app* workflow, the docs, public notes in `notes/`, and private notes in a private repository linked at `private/` as a submodule (the owner's personal-site pattern). The project's own repository is an instance too, and *Use this template* (or a fork) makes a new one (D-84). | P0 |
-| PKG-02 | The repository's *Deploy app* workflow publishes, to its own GitHub Pages site, the app at the root and each public note as a read-only page; with share links, sealed private pages too (D-84). | P0 |
+| PKG-01 | The project repository holds the app's source, docs, releases, and the instance template, and is also the owner's own instance (public notes in `notes/`, the private repository at `private/`). People who want to use Focus Notes make their instance from the **template repository**, which holds only their content and a *Deploy app* workflow; people who want to improve it fork the project repository (D-87). | P0 |
+| PKG-02 | Each instance's *Deploy app* workflow publishes the app and the instance's public notes to its own GitHub Pages. The project repository builds the app from source; instances made from the template deploy the released web app bundle at a pinned version, so their owners never build anything (D-87). | P0 |
 | PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access, for people who want a dedicated desktop experience (D-80). | P0 |
 | PKG-04 | The product repository builds and tests without any user workspace, credentials, or secrets. | P0 |
 | PKG-05 | The web app is the primary way to use Focus Notes: each user's copy of the Focus Notes repository builds and deploys it to their own GitHub Pages site, and it runs in any modern browser with nothing to download (D-80). | P0 |
-| PKG-06 | Nothing is hosted, registered, or distributed by the project: no OAuth app, client ID, server, product site, downloads, store listings, or telemetry. Each instance needs only its owner's GitHub account and its own copy of the repository (D-21, D-86). | P0 |
+| PKG-06 | Nothing hosted or registered by the project: no OAuth app, client ID, server, or telemetry. Each user's instance needs only their own GitHub account plus the public release files on GitHub (D-21, D-87). | P0 |
 | PKG-07 | Local first in the browser: notes, settings, and the queue of unsynced changes live in IndexedDB, survive reloads, work offline, and need no account to start writing. The app asks the browser to keep its storage (`navigator.storage.persist`) (D-82). | P0 |
 | PKG-08 | Sync from the browser: public notes are committed to the instance repository and private notes to its private repository, through the GitHub REST API, several files in one commit per repository, and pulled on open, on focus, and every few minutes. A note changed in both places keeps both versions, so no text is ever lost (D-82, D-84). | P0 |
+| PKG-09 | Visitor mode: someone who opens an instance without its owner's token sees only its public notes, read-only, with the note list. Private notes, editing, and syncing need the owner's token. Visitors also see **Use this app for yourself** (DST-01) (D-87). | P0 |
 
 ## Desktop app (DSK)
 
@@ -179,7 +180,7 @@ Owner: *"Our electron app will have 20px rounded corners with custom title bar."
 | DSK-04 | Full-screen mode (<kbd>⌃⌘F</kbd> / <kbd>F11</kbd>, and in ⋯). The title bar reappears when the pointer reaches the top edge. | P0 |
 | DSK-05 | A full native menu bar on macOS that lists every command with its shortcut. | P0 |
 | DSK-06 | Multiple windows, one note per window. | P1 |
-| DSK-07 | Signed builds (when the owner has certificates) and automatic updates from the owner's own copy's GitHub Releases (D-86). | P1 |
+| DSK-07 | Signed builds and automatic updates from GitHub Releases. | P1 |
 | DSK-08 | Windows and Linux: edge and corner snapping with previews, a Snap Layouts picker on the maximize button, an app-drawn system menu (<kbd>Alt</kbd>+<kbd>Space</kbd>), a drawn shadow with a click-through margin, and correct behavior across monitors with different scaling. See [Desktop app](../experience/desktop-app.html#window-management-on-windows-and-linux). | P0 |
 
 ## First run and sign-in (FRE)
@@ -283,7 +284,7 @@ Cross-cutting requirements serving CP-SAFE-01 and CP-OWN-01 across every capabil
 | SEC-02 | Markdown and HTML are sanitized everywhere they're rendered. Raw HTML in notes is shown as text. Only safe URL schemes are allowed. Trusted Types in the app. | P0 |
 | SEC-03 | Credentials live only in Git's credential helper. API tokens are held in memory. Browser tokens are encrypted with a non-extractable key, or kept for the session. Tokens never appear in logs, URLs, or process arguments. | P0 |
 | SEC-04 | Supply chain: lockfiles, Dependabot, CodeQL, secret scanning with push protection, actions pinned by SHA, release SBOM, checksums, and artifact attestations. | P0 |
-| SEC-05 | Each copy's workflows pin every third-party action by commit SHA and build only from the repository's own source; nothing is fetched from the project at build or run time, and upstream updates arrive as changes the owner reviews (D-86). | P0 |
+| SEC-05 | Instances' workflows pin every action by commit SHA and verify the web app bundle by SHA-256 and attestation before deploying it. Updates arrive only as pull requests. | P0 |
 | SEC-06 | Every Pages deploy runs the leak check and fails if private text or file names appear in the output. | P0 |
 | SEC-07 | `SECURITY.md` and GitHub private vulnerability reporting, with acknowledgement within 7 days. Documented responses for leaked share secrets, keys, and tokens. | P0 |
 
@@ -374,10 +375,10 @@ Owner: *"How do we package and distribute this?… It would be ideal if people c
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| DST-01 | The README's *Get your own Focus Notes* section is the only getting-started guide: copy the repository (*Use this template* or fork), turn on GitHub Pages, and open your site; for the desktop app, build it from your copy. No page or download is offered to visitors (D-86). | P0 |
-| DST-02 | Start in the browser: *Use this template* (or fork), turn on GitHub Pages with GitHub Actions, and open your site. The README says exactly that, and the app's first run does the rest (D-80, D-86). | P0 |
-| DST-03 | Each copy's own release workflow builds the desktop app for Windows, macOS, and Linux (installers, checksums, SBOM, and attestations) into that copy's own GitHub Releases, for its owner's use only (D-86). | P0 |
-| DST-04 | Building the desktop app on your own computer: one command (`pnpm dist`) makes an installer for that computer from your copy (D-86). | P1 |
+| DST-01 | **Use this app for yourself:** in visitor mode, a button opens a dialog that explains how Focus Notes works (your own independent instance in your own GitHub account, no server, nothing shared with the person whose site this is) and gives the steps: create a GitHub account, make your instance from the template, turn on GitHub Pages, and connect; plus **Download the desktop app** from the latest GitHub Release. The README says the same (D-87). | P0 |
+| DST-02 | Start in the browser: make your instance from the Focus Notes template (nothing to build), turn on GitHub Pages with GitHub Actions, and open your site; the app's first run does the rest (D-80, D-87). | P0 |
+| DST-03 | A release pipeline in the project repository that builds the desktop installers for Windows, macOS, and Linux and the web app bundle, plus checksums, an SBOM, and attestations, into a draft GitHub Release with smoke tests. | P0 |
+| DST-04 | Store listings: winget and Homebrew cask (and Flathub later), updated automatically from releases. | P1 |
 | DST-05 | `.focus-notes/workspace.json` with `formatVersion`. Migrations ask first, and older apps refuse to write newer formats. | P0 |
-| DST-06 | Updates never touch content: the app's code, workflows, and docs are kept apart from content (`notes/`, `private/`, `.focus-notes/`), so bringing a copy up to date with upstream Focus Notes only changes the app (D-84, D-86). | P0 |
-| DST-07 | Updating your instance: the app shows when your copy is behind upstream Focus Notes and links to GitHub's *Sync fork* (or an update pull request for copies made from the template); the Deploy app workflow then redeploys (D-86). | P1 |
+| DST-06 | The instance template repository is generated from `templates/workspace/` at each release; its *Deploy app* workflow deploys the released web app bundle by version and checksum, and updates arrive as pull requests that move the version (D-87). | P0 |
+| DST-07 | Stable and Beta update channels. | P1 |

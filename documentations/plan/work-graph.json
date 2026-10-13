@@ -1286,8 +1286,7 @@
       "title": "Release pipeline and template releases",
       "summary": "Draft releases with installers, the reader bundle, checksums, SBOM, attestations, and template updates.",
       "requirements": [
-        "DST-03",
-        "DST-06"
+        "DST-03"
       ],
       "dependsOn": [
         "WP-0.9",
@@ -1310,10 +1309,10 @@
     {
       "id": "WP-5.6",
       "stage": "M5",
-      "title": "Get started page",
-      "summary": "The product site's Get started page, rendered from view documents.",
+      "title": "Instance template and update pull requests",
+      "summary": "The template repository generated from templates/workspace/ at each release, its pinned Deploy app workflow, and update pull requests.",
       "requirements": [
-        "DST-01"
+        "DST-06"
       ],
       "dependsOn": [
         "WP-5.5"
@@ -1393,11 +1392,13 @@
     {
       "id": "WP-6.2",
       "stage": "MW",
-      "title": "Start in the browser and connect GitHub",
-      "summary": "Template or fork, turn on Pages, open your site; the web first run: start writing, or connect GitHub with a pre-filled notes repository and a pre-filled fine-grained token.",
+      "title": "Start in the browser, visitor mode, and Use this app for yourself",
+      "summary": "Make your instance from the template; the web first run with Connect GitHub; visitor mode with public notes only; and the Use this app for yourself dialog.",
       "requirements": [
+        "DST-01",
         "DST-02",
-        "FRE-09"
+        "FRE-09",
+        "PKG-09"
       ],
       "dependsOn": [
         "WP-6.1"

@@ -6,12 +6,15 @@ A calm, Markdown-native writing app: a blank canvas, a single red trigger at the
 
 **License:** [MIT](LICENSE). Security reports: see [SECURITY.md](SECURITY.md). Instructions for AI agents: [AGENTS.md](AGENTS.md).
 
-## Get your own Focus Notes (in the browser)
+## Use Focus Notes yourself
 
-1. Choose **Use this template** (or **Fork**) at the top of this page to copy the repository into your account. Keep it public: GitHub Pages on free plans serves only public repositories. Your notes go in a separate repository, private by default.
-2. In your copy, open **Settings → Pages** and set **Source** to **GitHub Actions**.
-3. Open **Actions → Deploy app → Run workflow** (it also runs on every push to `main`). When it finishes, open `https://<your-username>.github.io/<repository>/`.
-4. Start writing. Notes stay in your browser until you choose **Connect GitHub…** in the toolbar's ⋯ menu, which walks you through making your notes repository and a token limited to it, both from pre-filled GitHub pages.
+This repository is the app's source, and its GitHub Pages site is the owner's own instance. To use Focus Notes, get **your own** instance; nothing is shared with anyone else's:
+
+1. Make your instance from the Focus Notes **template repository** (*Use this template*). Keep it public: GitHub Pages on free plans serves only public repositories. Private notes go in a private repository linked to it.
+2. In your instance, open **Settings → Pages** and set **Source** to **GitHub Actions**, then run **Actions → Deploy app**. It deploys the released app; there's nothing to build.
+3. Open `https://<your-username>.github.io/<repository>/` and start writing. Notes stay in your browser until you choose **Connect GitHub…** in the toolbar's ⋯ menu, which walks you through your private repository and a token, both from pre-filled GitHub pages.
+
+Prefer a desktop app? Download it from the latest [release](https://github.com/prabinpebam/focus-notes/releases/latest). Want to improve Focus Notes? Fork this repository; its *Deploy app* workflow builds the app from source.
 
 How it works, and why it needs a token rather than *Sign in with GitHub*: [Web app](documentations/architecture/web-app.md). To try the app locally: `pnpm install`, `pnpm tokens`, then `pnpm web`.
 

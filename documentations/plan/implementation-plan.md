@@ -3,7 +3,7 @@
 Every stage in detail: what you can do at the end, the demo that proves it, the work packages that build it, and the exit criteria on top of the [definition of done](definition-of-done.md). The same plan is in [`work-graph.json`](https://github.com/prabinpebam/focus-notes/blob/main/documentations/plan/work-graph.json), which agents read to pick ready work ([The agentic loop](agentic-loop.html)).
 
 > [!NOTE]
-> **TL;DR.** 59 work packages across 10 stages, covering all 191 requirements exactly once. Each work package lists its requirements, the work packages it depends on, the code areas it touches, the reviews it needs, and the spec pages it implements. Every work package also depends on the previous stage's gate, except spikes and long-lead items marked *lookahead*. The longest chain to version 1.0 is 22 work packages. Every stage has a demo script that the owner runs on clean machines at the stage gate, and that then becomes an automated journey test.
+> **TL;DR.** 59 work packages across 10 stages, covering all 195 requirements exactly once. Each work package lists its requirements, the work packages it depends on, the code areas it touches, the reviews it needs, and the spec pages it implements. Every work package also depends on the previous stage's gate, except spikes and long-lead items marked *lookahead*. The longest chain to version 1.0 is 22 work packages. Every stage has a demo script that the owner runs on clean machines at the stage gate, and that then becomes an automated journey test.
 
 ## How to read a work package
 
@@ -118,7 +118,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
 | WP-6.1 | **Web app on your own Pages, local first, with GitHub sync**. The web build deployed by each user's copy of the repository to their GitHub Pages; IndexedDB storage and the outbox; the sync engine on the Git Data API; the encrypted token store. | PKG-05, PKG-07, PKG-08 | WP-1.4 | code, security |
-| WP-6.2 | **Start in the browser and connect GitHub**. Template or fork, turn on Pages, open your site; the web first run with the pre-filled notes repository and fine-grained token. | DST-02, FRE-09 | WP-6.1 | code, security, accessibility |
+| WP-6.2 | **Start in the browser, visitor mode, and Use this app for yourself**. Make your instance from the template; the web first run with Connect GitHub; visitor mode with public notes only; and the Use this app for yourself dialog. | DST-01, DST-02, FRE-09, PKG-09 | WP-6.1 | code, security, accessibility |
 | WP-2.3 | **Local workspace model**. Folder workspaces, `workspace.json` with its format version and migrations, title-based file names, and change notifications scoped to the content each view model declares. | FIL-07, DST-05, PRF-11 | WP-1.1 | code |
 | WP-2.4 | **Files panel and file operations**. The Files sheet with the tree, create, rename, delete, multiple selection, drag and drop, and Move to…, with structural changes shown before they're saved. | FIL-01 to FIL-03, FIL-08, PRF-09 | WP-2.3, WP-1.4 | code, design-system, accessibility |
 | WP-2.5 | **Link updates**. Relative links updated on every rename and move. | FIL-09 | WP-2.4 | code |
@@ -182,8 +182,8 @@ Work packages off this path run in parallel when their dependencies are Done and
 | WP-5.2 | **Sealing, leak check, and pinned workflow**. Per-build sealing, keyrings, the leak check, and the reusable workflow pinned by SHA with verification. | SHR-04, SHR-11, SEC-05, SEC-06 | WP-5.1 | code, security |
 | WP-5.3 | **Audiences, passcodes, and invites**. The Share popover, audiences, generated and custom passcodes, expiry, withdrawal, and the invite. | SHR-05, SHR-07 to SHR-09 | WP-5.2 | code, design-system, accessibility, security |
 | WP-5.4 | **Share reader**. The reader with magic links, name and passcode, and the page weight budget. | SHR-10, PRF-05 | WP-5.2 | code, design-system, accessibility, security |
-| WP-5.5 | **Release pipeline and template releases**. Draft releases with installers, the reader bundle, checksums, SBOM, attestations, and template updates. | DST-03, DST-06 | WP-0.9, WP-5.1 | code, security |
-| WP-5.6 | **Get started page**. The product site's Get started page, rendered from view documents. | DST-01 | WP-5.5 | code, design-system, accessibility |
+| WP-5.5 | **Release pipeline and template releases**. Draft releases with installers, the reader bundle, checksums, SBOM, attestations, and template updates. | DST-03 | WP-0.9, WP-5.1 | code, security |
+| WP-5.6 | **Instance template and update pull requests**. The template repository generated from templates/workspace/ at each release, its pinned Deploy app workflow, and update pull requests. | DST-06 | WP-5.5 | code, design-system, accessibility |
 | WP-5.7 | **Diagnostics and release qualification**. Local diagnostics, Report a problem, and the full support-matrix pass for 1.0. | QLT-02, QLT-04 | WP-5.3, WP-5.4, WP-5.6 | code, design-system, accessibility, security |
 
 **Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
