@@ -16,7 +16,8 @@
     "vm.about",
     "vm.files",
     "vm.move",
-    "vm.confirm"
+    "vm.confirm",
+    "vm.import"
   ],
   "focus": "editor",
   "root": {
@@ -1850,13 +1851,13 @@
       },
       {
         "type": "Dialog",
-        "id": "confirmDelete",
+        "id": "confirm",
         "when": {
           "get": "vm.confirm.open"
         },
         "props": {
           "title": {
-            "t": "files.confirm.title"
+            "get": "vm.confirm.title"
           },
           "closeLabel": {
             "t": "dialog.close"
@@ -1917,6 +1918,9 @@
                   },
                   {
                     "type": "Button",
+                    "when": {
+                      "get": "vm.confirm.danger"
+                    },
                     "props": {
                       "label": {
                         "get": "vm.confirm.confirmLabel"
@@ -1925,7 +1929,151 @@
                     },
                     "on": {
                       "press": {
-                        "run": "files.confirmDelete"
+                        "run": "files.confirm"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "when": {
+                      "expr": {
+                        "!": {
+                          "get": "vm.confirm.danger"
+                        }
+                      }
+                    },
+                    "props": {
+                      "label": {
+                        "get": "vm.confirm.confirmLabel"
+                      },
+                      "variant": "primary"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "files.confirm"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "importNotes",
+        "when": {
+          "get": "vm.import.open"
+        },
+        "props": {
+          "title": {
+            "t": "import.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.import.open"
+          },
+          "size": "s"
+        },
+        "on": {
+          "openChange": {
+            "run": "import.setOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.import.message"
+                  }
+                }
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "SegmentedControl",
+                    "props": {
+                      "label": {
+                        "t": "import.to"
+                      },
+                      "options": {
+                        "get": "vm.import.options"
+                      },
+                      "value": {
+                        "bind": "vm.import.to"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.import.hint"
+                      },
+                      "role": "caption",
+                      "tone": "muted",
+                      "announce": true
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "end",
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "import.cancel"
+                      },
+                      "variant": "secondary"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "import.setOpen",
+                        "args": {
+                          "open": false
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "import.action"
+                      },
+                      "variant": "primary",
+                      "busy": {
+                        "get": "vm.import.busy"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "import.confirm"
                       }
                     }
                   }
@@ -2155,6 +2303,42 @@
                           "on": {
                             "press": {
                               "run": "files.moveTo"
+                            }
+                          }
+                        },
+                        {
+                          "type": "IconButton",
+                          "when": {
+                            "get": "vm.files.canMakePublic"
+                          },
+                          "props": {
+                            "icon": "share",
+                            "label": {
+                              "t": "command.files.makePublic"
+                            },
+                            "tone": "muted"
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.makePublic"
+                            }
+                          }
+                        },
+                        {
+                          "type": "IconButton",
+                          "when": {
+                            "get": "vm.files.canMakePrivate"
+                          },
+                          "props": {
+                            "icon": "lock",
+                            "label": {
+                              "t": "command.files.makePrivate"
+                            },
+                            "tone": "muted"
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.makePrivate"
                             }
                           }
                         },

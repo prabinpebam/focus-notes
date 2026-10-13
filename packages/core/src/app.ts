@@ -13,7 +13,9 @@ import { waits } from "@focus-notes/tokens";
 import { TaskTracker, type Clock, type TaskView } from "./tasks.ts";
 import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts";
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
-import { joinPath } from "./workspace.ts";
+import { joinPath, newNoteFolder } from "./workspace.ts";
+import { registerImport, IMPORT_CLOSED, type ImportState } from "./import-app.ts";
+import { appStateOfSettings, parseSettings, settingsFileOf, splitAppState, type SettingsFile } from "./settings.ts";
 import { registerSync, NO_SYNC, SyncFailed, type SyncState } from "./sync-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
@@ -57,9 +59,13 @@ export interface AppState {
     aboutOpen: boolean;
     /** The formatting toolbar, link editor, and link hover card (EDT-12, EDT-13). */
     format: FormatState;
-    /** The Files panel, Move to…, and delete confirmations (IA-VIEW-FILES, WP-2.4). */
+    /** The Files panel, Move to…, and its confirmations: deleting, and changing who can see notes (IA-VIEW-FILES). */
     files: FilesState;
+    /** Import notes on the desktop: where a chosen bundle's notes go (FRE-10). */
+    importNotes: ImportState;
   };
+  /** Synced settings (PRV-03): no private repository to sync through, or syncing off or on. */
+  settingsSync: "unavailable" | "off" | "on";
   /** The instance this web app was deployed with, read-only (PKG-08, PKG-10). */
   instance: InstanceState;
   /** The workspace: its tree of notes and folders, and whether this app may write it (DST-05). */
@@ -168,7 +174,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED },
+    settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
     sync: NO_SYNC,
@@ -207,10 +214,21 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let saving: Promise<void> = Promise.resolve();
   let appState: AppStateFile = { version: 1 };
-
-  const persistAppState = (patch: Partial<AppStateFile>) => {
+  /** What this device keeps (`state.json`), and the synced settings file while syncing is on (PRV-03). */
+  let deviceState: AppStateFile = { version: 1 };
+  let settingsFile: SettingsFile | undefined;
+  const saveDevice = (patch: Partial<AppStateFile>) => {
+    deviceState = { ...deviceState, ...patch };
+    return bridge.saveAppState(deviceState);
+  };
+  const saveSettings = () => bridge.settings!.save(`${JSON.stringify(settingsFile, null, 2)}\n`);
+  const persistAppState = async (patch: Partial<AppStateFile>) => {
     appState = { ...appState, ...patch };
-    return bridge.saveAppState(appState);
+    const { device, synced } = splitAppState(patch);
+    // While syncing, the synced settings go to the private repository and the rest stays here (D-46).
+    if (!settingsFile || !Object.keys(synced).length) return saveDevice(patch);
+    settingsFile = settingsFileOf(synced, settingsFile);
+    await Promise.all([saveSettings(), Object.keys(device).length ? saveDevice(device) : undefined]);
   };
 
   const setNote = (patch: Partial<AppState["note"]>) =>
@@ -417,8 +435,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     disabledReason: "command.note.new.readOnly",
     run: async () => {
       const current = store.state.note.path;
-      // With the Files panel open, the note goes into the selected folder (Files → Creating).
-      const folder = files.newNoteFolder();
+      // With the Files panel open, the note goes into the selected folder (Files → Creating); else
+      // into the open note's folder if it's private, or the Private root: private by default (SHR-01).
+      const folder = newNoteFolder(store.state.workspace.tree, files.newNoteFolder(), isReadOnlyPath(current) ? undefined : current);
       const near = folder !== undefined ? joinPath(folder, "untitled.md") : isReadOnlyPath(current) ? undefined : current;
       const path = await bridge.newNotePath(near);
       if (!(await flush())) return;
@@ -659,6 +678,35 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store, commands, viewModels, catalog, bridge, load, flush, toast, tracker, menu: extraMenu,
     appState: () => appState, persistAppState, itemSchema: ITEM_SCHEMA, describeItem,
   });
+  registerImport({ store, commands, viewModels, catalog, bridge, tracker, toast, menu: extraMenu });
+  // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
+  // keeps them on this device as they are now, and deletes the file.
+  commands.register({
+    id: "settings.sync", title: "command.settings.sync",
+    enabled: (s) => s.settingsSync !== "unavailable",
+    checked: (s) => s.settingsSync === "on",
+    run: async () => {
+      if (!bridge.settings || store.state.settingsSync === "unavailable") return;
+      const on = store.state.settingsSync === "off";
+      const { synced } = splitAppState(appState);
+      const before = settingsFile;
+      try {
+        if (on) {
+          settingsFile = settingsFileOf(synced);
+          await saveSettings();
+        } else {
+          settingsFile = undefined;
+          await saveDevice(synced);
+          await bridge.settings.remove();
+        }
+        store.update((s) => ({ ...s, settingsSync: on ? "on" : "off" }));
+        toast(catalog.format(on ? "toast.settingsSynced" : "toast.settingsLocal"));
+      } catch {
+        settingsFile = before;
+        toast(catalog.format("toast.settingsFailed"), { tone: "error" });
+      }
+    },
+  });
   viewModels.register({
     id: "vm.feedback",
     schema: {
@@ -699,7 +747,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     select: (s) => ({
       open: s.ui.toolbarOpen,
       items: DEFAULT_TOOLBAR.map(describeItem),
-      more: [...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({
+      // Sync appearance joins the Theme group where there's a private repository to sync through (PRV-03).
+      more: [...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({
         id: g.id, label: catalog.format(g.label),
         items: g.items.map((e) => (typeof e === "string" ? describeItem(e) : { id: e.submenu, label: catalog.format(e.label), items: e.items.map(describeItem) })),
       })),
@@ -863,7 +912,15 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     async start() {
       // The workspace format is read alongside the app state, before the first note opens (DST-05).
       const formatRead = workspace.prepare();
-      appState = await bridge.loadAppState().catch(() => ({ version: 1 as const }));
+      const [loaded, synced] = await Promise.all([
+        bridge.loadAppState().catch(() => ({ version: 1 as const })),
+        bridge.settings?.load().catch(() => undefined),
+      ]);
+      deviceState = loaded;
+      // Synced settings, when they're on, are read over this device's own (PRV-03).
+      settingsFile = synced?.available ? parseSettings(synced.text) : undefined;
+      appState = { ...deviceState, ...appStateOfSettings(settingsFile) };
+      store.update((s) => ({ ...s, settingsSync: !synced?.available ? "unavailable" : settingsFile ? "on" : "off" }));
       store.update((s) => ({
         ...s,
         appearance: {

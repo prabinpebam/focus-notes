@@ -111,7 +111,7 @@ describe("FIL-06, SHR-02: moving between the roots", () => {
 });
 
 describe("FRE-10: importing a bundle into a workspace", () => {
-  const bundle = (notes: { path: string; text: string }[]) => ({ format: BUNDLE_FORMAT, exported: "2026-10-14T00:00:00Z", notes: notes.map((n) => ({ ...n, updated: "2026-10-14T00:00:00Z" })) });
+  const bundle = (notes: { path: string; text: string }[]) => ({ format: BUNDLE_FORMAT as typeof BUNDLE_FORMAT, exported: "2026-10-14T00:00:00Z", notes: notes.map((n) => ({ ...n, updated: "2026-10-14T00:00:00Z" })) });
 
   it("names that differ only in case are taken on the desktop, and an unread note is never replaced", () => {
     const existing = new Map<string, string | undefined>([["Ideas.md", undefined], ["same.md", "# Same\n"]]);

@@ -10,14 +10,14 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { sourceOf } from "./notes.ts";
-import { planLinkWrites, rewriteLinks, type LinkWrite, type PathMove } from "./links.ts";
+import { planLinkWrites, rewriteLinks, sameRootOf, type LinkWrite, type PathMove } from "./links.ts";
 import {
   actedOn, ancestorsOf, destinations, isRootRow, keepShowing, NO_SELECTION, rebase, rootRowId, select, selectAll, targetFolder, titleOfNode,
   topLevel, visibleRows, type FileRow, type Selection,
 } from "./files.ts";
 import {
-  applyChanges, buildTree, dirOf, findNode, joinPath, planCreateFolder, planDelete, planMove, planRename, planRenameFolder, retitle, rootOf,
-  type RefusalReason, type WorkspaceTree,
+  applyChanges, buildTree, dirOf, findNode, joinPath, planCreateFolder, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf,
+  visibilityOf, type RefusalReason, type WorkspaceTree,
 } from "./workspace.ts";
 
 export interface FilesState {
@@ -33,8 +33,11 @@ export interface FilesState {
   edit?: { kind: "rename" | "newFolder"; id: string; parent: string; value: string; error: string };
   /** Rows shown in their new place whose write hasn't finished: the saving sign (Files → Row states). */
   pending: readonly string[];
-  /** Deleting that asks first (Files → Deleting). */
-  confirm?: { paths: string[]; notes: number; name: string };
+  /**
+   * What asks first: deleting (Files → Deleting), and changing who can see notes (DD-FILES-08):
+   * Make public or private keeps each item's folder path (`dest` unset); a drop or Move to… has one.
+   */
+  confirm?: { kind: "delete"; paths: string[]; notes: number; name: string } | { kind: "visibility"; to: "public" | "private"; paths: string[]; dest?: string; name: string };
   /** Move to… (IA-CMP-MOVE). */
   move: { open: boolean; query: string; activeId: string; paths: string[]; focus: number };
 }
@@ -62,9 +65,9 @@ interface Ctx {
   itemSchema: Record<string, unknown>;
 }
 
-const REASONS: Record<RefusalReason | OpErrorCode | "visibility", string> = {
+const REASONS: Record<RefusalReason | OpErrorCode, string> = {
   notFound: "files.reason.notFound", taken: "files.reason.taken", readOnly: "files.reason.readOnly", invalid: "files.reason.invalid",
-  intoItself: "files.reason.intoItself", trash: "files.reason.trash", failed: "files.reason.failed", visibility: "files.reason.visibility",
+  intoItself: "files.reason.intoItself", trash: "files.reason.trash", failed: "files.reason.failed",
 };
 
 export function registerFiles(ctx: Ctx) {
@@ -172,12 +175,12 @@ export function registerFiles(ctx: Ctx) {
     own && p === own.path ? Promise.resolve(own.text) : p === store.state.note.path ? Promise.resolve(store.state.note.markdown) : bridge.readNote(p);
   const writeOps = (writes: readonly LinkWrite[]): WorkspaceOp[] => writes.map((w) => ({ op: "write", path: w.path, text: w.text }));
   /** After the batch, the open note shows its new links, keeping anything typed while it was written. */
-  const followLinks = (writes: readonly LinkWrite[], moves: readonly PathMove[]) => {
+  const followLinks = (writes: readonly LinkWrite[], moves: readonly PathMove[], before: WorkspaceTree) => {
     const n = store.state.note;
     const w = writes.find((x) => x.path === n.path);
     if (!w) return;
     const same = n.markdown === w.before;
-    const text = same ? w.text : rewriteLinks(n.markdown, w.from, w.path, moves).text;
+    const text = same ? w.text : rewriteLinks(n.markdown, w.from, w.path, moves, sameRootOf(before)).text;
     ctx.setNote({ key: `${w.path}#links-${Date.now()}`, initialMarkdown: text, markdown: text, saveState: same ? "saved" : "unsaved" });
     ctx.loaded(w.path, text);
   };
@@ -219,7 +222,7 @@ export function registerFiles(ctx: Ctx) {
           if (sourceOf(to) !== "private") await ctx.persistAppState({ lastNotePath: to });
         }
       }
-      followLinks(writes, moves);
+      followLinks(writes, moves, before);
       return writes;
     }));
     queue = done;
@@ -256,8 +259,11 @@ export function registerFiles(ctx: Ctx) {
     const where = catalog.format("files.quoted", { name: folderLabel(dest) });
     const plan = planMove(tree(), paths, dest);
     if (plan.kind === "refused") return void refused("files.moveFailed", { what }, plan.reason);
-    // Changing who can see a note asks first, and arrives with Git (WP-3.4).
-    if (plan.crossesVisibility) return void refused("files.moveFailed", { what }, "visibility");
+    // Into the other section changes who can see it, so it asks first (DD-FILES-08).
+    const to = rootOf(tree(), dest)?.id;
+    if (plan.crossesVisibility && (to === "public" || to === "private")) {
+      return setFiles(() => ({ confirm: { kind: "visibility", to, paths, dest, name: what } }));
+    }
     if (!plan.moves.length) return;
     void perform(plan.tree, plan.moves.map((m) => ({ op: "move" as const, from: m.from, to: m.to })), {
       touched: plan.moves.map((m) => m.to), moves: plan.moves, open: dest === rootOf(tree(), dest)?.path ? [] : [dest],
@@ -281,9 +287,13 @@ export function registerFiles(ctx: Ctx) {
       .map((d) => {
         const label = d.depth === 0 ? rootLabel(d.root.id) : d.name;
         const where = d.depth === 0 ? "" : rootLabel(d.root.id) + " · " + dirOf(d.path).slice(d.root.path.length).replace(/^[\\/:]+/, "").replace(/\\/g, "/");
-        // Moving between Public and Private changes visibility, which arrives with Git (WP-3.4).
+        // Into the other section changes who can see it: said here, and confirmed after (DD-FILES-08).
         const other = from && d.root.id !== from.id;
-        return { id: d.path, label, description: other ? catalog.format("files.visibilityLater") : where.replace(/ · $/, ""), icon: d.depth === 0 ? "open" : "folder", ...(other ? { disabled: true } : {}) };
+        const description = where.replace(/ · $/, "");
+        const item: { id: string; label: string; description: string; icon: string; disabled?: boolean } = {
+          id: d.path, label, description: other ? catalog.format("files.otherRoot", { where: description || label }) : description, icon: d.depth === 0 ? "open" : "folder",
+        };
+        return item;
       })
       .filter((d) => !q || d.label.toLocaleLowerCase().includes(q));
   };
@@ -348,19 +358,66 @@ export function registerFiles(ctx: Ctx) {
       const plan = planDelete(tree(), paths);
       if (plan.kind === "refused") return void refused("files.deleteFailed", { what }, plan.reason);
       // A folder with notes, five or more items, or a public note asks first (DD-FILES-06).
-      if (plan.ask) return setFiles(() => ({ confirm: { paths, notes: plan.notes.length, name: what } }));
+      if (plan.ask) return setFiles(() => ({ confirm: { kind: "delete", paths, notes: plan.notes.length, name: what } }));
       doDelete(paths);
     },
   });
   commands.register({
-    id: "files.confirmDelete", title: "command.files.delete",
+    id: "files.confirm", title: "command.files.confirm",
     run: () => {
       const c = files().confirm;
       setFiles((f) => ({ confirm: undefined, focusRequest: f.focusRequest + 1 }));
-      if (c) doDelete(c.paths);
+      if (c?.kind === "delete") doDelete(c.paths);
+      else if (c?.kind === "visibility") doVisibility(c.paths, c.to, c.dest);
     },
   });
-  commands.register<{ open: boolean }>({ id: "files.setConfirmOpen", title: "command.files.delete", run: ({ open }) => { if (!open) setFiles((f) => ({ confirm: undefined, focusRequest: f.focusRequest + 1 })); } });
+  commands.register<{ open: boolean }>({ id: "files.setConfirmOpen", title: "command.files.confirm", run: ({ open }) => { if (!open) setFiles((f) => ({ confirm: undefined, focusRequest: f.focusRequest + 1 })); } });
+
+  // ---- who can see a note: Make public, Make private (FIL-06, SHR-01, SHR-02) ----
+  /** The items a visibility change acts on: the Files selection while the panel is open, else the open note. */
+  const visibilityTargets = (s: AppState): string[] => {
+    const f = s.ui.files;
+    const t = s.workspace.tree;
+    if (f.open) return topLevel(actedOn(f.selection, f.selection.focus)).filter((p) => findNode(t, p));
+    return s.note.path && findNode(t, s.note.path) ? [s.note.path] : [];
+  };
+  /** Whether anything acted on can go to the other root: a workspace with both, written here. */
+  const canMake = (s: AppState, to: "public" | "private") => {
+    const t = s.workspace.tree;
+    if (!canWrite(s) || !t.roots.some((r) => r.id === to && !r.readOnly)) return false;
+    return visibilityTargets(s).some((p) => { const v = visibilityOf(t, p); return v !== undefined && v !== to && !(to === "private" && v === "shared"); });
+  };
+  /** Moves between the roots once confirmed: one batch, one commit in each repository, private first (D-97). */
+  function doVisibility(paths: string[], to: "public" | "private", dest?: string): void {
+    const what = whatOf(paths);
+    const failed = (why: string) => catalog.format(to === "public" ? "files.makePublicFailed" : "files.makePrivateFailed", { what, reason: why });
+    const plan = dest === undefined ? planVisibility(tree(), paths, to) : planMove(tree(), paths, dest);
+    if (plan.kind === "refused") return void toast(failed(reason(plan.reason)), { tone: "error" });
+    if (!plan.moves.length) return;
+    void perform(plan.tree, plan.moves.map((m) => ({ op: "move" as const, from: m.from, to: m.to })), {
+      touched: plan.moves.map((m) => m.to), moves: plan.moves,
+      open: [...new Set(plan.moves.flatMap((m) => ancestorsOf(plan.tree, m.to)))],
+      done: catalog.format(to === "public" ? "files.madePublic" : "files.madePrivate", { what }),
+      failed,
+    });
+    // The section it went to opens, so it's seen where it is now.
+    setFiles((f) => ({ collapsed: f.collapsed.filter((c) => c !== rootRowId(to)) }));
+  }
+  for (const to of ["public", "private"] as const) {
+    commands.register({
+      id: to === "public" ? "files.makePublic" : "files.makePrivate", title: to === "public" ? "command.files.makePublic" : "command.files.makePrivate",
+      icon: to === "public" ? "share" : "lock", group: "files",
+      enabled: (s) => canMake(s, to),
+      run: () => {
+        const t = tree();
+        const paths = visibilityTargets(store.state).filter((p) => { const v = visibilityOf(t, p); return v !== undefined && v !== to; });
+        if (!paths.length) return;
+        // Always confirmed, whichever way (DD-FILES-08), so the audience never changes by accident.
+        store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
+        setFiles(() => ({ confirm: { kind: "visibility", to, paths, name: whatOf(paths) } }));
+      },
+    });
+  }
 
   // ---- creating and renaming (FIL-01, FIL-02) ----
   commands.register({
@@ -453,7 +510,7 @@ export function registerFiles(ctx: Ctx) {
           ctx.setNote({ path: to, key: `${to}#${Date.now()}`, initialMarkdown: own, markdown: own, saveState: "saved" });
           ctx.loaded(to, own);
           if (sourceOf(to) !== "private") await ctx.persistAppState({ lastNotePath: to });
-        } else followLinks(others, moves);
+        } else followLinks(others, moves, before);
       });
       const done = withLinks(catalog.format("files.renamed", { what: catalog.format("files.quoted", { name: title }) }), others);
       // Other notes changed too: that's said where it's seen.
@@ -478,7 +535,7 @@ export function registerFiles(ctx: Ctx) {
       ...["expanded", "hasChildren", "selected", "current", "pending", "readOnly", "draggable", "droppable", "editing"].map((k) => [k, { type: "boolean" as const }]),
     ]),
   };
-  const CLOSED = { open: false, focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newText: "", newMenu: [] };
+  const CLOSED = { open: false, focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newText: "", newMenu: [], canMakePublic: false, canMakePrivate: false };
   viewModels.register({
     id: "vm.files",
     schema: {
@@ -488,6 +545,7 @@ export function registerFiles(ctx: Ctx) {
         editValue: { type: "string" }, editError: { type: "string" }, editLabel: { type: "string" },
         filter: { type: "string" }, empty: { type: "boolean" }, emptyText: { type: "string" },
         selectedCount: { type: "number" }, multi: { type: "boolean" }, selectionText: { type: "string" }, newText: { type: "string" },
+        canMakePublic: { type: "boolean" }, canMakePrivate: { type: "boolean" },
         newMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
       },
     },
@@ -531,6 +589,7 @@ export function registerFiles(ctx: Ctx) {
         emptyText: f.filter.trim() ? catalog.format("files.noMatch", { query: f.filter.trim() }) : catalog.format("files.empty"),
         selectedCount: count, multi: count > 1, selectionText: catalog.format("files.selected", { count }), newText: catalog.format("files.new"),
         newMenu: [{ id: "new", label: "", items: [ctx.describeItem("files.newNote"), ctx.describeItem("files.newFolder")] }],
+        canMakePublic: canMake(s, "public"), canMakePrivate: canMake(s, "private"),
       };
     },
   });
@@ -558,14 +617,19 @@ export function registerFiles(ctx: Ctx) {
   });
   viewModels.register({
     id: "vm.confirm",
-    schema: { type: "object", properties: { open: { type: "boolean" }, message: { type: "string" }, confirmLabel: { type: "string" } } },
-    reads: ["ui.files.confirm"],
+    schema: { type: "object", properties: { open: { type: "boolean" }, title: { type: "string" }, message: { type: "string" }, confirmLabel: { type: "string" }, danger: { type: "boolean" } } },
+    reads: ["ui.files.confirm", "workspace.tree"],
     select: (s) => {
       const c = s.ui.files.confirm;
-      if (!c) return { open: false, message: "", confirmLabel: "" };
+      if (!c) return { open: false, title: "", message: "", confirmLabel: "", danger: false };
+      if (c.kind === "visibility") {
+        // Making something public says who will read it; making it private says what it can't undo (Files and sharing → Changing visibility).
+        const key = c.to === "public" ? "files.confirmPublic" : "files.confirmPrivate";
+        return { open: true, title: catalog.format(`${key}.title`), message: catalog.format(`${key}.message`, { what: c.name }), confirmLabel: catalog.format(`${key}.action`), danger: false };
+      }
       const pub = c.paths.some((p) => rootOf(s.workspace.tree, p)?.id === "public");
       return {
-        open: true,
+        open: true, title: catalog.format("files.confirm.title"), danger: true,
         message: catalog.format(pub ? "files.confirm.public" : "files.confirm.message", { what: c.name, notes: c.notes }),
         confirmLabel: catalog.format(pub ? "files.confirm.unpublish" : "files.confirm.delete", { notes: c.notes }),
       };

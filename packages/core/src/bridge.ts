@@ -46,6 +46,21 @@ export interface PlatformBridge {
   workspace?: WorkspaceBridge;
   /** Commits and pushes with the user's own Git (the desktop, WP-3.3). Absent in the browser. */
   sync?: SyncBridge;
+  /** Synced settings in the private repository (PRV-03, D-46). Absent where there can't be one (the browser). */
+  settings?: SettingsBridge;
+}
+
+/**
+ * `private/.focus-notes/settings.json` (D-46). Syncing is opted into: while the file exists, the
+ * synced settings are read from it and written to it, and it's committed like a note.
+ */
+export interface SettingsBridge {
+  /** Whether the workspace has a private repository to sync through, and the file's text while syncing is on. */
+  load(): Promise<{ available: boolean; text?: string }>;
+  /** Writes the file (syncing on). The shell checks it against the schema first. */
+  save(text: string): Promise<void>;
+  /** Deletes the file (syncing off). */
+  remove(): Promise<void>;
 }
 
 /** Why saving to Git or syncing failed (Feedback → Save and sync status). */
@@ -90,10 +105,17 @@ export interface WorkspaceBridge {
    * refused nothing changes (WP-2.4). In a Git workspace the desktop makes each batch one commit
    * per repository before resolving (FIL-05); a commit that fails is reported through `sync`, and
    * the files stay as the batch left them. A move between the Public and Private roots changes
-   * visibility (WP-3.4). Rejects with an Error
-   * whose message ends in an {@link OpErrorCode}.
+   * who can see a note: one commit in each repository, private first (FIL-06, D-97). Rejects with
+   * an Error whose message ends in an {@link OpErrorCode}.
    */
   apply?(ops: WorkspaceOp[]): Promise<void>;
+  /**
+   * Asks for an export bundle with the system's open dialog (FRE-10). Only the shell reads the file,
+   * refusing one that's too large (the message ends in `tooLarge`) or isn't a bundle. Undefined if cancelled.
+   */
+  chooseBundle?(): Promise<{ id: string; name: string; notes: number } | undefined>;
+  /** Adds the chosen bundle's notes to a root as one batch and one commit, replacing nothing (FRE-10). */
+  importBundle?(id: string, to: "private" | "public"): Promise<{ added: number; renamed: number }>;
   /** Changes made outside the app, in batches (the desktop's file watcher). */
   onChange?(listener: (changes: WorkspaceChange[]) => void): () => void;
 }
