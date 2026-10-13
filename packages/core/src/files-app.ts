@@ -101,7 +101,15 @@ export function registerFiles(ctx: Ctx) {
   const rootLabel = (id: string) => catalog.format(`files.root.${id === "local" && bridge.platform !== "web" ? "folder" : id}`);
 
   // ---- opening, revealing, closing ----
+  // Opened before the workspace was first listed: the current note is revealed once it is.
+  let revealWhenListed = false;
+  store.subscribe(() => {
+    if (!revealWhenListed || !tree().roots.length) return;
+    revealWhenListed = false;
+    if (files().open) reveal();
+  });
   const reveal = () => {
+    if (!tree().roots.length) revealWhenListed = true;
     const path = store.state.note.path;
     const add = path && findNode(tree(), path) ? ancestorsOf(tree(), path) : [];
     setFiles((f) => ({
@@ -167,7 +175,7 @@ export function registerFiles(ctx: Ctx) {
    * Shows `next` now, then writes the batch. Success changes nothing visible but the saving sign;
    * a refusal puts the tree and the selection back and says why (Desktop and Git → Changes shown before they're saved).
    */
-  async function perform(next: WorkspaceTree, ops: WorkspaceOp[], o: { touched: string[]; moves?: { from: string; to: string }[]; deletes?: string[]; done: string; failed: (why: string) => string; open?: string[] }) {
+  async function perform(next: WorkspaceTree, ops: WorkspaceOp[], o: { touched: string[]; moves?: { from: string; to: string }[]; deletes?: string[]; select?: string[]; done: string; failed: (why: string) => string; open?: string[] }) {
     const before = tree();
     const beforeFiles = files();
     const moves = o.moves ?? [];
@@ -175,7 +183,8 @@ export function registerFiles(ctx: Ctx) {
     setFiles((f) => ({
       pending: [...f.pending, ...o.touched],
       expanded: [...new Set([...f.expanded.map((e) => rebase(e, moves)), ...(o.open ?? [])])],
-      selection: moves.length ? { selected: moves.map((m) => m.to), anchor: moves[0]!.to, focus: moves[0]!.to } : f.selection,
+      selection: o.select?.length ? { selected: o.select, anchor: o.select[0]!, focus: o.select[0]! }
+        : moves.length ? { selected: moves.map((m) => m.to), anchor: moves[0]!.to, focus: moves[0]!.to } : f.selection,
     }));
     setFiles((f) => ({ selection: keepShowing(f.selection, rowsOf(store.state)) }));
     const done = (queue = queue.catch(() => {}).then(() => ctx.exclusive(async () => {
@@ -250,7 +259,7 @@ export function registerFiles(ctx: Ctx) {
         const where = d.depth === 0 ? "" : rootLabel(d.root.id) + " · " + dirOf(d.path).slice(d.root.path.length).replace(/^[\\/:]+/, "").replace(/\\/g, "/");
         // Moving between Public and Private changes visibility, which arrives with Git (WP-3.4).
         const other = from && d.root.id !== from.id;
-        return { id: d.path, label, description: other ? catalog.format("files.visibilityLater") : where.replace(/ · $/, ""), icon: d.depth === 0 ? "home" : "folder", ...(other ? { disabled: true } : {}) };
+        return { id: d.path, label, description: other ? catalog.format("files.visibilityLater") : where.replace(/ · $/, ""), icon: d.depth === 0 ? "open" : "folder", ...(other ? { disabled: true } : {}) };
       })
       .filter((d) => !q || d.label.toLocaleLowerCase().includes(q));
   };
@@ -373,10 +382,9 @@ export function registerFiles(ctx: Ctx) {
       if (plan.kind === "refused") return editError(plan.reason);
       setFiles((f) => ({ edit: undefined, focusRequest: f.focusRequest + 1 }));
       await perform(plan.tree, [{ op: "createFolder", path: plan.path }], {
-        touched: [plan.path], done: catalog.format("files.folderCreated", { what: catalog.format("files.quoted", { name: value }) }),
+        touched: [plan.path], select: [plan.path], done: catalog.format("files.folderCreated", { what: catalog.format("files.quoted", { name: value }) }),
         failed: (why) => catalog.format("files.createFailed", { what: catalog.format("files.quoted", { name: value }), reason: why }),
       });
-      setFiles((f) => ({ selection: keepShowing({ selected: [plan.path], anchor: plan.path, focus: plan.path }, rowsOf(store.state)) }));
       return;
     }
     const row = rowById(e.id);
@@ -438,7 +446,7 @@ export function registerFiles(ctx: Ctx) {
       ...["expanded", "hasChildren", "selected", "current", "pending", "readOnly", "draggable", "droppable", "editing"].map((k) => [k, { type: "boolean" as const }]),
     ]),
   };
-  const CLOSED = { open: false, focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newMenu: [] };
+  const CLOSED = { open: false, focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newText: "", newMenu: [] };
   viewModels.register({
     id: "vm.files",
     schema: {
@@ -447,7 +455,7 @@ export function registerFiles(ctx: Ctx) {
         open: { type: "boolean" }, focusRequest: { type: "number" }, items: { type: "array", items: TREE_ITEM }, focusId: { type: "string" },
         editValue: { type: "string" }, editError: { type: "string" }, editLabel: { type: "string" },
         filter: { type: "string" }, empty: { type: "boolean" }, emptyText: { type: "string" },
-        selectedCount: { type: "number" }, multi: { type: "boolean" }, selectionText: { type: "string" },
+        selectedCount: { type: "number" }, multi: { type: "boolean" }, selectionText: { type: "string" }, newText: { type: "string" },
         newMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
       },
     },
@@ -489,7 +497,7 @@ export function registerFiles(ctx: Ctx) {
         editLabel: catalog.format(f.edit?.kind === "newFolder" ? "files.folderName" : rows.find((r) => r.id === f.edit?.id)?.kind === "folder" ? "files.folderName" : "files.title"),
         filter: f.filter, empty: notes === 0,
         emptyText: f.filter.trim() ? catalog.format("files.noMatch", { query: f.filter.trim() }) : catalog.format("files.empty"),
-        selectedCount: count, multi: count > 1, selectionText: catalog.format("files.selected", { count }),
+        selectedCount: count, multi: count > 1, selectionText: catalog.format("files.selected", { count }), newText: catalog.format("files.new"),
         newMenu: [{ id: "new", label: "", items: [ctx.describeItem("files.newNote"), ctx.describeItem("files.newFolder")] }],
       };
     },

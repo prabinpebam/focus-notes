@@ -13,7 +13,10 @@
     "vm.picker",
     "vm.account",
     "vm.unlock",
-    "vm.about"
+    "vm.about",
+    "vm.files",
+    "vm.move",
+    "vm.confirm"
   ],
   "focus": "editor",
   "root": {
@@ -1103,6 +1106,257 @@
         ]
       },
       {
+        "type": "Sheet",
+        "id": "files",
+        "when": {
+          "get": "vm.files.open"
+        },
+        "props": {
+          "label": {
+            "t": "files.heading"
+          },
+          "side": "start",
+          "width": "files",
+          "keyScope": "files"
+        },
+        "on": {
+          "close": {
+            "run": "files.close"
+          }
+        },
+        "slots": {
+          "header": [
+            {
+              "type": "Inline",
+              "props": {
+                "justify": "between",
+                "gap": "s"
+              },
+              "children": [
+                {
+                  "switch": {
+                    "get": "vm.files.multi"
+                  },
+                  "cases": {
+                    "false": {
+                      "type": "Heading",
+                      "props": {
+                        "level": "2",
+                        "value": {
+                          "t": "files.heading"
+                        }
+                      }
+                    },
+                    "true": {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "get": "vm.files.selectionText"
+                        },
+                        "role": "emphasis",
+                        "announce": true
+                      }
+                    }
+                  }
+                },
+                {
+                  "switch": {
+                    "get": "vm.files.multi"
+                  },
+                  "cases": {
+                    "false": {
+                      "type": "MenuButton",
+                      "props": {
+                        "label": {
+                          "t": "files.new"
+                        },
+                        "variant": "text",
+                        "text": {
+                          "get": "vm.files.newText"
+                        },
+                        "placement": "bottom end",
+                        "sections": {
+                          "get": "vm.files.newMenu"
+                        }
+                      },
+                      "on": {
+                        "action": {
+                          "run": "command.run",
+                          "args": {
+                            "id": {
+                              "get": "event.id"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "true": {
+                      "type": "Inline",
+                      "props": {
+                        "gap": "xs"
+                      },
+                      "children": [
+                        {
+                          "type": "IconButton",
+                          "props": {
+                            "icon": "folder",
+                            "label": {
+                              "t": "command.files.moveTo"
+                            },
+                            "tone": "muted"
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.moveTo"
+                            }
+                          }
+                        },
+                        {
+                          "type": "IconButton",
+                          "props": {
+                            "icon": "delete",
+                            "label": {
+                              "t": "command.files.delete"
+                            },
+                            "tone": "muted"
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.delete"
+                            }
+                          }
+                        },
+                        {
+                          "type": "IconButton",
+                          "props": {
+                            "icon": "dismiss",
+                            "label": {
+                              "t": "command.files.clearSelection"
+                            },
+                            "tone": "muted"
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.clearSelection"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "SearchField",
+              "props": {
+                "label": {
+                  "t": "files.filter"
+                },
+                "placeholder": {
+                  "t": "files.filter"
+                },
+                "clearLabel": {
+                  "t": "field.clear"
+                },
+                "value": {
+                  "bind": "vm.files.filter"
+                }
+              }
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "FileTree",
+            "id": "filesTree",
+            "props": {
+              "label": {
+                "t": "files.tree"
+              },
+              "items": {
+                "get": "vm.files.items"
+              },
+              "focusId": {
+                "get": "vm.files.focusId"
+              },
+              "focusRequest": {
+                "get": "vm.files.focusRequest"
+              },
+              "editValue": {
+                "bind": "vm.files.editValue"
+              },
+              "editLabel": {
+                "get": "vm.files.editLabel"
+              },
+              "editError": {
+                "get": "vm.files.editError"
+              }
+            },
+            "on": {
+              "select": {
+                "run": "files.select",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  },
+                  "mode": {
+                    "get": "event.mode"
+                  }
+                }
+              },
+              "expand": {
+                "run": "files.setExpanded",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  },
+                  "expanded": {
+                    "get": "event.expanded"
+                  }
+                }
+              },
+              "action": {
+                "run": "files.activate",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              },
+              "drop": {
+                "run": "files.drop",
+                "args": {
+                  "source": {
+                    "get": "event.source"
+                  },
+                  "target": {
+                    "get": "event.target"
+                  }
+                }
+              },
+              "editBlur": {
+                "run": "files.editBlur"
+              }
+            }
+          },
+          {
+            "type": "Text",
+            "when": {
+              "get": "vm.files.empty"
+            },
+            "props": {
+              "value": {
+                "get": "vm.files.emptyText"
+              },
+              "role": "caption",
+              "tone": "muted",
+              "announce": true
+            }
+          }
+        ]
+      },
+      {
         "type": "Dialog",
         "id": "shortcuts",
         "props": {
@@ -1723,6 +1977,206 @@
                     "on": {
                       "press": {
                         "run": "about.template"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "move",
+        "when": {
+          "get": "vm.move.open"
+        },
+        "props": {
+          "title": {
+            "get": "vm.move.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.move.open"
+          },
+          "size": "s"
+        },
+        "on": {
+          "openChange": {
+            "run": "move.setOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "slots": {
+          "toolbar": [
+            {
+              "type": "Stack",
+              "props": {
+                "gap": "s"
+              },
+              "children": [
+                {
+                  "type": "SearchField",
+                  "props": {
+                    "label": {
+                      "t": "move.search"
+                    },
+                    "placeholder": {
+                      "t": "move.search"
+                    },
+                    "clearLabel": {
+                      "t": "field.clear"
+                    },
+                    "autoFocus": true,
+                    "value": {
+                      "bind": "vm.move.query"
+                    },
+                    "focusRequest": {
+                      "get": "vm.move.focus"
+                    },
+                    "keyScope": "moveField",
+                    "controls": "moveList",
+                    "activeId": {
+                      "get": "vm.move.activeId"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "get": "vm.move.summary"
+                    },
+                    "role": "caption",
+                    "tone": "muted",
+                    "announce": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "ResultList",
+            "id": "moveList",
+            "props": {
+              "label": {
+                "t": "move.list"
+              },
+              "items": {
+                "get": "vm.move.items"
+              },
+              "activeId": {
+                "get": "vm.move.activeId"
+              }
+            },
+            "on": {
+              "action": {
+                "run": "move.choose",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              },
+              "activeChange": {
+                "run": "move.setActive",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "confirmDelete",
+        "when": {
+          "get": "vm.confirm.open"
+        },
+        "props": {
+          "title": {
+            "t": "files.confirm.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.confirm.open"
+          },
+          "size": "s"
+        },
+        "on": {
+          "openChange": {
+            "run": "files.setConfirmOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.confirm.message"
+                  }
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "end",
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "files.confirm.cancel"
+                      },
+                      "variant": "secondary"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "files.setConfirmOpen",
+                        "args": {
+                          "open": false
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "get": "vm.confirm.confirmLabel"
+                      },
+                      "variant": "danger"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "files.confirmDelete"
                       }
                     }
                   }

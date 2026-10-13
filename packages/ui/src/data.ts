@@ -25,8 +25,40 @@ export interface ResultItem {
   disabled?: boolean;
 }
 
-/** Key scopes (Keyboard shortcuts → Contexts decide): keys registered for a scope work only inside it. */
-export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor"] as const;
+/** A row of the Files tree (FileTree): a root's section label, a folder, or a note. */
+export interface TreeItem {
+  id: string;
+  kind: "section" | "folder" | "note";
+  /** 1 for a section, then one more per folder (aria-level). */
+  level: number;
+  label: string;
+  /** Said after the label and shown muted: "read-only", "public". */
+  description?: string;
+  /** The tooltip: a note's file name. */
+  title?: string;
+  /** The ID of the row it's in. */
+  parent?: string;
+  expanded?: boolean;
+  hasChildren?: boolean;
+  selected?: boolean;
+  /** The open note. */
+  current?: boolean;
+  /** Shown in its new place, waiting for its write (the saving sign). */
+  pending?: boolean;
+  readOnly?: boolean;
+  draggable?: boolean;
+  /** Things can be dropped into it. */
+  droppable?: boolean;
+  /** Shows the inline name field instead of its label. */
+  editing?: boolean;
+}
+
+/**
+ * Key scopes (Keyboard shortcuts → Contexts decide): keys registered for a scope work only inside it.
+ * `files` is the Files sheet, `filesTree` its tree, and `filesEdit` the tree's name field, which
+ * stops the outer scopes so Delete and F2 edit the text there.
+ */
+export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "moveField"] as const;
 export type KeyScope = (typeof KEY_SCOPES)[number];
 
 /** One choice in a segmented control or filter. */

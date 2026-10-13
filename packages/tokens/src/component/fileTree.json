@@ -1,0 +1,142 @@
+{
+  "cmp": {
+    "fileTree": {
+      "rowHeight": {
+        "$type": "dimension",
+        "$value": "{size.hit}"
+      },
+      "indent": {
+        "$type": "dimension",
+        "$value": "{space.l}"
+      },
+      "gap": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
+      },
+      "rowGap": {
+        "$type": "dimension",
+        "$value": "{space.none}"
+      },
+      "paddingInline": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "radius": {
+        "$type": "dimension",
+        "$value": "{radius.control}"
+      },
+      "iconSize": {
+        "$type": "dimension",
+        "$value": "{size.iconS}"
+      },
+      "font": {
+        "$type": "fontFamily",
+        "$value": "{font.ui}"
+      },
+      "fontSize": {
+        "$type": "dimension",
+        "$value": "{font.uiBody}"
+      },
+      "sectionSize": {
+        "$type": "dimension",
+        "$value": "{font.uiSecondary}"
+      },
+      "captionSize": {
+        "$type": "dimension",
+        "$value": "{font.uiCaption}"
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "$value": "{font.weightRegular}"
+      },
+      "strongWeight": {
+        "$type": "fontWeight",
+        "$value": "{font.weightSemibold}"
+      },
+      "text": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "textMuted": {
+        "$type": "color",
+        "$value": "{color.textMuted}"
+      },
+      "hover": {
+        "$type": "color",
+        "$value": "{color.hover}"
+      },
+      "selection": {
+        "$type": "color",
+        "$value": "{color.selection}"
+      },
+      "accent": {
+        "$type": "color",
+        "$value": "{color.accent}"
+      },
+      "danger": {
+        "$type": "color",
+        "$value": "{color.danger}"
+      },
+      "focusRing": {
+        "$type": "color",
+        "$value": "{color.focusRing}"
+      },
+      "focusWidth": {
+        "$type": "dimension",
+        "$value": "{border.focus}"
+      },
+      "focusOffset": {
+        "$type": "dimension",
+        "$value": "{border.focusOffset}"
+      },
+      "outlineWidth": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      },
+      "inputBackground": {
+        "$type": "color",
+        "$value": "{color.surface}"
+      },
+      "inputBorder": {
+        "$type": "color",
+        "$value": "{color.borderStrong}"
+      },
+      "inputHeight": {
+        "$type": "dimension",
+        "$value": "{size.controlS}"
+      },
+      "transparent": {
+        "$type": "color",
+        "$value": "{color.none}"
+      },
+      "duration": {
+        "$type": "duration",
+        "$value": "{motion.micro}"
+      },
+      "signDelay": {
+        "$type": "duration",
+        "$value": "{wait.signDelay}"
+      },
+      "scrollbarSize": {
+        "$type": "dimension",
+        "$value": "{size.scrollbar}"
+      },
+      "scrollbarInset": {
+        "$type": "dimension",
+        "$value": "{border.scrollbarInset}"
+      },
+      "scrollbarThumb": {
+        "$type": "color",
+        "$value": "{color.scrollbar}"
+      },
+      "scrollbarThumbHover": {
+        "$type": "color",
+        "$value": "{color.scrollbarHover}"
+      },
+      "scrollbarTrack": {
+        "$type": "color",
+        "$value": "{color.none}"
+      }
+    }
+  }
+}

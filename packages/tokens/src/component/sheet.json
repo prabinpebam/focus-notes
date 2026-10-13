@@ -1,0 +1,78 @@
+{
+  "cmp": {
+    "sheet": {
+      "inset": {
+        "$type": "dimension",
+        "$value": "{space.m}"
+      },
+      "top": {
+        "$type": "dimension",
+        "$value": "{layout.topBand}"
+      },
+      "widthFiles": {
+        "$type": "dimension",
+        "$value": "{layout.sheetFiles}"
+      },
+      "widthTheme": {
+        "$type": "dimension",
+        "$value": "{layout.sheetTheme}"
+      },
+      "radius": {
+        "$type": "dimension",
+        "$value": "{radius.sheet}"
+      },
+      "padding": {
+        "$type": "dimension",
+        "$value": "{space.m}"
+      },
+      "gap": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "background": {
+        "$type": "color",
+        "$value": "{color.surface}"
+      },
+      "text": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "border": {
+        "$type": "color",
+        "$value": "{color.border}"
+      },
+      "borderWidth": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      },
+      "opacity": {
+        "$type": "number",
+        "$value": "{frost.opacity}"
+      },
+      "blur": {
+        "$type": "dimension",
+        "$value": "{frost.blur}"
+      },
+      "shadow": {
+        "$type": "shadow",
+        "$value": "{shadow.2}"
+      },
+      "layer": {
+        "$type": "number",
+        "$value": "{layer.panel}"
+      },
+      "duration": {
+        "$type": "duration",
+        "$value": "{motion.sheet}"
+      },
+      "easing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.decelerate}"
+      },
+      "offset": {
+        "$type": "dimension",
+        "$value": "{space.l}"
+      }
+    }
+  }
+}

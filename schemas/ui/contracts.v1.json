@@ -43,6 +43,11 @@
             "three"
           ],
           "default": "none"
+        },
+        "announce": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A polite live region, for counts and results."
         }
       },
       "events": {},
@@ -363,6 +368,14 @@
           ],
           "default": "start"
         },
+        "toggle": {
+          "kind": "boolean",
+          "default": false
+        },
+        "pressed": {
+          "kind": "boolean",
+          "default": false
+        },
         "busy": {
           "kind": "boolean",
           "default": false
@@ -384,6 +397,7 @@
         "rest",
         "hover",
         "pressed",
+        "selected",
         "focusVisible",
         "disabled",
         "busy"
@@ -469,6 +483,30 @@
           }
         },
         {
+          "name": "toggle off",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "variant": "subtle",
+            "icon": "link",
+            "toggle": true,
+            "pressed": false
+          }
+        },
+        {
+          "name": "toggle on",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "variant": "subtle",
+            "icon": "link",
+            "toggle": true,
+            "pressed": true
+          }
+        },
+        {
           "name": "disabled with reason",
           "props": {
             "label": {
@@ -514,6 +552,11 @@
           "kind": "boolean",
           "default": false
         },
+        "mixed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A toggle that applies to only part of what it acts on (aria-pressed mixed)."
+        },
         "disabled": {
           "kind": "boolean",
           "default": false
@@ -521,6 +564,13 @@
         "disabledReason": {
           "kind": "message",
           "requiredWhen": "disabled"
+        },
+        "busy": {
+          "kind": "boolean",
+          "default": false
+        },
+        "busyLabel": {
+          "kind": "text"
         }
       },
       "events": {
@@ -532,8 +582,10 @@
         "hover",
         "pressed",
         "selected",
+        "mixed",
         "focusVisible",
-        "disabled"
+        "disabled",
+        "busy"
       ],
       "tokens": "cmp.iconButton.*",
       "a11y": {
@@ -580,6 +632,30 @@
             },
             "toggle": true,
             "pressed": true
+          }
+        },
+        {
+          "name": "toggle mixed",
+          "props": {
+            "icon": "bold",
+            "label": {
+              "t": "gallery.action"
+            },
+            "toggle": true,
+            "mixed": true
+          }
+        },
+        {
+          "name": "busy",
+          "props": {
+            "icon": "save",
+            "label": {
+              "t": "gallery.action"
+            },
+            "busy": true,
+            "busyLabel": {
+              "get": "vm.gallery.query"
+            }
           }
         },
         {
@@ -831,6 +907,1444 @@
               "t": "trigger.label"
             },
             "tone": "danger"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Divider",
+      "tier": "primitive",
+      "description": "Separates groups in menus and toolbars.",
+      "props": {
+        "orientation": {
+          "kind": "enum",
+          "values": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.divider.*",
+      "a11y": {
+        "pattern": "separator"
+      },
+      "fixtures": [
+        {
+          "name": "orientation horizontal",
+          "props": {
+            "orientation": "horizontal"
+          }
+        },
+        {
+          "name": "orientation vertical",
+          "props": {
+            "orientation": "vertical"
+          }
+        }
+      ]
+    },
+    {
+      "type": "PopoverPanel",
+      "tier": "primitive",
+      "description": "A frosted panel anchored to its trigger. Esc and clicking outside close it.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "open": {
+          "kind": "boolean",
+          "default": false
+        },
+        "placement": {
+          "kind": "enum",
+          "values": [
+            "bottom",
+            "top",
+            "start",
+            "end"
+          ],
+          "default": "bottom"
+        }
+      },
+      "events": {
+        "openChange": {
+          "payload": {
+            "open": "boolean"
+          }
+        }
+      },
+      "slots": {
+        "trigger": {
+          "accepts": [
+            "Button",
+            "IconButton",
+            "TriggerButton"
+          ],
+          "min": 1,
+          "max": 1
+        },
+        "content": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "closed",
+        "open"
+      ],
+      "tokens": "cmp.popoverPanel.*",
+      "a11y": {
+        "pattern": "dialog (non-modal popover)",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "placement bottom",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "placement": "bottom",
+            "open": false
+          },
+          "slots": {
+            "trigger": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "gallery.action"
+                  }
+                }
+              }
+            ],
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "gallery.sample"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "placement top",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "placement": "top",
+            "open": false
+          },
+          "slots": {
+            "trigger": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "gallery.action"
+                  }
+                }
+              }
+            ],
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "gallery.sample"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "placement start",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "placement": "start",
+            "open": false
+          },
+          "slots": {
+            "trigger": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "gallery.action"
+                  }
+                }
+              }
+            ],
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "gallery.sample"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "placement end",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "placement": "end",
+            "open": false
+          },
+          "slots": {
+            "trigger": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "gallery.action"
+                  }
+                }
+              }
+            ],
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "gallery.sample"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "MenuButton",
+      "tier": "primitive",
+      "description": "A button that opens a menu of commands, each showing its state and shortcut: an icon, a quiet text pill, or text with a chevron (Turn into).",
+      "props": {
+        "icon": {
+          "kind": "icon",
+          "description": "For the icon variant."
+        },
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "variant": {
+          "kind": "enum",
+          "values": [
+            "icon",
+            "pill",
+            "text"
+          ],
+          "default": "icon"
+        },
+        "text": {
+          "kind": "text",
+          "description": "The pill and text variants' visible text."
+        },
+        "placement": {
+          "kind": "enum",
+          "values": [
+            "bottom end",
+            "bottom start",
+            "top start"
+          ],
+          "default": "bottom end"
+        },
+        "sections": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true
+        },
+        "shortcut": {
+          "kind": "text"
+        }
+      },
+      "events": {
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "closed",
+        "open",
+        "itemFocused",
+        "itemDisabled",
+        "itemChecked"
+      ],
+      "tokens": "cmp.menuButton.*",
+      "a11y": {
+        "pattern": "menu button",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "variant icon",
+          "props": {
+            "icon": "more",
+            "label": {
+              "t": "gallery.action"
+            },
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        },
+        {
+          "name": "variant pill",
+          "props": {
+            "variant": "pill",
+            "text": {
+              "get": "vm.gallery.query"
+            },
+            "label": {
+              "t": "gallery.action"
+            },
+            "placement": "top start",
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        },
+        {
+          "name": "placement top start",
+          "props": {
+            "icon": "more",
+            "label": {
+              "t": "gallery.action"
+            },
+            "placement": "top start",
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        },
+        {
+          "name": "variant text, placement bottom start",
+          "props": {
+            "variant": "text",
+            "text": {
+              "get": "vm.gallery.query"
+            },
+            "label": {
+              "t": "gallery.action"
+            },
+            "placement": "bottom start",
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "Shortcut",
+      "tier": "primitive",
+      "description": "A key chord drawn as key caps in the platform's symbols, read aloud in words.",
+      "props": {
+        "keys": {
+          "kind": "list",
+          "of": "keyCaps",
+          "required": true,
+          "description": "Key caps in display order, from a view model."
+        },
+        "label": {
+          "kind": "text",
+          "required": true,
+          "description": "The chord in words, for screen readers."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.shortcut.*",
+      "a11y": {
+        "pattern": "text; caps are hidden and the chord is read in words",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "macOS chord",
+          "props": {
+            "keys": {
+              "get": "vm.gallery.keysMac"
+            },
+            "label": {
+              "get": "vm.gallery.keysMacSpoken"
+            }
+          }
+        },
+        {
+          "name": "Windows chord",
+          "props": {
+            "keys": {
+              "get": "vm.gallery.keysPc"
+            },
+            "label": {
+              "get": "vm.gallery.keysPcSpoken"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "SearchField",
+      "tier": "primitive",
+      "description": "A search box with a clear button. Esc clears it, or passes on when it's already empty.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "bindable": true
+        },
+        "placeholder": {
+          "kind": "message"
+        },
+        "clearLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "autoFocus": {
+          "kind": "boolean",
+          "default": false
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus into the field."
+        },
+        "invalid": {
+          "kind": "boolean",
+          "default": false
+        },
+        "keyScope": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "findBar",
+            "findField",
+            "replaceField",
+            "pickerField",
+            "moveField"
+          ],
+          "default": "none"
+        },
+        "controls": {
+          "kind": "ref",
+          "description": "The ResultList this field drives."
+        },
+        "activeId": {
+          "kind": "text",
+          "description": "The active item in that list."
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "value"
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "focused",
+        "filled",
+        "invalid"
+      ],
+      "tokens": "cmp.searchField.*",
+      "a11y": {
+        "pattern": "search box",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "empty",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "placeholder": {
+              "t": "shortcuts.searchPlaceholder"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            }
+          }
+        },
+        {
+          "name": "filled",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "value": {
+              "get": "vm.gallery.query"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            }
+          }
+        },
+        {
+          "name": "invalid",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "value": {
+              "get": "vm.gallery.query"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "invalid": true
+          }
+        },
+        {
+          "name": "keyScope none",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "keyScope": "none"
+          }
+        },
+        {
+          "name": "keyScope findBar",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "keyScope": "findBar"
+          }
+        },
+        {
+          "name": "keyScope findField",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "keyScope": "findField"
+          }
+        },
+        {
+          "name": "keyScope replaceField",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "keyScope": "replaceField"
+          }
+        },
+        {
+          "name": "keyScope pickerField",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "keyScope": "pickerField"
+          }
+        },
+        {
+          "name": "keyScope moveField",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "keyScope": "moveField"
+          }
+        }
+      ]
+    },
+    {
+      "type": "SegmentedControl",
+      "tier": "primitive",
+      "description": "Two to five mutually exclusive choices drawn as segments, with a visible label.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "options": {
+          "kind": "list",
+          "of": "options",
+          "required": true,
+          "description": "2 to 5 options from a view model."
+        },
+        "value": {
+          "kind": "text",
+          "bindable": true
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "value"
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "selected",
+        "focusVisible"
+      ],
+      "tokens": "cmp.segmentedControl.*",
+      "a11y": {
+        "pattern": "radio group",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "first selected",
+          "props": {
+            "label": {
+              "t": "shortcuts.layer"
+            },
+            "options": {
+              "get": "vm.gallery.options"
+            },
+            "value": {
+              "get": "vm.gallery.optionFirst"
+            }
+          }
+        },
+        {
+          "name": "last selected",
+          "props": {
+            "label": {
+              "t": "shortcuts.platform"
+            },
+            "options": {
+              "get": "vm.gallery.options"
+            },
+            "value": {
+              "get": "vm.gallery.optionLast"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "DialogPanel",
+      "tier": "primitive",
+      "description": "The modal surface behind every dialog: scrim, raised panel, a title row, fixed controls, and a scrolling body.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "open": {
+          "kind": "boolean",
+          "default": false
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "s",
+            "l"
+          ],
+          "default": "l"
+        }
+      },
+      "events": {
+        "openChange": {
+          "payload": {
+            "open": "boolean"
+          }
+        }
+      },
+      "slots": {
+        "header": {
+          "accepts": "any",
+          "max": 1
+        },
+        "fixed": {
+          "accepts": "any",
+          "max": 1
+        },
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "open",
+        "entering",
+        "exiting"
+      ],
+      "tokens": "cmp.dialogPanel.*",
+      "a11y": {
+        "pattern": "modal dialog",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "size s",
+          "props": {
+            "label": {
+              "t": "shortcuts.title"
+            },
+            "open": true,
+            "size": "s"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "size l",
+          "props": {
+            "label": {
+              "t": "shortcuts.title"
+            },
+            "open": true,
+            "size": "l"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Spinner",
+      "tier": "primitive",
+      "description": "An indeterminate wait sign. Stands still with reduced motion.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "description": "What's being waited for; omit inside a control that says it."
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "s",
+            "m"
+          ],
+          "default": "m"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.spinner.*",
+      "a11y": {
+        "pattern": "progressbar (indeterminate)",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "size s",
+          "props": {
+            "size": "s",
+            "label": {
+              "t": "task.saving"
+            }
+          }
+        },
+        {
+          "name": "size m",
+          "props": {
+            "size": "m",
+            "label": {
+              "t": "task.saving"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "LiveRegion",
+      "tier": "primitive",
+      "description": "A polite screen-reader announcement with nothing on screen.",
+      "props": {
+        "message": {
+          "kind": "text",
+          "required": true
+        },
+        "announceKey": {
+          "kind": "number",
+          "min": 0,
+          "description": "Changes when the same words should be announced again."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.liveRegion.*",
+      "a11y": {
+        "pattern": "status (live region)"
+      },
+      "fixtures": [
+        {
+          "name": "message",
+          "props": {
+            "message": {
+              "get": "vm.gallery.query"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "Toast",
+      "tier": "primitive",
+      "description": "A one-sentence confirmation with an optional action. Pauses while hovered or focused; Esc dismisses it.",
+      "props": {
+        "message": {
+          "kind": "text",
+          "required": true
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "info",
+            "error"
+          ],
+          "default": "info"
+        },
+        "actionLabel": {
+          "kind": "text"
+        },
+        "dismissLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0
+        }
+      },
+      "events": {
+        "action": {},
+        "dismiss": {},
+        "pausedChange": {
+          "payload": {
+            "paused": "boolean"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "paused",
+        "focusVisible"
+      ],
+      "tokens": "cmp.toast.*",
+      "a11y": {
+        "pattern": "status (errors: alert)",
+        "name": "message"
+      },
+      "fixtures": [
+        {
+          "name": "tone info",
+          "props": {
+            "message": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "info",
+            "dismissLabel": {
+              "t": "toast.dismiss"
+            }
+          }
+        },
+        {
+          "name": "tone error with action",
+          "props": {
+            "message": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "error",
+            "actionLabel": {
+              "get": "vm.gallery.query"
+            },
+            "dismissLabel": {
+              "t": "toast.dismiss"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "ResultList",
+      "tier": "primitive",
+      "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant).",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "resultItems",
+          "required": true
+        },
+        "activeId": {
+          "kind": "text"
+        }
+      },
+      "events": {
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "activeChange": {
+          "payload": {
+            "id": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "active",
+        "disabled"
+      ],
+      "tokens": "cmp.resultList.*",
+      "a11y": {
+        "pattern": "listbox with aria-activedescendant",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "with active item",
+          "props": {
+            "label": {
+              "t": "find.label"
+            },
+            "items": {
+              "get": "vm.gallery.results"
+            },
+            "activeId": {
+              "get": "vm.gallery.optionFirst"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "Tabs",
+      "tier": "primitive",
+      "description": "A tab list and the selected tab's panel. The view switches the panel content on the value.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "options",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "bindable": true
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "value"
+        }
+      },
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest",
+        "hover",
+        "selected",
+        "focusVisible"
+      ],
+      "tokens": "cmp.tabs.*",
+      "a11y": {
+        "pattern": "tabs",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "first selected",
+          "props": {
+            "label": {
+              "t": "shortcuts.layer"
+            },
+            "items": {
+              "get": "vm.gallery.options"
+            },
+            "value": {
+              "get": "vm.gallery.optionFirst"
+            }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "MorphPanel",
+      "tier": "primitive",
+      "description": "A trigger that morphs into its panel: the circle grows into the panel's shape, and the content fades in after it.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "open": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "openChange": {
+          "payload": {
+            "open": "boolean"
+          }
+        }
+      },
+      "slots": {
+        "trigger": {
+          "accepts": "any",
+          "min": 1,
+          "max": 1
+        },
+        "content": {
+          "accepts": "any",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "tokens": "cmp.morphPanel.*",
+      "a11y": {
+        "pattern": "dialog (non-modal), opened by its trigger",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "closed",
+          "props": {
+            "label": {
+              "t": "toolbar.label"
+            },
+            "open": false
+          },
+          "slots": {
+            "trigger": [
+              {
+                "type": "TriggerButton",
+                "props": {
+                  "label": {
+                    "t": "trigger.label"
+                  }
+                }
+              }
+            ],
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "gallery.sample"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "open",
+          "props": {
+            "label": {
+              "t": "toolbar.label"
+            },
+            "open": true
+          },
+          "slots": {
+            "trigger": [
+              {
+                "type": "TriggerButton",
+                "props": {
+                  "label": {
+                    "t": "trigger.label"
+                  }
+                }
+              }
+            ],
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "gallery.sample"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "TextField",
+      "tier": "primitive",
+      "description": "A labelled single-line field, with an optional description. Secrets use type password.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "bindable": true
+        },
+        "placeholder": {
+          "kind": "message"
+        },
+        "description": {
+          "kind": "message"
+        },
+        "type": {
+          "kind": "enum",
+          "values": [
+            "text",
+            "password",
+            "url"
+          ],
+          "default": "text"
+        },
+        "invalid": {
+          "kind": "boolean",
+          "default": false
+        },
+        "labelHidden": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The label is read by screen readers but not shown, for one-line editors whose placeholder and context say what goes in."
+        },
+        "autoFocus": {
+          "kind": "boolean",
+          "default": false
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "value"
+        },
+        "submit": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "focused",
+        "invalid"
+      ],
+      "tokens": "cmp.textField.*",
+      "a11y": {
+        "pattern": "text box",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "type text",
+          "props": {
+            "label": {
+              "t": "unlock.passphrase"
+            },
+            "type": "text",
+            "description": {
+              "t": "unlock.intro"
+            }
+          }
+        },
+        {
+          "name": "type password",
+          "props": {
+            "label": {
+              "t": "unlock.passphrase"
+            },
+            "type": "password"
+          }
+        },
+        {
+          "name": "type url",
+          "props": {
+            "label": {
+              "t": "unlock.passphrase"
+            },
+            "type": "url"
+          }
+        },
+        {
+          "name": "invalid",
+          "props": {
+            "label": {
+              "t": "unlock.passphrase"
+            },
+            "invalid": true
+          }
+        },
+        {
+          "name": "label hidden",
+          "props": {
+            "label": {
+              "t": "unlock.passphrase"
+            },
+            "labelHidden": true,
+            "placeholder": {
+              "t": "unlock.passphrase"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "PillButton",
+      "tier": "primitive",
+      "description": "A small, quiet text button in a pill: muted until pointed at or focused.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focusVisible"
+      ],
+      "tokens": "cmp.pillButton.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "unlock",
+          "props": {
+            "label": {
+              "t": "account.unlock"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "FileTree",
+      "tier": "primitive",
+      "description": "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, and an inline name field.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "treeItems",
+          "required": true
+        },
+        "focusId": {
+          "kind": "text",
+          "description": "The focused row, the tree's one tab stop."
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus into the tree."
+        },
+        "editValue": {
+          "kind": "text",
+          "bindable": true,
+          "description": "The text of the row being named."
+        },
+        "editLabel": {
+          "kind": "text",
+          "description": "The name field's label: Title or Folder name."
+        },
+        "editError": {
+          "kind": "text",
+          "description": "Why the name can't be used, under the field."
+        }
+      },
+      "events": {
+        "select": {
+          "payload": {
+            "id": "text",
+            "mode": "text"
+          }
+        },
+        "expand": {
+          "payload": {
+            "id": "text",
+            "expanded": "boolean"
+          }
+        },
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "drop": {
+          "payload": {
+            "source": "text",
+            "target": "text"
+          }
+        },
+        "editChange": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "editValue"
+        },
+        "editBlur": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "focusVisible",
+        "selected",
+        "current",
+        "multiSelected",
+        "editing",
+        "invalid",
+        "dropTarget",
+        "pending",
+        "readOnly"
+      ],
+      "tokens": "cmp.fileTree.*",
+      "a11y": {
+        "pattern": "tree (multi-selectable) with type-ahead",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "sections, folders, the current note, and a multiple selection",
+          "props": {
+            "label": {
+              "t": "files.tree"
+            },
+            "items": {
+              "get": "vm.gallery.tree"
+            },
+            "focusId": {
+              "get": "vm.gallery.treeFocus"
+            }
+          }
+        },
+        {
+          "name": "naming a folder, with an error",
+          "props": {
+            "label": {
+              "t": "files.tree"
+            },
+            "items": {
+              "get": "vm.gallery.treeEditing"
+            },
+            "editValue": {
+              "get": "vm.gallery.query"
+            },
+            "editLabel": {
+              "get": "vm.gallery.treeEditLabel"
+            },
+            "editError": {
+              "get": "vm.gallery.treeEditError"
+            }
           }
         }
       ]
@@ -1681,6 +3195,20 @@
           "kind": "token",
           "group": "space",
           "default": "none"
+        },
+        "keyScope": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "findBar",
+            "findField",
+            "replaceField",
+            "pickerField",
+            "formatToolbar",
+            "linkEditor"
+          ],
+          "default": "none",
+          "description": "Keys registered for this scope work while focus is inside."
         }
       },
       "events": {},
@@ -1890,6 +3418,132 @@
           ]
         },
         {
+          "name": "keyScope none",
+          "props": {
+            "keyScope": "none",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyScope findBar",
+          "props": {
+            "keyScope": "findBar",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyScope findField",
+          "props": {
+            "keyScope": "findField",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyScope replaceField",
+          "props": {
+            "keyScope": "replaceField",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyScope pickerField",
+          "props": {
+            "keyScope": "pickerField",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyScope formatToolbar",
+          "props": {
+            "keyScope": "formatToolbar",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyScope linkEditor",
+          "props": {
+            "keyScope": "linkEditor",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
           "name": "elevation 0",
           "props": {
             "elevation": "0",
@@ -1984,9 +3638,11 @@
           "kind": "enum",
           "values": [
             "topBand",
+            "belowTopBand",
             "fill",
             "center",
-            "bottomCenter"
+            "bottomCenter",
+            "bottomStart"
           ],
           "default": "center"
         },
@@ -2212,6 +3868,32 @@
           ]
         },
         {
+          "name": "position belowTopBand",
+          "props": {
+            "position": "belowTopBand"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "name": "position fill",
           "props": {
             "position": "fill"
@@ -2267,6 +3949,32 @@
           "name": "position bottomCenter",
           "props": {
             "position": "bottomCenter"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "position bottomStart",
+          "props": {
+            "position": "bottomStart"
           },
           "children": [
             {
@@ -2542,6 +4250,50 @@
             "web"
           ],
           "required": true
+        },
+        "contentSize": {
+          "kind": "number",
+          "min": 14,
+          "max": 32
+        },
+        "focusMode": {
+          "kind": "boolean",
+          "default": false
+        },
+        "theme": {
+          "kind": "enum",
+          "values": [
+            "paper",
+            "sepia",
+            "harbor-light",
+            "forest-light",
+            "contrast-light",
+            "ink",
+            "dusk",
+            "harbor-dark",
+            "forest-dark",
+            "contrast-dark"
+          ],
+          "description": "The theme to show (THM-08). Defaults to Paper or Ink."
+        },
+        "contentFont": {
+          "kind": "enum",
+          "values": [
+            "mono",
+            "sans",
+            "serif",
+            "hyperlegible",
+            "dyslexic",
+            "system"
+          ],
+          "default": "mono",
+          "description": "The content font (THM-03)."
+        },
+        "uiScale": {
+          "kind": "number",
+          "min": 0.9,
+          "max": 1.5,
+          "description": "Interface scale (DSY-03); note text is unaffected."
         }
       },
       "events": {},
@@ -2625,6 +4377,735 @@
               }
             }
           ]
+        },
+        {
+          "name": "theme paper",
+          "props": {
+            "scheme": "light",
+            "theme": "paper",
+            "platform": "windows"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme sepia",
+          "props": {
+            "scheme": "light",
+            "theme": "sepia",
+            "platform": "windows"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme harbor-light",
+          "props": {
+            "scheme": "light",
+            "theme": "harbor-light",
+            "platform": "windows"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme forest-light",
+          "props": {
+            "scheme": "light",
+            "theme": "forest-light",
+            "platform": "windows"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme contrast-light",
+          "props": {
+            "scheme": "light",
+            "theme": "contrast-light",
+            "platform": "windows"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme ink",
+          "props": {
+            "scheme": "dark",
+            "theme": "ink",
+            "platform": "windows"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme dusk",
+          "props": {
+            "scheme": "dark",
+            "theme": "dusk",
+            "platform": "windows"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme harbor-dark",
+          "props": {
+            "scheme": "dark",
+            "theme": "harbor-dark",
+            "platform": "windows"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme forest-dark",
+          "props": {
+            "scheme": "dark",
+            "theme": "forest-dark",
+            "platform": "windows"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "theme contrast-dark",
+          "props": {
+            "scheme": "dark",
+            "theme": "contrast-dark",
+            "platform": "windows"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "contentFont mono",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "contentFont": "mono"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "contentFont sans",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "contentFont": "sans"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "contentFont serif",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "contentFont": "serif"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "contentFont hyperlegible",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "contentFont": "hyperlegible"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "contentFont dyslexic",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "contentFont": "dyslexic"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "contentFont system",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "contentFont": "system"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "uiScale 1.5",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "uiScale": 1.5
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ToolbarRow",
+      "tier": "layout",
+      "description": "A row with the toolbar role: one tab stop, with arrow keys, Home, and End moving between its items.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus to its first item (Alt+F10)."
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": [
+            "IconButton",
+            "Button",
+            "MenuButton",
+            "Divider"
+          ]
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "space.*",
+      "a11y": {
+        "pattern": "toolbar",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "with actions",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            }
+          },
+          "children": [
+            {
+              "type": "IconButton",
+              "props": {
+                "icon": "newNote",
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "IconButton",
+              "props": {
+                "icon": "open",
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Divider",
+              "props": {
+                "orientation": "vertical"
+              }
+            },
+            {
+              "type": "IconButton",
+              "props": {
+                "icon": "more",
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Field",
+      "tier": "layout",
+      "description": "Label, control, description, and error in one arrangement; the group is named by the label.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "description": {
+          "kind": "message"
+        },
+        "error": {
+          "kind": "message"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any",
+          "max": 1
+        }
+      },
+      "states": [
+        "rest",
+        "error"
+      ],
+      "tokens": "cmp.field.*",
+      "a11y": {
+        "pattern": "group",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "with description",
+          "props": {
+            "label": {
+              "t": "find.field"
+            },
+            "description": {
+              "t": "gallery.long"
+            }
+          },
+          "children": [
+            {
+              "type": "SearchField",
+              "props": {
+                "label": {
+                  "t": "find.field"
+                },
+                "clearLabel": {
+                  "t": "field.clear"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "with error",
+          "props": {
+            "label": {
+              "t": "find.field"
+            },
+            "error": {
+              "t": "find.invalid"
+            }
+          },
+          "children": [
+            {
+              "type": "SearchField",
+              "props": {
+                "label": {
+                  "t": "find.field"
+                },
+                "clearLabel": {
+                  "t": "field.clear"
+                },
+                "invalid": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Positioner",
+      "tier": "layout",
+      "description": "Anchors floating content to a range in the note (the selection or a link): never covering it, kept on screen, and following it as it scrolls.",
+      "props": {
+        "anchor": {
+          "kind": "enum",
+          "values": [
+            "selection",
+            "link"
+          ],
+          "default": "selection"
+        },
+        "placement": {
+          "kind": "enum",
+          "values": [
+            "above",
+            "below"
+          ],
+          "default": "above",
+          "description": "Above flips below near the top band; touch screens always use below."
+        },
+        "offset": {
+          "kind": "token",
+          "group": "space",
+          "default": "s"
+        },
+        "landmark": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "region"
+          ],
+          "default": "none"
+        },
+        "label": {
+          "kind": "message",
+          "requiredWhen": "landmark"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any",
+          "max": 1
+        }
+      },
+      "states": [
+        "above",
+        "below",
+        "offscreen"
+      ],
+      "tokens": "cmp.positioner.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        {
+          "name": "anchor selection, above",
+          "props": {
+            "anchor": "selection",
+            "placement": "above"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "s",
+                "shape": "popover",
+                "elevation": "2"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "anchor link, below",
+          "props": {
+            "anchor": "link",
+            "placement": "below"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "s",
+                "shape": "popover",
+                "elevation": "2"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "landmark region",
+          "props": {
+            "landmark": "region",
+            "label": {
+              "t": "gallery.sample"
+            }
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "s",
+                "shape": "popover",
+                "elevation": "2"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Sheet",
+      "tier": "layout",
+      "description": "A side sheet over the canvas (Files on the left, Theme on the right). Not modal; closes on Esc or a click on the canvas.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "side": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "end"
+          ],
+          "default": "start"
+        },
+        "width": {
+          "kind": "enum",
+          "values": [
+            "files",
+            "theme"
+          ],
+          "default": "files",
+          "description": "A layout.sheet* token."
+        },
+        "keyScope": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "files"
+          ],
+          "default": "none",
+          "description": "Keys registered for this scope work while focus is inside."
+        }
+      },
+      "events": {
+        "close": {}
+      },
+      "slots": {
+        "header": {
+          "accepts": "any"
+        },
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest",
+        "entering"
+      ],
+      "tokens": "cmp.sheet.*",
+      "a11y": {
+        "pattern": "complementary landmark",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "start, files width",
+          "props": {
+            "label": {
+              "t": "files.heading"
+            },
+            "side": "start",
+            "width": "files",
+            "keyScope": "files"
+          },
+          "slots": {
+            "header": [
+              {
+                "type": "Heading",
+                "props": {
+                  "level": "2",
+                  "value": {
+                    "t": "files.heading"
+                  }
+                }
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "end, theme width",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "side": "end",
+            "width": "theme",
+            "keyScope": "none"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
         }
       ]
     },
@@ -2651,6 +5132,42 @@
         "readOnly": {
           "kind": "boolean",
           "default": false
+        },
+        "focusMode": {
+          "kind": "boolean",
+          "default": false
+        },
+        "keymap": {
+          "kind": "list",
+          "of": "keyBindings",
+          "description": "Editor key bindings from the command registry."
+        },
+        "findOpen": {
+          "kind": "boolean",
+          "default": false
+        },
+        "findQuery": {
+          "kind": "text"
+        },
+        "findReplace": {
+          "kind": "text"
+        },
+        "findCase": {
+          "kind": "boolean",
+          "default": false
+        },
+        "findWord": {
+          "kind": "boolean",
+          "default": false
+        },
+        "findRegex": {
+          "kind": "boolean",
+          "default": false
+        },
+        "linkEditing": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The link editor is open: the selection stays highlighted and anchored."
         }
       },
       "events": {
@@ -2659,7 +5176,47 @@
             "value": "text"
           }
         },
-        "ready": {}
+        "ready": {},
+        "findResult": {
+          "payload": {
+            "count": "number",
+            "current": "number",
+            "invalid": "boolean",
+            "wrapped": "boolean",
+            "replaced": "number"
+          }
+        },
+        "findPrefill": {
+          "payload": {
+            "value": "text"
+          }
+        },
+        "format": {
+          "payload": {
+            "toolbar": "boolean",
+            "card": "boolean",
+            "bold": "text",
+            "italic": "text",
+            "strike": "text",
+            "code": "text",
+            "block": "text",
+            "codeBlock": "boolean",
+            "inlineCode": "boolean",
+            "oneBlock": "boolean",
+            "href": "text"
+          }
+        },
+        "linkEdit": {
+          "payload": {
+            "href": "text",
+            "selected": "boolean"
+          }
+        },
+        "openLink": {
+          "payload": {
+            "href": "text"
+          }
+        }
       },
       "slots": {},
       "states": [
@@ -2677,7 +5234,7 @@
     {
       "type": "Trigger",
       "tier": "compound",
-      "description": "The trigger at the top center. Opens the toolbar, and shows a save problem in its dot.",
+      "description": "The trigger at the top center. Opens the toolbar under itself, and shows a save problem in its dot.",
       "props": {
         "label": {
           "kind": "message",
@@ -2693,13 +5250,40 @@
         "shortcut": {
           "kind": "text"
         },
-        "expanded": {
+        "open": {
           "kind": "boolean",
           "default": false
+        },
+        "toolbarLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "commandItems",
+          "required": true
+        },
+        "more": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true
+        },
+        "moreLabel": {
+          "kind": "message",
+          "required": true
         }
       },
       "events": {
-        "press": {}
+        "openChange": {
+          "payload": {
+            "open": "boolean"
+          }
+        },
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        }
       },
       "slots": {},
       "states": [
@@ -2707,11 +5291,12 @@
         "hover",
         "pressed",
         "focusVisible",
+        "open",
         "problem"
       ],
-      "tokens": "none (composes TriggerButton)",
+      "tokens": "none (composes TriggerButton, MorphPanel, Toolbar)",
       "a11y": {
-        "pattern": "menu button",
+        "pattern": "button that morphs into a toolbar (non-modal dialog)",
         "name": "label"
       },
       "fixtures": [
@@ -2720,6 +5305,18 @@
           "props": {
             "label": {
               "t": "trigger.label"
+            },
+            "toolbarLabel": {
+              "t": "toolbar.label"
+            },
+            "items": {
+              "get": "vm.gallery.toolbar"
+            },
+            "more": {
+              "get": "vm.gallery.menu"
+            },
+            "moreLabel": {
+              "t": "toolbar.more"
             }
           }
         },
@@ -2732,8 +5329,195 @@
             "problemLabel": {
               "t": "trigger.saveProblem"
             },
-            "problem": true
+            "problem": true,
+            "toolbarLabel": {
+              "t": "toolbar.label"
+            },
+            "items": {
+              "get": "vm.gallery.toolbar"
+            },
+            "more": {
+              "get": "vm.gallery.menu"
+            },
+            "moreLabel": {
+              "t": "toolbar.more"
+            }
           }
+        }
+      ]
+    },
+    {
+      "type": "Toolbar",
+      "tier": "compound",
+      "description": "The trigger's toolbar: at most six command actions, then ⋯ with everything else (UI-04).",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "commandItems",
+          "required": true
+        },
+        "more": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true
+        },
+        "moreLabel": {
+          "kind": "message",
+          "required": true
+        }
+      },
+      "events": {
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "none (composes ToolbarRow, IconButton, Divider, MenuButton)",
+      "a11y": {
+        "pattern": "toolbar",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "default actions",
+          "props": {
+            "label": {
+              "t": "toolbar.label"
+            },
+            "items": {
+              "get": "vm.gallery.toolbar"
+            },
+            "more": {
+              "get": "vm.gallery.menu"
+            },
+            "moreLabel": {
+              "t": "toolbar.more"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "Dialog",
+      "tier": "compound",
+      "description": "A titled modal dialog with a close button, optional fixed controls, and a scrolling body.",
+      "props": {
+        "title": {
+          "kind": "message",
+          "required": true
+        },
+        "closeLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "open": {
+          "kind": "boolean",
+          "default": false
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "s",
+            "l"
+          ],
+          "default": "l"
+        }
+      },
+      "events": {
+        "openChange": {
+          "payload": {
+            "open": "boolean"
+          }
+        }
+      },
+      "slots": {
+        "toolbar": {
+          "accepts": "any"
+        },
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "open",
+        "entering",
+        "exiting"
+      ],
+      "tokens": "none (composes DialogPanel, Heading, IconButton, Inline)",
+      "a11y": {
+        "pattern": "modal dialog",
+        "name": "title"
+      },
+      "fixtures": [
+        {
+          "name": "size s",
+          "props": {
+            "title": {
+              "t": "shortcuts.title"
+            },
+            "closeLabel": {
+              "t": "dialog.close"
+            },
+            "open": true,
+            "size": "s"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "size l with toolbar",
+          "props": {
+            "title": {
+              "t": "shortcuts.title"
+            },
+            "closeLabel": {
+              "t": "dialog.close"
+            },
+            "open": true,
+            "size": "l"
+          },
+          "slots": {
+            "toolbar": [
+              {
+                "type": "SearchField",
+                "props": {
+                  "label": {
+                    "t": "shortcuts.search"
+                  },
+                  "clearLabel": {
+                    "t": "field.clear"
+                  }
+                }
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
         }
       ]
     }

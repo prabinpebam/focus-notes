@@ -1,0 +1,22 @@
+import { defineContract } from "../../contract.ts";
+
+export const contract = defineContract({
+  type: "Sheet",
+  tier: "layout",
+  description: "A side sheet over the canvas (Files on the left, Theme on the right). Not modal; closes on Esc or a click on the canvas.",
+  props: {
+    label: { kind: "message", required: true },
+    side: { kind: "enum", values: ["start", "end"], default: "start" },
+    width: { kind: "enum", values: ["files", "theme"], default: "files", description: "A layout.sheet* token." },
+    keyScope: { kind: "enum", values: ["none", "files"], default: "none", description: "Keys registered for this scope work while focus is inside." },
+  },
+  events: { close: {} },
+  slots: { header: { accepts: "any" }, default: { accepts: "any" } },
+  states: ["rest", "entering"],
+  tokens: "cmp.sheet.*",
+  a11y: { pattern: "complementary landmark", name: "label" },
+  fixtures: [
+    { name: "start, files width", props: { label: { t: "files.heading" }, side: "start", width: "files", keyScope: "files" }, slots: { header: [{ type: "Heading", props: { level: "2", value: { t: "files.heading" } } }] }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "end, theme width", props: { label: { t: "gallery.sample" }, side: "end", width: "theme", keyScope: "none" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] },
+  ],
+});

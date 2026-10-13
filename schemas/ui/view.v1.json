@@ -216,6 +216,54 @@
           "$ref": "#/$defs/c_TriggerButton"
         },
         {
+          "$ref": "#/$defs/c_Divider"
+        },
+        {
+          "$ref": "#/$defs/c_PopoverPanel"
+        },
+        {
+          "$ref": "#/$defs/c_MenuButton"
+        },
+        {
+          "$ref": "#/$defs/c_Shortcut"
+        },
+        {
+          "$ref": "#/$defs/c_SearchField"
+        },
+        {
+          "$ref": "#/$defs/c_SegmentedControl"
+        },
+        {
+          "$ref": "#/$defs/c_DialogPanel"
+        },
+        {
+          "$ref": "#/$defs/c_Spinner"
+        },
+        {
+          "$ref": "#/$defs/c_LiveRegion"
+        },
+        {
+          "$ref": "#/$defs/c_Toast"
+        },
+        {
+          "$ref": "#/$defs/c_ResultList"
+        },
+        {
+          "$ref": "#/$defs/c_Tabs"
+        },
+        {
+          "$ref": "#/$defs/c_MorphPanel"
+        },
+        {
+          "$ref": "#/$defs/c_TextField"
+        },
+        {
+          "$ref": "#/$defs/c_PillButton"
+        },
+        {
+          "$ref": "#/$defs/c_FileTree"
+        },
+        {
           "$ref": "#/$defs/c_Stack"
         },
         {
@@ -234,10 +282,28 @@
           "$ref": "#/$defs/c_AppRoot"
         },
         {
+          "$ref": "#/$defs/c_ToolbarRow"
+        },
+        {
+          "$ref": "#/$defs/c_Field"
+        },
+        {
+          "$ref": "#/$defs/c_Positioner"
+        },
+        {
+          "$ref": "#/$defs/c_Sheet"
+        },
+        {
           "$ref": "#/$defs/c_EditorSurface"
         },
         {
           "$ref": "#/$defs/c_Trigger"
+        },
+        {
+          "$ref": "#/$defs/c_Toolbar"
+        },
+        {
+          "$ref": "#/$defs/c_Dialog"
         }
       ]
     },
@@ -457,6 +523,19 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "announce": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -627,7 +706,16 @@
                     "heading3",
                     "color",
                     "share",
-                    "history"
+                    "history",
+                    "matchCase",
+                    "wholeWord",
+                    "regex",
+                    "arrowUp",
+                    "arrowDown",
+                    "lock",
+                    "export",
+                    "import",
+                    "strikethrough"
                   ]
                 },
                 {
@@ -806,7 +894,16 @@
                     "heading3",
                     "color",
                     "share",
-                    "history"
+                    "history",
+                    "matchCase",
+                    "wholeWord",
+                    "regex",
+                    "arrowUp",
+                    "arrowDown",
+                    "lock",
+                    "export",
+                    "import",
+                    "strikethrough"
                   ]
                 },
                 {
@@ -821,6 +918,32 @@
                     "start",
                     "end"
                   ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "toggle": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "pressed": {
+              "anyOf": [
+                {
+                  "type": "boolean"
                 },
                 {
                   "$ref": "#/$defs/read"
@@ -967,7 +1090,16 @@
                     "heading3",
                     "color",
                     "share",
-                    "history"
+                    "history",
+                    "matchCase",
+                    "wholeWord",
+                    "regex",
+                    "arrowUp",
+                    "arrowDown",
+                    "lock",
+                    "export",
+                    "import",
+                    "strikethrough"
                   ]
                 },
                 {
@@ -1037,6 +1169,19 @@
                 }
               ]
             },
+            "mixed": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "disabled": {
               "anyOf": [
                 {
@@ -1060,6 +1205,26 @@
                 },
                 {
                   "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "busy": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "busyLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
                 }
               ]
             }
@@ -1321,6 +1486,1617 @@
           "additionalProperties": false,
           "properties": {
             "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_Divider": {
+      "type": "object",
+      "description": "Separates groups in menus and toolbars.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Divider"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "orientation": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "horizontal",
+                    "vertical"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_PopoverPanel": {
+      "type": "object",
+      "description": "A frosted panel anchored to its trigger. Esc and clicking outside close it.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "PopoverPanel"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "open": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "placement": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "bottom",
+                    "top",
+                    "start",
+                    "end"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "openChange": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "trigger": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "content": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        }
+      }
+    },
+    "c_MenuButton": {
+      "type": "object",
+      "description": "A button that opens a menu of commands, each showing its state and shortcut: an icon, a quiet text pill, or text with a chevron (Turn into).",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "MenuButton"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "icon": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "save",
+                    "darkTheme",
+                    "lightTheme",
+                    "more",
+                    "search",
+                    "add",
+                    "dismiss",
+                    "check",
+                    "newNote",
+                    "bold",
+                    "italic",
+                    "link",
+                    "minimize",
+                    "restore",
+                    "maximize",
+                    "fullScreen",
+                    "exitFullScreen",
+                    "focus",
+                    "font",
+                    "keyboard",
+                    "settings",
+                    "info",
+                    "warning",
+                    "error",
+                    "sync",
+                    "delete",
+                    "rename",
+                    "copy",
+                    "folder",
+                    "document",
+                    "chevronRight",
+                    "chevronDown",
+                    "undo",
+                    "redo",
+                    "table",
+                    "quote",
+                    "code",
+                    "bulletList",
+                    "numberedList",
+                    "heading1",
+                    "heading2",
+                    "heading3",
+                    "color",
+                    "share",
+                    "history",
+                    "matchCase",
+                    "wholeWord",
+                    "regex",
+                    "arrowUp",
+                    "arrowDown",
+                    "lock",
+                    "export",
+                    "import",
+                    "strikethrough"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "variant": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "icon",
+                    "pill",
+                    "text"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "text": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "placement": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "bottom end",
+                    "bottom start",
+                    "top start"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "sections": {
+              "$ref": "#/$defs/read"
+            },
+            "shortcut": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "sections"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_Shortcut": {
+      "type": "object",
+      "description": "A key chord drawn as key caps in the platform's symbols, read aloud in words.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Shortcut"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "keys": {
+              "$ref": "#/$defs/read"
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "keys",
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_SearchField": {
+      "type": "object",
+      "description": "A search box with a clear button. Esc clears it, or passes on when it's already empty.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SearchField"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "placeholder": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "clearLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "autoFocus": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "focusRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "invalid": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "keyScope": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "findBar",
+                    "findField",
+                    "replaceField",
+                    "pickerField",
+                    "moveField"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "controls": {
+              "type": "string",
+              "pattern": "^[a-z][A-Za-z0-9-]*$"
+            },
+            "activeId": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "clearLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "change": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_SegmentedControl": {
+      "type": "object",
+      "description": "Two to five mutually exclusive choices drawn as segments, with a visible label.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SegmentedControl"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "options": {
+              "$ref": "#/$defs/read"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "options"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "change": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_DialogPanel": {
+      "type": "object",
+      "description": "The modal surface behind every dialog: scrim, raised panel, a title row, fixed controls, and a scrolling body.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "DialogPanel"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "open": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "s",
+                    "l"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "openChange": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "header": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "fixed": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        }
+      }
+    },
+    "c_Spinner": {
+      "type": "object",
+      "description": "An indeterminate wait sign. Stands still with reduced motion.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Spinner"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "s",
+                    "m"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_LiveRegion": {
+      "type": "object",
+      "description": "A polite screen-reader announcement with nothing on screen.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "LiveRegion"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "announceKey": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "message"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_Toast": {
+      "type": "object",
+      "description": "A one-sentence confirmation with an optional action. Pauses while hovered or focused; Esc dismisses it.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Toast"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "info",
+                    "error"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "actionLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "dismissLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "focusRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "message",
+            "dismissLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/actions"
+            },
+            "dismiss": {
+              "$ref": "#/$defs/actions"
+            },
+            "pausedChange": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_ResultList": {
+      "type": "object",
+      "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant).",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ResultList"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "items": {
+              "$ref": "#/$defs/read"
+            },
+            "activeId": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "items"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/actions"
+            },
+            "activeChange": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_Tabs": {
+      "type": "object",
+      "description": "A tab list and the selected tab's panel. The view switches the panel content on the value.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Tabs"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "items": {
+              "$ref": "#/$defs/read"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "items"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "change": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_MorphPanel": {
+      "type": "object",
+      "description": "A trigger that morphs into its panel: the circle grows into the panel's shape, and the content fades in after it.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "MorphPanel"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "open": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "openChange": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "trigger": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "content": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        }
+      }
+    },
+    "c_TextField": {
+      "type": "object",
+      "description": "A labelled single-line field, with an optional description. Secrets use type password.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "TextField"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "placeholder": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "type": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "text",
+                    "password",
+                    "url"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "invalid": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "labelHidden": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "autoFocus": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "focusRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "change": {
+              "$ref": "#/$defs/actions"
+            },
+            "submit": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_PillButton": {
+      "type": "object",
+      "description": "A small, quiet text button in a pill: muted until pointed at or focused.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "PillButton"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_FileTree": {
+      "type": "object",
+      "description": "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, and an inline name field.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "FileTree"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "items": {
+              "$ref": "#/$defs/read"
+            },
+            "focusId": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "focusRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "editValue": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "editLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "editError": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "items"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "select": {
+              "$ref": "#/$defs/actions"
+            },
+            "expand": {
+              "$ref": "#/$defs/actions"
+            },
+            "action": {
+              "$ref": "#/$defs/actions"
+            },
+            "drop": {
+              "$ref": "#/$defs/actions"
+            },
+            "editChange": {
+              "$ref": "#/$defs/actions"
+            },
+            "editBlur": {
               "$ref": "#/$defs/actions"
             }
           }
@@ -1717,6 +3493,27 @@
                   "$ref": "#/$defs/read"
                 }
               ]
+            },
+            "keyScope": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "findBar",
+                    "findField",
+                    "replaceField",
+                    "pickerField",
+                    "formatToolbar",
+                    "linkEditor"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": []
@@ -1791,9 +3588,11 @@
                 {
                   "enum": [
                     "topBand",
+                    "belowTopBand",
                     "fill",
                     "center",
-                    "bottomCenter"
+                    "bottomCenter",
+                    "bottomStart"
                   ]
                 },
                 {
@@ -2013,6 +3812,87 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "contentSize": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 14,
+                  "maximum": 32
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "focusMode": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "theme": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "paper",
+                    "sepia",
+                    "harbor-light",
+                    "forest-light",
+                    "contrast-light",
+                    "ink",
+                    "dusk",
+                    "harbor-dark",
+                    "forest-dark",
+                    "contrast-dark"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "contentFont": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "mono",
+                    "sans",
+                    "serif",
+                    "hyperlegible",
+                    "dyslexic",
+                    "system"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "uiScale": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0.9,
+                  "maximum": 1.5
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
             }
           },
           "required": [
@@ -2029,6 +3909,427 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_ToolbarRow": {
+      "type": "object",
+      "description": "A row with the toolbar role: one tab stop, with arrow keys, Home, and End moving between its items.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ToolbarRow"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "focusRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_Field": {
+      "type": "object",
+      "description": "Label, control, description, and error in one arrangement; the group is named by the label.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Field"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "error": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_Positioner": {
+      "type": "object",
+      "description": "Anchors floating content to a range in the note (the selection or a link): never covering it, kept on screen, and following it as it scrolls.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Positioner"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "anchor": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "selection",
+                    "link"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "placement": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "above",
+                    "below"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "offset": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "xs",
+                    "s",
+                    "m",
+                    "l",
+                    "xl",
+                    "xxl",
+                    "xxxl"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "landmark": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "region"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_Sheet": {
+      "type": "object",
+      "description": "A side sheet over the canvas (Files on the left, Theme on the right). Not modal; closes on Esc or a click on the canvas.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Sheet"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "side": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "start",
+                    "end"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "width": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "files",
+                    "theme"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "keyScope": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "files"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "close": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "header": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
           }
         }
       }
@@ -2118,6 +4419,101 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "focusMode": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "keymap": {
+              "$ref": "#/$defs/read"
+            },
+            "findOpen": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "findQuery": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "findReplace": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "findCase": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "findWord": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "findRegex": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "linkEditing": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -2135,6 +4531,21 @@
             },
             "ready": {
               "$ref": "#/$defs/actions"
+            },
+            "findResult": {
+              "$ref": "#/$defs/actions"
+            },
+            "findPrefill": {
+              "$ref": "#/$defs/actions"
+            },
+            "format": {
+              "$ref": "#/$defs/actions"
+            },
+            "linkEdit": {
+              "$ref": "#/$defs/actions"
+            },
+            "openLink": {
+              "$ref": "#/$defs/actions"
             }
           }
         }
@@ -2142,7 +4553,7 @@
     },
     "c_Trigger": {
       "type": "object",
-      "description": "The trigger at the top center. Opens the toolbar, and shows a save problem in its dot.",
+      "description": "The trigger at the top center. Opens the toolbar under itself, and shows a save problem in its dot.",
       "required": [
         "type",
         "props"
@@ -2219,7 +4630,7 @@
                 }
               ]
             },
-            "expanded": {
+            "open": {
               "anyOf": [
                 {
                   "type": "boolean"
@@ -2231,18 +4642,264 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "toolbarLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "items": {
+              "$ref": "#/$defs/read"
+            },
+            "more": {
+              "$ref": "#/$defs/read"
+            },
+            "moreLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
-            "label"
+            "label",
+            "toolbarLabel",
+            "items",
+            "more",
+            "moreLabel"
           ]
         },
         "on": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "press": {
+            "openChange": {
               "$ref": "#/$defs/actions"
+            },
+            "action": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_Toolbar": {
+      "type": "object",
+      "description": "The trigger's toolbar: at most six command actions, then ⋯ with everything else (UI-04).",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Toolbar"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "items": {
+              "$ref": "#/$defs/read"
+            },
+            "more": {
+              "$ref": "#/$defs/read"
+            },
+            "moreLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "items",
+            "more",
+            "moreLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_Dialog": {
+      "type": "object",
+      "description": "A titled modal dialog with a close button, optional fixed controls, and a scrolling body.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Dialog"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "closeLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "open": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "s",
+                    "l"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "title",
+            "closeLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "openChange": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "toolbar": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
             }
           }
         }

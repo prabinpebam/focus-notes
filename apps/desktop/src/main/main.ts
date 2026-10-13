@@ -159,7 +159,8 @@ const writesDone = (p: string) => Promise.allSettled([...writeQueues].filter(([k
  */
 async function applyOps(raw: unknown): Promise<void> {
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > 5000) throw refuse("invalid");
-  const ops = raw.map((op: unknown) => {
+  type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string };
+  const ops = raw.map((op: unknown): Op => {
     const o = op as Record<string, unknown>;
     if (o?.op === "createFolder" || o?.op === "delete") return { op: o.op, ...opPath(o.path) };
     if (o?.op === "move") {
