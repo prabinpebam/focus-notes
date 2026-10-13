@@ -294,6 +294,15 @@ export function registerBrowserFeatures(ctx: BrowserContext): { start(): Promise
       const why = isReadOnlyPath(s.note.path) ? "account.readOnly" : s.workspace.access === "migrate" ? "account.readOnlyOlder"
         : s.workspace.access === "newer" ? "account.readOnlyNewer" : "account.readOnlyUnreadable";
       const base = { about, readOnly, readOnlyText: readOnly ? catalog.format(why) : "" };
+      // The desktop: the GitHub login Git is signed in as, with the sync status, Sync now, and Sign out (UI-12, D-89).
+      if (s.account.login) {
+        const status = catalog.format(s.sync.problem ? "account.syncProblem" : "account.synced");
+        return {
+          ...base, visible: true, mode: "owner", text: catalog.format(s.sync.problem ? "account.loginProblem" : "account.login", { login: s.account.login }),
+          label: catalog.format("account.signedIn", { login: s.account.login, status }),
+          sections: [{ id: "github", label: status, items: ["sync.now", "account.signOut"].map(ctx.describeItem) }],
+        };
+      }
       if (i.vault === "unlocked") {
         return {
           ...base, visible: true, mode: "owner", text: i.owner, label: catalog.format("account.owner", { owner: i.owner }),
