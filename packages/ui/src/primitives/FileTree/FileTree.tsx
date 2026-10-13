@@ -182,7 +182,6 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
     <div ref={ref} id={id} role="tree" aria-label={label} aria-multiselectable="true" className={s.tree} data-key-scope="filesTree" onKeyDown={keyDown}>
       {items.map((item) => {
         const folder = item.kind !== "note";
-        const name = item.description ? `${item.label}, ${item.description}` : undefined;
         return (
           <div
             key={item.id}
@@ -192,7 +191,6 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
             aria-level={item.level}
             aria-selected={item.selected}
             aria-expanded={folder ? item.expanded : undefined}
-            aria-label={item.editing ? undefined : name}
             aria-busy={item.pending ? true : undefined}
             tabIndex={item.id === focused && !item.editing ? 0 : -1}
             title={item.title || undefined}
@@ -240,9 +238,10 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
                 {editError ? <span id={errorId} className={s.error}>{editError}</span> : null}
               </span>
             ) : (
-              <span className={s.label} dir="auto">{item.label}</span>
+              <span className={s.label} dir="auto">{item.label}{item.description ? <span className={s.srOnly}>,</span> : null}</span>
             )}
-            {item.description && !item.editing ? <span className={s.description} aria-hidden="true">{item.description}</span> : null}
+            {/* The name is the row's text: "About, public" (Files → Accessibility). */}
+            {item.description && !item.editing ? <span className={s.description}>{item.description}</span> : null}
             {item.pending ? <span className={s.pending}><Spinner size="s" /></span> : null}
           </div>
         );

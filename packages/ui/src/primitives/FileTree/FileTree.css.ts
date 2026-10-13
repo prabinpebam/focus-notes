@@ -80,4 +80,7 @@ export const input = style({
     '&[aria-invalid="true"]': { borderColor: t.danger },
   },
 });
+/** Read by screen readers, not shown: the comma between a row's name and its description. */
+// Inline and without size, so the name reads "About, public" with no space before the comma.
+export const srOnly = style({ display: "inline", fontSize: 0 });
 export const error = style({ color: t.danger, fontSize: t.captionSize, whiteSpace: "normal" });

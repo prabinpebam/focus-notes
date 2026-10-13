@@ -146,9 +146,9 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
   async function written(path: string, markdown: string): Promise<void> {
     lastWritten = { path, text: markdown };
     if (!ws || queued || store.state.workspace.access !== "write") return;
-    // Notes the app creates are in the tree before the watcher (if any) reports them.
-    setTree(applyChanges(store.state.workspace.tree, [{ path, kind: "note", exists: true }]));
+    // Notes the app creates are in the tree before the watcher (if any) reports them, with their titles.
     const next = titleOfMarkdown(markdown);
+    setTree(applyChanges(store.state.workspace.tree, [{ path, kind: "note", exists: true, ...(next ? { title: next } : {}) }]));
     if (!follows || !next || next === title) return;
     const plan = planRename(store.state.workspace.tree, path, next);
     if (plan?.kind === "unchanged") title = next;
