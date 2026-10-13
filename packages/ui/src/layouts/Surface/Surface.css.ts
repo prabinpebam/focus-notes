@@ -9,7 +9,6 @@ export const variant = styleVariants({
   frost: {
     backgroundColor: `color-mix(in srgb, ${t.background.frost} calc(${tokens.frost.opacity} * 100%), transparent)`,
     backdropFilter: `blur(${tokens.frost.blur})`,
-    WebkitBackdropFilter: `blur(${tokens.frost.blur})`,
     borderStyle: "solid",
     borderWidth: t.borderWidth,
     borderColor: t.border,

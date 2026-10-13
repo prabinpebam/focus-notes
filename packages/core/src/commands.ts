@@ -10,6 +10,8 @@ export interface Shortcut {
   macos?: string;
   windows?: string;
   linux?: string;
+  /** Extra chords that also run the command (for example F8), not shown in menus. */
+  alternates?: { default?: string[]; macos?: string[]; windows?: string[]; linux?: string[] };
 }
 
 export interface CommandContext<S> {
@@ -25,6 +27,8 @@ export interface CommandDef<S, A extends Record<string, unknown> = Record<string
   icon?: string;
   shortcut?: Shortcut;
   enabled?: (state: S) => boolean;
+  /** Message key saying why the command is unavailable, shown with it (Foundations → States). */
+  disabledReason?: string;
   checked?: (state: S) => boolean;
   run: (args: A, ctx: CommandContext<S>) => void | Promise<void>;
 }
@@ -35,6 +39,7 @@ export interface CommandDescription {
   icon?: string;
   shortcut?: string;
   enabled: boolean;
+  disabledReason?: string;
   checked?: boolean;
 }
 
@@ -76,6 +81,7 @@ export class CommandRegistry<S> {
     const chord = shortcutFor(def.shortcut, this.platform);
     if (chord) d.shortcut = chord;
     if (def.checked) d.checked = def.checked(state);
+    if (!d.enabled && def.disabledReason) d.disabledReason = def.disabledReason;
     return d;
   }
 
@@ -100,11 +106,18 @@ export class CommandRegistry<S> {
   /** Finds the command bound to a keyboard event, for the global key handler. */
   match(event: { key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean }): string | undefined {
     for (const [id, def] of this.#commands) {
-      const chord = shortcutFor(def.shortcut, this.platform);
-      if (chord && chordMatches(chord, event, this.platform)) return id;
+      for (const chord of chordsFor(def.shortcut, this.platform)) if (chordMatches(chord, event, this.platform)) return id;
     }
     return undefined;
   }
+}
+
+/** The primary chord and any alternates for a platform. */
+export function chordsFor(s: Shortcut | undefined, platform: Platform): string[] {
+  if (!s) return [];
+  const primary = shortcutFor(s, platform);
+  const alts = (platform === "web" ? undefined : s.alternates?.[platform]) ?? s.alternates?.default ?? [];
+  return [...(primary ? [primary] : []), ...alts];
 }
 
 export function shortcutFor(s: Shortcut | undefined, platform: Platform): string | undefined {
@@ -119,7 +132,9 @@ export function chordMatches(
   platform: Platform,
 ): boolean {
   const parts = chord.split("+");
-  const key = parts.pop()!.toLowerCase();
+  const named = parts.pop()!.toLowerCase();
+  // "Plus" names the + key, which can't be written inside a chord.
+  const key = named === "plus" ? "+" : named;
   const want = new Set(parts.map((p) => p.toLowerCase()));
   const mod = platform === "macos" ? e.metaKey : e.ctrlKey;
   if (want.has("mod") !== mod) return false;

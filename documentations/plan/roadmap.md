@@ -22,7 +22,9 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 
 ## Where we are
 
-**M0 (walking skeleton) is built** and passes its demo as automated journey tests on Windows: the app opens to the canvas with the trigger, saves what you type as Markdown, reopens it, keeps untouched files byte-identical, and makes no network requests. It's being verified in CI on macOS and Linux before its gate. **M1 is next.**
+**M0 (walking skeleton) is built** and passes its demo as automated journey tests on Windows: the app opens to the canvas with the trigger, saves what you type as Markdown, reopens it, keeps untouched files byte-identical, and makes no network requests. It's being verified in CI on macOS and Linux before its gate.
+
+**M1 is under way.** Built so far: every block type with Markdown shortcuts, task lists, undo and redo, and per-block text direction (WP-1.1); the trigger's toolbar with the six default actions and the ⋯ menu, keyboard-complete and command-driven, with text size, theme mode, focus mode on and off, full screen, and new notes (WP-1.6, with WP-1.4's first compound components). Search shows as unavailable until Spotlight (M4).
 
 ## Staging principles
 

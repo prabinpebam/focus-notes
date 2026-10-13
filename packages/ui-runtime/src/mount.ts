@@ -2,7 +2,7 @@
 import { createElement, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { App } from "@focus-notes/core";
-import { registry, contractByType, FLUSH_EVENT } from "@focus-notes/ui";
+import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT } from "@focus-notes/ui";
 import { ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
 
 export interface MountOptions {
@@ -35,6 +35,13 @@ export function mountApp(el: Element, { app, views, view = "canvas" }: MountOpti
   };
   window.addEventListener("dragover", stopNavigation);
   window.addEventListener("drop", stopNavigation);
+  // When the toolbar closes, the caret goes back to the note.
+  let toolbarWasOpen = app.store.state.ui.toolbarOpen;
+  app.store.subscribe(() => {
+    const open = app.store.state.ui.toolbarOpen;
+    if (toolbarWasOpen && !open) setTimeout(() => window.dispatchEvent(new Event(REFOCUS_EVENT)), 0);
+    toolbarWasOpen = open;
+  });
   return root;
 }
 

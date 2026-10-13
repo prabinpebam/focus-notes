@@ -7,7 +7,7 @@ import { messages } from "@focus-notes/views";
 import { ViewHost, type RuntimeDeps } from "../src/render.ts";
 
 const bridge: PlatformBridge = {
-  platform: "macos", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined,
+  platform: "macos", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/notes/Untitled.md",
   defaultNotePath: async () => "", loadAppState: async () => ({ version: 1 }), saveAppState: async () => {},
   systemScheme: () => "light", onSystemSchemeChange: () => () => {},
 };

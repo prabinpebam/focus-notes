@@ -14,7 +14,7 @@ function fakeBridge(files: Record<string, string> = {}, overrides: Partial<Platf
       files[p] = c;
       writes.push([p, c]);
     },
-    chooseNote: async () => undefined,
+    chooseNote: async () => undefined, newNotePath: async () => "/notes/Untitled.md",
     defaultNotePath: async () => {
       files["/notes/Welcome.md"] ??= "# Welcome\n";
       return "/notes/Welcome.md";

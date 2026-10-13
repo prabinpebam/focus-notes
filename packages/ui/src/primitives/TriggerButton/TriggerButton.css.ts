@@ -17,7 +17,6 @@ export const ring = style({
   borderColor: t.ringBorder,
   backgroundColor: `color-mix(in srgb, ${t.ring} calc(${t.opacity} * 100%), transparent)`,
   backdropFilter: `blur(${t.blur})`,
-  WebkitBackdropFilter: `blur(${t.blur})`,
   boxShadow: t.shadow,
   cursor: "default",
   outline: "none",

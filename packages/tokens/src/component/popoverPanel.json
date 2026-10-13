@@ -1,0 +1,15 @@
+{ "cmp": { "popoverPanel": {
+  "background": { "$type": "color", "$value": "{color.surface}" },
+  "border": { "$type": "color", "$value": "{color.border}" },
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "radius": { "$type": "dimension", "$value": "{radius.popover}" },
+  "shadow": { "$type": "shadow", "$value": "{shadow.2}" },
+  "opacity": { "$type": "number", "$value": "{frost.opacity}" },
+  "blur": { "$type": "dimension", "$value": "{frost.blur}" },
+  "padding": { "$type": "dimension", "$value": "{space.xs}" },
+  "offset": { "$type": "dimension", "$value": "{space.s}" },
+  "duration": { "$type": "duration", "$value": "{motion.enter}" },
+  "exitDuration": { "$type": "duration", "$value": "{motion.exit}" },
+  "easing": { "$type": "cubicBezier", "$value": "{easing.decelerate}" },
+  "layer": { "$type": "number", "$value": "{layer.panel}" }
+} } }

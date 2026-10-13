@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
   readNote: (path: string) => ipcRenderer.invoke("note:read", path),
   writeNote: (path: string, content: string) => ipcRenderer.invoke("note:write", path, content),
   chooseNote: () => ipcRenderer.invoke("note:choose"),
+  newNotePath: (near?: string) => ipcRenderer.invoke("note:newPath", near),
+  toggleFullScreen: () => void ipcRenderer.invoke("window:fullScreen"),
   defaultNotePath: () => ipcRenderer.invoke("note:default"),
   loadAppState: () => ipcRenderer.invoke("state:load"),
   saveAppState: (state: unknown) => ipcRenderer.invoke("state:save", state),

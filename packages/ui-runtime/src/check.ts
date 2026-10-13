@@ -93,7 +93,7 @@ export function checkUi(inputs: CheckInputs): Problem[] {
       if (isRead(v)) {
         const t = checkRead(v.get, at, scope);
         if (t && spec) {
-          const want = spec.kind === "boolean" ? "boolean" : spec.kind === "number" ? "number" : ["message", "text", "enum", "token", "icon"].includes(spec.kind) ? "string" : undefined;
+          const want = spec.kind === "boolean" ? "boolean" : spec.kind === "number" ? "number" : spec.kind === "list" ? "array" : ["message", "text", "enum", "token", "icon"].includes(spec.kind) ? "string" : undefined;
           if (want && t.type && t.type !== want) add("types", at, `"${v.get}" is ${t.type}, but this prop needs ${want}`);
           if (spec.kind === "enum" && t.enum) for (const e of t.enum) if (!spec.values.includes(String(e))) add("types", at, `"${v.get}" can be "${e}", which this prop doesn't accept`);
         }

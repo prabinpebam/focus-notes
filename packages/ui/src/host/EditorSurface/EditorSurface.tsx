@@ -20,6 +20,8 @@ export interface EditorSurfaceProps {
 const SERIALIZE_DELAY_MS = 150;
 /** Dispatched on window by the runtime before a flush; surfaces hand over pending text synchronously. */
 export const FLUSH_EVENT = "focus-notes:flush";
+/** Dispatched when a panel closes: the caret goes back exactly where it was (Main UI → Dismiss). */
+export const REFOCUS_EVENT = "focus-notes:refocus";
 
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({ documentKey, initialValue, label, placeholder, readOnly, id, onChange, onReady }: EditorSurfaceProps) {
@@ -92,7 +94,15 @@ export function EditorSurface({ documentKey, initialValue, label, placeholder, r
       }
     };
     window.addEventListener(FLUSH_EVENT, flush);
-    return () => window.removeEventListener(FLUSH_EVENT, flush);
+    // After a panel's own focus restoration, put the caret back in the note.
+    const refocus = () => requestAnimationFrame(() => {
+      if (editor && !editor.isDestroyed) editor.commands.focus();
+    });
+    window.addEventListener(REFOCUS_EVENT, refocus);
+    return () => {
+      window.removeEventListener(FLUSH_EVENT, flush);
+      window.removeEventListener(REFOCUS_EVENT, refocus);
+    };
   }, [editor, session]);
 
   return (

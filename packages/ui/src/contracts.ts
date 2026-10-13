@@ -16,13 +16,19 @@ import { contract as Center } from "./layouts/Center/contract.ts";
 import { contract as AppRoot } from "./layouts/AppRoot/contract.ts";
 import { contract as EditorSurface } from "./host/EditorSurface/contract.ts";
 import { contract as Trigger } from "./compounds/Trigger/contract.ts";
+import { contract as Divider } from "./primitives/Divider/contract.ts";
+import { contract as PopoverPanel } from "./primitives/PopoverPanel/contract.ts";
+import { contract as MenuButton } from "./primitives/MenuButton/contract.ts";
+import { contract as ToolbarRow } from "./layouts/ToolbarRow/contract.ts";
+import { contract as Toolbar } from "./compounds/Toolbar/contract.ts";
 
 export const contracts: readonly Contract[] = [
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton,
-  Stack, Inline, Surface, Layer, Center, AppRoot,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton,
+  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow,
   EditorSurface,
-  Trigger,
+  Trigger, Toolbar,
 ];
 export const contractByType = new Map(contracts.map((c) => [c.type, c]));
 export { ICON_NAMES, type IconName } from "./icon-names.ts";
 export type * from "./contract.ts";
+export type * from "./data.ts";

@@ -11,6 +11,10 @@ export interface PlatformBridge {
   writeNote(path: string, content: string): Promise<void>;
   /** Shows the open dialog. Resolves to undefined if cancelled. */
   chooseNote(): Promise<string | undefined>;
+  /** A free path for a new untitled note next to the given note, or in the notes folder. */
+  newNotePath(near?: string): Promise<string>;
+  /** Enters or leaves full screen (DSK-04). Absent where the shell can't. */
+  toggleFullScreen?(): void;
   /** The default note for a first launch, created if missing. */
   defaultNotePath(): Promise<string>;
   loadAppState(): Promise<AppStateFile>;
@@ -27,4 +31,6 @@ export interface AppStateFile {
   version: 1;
   lastNotePath?: string;
   appearance?: "system" | "light" | "dark";
+  fontSize?: number;
+  focusMode?: boolean;
 }

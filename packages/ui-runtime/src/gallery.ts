@@ -56,13 +56,31 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
 /** Registers the gallery's view model and its navigation command on an app. */
 export function registerGallery(app: App, contracts: readonly Contract[], navigate: (id: string) => void): void {
   const fixtures = galleryFixtures(contracts);
+  const item = (id: string, label: string, icon: string, extra: Record<string, unknown> = {}) => ({ id, label, icon, ...extra });
+  const toolbar = [
+    item("g.new", "New note", "newNote", { shortcut: "Ctrl+N" }),
+    item("g.open", "Open…", "open", { shortcut: "Ctrl+O" }),
+    item("g.search", "Search", "search", { disabled: true, reason: "Not available here" }),
+    item("g.save", "Save", "save", { shortcut: "Ctrl+S" }),
+    item("g.focus", "Focus mode", "focus", { checked: true }),
+    item("g.theme", "Switch light and dark", "darkTheme", { checked: false }),
+  ];
+  const menu = [
+    { id: "view", label: "View", items: [item("g.smaller", "Smaller text", "font", { shortcut: "Ctrl+-" }), item("g.larger", "Larger text", "font", { shortcut: "Ctrl+=", disabled: true })] },
+    { id: "theme", label: "Theme", items: [item("g.system", "System", "color", { checked: true }), item("g.light", "Light", "lightTheme", { checked: false })] },
+  ];
+  const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, icon: { type: "string" as const }, shortcut: { type: "string" as const }, checked: { type: "boolean" as const }, disabled: { type: "boolean" as const }, reason: { type: "string" as const } } };
   app.viewModels.register({
     id: "vm.gallery",
     schema: {
       type: "object",
-      properties: { fixtures: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" } } } } },
+      properties: {
+        fixtures: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" } } } },
+        toolbar: { type: "array", items: ITEM },
+        menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
+      },
     },
-    select: () => ({ fixtures }),
+    select: () => ({ fixtures, toolbar, menu }),
   });
   app.commands.register<{ id: string }>({ id: "gallery.open", title: "gallery.title", run: ({ id }) => navigate(String(id)) });
 }

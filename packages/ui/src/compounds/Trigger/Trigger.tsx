@@ -1,4 +1,7 @@
 import { TriggerButton } from "../../primitives/TriggerButton/TriggerButton.tsx";
+import { PopoverPanel } from "../../primitives/PopoverPanel/PopoverPanel.tsx";
+import { Toolbar } from "../Toolbar/Toolbar.tsx";
+import type { CommandItem, MenuSection } from "../../data.ts";
 
 export interface TriggerProps {
   label: string;
@@ -6,19 +9,34 @@ export interface TriggerProps {
   problemLabel?: string;
   problem?: boolean;
   shortcut?: string;
-  expanded?: boolean;
-  onPress?: () => void;
+  open?: boolean;
+  toolbarLabel: string;
+  items: CommandItem[];
+  more: MenuSection[];
+  moreLabel: string;
+  onOpenChange?: (payload: { open: boolean }) => void;
+  onAction?: (payload: { id: string }) => void;
 }
 
-/** The trigger (IA-CMP-TRIGGER, IA-CMP-SAVESTATE): its dot turns to the danger tone only when saving fails. */
-export function Trigger({ label, problemLabel, problem, shortcut, expanded, onPress }: TriggerProps) {
+/**
+ * The trigger (IA-CMP-TRIGGER, IA-CMP-SAVESTATE): opens the toolbar under itself (UI-03). Its dot
+ * turns to the danger tone only when saving fails.
+ */
+export function Trigger({ label, problemLabel, problem, shortcut, open, toolbarLabel, items, more, moreLabel, onOpenChange, onAction }: TriggerProps) {
   return (
-    <TriggerButton
-      label={problem && problemLabel ? `${label}. ${problemLabel}` : label}
-      tone={problem ? "danger" : "red"}
-      {...(shortcut ? { shortcut } : {})}
-      {...(expanded !== undefined ? { expanded } : {})}
-      {...(onPress ? { onPress } : {})}
+    <PopoverPanel
+      label={toolbarLabel}
+      {...(open !== undefined ? { open } : {})}
+      {...(onOpenChange ? { onOpenChange } : {})}
+      trigger={
+        <TriggerButton
+          label={problem && problemLabel ? `${label}. ${problemLabel}` : label}
+          tone={problem ? "danger" : "red"}
+          {...(shortcut ? { shortcut } : {})}
+          expanded={Boolean(open)}
+        />
+      }
+      content={<Toolbar label={toolbarLabel} items={items} more={more} moreLabel={moreLabel} {...(onAction ? { onAction } : {})} />}
     />
   );
 }

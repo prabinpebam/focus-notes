@@ -2,11 +2,16 @@
   "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
   "id": "canvas",
   "ia": "IA-VIEW-CANVAS",
-  "viewModels": ["vm.app", "vm.canvas"],
+  "viewModels": ["vm.app", "vm.canvas", "vm.toolbar"],
   "focus": "editor",
   "root": {
     "type": "AppRoot",
-    "props": { "scheme": { "get": "vm.app.scheme" }, "platform": { "get": "vm.app.platform" } },
+    "props": {
+      "scheme": { "get": "vm.app.scheme" },
+      "platform": { "get": "vm.app.platform" },
+      "contentSize": { "get": "vm.app.fontSize" },
+      "focusMode": { "get": "vm.app.focusMode" }
+    },
     "children": [
       {
         "type": "Layer",
@@ -17,9 +22,18 @@
             "props": {
               "label": { "t": "trigger.label" },
               "problemLabel": { "t": "trigger.saveProblem" },
-              "problem": { "get": "vm.canvas.saveProblem" }
+              "problem": { "get": "vm.canvas.saveProblem" },
+              "shortcut": { "get": "vm.toolbar.triggerShortcut" },
+              "open": { "get": "vm.toolbar.open" },
+              "toolbarLabel": { "t": "toolbar.label" },
+              "items": { "get": "vm.toolbar.items" },
+              "more": { "get": "vm.toolbar.more" },
+              "moreLabel": { "t": "toolbar.more" }
             },
-            "on": { "press": { "run": "trigger.activate" } }
+            "on": {
+              "openChange": { "run": "toolbar.setOpen", "args": { "open": { "get": "event.open" } } },
+              "action": { "run": "command.run", "args": { "id": { "get": "event.id" } } }
+            }
           }
         ]
       },

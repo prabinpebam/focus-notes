@@ -11,7 +11,7 @@ const bridge: PlatformBridge = {
   platform: "windows",
   readNote: async () => "",
   writeNote: async () => {},
-  chooseNote: async () => undefined,
+  chooseNote: async () => undefined, newNotePath: async () => "/notes/Untitled.md",
   defaultNotePath: async () => "",
   loadAppState: async () => ({ version: 1 }),
   saveAppState: async () => {},

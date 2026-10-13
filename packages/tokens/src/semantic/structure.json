@@ -53,6 +53,7 @@
     "sheetFiles": { "$value": "{ref.size.320}" },
     "sheetTheme": { "$value": "{ref.size.380}" },
     "popover": { "$value": "{ref.size.360}" },
+    "menuMinWidth": { "$value": "{ref.size.240}" },
     "dialogS": { "$value": "{ref.size.480}" },
     "dialogL": { "$value": "{ref.size.760}" },
     "blockGap": { "$value": "{ref.size.12}" },

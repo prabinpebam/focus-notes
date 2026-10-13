@@ -360,7 +360,7 @@
         "architecture/editor-engine.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-1.2",
@@ -450,7 +450,7 @@
         "design/components/feedback-and-dialogs.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "building"
     },
     {
       "id": "WP-1.5",
@@ -516,7 +516,7 @@
         "experience/main-ui.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "building"
     },
     {
       "id": "WP-1.7",

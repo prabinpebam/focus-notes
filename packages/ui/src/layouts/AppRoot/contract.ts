@@ -7,6 +7,8 @@ export const contract = defineContract({
   props: {
     scheme: { kind: "enum", values: ["light", "dark"], required: true },
     platform: { kind: "enum", values: ["macos", "windows", "linux", "web"], required: true },
+    contentSize: { kind: "number", min: 14, max: 32 },
+    focusMode: { kind: "boolean", default: false },
   },
   events: {},
   slots: { default: { accepts: "any" } },

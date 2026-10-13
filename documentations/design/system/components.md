@@ -3,7 +3,7 @@
 The complete catalog of design-system components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every view in Focus Notes is assembled from this list and nothing else.
 
 > [!NOTE]
-> **TL;DR.** **28 primitives** (Text, Icon, Button, TriggerButton, TextField, Switch, Slider, and so on), plus **5 host components** that wrap imperative DOM (the editor surface, the focus mask, the window frame, the color area, and a virtual list). **12 layouts** (AppRoot, Stack, Inline, Grid, Surface, Layer, Positioner, and so on). **9 block components** that render note content in the editor and on published pages, with image and gallery to come. **38 compound components** (some in pairs, like Menu and MenuItem) that compose them, from Toolbar and Menu to CommandPalette, FileTree, and ConflictResolver, each mapped to the IA components it delivers. Every component has a machine-readable **contract**, and the view schema is generated from those contracts (DSY-05).
+> **TL;DR.** **30 primitives** (Text, Icon, Button, TriggerButton, TextField, Switch, Slider, and so on), plus **5 host components** that wrap imperative DOM (the editor surface, the focus mask, the window frame, the color area, and a virtual list). **13 layouts** (AppRoot, Stack, Inline, Grid, Surface, Layer, Positioner, and so on). **9 block components** that render note content in the editor and on published pages, with image and gallery to come. **38 compound components** (some in pairs, like Menu and MenuItem) that compose them, from Toolbar and Menu to CommandPalette, FileTree, and ConflictResolver, each mapped to the IA components it delivers. Every component has a machine-readable **contract**, and the view schema is generated from those contracts (DSY-05).
 
 <h2 id="contracts" data-reader-personas="engineering">Contracts</h2>
 
@@ -70,6 +70,8 @@ Each component declares a contract in `packages/ui`. The build turns contracts i
 | **Swatch** | `color` (a token or a theme's value), `selected`, `label` | Radio or button | Theme gallery, color editor |
 | **SignalDot** | `tone` red, warning, danger (size from `cmp.signalDot.size`) | Decorative, with status in its parent's name | Trigger, save state |
 | **TriggerButton** | `label` (required), `tone`, `expanded`, `shortcut`. A 30 px frosted circle holding a SignalDot, with a 32 px (44 px touch) hit area | Menu button | Trigger |
+| **PopoverPanel** | `label` (required), `open`, `placement`; slots `trigger` and `content`; event `openChange`. Frosted, anchored, closes on Esc (in one press, even over a tooltip) and outside click, and moves focus to its first action | Dialog (non-modal popover) | Trigger's toolbar, Share, link editor |
+| **MenuButton** | `icon`, `label` (required), `sections` (command items from a view model), event `action`. Checkable items use `menuitemcheckbox`; each item shows its shortcut | Menu button | ⋯ menu, block menu |
 | **Spinner** | `size`, `label` | Progress bar, indeterminate | Busy buttons, saving rows in Files, "Checking changes…" ([Waits](../components/feedback-and-dialogs.md#waits)) |
 | **ProgressBar** | `value` (omit for an indeterminate line), `max`, `label` | Progress bar | Setup, publishing, a view opening, a region being updated |
 | **Divider** | `orientation` | Separator | Menus, toolbars |
@@ -95,6 +97,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | --- | --- | --- |
 | **Stack** | Children in a column | `gap`, `align`, `padding` |
 | **Inline** | Children in a row | `gap`, `align`, `justify`, `wrap`, `padding` |
+| **ToolbarRow** | A row with the toolbar role: one tab stop, arrow keys, Home and End between its items | `label` (required) |
 | **Grid** | Children in columns | `columns` (1 to 6) or `minItem` (a size token), `gap` |
 | **Center** | Centers content up to a maximum width | `maxWidth` (for example `layout.measure`), `gutter` |
 | **Split** | Two panes, optionally resizable | `start` and `end` sizes (tokens), `resizable`, `collapseBelow` (a size class) |

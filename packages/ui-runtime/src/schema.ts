@@ -24,6 +24,7 @@ export function buildUiSchema({ contracts, icons, tokenGroups }: SchemaInputs): 
       case "number": return { anyOf: [{ type: "number", ...(spec.min !== undefined ? { minimum: spec.min } : {}), ...(spec.max !== undefined ? { maximum: spec.max } : {}) }, ref("read")] };
       case "text": return { anyOf: [ref("read"), ...(spec.bindable ? [ref("bind")] : [])] };
       case "ref": return { type: "string", pattern: "^[a-z][A-Za-z0-9-]*$" };
+      case "list": return ref("read");
     }
   };
   const componentDef = (c: Contract) => {

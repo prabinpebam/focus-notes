@@ -7,7 +7,7 @@ import { checkUi, checkFixtureCoverage, type Problem } from "../src/check.ts";
 import { checkExpression, evaluate } from "../src/expr.ts";
 
 const bridge: PlatformBridge = {
-  platform: "windows", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined,
+  platform: "windows", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/notes/Untitled.md",
   defaultNotePath: async () => "", loadAppState: async () => ({ version: 1 }), saveAppState: async () => {},
   systemScheme: () => "light", onSystemSchemeChange: () => () => {},
 };
@@ -40,7 +40,7 @@ describe("ui:check (DSY-08)", () => {
   });
   it("rejects reads that don't exist or have the wrong type", () => {
     expect(messagesOf(problems({ type: "Text", props: { value: { get: "vm.canvas.nothing" } } }))).toContain('references: "vm.canvas.nothing" doesn\'t exist');
-    expect(messagesOf(problems({ type: "Trigger", props: { label: { t: "trigger.label" }, problem: { get: "vm.canvas.noteKey" } } }))).toContain('types: "vm.canvas.noteKey" is string, but this prop needs boolean');
+    expect(messagesOf(problems({ type: "Stack", props: { grow: { get: "vm.canvas.noteKey" } } }))).toContain('types: "vm.canvas.noteKey" is string, but this prop needs boolean');
   });
   it("rejects unknown commands", () => {
     expect(messagesOf(problems({ type: "Button", props: { label: { t: "gallery.action" } }, on: { press: { run: "nope.go" } } }))).toContain("references: unknown command nope.go");

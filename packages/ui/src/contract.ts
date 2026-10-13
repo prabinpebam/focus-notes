@@ -16,7 +16,9 @@ export type PropSpec =
   /** Text that comes from data (a note, a file name). Never a literal in a view. */
   | { kind: "text"; bindable?: boolean; required?: boolean; description?: string }
   /** An element ID in the same view, for anchors and tooltips. */
-  | { kind: "ref"; description?: string };
+  | { kind: "ref"; description?: string }
+  /** Structured data from a view model (menu sections, command items). Only ever a read. */
+  | { kind: "list"; of: "commandItems" | "menuSections"; required?: boolean; description?: string };
 
 export type PropKind = PropSpec["kind"];
 

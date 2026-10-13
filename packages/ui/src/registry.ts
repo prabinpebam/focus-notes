@@ -15,11 +15,16 @@ import { Center } from "./layouts/Center/Center.tsx";
 import { AppRoot } from "./layouts/AppRoot/AppRoot.tsx";
 import { EditorSurface } from "./host/EditorSurface/EditorSurface.tsx";
 import { Trigger } from "./compounds/Trigger/Trigger.tsx";
+import { Divider } from "./primitives/Divider/Divider.tsx";
+import { PopoverPanel } from "./primitives/PopoverPanel/PopoverPanel.tsx";
+import { MenuButton } from "./primitives/MenuButton/MenuButton.tsx";
+import { ToolbarRow } from "./layouts/ToolbarRow/ToolbarRow.tsx";
+import { Toolbar } from "./compounds/Toolbar/Toolbar.tsx";
 
 /** The closed registry: the renderer can create these and nothing else (DSY-06). */
 export const registry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton,
-  Stack, Inline, Surface, Layer, Center, AppRoot,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton,
+  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow,
   EditorSurface,
-  Trigger,
+  Trigger, Toolbar,
 });

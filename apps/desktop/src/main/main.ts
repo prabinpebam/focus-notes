@@ -82,6 +82,17 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!existsSync(p)) await atomicWrite(p, WELCOME);
     return p;
   });
+  handle("note:newPath", async (near) => {
+    const dir = typeof near === "string" && near ? dirname(notePath(near)) : notesHome();
+    for (let i = 1; ; i++) {
+      const p = join(dir, i === 1 ? "Untitled.md" : `Untitled ${i}.md`);
+      if (!existsSync(p)) return p;
+    }
+  });
+  handle("window:fullScreen", async () => {
+    const w = win();
+    if (w) w.setFullScreen(!w.isFullScreen());
+  });
   handle("state:load", async () => {
     try {
       const s = JSON.parse(await readFile(stateFile(), "utf8"));

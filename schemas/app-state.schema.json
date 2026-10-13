@@ -19,6 +19,23 @@
         "light",
         "dark"
       ]
+    },
+    "fontSize": {
+      "enum": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        20,
+        22,
+        24,
+        28,
+        32
+      ]
+    },
+    "focusMode": {
+      "type": "boolean"
     }
   },
   "additionalProperties": false
