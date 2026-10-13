@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "entries": [
+    {
+      "path": "landing.html",
+      "title": "Overview",
+      "order": 0,
+      "icon": "home",
+      "status": "draft",
+      "updated": "2026-10-13"
+    },
+    {
+      "path": "seed-specs.md",
+      "title": "Seed spec",
+      "order": 10,
+      "icon": "lightbulb",
+      "status": "stable",
+      "updated": "2026-10-13",
+      "group": "Product"
+    },
+    {
+      "path": "product/vision.md",
+      "title": "Vision and principles",
+      "order": 11,
+      "icon": "flag",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Product"
+    },
+    {
+      "path": "product/requirements.md",
+      "title": "Requirements",
+      "order": 12,
+      "icon": "checklist",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Product"
+    },
+    {
+      "path": "experience/main-ui.html",
+      "title": "Main UI and trigger",
+      "order": 20,
+      "icon": "radio_button_checked",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Experience"
+    },
+    {
+      "path": "experience/focus-mode.md",
+      "title": "Focus mode",
+      "order": 21,
+      "icon": "center_focus_strong",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Experience"
+    },
+    {
+      "path": "experience/editing.md",
+      "title": "Editing",
+      "order": 22,
+      "icon": "edit_note",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Experience"
+    },
+    {
+      "path": "experience/files-and-sharing.md",
+      "title": "Files and sharing",
+      "order": 23,
+      "icon": "folder_shared",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Experience"
+    },
+    {
+      "path": "experience/theming.md",
+      "title": "Theming",
+      "order": 24,
+      "icon": "palette",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Experience"
+    },
+    {
+      "path": "architecture/overview.html",
+      "title": "Architecture overview",
+      "order": 30,
+      "icon": "schema",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Architecture"
+    },
+    {
+      "path": "architecture/content-model.md",
+      "title": "Content model",
+      "order": 31,
+      "icon": "data_object",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Architecture"
+    },
+    {
+      "path": "architecture/editor-engine.md",
+      "title": "Editor engine",
+      "order": 32,
+      "icon": "extension",
+      "status": "deciding",
+      "updated": "2026-10-13",
+      "group": "Architecture"
+    },
+    {
+      "path": "architecture/repository-and-publishing.html",
+      "title": "Repository and publishing",
+      "order": 33,
+      "icon": "publish",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Architecture"
+    },
+    {
+      "path": "plan/roadmap.md",
+      "title": "Roadmap",
+      "order": 40,
+      "icon": "timeline",
+      "status": "draft",
+      "updated": "2026-10-13",
+      "group": "Plan"
+    },
+    {
+      "path": "plan/decisions.md",
+      "title": "Decisions",
+      "order": 41,
+      "icon": "rule",
+      "status": "deciding",
+      "updated": "2026-10-13",
+      "group": "Plan"
+    }
+  ]
+}

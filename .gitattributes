@@ -1,0 +1,16 @@
+# Slate runtime integrity depends on byte-identical files (SHA-256 in
+# documentations/.slate-runtime.json), and notes round-trip as LF Markdown.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.zip binary

@@ -1,0 +1,189 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Experience</p>
+  <h1 class="slate-hero__title">Main UI and the trigger</h1>
+  <p class="slate-hero__summary">A blank canvas with one red dot. Everything that isn't writing lives behind it.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>The window shows only the note and the <strong>trigger</strong>: a 10 px red dot inside a frosted circle with a 30 px radius, pinned at the top center. Activating it opens a minimal, transient <strong>toolbar</strong> (Files, New note, Focus, Theme, Share, Settings). Formatting controls appear only in context. Covers UI-01 to UI-06 in the <a href="../product/requirements.md">requirements</a>.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 576" role="img"
+       aria-labelledby="mainui-title mainui-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="mainui-title">The blank canvas at rest and with the trigger activated</title>
+    <desc id="mainui-desc">Left: an app window that is empty except for lines of note text and, at the top center, a 10 pixel red dot inside a frosted ring with a 30 pixel radius. Right: the same window after the trigger is activated, with a minimal toolbar under the trigger offering Files, New note, Focus, Theme, Share and Settings over the dimmed note.</desc>
+    <g id="mainui-windows" data-slate-svg-step="0" data-slate-svg-effect="fade">
+      <text x="40" y="50" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700">At rest</text>
+      <rect x="40" y="70" width="420" height="470" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="2"/>
+      <g fill="var(--color-neutral-fg-3)">
+        <rect x="90" y="262" width="320" height="10" rx="5"/>
+        <rect x="90" y="290" width="300" height="10" rx="5"/>
+        <rect x="90" y="318" width="210" height="10" rx="5"/>
+        <rect x="90" y="364" width="320" height="10" rx="5"/>
+        <rect x="90" y="392" width="285" height="10" rx="5"/>
+        <rect x="90" y="420" width="310" height="10" rx="5"/>
+        <rect x="90" y="448" width="160" height="10" rx="5"/>
+        <rect x="90" y="494" width="260" height="10" rx="5"/>
+      </g>
+      <text x="500" y="50" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="22" font-weight="700">Trigger activated</text>
+      <rect x="500" y="70" width="420" height="470" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="2"/>
+      <g fill="var(--color-neutral-fg-4)" opacity="0.6">
+        <rect x="550" y="336" width="320" height="10" rx="5"/>
+        <rect x="550" y="364" width="300" height="10" rx="5"/>
+        <rect x="550" y="392" width="210" height="10" rx="5"/>
+        <rect x="550" y="438" width="320" height="10" rx="5"/>
+        <rect x="550" y="466" width="285" height="10" rx="5"/>
+        <rect x="550" y="494" width="310" height="10" rx="5"/>
+      </g>
+    </g>
+    <g id="mainui-trigger-rest" data-slate-svg-step="1" data-slate-svg-effect="scale-in">
+      <circle cx="250" cy="122" r="30" fill="var(--color-neutral-bg-4)" fill-opacity="0.85" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <circle cx="250" cy="122" r="5" fill="var(--color-status-danger-fg)"/>
+    </g>
+    <g id="mainui-trigger-labels" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
+      <text x="250" y="190" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="20" text-anchor="middle">Red dot: 10 px diameter</text>
+      <text x="250" y="220" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="20" text-anchor="middle">Frosted ring: 30 px radius</text>
+    </g>
+    <g id="mainui-toolbar" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
+      <circle cx="710" cy="122" r="30" fill="var(--color-neutral-bg-4)" fill-opacity="0.85" stroke="var(--color-brand-stroke)" stroke-width="3"/>
+      <circle cx="710" cy="122" r="5" fill="var(--color-status-danger-fg)"/>
+      <rect x="525" y="170" width="370" height="132" rx="20" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <g fill="var(--color-neutral-bg-3)">
+        <rect id="mainui-chip-files" x="538" y="184" width="106" height="44" rx="12"/>
+        <rect id="mainui-chip-new" x="656" y="184" width="106" height="44" rx="12"/>
+        <rect id="mainui-chip-focus" x="774" y="184" width="106" height="44" rx="12"/>
+        <rect id="mainui-chip-theme" x="538" y="244" width="106" height="44" rx="12"/>
+        <rect id="mainui-chip-share" x="656" y="244" width="106" height="44" rx="12"/>
+        <rect id="mainui-chip-settings" x="774" y="244" width="106" height="44" rx="12"/>
+      </g>
+      <g fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="18" text-anchor="middle">
+        <text x="591" y="212" data-slate-fit-target="mainui-chip-files" data-slate-fit-padding="10">Files</text>
+        <text x="709" y="212" data-slate-fit-target="mainui-chip-new" data-slate-fit-padding="10">New note</text>
+        <text x="827" y="212" data-slate-fit-target="mainui-chip-focus" data-slate-fit-padding="10">Focus</text>
+        <text x="591" y="272" data-slate-fit-target="mainui-chip-theme" data-slate-fit-padding="10">Theme</text>
+        <text x="709" y="272" data-slate-fit-target="mainui-chip-share" data-slate-fit-padding="10">Share</text>
+        <text x="827" y="272" data-slate-fit-target="mainui-chip-settings" data-slate-fit-padding="10">Settings</text>
+      </g>
+    </g>
+  </svg>
+  <figcaption>The canvas at rest (left) and with the trigger activated (right). The trigger is drawn at true relative scale; the windows aren't.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>Element</th><th>Specification</th></tr></thead>
+    <tbody>
+      <tr><td>Red dot</td><td>Circle, 10 px diameter, solid red (token <code>trigger.dot</code>)</td></tr>
+      <tr><td>Frosted ring</td><td>Circle, 30 px radius (60 px diameter), translucent fill with backdrop blur (token <code>trigger.ring</code>)</td></tr>
+      <tr><td>Position</td><td>Horizontally centered, fixed to the top of the viewport</td></tr>
+      <tr><td>Toolbar actions</td><td>Files, New note, Focus, Theme, Share, Settings</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2>The canvas</h2>
+<p>The canvas is the whole window. At rest it shows exactly two things: the note's text and the trigger (UI-01).</p>
+<ul>
+  <li><strong>No persistent chrome.</strong> No sidebar, tab strip, title bar, status bar, or word count. In Electron the window is frameless, and a transparent top drag strip lets the user move it. The trigger is excluded from the drag strip so it stays clickable.</li>
+  <li><strong>Reading column.</strong> Text sits in a centered column. Its width is a theme token (<code>layout.measure</code>, default 70 characters) so line length stays comfortable on wide screens.</li>
+  <li><strong>Top clearance.</strong> The column starts below the trigger's safe zone, so the frosted ring never covers text at scroll position zero. Scrolled text passes under the ring and is blurred by it, which is why the ring is frosted rather than opaque.</li>
+  <li><strong>Empty note.</strong> A new note shows one placeholder line ("Start writing, or type / for blocks") in the subdued text color. Nothing else appears.</li>
+  <li><strong>Save state</strong> is never a permanent indicator. See <a href="#states">trigger states</a> for how unsaved or failed saves surface.</li>
+</ul>
+
+<h2>The trigger</h2>
+<p>The trigger is the app's only permanent control and the one entry point to every app-level action (UI-02, UI-03).</p>
+
+<dl class="slate-defs">
+  <dt>Dot</dt>
+  <dd>10 px diameter, solid red. The color is a theme token, so a theme can retune the exact red but not remove it.</dd>
+  <dt>Ring</dt>
+  <dd>30 px radius, centered on the dot. Translucent surface with <code>backdrop-filter: blur()</code> (the "frost"). It has a hairline edge so it stays visible on blank backgrounds in both light and dark themes.</dd>
+  <dt>Position</dt>
+  <dd>Fixed, horizontally centered, near the top of the viewport. It stays in place while the note scrolls.</dd>
+  <dt>Hit target</dt>
+  <dd>The whole ring (60 &times; 60 px), well above the 44 px minimum for touch targets.</dd>
+  <dt>Semantics</dt>
+  <dd>A <code>button</code> named "Open toolbar", with <code>aria-expanded</code> and <code>aria-controls</code> pointing at the toolbar.</dd>
+</dl>
+
+<h3 id="states">States</h3>
+<table>
+  <thead><tr><th>State</th><th>Treatment</th></tr></thead>
+  <tbody>
+    <tr><td>Rest</td><td>As specified above.</td></tr>
+    <tr><td>Hover</td><td>The ring becomes slightly more opaque. The dot doesn't change.</td></tr>
+    <tr><td>Keyboard focus</td><td>A theme focus ring is drawn outside the frosted ring.</td></tr>
+    <tr><td>Pressed or open</td><td>The ring gets an accent edge (as in the figure) while the toolbar is open.</td></tr>
+    <tr><td>Save problem</td><td>Only when a save has failed or the app is offline with unsynced changes: a small status ring around the dot, plus a toast the first time it happens. Normal autosave is invisible. <em>Proposed; see <a href="../plan/decisions.md">decisions</a> D-06.</em></td></tr>
+  </tbody>
+</table>
+
+<h2>The minimal toolbar</h2>
+<p>The toolbar is a small frosted panel that opens directly below the trigger. It lists app-level actions only (UI-04). Text formatting never goes here.</p>
+
+<table>
+  <thead><tr><th>Action</th><th>Opens or does</th><th>Shortcut (proposed)</th></tr></thead>
+  <tbody>
+    <tr><td>Files</td><td>The file panel: a tree of folders and notes with create, rename, move, and delete (see <a href="files-and-sharing.md">Files and sharing</a>).</td><td><kbd>Ctrl/Cmd</kbd>+<kbd>O</kbd></td></tr>
+    <tr><td>New note</td><td>Creates an untitled note in the current folder and puts the caret in it.</td><td><kbd>Ctrl/Cmd</kbd>+<kbd>N</kbd> (web: <kbd>Alt</kbd>+<kbd>N</kbd>)</td></tr>
+    <tr><td>Focus</td><td>Turns <a href="focus-mode.md">focus mode</a> on or off.</td><td><kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td></tr>
+    <tr><td>Theme</td><td>The theme picker: theme, content font, and size (see <a href="theming.md">Theming</a>).</td><td>None</td></tr>
+    <tr><td>Share</td><td>Visibility (public or private), copy public link, and create a private share link.</td><td>None</td></tr>
+    <tr><td>Settings</td><td>Account and repository connection, shortcuts, and about.</td><td><kbd>Ctrl/Cmd</kbd>+<kbd>,</kbd></td></tr>
+  </tbody>
+</table>
+<p>The trigger's own shortcut is <kbd>Ctrl/Cmd</kbd>+<kbd>.</kbd>, which opens the toolbar and focuses the first action.</p>
+
+<h3>Behavior</h3>
+<ol class="slate-steps">
+  <li class="slate-step">
+    <p class="slate-step__title">Open</p>
+    <p>Click, tap, <kbd>Enter</kbd> or <kbd>Space</kbd> on the trigger, or the global shortcut. The panel fades and scales in (about 150 ms; no animation with reduced motion), and focus moves to the first action.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Navigate</p>
+    <p>Arrow keys move between actions (roving tabindex). <kbd>Enter</kbd> runs the focused action.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Act</p>
+    <p>An action either completes at once and closes the toolbar (New note, Focus), or replaces the toolbar with its own transient panel (Files, Theme, Share, Settings).</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Dismiss</p>
+    <p><kbd>Esc</kbd>, clicking outside, or running an action closes every panel and restores the caret to its exact previous position.</p>
+  </li>
+</ol>
+
+<div class="slate-callout slate-callout--tip" role="note">
+  <p class="slate-callout__title">Design rule</p>
+  <p>Each new feature has to justify a place in the toolbar. If it fits in contextual UI, a shortcut, or an existing panel, it goes there. Six actions is the upper limit, not the starting point.</p>
+</div>
+
+<h2>Contextual editing UI</h2>
+<p>Text-level controls show up only when they apply and fade away when they don't (UI-06). Details are on <a href="editing.md">Editing</a>.</p>
+<div class="slate-card-grid" data-cols="3">
+  <article class="slate-card">
+    <h3 class="slate-card__title">Formatting bubble</h3>
+    <p class="slate-card__body">Appears above a non-empty text selection: bold, italic, strikethrough, code, link, and turn into.</p>
+  </article>
+  <article class="slate-card">
+    <h3 class="slate-card__title">Slash menu</h3>
+    <p class="slate-card__body">Typing <code>/</code> opens a filterable list of every registered block type.</p>
+  </article>
+  <article class="slate-card">
+    <h3 class="slate-card__title">Block handle</h3>
+    <p class="slate-card__body">Appears in the left margin on hover or keyboard focus. Drag to reorder, or click for block actions.</p>
+  </article>
+</div>
+
+<h2>Accessibility</h2>
+<ul>
+  <li>The trigger and every toolbar action can be reached and operated with the keyboard alone, and each has a visible focus indicator (UI-05).</li>
+  <li>The trigger has an accessible name and announces its expanded state. Panels are labeled dialogs or toolbars, and they return focus to the editor when they close.</li>
+  <li>The frosted ring keeps at least 3:1 contrast against the canvas in every theme. The red dot isn't the only signal for any state.</li>
+  <li>All motion respects <code>prefers-reduced-motion</code>.</li>
+</ul>

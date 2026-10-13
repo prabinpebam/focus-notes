@@ -1,0 +1,7 @@
+{
+  "projectName": "Focus Notes",
+  "defaultTheme": "auto",
+  "density": "comfortable",
+  "landing": "landing.html",
+  "themeStylesheet": "project.theme.css"
+}

@@ -1,0 +1,198 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Architecture</p>
+  <h1 class="slate-hero__title">Repository and publishing</h1>
+  <p class="slate-hero__summary">One public repository, one private submodule, and a GitHub Pages build that never publishes private plaintext.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>The public repository holds the app, the docs, and public notes. Private notes live in a separate <strong>private repository mounted as a Git submodule</strong> at <code>private/</code>, the same pattern as the <code>personal-site</code> project. GitHub Actions checks out both repositories (the private one with a read-only deploy key), builds the app and public note pages, <strong>seals</strong> any privately shared notes with AES-256-GCM, checks that no plaintext leaked, and deploys to GitHub Pages. Readers of shared private notes decrypt them in their own browser using the key in the link's <code>#fragment</code>.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 380" role="img"
+       aria-labelledby="pub-title pub-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="pub-title">Publishing pipeline from two repositories to GitHub Pages</title>
+    <desc id="pub-desc">The public repository and the private repository, fetched with a read-only deploy key, both feed a GitHub Actions workflow. The workflow builds the app and public pages, seals privately shared notes, and verifies there are no plaintext leaks before deploying to GitHub Pages, which serves public pages plus ciphertext only.</desc>
+    <g id="pub-inputs" data-slate-svg-step="0" data-slate-svg-effect="fade-rise">
+      <rect id="pub-public" x="40" y="60" width="220" height="80" rx="14" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="1.5"/>
+      <text x="150" y="94" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="20" font-weight="700">Public repo</text>
+      <text x="150" y="122" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="17">app, docs, content/</text>
+      <rect id="pub-private" x="40" y="220" width="220" height="80" rx="14" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5"/>
+      <text x="150" y="254" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="20" font-weight="700">Private repo</text>
+      <text x="150" y="282" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="17">private/, access.json</text>
+      <text x="150" y="330" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="16">read-only deploy key</text>
+    </g>
+    <g id="pub-in-links" data-slate-svg-step="1" data-slate-svg-effect="draw" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M264 100 H304"/><path d="M296 92 L304 100 L296 108"/>
+      <path d="M264 260 H304"/><path d="M296 252 L304 260 L296 268"/>
+    </g>
+    <g id="pub-actions" data-slate-svg-step="2" data-slate-svg-effect="scale-in">
+      <rect x="310" y="40" width="380" height="300" rx="18" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="2"/>
+      <text x="334" y="74" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="20" font-weight="700">GitHub Actions</text>
+      <rect id="pub-step-build" x="334" y="92" width="332" height="66" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5"/>
+      <text x="500" y="131" text-anchor="middle" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="18" data-slate-fit-target="pub-step-build" data-slate-fit-padding="12">1. Build app + public pages</text>
+      <rect id="pub-step-seal" x="334" y="174" width="332" height="66" rx="12" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5"/>
+      <text x="500" y="213" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="18" data-slate-fit-target="pub-step-seal" data-slate-fit-padding="12">2. Seal shared private notes</text>
+      <rect id="pub-step-verify" x="334" y="256" width="332" height="66" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5"/>
+      <text x="500" y="295" text-anchor="middle" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="18" data-slate-fit-target="pub-step-verify" data-slate-fit-padding="12">3. Verify no plaintext leaks</text>
+    </g>
+    <g id="pub-out-link" data-slate-svg-step="3" data-slate-svg-effect="draw" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M694 190 H734"/><path d="M726 182 L734 190 L726 198"/>
+    </g>
+    <g id="pub-pages" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
+      <rect x="740" y="150" width="180" height="80" rx="14" fill="var(--color-brand-bg)"/>
+      <text x="830" y="184" text-anchor="middle" fill="var(--color-on-brand)" font-family="var(--font-family-base)" font-size="20" font-weight="700">GitHub Pages</text>
+      <text x="830" y="210" text-anchor="middle" fill="var(--color-on-brand)" font-family="var(--font-family-base)" font-size="17">static site</text>
+      <text x="830" y="262" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="16">public pages +</text>
+      <text x="830" y="284" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="16">ciphertext only</text>
+    </g>
+  </svg>
+  <figcaption>Private content enters the build only through a read-only deploy key and leaves it only as ciphertext.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>Stage</th><th>Input</th><th>Output</th></tr></thead>
+    <tbody>
+      <tr><td>Checkout</td><td>Public repo; private repo through a read-only deploy key</td><td>Full workspace on the CI runner</td></tr>
+      <tr><td>1. Build</td><td>App source, <code>content/</code></td><td>App bundle and public note pages</td></tr>
+      <tr><td>2. Seal</td><td>Notes with active grants in <code>access.json</code></td><td>AES-256-GCM ciphertext and keyrings</td></tr>
+      <tr><td>3. Verify</td><td>Build output</td><td>Pass, or fail the deploy if any private plaintext is found</td></tr>
+      <tr><td>Deploy</td><td>Verified output</td><td>GitHub Pages site</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2>Two repositories</h2>
+<div class="slate-compare">
+  <div class="slate-compare__col">
+    <p class="slate-compare__head">Public repository (this repo)</p>
+    <ul>
+      <li>App source and build configuration</li>
+      <li>Public notes in <code>content/</code></li>
+      <li>Custom themes and synced settings in <code>.focus-notes/</code></li>
+      <li>Documentation (<code>documentations/</code>) and the <code>slate/</code> submodule</li>
+      <li>The deploy workflow</li>
+      <li>A <strong>pointer</strong> (gitlink) to a commit of the private repository, plus <code>.gitmodules</code></li>
+    </ul>
+  </div>
+  <div class="slate-compare__col">
+    <p class="slate-compare__head">Private repository (submodule at <code>private/</code>)</p>
+    <ul>
+      <li>Private notes and their <code>assets/</code></li>
+      <li><code>access.json</code>: share grants (secrets live only here)</li>
+      <li>Optional <code>access-message.json</code>: templates for sharing messages</li>
+      <li>Must never be made public</li>
+    </ul>
+  </div>
+</div>
+
+<p>The public repository tracks only the submodule <em>pointer</em>, never the private files. This follows the <code>personal-site</code> setup, where <code>.gitmodules</code> declares the private repository with <code>branch = main</code>.</p>
+
+<h2>Working with the submodule</h2>
+<ol class="slate-steps">
+  <li class="slate-step">
+    <p class="slate-step__title">Clone</p>
+    <p><code>git clone --recurse-submodules</code>, or run <code>git submodule update --init</code> after cloning. Without access to the private repository the submodule stays empty and the app still builds and runs with public content only (PKG-04).</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Track main</p>
+    <p>A setup script switches <code>private/</code> from detached HEAD to <code>main</code> and turns on recursive pulls and push checks (<code>submodule.recurse</code>, <code>push.recurseSubmodules=check</code>), as <code>personal-site</code> does.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">Commit private first</p>
+    <p>Any change to private notes is committed and pushed to the private repository <em>before</em> the public repository's pointer is updated. A pointer must never reference a private commit that hasn't been pushed.</p>
+  </li>
+</ol>
+
+<h3>How the web app writes</h3>
+<p>The web app can't run Git, so the GitHub API adapter does the same thing through the REST API:</p>
+<ol>
+  <li><strong>Public note change:</strong> one commit to the public repository (contents API for single files, git trees and commits API for batched moves).</li>
+  <li><strong>Private note change:</strong> a commit to the private repository, then a commit to the public repository that updates the <code>private</code> gitlink (tree entry mode <code>160000</code>) to the new private commit SHA.</li>
+  <li><strong>Visibility change:</strong> add the note to the target repository, delete it from the source repository, then update the pointer. Private side first, as always.</li>
+</ol>
+<div class="slate-callout slate-callout--note" role="note">
+  <p>Bumping the pointer on every private save would trigger a public deploy (and a public commit) for every keystroke pause. <strong>Proposed (D-07):</strong> update the pointer only when the private change affects publishing (share grants or shared notes), plus once a day. Ordinary private edits stay in the private repository.</p>
+</div>
+
+<h2>Deploy pipeline</h2>
+<dl class="slate-defs">
+  <dt>Triggers</dt>
+  <dd>Push to <code>main</code>, manual dispatch, and a nightly schedule so share-link expiry takes effect without a push.</dd>
+  <dt>Private checkout</dt>
+  <dd>The Actions secret <code>PRIVATE_CONTENT_KEY</code> holds an SSH deploy key whose public half is installed <strong>read-only</strong> on the private repository. The workflow rewrites the submodule URL to SSH, runs <code>git submodule update --init --depth 1 private</code>, checks that <code>private/access.json</code> exists (refusing to deploy a half-configured site), then deletes the key from the runner.</dd>
+  <dd>Build logs that could reveal private note names are sent to a runner-local file instead of the public Actions log.</dd>
+  <dt>Build</dt>
+  <dd>Builds the app bundle, renders every note in <code>content/</code> to a static page at <code>/n/&lt;path&gt;/</code>, and optionally publishes this documentation at <code>/docs/</code>.</dd>
+  <dt>Seal</dt>
+  <dd>For each active grant, encrypts the granted notes and their media into <code>_sealed/&lt;build&gt;/</code> and writes the grant keyrings into <code>_access/&lt;build&gt;/</code>.</dd>
+  <dt>Verify</dt>
+  <dd>A leak check scans the output for any private text or file names and fails the deploy if it finds any.</dd>
+  <dt>Deploy</dt>
+  <dd>Uploads the verified artifact to GitHub Pages. Only <code>main</code> deploys.</dd>
+</dl>
+
+<h2>Sealing and share links</h2>
+<p>This design follows the <code>personal-site</code> access spec, scaled down to what SHR-05 needs (magic links only, no typed access codes in the first version).</p>
+<table>
+  <thead><tr><th>Aspect</th><th>Design</th></tr></thead>
+  <tbody>
+    <tr><td>Content encryption</td><td>AES-256-GCM with authenticated additional data (build ID, note ID)</td></tr>
+    <tr><td>Keys</td><td>Fresh random keys and build ID on every deploy. Per-note and keyring keys derived with HKDF</td></tr>
+    <tr><td>Link secret</td><td>32 random bytes, base64url, carried only in the URL fragment: <code>#a=&lt;grant-id&gt;.&lt;secret&gt;</code></td></tr>
+    <tr><td>Decryption</td><td>In the reader's browser with WebCrypto. The fragment is removed from the address bar right away with <code>history.replaceState</code></td></tr>
+    <tr><td>Private URLs</td><td>Opaque tokens (<code>/s/&lt;token&gt;/</code>), so note names and paths aren't exposed</td></tr>
+    <tr><td>Expiry and revoke</td><td>Grants carry <code>expiresAt</code>. Revoking deletes the grant. Both take effect at the next deploy (nightly at the latest)</td></tr>
+  </tbody>
+</table>
+
+<h3>Grant record (<code>private/access.json</code>)</h3>
+<table>
+  <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>Grant identifier (appears in the link fragment)</td></tr>
+    <tr><td><code>kind</code></td><td><code>link</code> (first version). <code>code</code> is reserved for typed access codes later</td></tr>
+    <tr><td><code>recipient</code></td><td>Label for the owner's own reference (name, organisation)</td></tr>
+    <tr><td><code>purpose</code></td><td>Why it was shared</td></tr>
+    <tr><td><code>scope</code></td><td>Note IDs (and optionally folders) the grant unlocks</td></tr>
+    <tr><td><code>createdAt</code>, <code>expiresAt</code></td><td>ISO 8601 timestamps with offset</td></tr>
+    <tr><td><code>secret</code></td><td>Secret material. It exists only in the private repository and never appears in the public repository, logs, or telemetry</td></tr>
+  </tbody>
+</table>
+
+<h2 id="threat-model">Threat model</h2>
+<div class="slate-compare">
+  <div class="slate-compare__col">
+    <p class="slate-compare__head">Protects against</p>
+    <ul>
+      <li>Crawlers, search engines, and anyone browsing the public site or repository</li>
+      <li>Wrong, expired, or revoked links (after the next deploy)</li>
+      <li>A grant for one note unlocking a different note</li>
+      <li>Private plaintext slipping into the Pages artifact (the leak check)</li>
+    </ul>
+  </div>
+  <div class="slate-compare__col">
+    <p class="slate-compare__head">Does not protect against</p>
+    <ul>
+      <li>Recipients forwarding the link or saving the decrypted text</li>
+      <li>Content already downloaded or cached before revoke or expiry</li>
+      <li>Metadata: that sealed files exist, their sizes, and when they change</li>
+      <li>Script injection on the site's origin, which could read keys in the browser (mitigated by CSP and sanitizing)</li>
+      <li>Material that must stay confidential under contract or policy. Don't put that kind of content on public hosting, even encrypted</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Site URL map</h2>
+<table>
+  <thead><tr><th>Path</th><th>Serves</th></tr></thead>
+  <tbody>
+    <tr><td><code>/</code></td><td>The app (asks the owner to connect a token on first use)</td></tr>
+    <tr><td><code>/n/&lt;path&gt;/</code></td><td>Read-only public note pages</td></tr>
+    <tr><td><code>/s/&lt;token&gt;/</code></td><td>Private share-link reader (decrypts in the browser)</td></tr>
+    <tr><td><code>/docs/</code></td><td>This documentation (optional)</td></tr>
+  </tbody>
+</table>

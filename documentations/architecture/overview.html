@@ -1,0 +1,142 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Architecture</p>
+  <h1 class="slate-hero__title">Architecture overview</h1>
+  <p class="slate-hero__summary">One web app core, two thin shells, and GitHub as the only backend.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>Focus Notes is a static, client-side web app. The <strong>same build</strong> runs in the browser from GitHub Pages and inside an <strong>Electron</strong> shell. A shared core (editor engine and block registry, focus mode, theme engine, workspace) talks to storage through one <strong>workspace adapter</strong> interface. The web uses the GitHub REST API; Electron uses a local Git clone. All content lives in two GitHub repositories, a public one and a private one mounted as a submodule. There is no proprietary server.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" role="img"
+       aria-labelledby="arch-title arch-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="arch-title">Focus Notes system layers</title>
+    <desc id="arch-desc">Two shells, a web app on GitHub Pages and an Electron desktop app, both run one shared app core made of the editor engine with its block registry, focus mode, the theme engine and the workspace service. The core reaches storage through either a GitHub API adapter on the web or a local Git adapter in Electron. Both adapters read and write GitHub, where a public repository holds the app, docs and public notes, and a private repository, linked as a submodule, holds private notes and share grants.</desc>
+    <g id="arch-links" data-slate-svg-step="4" data-slate-svg-effect="draw" fill="none" stroke="var(--color-neutral-fg-3)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M280 112 V146"/><path d="M272 138 L280 146 L288 138"/>
+      <path d="M680 112 V146"/><path d="M672 138 L680 146 L688 138"/>
+      <path d="M280 332 V366"/><path d="M272 358 L280 366 L288 358"/>
+      <path d="M680 332 V366"/><path d="M672 358 L680 366 L688 358"/>
+      <path d="M280 440 V466"/><path d="M272 458 L280 466 L288 458"/>
+      <path d="M680 440 V466"/><path d="M672 458 L680 466 L688 458"/>
+    </g>
+    <g id="arch-shells" data-slate-svg-step="0" data-slate-svg-effect="fade-rise">
+      <rect id="arch-web" x="120" y="36" width="320" height="76" rx="14" fill="var(--color-brand-bg)"/>
+      <text x="280" y="68" text-anchor="middle" fill="var(--color-on-brand)" font-family="var(--font-family-base)" font-size="22" font-weight="700">Web app</text>
+      <text x="280" y="96" text-anchor="middle" fill="var(--color-on-brand)" font-family="var(--font-family-base)" font-size="18">GitHub Pages, any browser</text>
+      <rect id="arch-electron" x="520" y="36" width="320" height="76" rx="14" fill="var(--color-brand-bg)"/>
+      <text x="680" y="68" text-anchor="middle" fill="var(--color-on-brand)" font-family="var(--font-family-base)" font-size="22" font-weight="700">Desktop app</text>
+      <text x="680" y="96" text-anchor="middle" fill="var(--color-on-brand)" font-family="var(--font-family-base)" font-size="18">Electron, same web build</text>
+    </g>
+    <g id="arch-core" data-slate-svg-step="1" data-slate-svg-effect="scale-in">
+      <rect x="60" y="150" width="840" height="182" rx="18" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="2"/>
+      <text x="84" y="184" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="20" font-weight="700">Shared app core</text>
+      <g fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5">
+        <rect id="arch-mod-editor" x="84" y="204" width="180" height="104" rx="12"/>
+        <rect id="arch-mod-focus" x="288" y="204" width="180" height="104" rx="12"/>
+        <rect id="arch-mod-theme" x="492" y="204" width="180" height="104" rx="12"/>
+        <rect id="arch-mod-workspace" x="696" y="204" width="180" height="104" rx="12"/>
+      </g>
+      <g font-family="var(--font-family-base)" text-anchor="middle">
+        <text x="174" y="248" font-size="19" font-weight="700" fill="var(--color-neutral-fg-1)" data-slate-fit-target="arch-mod-editor" data-slate-fit-padding="12">Editor engine</text>
+        <text x="174" y="276" font-size="17" fill="var(--color-neutral-fg-2)" data-slate-fit-target="arch-mod-editor" data-slate-fit-padding="12">+ block registry</text>
+        <text x="378" y="248" font-size="19" font-weight="700" fill="var(--color-neutral-fg-1)" data-slate-fit-target="arch-mod-focus" data-slate-fit-padding="12">Focus mode</text>
+        <text x="378" y="276" font-size="17" fill="var(--color-neutral-fg-2)" data-slate-fit-target="arch-mod-focus" data-slate-fit-padding="12">row mask</text>
+        <text x="582" y="248" font-size="19" font-weight="700" fill="var(--color-neutral-fg-1)" data-slate-fit-target="arch-mod-theme" data-slate-fit-padding="12">Theme engine</text>
+        <text x="582" y="276" font-size="17" fill="var(--color-neutral-fg-2)" data-slate-fit-target="arch-mod-theme" data-slate-fit-padding="12">design tokens</text>
+        <text x="786" y="248" font-size="19" font-weight="700" fill="var(--color-neutral-fg-1)" data-slate-fit-target="arch-mod-workspace" data-slate-fit-padding="12">Workspace</text>
+        <text x="786" y="276" font-size="17" fill="var(--color-neutral-fg-2)" data-slate-fit-target="arch-mod-workspace" data-slate-fit-padding="12">files, sharing</text>
+      </g>
+    </g>
+    <g id="arch-adapters" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
+      <rect id="arch-api" x="120" y="366" width="320" height="74" rx="14" fill="var(--color-neutral-bg-3)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <text x="280" y="398" text-anchor="middle" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="20" font-weight="700">GitHub API adapter</text>
+      <text x="280" y="424" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="17">Web: REST + access token</text>
+      <rect id="arch-git" x="520" y="366" width="320" height="74" rx="14" fill="var(--color-neutral-bg-3)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <text x="680" y="398" text-anchor="middle" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="20" font-weight="700">Local Git adapter</text>
+      <text x="680" y="424" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="17">Electron: file system + git</text>
+    </g>
+    <g id="arch-github" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
+      <rect x="60" y="466" width="840" height="146" rx="18" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="2"/>
+      <text x="84" y="500" fill="var(--color-neutral-fg-1)" font-family="var(--font-family-base)" font-size="20" font-weight="700">GitHub</text>
+      <rect id="arch-public" x="100" y="516" width="320" height="76" rx="12" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="1.5"/>
+      <text x="260" y="546" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="19" font-weight="700">Public repository</text>
+      <text x="260" y="574" text-anchor="middle" fill="var(--color-status-success-fg)" font-family="var(--font-family-base)" font-size="17">app, docs, public notes</text>
+      <rect id="arch-private" x="540" y="516" width="320" height="76" rx="12" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5"/>
+      <text x="700" y="546" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="19" font-weight="700">Private repository</text>
+      <text x="700" y="574" text-anchor="middle" fill="var(--color-status-warning-fg)" font-family="var(--font-family-base)" font-size="17">private notes, grants</text>
+      <path d="M424 566 H536" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2.5" stroke-dasharray="7 6"/>
+      <text x="480" y="552" text-anchor="middle" fill="var(--color-neutral-fg-2)" font-family="var(--font-family-base)" font-size="16">submodule</text>
+    </g>
+  </svg>
+  <figcaption>The shells are thin. Everything above the storage adapters is identical on the web and in Electron.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>Layer</th><th>Parts</th></tr></thead>
+    <tbody>
+      <tr><td>Shells</td><td>Web app on GitHub Pages; Electron desktop app wrapping the same build</td></tr>
+      <tr><td>Shared core</td><td>Editor engine and block registry; focus mode; theme engine; workspace (files, visibility, sharing)</td></tr>
+      <tr><td>Storage adapters</td><td>GitHub API adapter (web); local Git adapter (Electron)</td></tr>
+      <tr><td>GitHub</td><td>Public repository (app, docs, public notes); private repository as a submodule (private notes, share grants)</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2>Layers</h2>
+<dl class="slate-defs">
+  <dt>Shells</dt>
+  <dd>Startup, window chrome, and access to platform services. The web shell is a static page. The Electron shell adds a frameless window, native menus and shortcuts, file-system access, and Git, all exposed through a narrow, typed preload bridge with context isolation turned on.</dd>
+  <dt>Editor engine and block registry</dt>
+  <dd>The WYSIWYG block editor, Markdown parse and serialize, input rules, and the plugin registry for block types (<a href="editor-engine.md">Editor engine</a>).</dd>
+  <dt>Focus mode</dt>
+  <dd>A self-contained module that watches the editor's selection and writes the mask band (<a href="../experience/focus-mode.md">Focus mode</a>).</dd>
+  <dt>Theme engine</dt>
+  <dd>Loads, validates, and merges theme JSON, then applies tokens as CSS custom properties (<a href="../experience/theming.md">Theming</a>).</dd>
+  <dt>Workspace</dt>
+  <dd>The note tree, file operations, visibility, sharing, the save queue, and conflict handling (<a href="../experience/files-and-sharing.md">Files and sharing</a>). It is the only module that talks to an adapter.</dd>
+  <dt>Workspace adapter</dt>
+  <dd>One interface with two implementations. The operations are: list a tree, read a note (with its version), write a note against an expected version, move, delete, commit a batch, and read history. Each operation is told which repository it targets: public or private.</dd>
+</dl>
+
+<h2>Web and desktop compared</h2>
+<table>
+  <thead><tr><th>Concern</th><th>Web (GitHub Pages)</th><th>Desktop (Electron, P1)</th></tr></thead>
+  <tbody>
+    <tr><td>Delivery</td><td>Static files built and deployed by GitHub Actions</td><td>Packaged installers wrapping the same build</td></tr>
+    <tr><td>Storage</td><td>GitHub REST API (contents, git trees and commits)</td><td>Local clone with submodule. Pushes and pulls with git</td></tr>
+    <tr><td>Sign-in</td><td>Fine-grained personal access token limited to the two content repositories (see D-02)</td><td>GitHub OAuth device flow, token kept in the OS keychain</td></tr>
+    <tr><td>Offline</td><td>Local edit queue in IndexedDB that syncs when back online</td><td>Fully offline, pushes later</td></tr>
+    <tr><td>Visitors without an account</td><td>Read-only public pages and private share links</td><td>Not applicable</td></tr>
+  </tbody>
+</table>
+
+<div class="slate-callout slate-callout--info" role="note">
+  <p class="slate-callout__title">Why no OAuth button on the web, at first</p>
+  <p>GitHub's OAuth token exchange needs a client secret and can't be called from a browser page. A purely static GitHub Pages app therefore can't finish a standard OAuth sign-in without a small token-exchange service. The first release uses a scoped personal access token so it needs no server. Adding a tiny token-exchange function later is tracked as decision D-02.</p>
+</div>
+
+<h2>Tech stack (proposed)</h2>
+<table>
+  <thead><tr><th>Area</th><th>Proposal</th><th>Reason</th></tr></thead>
+  <tbody>
+    <tr><td>Language</td><td>TypeScript</td><td>One typed codebase across both shells</td></tr>
+    <tr><td>Build</td><td>Vite, static output</td><td>Fast builds; static files suit GitHub Pages and Electron alike</td></tr>
+    <tr><td>Editor engine</td><td>Tiptap on ProseMirror (pending D-01)</td><td>See <a href="editor-engine.md">Editor engine</a></td></tr>
+    <tr><td>Desktop</td><td>Electron with context isolation and a typed preload bridge</td><td>Required by the seed spec</td></tr>
+    <tr><td>Local cache</td><td>IndexedDB</td><td>Offline edit queue and fast reopen on the web</td></tr>
+    <tr><td>CI/CD</td><td>GitHub Actions to GitHub Pages</td><td>Required by the seed spec</td></tr>
+  </tbody>
+</table>
+
+<h2>Security baseline</h2>
+<ul>
+  <li>A strict Content Security Policy: no inline scripts, and connections only to <code>api.github.com</code> and the app's own origin.</li>
+  <li>Markdown is sanitized when rendered, both in the editor and on published pages. Raw HTML in notes is shown as text, not run.</li>
+  <li>Access tokens never go into the repository or into URLs. On the web they are held in memory, with an optional encrypted local copy. In Electron they go in the OS keychain.</li>
+  <li>Private note content only reaches the GitHub Pages artifact in sealed (encrypted) form (see <a href="repository-and-publishing.html#threat-model">threat model</a>).</li>
+</ul>

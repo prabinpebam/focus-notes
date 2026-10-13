@@ -1,0 +1,85 @@
+# Editing
+
+Editing works like Notion or Microsoft Loop: a WYSIWYG, block-based surface where Markdown syntax turns into formatting as you type. Every edit saves as plain Markdown.
+
+> [!NOTE]
+> **TL;DR.** Documents are a sequence of **blocks** (paragraph, heading, list, task, quote, code, divider, table, and future components). Formatting comes from shortcuts, Markdown input rules, a selection **bubble**, and a **slash menu**. Tables get real row and column editing but always save as GFM pipe tables. Every block type is a registered plugin, so images and galleries can be added later without touching the editor core. Covers EDT-*, TBL-*, and EXT-* in the [requirements](../product/requirements.md).
+
+## Blocks and their Markdown
+
+Every block maps to exactly one Markdown construct. That mapping is the contract that keeps notes portable (EDT-01, EDT-10).
+
+| Block | Created by | Saved as |
+| --- | --- | --- |
+| Paragraph | Default | Plain text, separated by blank lines |
+| Heading 1 to 3 | `# `, `## `, `### ` or `/h1` to `/h3` | `#`, `##`, `###` |
+| Bulleted list | `- ` or `* ` | `- item` |
+| Numbered list | `1. ` | `1. item` |
+| Task list | `[] ` or `[ ] ` | `- [ ] item` / `- [x] item` |
+| Quote | `> ` | `> text` |
+| Code block | ```` ``` ```` (optionally with a language) | Fenced code block with language |
+| Divider | `---` | `---` |
+| Table | `/table`, or typing a GFM header row | GFM pipe table |
+| Component (future) | `/image`, `/gallery`, … | Directive syntax (see [Content model](../architecture/content-model.md#components)) |
+
+Lists nest with <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>. Pressing <kbd>Enter</kbd> on an empty list item exits the list. <kbd>Backspace</kbd> at the start of a heading, quote, or list item turns it back into a paragraph.
+
+## Inline formatting
+
+| Format | Shortcut | Input rule | Saved as |
+| --- | --- | --- | --- |
+| Bold | <kbd>Ctrl/Cmd</kbd>+<kbd>B</kbd> | `**text**` | `**text**` |
+| Italic | <kbd>Ctrl/Cmd</kbd>+<kbd>I</kbd> | `*text*` or `_text_` | `*text*` |
+| Strikethrough | <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> | `~~text~~` | `~~text~~` |
+| Inline code | <kbd>Ctrl/Cmd</kbd>+<kbd>E</kbd> | `` `code` `` | `` `code` `` |
+| Link | <kbd>Ctrl/Cmd</kbd>+<kbd>K</kbd> | `[text](url)`, or paste a URL over selected text | `[text](url)` |
+
+Underline, text color, and highlight aren't offered because CommonMark/GFM can't represent them. Adding them would break the "Markdown is the source of truth" principle (see [Vision](../product/vision.md)).
+
+## Contextual controls
+
+- **Formatting bubble.** Appears above any non-empty selection with Bold, Italic, Strikethrough, Code, Link, and *Turn into…*. It disappears when the selection collapses.
+- **Slash menu.** Typing `/` at any position opens a filterable list of every registered block (EDT-06). The list comes from the block registry, so new components show up on their own.
+- **Block handle.** On hover or keyboard focus, a handle appears in the left margin. Drag it to reorder; click it for Duplicate, Delete, Turn into, and Copy link to block (EDT-07).
+
+All three use the theme's surface tokens and stay quiet. None of them appear while you're just typing, which keeps the [blank-canvas](main-ui.html) promise.
+
+## Tables
+
+Tables get first-class editing (TBL-01 to TBL-06), but they always save as GFM pipe tables, so they stay readable on GitHub and in any Markdown viewer.
+
+| Interaction | Behavior |
+| --- | --- |
+| Insert | `/table` inserts a 3 &times; 3 table with a header row. Typing a valid GFM header and delimiter row also converts it. |
+| Move between cells | <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd>. <kbd>Tab</kbd> in the last cell adds a row. Arrow keys cross cell edges at the start or end of a cell's text. |
+| Rows and columns | Hovering a row or column edge shows an insert (+) affordance. A row or column handle offers Insert before/after, Move, and Delete. |
+| Alignment | The column handle sets left, center, or right, saved as `:---`, `:---:`, `---:` (TBL-04). |
+| Cell content | Inline formatting only. <kbd>Enter</kbd> moves to the cell below, and <kbd>Shift</kbd>+<kbd>Enter</kbd> is blocked, because a GFM cell can't hold multiple paragraphs (TBL-06). |
+| Header row | Always present (GFM requires one). It can be emptied but not removed. |
+| Delete table | Through the block handle, or <kbd>Backspace</kbd> on an empty, fully selected table. |
+| Paste | A tab-separated or HTML table pasted from a spreadsheet or the web becomes a table block. |
+
+## Paste and drop
+
+1. **Markdown text** is parsed into blocks (EDT-09).
+2. **HTML** (from browsers and Office apps) is converted to the closest supported block and inline types. Unsupported styling is dropped.
+3. **Anything else** comes in as plain text.
+4. **Images** are refused with a clear message until the image component ships (EXT-03). They are never silently dropped.
+
+## Undo, redo, and saving
+
+- **Undo and redo** (<kbd>Ctrl/Cmd</kbd>+<kbd>Z</kbd>, <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd>) cover typing, formatting, structural edits, and table operations. Typing is grouped into word-sized steps (EDT-08).
+- **Autosave** writes the note to local storage right away, then commits to the repository after a short idle pause (proposed: 3 seconds of no typing, or when the note is closed). Saves are silent. Only failures surface, through the trigger's save-problem state (see [Main UI](main-ui.html#states)) (EDT-11).
+- **Round-trip fidelity.** Opening and closing a note without edits writes nothing. Saving after an edit only changes the lines that were edited, as far as the serializer allows (EDT-10). See [Content model](../architecture/content-model.md#round-trip-fidelity).
+
+## Extending with components
+
+The seed asks for room to add special components later (image, gallery, …). The editor is built around a **block registry** (EXT-01): built-in blocks register through the same API a future image or gallery block would use. A registration declares:
+
+- the block's **schema** (attributes and allowed content);
+- its **view** (how it renders and edits on the canvas);
+- **Markdown parse and serialize** rules;
+- a **slash-menu entry** (label, keywords, icon);
+- optional **toolbar or handle actions**.
+
+Unknown component syntax in a file is kept byte-for-byte and shown as a read-only placeholder, so opening a note in an older app version never destroys content (EXT-05). The engine-level design is in [Editor engine](../architecture/editor-engine.md).
