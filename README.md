@@ -11,7 +11,7 @@ A calm, Markdown-native writing app: a blank canvas, a single red trigger at the
 This repository is the app's source, and its GitHub Pages site is the owner's own instance. To use Focus Notes, get **your own** instance; nothing is shared with anyone else's:
 
 1. Make your instance from the Focus Notes **template repository** (*Use this template*). Keep it public: GitHub Pages on free plans serves only public repositories. Private notes go in a private repository linked to it.
-2. In your instance, open **Settings → Pages** and set **Source** to **GitHub Actions**, then run **Actions → Deploy app**. It deploys the released app; there's nothing to build.
+2. In your instance, open **Settings → Pages** and set **Source** to **GitHub Actions**, then run **Actions → Deploy app**. It deploys the released app, so you never build the app yourself.
 3. Open `https://<your-username>.github.io/<repository>/` and start writing. Notes stay in your browser until you choose **Connect GitHub…** in the toolbar's ⋯ menu, which walks you through your private repository and a token, both from pre-filled GitHub pages.
 
 Prefer a desktop app? Download it from the latest [release](https://github.com/prabinpebam/focus-notes/releases/latest). Want to improve Focus Notes? Fork this repository; its *Deploy app* workflow builds the app from source.

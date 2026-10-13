@@ -376,7 +376,7 @@ Owner: *"How do we package and distribute this?… It would be ideal if people c
 | ID | Requirement | Priority |
 | --- | --- | --- |
 | DST-01 | **Use this app for yourself:** in visitor mode, a button opens a dialog that explains how Focus Notes works (your own independent instance in your own GitHub account, no server, nothing shared with the person whose site this is) and gives the steps: create a GitHub account, make your instance from the template, turn on GitHub Pages, and connect; plus **Download the desktop app** from the latest GitHub Release. The README says the same (D-87). | P0 |
-| DST-02 | Start in the browser: make your instance from the Focus Notes template (nothing to build), turn on GitHub Pages with GitHub Actions, and open your site; the app's first run does the rest (D-80, D-87). | P0 |
+| DST-02 | Start in the browser: copy the Focus Notes template repository (*Use this template*, or clone it; not the source repository) to make your instance, with no app to build, turn on GitHub Pages with GitHub Actions, and open your site; the app's first run does the rest (D-80, D-87). | P0 |
 | DST-03 | A release pipeline in the project repository that builds the desktop installers for Windows, macOS, and Linux and the web app bundle, plus checksums, an SBOM, and attestations, into a draft GitHub Release with smoke tests. | P0 |
 | DST-04 | Store listings: winget and Homebrew cask (and Flathub later), updated automatically from releases. | P1 |
 | DST-05 | `.focus-notes/workspace.json` with `formatVersion`. Migrations ask first, and older apps refuse to write newer formats. | P0 |
