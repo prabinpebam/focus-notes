@@ -25,7 +25,7 @@ Opened from **Open** in the [trigger toolbar](main-ui.html) (<kbd>Ctrl/⌘</kbd>
 | Rename folder | Inline rename | One commit renaming every path inside it and updating links | FIL-02, FIL-09 |
 | Delete folder | Context menu, then confirm, listing how many notes it holds (empty folders don't ask) | One commit deleting the subtree, with *Undo* | FIL-02, FIL-05 |
 | Move | Drag-and-drop, cut and paste, or the *Move to…* picker, for one item or a multi-selection | Git rename within the same repository, links updated, one commit | FIL-03, FIL-08, FIL-09 |
-| Move between Public and Private | Drag across sections, or *Make public* / *Make private* in Share, always confirmed | Delete in one repository and add in the other, plus a submodule pointer update (see below) | FIL-06, SHR-02 |
+| Move between Public and Private | Drag across sections, Move to…, or *Make public* / *Make private* (Share, from M5; today the ⋯ menu for the open note and the Files header for a selection), always confirmed | Delete in one repository and add in the other, private first, plus a submodule pointer update (see below) | FIL-06, SHR-02 |
 | Restore | *Recently deleted* → Restore or Restore to… | Re-adds the file from Git history in a new commit | FIL-10 |
 
 The full interaction design (anatomy, states, naming rules, multi-select, and the reasoning behind each choice) is in [Files panel](../design/views/files.html).
@@ -41,8 +41,10 @@ Renaming or moving a note or folder rewrites the relative links that point at it
 - **Renames by title:** renaming a note in Files, and a file name that follows its title as it's typed (FIL-07), update links the same way.
 - **The open note** shows its new links at once, keeping anything typed while the batch was written.
 - **In the browser,** only the notes written there are rewritten; the instance's read-only notes are never read for this, let alone written.
+- **Within a root:** a link is rewritten only when what it reaches stays in the note's own root. Moving a note between Public and Private leaves links that would reach across as they are, so a public note never names a private one (D-99).
 - **A refusal** puts the links back together with the move: nothing changes on disk or in the browser's storage.
-Commit messages are readable and consistent. For example: `Create notes/ideas.md`, `Move drafts/a.md → archive/a.md`, `Make private: journal/2026-10-13.md`.
+
+Commit messages are readable and consistent. For example: `Create notes/ideas.md`, `Move drafts/a.md → archive/a.md`, `Make private: notes/journal/2026-10-13.md`.
 
 ## Public and private
 
@@ -54,12 +56,14 @@ Seed: *"The content can be made public or private. Private content are hosted in
 | Published on GitHub Pages | Yes, as a read-only page | Only as sealed (encrypted) files | Only sealed, in the owner's vault |
 | Who can read it | Anyone with the URL | Named audiences, with a magic link or their name and passcode, and you | Only you (in a browser, with your vault passphrase) |
 | Default for new notes | No | No | **Yes** (SHR-01, safe by default) |
+
+A new note goes into the folder chosen in Files, or next to the open note when that one is private, and otherwise into the Private root, even when the open note is public. The Files panel says which notes are public: they're under *Public*, with "public" beside their titles and in their names for screen readers. *Shared* arrives with audiences (M5): it's a private note with a grant, stored like any private note.
 ### Changing visibility
 
-1. The user picks **Share → Make public** (or *Make private*). Making a note public asks for confirmation: *"Anyone with the link will be able to read this note."*
-2. The app writes the note into the target repository and deletes it from the source repository.
-3. If the private repository changed, the public repository's submodule pointer is moved to the new private commit.
-4. The note keeps the same folder path inside its new root, so links between notes in the same root still work.
+1. The user picks **Make public** (or *Make private*): from Share once it arrives (M5), and today from the ⋯ menu's *Notes* group for the open note, or the Files header for several selected notes. Moving notes into the other section, by dragging or with Move to…, is the same change. It always asks first (DD-FILES-08). Making notes public says who will read them: *"Anyone with the link will be able to read “On focus” once it's published."* Making them private says what it can't undo (below).
+2. The app writes the note into the target repository and deletes it from the source repository, as one batch: one commit in each, the private repository's first.
+3. If the private repository changed, the public repository's submodule pointer is moved to the new private commit once it's pushed (D-97).
+4. The note keeps the same folder path inside its new root (missing folders are made), so links between notes that move together still work. A name that's taken there is numbered, as for any move.
 
 > [!WARNING]
 > Making a note private doesn't erase it from the public repository's **Git history** or from caches and copies people already have. The confirmation dialog says this clearly. Rewriting history is a manual maintenance task, not an app feature.
