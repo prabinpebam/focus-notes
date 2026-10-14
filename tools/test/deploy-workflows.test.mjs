@@ -12,6 +12,8 @@ import yaml from "js-yaml";
 
 const root = join(import.meta.dirname, "..", "..");
 const files = { project: ".github/workflows/pages.yml", template: "templates/workspace/.github/workflows/pages.yml" };
+/** The default branch, whatever it's called; scheduled runs always run there (and their event has no repository). */
+const ON_DEFAULT = "github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)";
 
 describe.each(Object.entries(files))("the %s's Deploy app workflow", (_, file) => {
   const text = readFileSync(join(root, file), "utf8");
@@ -26,7 +28,7 @@ describe.each(Object.entries(files))("the %s's Deploy app workflow", (_, file) =
       expect(ref, ref).toMatch(/^[\w.-]+\/[\w.-]+(\/[\w./-]+)?@[0-9a-f]{40}$/);
       expect(rest, ref).toMatch(/#\s*v\d+/);
     }
-    expect([...steps, ...wf.jobs.deploy.steps].filter((s) => s.uses)).toHaveLength(uses.length);
+    expect([...steps, ...wf.jobs.deploy.steps, ...wf.jobs["after-deploy"].steps].filter((s) => s.uses)).toHaveLength(uses.length);
   });
 
   it("SEC-05: can't push anything: contents are read-only everywhere, so updates arrive only as pull requests", () => {
@@ -34,30 +36,47 @@ describe.each(Object.entries(files))("the %s's Deploy app workflow", (_, file) =
     for (const job of Object.values(wf.jobs)) expect(job.permissions?.contents ?? "read").toBe("read");
   });
 
-  it("SHR-11: deploys nightly, so expiry takes effect without a push, and only main deploys", () => {
+  it("SHR-11: deploys nightly, so expiry takes effect without a push, and only the default branch deploys", () => {
     expect(wf.on.push.branches).toEqual(["main"]);
     expect(wf.on).toHaveProperty("workflow_dispatch");
     expect(wf.on.schedule).toHaveLength(1);
     expect(wf.on.schedule[0].cron).toMatch(/^\d+ \d+ \* \* \*$/);
-    expect(wf.jobs.deploy.if).toBe("github.ref == 'refs/heads/main'");
+    expect(wf.jobs.deploy.if).toBe(ON_DEFAULT);
   });
 
-  it("SHR-11: a nightly run fails on purpose when the last commit is 50 days old, before GitHub's 60-day shutoff", () => {
-    const i = named(/still active/);
-    expect(i).toBeGreaterThan(0);
-    expect(steps[i].if).toBe("github.event_name == 'schedule'");
-    expect(steps[i].run).toMatch(/git log -1 --format=%ct/);
-    expect(steps[i].run).toMatch(/-ge 50/);
-    expect(steps[i].run).toMatch(/::error::/);
-    expect(steps[i].run).toMatch(/exit 1/);
-    // It runs before anything is built or downloaded.
-    expect(i).toBeLessThan(steps.findIndex((s) => /setup-node/.test(s.uses ?? "")));
+  it("SHR-11: deploys first, then a nightly run fails on purpose when the last commit is 50 days old, before GitHub's 60-day shutoff", () => {
+    expect(named(/still active/)).toBe(-1);
+    const after = wf.jobs["after-deploy"];
+    expect(after.needs).toBe("deploy");
+    expect(after.if).toBe("always()");
+    const step = after.steps.find((s) => /still active/.test(s.name ?? ""));
+    expect(step.if).toBe("github.event_name == 'schedule'");
+    expect(step.run).toMatch(/commits\/\$GITHUB_SHA/);
+    expect(step.run).toMatch(/-ge 50/);
+    expect(step.run).toMatch(/::error::/);
+    expect(step.run).toMatch(/exit 1/);
   });
 
-  it("checks out private/ only after every third-party step, and deletes it straight after publishing", () => {
+  it("deletes this run's Pages artifact once the deploy is done, so old keyrings don't stay downloadable", () => {
+    const after = wf.jobs["after-deploy"];
+    expect(after.permissions).toEqual({ actions: "write", contents: "read" });
+    const del = after.steps.findIndex((s) => /Delete this run's Pages artifact/.test(s.name ?? ""));
+    expect(del).toBe(0);
+    const run = after.steps[del].run;
+    expect(run).toMatch(/actions\/runs\/\$GITHUB_RUN_ID\/artifacts/);
+    expect(run).toMatch(/select\(\.name == "github-pages"\)/);
+    expect(run).toMatch(/gh api -X DELETE "repos\/\$GITHUB_REPOSITORY\/actions\/artifacts\/\$id"/);
+    expect(after.steps[del].env.GH_TOKEN).toBe("${{ github.token }}");
+    // And if that ever fails, the artifact expires after a day.
+    const upload = steps.find((s) => s.uses?.startsWith("actions/upload-pages-artifact@"));
+    expect(upload.with["retention-days"]).toBe(1);
+  });
+
+  it("checks out private/ only on the default branch, after every third-party step, and deletes it straight after publishing", () => {
     const priv = named(/Check out the private repository/);
     const pub = named(/^Publish/);
     expect(priv).toBeGreaterThan(0);
+    expect(steps[priv].if).toBe(`env.HAS_PRIVATE_KEY == 'true' && (${ON_DEFAULT})`);
     expect(pub).toBe(priv + 1);
     expect(steps[pub].run).toMatch(/rm -rf private\s*$/);
     // Before the checkout: every action except the upload, which runs once private/ is gone.

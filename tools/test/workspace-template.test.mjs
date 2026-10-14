@@ -96,7 +96,7 @@ describe("the template's Deploy app workflow (D-48, SEC-05)", () => {
   it("is valid YAML with the build and deploy jobs, and read-only contents by default", () => {
     const w = workflow();
     expect(w.name).toBe("Deploy app");
-    expect(Object.keys(w.jobs)).toEqual(["build", "deploy"]);
+    expect(Object.keys(w.jobs)).toEqual(["build", "deploy", "after-deploy"]);
     expect(w.permissions).toEqual({ contents: "read" });
     expect(w.on.push.branches).toEqual(["main"]);
     expect(w.on).toHaveProperty("workflow_dispatch");
@@ -104,7 +104,7 @@ describe("the template's Deploy app workflow (D-48, SEC-05)", () => {
     expect(w.jobs.build.permissions).toEqual({ contents: "read", attestations: "read" });
     expect(w.jobs.deploy.permissions).toEqual({ pages: "write", "id-token": "write" });
     expect(w.jobs.deploy.needs).toBe("build");
-    expect(w.jobs.deploy.if).toBe("github.ref == 'refs/heads/main'");
+    expect(w.jobs.deploy.if).toBe("github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)");
   });
 
   it("pins every action by a full commit SHA, with its version as a comment", () => {
@@ -116,7 +116,7 @@ describe("the template's Deploy app workflow (D-48, SEC-05)", () => {
       expect(rest, ref).toMatch(/#\s*v\d+/);
     }
     // Every `uses` the YAML has is one the pattern saw (none hidden in a flow mapping).
-    expect([...steps(), ...workflow().jobs.deploy.steps].filter((s) => s.uses)).toHaveLength(uses.length);
+    expect([...steps(), ...workflow().jobs.deploy.steps, ...workflow().jobs["after-deploy"].steps].filter((s) => s.uses)).toHaveLength(uses.length);
   });
 
   it("pins a version and a SHA-256 for the bundle, clearly marked as a placeholder until a release has one", () => {
@@ -146,7 +146,7 @@ describe("the template's Deploy app workflow (D-48, SEC-05)", () => {
     const priv = named(/Check out the private repository/);
     expect(priv).toBe(named(/Unpack/) + 1);
     const step = steps()[priv];
-    expect(step.if).toBe("env.HAS_PRIVATE_KEY == 'true'");
+    expect(step.if).toBe("env.HAS_PRIVATE_KEY == 'true' && (github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch))");
     expect(step.run).toMatch(/trap 'rm -f "\$key"' EXIT/);
     expect(step.run).toMatch(/StrictHostKeyChecking=yes/);
     expect(step.env.PRIVATE_CONTENT_KEY).toBe("${{ secrets.PRIVATE_CONTENT_KEY }}");
