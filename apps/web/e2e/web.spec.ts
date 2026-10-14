@@ -134,7 +134,8 @@ test("a visitor sees the public notes read-only and how to use the app for thems
   await open.getByRole("option", { name: /Reading list/ }).click();
   await expect(editor(page)).toContainText("Books I want to read");
 
-  // Use this app for yourself explains the model and goes only to GitHub's own pages (DST-01).
+  // Use this app for yourself explains the model and goes only to GitHub's own pages (DST-01), and
+  // its copy button opens the template repository, not the source (DST-02).
   await c.getByRole("button", { name: "Use this app for yourself" }).click();
   const about = page.getByRole("dialog", { name: "Use this app for yourself" });
   await expect(about).toContainText("Nothing here is shared with you");

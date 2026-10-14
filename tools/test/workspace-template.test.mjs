@@ -57,6 +57,41 @@ describe("the workspace template's content", () => {
   });
 });
 
+// DST-02, the parts there now: the template a person copies is a whole instance that turns on
+// GitHub Pages with GitHub Actions and deploys the released app, with nothing to build. Making the
+// template repository itself from this folder, and a first deploy from it, wait for WP-5.6
+// (Plan → Gate evidence → MW).
+describe("DST-02: start in the browser from a copy of the template", () => {
+  it("DST-02: a push to main deploys the released web app to the copy's own GitHub Pages with GitHub Actions", () => {
+    const wf = workflow();
+    expect(wf.on.push.branches).toEqual(["main"]);
+    expect(wf.on).toHaveProperty("workflow_dispatch");
+    expect(wf.jobs.deploy.permissions).toEqual({ pages: "write", "id-token": "write" });
+    expect(wf.jobs.deploy.environment.name).toBe("github-pages");
+    const uses = [...steps(), ...wf.jobs.deploy.steps].map((s) => (s.uses ?? "").split("@")[0]);
+    for (const a of ["actions/configure-pages", "actions/upload-pages-artifact", "actions/deploy-pages"]) expect(uses).toContain(a);
+    // No app to build: the workflow downloads the release's bundle and never installs or builds source.
+    const runs = steps().map((s) => s.run ?? "").join("\n");
+    expect(runs).not.toMatch(/pnpm (install|build)|npm (ci|install|run build)|vite build/);
+    expect(wf.env.FOCUS_NOTES_SOURCE).toBe("prabinpebam/focus-notes");
+  });
+
+  it("DST-02: the README walks through it: Pages from GitHub Actions, open the site, write in the browser, the desktop app for GitHub", () => {
+    const readme = read("README.md");
+    expect(readme).toContain("**Settings → Pages → Source: GitHub Actions**");
+    expect(readme).toContain("https://<your-username>.github.io/<this-repository>/");
+    expect(readme).toContain("Notes written there stay in that browser.");
+    expect(readme).toContain("desktop app from the [releases page](https://github.com/prabinpebam/focus-notes/releases/latest)");
+  });
+
+  it("DST-02: the app's \"make my own copy\" link is the template repository, not the source repository", async () => {
+    const { TEMPLATE_URL } = await import("../../packages/core/src/browser.ts");
+    const { TEMPLATE } = await import("../../apps/desktop/src/main/setup/engine.ts");
+    expect(TEMPLATE_URL).toBe("https://github.com/prabinpebam/focus-notes-workspace");
+    expect(`https://github.com/${TEMPLATE.owner}/${TEMPLATE.name}`).toBe(TEMPLATE_URL);
+  });
+});
+
 describe("the template's Deploy app workflow (D-48, SEC-05)", () => {
   it("is valid YAML with the build and deploy jobs, and read-only contents by default", () => {
     const w = workflow();
