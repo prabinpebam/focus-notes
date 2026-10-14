@@ -1,4 +1,4 @@
-/** Notes the benchmarks and journeys share (PRF-03). Plain TypeScript, so Node runs it as it is. */
+/** Notes the benchmarks, journeys, and tests share (PRF-03, SPT-07). Plain TypeScript, so Node runs it as it is. */
 
 /** A 10,000-word note of the usual shapes: headings, paragraphs, lists, a task, a quote, and code. */
 export function tenThousandWords(): string {

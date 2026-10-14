@@ -188,7 +188,7 @@ export function startSearch(host: SearchHost, index: SearchIndexClient, options:
     lockGen++;
     vaultTree = undefined;
     // First, before any later query: the index forgets every private note at once.
-    index.apply([{ op: "removeWithin", path: "private:" }]);
+    send([{ op: "removeWithin", path: "private:" }]);
     out = out.filter((op) => !("path" in op) || sourceOf(op.path) !== "private");
     for (const p of [...queue]) if (sourceOf(p) === "private") queue.delete(p);
     for (const p of [...known.keys()]) if (sourceOf(p) === "private") known.delete(p);
