@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { largeWorkspace } from "./large.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
 const budgetsPath = join(import.meta.dirname, "budgets.json");
@@ -100,7 +101,8 @@ async function gitStatus() {
   }
 }
 
-const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()) } };
+// PRF-04 and PRF-10: memory and idle CPU with 10,000 notes, and reopening an unchanged note.
+const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()), ...(await largeWorkspace({ root, mainEntry })) } };
 mkdirSync(join(root, "test-results"), { recursive: true });
 writeFileSync(join(root, "test-results", "bench.json"), JSON.stringify(report, null, 2));
 

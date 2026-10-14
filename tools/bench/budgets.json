@@ -26,6 +26,21 @@
     "PRF-07.cachedStatusMs": {
       "budget": 5,
       "unit": "ms"
+    },
+    "PRF-04.memoryMB": {
+      "budget": 350,
+      "unit": " MB",
+      "noise": 0.1
+    },
+    "PRF-04.idleCpuPct": {
+      "budget": 1,
+      "unit": "%",
+      "noiseAbsolute": 0.5
+    },
+    "PRF-10.reopenMs": {
+      "budget": 50,
+      "unit": "ms",
+      "noiseAbsolute": 15
     }
   },
   "baselinePlatform": "win32",
