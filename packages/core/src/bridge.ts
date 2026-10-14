@@ -285,6 +285,11 @@ export interface AppStateFile {
   darkTheme?: string;
   contentFont?: string;
   uiScale?: number;
+  /** Reading settings (Theme manager → Reading): line spacing, reading width in characters, paragraph spacing, and focus dim. */
+  lineHeight?: number;
+  measure?: number;
+  paragraphSpacing?: "compact" | "comfortable" | "airy";
+  focusDim?: number;
   /** The web first run has been seen (FRE-09). */
   webWelcomed?: boolean;
   /** The desktop first run's step, kept so quitting resumes there, or done (FRE-01). */

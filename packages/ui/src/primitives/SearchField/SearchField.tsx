@@ -17,6 +17,8 @@ export interface SearchFieldProps {
   /** Shows the field as in error, for example a regular expression that doesn't compile. */
   invalid?: boolean;
   keyScope?: KeyScope;
+  /** A mode shown before the text, such as Spotlight's All, Notes, or Commands. The label says it in words. */
+  chip?: string;
   /** The ResultList this field drives (combobox pattern): its ID, and the active item's ID. */
   controls?: string;
   activeId?: string;
@@ -28,7 +30,7 @@ export interface SearchFieldProps {
  * A search box (SearchField). Esc clears it when it has text; when it's empty, Esc passes on, so
  * the dialog or panel around it closes.
  */
-export function SearchField({ label, value, placeholder, clearLabel, autoFocus, focusRequest, invalid, keyScope = "none", controls, activeId, id, onChange }: SearchFieldProps) {
+export function SearchField({ label, value, placeholder, clearLabel, autoFocus, focusRequest, invalid, keyScope = "none", chip, controls, activeId, id, onChange }: SearchFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     if (!focusRequest) return;
@@ -47,6 +49,7 @@ export function SearchField({ label, value, placeholder, clearLabel, autoFocus, 
       {...(id ? { id } : {})}
     >
       <span className={s.icon} aria-hidden="true"><Icon name="search" /></span>
+      {chip ? <span className={s.chip} aria-hidden="true">{chip}</span> : null}
       <Input
         className={s.input}
         ref={input}

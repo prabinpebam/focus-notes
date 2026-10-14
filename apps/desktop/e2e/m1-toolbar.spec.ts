@@ -66,10 +66,15 @@ test("UI-07: toolbar actions run their commands and show their state", async () 
   await page.keyboard.press("Escape");
   await expect(toolbar).toBeHidden();
 
-  // Search isn't here yet, and says why instead of doing nothing.
+  // Search opens Spotlight (WP-4.2), with its field focused; Esc gives the caret back to the note.
   await page.keyboard.press(`${mod}+.`);
-  await expect(toolbar.getByRole("button", { name: "Search" })).toHaveAttribute("aria-disabled", "true");
+  await expect(toolbar.getByRole("button", { name: "Search" })).not.toHaveAttribute("aria-disabled", "true");
+  await toolbar.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox")).toBeFocused();
+  await expect(toolbar).toBeHidden();
   await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Spotlight" })).toBeHidden();
+  await expect(editor).toBeFocused();
   await quit(l);
 });
 

@@ -8,4 +8,6 @@ export default defineConfig({
   base: "./",
   plugins: [react(), vanillaExtractPlugin()],
   build: { outDir: "../../out/renderer", emptyOutDir: true, target: "chrome140", sourcemap: true },
+  // The search index's worker (WP-4.1) is a module, loaded from the app's own files.
+  worker: { format: "es" },
 });

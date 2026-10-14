@@ -11,9 +11,10 @@ export const DEFAULT_CSP = [
   "form-action 'none'",
   "frame-ancestors 'none'",
   // Trusted Types (SEC-02): HTML reaches the DOM only through the app's sanitizing default policy
-  // and DOMPurify's own; scripts and script URLs have no policy at all.
+  // and DOMPurify's own. No script has a policy; one script URL does: `search-worker` passes the
+  // search index's own worker, from the app itself, and nothing else (D-107).
   "require-trusted-types-for 'script'",
-  "trusted-types default dompurify",
+  "trusted-types default dompurify search-worker",
 ].join("; ");
 
 /**

@@ -46,14 +46,14 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
   },
   {
     id: "file", label: "menu.file",
-    items: ["note.new", "note.open", "picker.open", "-", "note.save", "sync.now", "-", "note.share", "files.makePublic", "files.makePrivate", "-", "notes.import", "-", { role: "close" }],
+    items: ["note.new", "note.open", "spotlight.quickOpen", "-", "note.save", "sync.now", "-", "note.share", "files.makePublic", "files.makePrivate", "-", "notes.import", "-", { role: "close" }],
   },
   {
     id: "edit", label: "menu.edit",
     items: [
       { role: "undo", command: "edit.undo" }, { role: "redo", command: "edit.redo" }, "-",
       { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "pasteAndMatchStyle" }, { role: "selectAll" }, "-",
-      { submenu: "menu.find", items: ["find.open", "find.replace", "find.next", "find.prev"] },
+      { submenu: "menu.find", items: ["find.open", "find.replace", "find.next", "find.prev", "find.allNotes", "find.nextResult", "find.prevResult"] },
     ],
   },
   {
@@ -73,6 +73,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
       { submenu: "menu.appearance", items: ["appearance.system", "appearance.light", "appearance.dark"], radio: true },
       { submenu: "menu.lightTheme", items: themes("light"), radio: true },
       { submenu: "menu.darkTheme", items: themes("dark"), radio: true },
+      "theme.manager.open",
       "settings.sync", "-",
       "font.larger", "font.smaller", "font.reset",
       { submenu: "menu.contentFont", items: CONTENT_FONTS.map((f) => `font.content.${f}`), radio: true }, "-",
@@ -82,7 +83,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
   },
   {
     id: "go", label: "menu.go",
-    items: ["files.open", "files.reveal", "files.showDeleted", "-", "edit.docStart", "edit.docEnd", "-", "conflict.open", "toast.focus"],
+    items: ["spotlight.open", "spotlight.commands", "spotlight.headings", "-", "files.open", "files.reveal", "files.showDeleted", "-", "edit.docStart", "edit.docEnd", "-", "conflict.open", "toast.focus"],
   },
   { id: "window", label: "menu.window", kind: "window", items: [{ role: "minimize" }, { role: "zoom" }, "-", { role: "front" }] },
   { id: "help", label: "menu.help", kind: "help", items: ["shortcuts.open", "help.open"] },
@@ -95,17 +96,17 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
  */
 export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
   // What views, the editor, and the shell send as things change: values, events, and their own steps.
-  { why: "state", ids: /^(command\.run|app\.ready|note\.setContent|paste\.notice|toolbar\.setOpen|format\.setState|table\.(setState|changed|copied|action)|slash\..+|find\.(setQuery|setReplace|prefill|setResult)|toast\.setPaused|files\.(drop|editBlur|setEditValue|setExpanded|setFilter)|window\.(drag|key)|.+\.set[A-Z]\w*)$/ },
+  { why: "state", ids: /^(command\.run|app\.ready|note\.setContent|paste\.notice|toolbar\.setOpen|format\.setState|table\.(setState|changed|copied|action)|slash\..+|find\.(setQuery|setReplace|prefill|setResult)|toast\.setPaused|files\.(drop|editBlur|setEditValue|setExpanded|setFilter)|window\.(drag|key)|theme\.color\.set|.+\.set[A-Z]\w*)$/ },
   // Keys of one focused control, listed in the cheat sheet: the find bar, a picker's field, the Files tree, a table, a toolbar.
-  { why: "scoped key", ids: /^(find\.(nextInField|prevInField|replaceNext|replaceAll|close|historyOlder|historyNewer|toggle\..+|toggleReplace)|picker\.(next|prev|chooseActive)|move\.(next|prev|chooseActive)|files\.(selectAll|openItem|delete|rename|cancelEdit|commitEdit|moveTo|newFolder)|table\.(nextCell|prevCell|cellBelow|cellAbove|addRowBelow|addRowAbove|moveRowUp|moveRowDown|deleteRow|selectCells|contextMenu)|format\.exitToolbar|link\.cancel)$/ },
+  { why: "scoped key", ids: /^(find\.(nextInField|prevInField|replaceNext|replaceAll|close|historyOlder|historyNewer|toggle\..+|toggleReplace)|picker\.(next|prev|chooseActive)|move\.(next|prev|chooseActive)|files\.(selectAll|openItem|delete|rename|cancelEdit|commitEdit|moveTo|newFolder)|table\.(nextCell|prevCell|cellBelow|cellAbove|addRowBelow|addRowAbove|moveRowUp|moveRowDown|deleteRow|selectCells|contextMenu)|format\.exitToolbar|link\.cancel|spotlight\.(next|prev|run|runAlt|actions|actionsRight|back|all)|findAll\.(next|prev|openActive|toggle\..+))$/ },
   // Buttons and items of an open panel, dialog, message, or context menu, which act on what they show.
-  { why: "in a view", ids: /^(firstRun\..+|setup\..+|account\..+|workspace\..+|note\.readOnlyAction|files\.(close|select|clearSelection|activate|undo|confirm|hideDeleted|toggleDeleted|restore|restoreTo|newNote)|move\.choose|picker\.choose|link\.(openEditor|apply|open|copy|remove)|table\..+|toast\.(dismiss|action)|unlock\..+|about\.(template|download)|import\.confirm|conflict\.(choose|later))$/ },
+  { why: "in a view", ids: /^(firstRun\..+|setup\..+|account\..+|workspace\..+|note\.readOnlyAction|files\.(close|select|clearSelection|activate|undo|confirm|hideDeleted|toggleDeleted|restore|restoreTo|newNote)|move\.choose|picker\.choose|link\.(openEditor|apply|open|copy|remove)|table\..+|toast\.(dismiss|action)|unlock\..+|about\.(template|download)|import\.confirm|conflict\.(choose|later)|spotlight\.choose|findAll\.(close|choose)|theme\.(manager\.(close|revert)|preview|previewEnd|choose|color\.fix)|reading\.reset)$/ },
   // The browser's own: its notes, the vault there, and the visitor's way to an instance of their own.
   { why: "browser", ids: /^(notes\.export|note\.copyToLocal|vault\.(unlock|lock|forget)|about\.open)$/ },
+  // The old note list, which Spotlight's quick open replaced (D-109): File's Quick open is Spotlight's.
+  { why: "replaced", ids: /^picker\.open$/ },
   // The app-built window of Windows and Linux; on macOS, the Window menu's own items.
   { why: "app-built window", ids: /^window\.(minimize|maximize|restore|toggleMaximize|close|move|size|systemMenu|snap\..+)$/ },
-  // Named for a later milestone: its keys are reserved, and it isn't listed anywhere yet.
-  { why: "planned", ids: /^spotlight\.open$/ },
 ];
 
 /** A menu bar item as the shell builds it. `chord` is the registry's chord for the platform ("Mod+Shift+L"). */

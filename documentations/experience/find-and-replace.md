@@ -3,7 +3,7 @@
 Find and replace text in the open note, or across every note in the workspace. It works the way VS Code and Word do, inside a compact bar that keeps the canvas calm.
 
 > [!NOTE]
-> **TL;DR.** <kbd>Mod</kbd>+<kbd>F</kbd> opens a small frosted **find bar** under the trigger, showing a live "3 of 12" count, case/word/regex toggles, and next and previous buttons. It expands into **replace** (<kbd>⌥⌘F</kbd> / <kbd>Ctrl+H</kbd>), and replace-all is a single undo step. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> searches **all notes** inside the [Spotlight](spotlight.html) panel. Replacing across notes (P1) shows a preview and saves as one revertible commit. Matching runs on the text you see, not on Markdown syntax. Covers FND-01 to FND-05 in the [requirements](../product/requirements.md).
+> **TL;DR.** <kbd>Mod</kbd>+<kbd>F</kbd> opens a small frosted **find bar** under the trigger, showing a live "3 of 12" count, case/word/regex toggles, and next and previous buttons. It expands into **replace** (<kbd>⌥⌘F</kbd> / <kbd>Ctrl+H</kbd>), and replace-all is a single undo step. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> searches **all notes** in a side sheet of results grouped by note, and opens any of them at exactly that match with the find bar on it (D-110). Replacing across notes (P1) shows a preview and saves as one revertible commit. Matching runs on the text you see, not on Markdown syntax. Covers FND-01 to FND-05 in the [requirements](../product/requirements.md).
 
 ## Find in the note
 
@@ -51,12 +51,13 @@ Find and replace text in the open note, or across every note in the workspace. I
 
 ## Find in all notes
 
-**Open:** <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>. This opens [Spotlight](spotlight.html) in *Find in notes* mode, so there's no separate search sidebar and no extra chrome.
+**Open:** <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>, ⋯ → *Find in all notes*, or Spotlight's *Find "…" in all notes*, which brings its query. A frosted side sheet opens on the right, over the canvas like the [Files panel](../design/views/files.html), with its search field focused. It's built as its own sheet rather than a Spotlight mode, because grouped lines need the height (D-110).
 
-1. Results are grouped by note: title, path, whether it's public or private, and the number of matches. Each note expands to show its matching lines with the match highlighted.
-2. The same toggles apply (case, word, regex), along with filters: `in:essays/`, `is:private`, `is:public`.
-3. <kbd>Enter</kbd> on a matching line opens that note at the match with the find bar open, so <kbd>Enter</kbd> then steps through its other matches. <kbd>F4</kbd> / <kbd>Shift</kbd>+<kbd>F4</kbd> jump to the next or previous result across notes without reopening the panel.
-4. **Desktop** searches the files on disk, so results are always complete and current. **Web** (MW) searches the local index, which is complete for note titles and covers note text as fast as notes can be cached.
+1. **Matching** is the find bar's own: the same visible text, the same matcher, and the same toggles, Match case (`Aa`), Whole word (`ab`), and Regular expression (`.*`), on the sheet's buttons or <kbd>Alt</kbd>+<kbd>C</kbd> / <kbd>W</kbd> / <kbd>R</kbd> (<kbd>⌥⌘C</kbd> / <kbd>W</kbd> / <kbd>R</kbd> on a Mac). Case and accents don't matter by default. Filters narrow it: `in:essays/`, `is:private`, `is:public`.
+2. **Results are grouped by note**: private notes first, then public, then the browser's own, each by path. A note's heading shows its title, its path, whether it's public or private, and its number of matches; under it, each match is a line of the note with the match marked in the find highlight. A line holding two matches shows twice, each marked once. A summary says "12 matches in 3 notes" (announced politely), "No results", or that a regular expression doesn't compile. After 1,000 lines it says only the first are shown, though every match is counted.
+3. **Keys.** Focus stays in the field. <kbd>↓</kbd> and <kbd>↑</kbd> move through the lines (never onto a note's heading); <kbd>Enter</kbd>, or a click, opens the note at that match, with the find bar open and its field focused, showing "3 of 5", so <kbd>Enter</kbd> then steps through the note's other matches. <kbd>F4</kbd> / <kbd>Shift</kbd>+<kbd>F4</kbd> open the next or previous result across notes without the sheet (the first <kbd>F4</kbd> opens the result that's highlighted). <kbd>Esc</kbd> clears the field, then closes the sheet, and the caret goes back to the note. The search stays for the session.
+4. **Where it searches.** The [search index](spotlight.html) answers, in its worker: every note's visible text, one line per block, as the index read it. **Desktop:** the workspace's notes on disk, private and public, kept current by the app's saves and the file watcher. **Web:** this browser's notes, the instance's public notes, and its private notes only while they're unlocked; locking takes them out of the results at once. While notes are still being read (just after launch), the summary says how many, and the results fill in as they are.
+5. **Exactly that match.** Each line knows its place in the note's count and which line it's on, and the editor selects it by its line first: a block the editor shows as raw Markdown isn't searched by the find bar, so there the count in the sheet can be higher than the find bar's, and the line still opens at the right match. A table's row is one line in the sheet and a cell per block in the editor, so a match there is found by its place in the count.
 
 ## Replace in all notes (P1)
 
@@ -72,8 +73,7 @@ Find and replace text in the open note, or across every note in the workspace. I
 | Need | Approach | License |
 | --- | --- | --- |
 | Find and replace in one note | [`prosemirror-search`](https://github.com/ProseMirror/prosemirror-search), the official ProseMirror search package, wrapped as a Tiptap extension | MIT |
-| Search across notes on the desktop | ripgrep run on the workspace, with Markdown stripped from result lines for display | MIT / Unlicense |
-| Search across notes on the web | The [Spotlight](spotlight.html) index (MiniSearch), plus a full scan of cached notes for exact and regex matches | MIT |
+| Search across notes | The [search index](spotlight.html)'s worker scans the visible text it holds for every note, with the find bar's matcher (`@focus-notes/markdown/match`), on the desktop and the web alike; no ripgrep (D-110) | MIT |
 | Matching that ignores accents | Unicode NFD normalization with combining marks removed, for both the text and the query | Not applicable |
 
 ## Acceptance checks
@@ -81,5 +81,5 @@ Find and replace text in the open note, or across every note in the workspace. I
 - **FND-01:** <kbd>Mod</kbd>+<kbd>F</kbd> with "focus" selected opens the bar pre-filled, shows the right count, and <kbd>Enter</kbd> steps through every match and wraps around.
 - **FND-02:** Replace-all of 100 matches is undone by a single <kbd>Mod</kbd>+<kbd>Z</kbd>, and bold or links on the replaced text are kept.
 - **FND-03:** Find in selection never matches outside the selected range.
-- **FND-04:** Find in all notes on a 5,000-note workspace lists the first results within 300 ms on the desktop.
+- **FND-04:** Find in all notes on a 5,000-note workspace lists the first results within 300 ms on the desktop (`FND-04.findAllP95Ms` in the benchmark). <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>, a query, the arrow keys, and <kbd>Enter</kbd> open the note at that exact match with the find bar showing its place in the count, from the keyboard alone and with no axe violations (the M4 journey `m4-find-all`).
 - **FND-05:** Replacing across 10 notes makes one commit, and *Revert* restores every file byte for byte.

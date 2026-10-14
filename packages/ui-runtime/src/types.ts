@@ -33,7 +33,7 @@ export interface ViewDocument {
   /** The element ID that receives focus when the view opens. */
   focus?: string;
   /**
-   * Hosted beside the main view (mountApp's `overlays`): its root is a Stack of dialogs, each shown
+   * Hosted beside the main view (mountApp's `overlays`): its root is a Stack of dialogs and side sheets, each shown
    * only when its view model opens it, and the main view's AppRoot sets the theme for both.
    */
   overlay?: boolean;

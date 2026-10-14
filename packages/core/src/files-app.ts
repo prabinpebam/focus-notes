@@ -116,9 +116,10 @@ export function registerFiles(ctx: Ctx) {
     revealWhenListed = false;
     if (files().open) reveal();
   });
-  const reveal = () => {
+  /** Opens the panel with a note or folder shown and selected: the open note unless one is given (Spotlight's quick actions). */
+  const reveal = (target?: string) => {
     if (!tree().roots.length) revealWhenListed = true;
-    const path = store.state.note.path;
+    const path = target ?? store.state.note.path;
     const add = path && findNode(tree(), path) ? ancestorsOf(tree(), path) : [];
     setFiles((f) => ({
       open: true, filter: "", edit: undefined, focusRequest: f.focusRequest + 1,
@@ -132,9 +133,9 @@ export function registerFiles(ctx: Ctx) {
   };
   const close = () => setFiles((f) => ({ open: false, edit: undefined, confirm: undefined, move: { ...f.move, open: false }, recent: { ...f.recent, open: false } }));
   commands.register({ id: "files.open", title: "command.files.open", icon: "open", enabled: () => Boolean(ws), run: () => (files().open ? close() : reveal()) });
-  commands.register({
+  commands.register<{ path: string }>({
     id: "files.reveal", title: "command.files.reveal", shortcut: { default: "Mod+Shift+E" }, layer: "power", group: "files",
-    enabled: () => Boolean(ws), run: reveal,
+    enabled: () => Boolean(ws), run: ({ path }) => reveal(typeof path === "string" && path ? path : undefined),
   });
   commands.register({ id: "files.close", title: "command.files.close", run: close });
 

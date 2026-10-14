@@ -41,10 +41,13 @@ import { Sheet } from "./layouts/Sheet/Sheet.tsx";
 import { VersionPane } from "./primitives/VersionPane/VersionPane.tsx";
 import { WindowControls } from "./primitives/WindowControls/WindowControls.tsx";
 import { WindowFrame } from "./host/WindowFrame/WindowFrame.tsx";
+import { ThemeGallery } from "./primitives/ThemeGallery/ThemeGallery.tsx";
+import { Slider } from "./primitives/Slider/Slider.tsx";
+import { ColorField } from "./primitives/ColorField/ColorField.tsx";
 
 /** The closed registry: the renderer can create these and nothing else (DSY-06). */
 export const registry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField,
   Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet,
   EditorSurface, TableControls, WindowFrame,
   Trigger, Toolbar, Dialog,

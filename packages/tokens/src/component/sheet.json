@@ -17,6 +17,10 @@
         "$type": "dimension",
         "$value": "{layout.sheetTheme}"
       },
+      "widthFind": {
+        "$type": "dimension",
+        "$value": "{layout.sheetFind}"
+      },
       "radius": {
         "$type": "dimension",
         "$value": "{radius.sheet}"

@@ -5,8 +5,9 @@
  * stores and keys only through `WEB_STORES` and `WEB_META`, and signing out and removing a
  * workspace delete what `removedBy` says; a test keeps this list and the docs' table the same.
  *
- * Not stored at all, so there's nothing to delete: a search index (the Files list and Recently
- * deleted are built in memory), and logs (the main process writes counts and problem codes to
+ * Not stored at all, so there's nothing to delete: the search index (Spotlight's, in its Web
+ * Worker's memory, rebuilt each start and dropped on quit, D-107; the Files list and Recently
+ * deleted are built in memory too), and logs (the main process writes counts and problem codes to
  * standard output only, never to a file). The GitHub token stays in Git's credential helper.
  */
 

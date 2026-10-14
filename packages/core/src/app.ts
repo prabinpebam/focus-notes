@@ -1,6 +1,6 @@
 import { Store } from "./store.ts";
 import { CommandRegistry, chordsFor, formatChord, KEY_LAYERS, type Binding } from "./commands.ts";
-import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, UI_SCALES, themeById, type ContentFont } from "./themes.ts";
+import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, FOCUS_DIM, LINE_HEIGHT, MEASURE, PARAGRAPH_SPACINGS, UI_SCALES, onSteps, themeById, type ContentFont, type ParagraphSpacing } from "./themes.ts";
 import { cheatSheet, displayPlatform, EDITOR_COMMANDS, NATIVE_KEYS, type CheatSheetLayer, type CheatSheetPlatform } from "./keymap.ts";
 import { ViewModelRegistry } from "./view-models.ts";
 import { MessageCatalog, type Messages } from "./messages.ts";
@@ -24,6 +24,10 @@ import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./setting
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
 import { registerMenuBar } from "./menu-bar.ts";
 import { WarmUp } from "./warmup.ts";
+import { registerSpotlight, SPOTLIGHT_CLOSED, type SpotlightState } from "./spotlight-app.ts";
+import { registerFindAll, FIND_ALL_CLOSED, type FindAllState, type FindJump } from "./find-all-app.ts";
+import type { SearchService } from "./search/feed.ts";
+import { registerThemeManager, THEME_MANAGER_CLOSED, draftTokens, shownTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -38,15 +42,8 @@ export interface AppState {
     status: "loading" | "ready" | "error";
     saveState: SaveState;
   };
-  appearance: {
-    mode: "system" | "light" | "dark";
-    system: Scheme;
-    fontSize: number;
-    lightTheme: string;
-    darkTheme: string;
-    contentFont: ContentFont;
-    uiScale: number;
-  };
+  /** Appearance and the reading settings (THM-08, THM-03, Theme manager → Reading). */
+  appearance: Appearance;
   focusMode: boolean;
   ui: {
     toolbarOpen: boolean;
@@ -54,6 +51,8 @@ export interface AppState {
     shortcuts: { open: boolean; query: string; layer: CheatSheetLayer; platform: CheatSheetPlatform };
     /** The find bar (IA-CMP-FINDBAR, FND-01, FND-02). */
     find: FindState;
+    /** Find in all notes (FND-04): its side sheet, query, and results. */
+    findAll: FindAllState;
     /** Toasts, newest last; at most two show (IA-CMP-TOAST). */
     toasts: ToastState[];
     /** Bumped to move focus to the newest toast's action (F6). */
@@ -74,6 +73,10 @@ export interface AppState {
     conflict: ConflictState;
     /** Settings (IA-VIEW-SETTINGS): Account and Workspace, with signing out and removing the workspace (FRE-07). */
     settings: SettingsState;
+    /** Spotlight (IA-VIEW-SPOTLIGHT): search and act. */
+    spotlight: SpotlightState;
+    /** The theme manager (IA-VIEW-THEME, THM-07). */
+    theme: ThemeManagerState;
   };
   /** Synced settings (PRV-03): no private repository to sync through, or syncing off or on. */
   settingsSync: "unavailable" | "off" | "on";
@@ -185,12 +188,13 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
   {
     id: "theme", label: "menu.theme",
     items: [
+      "theme.manager.open",
       "appearance.system", "appearance.light", "appearance.dark",
       { submenu: "theme.light", label: "menu.lightTheme", items: BUILT_IN_THEMES.filter((t) => t.kind === "light").map((t) => `theme.light.${t.id}`) },
       { submenu: "theme.dark", label: "menu.darkTheme", items: BUILT_IN_THEMES.filter((t) => t.kind === "dark").map((t) => `theme.dark.${t.id}`) },
     ],
   },
-  { id: "edit", label: "menu.edit", items: ["find.open", "find.replace"] },
+  { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
   { id: "note", label: "menu.note", items: ["note.share"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "shortcuts.open", "help.open"] },
@@ -223,6 +227,8 @@ export interface App {
   keySeen(): void;
   /** The warm-up after start (PRF-10): shells and later features add the work it does. */
   warmUp: WarmUp;
+  /** The search index, once the shell has started it (`startSearch`, D-107): Spotlight and Find in all notes ask it. */
+  useSearch(service: SearchService): void;
 }
 
 export const resolvedScheme = (s: AppState): Scheme =>
@@ -244,9 +250,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     appearance: {
       mode: "system", system: bridge.systemScheme(), fontSize: DEFAULT_FONT_SIZE,
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
+      lineHeight: LINE_HEIGHT.default, measure: MEASURE.default, paragraphSpacing: "comfortable",
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, settings: SETTINGS_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, settings: SETTINGS_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -584,7 +591,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     id: "note.new", title: "command.note.new", icon: "newNote", shortcut: { default: "Mod+N", web: "Ctrl+Alt+N" }, layer: "basic", group: "app",
     enabled: (s) => s.workspace.access === "write",
     disabledReason: "command.note.new.readOnly",
-    run: async () => {
+    // With a title (Spotlight's Create note "…"), the note starts with it as its H1 and is named after it (FIL-07).
+    run: async ({ title }: { title?: unknown }) => {
       const current = store.state.note.path;
       // With the Files panel open, the note goes into the selected folder (Files → Creating); else
       // into the open note's folder if it's private, or the Private root: private by default (SHR-01).
@@ -595,15 +603,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       files.created(path);
       await bridge.writeNote(path, "");
       await load(path);
+      const heading = typeof title === "string" ? title.replace(/\s+/g, " ").trim() : "";
+      if (heading && store.state.note.path === path) {
+        const md = `# ${heading}\n\n`;
+        setNote({ key: `${path}#${Date.now()}`, initialMarkdown: md, markdown: md, saveState: "unsaved" });
+        await flush();
+      }
     },
-  });
-  commands.register({
-    id: "spotlight.open", title: "command.spotlight.open", icon: "search",
-    shortcut: { default: "Mod+/", alternates: { default: ["Mod+Shift+P"] } }, layer: "power", group: "spotlight", planned: true,
-    // Spotlight arrives in M4; until then the command says so instead of doing nothing.
-    enabled: () => false,
-    disabledReason: "command.spotlight.open.reason",
-    run: () => {},
   });
   commands.register({
     id: "window.fullScreen", title: "command.window.fullScreen", icon: "fullScreen",
@@ -716,6 +722,26 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     id: "find.prefill", title: "command.find.setQuery",
     run: ({ value }) => { if (typeof value === "string" && value) setFind({ query: value }); },
   });
+  // A match opened from Find in all notes (FND-04): the find bar opens on the note's matches with
+  // that one selected and the find field focused, once the note's editor is ready.
+  let pendingJump: { path: string; jump: FindJump } | undefined;
+  const showJump = (jump: FindJump) => {
+    const f = store.state.ui.find;
+    setFind({
+      open: true, query: jump.query, caseSensitive: jump.caseSensitive, wholeWord: jump.wholeWord, regex: jump.regex,
+      notice: "", focusFind: f.focusFind + 1,
+    });
+    remember();
+    store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
+    editorAction("find.select", { ...jump });
+  };
+  const openMatch = async (path: string, jump: FindJump) => {
+    if (store.state.note.path === path && store.state.note.status === "ready") return showJump(jump);
+    pendingJump = { path, jump };
+    await load(path);
+    // The note couldn't be opened, or another one was asked for meanwhile.
+    if (pendingJump?.path === path && store.state.note.path !== path) pendingJump = undefined;
+  };
   commands.register<{ count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }>({
     id: "find.setResult", title: "command.find.setResult",
     run: ({ count, current, invalid, wrapped, replaced }) => {
@@ -802,6 +828,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       if (start !== undefined) afterPaint(() => timing.measure(OPEN_MEASURE, start));
       // The caret is ready: the warm-up may begin (PRF-10).
       warmUp.start();
+      const jump = pendingJump;
+      if (jump && jump.path === store.state.note.path) {
+        pendingJump = undefined;
+        // Once the new editor has finished setting up (its caret placed, its listeners on).
+        afterPaint(() => showJump(jump.jump));
+      }
     },
   });
 
@@ -856,6 +888,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
   const menuBar = registerMenuBar({ store, commands, catalog, platform: bridge.platform, ...(bridge.nativeWindow ? { bridge: bridge.nativeWindow } : {}) });
+  const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now });
+  const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
+  registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
   // keeps them on this device as they are now, and deletes the file.
   commands.register({
@@ -984,15 +1019,30 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         focusMode: { type: "boolean" },
         theme: { type: "string", enum: BUILT_IN_THEMES.map((t) => t.id) },
         contentFont: { type: "string", enum: [...CONTENT_FONTS] },
+        // Reading settings (Theme manager → Reading): unset where they're the token's own value.
+        lineHeight: { type: "number" },
+        measure: { type: "number" },
+        paragraphSpacing: { type: "string", enum: [...PARAGRAPH_SPACINGS] },
+        focusDim: { type: "number" },
+        /** An edited copy of the theme showing (Edit colors): its colors over the theme's tokens. */
+        themeColors: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } },
         uiScale: { type: "number" },
         editorKeymap: { type: "array", items: { type: "object", properties: { id: { type: "string" }, chord: { type: "string" } } } },
       },
     },
-    reads: ["appearance", "focusMode"],
-    select: (s) => ({
-      scheme: resolvedScheme(s), theme: resolvedTheme(s), platform: bridge.platform, fontSize: s.appearance.fontSize, focusMode: s.focusMode,
-      contentFont: s.appearance.contentFont, uiScale: s.appearance.uiScale, editorKeymap,
-    }),
+    reads: ["appearance", "focusMode", "ui.theme.preview", "ui.theme.draft"],
+    select: (s) => {
+      // The theme manager's keyboard preview shows on the real note (THM-07), and so does an edited copy.
+      const theme = shownTheme(s);
+      const a = s.appearance;
+      return {
+        scheme: themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode,
+        contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap,
+        lineHeight: a.lineHeight === LINE_HEIGHT.default ? undefined : a.lineHeight,
+        measure: a.measure === MEASURE.default ? undefined : a.measure,
+        paragraphSpacing: a.paragraphSpacing, focusDim: a.focusDim, themeColors: draftTokens(s),
+      };
+    },
   });
 
   const allBindings = (platform: Platform): Binding[] => {
@@ -1085,6 +1135,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     idle: () => tracker.idle(),
     keySeen: () => menuBar.keySeen(),
     warmUp,
+    useSearch: (service) => {
+      spotlight.attach(service);
+      findAll.useSearch(service);
+    },
     onEditorAction(listener) {
       editorListeners.add(listener);
       return () => editorListeners.delete(listener);
@@ -1113,6 +1167,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           ...(themeById(appState.darkTheme)?.kind === "dark" ? { darkTheme: appState.darkTheme! } : {}),
           ...((CONTENT_FONTS as readonly string[]).includes(appState.contentFont ?? "") ? { contentFont: appState.contentFont as ContentFont } : {}),
           ...((UI_SCALES as readonly number[]).includes(appState.uiScale ?? 0) ? { uiScale: appState.uiScale! } : {}),
+          ...(onSteps(appState.lineHeight, LINE_HEIGHT) !== undefined ? { lineHeight: onSteps(appState.lineHeight, LINE_HEIGHT)! } : {}),
+          ...(onSteps(appState.measure, MEASURE) !== undefined ? { measure: onSteps(appState.measure, MEASURE)! } : {}),
+          ...((PARAGRAPH_SPACINGS as readonly string[]).includes(appState.paragraphSpacing ?? "") ? { paragraphSpacing: appState.paragraphSpacing as ParagraphSpacing } : {}),
+          ...(onSteps(appState.focusDim, FOCUS_DIM) !== undefined ? { focusDim: onSteps(appState.focusDim, FOCUS_DIM)! } : {}),
         },
         // Focus mode is on for new installs: it's a signature feature (D-04).
         focusMode: appState.focusMode ?? true,

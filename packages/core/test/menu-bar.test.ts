@@ -89,7 +89,7 @@ describe("DSK-05: the macOS menu bar lists every command", () => {
       ...toolbar.items.map((i) => i.id),
       ...toolbar.more.flatMap((g) => g.items.flatMap((i) => (i.items ? i.items.map((c) => c.id) : [i.id]))),
       ...app.commands.bindings("macos").filter((b) => !b.handledBy || b.handledBy === "editor").map((b) => b.id),
-    ].filter((id) => id !== "spotlight.open"); // Planned for M4: its keys are reserved, and it isn't listed anywhere yet.
+    ];
     expect(wanted.filter((id) => !listed.has(id))).toEqual([]);
   });
 
@@ -145,7 +145,11 @@ describe("DSK-05: the macOS menu bar lists every command", () => {
     expect(find(m, "help.open")).toMatchObject({ label: "Help and docs", enabled: false, reason: "Help and docs arrive in a later preview" });
     expect(find(m, "shortcuts.open")?.reason).toBeUndefined();
     // The app-built window's commands and the browser's aren't on a Mac's menu bar at all.
-    for (const id of ["window.minimize", "window.snap.left", "notes.export", "vault.unlock", "spotlight.open"]) expect(find(m, id)).toBeUndefined();
+    for (const id of ["window.minimize", "window.snap.left", "notes.export", "vault.unlock"]) expect(find(m, id)).toBeUndefined();
+    // Spotlight (M4) is in Go, with its keys.
+    expect(items("go").slice(0, 3)).toEqual(["spotlight.open", "spotlight.commands", "spotlight.headings"]);
+    expect(items("file")).toContain("spotlight.quickOpen");
+    expect(find(m, "spotlight.open")).toMatchObject({ chord: "Mod+/", enabled: true });
   });
 
   it("keeps macOS's own menus and items: the app menu, cut, copy, and paste, the Window menu, and Help", async () => {

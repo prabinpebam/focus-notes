@@ -49,9 +49,12 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
       scopes.push((el as HTMLElement).dataset.keyScope!);
       if (el.hasAttribute("data-key-scope-stop")) break;
     }
+    // In a text field, whether the caret is at the end of its text (→ opens Spotlight's actions only there).
+    const field = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement ? e.target : undefined;
     const id = app.commands.match({
       key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey,
       altGraph: e.getModifierState?.("AltGraph") ?? false,
+      ...(field ? { caretAtEnd: field.selectionStart === field.value.length && field.selectionEnd === field.value.length } : {}),
     }, scopes);
     if (!id) return;
     e.preventDefault();
@@ -74,15 +77,32 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   let toolbarWasOpen = app.store.state.ui.toolbarOpen;
   let sheetWasOpen = app.store.state.ui.shortcuts.open;
   let filesWereOpen = app.store.state.ui.files.open;
+  let spotlightWasOpen = app.store.state.ui.spotlight.open;
+  let findAllWasOpen = app.store.state.ui.findAll.open;
+  let themeWasOpen = app.store.state.ui.theme.open;
   app.store.subscribe(() => {
-    const { toolbarOpen, shortcuts, find, files } = app.store.state.ui;
-    // Not when the toolbar closed because the find bar, the cheat sheet, or the Files panel took focus.
-    if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open && !files.open) || (sheetWasOpen && !shortcuts.open) || (filesWereOpen && !files.open)) {
+    const { toolbarOpen, shortcuts, find, files, spotlight, findAll, theme } = app.store.state.ui;
+    // Spotlight hands focus back where it was; if that's gone (a dialog it replaced), to the note.
+    if (spotlightWasOpen && !spotlight.open) {
+      setTimeout(() => {
+        if (!document.activeElement || document.activeElement === document.body) window.dispatchEvent(new Event(REFOCUS_EVENT));
+      }, 300);
+    }
+    spotlightWasOpen = spotlight.open;
+    // Find in all notes closing: back to the note, unless a match it opened has the find bar's focus.
+    if (findAllWasOpen && !findAll.open) {
+      const asked = find.focusFind;
+      setTimeout(() => { if (app.store.state.ui.find.focusFind === asked) window.dispatchEvent(new Event(REFOCUS_EVENT)); }, 0);
+    }
+    findAllWasOpen = findAll.open;
+    // Not when the toolbar closed because the find bar, the cheat sheet, the Files panel, or the theme manager took focus.
+    if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open && !files.open && !theme.open) || (sheetWasOpen && !shortcuts.open) || (filesWereOpen && !files.open) || (themeWasOpen && !theme.open)) {
       setTimeout(() => window.dispatchEvent(new Event(REFOCUS_EVENT)), 0);
     }
     toolbarWasOpen = toolbarOpen;
     sheetWasOpen = shortcuts.open;
     filesWereOpen = files.open;
+    themeWasOpen = theme.open;
   });
   return root;
 }

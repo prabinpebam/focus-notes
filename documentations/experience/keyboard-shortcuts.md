@@ -170,6 +170,8 @@ Details are on [Find and replace](find-and-replace.md).
 | Next / previous result across notes | <kbd>F4</kbd> / <kbd>⇧F4</kbd> | <kbd>F4</kbd> / <kbd>Shift+F4</kbd> | Pro | VS Code |
 | Close the find bar | <kbd>Esc</kbd> | <kbd>Esc</kbd> | Basic | Universal |
 
+In *Find in all notes*, focus stays in its field: <kbd>↓</kbd> and <kbd>↑</kbd> move through the matching lines, <kbd>Enter</kbd> opens the highlighted one at its match with the find bar on it, the match case, whole word, and regex keys work anywhere in the sheet, and <kbd>Esc</kbd> clears the field, then closes the sheet ([D-110](../plan/decisions.md)).
+
 ## Spotlight
 
 These apply while [Spotlight](spotlight.html) is open.
@@ -181,10 +183,13 @@ These apply while [Spotlight](spotlight.html) is open.
 | Alternative action (for example, open in a new window) | <kbd>⌘Enter</kbd> | <kbd>Ctrl+Enter</kbd> | Power | macOS Spotlight, Raycast |
 | Show the actions for the selected result | <kbd>→</kbd> or <kbd>⌘K</kbd> | <kbd>→</kbd> or <kbd>Ctrl+K</kbd> | Power | Raycast |
 | Back out of the action list | <kbd>←</kbd> or <kbd>Esc</kbd> | <kbd>←</kbd> or <kbd>Esc</kbd> | Power | Raycast |
+| Back to All from another mode, in an empty field | <kbd>⌫</kbd> | <kbd>Backspace</kbd> | Power | Raycast, VS Code |
 | Run the nth result | <kbd>⌘1</kbd> to <kbd>⌘9</kbd> | <kbd>Ctrl+1</kbd> to <kbd>Ctrl+9</kbd> | Pro | Alfred |
 | Copy link to the selected note | <kbd>⇧⌘C</kbd> | <kbd>Ctrl+Shift+C</kbd> | Pro | Raycast |
 | Jump between result groups | <kbd>⌥↓</kbd> / <kbd>⌥↑</kbd> | <kbd>Alt+↓</kbd> / <kbd>Alt+↑</kbd> | Pro | No common standard |
 | Close | <kbd>Esc</kbd> | <kbd>Esc</kbd> | Basic | Universal |
+
+As built (WP-4.2, D-109): these keys are the `spotlightField` key scope. <kbd>→</kbd> shows the actions only with the caret at the end of the field's text, so elsewhere it still moves the caret; <kbd>←</kbd>, <kbd>Esc</kbd>, and <kbd>Backspace</kbd> act only when there's something for them to do (an action list to leave, another mode to leave) and otherwise reach the field. <kbd>⌃P</kbd> / <kbd>⌃N</kbd>, <kbd>Mod</kbd>+<kbd>1</kbd> to <kbd>9</kbd>, <kbd>⇧⌘C</kbd>, and <kbd>⌥↓</kbd> / <kbd>⌥↑</kbd> arrive with the Pro layer (WP-4.4). The browser uses the same keys: <kbd>Ctrl</kbd>+<kbd>/</kbd>, <kbd>Ctrl</kbd>+<kbd>P</kbd> (quick open, in place of printing), <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, and <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>.
 
 ## Files panel
 

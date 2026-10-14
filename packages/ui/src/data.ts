@@ -15,7 +15,7 @@ export interface CommandItem {
   busyLabel?: string;
 }
 
-/** A result in a ResultList (Spotlight, the slash menu, Move to). */
+/** A result in a ResultList (Spotlight, the slash menu, Move to, Find in all notes). */
 export interface ResultItem {
   id: string;
   label: string;
@@ -23,6 +23,18 @@ export interface ResultItem {
   icon?: string;
   shortcut?: string;
   disabled?: boolean;
+  /**
+   * A group's heading, not a result: the items after it, up to the next heading, are its group
+   * (Spotlight's Top hit, Notes, Commands…; Find in all notes' note, with its path and count as the
+   * description). The arrow keys pass over it.
+   */
+  header?: boolean;
+  /** Where the label matched: [start, end) ranges in UTF-16 code units, marked as matches. */
+  highlights?: readonly (readonly number[])[];
+  /** The same for the description (a full-text snippet). */
+  descriptionHighlights?: readonly (readonly number[])[];
+  /** A current state or value at the end of the row ("On", "16 px"), read with it. */
+  state?: string;
 }
 
 /** One block of a note's version in the conflict resolver (VersionPane), and whether the other version differs there. */
@@ -63,10 +75,30 @@ export interface TreeItem {
 /**
  * Key scopes (Keyboard shortcuts → Contexts decide): keys registered for a scope work only inside it.
  * `files` is the Files sheet, `filesTree` its tree, and `filesEdit` the tree's name field, which
- * stops the outer scopes so Delete and F2 edit the text there.
+ * stops the outer scopes so Delete and F2 edit the text there. `findAll` is the Find in all notes
+ * sheet and `findAllField` its search field.
  */
-export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "moveField", "firstRun", "repoField"] as const;
+export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "moveField", "firstRun", "repoField", "spotlightField", "findAll", "findAllField"] as const;
 export type KeyScope = (typeof KEY_SCOPES)[number];
+
+/** A theme in the theme manager's gallery (ThemeGallery). */
+export interface ThemeTile {
+  id: string;
+  label: string;
+  kind: "light" | "dark";
+  /** "Light ✓" or "Dark ✓" when it fills that slot. */
+  slot?: string;
+  /** The contrast badge: AA or AAA. */
+  badge: string;
+  /** Said after the name: its kind and badge. */
+  description?: string;
+}
+
+/** A color token's value for the root (AppRoot's themeColors): an edited copy of a theme. */
+export interface ColorValue {
+  id: string;
+  value: string;
+}
 
 /** One choice in a segmented control or filter. */
 export interface Option {

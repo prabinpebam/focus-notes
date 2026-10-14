@@ -1046,7 +1046,7 @@
         "experience/spotlight.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-4.2",
@@ -1080,7 +1080,7 @@
         "experience/spotlight.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-4.3",
@@ -1106,7 +1106,7 @@
         "experience/find-and-replace.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-4.4",
@@ -1159,7 +1159,7 @@
         "design/views/theme-manager.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-5.1",

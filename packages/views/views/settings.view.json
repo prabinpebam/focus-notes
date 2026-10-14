@@ -378,6 +378,114 @@
                         ]
                       }
                     ]
+                  },
+                  "appearance": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "settings.appearance.heading"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s",
+                          "align": "start"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.settings.appearance.summary"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "settings.appearance.open"
+                              },
+                              "icon": "color"
+                            },
+                            "on": {
+                              "press": [
+                                {
+                                  "run": "settings.setOpen",
+                                  "args": {
+                                    "open": false
+                                  }
+                                },
+                                {
+                                  "run": "theme.manager.open"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "SegmentedControl",
+                        "props": {
+                          "label": {
+                            "t": "settings.appearance.scale"
+                          },
+                          "options": {
+                            "get": "vm.settings.appearance.scales"
+                          },
+                          "value": {
+                            "bind": "vm.settings.appearance.scale"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "when": {
+                          "get": "vm.settings.appearance.canSync"
+                        },
+                        "props": {
+                          "gap": "xs",
+                          "align": "start"
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.settings.sync"
+                              },
+                              "toggle": true,
+                              "pressed": {
+                                "get": "vm.settings.appearance.syncOn"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "settings.sync"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "settings.appearance.syncNote"
+                              },
+                              "tone": "muted"
+                            }
+                          }
+                        ]
+                      }
+                    ]
                   }
                 }
               }

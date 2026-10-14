@@ -155,7 +155,19 @@ export const windowBox = (page: Page): Promise<{ left: number; top: number; widt
 
 /** Closes through the window's close path so pending saves are flushed (QLT-03). */
 export async function quit(l: Launched): Promise<void> {
-  // The note's window, not the snap preview (which has no page).
-  await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))?.close());
-  await l.app.waitForEvent("close", { timeout: 10_000 }).catch(() => {});
+  const closed = l.app.waitForEvent("close", { timeout: 10_000 }).then(() => true, () => false);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      // The note's window, not the snap preview (which has no page).
+      await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))?.close());
+      break;
+    } catch (e) {
+      // The main process's inspector can drop a call's answer ("Promise was collected") while
+      // Chromium attaches a new worker, such as the search index's just after start (WP-4.1). The
+      // call may have run: what counts is that the app closes; if it doesn't, it's asked again.
+      if (attempt >= 2 || !/garbage collected|Promise was collected/.test(String(e))) throw e;
+      if (await Promise.race([closed, new Promise<false>((r) => setTimeout(() => r(false), 1000))])) return;
+    }
+  }
+  await closed;
 }

@@ -3,7 +3,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   applyLink, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
-  focusAtEnd, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
+  focusAtEnd, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
@@ -395,11 +395,36 @@ export function EditorSurface({
         if (text && !text.includes("\n") && text.length <= 200) findRef.current.onFindPrefill?.({ value: text });
         return;
       }
+      if (id === "find.select") {
+        // A match opened from Find in all notes (FND-04): search for it as the find bar will, and
+        // select exactly that match. Focus goes to the find bar, so Enter steps on from there.
+        const o = { query: String(args.query ?? ""), replace: replaceRef.current, caseSensitive: Boolean(args.caseSensitive), wholeWord: Boolean(args.wholeWord), regex: Boolean(args.regex) };
+        const line = typeof args.lineKey === "number" ? { lineKey: args.lineKey, lineNth: Number(args.lineNth) || 0, occurrence: Number(args.occurrence) || 0 } : {};
+        selectFindTarget(editor, o, { index: Number(args.index) || 0, ...line });
+        const st = findStatus(editor.state);
+        lastFind.current = `${st.count}:${st.current}:${st.invalid}`;
+        findRef.current.onFindResult?.({ ...st, wrapped: false, replaced: 0 });
+        return;
+      }
       if (id === "slash.insert") {
         // A row clicked in the slash menu; focus never left the note.
         const entry = slashEntries().find((e) => e.id === args.id);
         if (entry && editor.isEditable) insertSlashEntry(editor, entry);
         editor.view.focus();
+        return;
+      }
+      if (id === "editor.goToHeading") {
+        // Spotlight's heading results: the note's nth heading as the index counts them (top-level
+        // blocks), or the first with that text if the note has changed since it was indexed.
+        const heads: { pos: number; text: string }[] = [];
+        editor.state.doc.forEach((node, offset) => { if (node.type.name === "heading") heads.push({ pos: offset, text: node.textContent }); });
+        const text = String(args.text ?? "");
+        const nth = heads[Number(args.index)];
+        const head = nth && (!text || nth.text === text) ? nth : (heads.find((h) => h.text === text) ?? nth);
+        if (!head) return;
+        editor.commands.setTextSelection(head.pos + 1);
+        editor.view.focus();
+        editor.commands.scrollIntoView();
         return;
       }
       if (runLinkAction(id, args)) return;

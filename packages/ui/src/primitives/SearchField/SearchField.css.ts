@@ -26,6 +26,18 @@ export const root = style({
 
 export const icon = style({ display: "inline-flex", color: t.icon, flexShrink: 0 });
 
+/** The mode before the text (Spotlight). */
+export const chip = style({
+  flexShrink: 0,
+  paddingInline: t.chipPaddingInline,
+  borderRadius: t.chipRadius,
+  backgroundColor: t.chipBackground,
+  color: t.chipText,
+  fontSize: t.chipFontSize,
+  fontWeight: t.chipWeight,
+  whiteSpace: "nowrap",
+});
+
 export const input = style({
   flexGrow: 1,
   minWidth: 0,

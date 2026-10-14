@@ -1,0 +1,130 @@
+{
+  "cmp": {
+    "themeGallery": {
+      "gap": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "tileMinWidth": {
+        "$type": "dimension",
+        "$value": "{layout.themeTile}"
+      },
+      "swatchHeight": {
+        "$type": "dimension",
+        "$value": "{layout.themeSwatch}"
+      },
+      "radius": {
+        "$type": "dimension",
+        "$value": "{radius.control}"
+      },
+      "swatchRadius": {
+        "$type": "dimension",
+        "$value": "{radius.small}"
+      },
+      "padding": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
+      },
+      "swatchPadding": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "border": {
+        "$type": "color",
+        "$value": "{color.border}"
+      },
+      "borderWidth": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      },
+      "selectedBorder": {
+        "$type": "color",
+        "$value": "{color.accent}"
+      },
+      "selectedWidth": {
+        "$type": "dimension",
+        "$value": "{border.selectedBar}"
+      },
+      "hover": {
+        "$type": "color",
+        "$value": "{color.hover}"
+      },
+      "text": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "muted": {
+        "$type": "color",
+        "$value": "{color.textMuted}"
+      },
+      "focusRing": {
+        "$type": "color",
+        "$value": "{color.focusRing}"
+      },
+      "focusWidth": {
+        "$type": "dimension",
+        "$value": "{border.focus}"
+      },
+      "focusOffset": {
+        "$type": "dimension",
+        "$value": "{border.focusOffset}"
+      },
+      "font": {
+        "$type": "fontFamily",
+        "$value": "{font.ui}"
+      },
+      "fontSize": {
+        "$type": "dimension",
+        "$value": "{font.uiSecondary}"
+      },
+      "captionSize": {
+        "$type": "dimension",
+        "$value": "{font.uiCaption}"
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "$value": "{font.weightSemibold}"
+      },
+      "glyphFont": {
+        "$type": "fontFamily",
+        "$value": "{font.content}"
+      },
+      "glyphSize": {
+        "$type": "dimension",
+        "$value": "{font.uiTitle}"
+      },
+      "dotSize": {
+        "$type": "dimension",
+        "$value": "{size.triggerDot}"
+      },
+      "sampleCanvas": {
+        "$type": "color",
+        "$value": "{color.canvas}"
+      },
+      "sampleText": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "sampleAccent": {
+        "$type": "color",
+        "$value": "{color.accent}"
+      },
+      "sampleDot": {
+        "$type": "color",
+        "$value": "{trigger.dot}"
+      },
+      "sampleBorder": {
+        "$type": "color",
+        "$value": "{color.border}"
+      },
+      "duration": {
+        "$type": "duration",
+        "$value": "{motion.micro}"
+      },
+      "easing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.standard}"
+      }
+    }
+  }
+}

@@ -21,6 +21,8 @@ const BUILT: { ia: string; view: string; node?: { type: string; id: string } }[]
   { ia: "IA-VIEW-FILES", view: "canvas", node: { type: "Sheet", id: "files" } },
   { ia: "IA-VIEW-SHORTCUTS", view: "canvas", node: { type: "Dialog", id: "shortcuts" } },
   { ia: "IA-VIEW-GETSTARTED", view: "canvas", node: { type: "Dialog", id: "about" } },
+  { ia: "IA-VIEW-SETTINGS", view: "settings" },
+  { ia: "IA-VIEW-THEME", view: "theme" },
 ];
 
 function find(node: unknown, pred: (n: Record<string, unknown>) => boolean): Record<string, unknown> | undefined {

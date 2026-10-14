@@ -35,8 +35,15 @@ export const modal = style({
 
 export const size = {
   s: style({ maxWidth: t.width.s }),
+  m: style({ maxWidth: t.width.m }),
   l: style({ maxWidth: t.width.l }),
   xl: style({ maxWidth: t.width.xl }),
+};
+
+/** Centered, or near the top like Spotlight, where results grow downward without the field moving. */
+export const placement = {
+  center: style({}),
+  top: style({ alignItems: "flex-start", paddingBlockStart: t.top }),
 };
 
 export const dialog = style({
@@ -72,3 +79,12 @@ export const body = style({
   selectors: { "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` } },
 });
 minimalScrollbar(body, t);
+
+/** The raised surface, or the theme's frosted one (Foundations → Surfaces). */
+export const material = {
+  raised: style({}),
+  frosted: style({
+    backgroundColor: `color-mix(in srgb, ${t.frostBackground} calc(${t.frostOpacity} * 100%), transparent)`,
+    backdropFilter: `blur(${t.frostBlur})`,
+  }),
+};

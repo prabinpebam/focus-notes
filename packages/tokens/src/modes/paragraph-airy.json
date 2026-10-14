@@ -1,0 +1,9 @@
+{
+  "$description": "Paragraph spacing Airy (Theme manager \u2192 Reading).",
+  "layout": {
+    "$type": "dimension",
+    "blockGap": {
+      "$value": "{ref.size.em200}"
+    }
+  }
+}

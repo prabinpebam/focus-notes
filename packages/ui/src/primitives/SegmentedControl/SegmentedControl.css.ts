@@ -3,7 +3,8 @@ import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.segmentedControl;
 
-export const root = style({ display: "inline-flex", alignItems: "center", gap: t.gap, fontFamily: t.font, fontSize: t.fontSize });
+// Wraps the segments under the label where they don't fit beside it (the theme manager's 380 px sheet).
+export const root = style({ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: t.gap, fontFamily: t.font, fontSize: t.fontSize });
 
 export const label = style({ color: t.text, whiteSpace: "nowrap" });
 

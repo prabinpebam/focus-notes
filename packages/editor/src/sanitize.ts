@@ -73,8 +73,11 @@ export function sanitizePastedHtml(html: string): string {
   }
 }
 
-/** The only policy names the Content Security Policy allows (`trusted-types default dompurify`). */
-export const TRUSTED_TYPES_POLICIES = ["default", "dompurify"] as const;
+/**
+ * The only policy names the Content Security Policy allows (`trusted-types default dompurify
+ * search-worker`). `search-worker` is the search index's (core's search/client.ts, D-107).
+ */
+export const TRUSTED_TYPES_POLICIES = ["default", "dompurify", "search-worker"] as const;
 
 interface TrustedTypesFactory {
   createPolicy(name: string, rules: { createHTML?: (s: string) => string }): unknown;

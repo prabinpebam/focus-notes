@@ -49,6 +49,26 @@
       "budget": 50,
       "unit": "ms",
       "noiseAbsolute": 15
+    },
+    "SPT-07.panelOpenMs": {
+      "budget": 50,
+      "unit": "ms"
+    },
+    "SPT-07.openMs": {
+      "budget": 50,
+      "unit": "ms"
+    },
+    "SPT-07.titleQueryP95Ms": {
+      "budget": 16,
+      "unit": "ms"
+    },
+    "SPT-07.fullTextP95Ms": {
+      "budget": 100,
+      "unit": "ms"
+    },
+    "FND-04.findAllP95Ms": {
+      "budget": 300,
+      "unit": "ms"
     }
   },
   "baselinePlatform": "win32",

@@ -1,7 +1,8 @@
 /**
  * Settings (IA-VIEW-SETTINGS) on the desktop: a dialog whose categories are a list on the left. As
- * built it has Account and Workspace (FRE-07, PRV-02); the other categories join with the work
- * packages that build them (Appearance with the theme manager, Agents, Sharing). Changes apply at
+ * built it has Account, Workspace (FRE-07, PRV-02), and Appearance (a summary that opens the theme
+ * manager, the interface size, and Sync appearance, DD-SET-02); the other categories join with the
+ * work packages that build them (Agents, Sharing). Changes apply at
  * once (DD-SET-01). The shell does the work: Git's helpers for the account (`bridge.firstRun`), Git
  * for the workspace (`bridge.workspace.removal` and `remove`); signing in again, switching account,
  * and Run setup again show the first run's card (first-run-app.ts).
@@ -15,9 +16,10 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { SyncState } from "./sync-app.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
+import { UI_SCALES, themeById } from "./themes.ts";
 
 /** Settings' categories, in order, as built so far. */
-export const SETTINGS_SECTIONS = ["account", "workspace"] as const;
+export const SETTINGS_SECTIONS = ["account", "workspace", "appearance"] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export interface SettingsState {
@@ -43,6 +45,8 @@ interface S {
   sync: SyncState;
   workspace: { folder?: string };
   firstRun: { active: boolean };
+  appearance: { mode: "system" | "light" | "dark"; lightTheme: string; darkTheme: string; fontSize: number; contentFont: string; uiScale: number };
+  settingsSync: "unavailable" | "off" | "on";
 }
 
 interface Ctx<St extends S> {
@@ -200,10 +204,14 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
           type: "object",
           properties: { folder: { type: "string" }, folderText: { type: "string" }, git: { type: "boolean" }, canRemove: { type: "boolean" }, canRunSetup: { type: "boolean" }, gitNote: { type: "string" } },
         },
+        appearance: {
+          type: "object",
+          properties: { summary: { type: "string" }, scale: { type: "string" }, scales: { type: "array", items: OPTION }, canSync: { type: "boolean" }, syncOn: { type: "boolean" } },
+        },
       },
     },
-    setters: { section: "settings.setSection" },
-    reads: ["ui.settings", "account", "sync.git", "workspace.folder"],
+    setters: { section: "settings.setSection", "appearance.scale": "ui.setScale" },
+    reads: ["ui.settings", "account", "sync.git", "workspace.folder", "appearance", "settingsSync"],
     select: (s) => {
       const st = s.ui.settings;
       const a = st.account;
@@ -225,6 +233,18 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
           folder, folderText: catalog.format("settings.workspace.folder", { folder }), git: s.sync.git,
           canRemove: s.sync.git && Boolean(ws?.remove), canRunSetup: Boolean(bridge.setup),
           gitNote: catalog.format(s.sync.git ? "settings.workspace.git" : "settings.workspace.local"),
+        },
+        // A summary that opens the theme manager: theme choice has one home (DD-SET-02).
+        appearance: {
+          summary: catalog.format("settings.appearance.summary", {
+            mode: catalog.format(`command.appearance.${s.appearance.mode}`),
+            light: catalog.format(themeById(s.appearance.lightTheme)?.title ?? "theme.paper"),
+            dark: catalog.format(themeById(s.appearance.darkTheme)?.title ?? "theme.ink"),
+            size: s.appearance.fontSize, font: catalog.format(`font.${s.appearance.contentFont}`),
+          }),
+          scale: String(s.appearance.uiScale),
+          scales: UI_SCALES.map((v) => ({ id: String(v), label: catalog.format("settings.appearance.percent", { value: Math.round(v * 100) }) })),
+          canSync: s.settingsSync !== "unavailable", syncOn: s.settingsSync === "on",
         },
       };
     },

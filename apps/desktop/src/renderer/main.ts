@@ -2,6 +2,8 @@
 import { createApp, resolvedScheme, resolvedTheme, type PlatformBridge } from "@focus-notes/core";
 import { mountApp, flushApp } from "@focus-notes/ui-runtime";
 import { views, messages } from "@focus-notes/views";
+import { createSearchWorker, startSearch } from "@focus-notes/core/search";
+import searchWorkerUrl from "@focus-notes/core/search-worker?worker&url";
 
 interface DesktopBridge extends PlatformBridge {
   setWindowScheme(s: "light" | "dark", canvas?: string, accent?: string): void;
@@ -17,8 +19,8 @@ const bridge = window.focusNotes;
 const app = createApp(bridge, messages.en!);
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root in the entry document");
-// Settings is a view document of its own, hosted beside the canvas (IA-VIEW-SETTINGS).
-mountApp(root, { app, views, overlays: ["settings"] });
+// Settings and the theme manager are view documents of their own, hosted beside the canvas (IA-VIEW-SETTINGS, IA-VIEW-THEME).
+mountApp(root, { app, views, overlays: ["settings", "theme"] });
 
 // The native parts follow the theme: title bar symbols and the window's own background (THM-02).
 let lastTheme = "";
@@ -36,4 +38,6 @@ app.store.subscribe(() => {
   });
 });
 bridge.onFlushRequest(() => flushApp(app));
-void app.start();
+// The search index (WP-4.1) builds in its worker once the first note is open, never before; Spotlight
+// (WP-4.2) and Find in all notes (WP-4.3) ask it.
+void app.start().then(() => app.useSearch(startSearch(app, createSearchWorker(searchWorkerUrl))));
