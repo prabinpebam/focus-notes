@@ -45,12 +45,15 @@ import { contract as WindowFrame } from "./host/WindowFrame/contract.ts";
 import { contract as ThemeGallery } from "./primitives/ThemeGallery/contract.ts";
 import { contract as Slider } from "./primitives/Slider/contract.ts";
 import { contract as ColorField } from "./primitives/ColorField/contract.ts";
+import { contract as ReaderPage } from "./layouts/ReaderPage/contract.ts";
+import { contract as NoteContent } from "./blocks/NoteContent/contract.ts";
 
 export const contracts: readonly Contract[] = [
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField,
-  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet,
+  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage,
   EditorSurface, TableControls, WindowFrame,
   Trigger, Toolbar, Dialog,
+  NoteContent,
 ];
 export const contractByType = new Map(contracts.map((c) => [c.type, c]));
 export { ICON_NAMES, type IconName } from "./icon-names.ts";
