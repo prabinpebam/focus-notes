@@ -52,7 +52,7 @@ What Focus Notes protects, from whom, and how. It also covers what's stored wher
 | Device settings | The app's data folder | The local user | Uninstalling, or Settings → Reset |
 | Search index, recent notes, logs | The app's data folder (logs are redacted, rotated, and kept 7 days) | The local user | Sign out, removing the workspace, or uninstalling |
 | GitHub credential (desktop only) | Git's credential helper | The local user | Sign out (and revoking it on GitHub) |
-| The workspace lock and Git settings (desktop only) | `focus-notes.lock` in the notes repository's Git folder (the app's process ID, while it runs); `push.recurseSubmodules=check` in that repository's `.git/config`; a commit's message in `FOCUS_NOTES_COMMIT_MSG` in the Git folder, only while it commits (D-97) | The local user | Quitting (the lock and the message file); removing the workspace |
+| The workspace lock and Git settings (desktop only) | `focus-notes.lock` in the notes repository's Git folder (the app's process ID, while it runs); `push.recurseSubmodules=check` in that repository's `.git/config`; a commit's message in `FOCUS_NOTES_COMMIT_MSG` in the Git folder, only while it commits (D-97); while a conflict is settled, a temporary index and message, `FOCUS_NOTES_RESOLVE_INDEX` and `FOCUS_NOTES_RESOLVE_MSG`, in the same folder (D-102) | The local user | Quitting (the lock and the message file); removing the workspace |
 
 ## Privacy commitments
 
