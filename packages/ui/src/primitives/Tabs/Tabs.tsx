@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Tab, TabList, TabPanel, Tabs as AriaTabs } from "react-aria-components";
 import type { Option } from "../../data.ts";
 import * as s from "./Tabs.css.ts";
@@ -20,6 +20,20 @@ export interface TabsProps {
 /** Tabs (ARIA tabs pattern): arrow keys move between tabs, and the panel follows the selection. */
 export function Tabs({ label, items, value, orientation = "horizontal", autoFocus, id, children, onChange }: TabsProps) {
   const selected = value ?? items[0]?.id ?? "";
+  // Vertical tabs need room for the list and the panel side by side; without it (a narrow window,
+  // 320 px reflow) they lay out across, over the panel, and the arrow keys go left and right.
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [narrow, setNarrow] = useState(false);
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (orientation !== "vertical" || !el) return;
+    const check = () => setNarrow(el.getBoundingClientRect().width < (parseFloat(getComputedStyle(el).getPropertyValue(s.besideVar.replace(/^var\(|\)$/g, ""))) || 0));
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [orientation]);
+  const laid = orientation === "vertical" && !narrow ? "vertical" : "horizontal";
   // Once, as the selected tab is first drawn (the collection draws its tabs after the list).
   const focused = useRef(!autoFocus);
   const focusFirst = (el: HTMLDivElement | null) => {
@@ -28,12 +42,12 @@ export function Tabs({ label, items, value, orientation = "horizontal", autoFocu
     el.focus();
   };
   return (
-    <AriaTabs className={s.root[orientation]} orientation={orientation} selectedKey={selected} onSelectionChange={(k) => onChange?.({ value: String(k) })} {...(id ? { id } : {})}>
-      <TabList className={s.list[orientation]} aria-label={label}>
-        {items.map((o) => <Tab key={o.id} id={o.id} className={s.tab[orientation]} {...(o.id === selected ? { ref: focusFirst } : {})}>{o.label}</Tab>)}
+    <AriaTabs ref={rootRef} className={s.root[laid]} orientation={laid} selectedKey={selected} onSelectionChange={(k) => onChange?.({ value: String(k) })} {...(id ? { id } : {})}>
+      <TabList className={s.list[laid]} aria-label={label}>
+        {items.map((o) => <Tab key={o.id} id={o.id} className={s.tab[laid]} {...(o.id === selected ? { ref: focusFirst } : {})}>{o.label}</Tab>)}
       </TabList>
       {/* Keyed by the selection, so the panel and its id change together with the selected tab's aria-controls. */}
-      <TabPanel key={selected} id={selected} className={s.panel[orientation]}>{children}</TabPanel>
+      <TabPanel key={selected} id={selected} className={s.panel[laid]}>{children}</TabPanel>
     </AriaTabs>
   );
 }

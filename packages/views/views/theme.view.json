@@ -53,7 +53,8 @@
                     "label": {
                       "t": "dialog.close"
                     },
-                    "tone": "muted"
+                    "tone": "muted",
+                    "bleed": true
                   },
                   "on": {
                     "press": {

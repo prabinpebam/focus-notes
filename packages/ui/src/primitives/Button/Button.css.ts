@@ -7,6 +7,8 @@ export const base = style({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  // Never squeezed in a row: the field beside it gives up the room (or the row wraps).
+  flexShrink: 0,
   gap: t.gap,
   borderRadius: t.radius,
   borderStyle: "solid",

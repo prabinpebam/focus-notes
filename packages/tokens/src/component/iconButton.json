@@ -1,5 +1,6 @@
 { "cmp": { "iconButton": {
   "size": { "$type": "dimension", "$value": "{size.controlM}" },
+  "iconSize": { "$type": "dimension", "$value": "{size.iconM}" },
   "radius": { "$type": "dimension", "$value": "{radius.control}" },
   "duration": { "$type": "duration", "$value": "{motion.micro}" },
   "disabledOpacity": { "$type": "number", "$value": "{opacity.disabled}" },

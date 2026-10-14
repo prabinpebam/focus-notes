@@ -1,17 +1,22 @@
-import { style } from "@vanilla-extract/css";
+import { createVar, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.tabs;
 
-const rootBase = style({ display: "flex", gap: t.panelGap, fontFamily: t.font });
+/** The narrowest vertical tabs fit in, list and panel side by side; narrower, they're laid out across (Tabs.tsx, D-111). */
+export const besideVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+
+const rootBase = style({ vars: { [besideVar]: `calc(${t.listWidth} + ${t.panelGap} + ${t.panelMinWidth})` }, display: "flex", gap: t.panelGap, fontFamily: t.font, minWidth: 0 });
 export const root = {
   horizontal: style([rootBase, { flexDirection: "column" }]),
-  // Vertical: the list on the inline start and the panel beside it, wrapping below it when narrow (320 px reflow).
-  vertical: style([rootBase, { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start" }]),
+  // Vertical: the list on the inline start and the panel beside it. Where there's no room for both,
+  // the tabs lay out across, over the panel, as horizontal ones (Tabs.tsx).
+  vertical: style([rootBase, { flexDirection: "row", alignItems: "flex-start" }]),
 };
 const listBase = style({ display: "flex", gap: t.gap, borderStyle: "solid", borderWidth: 0, borderColor: t.border });
 export const list = {
-  horizontal: style([listBase, { borderBottomWidth: t.borderWidth }]),
+  // Across: they scroll sideways rather than ever reach past their container (D-111).
+  horizontal: style([listBase, { borderBottomWidth: t.borderWidth, overflowX: "auto", scrollbarWidth: "none" }]),
   vertical: style([listBase, { flexDirection: "column", flexGrow: 0, flexShrink: 0, flexBasis: t.listWidth, borderInlineEndWidth: t.borderWidth, paddingInlineEnd: t.gap }]),
 };
 const tabBase = style({
