@@ -129,7 +129,15 @@ async function demo(l: Launched, dirs: { docs: string }, keyboardOnly: boolean) 
     await page.evaluate(() => {
       const w = window as unknown as { __pointer: string[] };
       w.__pointer = [];
-      for (const t of ["pointerdown", "mousedown", "click", "dblclick", "contextmenu"]) addEventListener(t, (e) => { if (e.isTrusted) w.__pointer.push(t); }, true);
+      // A click a key made (Enter or Space on a control: no pointer type, detail 0) is the keyboard's;
+      // macOS's controls make some where the others don't. Anything else names its target.
+      const byKey = (e: Event) => e.type === "click" && (e as MouseEvent).detail === 0 && !(e as PointerEvent).pointerType;
+      for (const t of ["pointerdown", "mousedown", "click", "dblclick", "contextmenu"]) {
+        addEventListener(t, (e) => {
+          const el = e.target instanceof Element ? e.target : undefined;
+          if (e.isTrusted && !byKey(e)) w.__pointer.push(`${t} ${el?.tagName ?? ""} ${el?.getAttribute("aria-label") ?? el?.getAttribute("role") ?? ""}`.trim());
+        }, true);
+      }
     });
   }
 

@@ -196,7 +196,8 @@ test("FIL-10, DD-FB-01: a delete's toast offers Undo, which restores the note fr
   const sheet = page.getByRole("complementary", { name: "Files" });
   const hello = sheet.getByRole("treeitem", { name: "Hello, public" });
   await hello.click();
-  await page.keyboard.press("Delete");
+  // Delete is ⌘⌫ on macOS, as in Finder (Keyboard shortcuts → Files panel).
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+Backspace" : "Delete");
   // A public note asks first.
   await page.getByRole("dialog", { name: /Delete/ }).getByRole("button", { name: "Delete and unpublish" }).click();
   await expect(page.locator("#toasts").getByText("Moved “Hello” to the trash.")).toBeVisible({ timeout: 15_000 });

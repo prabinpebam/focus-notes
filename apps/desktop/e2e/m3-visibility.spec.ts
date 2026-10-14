@@ -102,7 +102,8 @@ test("SHR-01: a new note is private by default, even from a public note", async 
   // Open the public note from Files.
   await page.keyboard.press(`${mod}+O`);
   await page.getByRole("treeitem", { name: "Hello, public" }).click();
-  await page.getByRole("treeitem", { name: "Hello, public" }).press("Enter");
+  // Opening is ⌘↓ on macOS, where Enter renames, as in Finder (Keyboard shortcuts → Files panel).
+  await page.getByRole("treeitem", { name: "Hello, public" }).press(process.platform === "darwin" ? "Meta+ArrowDown" : "Enter");
   await expect(page.getByRole("textbox", { name: "Note" })).toContainText("Hello");
   await page.keyboard.press(`${mod}+N`);
   await expect(page.getByRole("textbox", { name: "Note" })).not.toContainText("Hello");
