@@ -24,6 +24,10 @@ export const tile = style({
   color: t.text,
   cursor: "default",
   outline: "none",
+  // Scrolled to by the keyboard (Home, End, arrows), a tile stops the grid's padding inside the scrolling
+  // edge, as at the top of the list: tiles have fractional heights, and a scroll position is whole
+  // pixels, so without it the first or last tile could stop part of a pixel past the edge (D-111).
+  scrollMargin: t.focusWidth,
   // In forced colors the samples stay samples, and only the tile showing gets a background (Highlight
   // there); the rest of the tile's colors are system colors through the tokens' own mode.
   forcedColorAdjust: "none",

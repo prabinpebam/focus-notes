@@ -79,7 +79,16 @@ async function paste(page: Page, data: { text?: string; html?: string }) {
  */
 async function chooseByKeyboard(page: Page, name: string, menu?: string) {
   const focused = (menu ? page.getByRole("menu", { name: menu }) : page.getByRole("menu")).locator('[role^="menuitem"]:focus');
-  await expect(focused).toHaveCount(1);
+  await expect(focused).toHaveCount(1).catch(async (e: Error) => {
+    // Run 38620563582 failed here once on Windows CI only: say where focus and the menus were.
+    const where = await page.evaluate(() => {
+      const a = document.activeElement;
+      const menus = [...document.querySelectorAll('[role="menu"]')].map((m) => `${m.getAttribute("aria-label")} ${JSON.stringify(m.getBoundingClientRect())}`);
+      const hovered = [...document.querySelectorAll("[data-hovered]")].map((h) => h.textContent);
+      return `focus on ${a?.getAttribute("role")} "${a?.textContent?.slice(0, 40)}"; menus: ${menus.join(" | ")}; hovered: ${hovered.join(", ")}`;
+    });
+    throw new Error(`${e.message}\n${where}`);
+  });
   const seen = new Set<string>();
   for (let i = 0; i < 40; i++) {
     const { id, text } = await focused.evaluate((el) => ({ id: el.id, text: el.textContent ?? "" }));
@@ -336,13 +345,19 @@ test("TBL-08, TBL-11 by keyboard: Esc selects cells, Shift+arrows extend, Shift+
   await chooseByKeyboard(page, "Move row down");
   await expect.poll(() => column(page, 0)).toEqual(["Task", "Draft", "Ship", "Edit"]);
   // The moved row stays selected, so its last cell is the active one: its column can only move left.
+  // Each time, the caret is back in the note before the next key: the menu hands it back a frame
+  // after the action shows, and on a busy runner a key pressed in that frame met no editor (CI
+  // runs 38620563582, 38631550463: focus on the note, no menu).
+  await expect(editorOf(page)).toBeFocused();
   await page.keyboard.press("Shift+F10");
   await chooseByKeyboard(page, "Move column left");
   await expect(tableOf(page).locator("th")).toHaveText(["Task", "Owner", "Status", "Column 4"]);
+  await expect(editorOf(page)).toBeFocused();
   await page.keyboard.press("Shift+F10");
   await chooseByKeyboard(page, "Align");
   await chooseByKeyboard(page, "Center", "Align");
   await expect(cell(page, 0, 2)).toHaveAttribute("data-align", "center");
+  await expect(editorOf(page)).toBeFocused();
   await page.keyboard.press("Shift+F10");
   await chooseByKeyboard(page, "Delete row");
   await expect(tableOf(page).locator("tr")).toHaveCount(3);

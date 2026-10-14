@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { FLUSH_EDITOR, type App } from "@focus-notes/core";
 import { registry, contractByType, FLUSH_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, keyRanCommand, slashCatalog, preloadViews, InWindow } from "@focus-notes/ui";
 import { ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
-import { panelOpen, refocusNote } from "./refocus.ts";
+import { refocusNote } from "./refocus.ts";
 
 export interface MountOptions {
   app: App;
@@ -94,15 +94,17 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     spotlightWasOpen = spotlight.open;
     // Find in all notes closing: back to the note, unless a match it opened has the find bar's focus.
     if (findAllWasOpen && !findAll.open) {
+      // Checked again when the note would take focus: a busy runner can open the match and focus
+      // the find bar between this timer and the editor's next frame (run 38626199316).
       const asked = find.focusFind;
-      setTimeout(() => { if (app.store.state.ui.find.focusFind === asked) refocusNote(ui); }, 0);
+      setTimeout(() => refocusNote(ui, () => app.store.state.ui.find.focusFind === asked), 0);
     }
     findAllWasOpen = findAll.open;
     // Not when the toolbar closed because the find bar, the cheat sheet, the Files panel, or the theme manager took focus.
     if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open && !files.open && !theme.open) || (sheetWasOpen && !shortcuts.open) || (filesWereOpen && !files.open) || (themeWasOpen && !theme.open)) {
       // Nor once the toolbar or another panel has opened meanwhile (by its key, which the page may
       // handle before this timer or the note's frame): it has taken focus (DEF-4).
-      setTimeout(() => { if (!panelOpen(ui())) refocusNote(ui); }, 0);
+      setTimeout(() => refocusNote(ui), 0);
     }
     toolbarWasOpen = toolbarOpen;
     sheetWasOpen = shortcuts.open;
