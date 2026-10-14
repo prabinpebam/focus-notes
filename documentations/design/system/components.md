@@ -135,6 +135,8 @@ Note content renders through these, both as editor node views and on published p
 | **UnknownBlock** | Unknown component syntax, kept verbatim and shown read-only (EXT-05) |
 | **ImageBlock**, **GalleryBlock** | Later (EXT-03, EXT-04) |
 
+As built (WP-5.1, D-114), the published pages use these as one block component, **NoteContent** (`blocks`, a view model's note as the Markdown bridge parses it; tokens `cmp.noteContent.*`, aliasing the same semantic tokens as the editor surface), read-only, and the page around it is the **ReaderPage** layout (`skipLabel`, a `footer` slot; a skip link, the `main` landmark, and a footer; tokens `cmp.readerPage.*`). The editor still draws its own node views with the same rules.
+
 <h2 id="compound-components" data-reader-personas="design engineering">Compound components</h2>
 
 Compounds compose primitives, layouts, and other compounds. They hold behavior (keyboard handling, focus movement, state machines) but never markup or styles.
