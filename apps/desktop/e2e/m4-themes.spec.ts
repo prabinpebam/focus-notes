@@ -289,7 +289,10 @@ test("Settings → Appearance opens the theme manager; the manager has no axe vi
   await page.emulateMedia({ forcedColors: "active" });
   await sheet(page).getByRole("tab", { name: "Themes" }).click();
   expect(await axeViolations(page)).toEqual([]);
-  await gallery(page).locator('[data-tile="ink"]').focus();
+  // From the tab list into the gallery with the keyboard: the tile showing takes focus, with a visible ring.
+  await sheet(page).getByRole("tab", { name: "Themes" }).focus();
+  await page.keyboard.press("Tab");
+  await expect(gallery(page).locator('[data-tile="ink"]')).toBeFocused();
   expect(await focusProblem(page)).toBe("");
   // Only the tile showing has a border, in the system's highlight color.
   const borders = await gallery(page).getByRole("option").evaluateAll((els) => els.map((e) => getComputedStyle(e).borderTopColor));
