@@ -789,6 +789,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const ms = Math.round(process.uptime() * 1000);
     process.stdout.write(`[focus-notes] ready-ms=${ms}\n`);
     startGit();
+    windowFrame?.ready();
   });
 }
 
@@ -974,7 +975,7 @@ app.whenReady().then(async () => {
   watcher = watchWorkspace(() => mainWindow);
   // Never on the path of the first frame: Git answers when it answers (PRF-07).
   // Git opens once the caret is ready, or after 3 s if the note never becomes ready.
-  setTimeout(() => startGit(), 3000);
+  setTimeout(() => (startGit(), windowFrame?.ready()), 3000);
   // Fetching when the window becomes active (Desktop and Git → Save and sync, step 5).
   mainWindow.on("focus", () => gitSync?.focused());
   app.on("second-instance", () => {

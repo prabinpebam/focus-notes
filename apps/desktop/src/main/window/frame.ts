@@ -145,7 +145,11 @@ export class AppWindowFrame {
       screen.off("display-removed", changed);
       screen.off("display-metrics-changed", changed);
     });
-    custom.watchPointer();
+  }
+
+  /** Once the caret is ready: the click-through margin's pointer checks never compete with the first frame (PRF-02). */
+  ready(): void {
+    this.#custom?.watchPointer();
   }
 
   /** F11 in the app-built window, which keeps full screen itself. False where the system does it (macOS). */
