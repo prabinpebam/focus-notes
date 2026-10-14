@@ -43,6 +43,20 @@ async function unlock(page: Page, button: "Unlock" | "Unlock and remember") {
   await expect(dialog).toBeHidden({ timeout: 15_000 });
 }
 
+test("PKG-07: the app asks the browser to keep its storage and says plainly that clearing the site's data deletes the notes", async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { persistCalls: number };
+    w.persistCalls = 0;
+    if (navigator.storage) navigator.storage.persist = async () => { w.persistCalls++; return true; };
+  });
+  await noInstance(page);
+  await page.goto("./");
+  await expect(editor(page)).toContainText("Welcome to Focus Notes");
+  expect(await page.evaluate(() => (window as unknown as { persistCalls: number }).persistCalls)).toBeGreaterThanOrEqual(1);
+  await expect(editor(page)).toContainText("Clearing this site's data in your browser deletes these notes.");
+  await expect(editor(page)).toContainText("export them, or write in the desktop app");
+});
+
 // PKG-05: the web app runs from the site alone, holds no GitHub credential, and talks only to its own site.
 // MW demo, step 2: write with no account, reload, go offline.
 test("your notes stay in this browser: written with no account, kept across reloads and offline", async ({ page, context }) => {
