@@ -2,6 +2,8 @@
 import { createApp } from "@focus-notes/core";
 import { mountApp, flushApp } from "@focus-notes/ui-runtime";
 import { views, messages } from "@focus-notes/views";
+import { createSearchWorker, startSearch } from "@focus-notes/core/search";
+import searchWorkerUrl from "@focus-notes/core/search-worker?worker&url";
 import { createWebBridge } from "./bridge.ts";
 
 const root = document.getElementById("root");
@@ -12,4 +14,5 @@ mountApp(root, { app, views });
 // Hand over pending text whenever the page might go away (QLT-03).
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") void flushApp(app); });
 addEventListener("pagehide", () => void flushApp(app));
-void app.start();
+// The search index (WP-4.1) builds in its worker once the first note is open, never before.
+void app.start().then(() => startSearch(app, createSearchWorker(searchWorkerUrl)));

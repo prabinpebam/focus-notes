@@ -2,6 +2,8 @@
 import { createApp, resolvedScheme, resolvedTheme, type PlatformBridge } from "@focus-notes/core";
 import { mountApp, flushApp } from "@focus-notes/ui-runtime";
 import { views, messages } from "@focus-notes/views";
+import { createSearchWorker, startSearch } from "@focus-notes/core/search";
+import searchWorkerUrl from "@focus-notes/core/search-worker?worker&url";
 
 interface DesktopBridge extends PlatformBridge {
   setWindowScheme(s: "light" | "dark", canvas?: string, accent?: string): void;
@@ -36,4 +38,5 @@ app.store.subscribe(() => {
   });
 });
 bridge.onFlushRequest(() => flushApp(app));
-void app.start();
+// The search index (WP-4.1) builds in its worker once the first note is open, never before.
+void app.start().then(() => startSearch(app, createSearchWorker(searchWorkerUrl)));

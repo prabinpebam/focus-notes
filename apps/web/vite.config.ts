@@ -10,4 +10,6 @@ export default defineConfig({
   plugins: [react(), vanillaExtractPlugin()],
   // Fonts and icons stay files (font-src 'self'), never inlined as data URIs.
   build: { outDir: "../dist", emptyOutDir: true, target: "es2022", sourcemap: false, assetsInlineLimit: 0 },
+  // The search index's worker (WP-4.1) is a module file of the site, never a blob or data URL.
+  worker: { format: "es" },
 });
