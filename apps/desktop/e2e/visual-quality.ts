@@ -297,9 +297,14 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       const more = { top: el.scrollTop > 1, bottom: el.scrollTop + el.clientHeight < el.scrollHeight - 1 };
       const mask = o.maskImage && o.maskImage !== "none" ? o.maskImage : o.webkitMaskImage ?? "none";
       const f = String(v.fade);
+      // A mask, or (over an opaque background, the note) a sticky gradient in the background's color.
+      const overlay = (pseudo: "::before" | "::after") => {
+        const p = getComputedStyle(el, pseudo);
+        return p.position === "sticky" && p.backgroundImage.startsWith("linear-gradient") && p.height === `${f}px` && p.opacity === "1" && p.display !== "none";
+      };
       const has = {
-        top: mask.startsWith(`linear-gradient(rgba(0, 0, 0, 0) 0px, rgb(0, 0, 0) ${f}px`),
-        bottom: mask.includes(`rgb(0, 0, 0) calc(100% - ${f}px), rgba(0, 0, 0, 0) 100%)`),
+        top: mask.startsWith(`linear-gradient(rgba(0, 0, 0, 0) 0px, rgb(0, 0, 0) ${f}px`) || overlay("::before"),
+        bottom: mask.includes(`rgb(0, 0, 0) calc(100% - ${f}px), rgba(0, 0, 0, 0) 100%)`) || overlay("::after"),
       };
       for (const side of ["top", "bottom"] as const) {
         if (more[side] !== has[side]) out.push(`fading scroll edges: ${nameOf(el)} ${more[side] ? "has more to scroll to" : "has nothing more to scroll to"} at the ${side} but ${has[side] ? "fades it" : "doesn't fade it"} (mask: ${mask.slice(0, 120)})`);

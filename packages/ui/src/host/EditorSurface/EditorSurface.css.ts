@@ -1,6 +1,6 @@
 import { createVar, globalStyle, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
-import { fadingEdges, minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
+import { fadingOverlay, minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.editorSurface;
 
@@ -22,7 +22,7 @@ export const scroller = style({
 
 // The minimal scrollbar (D-73, UI-09).
 minimalScrollbar(scroller, t);
-fadingEdges(scroller, t);
+fadingOverlay(scroller, { scrollFade: t.scrollFade, background: t.background, fadeDuration: t.focusDuration });
 
 export const column = style({
   position: "relative",

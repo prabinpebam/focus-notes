@@ -47,3 +47,17 @@ export function fadingEdges(scroller: string, t: { scrollFade: string }): void {
   globalStyle(`${scroller}[data-fade-top][data-fade-bottom]`, { maskImage: both, WebkitMaskImage: both });
   globalStyle(`${scroller}[data-fade-top], ${scroller}[data-fade-bottom]`, { "@media": { "(forced-colors: active)": { maskImage: "none", WebkitMaskImage: "none" } } });
 }
+
+/**
+ * Fading scroll edges over an opaque background (the note, D-111): two sticky gradients in the
+ * background's color at the top and bottom of the scroller, shown as `useFadingEdges` marks them.
+ * The same look as `fadingEdges`, without masking the scroller: a mask over a long note makes every
+ * keystroke repaint all of it (PRF-01). None in forced colors.
+ */
+export function fadingOverlay(scroller: string, t: { scrollFade: string; background: string; fadeDuration: string }): void {
+  const edge = { content: '""', display: "block", position: "sticky", zIndex: 1, height: t.scrollFade, pointerEvents: "none", opacity: 0, transitionProperty: "opacity", transitionDuration: t.fadeDuration } as const;
+  globalStyle(`${scroller}::before`, { ...edge, top: 0, marginBlockEnd: `calc(-1 * ${t.scrollFade})`, backgroundImage: `linear-gradient(${t.background}, transparent)` });
+  globalStyle(`${scroller}::after`, { ...edge, bottom: 0, marginBlockStart: `calc(-1 * ${t.scrollFade})`, backgroundImage: `linear-gradient(transparent, ${t.background})` });
+  globalStyle(`${scroller}[data-fade-top]::before, ${scroller}[data-fade-bottom]::after`, { opacity: 1 });
+  globalStyle(`${scroller}::before, ${scroller}::after`, { "@media": { "(forced-colors: active)": { display: "none" } } });
+}
