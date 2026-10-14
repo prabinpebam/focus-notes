@@ -5,6 +5,7 @@ import { views, messages } from "@focus-notes/views";
 import { tokenGroups } from "@focus-notes/tokens";
 import { checkUi, checkFixtureCoverage, type Problem } from "../src/check.ts";
 import { checkExpression, evaluate } from "../src/expr.ts";
+import { VIEW_SCHEMA_URL } from "../src/migrate.ts";
 
 const bridge: PlatformBridge = {
   platform: "windows", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/notes/Untitled.md",
@@ -19,7 +20,7 @@ const base = {
   messages: app.messages,
 };
 const view = (root: unknown, extra: Record<string, unknown> = {}) => ({
-  t: { $schema: "x", id: "t", viewModels: ["vm.app", "vm.canvas"], focus: "f", root: { type: "AppRoot", props: { scheme: "light", platform: "windows" }, children: [{ type: "Stack", id: "f", children: [root] }] }, ...extra },
+  t: { $schema: VIEW_SCHEMA_URL, id: "t", viewModels: ["vm.app", "vm.canvas"], focus: "f", root: { type: "AppRoot", props: { scheme: "light", platform: "windows" }, children: [{ type: "Stack", id: "f", children: [root] }] }, ...extra },
 });
 const problems = (root: unknown, extra?: Record<string, unknown>): Problem[] => checkUi({ ...base, views: view(root, extra) });
 const messagesOf = (ps: Problem[]) => ps.map((p) => `${p.stage}: ${p.message}`);
@@ -58,7 +59,7 @@ describe("ui:check (DSY-08)", () => {
   });
   it("lets an overlay view add only dialogs and side sheets beside the main view (Settings, the theme manager)", () => {
     const dialog = { type: "Dialog", id: "f", props: { title: { t: "gallery.sample" }, closeLabel: { t: "dialog.close" } }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] };
-    const overlay = (children: unknown[]) => ({ o: { $schema: "x", id: "o", overlay: true, viewModels: [], focus: "f", root: { type: "Stack", children } } });
+    const overlay = (children: unknown[]) => ({ o: { $schema: VIEW_SCHEMA_URL, id: "o", overlay: true, viewModels: [], focus: "f", root: { type: "Stack", children } } });
     expect(checkUi({ ...base, views: overlay([dialog]) })).toEqual([]);
     const sheet = { type: "Sheet", id: "s", props: { label: { t: "gallery.sample" }, side: "end", width: "theme" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] };
     expect(checkUi({ ...base, views: overlay([dialog, sheet]) })).toEqual([]);

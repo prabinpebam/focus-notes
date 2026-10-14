@@ -211,6 +211,7 @@ Fragments are expanded at build time, so they cost nothing at run time.
 - The UI schema is versioned with SemVer, and every document names its version in `$schema`.
 - Adding a component, prop, variant, or token is a minor version.
 - Removing or renaming anything is a major version, and ships with a migration script that rewrites every view and fragment. CI runs the migration and the full validation before the change can merge (DSY-10).
+- How it's built: `packages/ui-runtime/src/migrate.ts` holds the current major (`UI_SCHEMA_MAJOR`, now 1) and the migrations, keyed by the major they start from. `ui:check` brings every document to the current major before validating it, refuses one written for a newer major with a clear error, and fails when a major has no migration from the one before. The generated schema (`schemas/ui/view.v<major>.json`) carries the major in its `$id` and accepts only that `$schema`.
 - Views ship inside the app. There are no remote views and no views supplied by users or agents in this version (D-61).
 
 <h2 data-reader-personas="engineering">Security</h2>
