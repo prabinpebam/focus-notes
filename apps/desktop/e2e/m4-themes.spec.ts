@@ -294,10 +294,11 @@ test("Settings → Appearance opens the theme manager; the manager has no axe vi
   await page.keyboard.press("Tab");
   await expect(gallery(page).locator('[data-tile="ink"]')).toBeFocused();
   expect(await focusProblem(page)).toBe("");
-  // Only the tile showing has a border, in the system's highlight color.
-  const borders = await gallery(page).getByRole("option").evaluateAll((els) => els.map((e) => getComputedStyle(e).borderTopColor));
-  expect(new Set(borders.filter((_, i) => i !== 5)).size).toBe(1);
-  expect(borders[5]).not.toBe(borders[0]);
+  // Only the tile showing has a background, in the system's highlight color: selection by
+  // background, never a border (D-111).
+  const fills = await gallery(page).getByRole("option").evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor));
+  expect(new Set(fills.filter((_, i) => i !== 5)).size).toBe(1);
+  expect(fills[5]).not.toBe(fills[0]);
   await page.screenshot({ path: "../../test-results/screens/theme-manager-forced-colors.png" });
   await quit(l);
 });

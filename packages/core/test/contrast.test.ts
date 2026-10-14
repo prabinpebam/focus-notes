@@ -22,6 +22,22 @@ describe("the pairs the guard checks", () => {
     }
   });
 
+  it("covers selected and hovered items' text and muted text on every surface they're drawn on (D-111)", () => {
+    const where = (fg: string, bg: string) => CONTRAST_PAIRS.filter((p) => p.fg === fg && p.bg === bg).map((p) => p.where ?? "on the canvas");
+    const all = ["on the canvas", "on a raised surface", "on a frosted sheet", "on frost over a scrim"];
+    for (const [fg, bg] of [["color.onSelection", "color.selection"], ["color.onSelectionMuted", "color.selection"], ["color.text", "color.hover"], ["color.textMuted", "color.hover"]] as const) {
+      expect(where(fg, bg), `${fg} on ${bg}`).toEqual(expect.arrayContaining(all));
+    }
+    expect(where("color.textMuted", "color.surface")).toEqual(expect.arrayContaining(["on a frosted sheet", "on frost over a scrim"]));
+  });
+
+  it("measures a background as it's drawn: over a scrim and a frosted surface, not the bare canvas", () => {
+    const c = { ...paper(), "color.canvas": "#ffffff", "color.scrim": "#00000080", "color.surface": "#ffffff", "color.selection": "#00000000", "color.onSelectionMuted": "#777777" };
+    const p = CONTRAST_PAIRS.find((q) => q.fg === "color.onSelectionMuted" && q.where === "on frost over a scrim")!;
+    // White frost at its opacity over a half-black scrim is darker than white, so the ratio drops.
+    expect(pairRatio(c, p)!).toBeLessThan(contrastRatio("#777777", "#ffffff"));
+  });
+
   it("measures WCAG 2.2 contrast, with translucent backgrounds over the canvas", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 5);
     expect(contrastRatio("#777777", "#ffffff")).toBeCloseTo(4.48, 2);

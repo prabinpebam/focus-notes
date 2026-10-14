@@ -1147,5 +1147,7 @@
   "reading.fontLabel": "Font: {font}",
   "reading.sizeMin": "This is the smallest text size",
   "reading.sizeMax": "This is the largest text size",
-  "colors.token.color.textInverse": "Tooltip text"
+  "colors.token.color.textInverse": "Tooltip text",
+  "colors.token.color.onSelectionMuted": "Muted text on selection",
+  "colors.token.color.hover": "Hovered item"
 }

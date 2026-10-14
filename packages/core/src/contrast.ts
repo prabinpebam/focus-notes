@@ -4,7 +4,14 @@
  * the lightness of the edited color, by the smallest amount, keeping its hue; and the check a
  * custom theme gets before it's saved. Built-in themes are checked by a test, so none ships failing.
  */
+import { frost } from "@focus-notes/tokens";
 import { composite, fromOklch, parseColor, ratioOf, relativeLuminance, toHex, toOklch, type Rgb } from "./color.ts";
+
+/** A color drawn between the canvas and a pair's background, at an opacity (a scrim, a frosted surface). */
+export interface Layer {
+  color: string;
+  opacity?: number;
+}
 
 export interface ContrastPair {
   fg: string;
@@ -17,10 +24,19 @@ export interface ContrastPair {
   role: "text" | "ui";
   /** The foreground is drawn at this opacity (a tooltip's shortcut, `opacity.muted`). */
   fgOpacity?: number;
+  /** What the background is drawn on, from the canvas up (D-111): a raised surface, a scrim, frost. */
+  under?: readonly Layer[];
+  /** Where it's drawn, named in failures ("on frost over a scrim"). */
+  where?: string;
 }
 
-const pair = (fg: string, bg: string, min: number, minHigh: number, role: ContrastPair["role"] = "text", fgOpacity?: number): ContrastPair =>
-  ({ fg, bg, min, minHigh, role, ...(fgOpacity !== undefined ? { fgOpacity } : {}) });
+const pair = (fg: string, bg: string, min: number, minHigh: number, role: ContrastPair["role"] = "text", fgOpacity?: number, at?: { under: readonly Layer[]; where: string }): ContrastPair =>
+  ({ fg, bg, min, minHigh, role, ...(fgOpacity !== undefined ? { fgOpacity } : {}), ...(at ?? {}) });
+
+/** Where interface items are drawn (D-111): a raised surface (dialogs, menus); a frosted sheet over the note; Spotlight's frost over a scrim. */
+const RAISED = { under: [{ color: "color.surfaceRaised" }], where: "on a raised surface" };
+const FROST = { under: [{ color: "color.surface", opacity: frost.opacity }], where: "on a frosted sheet" };
+const FROST_SCRIM = { under: [{ color: "color.scrim" }, { color: "color.surface", opacity: frost.opacity }], where: "on frost over a scrim" };
 
 /**
  * WCAG 1.4.3 (text, 4.5:1; 7:1 for High contrast) and 1.4.11 (interface parts, 3:1). A translucent
@@ -51,6 +67,19 @@ export const CONTRAST_PAIRS: readonly ContrastPair[] = [
   pair("color.onSelection", "color.selection", 4.5, 7),
   pair("color.onSelection", "color.findMatch", 4.5, 7),
   pair("color.onSelection", "color.findMatchActive", 4.5, 7),
+  // Selected and hovered items in lists, menus, results, and the theme gallery (D-111, selection by
+  // background): their text and their muted text (descriptions, shortcuts, states, captions), on
+  // every surface lists are drawn on.
+  ...[undefined, RAISED, FROST, FROST_SCRIM].flatMap((at) => [
+    pair("color.onSelection", "color.selection", 4.5, 7, "text", undefined, at),
+    pair("color.onSelectionMuted", "color.selection", 4.5, 7, "text", undefined, at),
+    pair("color.text", "color.hover", 4.5, 7, "text", undefined, at),
+    pair("color.textMuted", "color.hover", 4.5, 7, "text", undefined, at),
+  ]),
+  // Muted text on the frosted surfaces themselves (a sheet; Spotlight over its scrim).
+  // (A pair whose background is the last layer under it is that layer, drawn at its opacity.)
+  pair("color.textMuted", "color.surface", 4.5, 7, "text", undefined, FROST),
+  pair("color.textMuted", "color.surface", 4.5, 7, "text", undefined, FROST_SCRIM),
   // Non-text: the accent, the focus ring, and the trigger's red dot on its frosted circle.
   pair("color.accent", "color.canvas", 3, 4.5, "ui"),
   pair("color.focusRing", "color.canvas", 3, 4.5, "ui"),
@@ -91,11 +120,20 @@ export function pairRatio(colors: Readonly<Record<string, string>>, p: ContrastP
   const fg = colors[p.fg];
   const bg = colors[p.bg];
   if (!fg || !bg) return undefined;
-  const canvas = parseHex(colors["color.canvas"] ?? "") ?? [255, 255, 255];
+  let base: Rgb = parseHex(colors["color.canvas"] ?? "") ?? [255, 255, 255];
+  for (const layer of p.under ?? []) {
+    const l = colors[layer.color];
+    if (!l) return undefined;
+    const lc = parseColor(l);
+    if (!lc) return NaN;
+    base = composite({ ...lc, alpha: lc.alpha * (layer.opacity ?? 1) }, base);
+  }
   const b = parseColor(bg);
   const f = parseColor(fg);
   if (!b || !f) return NaN;
-  const under = composite(b, canvas);
+  // The last layer of frost is the background itself, drawn at its opacity.
+  const frosted = p.under?.at(-1)?.color === p.bg ? p.under.at(-1)!.opacity ?? 1 : 1;
+  const under = frosted === 1 ? composite(b, base) : base;
   return ratioOf(composite({ ...f, alpha: f.alpha * (p.fgOpacity ?? 1) }, under), under);
 }
 

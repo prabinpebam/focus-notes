@@ -49,6 +49,10 @@
         "$type": "color",
         "$value": "{color.onSelection}"
       },
+      "selectedMuted": {
+        "$type": "color",
+        "$value": "{color.onSelectionMuted}"
+      },
       "text": {
         "$type": "color",
         "$value": "{color.text}"

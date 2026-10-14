@@ -162,7 +162,7 @@ describe("THM-13: Edit colors and the contrast guard", () => {
     c = t.vm().colors;
     expect(c.note).toBe("Editing a copy, Paper (custom). It's kept until you close the app.");
     expect(c.rows[2]).toMatchObject({ value: "#b5b0a8", failing: true, canFix: true, fixLabel: "Fix Text" });
-    expect(c.rows[2].status).toMatch(/^Text on (Background|Surface|Raised surface|Sunken surface) \d\.\d:1, needs 4\.5$/);
+    expect(c.rows[2].status).toMatch(/^Text on (Background|Surface|Raised surface|Sunken surface|Hovered item) \d\.\d:1, needs 4\.5$/);
     expect(c.failing).toBe(true);
     expect(c.summary).toMatch(/^\d+ pairs are hard to read$/);
     expect(t.vm().status).toMatch(/^Text contrast \d\.\d:1 · Low contrast$/);

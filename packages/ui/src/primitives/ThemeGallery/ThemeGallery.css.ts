@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { globalStyle, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.themeGallery;
@@ -73,3 +73,5 @@ export const badge = style({
     [`${tile}:hover &, ${tile}:focus-visible &`]: { visibility: "visible" },
   },
 });
+// On the theme showing's background, its caption and badge keep their contrast (D-100, D-111).
+globalStyle(`${tile}[aria-selected="true"] :is(${slot}, ${badge})`, { color: t.selectedMuted });

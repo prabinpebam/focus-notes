@@ -12,7 +12,7 @@
     "text": { "$value": "{ref.color.paper.900}" },
     "textMuted": { "$value": "{ref.color.paper.600}" },
     "onSelection": { "$value": "{ref.color.paper.900}" },
-    "onSelectionMuted": { "$value": "{ref.color.paper.600}" },
+    "onSelectionMuted": { "$value": "{ref.color.paper.650}" },
     "textPlaceholder": { "$value": "{ref.color.paper.500}" },
     "textDisabled": { "$value": "{ref.color.paper.500}" },
     "textInverse": { "$value": "{ref.color.paper.50}" },

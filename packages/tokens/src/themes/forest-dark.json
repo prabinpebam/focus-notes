@@ -34,7 +34,7 @@
       "$value": "{ref.color.forestDark.50}"
     },
     "onSelectionMuted": {
-      "$value": "{ref.color.forestDark.400}"
+      "$value": "{ref.color.forestDark.300}"
     },
     "textPlaceholder": {
       "$value": "{ref.color.forestDark.500}"

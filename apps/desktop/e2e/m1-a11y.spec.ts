@@ -385,6 +385,8 @@ test("A11Y-01: a tooltip opened by keyboard focus is inside a landmark, and name
   expect(tip.y).toBeGreaterThan(button.y + button.height - 1);
   expect(Math.abs(tip.x + tip.width / 2 - (button.x + button.width / 2))).toBeLessThan(tip.width);
   await expect(page.getByRole("button", { name: "Open…" })).toHaveAccessibleDescription(/Open…/);
+  // Measured as it's drawn, once it has faded in: mid-fade, its text is part transparent.
+  await settled(page);
   expect(await axeViolations(page)).toEqual([]);
   await quit(l);
 });

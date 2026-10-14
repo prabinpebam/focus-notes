@@ -12,6 +12,10 @@
         "$value": "#00000000"
       },
       "paper": {
+        "650": {
+          "$value": "#5b564e",
+          "$description": "Muted text on the selection, AA on every surface it's drawn on (D-111)."
+        },
         "50": {
           "$value": "#fbfaf7"
         },
@@ -53,6 +57,10 @@
         }
       },
       "ink": {
+        "300": {
+          "$value": "#cfcbc4",
+          "$description": "Muted text on the selection, AA on every surface it's drawn on (D-111)."
+        },
         "50": {
           "$value": "#eceae6"
         },
@@ -206,6 +214,10 @@
         }
       },
       "dusk": {
+        "300": {
+          "$value": "#d6c7b6",
+          "$description": "Muted text on the selection, AA on every surface it's drawn on (D-111)."
+        },
         "50": {
           "$value": "#efe6da"
         },
@@ -285,6 +297,10 @@
         }
       },
       "harborDark": {
+        "300": {
+          "$value": "#bfd2e1",
+          "$description": "Muted text on the selection, AA on every surface it's drawn on (D-111)."
+        },
         "50": {
           "$value": "#e3ebf1"
         },
@@ -364,6 +380,10 @@
         }
       },
       "forestDark": {
+        "300": {
+          "$value": "#b4c4ac",
+          "$description": "Muted text on the selection, AA on every surface it's drawn on (D-111)."
+        },
         "50": {
           "$value": "#e5ecdf"
         },
@@ -467,6 +487,10 @@
         }
       },
       "hcDark": {
+        "mutedOnSelection": {
+          "$value": "#dbdbdb",
+          "$description": "Muted text on the selection, AA on every surface it's drawn on (D-111)."
+        },
         "0": {
           "$value": "#000000"
         },
