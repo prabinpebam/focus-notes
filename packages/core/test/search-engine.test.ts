@@ -179,6 +179,14 @@ describe("following changes", () => {
     expect(titles(e, "part")[0]).toMatchObject({ key: "b/uno.md#1", path: "b/uno.md" });
     expect(keys(titles(e, "a", { kinds: ["note"], within: "a" }))).toEqual([]);
   });
+  it("a note moved over another replaces it, leaving nothing of the old one", () => {
+    const e = engineWith({ "a.md": "# Alpha\n\nzebra\n", "b.md": "# Bravo\n\n## Part\n\nyak\n" });
+    e.apply([{ op: "move", from: "a.md", to: "b.md", rel: "b.md" }]);
+    expect(e.status()).toMatchObject({ notes: 1, indexed: 1 });
+    expect(full(e, "yak")).toEqual([]);
+    expect(titles(e, "part")).toEqual([]);
+    expect(keys(full(e, "zebra"))).toEqual(["b.md"]);
+  });
   it("moves a waiting text with its note", () => {
     const e = new SearchEngine();
     e.apply([note("a.md"), text("a.md", "# A\n\nzebra\n"), { op: "move", from: "a.md", to: "b.md", rel: "b.md" }]);

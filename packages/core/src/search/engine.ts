@@ -280,6 +280,7 @@ export class SearchEngine {
     const folder = this.#folders.get(from);
     if (folder) {
       this.#remove(from);
+      this.#remove(to);
       this.#apply({ op: "folder", path: to, rel, root: folder.root });
       return;
     }
@@ -287,6 +288,8 @@ export class SearchEngine {
     if (!rec || from === to) return;
     const queued = this.#queue.get(from);
     this.#remove(from);
+    // Over something already there (the feed never asks for that): it goes first.
+    this.#remove(to);
     const moved: NoteRec = { ...rec, path: to, rel, headingKeys: [] };
     this.#notes.set(to, moved);
     if (moved.indexed) this.#indexed++;
