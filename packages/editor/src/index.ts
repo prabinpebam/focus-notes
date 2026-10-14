@@ -19,7 +19,9 @@ export * from "./slash.ts";
 export * from "./paste.ts";
 export * from "./sanitize.ts";
 export * from "./table.ts";
+export * from "./blocks.ts";
 import { Find, FIND_ACTIONS } from "./find.ts";
+import { BLOCK_ACTIONS } from "./blocks.ts";
 import { LinkOpen, LinkPaste, SelectionGhost, removeLink, selectLink } from "./format.ts";
 import { SlashMenu, blockIs, insideNode, type SlashEntry } from "./slash.ts";
 import { SmartPaste } from "./paste.ts";
@@ -195,6 +197,7 @@ export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Rec
   "block.taskList": (e) => e.commands.toggleTaskList(),
   "block.quote": (e) => e.commands.toggleBlockquote(),
   "block.codeBlock": (e) => e.commands.toggleCodeBlock(),
+  ...BLOCK_ACTIONS,
   ...FIND_ACTIONS,
   ...TABLE_ACTIONS,
   "task.toggle": (e) => {

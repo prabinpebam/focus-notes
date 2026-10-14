@@ -28,11 +28,14 @@ describe("ui:check (DSY-08)", () => {
   it("passes the real views", () => expect(checkUi({ ...base, views })).toEqual([]));
   it("passes a valid node", () => expect(problems({ type: "Text", props: { value: { t: "gallery.sample" } } })).toEqual([]));
   it("rejects unknown components", () => expect(problems({ type: "Div" }).length).toBeGreaterThan(0));
+  // DSY-05: closed contracts, with no className, style, or attribute pass-through.
   it("rejects undeclared props such as className and style", () => {
     expect(problems({ type: "Text", props: { value: { t: "gallery.sample" }, className: "x" } }).length).toBeGreaterThan(0);
     expect(problems({ type: "Text", props: { value: { t: "gallery.sample" }, style: { color: "red" } } }).length).toBeGreaterThan(0);
   });
+  // I18N-01: interface text is a message key, never a literal.
   it("rejects literal text", () => expect(messagesOf(problems({ type: "Text", props: { value: "Hello" } })).join()).toMatch(/schema|literal/));
+  // DSY-02: a raw value where a token is expected fails the check.
   it("rejects raw values where a token is expected", () => expect(problems({ type: "Stack", props: { gap: "12px" } }).length).toBeGreaterThan(0));
   it("rejects unknown messages and wrong arguments", () => {
     expect(messagesOf(problems({ type: "Text", props: { value: { t: "nope.missing" } } }))).toContain('references: message "nope.missing" doesn\'t exist');
@@ -42,6 +45,7 @@ describe("ui:check (DSY-08)", () => {
     expect(messagesOf(problems({ type: "Text", props: { value: { get: "vm.canvas.nothing" } } }))).toContain('references: "vm.canvas.nothing" doesn\'t exist');
     expect(messagesOf(problems({ type: "Stack", props: { grow: { get: "vm.canvas.noteKey" } } }))).toContain('types: "vm.canvas.noteKey" is string, but this prop needs boolean');
   });
+  // DSY-07: view documents hold only registry references, message keys, typed reads, known commands, and a restricted expression subset.
   it("rejects unknown commands", () => {
     expect(messagesOf(problems({ type: "Button", props: { label: { t: "gallery.action" } }, on: { press: { run: "nope.go" } } }))).toContain("references: unknown command nope.go");
   });

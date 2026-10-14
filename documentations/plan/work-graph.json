@@ -1,7 +1,7 @@
 {
   "$comment": "The implementation plan in machine-readable form. Agents read this file to choose ready work. Keep it in step with implementation-plan.md; the plan check (WP-0.1) fails CI if they disagree.",
   "version": 1,
-  "updated": "2026-10-14",
+  "updated": "2026-10-15",
   "stages": [
     {
       "id": "M0",
@@ -1131,7 +1131,7 @@
         "experience/keyboard-shortcuts.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-4.5",

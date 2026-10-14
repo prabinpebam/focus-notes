@@ -10,6 +10,7 @@ import { launch, quit, tempDirs, windowBox } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 
+// PKG-03: the desktop app is Electron wrapping the same views the web build renders, with native file access.
 test("M0: launch to the blank canvas, type, save as Markdown, and reopen", async () => {
   const dirs = tempDirs();
   const first = await launch(dirs);

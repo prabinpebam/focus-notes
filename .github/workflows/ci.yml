@@ -44,20 +44,22 @@ jobs:
       - name: Budgets, report only
         if: runner.os == 'macOS'
         run: pnpm bench
+      # Journeys always run, even when an earlier step such as the budgets fails, so one
+      # failure never hides another (D-113).
       - name: Journey tests (Linux)
-        if: runner.os == 'Linux'
+        if: ${{ !cancelled() && runner.os == 'Linux' }}
         run: xvfb-run -a pnpm test:e2e
       - name: Journey tests
-        if: runner.os != 'Linux'
+        if: ${{ !cancelled() && runner.os != 'Linux' }}
         run: pnpm test:e2e
       # The web app's journeys gate on Windows (D-112); Linux runs them too, without blocking.
       - name: Web app journeys (Chromium)
-        if: runner.os == 'Windows'
+        if: ${{ !cancelled() && runner.os == 'Windows' }}
         run: |
           pnpm --filter @focus-notes/web exec playwright install chromium
           pnpm test:web
       - name: Web app journeys (Chromium, Linux)
-        if: runner.os == 'Linux'
+        if: ${{ !cancelled() && runner.os == 'Linux' }}
         run: |
           pnpm --filter @focus-notes/web exec playwright install --with-deps chromium
           pnpm test:web

@@ -16,6 +16,7 @@ const PASSPHRASE = "quiet maple lantern orbit seven";
 
 test.describe.configure({ mode: "serial" });
 
+// M3 demo, step 1 (first run with a fake GitHub; a clean machine without Git is the owner's check).
 test("FRE-01, FRE-04, FRE-05, FRE-08: a new install creates its workspace by keyboard alone, with the existing credential, and the account pill shows the login", async () => {
   test.setTimeout(180_000);
   const w = await world({ gcm: true });
@@ -100,6 +101,7 @@ test("FRE-01, FRE-04, FRE-05, FRE-08: a new install creates its workspace by key
   }
 });
 
+// M3 demo, step 3: a second computer opens the existing workspace.
 test("FRE-02, FRE-06: sign in with the GitHub CLI's code, then open the workspace from GitHub with its private notes", async () => {
   test.setTimeout(150_000);
   const w = await world({ gh: true, delayMs: 2500 });
