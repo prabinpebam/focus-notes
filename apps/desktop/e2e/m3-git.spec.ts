@@ -18,7 +18,16 @@ const remoteText = (remote: string) => {
     return "";
   }
 };
-const commits = (remote: string) => Number(git(remote, "rev-list", "--count", "main"));
+const commits = (repo: string, ref = "main") => Number(git(repo, "rev-list", "--count", ref));
+const welcome = (docs: string) => join(docs, "private", "notes", "welcome.md");
+/**
+ * Waits for the save to land on disk, polling often so it's seen as soon as it lands. The timeout is
+ * generous because a loaded runner can be twice as slow; the save's latency budget is measured by
+ * the PRF-03 journey, not here. The idle timer starts only once the write lands (Cadence.edited after
+ * the write), so the commit can't come sooner than the idle time after this returns.
+ */
+const onDisk = (docs: string, text: string) =>
+  expect.poll(() => readFileSync(welcome(docs), "utf8"), { timeout: 10_000, intervals: [50] }).toContain(text);
 const pointer = (notesRemote: string) => git(notesRemote, "ls-tree", "main", "private").split(/\s+/)[2];
 
 async function typeAtEnd(page: import("@playwright/test").Page, text: string) {
@@ -49,7 +58,8 @@ test("EDT-11: quitting commits and pushes", async () => {
   const { dirs, privateRemote } = instance();
   const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
   await typeAtEnd(l.page, " Written before quitting.");
-  await expect.poll(() => readFileSync(join(dirs.docs, "private", "notes", "welcome.md"), "utf8"), { timeout: 5000 }).toContain("Written before quitting.");
+  await onDisk(dirs.docs, "Written before quitting.");
+  expect(commits(join(dirs.docs, "private"), "HEAD")).toBe(1);
   expect(commits(privateRemote)).toBe(1);
   await quit(l);
   await expect.poll(() => remoteText(privateRemote), { timeout: 15_000 }).toBe("# Welcome\n\nFirst line. Written before quitting.");
@@ -57,11 +67,14 @@ test("EDT-11: quitting commits and pushes", async () => {
 
 test("EDT-11: a pause in typing commits and pushes on its own (60 s, shortened for the test)", async () => {
   const { dirs, privateRemote } = instance();
-  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "2000" });
+  // Well above the save's latency on a slow runner, so "written but not committed" is a real window.
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "5000" });
   await typeAtEnd(l.page, " Then a pause.");
-  // Written to disk within a second, but not committed yet.
-  await expect.poll(() => readFileSync(join(dirs.docs, "private", "notes", "welcome.md"), "utf8"), { timeout: 1500 }).toContain("Then a pause.");
+  // Written to disk, but not committed yet: neither in the workspace nor on the remote.
+  await onDisk(dirs.docs, "Then a pause.");
+  expect(commits(join(dirs.docs, "private"), "HEAD")).toBe(1);
   expect(commits(privateRemote)).toBe(1);
+  // Then the pause commits and pushes on its own.
   await expect.poll(() => remoteText(privateRemote), { timeout: 15_000 }).toBe("# Welcome\n\nFirst line. Then a pause.");
   await quit(l);
 });
