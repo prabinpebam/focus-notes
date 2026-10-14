@@ -89,8 +89,19 @@ export async function largeWorkspace({ root, mainEntry, notes = 10_000, reopenRu
       // The panel is ready when focus is on its row, not when a row is drawn: keys typed before
       // then would go to the note.
       await page.waitForFunction(() => document.activeElement?.getAttribute("role") === "treeitem", null, { timeout: 30_000 });
+      // Each typed key's time, handling time, and the row it was typed on: printed if the row never comes.
+      await page.evaluate(() => {
+        window.__typed = [];
+        window.__typedOn ??= addEventListener("keydown", (e) => window.__typed.push([e.key, Math.round(e.timeStamp), Math.round(performance.now()), document.activeElement?.textContent?.slice(0, 24)]), { capture: true }) ?? true;
+      });
       await page.keyboard.type(name);
-      await page.waitForFunction((n) => document.activeElement?.getAttribute("role") === "treeitem" && document.activeElement.textContent?.includes(n), name, { timeout: 30_000 });
+      await page.waitForFunction((n) => document.activeElement?.getAttribute("role") === "treeitem" && document.activeElement.textContent?.includes(n), name, { timeout: 30_000 }).catch(async (e) => {
+        console.error(`Opening ${name}: keys [key, event time, handled, row]`, JSON.stringify(await page.evaluate(() => ({
+          typed: window.__typed, active: [document.activeElement?.getAttribute("role") ?? document.activeElement?.tagName, document.activeElement?.textContent?.slice(0, 40)],
+          rows: [...document.querySelectorAll("[role=treeitem]")].slice(0, 12).map((r) => r.textContent),
+        }))));
+        throw e;
+      });
       await page.evaluate((n) => {
         const w = window;
         w.__act = undefined;
