@@ -22,7 +22,7 @@ function desktop(files: Record<string, string>) {
   const scan = (): WorkspaceScan => ({
     folder: W,
     roots: [{ id: "private", path: PRIV, readOnly: false }, { id: "public", path: PUB, readOnly: false }],
-    entries: [`${PRIV}/essays`].map((path) => ({ path, kind: "folder" as const })).concat(Object.keys(files).map((path) => ({ path, kind: "note" as const }))),
+    entries: [{ path: `${PRIV}/essays`, kind: "folder" as const }, ...Object.keys(files).map((path) => ({ path, kind: "note" as const }))],
   });
   const workspace: WorkspaceBridge = {
     info: async () => ({ folder: W, format: '{ "formatVersion": 1 }' }),
