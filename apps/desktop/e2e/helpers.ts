@@ -119,6 +119,12 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
   // FOCUS_NOTES_E2E_CPU_THROTTLE=4 slows the renderer down like a busy CI runner, to reproduce races.
   const throttle = Number(process.env.FOCUS_NOTES_E2E_CPU_THROTTLE ?? 0);
   if (throttle > 1) await (await page.context().newCDPSession(page)).send("Emulation.setCPUThrottlingRate", { rate: throttle });
+  // The search index's worker starts once the first note is open (WP-4.1). While it's being attached,
+  // the main process's inspector can drop the answer to a call into it ("Resulting promise was
+  // garbage collected"), so a journey starts once it's there: at most a few seconds, as a first run
+  // starts it only after the card.
+  if (!page.workers().length) await page.waitForEvent("worker", { timeout: 5_000 }).catch(() => {});
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(r))).catch(() => {});
   const readyMs = async () => {
     for (let i = 0; i < 100; i++) {
       const line = log.find((l) => l.includes("ready-ms="));
