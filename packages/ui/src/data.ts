@@ -25,6 +25,13 @@ export interface ResultItem {
   disabled?: boolean;
 }
 
+/** One block of a note's version in the conflict resolver (VersionPane), and whether the other version differs there. */
+export interface VersionBlock {
+  id: string;
+  text: string;
+  changed: boolean;
+}
+
 /** A row of the Files tree (FileTree): a root's section label, a folder, or a note. */
 export interface TreeItem {
   id: string;

@@ -432,7 +432,7 @@
   "deleted.footerCount": "Recently deleted · {count}",
   "deleted.title": "Recently deleted",
   "deleted.back": "Back to files",
-  "deleted.explain": "Notes deleted in the last 30 days. Notes stay in Git history even after 30 days. Older ones can be recovered with Git.",
+  "deleted.explain": "Notes stay in Git history even after 30 days. Older ones can be recovered with Git.",
   "deleted.loading": "Looking through history…",
   "deleted.count": "{count, plural, =0 {Nothing deleted in the last 30 days.} one {# note deleted in the last 30 days.} other {# notes deleted in the last 30 days.}}",
   "deleted.empty": "Nothing deleted in the last 30 days.",
@@ -442,5 +442,6 @@
   "deleted.where": "{root} · {folder} · {at, time, short}",
   "deleted.restore": "Restore",
   "deleted.restoreTo": "Restore to…",
-  "deleted.whereRoot": "{root} · {at, time, short}"
+  "deleted.whereRoot": "{root} · {at, time, short}",
+  "conflict.changed": "Changed"
 }

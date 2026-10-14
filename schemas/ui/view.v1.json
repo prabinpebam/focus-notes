@@ -264,6 +264,9 @@
           "$ref": "#/$defs/c_FileTree"
         },
         {
+          "$ref": "#/$defs/c_VersionPane"
+        },
+        {
           "$ref": "#/$defs/c_Stack"
         },
         {
@@ -2204,7 +2207,8 @@
                 {
                   "enum": [
                     "s",
-                    "l"
+                    "l",
+                    "xl"
                   ]
                 },
                 {
@@ -3100,6 +3104,96 @@
               "$ref": "#/$defs/actions"
             }
           }
+        }
+      }
+    },
+    "c_VersionPane": {
+      "type": "object",
+      "description": "One version of a note in the conflict resolver: its blocks as plain text, with the blocks that differ from the other version highlighted.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "VersionPane"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "blocks": {
+              "$ref": "#/$defs/read"
+            },
+            "emptyText": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "changedLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "blocks",
+            "emptyText",
+            "changedLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
         }
       }
     },
@@ -4329,6 +4423,12 @@
               "items": {
                 "$ref": "#/$defs/node"
               }
+            },
+            "footer": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
             }
           }
         }
@@ -4859,7 +4959,8 @@
                 {
                   "enum": [
                     "s",
-                    "l"
+                    "l",
+                    "xl"
                   ]
                 },
                 {

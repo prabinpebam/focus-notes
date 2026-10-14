@@ -17,7 +17,9 @@
     "vm.files",
     "vm.move",
     "vm.confirm",
-    "vm.import"
+    "vm.import",
+    "vm.conflict",
+    "vm.deleted"
   ],
   "focus": "editor",
   "root": {
@@ -2084,6 +2086,191 @@
         ]
       },
       {
+        "type": "Dialog",
+        "id": "conflict",
+        "when": {
+          "get": "vm.conflict.open"
+        },
+        "props": {
+          "title": {
+            "get": "vm.conflict.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.conflict.open"
+          },
+          "size": "xl"
+        },
+        "on": {
+          "openChange": {
+            "run": "conflict.setOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "slots": {
+          "toolbar": [
+            {
+              "type": "Stack",
+              "props": {
+                "gap": "s"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "when": {
+                    "get": "vm.conflict.multiple"
+                  },
+                  "props": {
+                    "value": {
+                      "get": "vm.conflict.position"
+                    },
+                    "role": "secondary",
+                    "tone": "muted",
+                    "announce": true
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "conflict.explain"
+                    },
+                    "role": "secondary",
+                    "tone": "muted"
+                  }
+                },
+                {
+                  "type": "Inline",
+                  "props": {
+                    "gap": "s",
+                    "wrap": true
+                  },
+                  "children": [
+                    {
+                      "type": "Button",
+                      "props": {
+                        "label": {
+                          "get": "vm.conflict.keepMine"
+                        },
+                        "variant": "secondary"
+                      },
+                      "on": {
+                        "press": {
+                          "run": "conflict.choose",
+                          "args": {
+                            "choice": "mine"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "Button",
+                      "props": {
+                        "label": {
+                          "get": "vm.conflict.takeTheirs"
+                        },
+                        "variant": "secondary"
+                      },
+                      "on": {
+                        "press": {
+                          "run": "conflict.choose",
+                          "args": {
+                            "choice": "theirs"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "Button",
+                      "props": {
+                        "label": {
+                          "t": "conflict.keepBoth"
+                        },
+                        "variant": "secondary"
+                      },
+                      "on": {
+                        "press": {
+                          "run": "conflict.choose",
+                          "args": {
+                            "choice": "both"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "Button",
+                      "props": {
+                        "label": {
+                          "t": "conflict.later"
+                        },
+                        "variant": "subtle"
+                      },
+                      "on": {
+                        "press": {
+                          "run": "conflict.later"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "Inline",
+            "props": {
+              "gap": "m",
+              "align": "start",
+              "wrap": true
+            },
+            "children": [
+              {
+                "type": "VersionPane",
+                "props": {
+                  "label": {
+                    "get": "vm.conflict.mineLabel"
+                  },
+                  "blocks": {
+                    "get": "vm.conflict.mine"
+                  },
+                  "emptyText": {
+                    "get": "vm.conflict.mineEmpty"
+                  },
+                  "changedLabel": {
+                    "t": "conflict.changed"
+                  }
+                }
+              },
+              {
+                "type": "VersionPane",
+                "props": {
+                  "label": {
+                    "get": "vm.conflict.theirsLabel"
+                  },
+                  "blocks": {
+                    "get": "vm.conflict.theirs"
+                  },
+                  "emptyText": {
+                    "get": "vm.conflict.theirsEmpty"
+                  },
+                  "changedLabel": {
+                    "t": "conflict.changed"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
         "type": "Layer",
         "id": "account",
         "when": {
@@ -2393,6 +2580,33 @@
                 "value": {
                   "bind": "vm.files.filter"
                 }
+              },
+              "when": {
+                "get": "vm.deleted.closed"
+              }
+            }
+          ],
+          "footer": [
+            {
+              "type": "Button",
+              "when": {
+                "get": "vm.deleted.available"
+              },
+              "props": {
+                "label": {
+                  "get": "vm.deleted.footer"
+                },
+                "variant": "subtle",
+                "icon": "history",
+                "toggle": true,
+                "pressed": {
+                  "get": "vm.deleted.open"
+                }
+              },
+              "on": {
+                "press": {
+                  "run": "files.toggleDeleted"
+                }
               }
             }
           ]
@@ -2469,12 +2683,24 @@
               "editBlur": {
                 "run": "files.editBlur"
               }
+            },
+            "when": {
+              "get": "vm.deleted.closed"
             }
           },
           {
             "type": "Text",
             "when": {
-              "get": "vm.files.empty"
+              "expr": {
+                "and": [
+                  {
+                    "get": "vm.files.empty"
+                  },
+                  {
+                    "get": "vm.deleted.closed"
+                  }
+                ]
+              }
             },
             "props": {
               "value": {
@@ -2484,6 +2710,189 @@
               "tone": "muted",
               "announce": true
             }
+          },
+          {
+            "type": "Stack",
+            "id": "deletedList",
+            "when": {
+              "get": "vm.deleted.open"
+            },
+            "props": {
+              "gap": "m"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "xs"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "level": "3",
+                      "value": {
+                        "t": "deleted.title"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.deleted.status"
+                      },
+                      "role": "secondary",
+                      "announce": true
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "deleted.explain"
+                      },
+                      "role": "caption",
+                      "tone": "muted"
+                    }
+                  }
+                ]
+              },
+              {
+                "each": {
+                  "get": "vm.deleted.groups"
+                },
+                "as": "group",
+                "key": "group.id",
+                "render": {
+                  "type": "Stack",
+                  "props": {
+                    "gap": "s"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "get": "group.label"
+                        },
+                        "role": "emphasis"
+                      }
+                    },
+                    {
+                      "each": {
+                        "get": "group.notes"
+                      },
+                      "as": "note",
+                      "key": "note.id",
+                      "render": {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs"
+                        },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "none"
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "note.title"
+                                  },
+                                  "role": "label",
+                                  "lines": "two"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "note.description"
+                                  },
+                                  "role": "caption",
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "xs",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "deleted.restore"
+                                  },
+                                  "size": "s"
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "files.restore",
+                                    "args": {
+                                      "id": {
+                                        "get": "note.id"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "deleted.restoreTo"
+                                  },
+                                  "size": "s",
+                                  "variant": "subtle",
+                                  "icon": "folder"
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "files.restoreTo",
+                                    "args": {
+                                      "id": {
+                                        "get": "note.id"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      "empty": {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "deleted.empty"
+                          },
+                          "tone": "muted"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "empty": {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "deleted.empty"
+                    },
+                    "tone": "muted"
+                  }
+                }
+              }
+            ]
           }
         ]
       },

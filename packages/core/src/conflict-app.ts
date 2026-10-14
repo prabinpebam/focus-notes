@@ -183,7 +183,7 @@ export function registerConflicts(ctx: Ctx) {
 
   // ---- the view model ----
   const BLOCK = { type: "object" as const, properties: { id: { type: "string" as const }, text: { type: "string" as const }, changed: { type: "boolean" as const } } };
-  const CLOSED_VM = { open: false, title: "", position: "", mineLabel: "", theirsLabel: "", mine: [], theirs: [], mineEmpty: "", theirsEmpty: "", busy: false, focus: 0, keepMine: "", takeTheirs: "" };
+  const CLOSED_VM = { open: false, title: "", position: "", multiple: false, mineLabel: "", theirsLabel: "", mine: [], theirs: [], mineEmpty: "", theirsEmpty: "", busy: false, focus: 0, keepMine: "", takeTheirs: "" };
   viewModels.register({
     id: "vm.conflict",
     schema: {
@@ -191,7 +191,7 @@ export function registerConflicts(ctx: Ctx) {
       properties: {
         open: { type: "boolean" }, title: { type: "string" }, position: { type: "string" }, mineLabel: { type: "string" }, theirsLabel: { type: "string" },
         mine: { type: "array", items: BLOCK }, theirs: { type: "array", items: BLOCK }, mineEmpty: { type: "string" }, theirsEmpty: { type: "string" },
-        busy: { type: "boolean" }, focus: { type: "number" }, keepMine: { type: "string" }, takeTheirs: { type: "string" },
+        busy: { type: "boolean" }, focus: { type: "number" }, keepMine: { type: "string" }, takeTheirs: { type: "string" }, multiple: { type: "boolean" },
       },
     },
     reads: ["ui.conflict"],
@@ -204,7 +204,7 @@ export function registerConflicts(ctx: Ctx) {
       return {
         open: true, busy: c.busy, focus: c.focus,
         title: catalog.format(sync ? "conflict.title" : "conflict.titleOutside", { what: quoted(n) }),
-        position: c.notes.length > 1 ? catalog.format("conflict.position", { n: c.index + 1, count: c.notes.length }) : "",
+        position: c.notes.length > 1 ? catalog.format("conflict.position", { n: c.index + 1, count: c.notes.length }) : "", multiple: c.notes.length > 1,
         mineLabel: catalog.format("conflict.mine"),
         theirsLabel: n.theirsAt !== undefined ? catalog.format(sync ? "conflict.theirsAt" : "conflict.outsideAt", { at: n.theirsAt }) : catalog.format("conflict.theirs"),
         mine: n.mine === undefined ? [] : v.mine, theirs: n.theirs === undefined ? [] : v.theirs,

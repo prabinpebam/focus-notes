@@ -509,6 +509,8 @@ export function registerFiles(ctx: Ctx) {
     },
   });
   commands.register({ id: "files.hideDeleted", title: "command.files.hideDeleted", run: () => setFiles((f) => ({ recent: { ...f.recent, open: false }, focusRequest: f.focusRequest + 1 })) });
+  // The footer's button shows the list and goes back to the tree, so focus stays on it.
+  commands.register({ id: "files.toggleDeleted", title: "command.files.showDeleted", enabled: canRestore, run: (_a, c) => c.run(recent().open ? "files.hideDeleted" : "files.showDeleted") });
   const deletedNote = (id: string) => recent().notes?.find((n) => n.id === id);
   /** Puts deleted notes back, in place or in a chosen folder of their section, in one commit (FIL-10). */
   async function doRestore(ids: string[], folder?: string): Promise<void> {
@@ -517,10 +519,12 @@ export function registerFiles(ctx: Ctx) {
     try {
       const back = await ctx.exclusive(() => ws!.restore!(ids, folder));
       setTree(applyChanges(tree(), back.map((r) => ({ path: r.path, kind: "note" as const, exists: true, title: r.title }))));
+      // Back in the tree, where it was put, selected and focused (Files → Deleting and restoring).
       setFiles((f) => ({
-        recent: { ...f.recent, notes: f.recent.notes?.filter((n) => !ids.includes(n.id)), focus: f.recent.focus + 1 },
+        recent: { ...f.recent, open: false, notes: f.recent.notes?.filter((n) => !ids.includes(n.id)) },
         expanded: [...new Set([...f.expanded, ...back.flatMap((r) => ancestorsOf(tree(), r.path))])],
         selection: back[0] ? { selected: back.map((r) => r.path), anchor: back[0].path, focus: back[0].path } : f.selection,
+        focusRequest: f.focusRequest + 1,
       }));
       const where = back[0] ? folderLabel(dirOf(back[0].path)) : "";
       const done = catalog.format("files.restoredTo", { what, where: catalog.format("files.quoted", { name: where }) });
@@ -772,6 +776,7 @@ export function registerFiles(ctx: Ctx) {
       type: "object",
       properties: {
         available: { type: "boolean" }, open: { type: "boolean" }, loading: { type: "boolean" }, footer: { type: "string" }, focus: { type: "number" },
+        closed: { type: "boolean" },
         groups: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, notes: { type: "array", items: DELETED_NOTE } } } },
         empty: { type: "boolean" }, status: { type: "string" },
       },
@@ -782,7 +787,7 @@ export function registerFiles(ctx: Ctx) {
       const available = s.ui.files.open && canRestore(s);
       const count = r.notes?.length;
       const footer = available ? catalog.format(count === undefined ? "deleted.footer" : "deleted.footerCount", { count: count ?? 0 }) : "";
-      if (!available || !r.open) return { available, open: false, loading: false, footer, focus: r.focus, groups: [], empty: false, status: "" };
+      if (!available || !r.open) return { available, open: false, closed: true, loading: false, footer, focus: r.focus, groups: [], empty: false, status: "" };
       const now = new Date();
       const groups = groupByDay(r.notes ?? []).map((g) => ({
         id: g.day, label: dayLabel(g.at, now),
@@ -793,7 +798,7 @@ export function registerFiles(ctx: Ctx) {
         })),
       }));
       return {
-        available, open: true, loading: r.loading, footer, focus: r.focus, groups, empty: !r.loading && !groups.length,
+        available, open: true, closed: false, loading: r.loading, footer, focus: r.focus, groups, empty: !r.loading && !groups.length,
         status: r.loading ? catalog.format("deleted.loading") : catalog.format("deleted.count", { count: count ?? 0 }),
       };
     },

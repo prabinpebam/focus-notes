@@ -6,7 +6,7 @@
   "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "radius": { "$type": "dimension", "$value": "{radius.sheet}" },
   "shadow": { "$type": "shadow", "$value": "{shadow.3}" },
-  "width": { "$type": "dimension", "s": { "$value": "{layout.dialogS}" }, "l": { "$value": "{layout.dialogL}" } },
+  "width": { "$type": "dimension", "s": { "$value": "{layout.dialogS}" }, "l": { "$value": "{layout.dialogL}" }, "xl": { "$value": "{layout.dialogXL}" } },
   "maxHeight": { "$type": "dimension", "$value": "{layout.dialogMaxHeight}" },
   "inset": { "$type": "dimension", "$value": "{layout.gutterCompact}" },
   "padding": { "$type": "dimension", "$value": "{space.xl}" },

@@ -7,7 +7,7 @@ export const contract = defineContract({
   props: {
     label: { kind: "message", required: true },
     open: { kind: "boolean", default: false },
-    size: { kind: "enum", values: ["s", "l"], default: "l" },
+    size: { kind: "enum", values: ["s", "l", "xl"], default: "l" },
   },
   events: { openChange: { payload: { open: "boolean" } } },
   slots: { header: { accepts: "any", max: 1 }, fixed: { accepts: "any", max: 1 }, default: { accepts: "any" } },
@@ -17,5 +17,6 @@ export const contract = defineContract({
   fixtures: [
     { name: "size s", props: { label: { t: "shortcuts.title" }, open: true, size: "s" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     { name: "size l", props: { label: { t: "shortcuts.title" }, open: true, size: "l" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "size xl", props: { label: { t: "shortcuts.title" }, open: true, size: "xl" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
   ],
 });

@@ -707,6 +707,10 @@ function watchWorkspace(win: () => BrowserWindow | undefined): FSWatcher | undef
   let timer: ReturnType<typeof setTimeout> | undefined;
   const report = async () => {
     timer = undefined;
+    // A pull or a conflict being settled rewrites files: they're read once it's over, so the app
+    // never sees a half-applied state (a rebase's conflict markers) as a change made outside.
+    await gitSync?.writable().catch(() => {});
+    if (timer) return; // More changes came meanwhile: they're reported together.
     const rels = [...pending];
     pending.clear();
     const changes: { path: string; kind: "note" | "folder" | "format"; exists: boolean; title?: string }[] = [];
