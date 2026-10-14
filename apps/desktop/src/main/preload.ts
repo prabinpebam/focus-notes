@@ -7,6 +7,20 @@ import { contextBridge, ipcRenderer } from "electron";
 const params = new URLSearchParams(globalThis.location?.search ?? "");
 const platform = (params.get("platform") ?? "windows") as "macos" | "windows" | "linux";
 const darkQuery = globalThis.matchMedia?.("(prefers-color-scheme: dark)");
+/** The app-built window's state when the page loaded (Windows and Linux, D-14); absent on macOS. */
+const initialWindow = (() => {
+  try {
+    const w = JSON.parse(params.get("window") ?? "null") as { frame?: unknown } | null;
+    return w && (w.frame === "custom" || w.frame === "opaque") ? w : undefined;
+  } catch {
+    return undefined;
+  }
+})();
+const listen = (channel: string) => (listener: (...args: unknown[]) => void) => {
+  const handler = (_e: unknown, ...args: unknown[]) => listener(...args);
+  ipcRenderer.on(channel, handler);
+  return () => ipcRenderer.removeListener(channel, handler);
+};
 
 contextBridge.exposeInMainWorld("focusNotes", {
   platform,
@@ -103,7 +117,24 @@ contextBridge.exposeInMainWorld("focusNotes", {
     openWorkspace: () => ipcRenderer.invoke("firstRun:openWorkspace"),
     openPage: (page: string) => ipcRenderer.send("firstRun:openPage", page),
   },
-  setWindowScheme: (s: "light" | "dark", canvas?: string) => ipcRenderer.send("window:scheme", s, canvas),
+  setWindowScheme: (s: "light" | "dark", canvas?: string, accent?: string) => ipcRenderer.send("window:scheme", s, canvas, accent),
+  // The window the app draws and manages on Windows and Linux (DSK-03, DSK-08): intent-level only.
+  window: initialWindow
+    ? {
+        initial: initialWindow,
+        state: () => ipcRenderer.invoke("window:state"),
+        onState: listen("window:state"),
+        onMenu: listen("window:menu"),
+        minimize: () => ipcRenderer.send("window:minimize"),
+        maximize: () => ipcRenderer.send("window:maximize"),
+        restore: () => ipcRenderer.send("window:restore"),
+        close: () => ipcRenderer.send("window:close"),
+        snap: (zone: string) => ipcRenderer.send("window:snap", zone),
+        drag: (phase: string, kind: string, x: number, y: number, shift: boolean) => ipcRenderer.send("window:drag", phase, kind, x, y, shift),
+        keyboard: (mode: string) => ipcRenderer.send("window:keyboard", mode),
+        key: (key: string, fine: boolean) => ipcRenderer.send("window:key", key, fine),
+      }
+    : undefined,
   onFlushRequest: (listener: () => Promise<boolean>) => {
     ipcRenderer.on("app:flush", () => {
       void listener()
