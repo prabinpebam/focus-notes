@@ -2,7 +2,7 @@
 import { createElement, Fragment, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { FLUSH_EDITOR, type App } from "@focus-notes/core";
-import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, keyRanCommand, slashCatalog, preloadViews } from "@focus-notes/ui";
+import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, keyRanCommand, slashCatalog, preloadViews, InWindow } from "@focus-notes/ui";
 import { ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
 
 export interface MountOptions {
@@ -30,7 +30,8 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   const Text = registry.Text!;
   const fallback = createElement(Text, { value: app.messages.has("app.viewFailed") ? app.messages.format("app.viewFailed") : "This panel couldn't load." });
   const host = (viewId: string) => createElement(ViewBoundary, { key: viewId, fallback, onError: (e: unknown) => console.error(e), children: createElement(ViewHost, { viewId, deps }) });
-  root.render(createElement(StrictMode, null, createElement(Fragment, null, host(view), ...overlays.map(host))));
+  // Overlays render inside the window as drawn (D-14, D-111): their scrims and sheets never reach its shadow margin.
+  root.render(createElement(StrictMode, null, createElement(Fragment, null, host(view), ...overlays.map((id) => createElement(InWindow, { key: id }, host(id))))));
 
   // Keys run commands (KEY-01). App keys are resolved first, in the capture phase, so a key does the
   // same thing wherever focus is (on a German layout Ctrl+Shift+7 types "/", which is the cheat

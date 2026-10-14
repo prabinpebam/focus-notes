@@ -4,6 +4,7 @@ import { windowMetrics } from "@focus-notes/tokens";
 import { Icon } from "../Icon/Icon.tsx";
 import type { MenuSection } from "../../data.ts";
 import * as s from "./WindowControls.css.ts";
+import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 
 export interface WindowControlsProps {
   label: string;
@@ -29,6 +30,7 @@ type Open = false | "hover" | "keyboard";
  */
 export function WindowControls({ label, minimizeLabel, maximizeLabel, restoreLabel, closeLabel, layoutsLabel, maximized, reveal, layouts, onAction, onDismiss }: WindowControlsProps) {
   const maxRef = useRef<HTMLButtonElement | null>(null);
+  const boundary = useWindowBoundary();
   const flyRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState<Open>(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -75,6 +77,7 @@ export function WindowControls({ label, minimizeLabel, maximizeLabel, restoreLab
       aria-label={label}
       className={s.root}
       data-window-controls=""
+      data-trigger-band=""
       data-reveal={reveal || open ? "" : undefined}
       onKeyDown={(e) => {
         // The picker handles its own Esc (back to maximize); on a button, Esc leaves the chrome.
@@ -107,12 +110,13 @@ export function WindowControls({ label, minimizeLabel, maximizeLabel, restoreLab
       <Button className={`${s.button} ${s.close}`} aria-label={closeLabel} onPress={() => act("window.close")}>
         <Icon name="dismiss" size="s" />
       </Button>
-      <Popover triggerRef={maxRef} isOpen={Boolean(open) && layouts.length > 0} onOpenChange={(o) => (o ? undefined : close(open === "keyboard"))} isNonModal placement="bottom end" className={s.popover} data-floating-child="">
+      <Popover triggerRef={maxRef} isOpen={Boolean(open) && layouts.length > 0} onOpenChange={(o) => (o ? undefined : close(open === "keyboard"))} isNonModal placement="bottom end" {...boundary} className={s.popover} data-floating-child="">
         <div
           ref={flyRef}
           role="dialog"
           aria-label={layoutsLabel}
           className={s.flyout}
+          data-surface="popover"
           onKeyDown={zoneKeys}
           onPointerEnter={() => clearTimeout(timer.current)}
           onPointerLeave={leave}

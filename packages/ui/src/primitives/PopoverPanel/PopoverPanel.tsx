@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import { Dialog, DialogTrigger, Popover } from "react-aria-components";
 import * as s from "./PopoverPanel.css.ts";
+import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 
 export interface PopoverPanelProps {
   /** Names the panel for assistive technology. */
@@ -16,6 +17,7 @@ export interface PopoverPanelProps {
 /** A frosted, anchored panel. Esc and clicking outside close it (Main UI → Behavior). */
 export function PopoverPanel({ label, open, placement = "bottom", trigger, content, onOpenChange }: PopoverPanelProps) {
   const dialogRef = useRef<HTMLElement | null>(null);
+  const boundary = useWindowBoundary();
   const onOpenChangeRef = useRef(onOpenChange);
   onOpenChangeRef.current = onOpenChange;
   // When the panel opens, focus moves to its first action (Main UI → Behavior).
@@ -41,7 +43,7 @@ export function PopoverPanel({ label, open, placement = "bottom", trigger, conte
   return (
     <DialogTrigger {...(open !== undefined ? { isOpen: open } : {})} onOpenChange={(o) => onOpenChange?.({ open: o })}>
       {trigger}
-      <Popover className={s.popover} placement={placement} offset={8} shouldFlip>
+      <Popover className={s.popover} placement={placement} offset={8} shouldFlip {...boundary} data-surface="popover">
         <Dialog aria-label={label} className={s.dialog} ref={dialogRef as RefObject<HTMLElement>}>
           {content}
         </Dialog>

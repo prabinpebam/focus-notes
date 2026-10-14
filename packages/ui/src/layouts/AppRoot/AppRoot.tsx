@@ -25,6 +25,7 @@ import "@fontsource/opendyslexic/400.css";
 import "@fontsource/opendyslexic/700.css";
 import { cssVarName } from "@focus-notes/tokens";
 import type { ColorValue } from "../../data.ts";
+import { setWindowElement } from "./in-window.tsx";
 import * as s from "./AppRoot.css.ts";
 
 export interface AppRootProps {
@@ -74,6 +75,9 @@ export function AppRoot({ scheme, theme, contentFont, uiScale, platform, content
     const html = document.documentElement;
     if (frame === "native") delete html.dataset.windowFrame;
     else html.dataset.windowFrame = frame;
+    // Views hosted beside this one render inside the drawn window too (InWindow).
+    setWindowElement(frame === "native" ? null : rootRef.current, frame);
+    return () => setWindowElement(null);
   }, [frame]);
 
   useEffect(() => {

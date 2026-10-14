@@ -1,6 +1,6 @@
 /** EDT-12: the toolbar never covers the selection, flips below near the top band, and stays on screen. */
 import { describe, expect, it } from "vitest";
-import { place, type AnchorRect } from "../src/behaviors/anchors.ts";
+import { fit, place, type AnchorRect } from "../src/behaviors/anchors.ts";
 
 const m = { gap: 8, edge: 12, topBand: 44 };
 const view = { width: 1000, height: 800 };
@@ -38,5 +38,23 @@ describe("placing the toolbar over a selection (EDT-12)", () => {
   it("hides while the anchor is scrolled out of view", () => {
     expect(place({ top: 0, bottom: 30, left: 0, right: 10 }, size, view, m, "above").offscreen).toBe(true);
     expect(place({ top: 900, bottom: 920, left: 0, right: 10 }, size, view, m, "above").offscreen).toBe(true);
+  });
+});
+
+describe("fitting content taller than the room (D-111, inside the window)", () => {
+  const small = { width: 480, height: 360 };
+  const tall = { width: 300, height: 370 };
+  it("keeps the side it was placed on when it fits there", () => {
+    const a = { top: 100, bottom: 120, left: 100, right: 100 };
+    const p = place(a, { width: 300, height: 120 }, small, m, "below", "start");
+    expect(fit(a, p, 120, small, m)).toEqual({ y: 128, side: "below", maxHeight: undefined });
+  });
+  it("takes the side with more room and stops at the window's edge less its margin", () => {
+    const low = { top: 250, bottom: 270, left: 100, right: 100 };
+    const p = place(low, tall, small, m, "below", "start");
+    // Above: from the top band to the gap over the anchor.
+    expect(fit(low, p, tall.height, small, m)).toEqual({ y: 44, side: "above", maxHeight: 250 - 8 - 44 });
+    const high = { top: 60, bottom: 80, left: 100, right: 100 };
+    expect(fit(high, place(high, tall, small, m, "below", "start"), tall.height, small, m)).toEqual({ y: 88, side: "below", maxHeight: 360 - 12 - 88 });
   });
 });

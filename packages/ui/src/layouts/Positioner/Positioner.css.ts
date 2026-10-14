@@ -1,4 +1,4 @@
-import { createVar, keyframes, style, styleVariants } from "@vanilla-extract/css";
+import { createVar, fallbackVar, keyframes, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.positioner;
@@ -10,6 +10,8 @@ export const bandVar = createVar({ syntax: "<length>", inherits: false, initialV
 /** Where the content sits, written by the placement code. */
 export const xVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 export const yVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+/** The most room it has, when it's taller than the window allows; what it holds scrolls (D-111). */
+export const maxHeightVar = createVar();
 
 const enter = keyframes({ from: { opacity: 0 } });
 
@@ -19,7 +21,10 @@ export const base = style({
   left: xVar,
   top: yVar,
   zIndex: t.layer,
+  // A column, so what it holds (a panel with a list) shrinks to its limit and the list scrolls.
   display: "flex",
+  flexDirection: "column",
+  maxHeight: fallbackVar(maxHeightVar, "none"),
   // Never wider than the window less its edges, so it reflows at 320 px (WCAG 1.4.10). Fixed, so
   // the percentage is of the window.
   maxWidth: `calc(100% - 2 * ${edgeVar})`,

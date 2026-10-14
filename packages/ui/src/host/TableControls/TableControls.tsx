@@ -8,6 +8,7 @@ import { COMPANION_ATTR } from "../../behaviors/anchors.ts";
 import { fixedBox } from "../../behaviors/frame.ts";
 import type { MenuSection } from "../../data.ts";
 import * as s from "./TableControls.css.ts";
+import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 
 export interface TableAction {
   id: string;
@@ -114,6 +115,7 @@ export function TableControls({
   columnLabel, rowLabel, tableLabel, insertLabel = "", newRowLabel, newColumnLabel, cellMenuLabel,
   columnMenu, rowMenu, tableMenu, cellMenu, menuRequest = 0, onAction, onClose,
 }: TableControlsProps) {
+  const boundary = useWindowBoundary();
   const g = useSyncExternalStore(tableGeometry.subscribe, tableGeometry.get, () => null);
   const [menu, setMenu] = useState<OpenMenu | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -310,6 +312,8 @@ export function TableControls({
           placement="bottom start"
           offset={8}
           className={menuStyles.popover}
+          {...boundary}
+          data-surface="popover"
           aria-label={menuLabel}
           data-floating-child=""
         >

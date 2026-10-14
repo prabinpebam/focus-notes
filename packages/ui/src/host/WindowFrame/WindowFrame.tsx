@@ -7,6 +7,7 @@ import * as menuStyles from "../../primitives/MenuButton/MenuButton.css.ts";
 import { fixedBox } from "../../behaviors/frame.ts";
 import type { MenuSection } from "../../data.ts";
 import * as s from "./WindowFrame.css.ts";
+import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 
 const EDGES = ["n", "s", "e", "w", "ne", "nw", "se", "sw"] as const;
 type Kind = "move" | (typeof EDGES)[number];
@@ -44,6 +45,7 @@ const band = (t: EventTarget | null) => {
  */
 export function WindowFrame({ frame = "native", resizable, fullScreen = false, menu, menuLabel, menuRequest = 0, menuX = -1, menuY = -1, keyboard = "none", onDrag, onToggleMaximize, onMenu, onAction, onKey }: WindowFrameProps) {
   const custom = frame !== "native";
+  const boundary = useWindowBoundary();
   const events = useRef({ onDrag, onToggleMaximize, onMenu, onKey });
   events.current = { onDrag, onToggleMaximize, onMenu, onKey };
   const full = useRef(fullScreen);
@@ -187,7 +189,7 @@ export function WindowFrame({ frame = "native", resizable, fullScreen = false, m
     <>
       <div ref={anchorRef} className={s.anchor} aria-hidden="true" />
       {open ? (
-        <Popover triggerRef={anchorRef} isOpen onOpenChange={setOpen} placement="bottom start" className={menuStyles.popover} aria-label={menuLabel} data-floating-child="">
+        <Popover triggerRef={anchorRef} isOpen onOpenChange={setOpen} placement="bottom start" className={menuStyles.popover} {...boundary} aria-label={menuLabel} data-floating-child="" data-surface="popover">
           <CommandMenu
             label={menuLabel}
             sections={menu}
