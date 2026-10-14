@@ -5,7 +5,7 @@
  * GitHub CLI), so nothing touches the network or a real account. Every program the app starts is
  * logged, and no token may appear in any of their arguments.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { quit } from "./helpers.ts";

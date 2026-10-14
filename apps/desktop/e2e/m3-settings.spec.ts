@@ -7,7 +7,7 @@
  * lose exactly what it says. GitHub is the in-memory fake, its repositories local bare remotes, and
  * the sign-in helpers fakes on PATH: nothing touches the network or a real account.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures.ts";
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

@@ -5,7 +5,7 @@
  * note shows its new links without losing what was just typed, and a refused batch puts the links
  * back together with the move.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit, tempDirs } from "./helpers.ts";

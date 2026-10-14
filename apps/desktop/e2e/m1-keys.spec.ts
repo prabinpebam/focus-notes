@@ -2,7 +2,7 @@
  * WP-1.8 journeys: the cheat sheet (KEY-05) and the Basic and Writer editor keys (KEY-02), run by
  * the editor's keymap from the command registry.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";

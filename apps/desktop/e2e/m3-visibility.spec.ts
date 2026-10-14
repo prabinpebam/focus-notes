@@ -5,7 +5,7 @@
  * notes adds an exported bundle as private notes, as ordinary commits (FRE-10). Local bare remotes
  * only: nothing touches the network.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures.ts";
 import { existsSync, readdirSync, readFileSync, truncateSync, writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

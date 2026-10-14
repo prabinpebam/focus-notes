@@ -1,5 +1,5 @@
 /** Journeys for the M0 review fixes: data safety on failed saves, and no navigation (review issues 3, 4). */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { chmodSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, tempDirs } from "./helpers.ts";

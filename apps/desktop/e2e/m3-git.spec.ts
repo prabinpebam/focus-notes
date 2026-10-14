@@ -4,7 +4,7 @@
  * commits and pushes, private first and then the pointer; quitting commits and pushes; 60 s with
  * no typing does too (shortened here); and a push that fails shows the problem, nothing else.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { readFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit } from "./helpers.ts";

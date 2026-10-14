@@ -2,7 +2,7 @@
  * The M0 demo script as a journey test (Implementation plan → M0). It runs on every build from
  * now on, so this stage's promise can't regress (PD-DOD-03).
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { axeViolations } from "./axe.ts";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";

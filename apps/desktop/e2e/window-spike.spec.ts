@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { _electron as electron } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";

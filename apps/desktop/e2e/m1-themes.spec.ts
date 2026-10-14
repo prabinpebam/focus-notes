@@ -3,7 +3,7 @@
  * fonts (THM-03), the contrast and forced-colors modes and UI scale (DSY-03, A11Y-02), and every
  * theme free of axe violations, including color contrast.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs, windowBox } from "./helpers.ts";

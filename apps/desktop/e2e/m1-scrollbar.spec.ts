@@ -1,5 +1,5 @@
 /** UI-09 (D-73): the minimal scrollbar hides at rest, shows while scrolling or near its edge, and never shifts the layout. */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";

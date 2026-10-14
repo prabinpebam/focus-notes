@@ -6,7 +6,7 @@
  * 320 CSS px (1.4.10), no motion with reduced motion (2.3.3), and system colors in forced colors.
  * The screen-reader passes are scripted in Performance and quality → Accessibility audit.
  */
-import { test, expect, type ElectronApplication, type Page } from "@playwright/test";
+import { test, expect, type ElectronApplication, type Page } from "./fixtures.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit, tempDirs, windowBox, type Launched } from "./helpers.ts";

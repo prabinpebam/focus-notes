@@ -1,4 +1,4 @@
-import { test, expect, type ElectronApplication, type Page } from "@playwright/test";
+import { test, expect, type ElectronApplication, type Page } from "./fixtures.ts";
 import { launch, quit, setWindowActive, tempDirs, windowBox, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 

@@ -4,7 +4,7 @@
  * The screen-reader passes (NVDA on Windows, VoiceOver on macOS) are scripted for the owner in
  * Performance and quality → Accessibility audit, since they can't be automated.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures.ts";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit, tempDirs, type Launched } from "./helpers.ts";

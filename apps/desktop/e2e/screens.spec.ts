@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test } from "./fixtures.ts";
 import { launch, quit, tempDirs } from "./helpers.ts";
 
 // Captures the canvas in light and dark for visual review and baselines.

@@ -4,7 +4,7 @@
  * drag and drop and with Move to… (FIL-03), and see every change at once, before it's written,
  * put back with a reason when it's refused (PRF-09).
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures.ts";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";

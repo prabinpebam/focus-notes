@@ -2,7 +2,7 @@
  * WP-1.1 journeys: blocks, Markdown shortcuts, and undo in the real app (EDT-02, EDT-04,
  * EDT-05, EDT-08), saved as clean Markdown (EDT-01).
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";

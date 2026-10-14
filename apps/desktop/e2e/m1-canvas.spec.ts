@@ -2,7 +2,7 @@
  * UI-10 and UI-11 (D-78): the trigger's place, hover, and morph into the toolbar; the reading zone
  * between 25% and 65% of the window; and the default type (Roboto Mono, 16 px, 2.5× headings).
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures.ts";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs, windowBox } from "./helpers.ts";

@@ -3,7 +3,7 @@
  * keyboard and screen-reader complete (UI-05), the default actions and the ⋯ menu (UI-07), all
  * command-driven (DSY-12). UI-10 is in m1-canvas, DSY-06 in packages/views/test.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures.ts";
 import { readdirSync } from "node:fs";
 import { launch, quit, tempDirs } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";

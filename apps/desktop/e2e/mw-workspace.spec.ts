@@ -3,7 +3,7 @@
  * in time (PRF-11), file names follow titles (FIL-07), and a newer workspace format is never
  * written (DST-05).
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit, tempDirs } from "./helpers.ts";

@@ -6,7 +6,7 @@
  * (FIL-10); and a delete's toast offers Undo. Keyboard and pointer, axe clean. Local bare remotes
  * only: nothing touches the network.
  */
-import { test, expect, type Locator, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "./fixtures.ts";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit } from "./helpers.ts";

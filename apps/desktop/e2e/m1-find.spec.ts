@@ -2,7 +2,7 @@
  * WP-1.10 journeys: find in the note (FND-01) and replace (FND-02), keyboard-complete, announced,
  * and with focus returning to the note on the current match.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";

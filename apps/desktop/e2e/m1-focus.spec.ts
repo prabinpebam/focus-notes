@@ -1,7 +1,7 @@
 /**
  * WP-1.7 journeys: focus mode (FOC-01 to FOC-06) and the typing budget (PRF-01).
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures.ts";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit, tempDirs } from "./helpers.ts";

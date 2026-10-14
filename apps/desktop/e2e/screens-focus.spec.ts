@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test } from "./fixtures.ts";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";

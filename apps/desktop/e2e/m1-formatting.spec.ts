@@ -2,7 +2,7 @@
  * WP-1.2 journeys: inline formatting (EDT-03), the contextual formatting toolbar (EDT-12), the link
  * editor and hover card (EDT-13), and formatting UI that shows only in context (UI-06).
  */
-import { test, expect, type Locator, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit, tempDirs, type Launched } from "./helpers.ts";

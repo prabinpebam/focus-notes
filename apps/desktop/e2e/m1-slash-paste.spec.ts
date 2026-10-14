@@ -1,7 +1,7 @@
 /**
  * WP-1.3 journeys: the slash menu (EDT-06), paste (EDT-09), and sanitizing under Trusted Types (SEC-02).
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit, tempDirs, type Launched } from "./helpers.ts";

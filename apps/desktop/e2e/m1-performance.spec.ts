@@ -3,7 +3,7 @@
  * disk within 1 s of the last keystroke, with serializing and saving off the typing path. The same
  * measures run in `pnpm bench` against the budgets file.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit, tempDirs } from "./helpers.ts";

@@ -8,7 +8,7 @@
  * Definition of done's suite runs 1,000), and FOCUS_NOTES_FAULT_SEED replays a failing run. Each
  * round continues from what the previous crash left, so recovery itself is crashed into too.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

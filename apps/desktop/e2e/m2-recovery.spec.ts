@@ -4,7 +4,7 @@
  * was closed keeps both versions; a clean quit leaves no journal behind; and Close without saving
  * means the text isn't brought back.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.ts";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";

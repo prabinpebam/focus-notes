@@ -4,7 +4,7 @@
  * (TBL-03), formatting in cells (TBL-05), GFM on disk (TBL-06), spreadsheet paste (TBL-10), and
  * cell ranges (TBL-11), with focus mode, find, accessibility, and the typing budget.
  */
-import { test, expect, type Locator, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit, tempDirs, type Launched } from "./helpers.ts";

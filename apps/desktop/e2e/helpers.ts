@@ -23,6 +23,28 @@ export const caret = {
   selectToLineStart: mac ? "Meta+Shift+ArrowLeft" : "Shift+Home",
 } as const;
 
+/** Every app a journey started, by its main process's ID: one a journey leaves running is killed after it (`fixtures.ts`). */
+const running = new Map<ElectronApplication, number>();
+
+/**
+ * Kills every app the journey left running: a journey that fails stops before it quits, and an app
+ * asked to quit can rightly refuse (unsaved text, D-92), which would hold up the worker's teardown
+ * and leave the app running into the next journeys. On Windows `app.process()` is a launcher, so the
+ * main process's own ID is killed too.
+ */
+export function killLeftovers(): void {
+  for (const [app, pid] of running) {
+    running.delete(app);
+    for (const id of [pid, (() => { try { return app.process().pid; } catch { return undefined; } })()]) {
+      try {
+        if (id) process.kill(id, "SIGKILL");
+      } catch {
+        // Already gone.
+      }
+    }
+  }
+}
+
 export const tempDirs = () => ({
   userData: mkdtempSync(join(tmpdir(), "fn-user-")),
   docs: mkdtempSync(join(tmpdir(), "fn-docs-")),
@@ -77,6 +99,7 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
     env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_WARMUP: "0", FOCUS_NOTES_E2E: "1", ...extraEnv },
   });
   app.process().stdout?.on("data", (d: Buffer) => log.push(...d.toString().split("\n").filter(Boolean)));
+  running.set(app, await app.evaluate(() => process.pid));
   // Every window the journey uses; one that closes at once (a page that went away) needs none.
   app.on("window", (p) => void emulateFocus(p).catch(() => {}));
   const page = await app.firstWindow();
