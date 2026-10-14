@@ -35,7 +35,8 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
   }
   const app = await electron.launch({
     args: [join(import.meta.dirname, "..", "out", "main", "main.mjs")],
-    env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", ...extraEnv },
+    // The warm-up after start is off in journeys, so their timing and focus stay the same (PRF-10).
+    env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_WARMUP: "0", ...extraEnv },
   });
   app.process().stdout?.on("data", (d: Buffer) => log.push(...d.toString().split("\n").filter(Boolean)));
   const page = await app.firstWindow();

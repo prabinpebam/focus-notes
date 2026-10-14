@@ -10,6 +10,8 @@ const darkQuery = globalThis.matchMedia?.("(prefers-color-scheme: dark)");
 
 contextBridge.exposeInMainWorld("focusNotes", {
   platform,
+  // Off only when the main process says so: end-to-end tests (PRF-10).
+  warmUp: params.get("warmup") !== "0",
   readNote: (path: string) => ipcRenderer.invoke("note:read", path),
   writeNote: (path: string, content: string) => ipcRenderer.invoke("note:write", path, content),
   chooseNote: () => ipcRenderer.invoke("note:choose"),
@@ -49,6 +51,11 @@ contextBridge.exposeInMainWorld("focusNotes", {
       ipcRenderer.on("workspace:changed", handler);
       return () => ipcRenderer.removeListener("workspace:changed", handler);
     },
+  },
+  // The recovery journal (QLT-03): unsaved text, and what this launch restored after a crash.
+  journal: {
+    write: (path: string, text: string) => ipcRenderer.invoke("journal:write", path, text),
+    restored: () => ipcRenderer.invoke("journal:restored"),
   },
   // Synced settings in the private repository (PRV-03): the main process checks what it writes.
   settings: {

@@ -24,15 +24,17 @@ const ticks = (s: string) => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]!);
 
 describe("PRV-02: the desktop's data folder", () => {
   it("names every file and folder the app keeps there, each with what removes it", () => {
-    expect(Object.values(DATA_FILES).sort()).toEqual(["account.json", "first-run.json", "setup.json", "state.json", "workspace.json"]);
+    expect(Object.values(DATA_FILES).sort()).toEqual(["account.json", "first-run.json", "recovery-journal.jsonl", "setup.json", "state.json", "workspace.json"]);
     const paths = DESKTOP_DATA.map((i) => i.path.split("#")[0]);
     for (const f of [...Object.values(DATA_FILES), ...Object.values(CHROMIUM_FOLDERS).map((c) => `${c}/`)]) expect(paths).toContain(f);
     for (const i of DESKTOP_DATA) expect(i.removedBy.length).toBeGreaterThan(0);
     expect(RECENT_STATE_KEYS).toEqual(["lastNotePath"]);
   });
   it("signing out and removing the workspace delete the recent items, setup progress, and the first run's choices; only removing forgets the folder", () => {
-    expect(filesRemovedBy("signOut").sort()).toEqual(["first-run.json", "setup.json"]);
-    expect(filesRemovedBy("removeWorkspace").sort()).toEqual(["first-run.json", "setup.json", "workspace.json"]);
+    expect(filesRemovedBy("signOut").sort()).toEqual(["first-run.json", "recovery-journal.jsonl", "setup.json"]);
+    expect(filesRemovedBy("removeWorkspace").sort()).toEqual(["first-run.json", "recovery-journal.jsonl", "setup.json", "workspace.json"]);
+    // QLT-03: unsaved text in the journal is the person's writing, so it goes with the workspace, and on a clean quit.
+    expect(filesRemovedBy("quit")).toEqual(["recovery-journal.jsonl"]);
     expect(filesRemovedBy("runSetupAgain")).toEqual(["setup.json"]);
     expect(filesRemovedBy("signIn")).toEqual(["account.json"]);
     for (const e of ["signOut", "removeWorkspace"] as const) expect(DESKTOP_DATA.find((i) => i.id === "recentItems")!.removedBy).toContain(e);
@@ -41,7 +43,7 @@ describe("PRV-02: the desktop's data folder", () => {
   it("is the inventory in Security and privacy: every data-folder file there is in the code, and every one in the code is there", () => {
     const rows = docRows();
     const inDataFolder = rows.filter((r) => /app's data folder/.test(r[1] ?? ""));
-    const documented = new Set(inDataFolder.flatMap((r) => ticks(r[1]!).filter((t) => /\.json$|\/$/.test(t) || (LOCK_FILES as readonly string[]).includes(t))));
+    const documented = new Set(inDataFolder.flatMap((r) => ticks(r[1]!).filter((t) => /\.jsonl?$|\/$/.test(t) || (LOCK_FILES as readonly string[]).includes(t))));
     const code = new Set([...Object.values(DATA_FILES), ...Object.values(CHROMIUM_FOLDERS).map((c) => `${c}/`), ...LOCK_FILES]);
     expect([...documented].sort()).toEqual([...code].sort());
     // No row is listed twice.
