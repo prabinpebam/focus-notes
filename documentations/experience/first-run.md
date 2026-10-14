@@ -114,7 +114,7 @@ People who started in the browser already have their instance (copied from the t
 
 After cloning, the app checks out the private submodule on `main` instead of a detached HEAD and sets `push.recurseSubmodules=check`. It leaves `submodule.recurse` off and syncs `private/` as its own repository, so a recursive pull can't reset it to the older publishing pointer (D-47, [Repository and publishing](../architecture/repository-and-publishing.html#working-with-the-submodule)).
 
-**Writing starts before setup finishes.** As soon as the workspace is on this computer and linked (*Download to this computer* and *Link them* are done), [Continue] opens it, even if a later step failed: a failed *Turn on GitHub Pages* or *Save to GitHub* can be retried from the checklist, and saving pushes anyway. The first deploy (which can take a few minutes) carries on on GitHub. A failure there never blocks writing. The workspace opens only once linking is done, so setup's own commits never meet the app's (D-101). **Settings → Workspace**, to follow and retry these later, comes with the settings.
+**Writing starts before setup finishes.** As soon as the workspace is on this computer and linked (*Download to this computer* and *Link them* are done), [Continue] opens it, even if a later step failed: a failed *Turn on GitHub Pages* or *Save to GitHub* can be retried from the checklist, and saving pushes anyway. The first deploy (which can take a few minutes) carries on on GitHub. A failure there never blocks writing. The workspace opens only once linking is done, so setup's own commits never meet the app's (D-101). Later, **Settings → Workspace** → *Run setup again* walks these steps again and repeats only what's missing (D-103).
 
 Opening a workspace (made, cloned, or chosen) keeps its folder in the app's data folder, moves the file watcher and Git to it, and starts the window again in it at *Make it yours* ([Desktop and Git → The workspace folder](../architecture/desktop-and-git.md#the-workspace-folder)).
 
@@ -122,13 +122,14 @@ Opening a workspace (made, cloned, or chosen) keeps its folder in the app's data
 
 Notes written in a browser stay there until they're moved (FRE-10). In the browser, ⋯ → **Export my notes…** saves them as one file. On the desktop, **Ready**'s *Bring notes from a browser…*, or ⋯ → **Import notes…** later, opens that file, lists its notes, and adds them to the instance: **private** by default, or public if chosen, as ordinary commits. A name that's taken keeps both versions. The browser keeps its copies until they're deleted there ([Desktop and Git → Importing notes from a browser](../architecture/desktop-and-git.md#importing-notes-from-a-browser)).
 
-## Account settings later
+## Account settings
 
-Until the settings exist, the account pill's menu has *Sync now* and *Sign out of GitHub* ([Main UI](main-ui.html), D-101). Later, **Settings → Account** (desktop) shows the signed-in account, which helper holds the credential, and the workspace, with:
+The account pill's menu has *Sync now* and *Sign out of GitHub* ([Main UI](main-ui.html), D-101). **Settings → Account** and **→ Workspace** (desktop, [Secondary views → Settings](../design/views/secondary-views.md#settings), D-103) show the signed-in account, which helper holds the credential, and the workspace, with:
 
-- **Switch account:** signs in again through the same helper.
-- **Sign out:** removes the GitHub credential from Git's helper (`git credential reject`, or `gh auth logout`), which signs out the terminal too. The screen says so, and links to GitHub's settings to fully revoke a token or authorization.
-- **Run setup again:** repeats any step, for example to move the workspace or turn on publishing later.
+- **Switch account:** signs in again through the same helper, on this first run's *Sign in to GitHub* card shown alone. The current credential leaves Git's helper first, and comes back if no one signs in.
+- **Sign out:** asks first. By default it removes the GitHub credential from Git's helper (`git credential reject`, or `gh auth logout`), which signs out the terminal too; *Keep it for the terminal* signs out only Focus Notes, and *Sign in…* then offers *Continue as @login*. Either way the recent note and setup's progress are deleted ([Data inventory](../architecture/security-and-privacy.md#data-inventory)). The screen links to GitHub's settings to fully revoke a token or authorization.
+- **Run setup again:** forgets setup's progress and walks these steps from Git, so any step can be repeated, for example to turn on publishing later. <kbd>Esc</kbd> on the Git step goes back to writing.
+- **Remove this workspace from this computer:** only once everything in both repositories is on GitHub (otherwise it offers *Sync now* first); it deletes the local clone and what the data inventory lists, and the first run starts again at *Your workspace*.
 
 ## Acceptance checks
 
