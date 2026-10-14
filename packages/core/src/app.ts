@@ -22,6 +22,7 @@ import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, t
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
+import { registerMenuBar } from "./menu-bar.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -169,6 +170,8 @@ export interface App {
   onEditorAction(listener: (id: string, args?: Record<string, unknown>) => void): () => void;
   /** Resolves when no wait is running or showing (PRF-08), so tests never race a save. */
   idle(): Promise<void>;
+  /** The page saw a key press that could be a menu bar item's key (DSK-05): that press isn't run again by the menu. */
+  keySeen(): void;
 }
 
 export const resolvedScheme = (s: AppState): Scheme =>
@@ -750,6 +753,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     ...(options.clock ? { now: options.clock.now } : {}),
   });
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
+  const menuBar = registerMenuBar({ store, commands, catalog, platform: bridge.platform, ...(bridge.nativeWindow ? { bridge: bridge.nativeWindow } : {}) });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
   // keeps them on this device as they are now, and deletes the file.
   commands.register({
@@ -977,6 +981,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   return {
     store, commands, viewModels, messages: catalog, bridge, flush,
     idle: () => tracker.idle(),
+    keySeen: () => menuBar.keySeen(),
     onEditorAction(listener) {
       editorListeners.add(listener);
       return () => editorListeners.delete(listener);
@@ -1021,6 +1026,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       sync.start();
       setup.start();
       await browser.start();
+      // Once every command is registered and the first note is open: the menu bar never delays the caret (PRF-02).
+      menuBar.start();
     },
   };
 }

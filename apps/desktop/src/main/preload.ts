@@ -141,6 +141,14 @@ contextBridge.exposeInMainWorld("focusNotes", {
         key: (key: string, fine: boolean) => ipcRenderer.send("window:key", key, fine),
       }
     : undefined,
+  // macOS's native window (DSK-02, DSK-05): the menu bar the renderer builds from its commands, and the traffic lights.
+  nativeWindow: platform === "macos"
+    ? {
+        setMenu: (model: unknown) => ipcRenderer.send("menu:set", model),
+        onMenuCommand: listen("menu:run"),
+        revealControls: (show: boolean) => ipcRenderer.send("window:reveal", show === true),
+      }
+    : undefined,
   onFlushRequest: (listener: () => Promise<boolean>) => {
     ipcRenderer.on("app:flush", () => {
       void listener()

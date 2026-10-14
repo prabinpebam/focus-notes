@@ -11,6 +11,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { SNAP_LAYOUTS, type ResizeEdge, type SnapLayout, type SnapZone } from "./window-geometry.ts";
+import type { MenuBarBridge } from "./menu-bar.ts";
 
 /** What the shell reports about the window it manages for the app. */
 export interface WindowReport {
@@ -47,6 +48,15 @@ export interface WindowBridge {
   keyboard(mode: "move" | "size"): void;
   /** A key while Move or Size runs, when the page has it (the shell usually catches them first). Ctrl moves by one pixel. */
   key(key: string, fine: boolean): void;
+}
+
+/**
+ * macOS's native window (D-14): the menu bar (DSK-05), and the traffic lights, which the shell shows
+ * while the pointer is on the title bar band or the window isn't active (DSK-02).
+ */
+export interface NativeWindowBridge extends MenuBarBridge {
+  /** Shows the traffic lights for a reason only the page knows: the toolbar is open. */
+  revealControls(show: boolean): void;
 }
 
 export interface WindowState extends Omit<WindowReport, "frame"> {
@@ -169,6 +179,17 @@ export function registerWindow({ store, commands, viewModels, catalog, bridge }:
 
   return {
     start() {
+      // macOS: the traffic lights show while the toolbar is open, as the app-drawn controls do.
+      const native = bridge.nativeWindow;
+      if (native) {
+        let shown = false;
+        const follow = () => {
+          if (store.state.ui.toolbarOpen === shown) return;
+          shown = store.state.ui.toolbarOpen;
+          native.revealControls(shown);
+        };
+        store.subscribe(follow);
+      }
       if (!win) return;
       win.onState(apply);
       win.onMenu(() => openMenu());

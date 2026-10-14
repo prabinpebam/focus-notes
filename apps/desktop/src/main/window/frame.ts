@@ -1,11 +1,13 @@
 /**
- * The main window's frame (D-14): on macOS the system's own window, which only needs its place
- * remembered; on Windows and Linux the transparent, app-built window (`CustomWindow`), with its
- * snap preview, its keys (Alt+Space and the system menu's Move and Size), and its IPC.
+ * The main window's frame (D-14): on macOS the system's own window, with its place remembered and its
+ * traffic lights shown only on the title bar band (`MacTitleBar`, DSK-02); on Windows and Linux the
+ * transparent, app-built window (`CustomWindow`), with its snap preview, its keys (Alt+Space and the
+ * system menu's Move and Size), and its IPC.
  */
 import { BrowserWindow, ipcMain, screen, type BrowserWindowConstructorOptions, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { SNAP_ZONES, WINDOW_METRICS, type DisplayInfo, type Rect, type SnapZone } from "@focus-notes/core/window-geometry";
 import { CustomWindow, type PreviewLike } from "./custom-window.ts";
+import { MacTitleBar } from "./mac-title-bar.ts";
 import { initialPlacement, readWindowMemory, writeWindowMemory, type Placement } from "./placement.ts";
 
 export type FrameKind = "custom" | "opaque";
@@ -59,6 +61,7 @@ export class AppWindowFrame {
   readonly #file: string;
   readonly #placement: Placement;
   #custom: CustomWindow | undefined;
+  #mac: MacTitleBar | undefined;
   #accent = "#2f6fed";
 
   constructor(kind: FrameKind | undefined, memoryFile: string) {
@@ -70,7 +73,8 @@ export class AppWindowFrame {
   /** Where the window opens, and how it's drawn. */
   options(): BrowserWindowConstructorOptions {
     const p = this.#placement;
-    if (!this.kind) return { ...p.restore, titleBarStyle: "hiddenInset" };
+    // macOS: the traffic lights sit in the 44 px title bar band (DSK-02).
+    if (!this.kind) return { ...p.restore, titleBarStyle: "hiddenInset", trafficLightPosition: { x: WINDOW_METRICS.trafficLightX, y: WINDOW_METRICS.trafficLightY } };
     const outer = CustomWindow.outer(p, this.kind);
     return {
       ...outer,
@@ -100,6 +104,16 @@ export class AppWindowFrame {
       if (p.mode === "maximized") win.maximize();
       if (p.fullScreen) win.once("ready-to-show", () => win.setFullScreen(true));
       win.on("close", () => writeWindowMemory(this.#file, { version: 1, bounds: win.getNormalBounds(), ...(win.isMaximized() ? { maximized: true } : {}), ...(win.isFullScreen() ? { fullScreen: true } : {}) }));
+      // Its traffic lights, hidden at rest (DD-DSK-04).
+      const mac = new MacTitleBar(win, () => screen.getCursorScreenPoint());
+      this.#mac = mac;
+      const update = () => mac.update();
+      win.on("show", update);
+      win.on("focus", update);
+      win.on("blur", update);
+      win.on("enter-full-screen", update);
+      win.on("leave-full-screen", update);
+      win.on("closed", () => mac.stop());
       return;
     }
     const preview = snapPreview();
@@ -150,6 +164,7 @@ export class AppWindowFrame {
   /** Once the caret is ready: the click-through margin's pointer checks never compete with the first frame (PRF-02). */
   ready(): void {
     this.#custom?.watchPointer();
+    this.#mac?.watchPointer();
   }
 
   /** F11 in the app-built window, which keeps full screen itself. False where the system does it (macOS). */
@@ -165,6 +180,10 @@ export class AppWindowFrame {
         if (fromApp(e) && this.#custom) fn(...args);
       });
     ipcMain.handle("window:state", (e) => (fromApp(e) ? this.#custom?.report() : undefined));
+    // macOS: the traffic lights show while the toolbar is open, as the app-drawn controls do.
+    ipcMain.on("window:reveal", (e, show: unknown) => {
+      if (fromApp(e)) this.#mac?.reveal(show === true);
+    });
     on("window:minimize", () => this.#custom?.minimize());
     on("window:maximize", () => this.#custom?.maximize());
     on("window:restore", () => this.#custom?.restore());
