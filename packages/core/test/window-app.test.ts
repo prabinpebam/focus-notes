@@ -36,6 +36,7 @@ function setup(report: Partial<WindowReport> = {}) {
     snap: (z) => calls.push(`snap ${z}`),
     drag: (phase, kind, x, y, shift) => calls.push(`drag ${phase} ${kind} ${x},${y}${shift ? " shift" : ""}`),
     keyboard: (mode) => calls.push(`keyboard ${mode}`),
+    key: (k, fine) => calls.push(`key ${k}${fine ? " fine" : ""}`),
   };
   const app = createApp({ ...base("windows"), window: win }, en);
   return { app, calls, emit: (r: Partial<WindowReport>) => listener?.({ ...first, ...r }), menuKey: () => menu?.() };
@@ -94,11 +95,20 @@ describe("DSK-03, DSK-08: window commands on Windows and Linux", () => {
     expect(vm(app)).toMatchObject({ menuRequest: 2, menuX: 120, menuY: 30 });
   });
   it("starts the system menu's keyboard Move and Size", async () => {
-    const { app, calls } = setup();
+    const { app, calls, emit } = setup();
     await app.start();
     await app.commands.run("window.move");
     await app.commands.run("window.size");
     expect(calls).toEqual(["keyboard move", "keyboard size"]);
+    // The shell says when it's running; keys the page gets meanwhile go to it.
+    await app.commands.run("window.key", { key: "ArrowLeft" });
+    emit({ keyboard: "size" });
+    expect(vm(app).keyboard).toBe("size");
+    await app.commands.run("window.key", { key: "ArrowLeft", fine: true });
+    await app.commands.run("window.key", { key: "a" });
+    emit({});
+    expect(vm(app).keyboard).toBe("none");
+    expect(calls.slice(2)).toEqual(["key ArrowLeft fine"]);
   });
   it("lists the Snap Layouts zones with names, thirds only when the display is wide", async () => {
     const { app, emit } = setup();

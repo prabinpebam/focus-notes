@@ -2500,6 +2500,159 @@
       ]
     },
     {
+      "type": "WindowControls",
+      "tier": "primitive",
+      "description": "The app-drawn minimize, maximize or restore, and close buttons of the Windows and Linux window (D-15), shown on hover, keyboard focus, or while the window isn't active, with the Snap Layouts picker on the maximize button.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "minimizeLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "maximizeLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "restoreLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "closeLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "layoutsLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The Snap Layouts picker's name."
+        },
+        "maximized": {
+          "kind": "boolean",
+          "bindable": true,
+          "description": "Shows Restore instead of Maximize."
+        },
+        "reveal": {
+          "kind": "boolean",
+          "bindable": true,
+          "description": "Shows the buttons without hover: the window isn't active, or the toolbar is open."
+        },
+        "layouts": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true,
+          "description": "The picker's layouts (halves, thirds, quarters, maximize) and their zones, each a command."
+        }
+      },
+      "events": {
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "hidden",
+        "shown",
+        "buttonHover",
+        "closeHover",
+        "focusVisible",
+        "layoutsOpen",
+        "zoneHover"
+      ],
+      "tokens": "cmp.windowControls.*",
+      "a11y": {
+        "pattern": "group of buttons; the picker is a non-modal dialog of zone buttons",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "shown",
+          "props": {
+            "label": {
+              "t": "window.controls"
+            },
+            "minimizeLabel": {
+              "t": "window.minimize"
+            },
+            "maximizeLabel": {
+              "t": "window.maximize"
+            },
+            "restoreLabel": {
+              "t": "window.restore"
+            },
+            "closeLabel": {
+              "t": "window.close"
+            },
+            "layoutsLabel": {
+              "t": "window.layouts"
+            },
+            "layouts": {
+              "get": "vm.gallery.snapLayouts"
+            },
+            "reveal": true
+          }
+        },
+        {
+          "name": "maximized",
+          "props": {
+            "label": {
+              "t": "window.controls"
+            },
+            "minimizeLabel": {
+              "t": "window.minimize"
+            },
+            "maximizeLabel": {
+              "t": "window.maximize"
+            },
+            "restoreLabel": {
+              "t": "window.restore"
+            },
+            "closeLabel": {
+              "t": "window.close"
+            },
+            "layoutsLabel": {
+              "t": "window.layouts"
+            },
+            "layouts": {
+              "get": "vm.gallery.snapLayouts"
+            },
+            "reveal": true,
+            "maximized": true
+          }
+        },
+        {
+          "name": "hidden until hover",
+          "props": {
+            "label": {
+              "t": "window.controls"
+            },
+            "minimizeLabel": {
+              "t": "window.minimize"
+            },
+            "maximizeLabel": {
+              "t": "window.maximize"
+            },
+            "restoreLabel": {
+              "t": "window.restore"
+            },
+            "closeLabel": {
+              "t": "window.close"
+            },
+            "layoutsLabel": {
+              "t": "window.layouts"
+            },
+            "layouts": {
+              "get": "vm.gallery.snapLayouts"
+            }
+          }
+        }
+      ]
+    },
+    {
       "type": "Stack",
       "tier": "layout",
       "description": "Children in a column, spaced by a space token.",
@@ -3807,6 +3960,7 @@
           "kind": "enum",
           "values": [
             "topBand",
+            "topEnd",
             "belowTopBand",
             "fill",
             "center",
@@ -4015,6 +4169,32 @@
           "name": "position topBand",
           "props": {
             "position": "topBand"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "position topEnd",
+          "props": {
+            "position": "topEnd"
           },
           "children": [
             {
@@ -4483,6 +4663,16 @@
           "min": 0.9,
           "max": 1.5,
           "description": "Interface scale (DSY-03); note text is unaffected."
+        },
+        "frame": {
+          "kind": "enum",
+          "values": [
+            "native",
+            "rounded",
+            "square"
+          ],
+          "default": "native",
+          "description": "The app-built window's shape on Windows and Linux (D-14): rounded with the drawn shadow, or square (maximized, snapped, full screen)."
         }
       },
       "events": {},
@@ -4861,6 +5051,42 @@
             "scheme": "light",
             "platform": "windows",
             "uiScale": 1.5
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "frame rounded",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "frame": "rounded"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "frame square",
+          "props": {
+            "scheme": "dark",
+            "platform": "linux",
+            "frame": "square"
           },
           "children": [
             {
@@ -5656,6 +5882,102 @@
       "a11y": {
         "pattern": "buttons with menus (menu button)",
         "name": "columnLabel"
+      },
+      "fixtures": []
+    },
+    {
+      "type": "WindowFrame",
+      "tier": "host",
+      "description": "The app-built window's behavior on Windows and Linux (D-14): moving by the title bar band (with double-click to maximize and right-click for the system menu), the resize handles on every edge and corner, and the app-drawn system menu. The window's shape and shadow are AppRoot's `frame`.",
+      "props": {
+        "frame": {
+          "kind": "enum",
+          "values": [
+            "native",
+            "rounded",
+            "square"
+          ],
+          "default": "native",
+          "description": "Native draws nothing. Rounded puts the handles in the shadow margin; square puts them just inside the edges."
+        },
+        "resizable": {
+          "kind": "boolean",
+          "bindable": true,
+          "description": "Shows the resize handles: not while maximized or full screen."
+        },
+        "menu": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true,
+          "description": "The system menu: Restore, Move, Size, Minimize, Maximize, Snap left, Snap right, Close."
+        },
+        "menuLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "menuRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value opens the system menu."
+        },
+        "menuX": {
+          "kind": "number",
+          "description": "Where the menu opens, in the window; -1 opens it under the band's start (Alt+Space)."
+        },
+        "menuY": {
+          "kind": "number"
+        },
+        "keyboard": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "move",
+            "size"
+          ],
+          "default": "none",
+          "description": "The system menu's Move or Size is running: the arrow keys, Enter, and Esc go to it."
+        }
+      },
+      "events": {
+        "drag": {
+          "payload": {
+            "phase": "text",
+            "kind": "text",
+            "x": "number",
+            "y": "number",
+            "shift": "boolean"
+          }
+        },
+        "toggleMaximize": {},
+        "menu": {
+          "payload": {
+            "x": "number",
+            "y": "number"
+          }
+        },
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "key": {
+          "payload": {
+            "key": "text",
+            "fine": "boolean"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "moving",
+        "resizing",
+        "menuOpen"
+      ],
+      "tokens": "cmp.windowFrame.*",
+      "a11y": {
+        "pattern": "menu (the system menu); the handles are pointer-only, with Move and Size in the menu for the keyboard",
+        "name": "menuLabel"
       },
       "fixtures": []
     },

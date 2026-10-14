@@ -24,6 +24,8 @@ export interface WindowReport {
   active: boolean;
   /** The Snap Layouts picker's layouts on the window's display: thirds only on wide ones. */
   layouts: SnapLayout[];
+  /** The system menu's Move or Size is running: the arrow keys move or resize the window. */
+  keyboard?: "move" | "size";
 }
 
 /** The desktop shell's window, on Windows and Linux. Coordinates are screen DIP. */
@@ -43,6 +45,8 @@ export interface WindowBridge {
   drag(phase: "start" | "move" | "end", kind: "move" | ResizeEdge, x: number, y: number, shift: boolean): void;
   /** The system menu's Move or Size: the arrow keys move or resize the window until Enter or Esc. */
   keyboard(mode: "move" | "size"): void;
+  /** A key while Move or Size runs, when the page has it (the shell usually catches them first). Ctrl moves by one pixel. */
+  key(key: string, fine: boolean): void;
 }
 
 export interface WindowState extends Omit<WindowReport, "frame"> {
@@ -82,7 +86,10 @@ export function registerWindow({ store, commands, viewModels, catalog, bridge }:
   const win = bridge.window;
   const custom = (s: AppState) => Boolean(win) && s.window.frame !== "native";
   const free = (s: AppState) => custom(s) && !s.window.fullScreen;
-  const apply = (r: WindowReport) => store.update((s) => ({ ...s, window: { ...s.window, ...r } }));
+  const apply = (r: WindowReport) => store.update((s) => {
+    const { keyboard: _k, ...rest } = s.window;
+    return { ...s, window: { ...rest, ...r } };
+  });
   const openMenu = (x = -1, y = -1) => store.update((s) => ({ ...s, window: { ...s.window, menu: s.window.menu + 1, menuAt: { x, y } } }));
 
   const cmd = (id: string, enabled: (s: AppState) => boolean, run: (args: Record<string, unknown>) => void) =>
@@ -94,6 +101,9 @@ export function registerWindow({ store, commands, viewModels, catalog, bridge }:
   cmd("window.close", custom, () => win?.close());
   cmd("window.move", (s) => free(s) && !s.window.maximized, () => win?.keyboard("move"));
   cmd("window.size", (s) => free(s) && !s.window.maximized, () => win?.keyboard("size"));
+  cmd("window.key", (s) => custom(s) && Boolean(s.window.keyboard), ({ key, fine }) => {
+    if (typeof key === "string" && /^(Arrow(Left|Right|Up|Down)|Enter|Escape)$/.test(key)) win?.key(key, fine === true);
+  });
   cmd("window.systemMenu", custom, ({ x, y }) => openMenu(typeof x === "number" ? Math.round(x) : -1, typeof y === "number" ? Math.round(y) : -1));
   for (const [zone, id] of Object.entries(ZONE_COMMANDS)) if (zone !== "maximize") cmd(id, free, () => win?.snap(zone as SnapZone));
   // The window frame's own moves and resizes, as it handles them (Window management → Move, Resize).
@@ -128,6 +138,7 @@ export function registerWindow({ store, commands, viewModels, catalog, bridge }:
         menuRequest: { type: "number" },
         menuX: { type: "number" },
         menuY: { type: "number" },
+        keyboard: { type: "string", enum: ["none", "move", "size"], description: "The system menu's Move or Size is taking the arrow keys." },
         layouts: SECTIONS,
       },
     },
@@ -144,6 +155,7 @@ export function registerWindow({ store, commands, viewModels, catalog, bridge }:
         menuRequest: w.menu,
         menuX: w.menuAt.x,
         menuY: w.menuAt.y,
+        keyboard: w.keyboard ?? "none",
         layouts: w.layouts.map((l) => ({
           id: l,
           label: catalog.format(`window.layout.${l}`),

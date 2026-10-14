@@ -1,0 +1,10 @@
+{ "cmp": { "windowFrame": {
+  "margin": { "$type": "dimension", "$value": "{window.margin}" },
+  "edge": { "$type": "dimension", "$value": "{window.resizeEdge}" },
+  "corner": { "$type": "dimension", "$value": "{window.resizeCorner}" },
+  "layer": { "$type": "number", "$value": "{layer.tooltip}" },
+  "snapPreview": { "$type": "color", "$value": "{color.accent}" },
+  "snapPreviewOpacity": { "$type": "number", "$value": "{window.snapPreviewOpacity}" },
+  "menuInset": { "$type": "dimension", "$value": "{space.s}" },
+  "menuTop": { "$type": "dimension", "$value": "{window.titleBarHeight}" }
+} } }
