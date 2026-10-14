@@ -28,6 +28,8 @@ export const DATA_FILES = {
   setup: "setup.json",
   /** Only that Focus Notes was signed out while Git kept its sign-in. No login or token. */
   account: "account.json",
+  /** The window's size, position, and maximized or snapped state (DSK-03, D-104). */
+  window: "window.json",
 } as const;
 export type DataFile = (typeof DATA_FILES)[keyof typeof DATA_FILES];
 
@@ -62,6 +64,7 @@ export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "firstRunIdentity", path: DATA_FILES.firstRun, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "setupProgress", path: DATA_FILES.setup, removedBy: ["runSetupAgain", "signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "signedOut", path: DATA_FILES.account, removedBy: ["signIn", "deleteDataFolder"] },
+  { id: "windowPlace", path: DATA_FILES.window, removedBy: ["deleteDataFolder"] },
   { id: "chromium", path: `${CHROMIUM_FOLDERS.session}/`, removedBy: ["deleteDataFolder"] },
   { id: "codeCache", path: `${CHROMIUM_FOLDERS.codeCache}/`, removedBy: ["deleteDataFolder"] },
   ...LOCK_FILES.map((f) => ({ id: `lock.${f}`, path: f, removedBy: ["quit"] as const })),

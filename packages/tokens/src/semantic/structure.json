@@ -417,6 +417,50 @@
     "titleBarHeight": {
       "$type": "dimension",
       "$value": "{ref.size.44}"
+    },
+    "margin": {
+      "$type": "dimension",
+      "$value": "{ref.size.16}"
+    },
+    "resizeEdge": {
+      "$type": "dimension",
+      "$value": "{ref.size.6}"
+    },
+    "resizeCorner": {
+      "$type": "dimension",
+      "$value": "{ref.size.14}"
+    },
+    "minWidth": {
+      "$type": "dimension",
+      "$value": "{ref.size.480}"
+    },
+    "minHeight": {
+      "$type": "dimension",
+      "$value": "{ref.size.360}"
+    },
+    "buttonWidth": {
+      "$type": "dimension",
+      "$value": "{ref.size.46}"
+    },
+    "buttonHeight": {
+      "$type": "dimension",
+      "$value": "{ref.size.32}"
+    },
+    "layoutWidth": {
+      "$type": "dimension",
+      "$value": "{ref.size.56}"
+    },
+    "layoutHeight": {
+      "$type": "dimension",
+      "$value": "{ref.size.36}"
+    },
+    "snapLayoutsDelay": {
+      "$type": "duration",
+      "$value": "{ref.duration.400}"
+    },
+    "snapPreviewOpacity": {
+      "$type": "number",
+      "$value": 0.3
     }
   },
   "wait": {

@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { FloatingContext } from "../Layer/floating.ts";
 import { anchors, place, companion, COMPANION_ATTR, COMPANION_LEAVE_EVENT, inCompanion, type AnchorName } from "../../behaviors/anchors.ts";
 import type { Space } from "../Stack/Stack.tsx";
+import { fixedBox } from "../../behaviors/frame.ts";
 import * as s from "./Positioner.css.ts";
 
 export interface PositionerProps {
@@ -43,7 +44,10 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       const px = (v: string) => parseFloat(cs.getPropertyValue(name(v))) || 0;
       const box = el.getBoundingClientRect();
       const touch = globalThis.matchMedia?.("(pointer: coarse)").matches ?? false;
-      const p = place(a, box, { width: innerWidth, height: innerHeight }, { gap: px(s.gapVar), edge: px(s.edgeVar), topBand: px(s.bandVar) }, touch ? "below" : placement, align);
+      // Inside the drawn window (D-14), the anchor's viewport coordinates move into the window's.
+      const o = fixedBox(el);
+      const at = { top: a.top - o.top, bottom: a.bottom - o.top, left: a.left - o.left, right: a.right - o.left };
+      const p = place(at, box, { width: o.width, height: o.height }, { gap: px(s.gapVar), edge: px(s.edgeVar), topBand: px(s.bandVar) }, touch ? "below" : placement, align);
       el.style.setProperty(name(s.xVar), `${Math.round(p.x)}px`);
       el.style.setProperty(name(s.yVar), `${Math.round(p.y)}px`);
       el.dataset.placed = p.side;

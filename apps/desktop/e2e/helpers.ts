@@ -50,8 +50,19 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
   return { app, page, log, readyMs };
 }
 
+/**
+ * The drawn window's box in the page (D-14): on Windows and Linux the window sits in a transparent
+ * shadow margin, so positions "from the window's edge" are measured from it. The viewport elsewhere.
+ */
+export const windowBox = (page: Page): Promise<{ left: number; top: number; width: number; height: number }> =>
+  page.evaluate(() => {
+    const r = document.querySelector("[data-app-root]")?.getBoundingClientRect();
+    return r ? { left: r.left, top: r.top, width: r.width, height: r.height } : { left: 0, top: 0, width: innerWidth, height: innerHeight };
+  });
+
 /** Closes through the window's close path so pending saves are flushed (QLT-03). */
 export async function quit(l: Launched): Promise<void> {
-  await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close());
+  // The note's window, not the snap preview (which has no page).
+  await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))?.close());
   await l.app.waitForEvent("close", { timeout: 10_000 }).catch(() => {});
 }

@@ -271,6 +271,9 @@
           "$ref": "#/$defs/c_VersionPane"
         },
         {
+          "$ref": "#/$defs/c_WindowControls"
+        },
+        {
           "$ref": "#/$defs/c_Stack"
         },
         {
@@ -305,6 +308,9 @@
         },
         {
           "$ref": "#/$defs/c_TableControls"
+        },
+        {
+          "$ref": "#/$defs/c_WindowFrame"
         },
         {
           "$ref": "#/$defs/c_Trigger"
@@ -3266,6 +3272,174 @@
         }
       }
     },
+    "c_WindowControls": {
+      "type": "object",
+      "description": "The app-drawn minimize, maximize or restore, and close buttons of the Windows and Linux window (D-15), shown on hover, keyboard focus, or while the window isn't active, with the Snap Layouts picker on the maximize button.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "WindowControls"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "minimizeLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "maximizeLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "restoreLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "closeLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "layoutsLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "maximized": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "reveal": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "layouts": {
+              "$ref": "#/$defs/read"
+            }
+          },
+          "required": [
+            "label",
+            "minimizeLabel",
+            "maximizeLabel",
+            "restoreLabel",
+            "closeLabel",
+            "layoutsLabel",
+            "layouts"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
     "c_Stack": {
       "type": "object",
       "description": "Children in a column, spaced by a space token.",
@@ -3752,6 +3926,7 @@
                 {
                   "enum": [
                     "topBand",
+                    "topEnd",
                     "belowTopBand",
                     "fill",
                     "center",
@@ -4056,6 +4231,23 @@
                 },
                 {
                   "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "frame": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "native",
+                    "rounded",
+                    "square"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
                 }
               ]
             }
@@ -4953,6 +5145,165 @@
               "$ref": "#/$defs/actions"
             },
             "close": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_WindowFrame": {
+      "type": "object",
+      "description": "The app-built window's behavior on Windows and Linux (D-14): moving by the title bar band (with double-click to maximize and right-click for the system menu), the resize handles on every edge and corner, and the app-drawn system menu. The window's shape and shadow are AppRoot's `frame`.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "WindowFrame"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "frame": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "native",
+                    "rounded",
+                    "square"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "resizable": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "menu": {
+              "$ref": "#/$defs/read"
+            },
+            "menuLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "menuRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "menuX": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "menuY": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "keyboard": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "move",
+                    "size"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "menu",
+            "menuLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "drag": {
+              "$ref": "#/$defs/actions"
+            },
+            "toggleMaximize": {
+              "$ref": "#/$defs/actions"
+            },
+            "menu": {
+              "$ref": "#/$defs/actions"
+            },
+            "action": {
+              "$ref": "#/$defs/actions"
+            },
+            "key": {
               "$ref": "#/$defs/actions"
             }
           }

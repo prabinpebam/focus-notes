@@ -3,6 +3,7 @@ import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
 import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
 import type { ConflictChoiceKind, DeletedNote } from "./history.ts";
+import type { WindowBridge } from "./window-app.ts";
 
 /**
  * Services a shell provides. The Electron preload implements this as `window.focusNotes`;
@@ -55,6 +56,8 @@ export interface PlatformBridge {
   firstRun?: FirstRunBridge;
   /** Synced settings in the private repository (PRV-03, D-46). Absent where there can't be one (the browser). */
   settings?: SettingsBridge;
+  /** The window the app draws and manages itself on Windows and Linux (DSK-03, D-14). Absent on macOS and in the browser. */
+  window?: WindowBridge;
 }
 
 /**

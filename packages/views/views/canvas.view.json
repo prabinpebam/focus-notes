@@ -23,7 +23,8 @@
     "vm.setup",
     "vm.import",
     "vm.conflict",
-    "vm.deleted"
+    "vm.deleted",
+    "vm.window"
   ],
   "focus": "editor",
   "root": {
@@ -49,9 +50,99 @@
       },
       "uiScale": {
         "get": "vm.app.uiScale"
+      },
+      "frame": {
+        "get": "vm.window.frame"
       }
     },
     "children": [
+      {
+        "type": "WindowFrame",
+        "when": {
+          "get": "vm.window.custom"
+        },
+        "props": {
+          "frame": {
+            "get": "vm.window.frame"
+          },
+          "resizable": {
+            "get": "vm.window.resizable"
+          },
+          "menu": {
+            "get": "vm.window.menu"
+          },
+          "menuLabel": {
+            "t": "window.menu"
+          },
+          "menuRequest": {
+            "get": "vm.window.menuRequest"
+          },
+          "menuX": {
+            "get": "vm.window.menuX"
+          },
+          "menuY": {
+            "get": "vm.window.menuY"
+          },
+          "keyboard": {
+            "get": "vm.window.keyboard"
+          }
+        },
+        "on": {
+          "drag": {
+            "run": "window.drag",
+            "args": {
+              "phase": {
+                "get": "event.phase"
+              },
+              "kind": {
+                "get": "event.kind"
+              },
+              "x": {
+                "get": "event.x"
+              },
+              "y": {
+                "get": "event.y"
+              },
+              "shift": {
+                "get": "event.shift"
+              }
+            }
+          },
+          "toggleMaximize": {
+            "run": "window.toggleMaximize"
+          },
+          "menu": {
+            "run": "window.systemMenu",
+            "args": {
+              "x": {
+                "get": "event.x"
+              },
+              "y": {
+                "get": "event.y"
+              }
+            }
+          },
+          "action": {
+            "run": "command.run",
+            "args": {
+              "id": {
+                "get": "event.id"
+              }
+            }
+          },
+          "key": {
+            "run": "window.key",
+            "args": {
+              "key": {
+                "get": "event.key"
+              },
+              "fine": {
+                "get": "event.fine"
+              }
+            }
+          }
+        }
+      },
       {
         "type": "Layer",
         "props": {
@@ -104,6 +195,65 @@
                   }
                 }
               },
+              "action": {
+                "run": "command.run",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "Layer",
+        "id": "windowControls",
+        "when": {
+          "get": "vm.window.custom"
+        },
+        "props": {
+          "layer": "trigger",
+          "position": "topEnd",
+          "landmark": "region",
+          "label": {
+            "t": "window.region"
+          }
+        },
+        "children": [
+          {
+            "type": "WindowControls",
+            "props": {
+              "label": {
+                "t": "window.controls"
+              },
+              "minimizeLabel": {
+                "t": "window.minimize"
+              },
+              "maximizeLabel": {
+                "t": "window.maximize"
+              },
+              "restoreLabel": {
+                "t": "window.restore"
+              },
+              "closeLabel": {
+                "t": "window.close"
+              },
+              "layoutsLabel": {
+                "t": "window.layouts"
+              },
+              "maximized": {
+                "get": "vm.window.maximized"
+              },
+              "reveal": {
+                "get": "vm.window.reveal"
+              },
+              "layouts": {
+                "get": "vm.window.layouts"
+              }
+            },
+            "on": {
               "action": {
                 "run": "command.run",
                 "args": {

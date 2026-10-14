@@ -16,6 +16,7 @@ export const contract = defineContract({
     theme: { kind: "enum", values: THEMES, description: "The theme to show (THM-08). Defaults to Paper or Ink." },
     contentFont: { kind: "enum", values: FONTS, default: "mono", description: "The content font (THM-03)." },
     uiScale: { kind: "number", min: 0.9, max: 1.5, description: "Interface scale (DSY-03); note text is unaffected." },
+    frame: { kind: "enum", values: ["native", "rounded", "square"], default: "native", description: "The app-built window's shape on Windows and Linux (D-14): rounded with the drawn shadow, or square (maximized, snapped, full screen)." },
   },
   events: {},
   slots: { default: { accepts: "any" } },
@@ -30,5 +31,7 @@ export const contract = defineContract({
     ...THEMES.map((theme) => ({ name: `theme ${theme}`, props: { scheme: theme === "paper" || theme.endsWith("-light") || theme === "sepia" ? "light" : "dark", theme, platform: "windows" }, children: sample })),
     ...FONTS.map((contentFont) => ({ name: `contentFont ${contentFont}`, props: { scheme: "light", platform: "windows", contentFont }, children: sample })),
     { name: "uiScale 1.5", props: { scheme: "light", platform: "windows", uiScale: 1.5 }, children: sample },
+    { name: "frame rounded", props: { scheme: "light", platform: "windows", frame: "rounded" }, children: sample },
+    { name: "frame square", props: { scheme: "dark", platform: "linux", frame: "square" }, children: sample },
   ],
 });

@@ -6,7 +6,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs } from "./helpers.ts";
+import { launch, quit, tempDirs, windowBox } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -54,9 +54,11 @@ test("light and dark themes are chosen separately, switch with the appearance, a
   await page.keyboard.press(`${mod}+Shift+L`);
   await expect.poll(() => attr(page, "data-theme")).toBe("dusk");
   expect(await canvas(page)).toBe("rgb(29, 24, 20)");
-  // The window behind the page matches, so resizing never flashes another color.
+  // The window behind the page matches, so resizing never flashes another color: on macOS the
+  // canvas; on Windows and Linux the window stays transparent around the window the page draws (D-14).
   // It's set over IPC after the theme changes, so it may land a moment later.
-  await expect.poll(async () => (await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.getBackgroundColor())).toLowerCase()).toBe("#1d1814");
+  await expect.poll(async () => (await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.getBackgroundColor())).toLowerCase())
+    .toMatch(process.platform === "darwin" ? /^#1d1814$/ : /^#0{6}(00)?$/);
   await quit(l);
 
   const state = JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8"));
@@ -141,13 +143,16 @@ test("200% zoom at a 640 px window reflows to 320 CSS px without sideways scroll
   const l = await launch(tempDirs());
   const { page } = l;
   await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
-  await l.app.evaluate(({ BrowserWindow }) => {
+  // The window itself is 640 px: on Windows and Linux it's drawn inside a 16 px margin (32 px at 200%).
+  const margin = process.platform === "darwin" ? 0 : 32;
+  await l.app.evaluate(({ BrowserWindow }, m) => {
     const w = BrowserWindow.getAllWindows()[0]!;
     w.setMinimumSize(320, 320);
-    w.setContentSize(640, 700);
+    w.setContentSize(640 + 2 * m, 700 + 2 * m);
     w.webContents.setZoomFactor(2);
-  });
-  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(320);
+  }, margin);
+  await expect.poll(async () => Math.round((await windowBox(page)).width)).toBe(320);
+  const win = await windowBox(page);
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(await overflow()).toBeLessThanOrEqual(0);
   // The toolbar and the cheat sheet fit too.
@@ -155,13 +160,13 @@ test("200% zoom at a 640 px window reflows to 320 CSS px without sideways scroll
   const toolbar = page.getByRole("toolbar", { name: "Toolbar" });
   await expect(toolbar).toBeVisible();
   // Once the morph settles, the toolbar fits inside 320 px.
-  await expect.poll(async () => { const b = (await toolbar.boundingBox())!; return b.x >= 0 && b.x + b.width <= 320; }).toBe(true);
+  await expect.poll(async () => { const b = (await toolbar.boundingBox())!; return b.x >= win.left && b.x + b.width <= win.left + 320; }).toBe(true);
   await page.keyboard.press("Escape");
   await page.keyboard.press(`${mod}+Shift+Slash`);
   const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
   await expect(sheet).toBeVisible();
   const s = (await sheet.boundingBox())!;
-  expect(s.x + s.width).toBeLessThanOrEqual(320);
+  expect(s.x + s.width).toBeLessThanOrEqual(win.left + 320);
   expect(await overflow()).toBeLessThanOrEqual(0);
   await page.screenshot({ path: "../../test-results/screens/reflow-320.png" });
   await quit(l);

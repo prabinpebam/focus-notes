@@ -29,9 +29,12 @@ import { applyLocalIdentity, checkWorkspace, cloneWorkspace } from "./first-run/
 import type { ConflictChoice, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
+import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
-const customWindow = process.argv.includes("--custom-window") && platform !== "macos";
+/** Windows and Linux: the transparent window with app-built window management; macOS: the system's (D-14). */
+const frameKind = frameKindFor(platform, process.argv, process.env);
+let windowFrame: AppWindowFrame | undefined;
 
 if (process.env.FOCUS_NOTES_USER_DATA) app.setPath("userData", resolve(process.env.FOCUS_NOTES_USER_DATA));
 /** A file in the app's data folder: only those the data inventory names (PRV-02). */
@@ -811,7 +814,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("history:deleted", async () => (isWorkspace() ? (await gitOpening)?.deleted() ?? [] : []));
   handle("history:restore", (ids, folder) => restoreNotes(ids, folder));
+  windowFrame?.registerIpc(fromApp, win);
   handle("window:fullScreen", async () => {
+    if (windowFrame?.toggleFullScreen()) return;
     const w = win();
     if (w) w.setFullScreen(!w.isFullScreen());
   });
@@ -843,6 +848,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const ms = Math.round(process.uptime() * 1000);
     process.stdout.write(`[focus-notes] ready-ms=${ms}\n`);
     startGit();
+    windowFrame?.ready();
   });
 }
 
@@ -857,21 +863,16 @@ function hardenSession(): void {
   session.defaultSession.setPermissionCheckHandler(() => false);
 }
 
-function createWindow(): BrowserWindow {
+function createWindow(frame: AppWindowFrame): BrowserWindow {
   const dark = nativeTheme.shouldUseDarkColors;
   const win = new BrowserWindow({
-    width: 1100,
-    height: 780,
     minWidth: 360,
     minHeight: 320,
     show: false,
     title: "Focus Notes",
-    backgroundColor: customWindow ? "#00000000" : dark ? "#1a1a1c" : "#fbfaf7",
-    ...(platform === "macos"
-      ? { titleBarStyle: "hiddenInset" as const }
-      : customWindow
-        ? { frame: false, transparent: true, roundedCorners: true }
-        : { titleBarStyle: "hidden" as const, titleBarOverlay: { color: "#00000000", symbolColor: dark ? "#eceae6" : "#1f1d1a", height: 44 } }),
+    backgroundColor: dark ? "#1a1a1c" : "#fbfaf7",
+    // Where it was last time, and how it's drawn on this platform.
+    ...frame.options(),
     webPreferences: {
       preload: join(import.meta.dirname, "preload.cjs"),
       contextIsolation: true,
@@ -883,6 +884,7 @@ function createWindow(): BrowserWindow {
     },
   });
   win.once("ready-to-show", () => win.show());
+  frame.attach(win);
   // ⇧⌘V pastes plain text on macOS too (Keyboard shortcuts → Everyday editing), where Chromium binds
   // only ⌥⇧⌘V. The renderer still sees Shift held, so the editor pastes the text as it is (EDT-09).
   if (platform === "macos") {
@@ -890,7 +892,7 @@ function createWindow(): BrowserWindow {
       if (input.type === "keyDown" && input.meta && input.shift && !input.alt && !input.control && input.key.toLowerCase() === "v") win.webContents.pasteAndMatchStyle();
     });
   }
-  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform } });
+  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, ...frame.query() } });
 
   // Ask the renderer to save pending changes before the window closes (QLT-03). If saving fails,
   // the person decides; text is never discarded silently.
@@ -937,11 +939,12 @@ function createWindow(): BrowserWindow {
     const d = nativeTheme.shouldUseDarkColors;
     win.webContents.send("scheme:changed", d ? "dark" : "light");
   });
-  ipcMain.on("window:scheme", (e, scheme: unknown, canvas: unknown) => {
+  ipcMain.on("window:scheme", (e, scheme: unknown, canvas: unknown, accent: unknown) => {
     if (!fromApp(e) || (scheme !== "light" && scheme !== "dark")) return;
-    if (platform !== "macos" && !customWindow) win.setTitleBarOverlay?.({ color: "#00000000", symbolColor: scheme === "dark" ? "#eceae6" : "#1f1d1a", height: 44 });
     const color = typeof canvas === "string" && /^#[0-9a-f]{6}$/i.test(canvas) ? canvas : scheme === "dark" ? "#1a1a1c" : "#fbfaf7";
-    win.setBackgroundColor(customWindow ? "#00000000" : color);
+    // The transparent window stays transparent: the page draws the window's canvas inside its shadow margin.
+    win.setBackgroundColor(frame.kind === "custom" ? "#00000000" : color);
+    frame.setAccent(accent);
   });
   return win;
 }
@@ -1024,13 +1027,14 @@ app.whenReady().then(async () => {
   chosenHome = readChosenHome();
   readFirstRun();
   hardenSession();
+  windowFrame = new AppWindowFrame(frameKind, join(app.getPath("userData"), DATA_FILES.window));
   registerIpc(() => mainWindow);
   await stat(notesHome()).catch(() => mkdir(notesHome(), { recursive: true }));
-  mainWindow = createWindow();
+  mainWindow = createWindow(windowFrame);
   watcher = watchWorkspace(() => mainWindow);
   // Never on the path of the first frame: Git answers when it answers (PRF-07).
   // Git opens once the caret is ready, or after 3 s if the note never becomes ready.
-  setTimeout(() => startGit(), 3000);
+  setTimeout(() => (startGit(), windowFrame?.ready()), 3000);
   // Fetching when the window becomes active (Desktop and Git → Save and sync, step 5).
   mainWindow.on("focus", () => gitSync?.focused());
   app.on("second-instance", () => {

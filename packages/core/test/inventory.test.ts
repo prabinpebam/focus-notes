@@ -24,7 +24,7 @@ const ticks = (s: string) => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]!);
 
 describe("PRV-02: the desktop's data folder", () => {
   it("names every file and folder the app keeps there, each with what removes it", () => {
-    expect(Object.values(DATA_FILES).sort()).toEqual(["account.json", "first-run.json", "setup.json", "state.json", "workspace.json"]);
+    expect(Object.values(DATA_FILES).sort()).toEqual(["account.json", "first-run.json", "setup.json", "state.json", "window.json", "workspace.json"]);
     const paths = DESKTOP_DATA.map((i) => i.path.split("#")[0]);
     for (const f of [...Object.values(DATA_FILES), ...Object.values(CHROMIUM_FOLDERS).map((c) => `${c}/`)]) expect(paths).toContain(f);
     for (const i of DESKTOP_DATA) expect(i.removedBy.length).toBeGreaterThan(0);
