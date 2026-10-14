@@ -34,7 +34,7 @@ export const tile = style({
     "&:hover": { backgroundColor: t.hover },
     // The theme showing: its tile's background, never a border or a side bar (D-111).
     '&[aria-selected="true"]': { backgroundColor: t.selected, color: t.selectedText },
-// Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
+    // Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
     "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
   },
 });

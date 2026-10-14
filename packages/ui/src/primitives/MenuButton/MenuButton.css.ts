@@ -41,7 +41,7 @@ export const item = style({
   selectors: {
     "&[data-focused]": { backgroundColor: t.hover },
     "&[data-pressed]": { backgroundColor: t.pressed },
-// Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
+    // Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
     "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: `calc(-1 * ${t.focusWidth})` },
     "&[data-disabled]": { opacity: t.disabledOpacity },
   },
@@ -77,7 +77,9 @@ export const text = style({
   selectors: {
     "&[data-hovered], &[aria-expanded=\"true\"]": { backgroundColor: t.hover },
     "&[data-pressed]": { backgroundColor: t.pressed },
-    "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.pillFocusWidth, outlineColor: t.focusRing },
+    // Inset, as a menu item's: the text and select variants line up with a panel's content edge, where
+    // a scrolling body would cut a ring drawn outside them (D-111).
+    "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.pillFocusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.pillFocusWidth})` },
   },
 });
 

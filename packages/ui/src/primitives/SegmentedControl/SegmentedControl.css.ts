@@ -48,7 +48,7 @@ export const segment = style({
   selectors: {
     "&[data-hovered]": { backgroundColor: t.hover },
     "&[data-selected]": { backgroundColor: t.selected, color: t.selectedText, boxShadow: t.shadow },
-// Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
+    // Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
     "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
   },
 });

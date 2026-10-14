@@ -31,7 +31,7 @@ const tabBase = style({
   outline: "none",
   selectors: {
     "&[data-hovered]": { backgroundColor: t.hover },
-// Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
+    // Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
     "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
   },
 });
@@ -46,7 +46,8 @@ export const tab = {
     selectors: { "&[data-selected]": { color: t.selectedText, backgroundColor: t.selected, forcedColorAdjust: "none" } },
   }]),
 };
-const panelBase = style({ outline: "none", selectors: { "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing } } });
+// The panel fills its scrolling container: its ring is inset so the container never cuts it (D-111).
+const panelBase = style({ outline: "none", selectors: { "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` } } });
 export const panel = {
   horizontal: panelBase,
   // Its first line (a heading trimmed to its capitals) centered on the first tab's label (D-111).
