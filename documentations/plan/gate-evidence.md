@@ -185,3 +185,6 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 | Firefox and WebKit web journeys | MW | Small | Add projects to `apps/web/playwright.config.ts` |
 | KEY-03: the Power layer | M4 | WP-4.4 | Build WP-4.4 |
 | 1,000-round fault run | M3 | A run | Run before the gate, record the seed and result |
+| Linux journeys (not blocking, D-112) fail: `m1-tables.spec.ts` "TBL-08, TBL-11 by keyboard", `vq-flows.spec.ts` and `vq-surfaces.spec.ts` (D-111) | M1 | Unknown | Read the traces in run 38615626147; check them on Windows once the bench passes |
+
+The work branch's CI (run 38617507089 on `99c6960`, and 38615626147 before it) passes the repository checks, typecheck, and every unit test on Windows, macOS and Linux, and fails the Windows bench the same way as `main`. On macOS (not blocking), run 38617507089 failed one unit test, `watch-tree.test.ts` "reports a note that's deleted and written again" (PRF-11), which passed on macOS in 38615626147: a file-watching flake to look at during the platform parity pass.
