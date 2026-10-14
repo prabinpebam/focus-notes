@@ -10,7 +10,7 @@ import { test, expect, type Locator, type Page } from "./fixtures.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit, tempDirs, type Launched } from "./helpers.ts";
-import { dialogNeverShrinks, hoverTooltips, settled, visualProblems, type VisualOptions } from "./visual-quality.ts";
+import { dialogNeverShrinks, hoverTooltips, listRings, settled, visualProblems, type VisualOptions } from "./visual-quality.ts";
 
 const mac = process.platform === "darwin";
 const mod = mac ? "Meta" : "Control";
@@ -199,20 +199,20 @@ const SURFACES: Surface[] = [
     await page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: /^Theme…/ }).click();
     await expect(page.getByRole("complementary", { name: "Theme" })).toBeVisible();
   }, tooltips: (page) => page.getByRole("complementary", { name: "Theme" }).getByRole("button") },
-  { name: "theme manager reading", open: async (page) => {
+  // Each of the theme manager's tabs, chosen from the keyboard so the tab shows its focus ring.
+  ...(["Themes", "Reading", "Edit colors"] as const).map((tab) => ({ name: `theme manager ${tab.toLowerCase()}`, open: async (page: Page) => {
     await moreMenu(page);
     await page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: /^Theme…/ }).click();
     const sheet = page.getByRole("complementary", { name: "Theme" });
-    await sheet.getByRole("tab", { name: "Reading" }).click();
-    await expect(sheet.getByRole("slider").first()).toBeVisible();
-  } },
-  { name: "theme manager colors", open: async (page) => {
-    await moreMenu(page);
-    await page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: /^Theme…/ }).click();
-    const sheet = page.getByRole("complementary", { name: "Theme" });
-    await sheet.getByRole("tab", { name: "Edit colors" }).click();
-    await expect(sheet.getByRole("tab", { name: "Edit colors" })).toHaveAttribute("aria-selected", "true");
-  } },
+    await expect(sheet).toBeVisible();
+    await sheet.getByRole("tab").first().focus();
+    const target = sheet.getByRole("tab", { name: tab });
+    for (let i = 0; i < 4 && !(await target.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("ArrowRight");
+    if ((await target.getAttribute("aria-selected")) !== "true") await page.keyboard.press("Enter");
+    await expect(sheet.getByRole("tab", { name: tab })).toHaveAttribute("aria-selected", "true");
+    await expect(sheet.getByRole("tab", { name: tab })).toBeFocused();
+    if (tab === "Reading") await expect(sheet.getByRole("slider").first()).toBeVisible();
+  } })),
   { name: "settings account", open: (page) => settings(page, "Account"), tooltips: (page) => page.getByRole("dialog", { name: "Settings" }).getByRole("button", { name: "Close" }) },
   { name: "settings workspace", open: (page) => settings(page, "Workspace") },
   { name: "settings appearance", open: (page) => settings(page, "Appearance") },
@@ -309,6 +309,9 @@ for (const { name: sizeName, size } of SIZES) {
         await page.screenshot({ path: `../../test-results/screens/vq-${sizeName}-${want}-${s.name.replace(/\s+/g, "-")}.png` });
         for (const p of await visualProblems(page, s.opts)) problems.push(`${s.name}: ${p}`);
         if (s.tooltips) await hoverTooltips(page, s.tooltips(page), s.name, problems, `../../test-results/screens/vq-${sizeName}-${want}-${s.name.replace(/\s+/g, "-")}-tooltip.png`);
+        // The focus ring at both ends of whatever list holds focus (D-111); last, as it moves focus
+        // (and so the selection) the tooltips were checked with.
+        problems.push(...await listRings(page, s.name));
         await reset(page).catch((e: Error) => { throw new Error(`Closing ${s.name}: ${e.message}`); });
       }
       // Dialogs never shrink while open (D-111): tabs that hold less, and filters that leave less.

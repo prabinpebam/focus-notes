@@ -252,9 +252,6 @@
     "categoryPanelMin": {
       "$value": "{ref.size.240}"
     },
-    "dialogMaxHeight": {
-      "$value": "{ref.size.85vh}"
-    },
     "dialogMinHeight": {
       "$value": "{ref.size.400}",
       "$description": "A dialog's least height, less where the window is too short for it with its 24 px inset (D-111)."

@@ -56,10 +56,6 @@
           "$value": "{layout.dialogXL}"
         }
       },
-      "maxHeight": {
-        "$type": "dimension",
-        "$value": "{layout.dialogMaxHeight}"
-      },
       "minHeight": {
         "$type": "dimension",
         "$value": "{layout.dialogMinHeight}"
