@@ -1,4 +1,5 @@
 import type { Platform } from "./commands.ts";
+import { lastWord } from "./scan.ts";
 import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
 import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
@@ -233,7 +234,7 @@ export const OP_ERROR_CODES = ["notFound", "taken", "readOnly", "invalid", "into
 export type OpErrorCode = (typeof OP_ERROR_CODES)[number];
 /** The code at the end of a shell's error message (Electron prefixes its own words), or "failed". */
 export function opErrorCode(error: unknown): OpErrorCode {
-  const word = /(\w+)\s*$/.exec(error instanceof Error ? error.message : String(error))?.[1];
+  const word = lastWord(error instanceof Error ? error.message : String(error));
   return (OP_ERROR_CODES as readonly string[]).includes(word ?? "") ? (word as OpErrorCode) : "failed";
 }
 

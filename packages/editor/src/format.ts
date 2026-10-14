@@ -37,7 +37,8 @@ export interface FormatInfo {
 
 /** A web address that opens in the browser and can be pasted as a link: http, https, or mailto. */
 export const isWebLink = (href: string): boolean => {
-  if (!/^(https?:\/\/[^\s/?#]+|mailto:[^\s@]+@)\S*$/i.test(href)) return false;
+  // No spaces, then the scheme: two linear checks rather than one pattern that backtracks.
+  if (/\s/.test(href) || !/^(?:https?:\/\/[^/?#]|mailto:[^@]+@)/i.test(href)) return false;
   try {
     return Boolean(new URL(href));
   } catch {

@@ -5,6 +5,7 @@
  * (FIL-12, DD-FB-04). No Git, no file system: the callers bring what they read.
  */
 import { fileStemForTitle } from "./text.ts";
+import { parseCommitHead } from "./scan.ts";
 import { dirOf, joinPath, retitle, stemOf, titleOfMarkdown, uniqueName } from "./workspace.ts";
 
 /** How long Recently deleted looks back (Files → Deleting and restoring). */
@@ -32,11 +33,11 @@ export function parseDeletedLog(out: string): DeletedEntry[] {
   for (const record of out.split("\x01")) {
     if (!record.trim()) continue;
     const [head = "", ...names] = record.split("\0");
-    const m = /^([0-9a-f]{7,64}) (\d+) ?(.*)$/.exec(head.trim());
+    const m = parseCommitHead(head.trim());
     if (!m) continue;
     for (const raw of names) {
       const path = raw.replace(/^\n+/, "");
-      if (path) entries.push({ commit: m[1]!, at: Number(m[2]) * 1000, subject: m[3] ?? "", path });
+      if (path) entries.push({ commit: m[0], at: Number(m[1]) * 1000, subject: m[2], path });
     }
   }
   return entries;
