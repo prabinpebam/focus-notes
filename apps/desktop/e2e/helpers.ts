@@ -33,15 +33,26 @@ const running = new Map<ElectronApplication, number>();
  * main process's own ID is killed too.
  */
 export function killLeftovers(): void {
+  const kill = (id: number | undefined) => {
+    try {
+      if (id) process.kill(id, "SIGKILL");
+    } catch {
+      // Already gone.
+    }
+  };
   for (const [app, pid] of running) {
     running.delete(app);
-    for (const id of [pid, (() => { try { return app.process().pid; } catch { return undefined; } })()]) {
-      try {
-        if (id) process.kill(id, "SIGKILL");
-      } catch {
-        // Already gone.
-      }
+    let launcher: number | undefined;
+    try {
+      launcher = app.process().pid;
+    } catch {
+      // Closed already.
     }
+    // On macOS and Linux Playwright starts the app in a process group of its own: the renderer, GPU,
+    // and zygote processes go with it, or they'd hold its output open and the worker would wait on them.
+    if (process.platform !== "win32" && launcher) kill(-launcher);
+    kill(pid);
+    kill(launcher);
   }
 }
 
