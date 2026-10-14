@@ -22,6 +22,8 @@ import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, t
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
+import { registerFindAll, FIND_ALL_CLOSED, type FindAllState, type FindJump } from "./find-all-app.ts";
+import type { SearchService } from "./search/feed.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -52,6 +54,8 @@ export interface AppState {
     shortcuts: { open: boolean; query: string; layer: CheatSheetLayer; platform: CheatSheetPlatform };
     /** The find bar (IA-CMP-FINDBAR, FND-01, FND-02). */
     find: FindState;
+    /** Find in all notes (FND-04): its side sheet, query, and results. */
+    findAll: FindAllState;
     /** Toasts, newest last; at most two show (IA-CMP-TOAST). */
     toasts: ToastState[];
     /** Bumped to move focus to the newest toast's action (F6). */
@@ -180,7 +184,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
       { submenu: "theme.dark", label: "menu.darkTheme", items: BUILT_IN_THEMES.filter((t) => t.kind === "dark").map((t) => `theme.dark.${t.id}`) },
     ],
   },
-  { id: "edit", label: "menu.edit", items: ["find.open", "find.replace"] },
+  { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
   { id: "note", label: "menu.note", items: ["note.share"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "shortcuts.open", "help.open"] },
@@ -209,6 +213,8 @@ export interface App {
   onEditorAction(listener: (id: string, args?: Record<string, unknown>) => void): () => void;
   /** Resolves when no wait is running or showing (PRF-08), so tests never race a save. */
   idle(): Promise<void>;
+  /** The search index, once the shell has started it (WP-4.1): Find in all notes asks it. */
+  useSearch(service: SearchService): void;
 }
 
 export const resolvedScheme = (s: AppState): Scheme =>
@@ -232,7 +238,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, settings: SETTINGS_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, settings: SETTINGS_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -670,6 +676,26 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     id: "find.prefill", title: "command.find.setQuery",
     run: ({ value }) => { if (typeof value === "string" && value) setFind({ query: value }); },
   });
+  // A match opened from Find in all notes (FND-04): the find bar opens on the note's matches with
+  // that one selected and the find field focused, once the note's editor is ready.
+  let pendingJump: { path: string; jump: FindJump } | undefined;
+  const showJump = (jump: FindJump) => {
+    const f = store.state.ui.find;
+    setFind({
+      open: true, query: jump.query, caseSensitive: jump.caseSensitive, wholeWord: jump.wholeWord, regex: jump.regex,
+      notice: "", focusFind: f.focusFind + 1,
+    });
+    remember();
+    store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
+    editorAction("find.select", { ...jump });
+  };
+  const openMatch = async (path: string, jump: FindJump) => {
+    if (store.state.note.path === path && store.state.note.status === "ready") return showJump(jump);
+    pendingJump = { path, jump };
+    await load(path);
+    // The note couldn't be opened, or another one was asked for meanwhile.
+    if (pendingJump?.path === path && store.state.note.path !== path) pendingJump = undefined;
+  };
   commands.register<{ count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }>({
     id: "find.setResult", title: "command.find.setResult",
     run: ({ count, current, invalid, wrapped, replaced }) => {
@@ -754,6 +780,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const start = opening;
       opening = undefined;
       if (start !== undefined) afterPaint(() => timing.measure(OPEN_MEASURE, start));
+      const jump = pendingJump;
+      if (jump && jump.path === store.state.note.path) {
+        pendingJump = undefined;
+        showJump(jump.jump);
+      }
     },
   });
 
@@ -807,6 +838,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     ...(options.clock ? { now: options.clock.now } : {}),
   });
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
+  const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
   // keeps them on this device as they are now, and deletes the file.
   commands.register({
@@ -1034,6 +1066,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   return {
     store, commands, viewModels, messages: catalog, bridge, flush,
     idle: () => tracker.idle(),
+    useSearch: (service) => findAll.useSearch(service),
     onEditorAction(listener) {
       editorListeners.add(listener);
       return () => editorListeners.delete(listener);
