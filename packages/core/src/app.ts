@@ -22,6 +22,7 @@ import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, t
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
+import { registerSpotlight, SPOTLIGHT_CLOSED, type SpotlightSearch, type SpotlightState } from "./spotlight-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -72,6 +73,8 @@ export interface AppState {
     conflict: ConflictState;
     /** Settings (IA-VIEW-SETTINGS): Account and Workspace, with signing out and removing the workspace (FRE-07). */
     settings: SettingsState;
+    /** Spotlight (IA-VIEW-SPOTLIGHT): search and act. */
+    spotlight: SpotlightState;
   };
   /** Synced settings (PRV-03): no private repository to sync through, or syncing off or on. */
   settingsSync: "unavailable" | "off" | "on";
@@ -209,6 +212,8 @@ export interface App {
   onEditorAction(listener: (id: string, args?: Record<string, unknown>) => void): () => void;
   /** Resolves when no wait is running or showing (PRF-08), so tests never race a save. */
   idle(): Promise<void>;
+  /** Gives Spotlight the search index once the shell has started it (`startSearch`, D-107). */
+  useSearch(search: SpotlightSearch): void;
 }
 
 export const resolvedScheme = (s: AppState): Scheme =>
@@ -232,7 +237,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, settings: SETTINGS_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, settings: SETTINGS_CLOSED, spotlight: SPOTLIGHT_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -538,7 +543,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     id: "note.new", title: "command.note.new", icon: "newNote", shortcut: { default: "Mod+N", web: "Ctrl+Alt+N" }, layer: "basic", group: "app",
     enabled: (s) => s.workspace.access === "write",
     disabledReason: "command.note.new.readOnly",
-    run: async () => {
+    // With a title (Spotlight's Create note "…"), the note starts with it as its H1 and is named after it (FIL-07).
+    run: async ({ title }: { title?: unknown }) => {
       const current = store.state.note.path;
       // With the Files panel open, the note goes into the selected folder (Files → Creating); else
       // into the open note's folder if it's private, or the Private root: private by default (SHR-01).
@@ -549,15 +555,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       files.created(path);
       await bridge.writeNote(path, "");
       await load(path);
+      const heading = typeof title === "string" ? title.replace(/\s+/g, " ").trim() : "";
+      if (heading && store.state.note.path === path) {
+        const md = `# ${heading}\n\n`;
+        setNote({ key: `${path}#${Date.now()}`, initialMarkdown: md, markdown: md, saveState: "unsaved" });
+        await flush();
+      }
     },
-  });
-  commands.register({
-    id: "spotlight.open", title: "command.spotlight.open", icon: "search",
-    shortcut: { default: "Mod+/", alternates: { default: ["Mod+Shift+P"] } }, layer: "power", group: "spotlight", planned: true,
-    // Spotlight arrives in M4; until then the command says so instead of doing nothing.
-    enabled: () => false,
-    disabledReason: "command.spotlight.open.reason",
-    run: () => {},
   });
   commands.register({
     id: "window.fullScreen", title: "command.window.fullScreen", icon: "fullScreen",
@@ -807,6 +811,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     ...(options.clock ? { now: options.clock.now } : {}),
   });
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
+  const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
   // keeps them on this device as they are now, and deletes the file.
   commands.register({
@@ -1034,6 +1039,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   return {
     store, commands, viewModels, messages: catalog, bridge, flush,
     idle: () => tracker.idle(),
+    useSearch: (search) => spotlight.attach(search),
     onEditorAction(listener) {
       editorListeners.add(listener);
       return () => editorListeners.delete(listener);

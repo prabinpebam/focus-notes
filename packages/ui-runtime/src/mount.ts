@@ -41,9 +41,12 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
       scopes.push((el as HTMLElement).dataset.keyScope!);
       if (el.hasAttribute("data-key-scope-stop")) break;
     }
+    // In a text field, whether the caret is at the end of its text (→ opens Spotlight's actions only there).
+    const field = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement ? e.target : undefined;
     const id = app.commands.match({
       key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey, altKey: e.altKey,
       altGraph: e.getModifierState?.("AltGraph") ?? false,
+      ...(field ? { caretAtEnd: field.selectionStart === field.value.length && field.selectionEnd === field.value.length } : {}),
     }, scopes);
     if (!id) return;
     e.preventDefault();

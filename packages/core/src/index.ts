@@ -31,3 +31,5 @@ export * from "./inventory.ts";
 export * from "./settings-app.ts";
 export * from "./window-app.ts";
 export * from "./window-geometry.ts";
+export * from "./spotlight.ts";
+export * from "./spotlight-app.ts";

@@ -85,8 +85,8 @@ describe("the default keymap (KEY-02, KEY-06)", () => {
     it(`${platform}: every shortcut has a layer and a group`, () => {
       for (const id of app.commands.ids()) {
         const d = app.commands.describe(id);
-        // Planned commands aren't bindings yet: Spotlight until M4, and Settings in a shell with no account (this one).
-        if (d.shortcut) expect(all.some((b) => b.id === id) || id === "spotlight.open" || id === "settings.open", id).toBe(true);
+        // Planned commands aren't bindings yet: Settings in a shell with no account (this one).
+        if (d.shortcut) expect(all.some((b) => b.id === id) || id === "settings.open", id).toBe(true);
       }
     });
   }
@@ -129,9 +129,8 @@ describe("the cheat sheet (KEY-05)", () => {
     const app = appFor("windows");
     expect((app.viewModels.select("vm.shortcuts", app.store.state) as { groups: unknown[] }).groups).toEqual([]);
     const { vm } = await open();
-    expect(vm().groups.map((g) => g.id)).toEqual(["app", "editing", "formatting", "blocks", "tables", "find", "files"]);
-    expect(ids(vm().groups)).toEqual(expect.arrayContaining(["note.save", "format.bold", "block.heading1", "keys.cutCopyPaste", "shortcuts.open"]));
-    expect(ids(vm().groups)).not.toContain("spotlight.open"); // planned for M4
+    expect(vm().groups.map((g) => g.id)).toEqual(["app", "editing", "formatting", "blocks", "tables", "find", "spotlight", "files"]);
+    expect(ids(vm().groups)).toEqual(expect.arrayContaining(["note.save", "format.bold", "block.heading1", "keys.cutCopyPaste", "shortcuts.open", "spotlight.open", "spotlight.quickOpen", "spotlight.actions"]));
     expect(vm().summary).toBe(`${vm().count} shortcuts`);
   });
   it("searches names and keys, in either platform's spelling", async () => {

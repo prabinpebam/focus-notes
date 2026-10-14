@@ -28,6 +28,10 @@ export interface Shortcut {
    * while focus is inside an element marked with that scope, such as the find bar.
    */
   handledBy?: string;
+  /** The key passes on (to the field it was typed in) while the command is unavailable: Backspace in a field with text. */
+  whenEnabled?: true;
+  /** In a text field, only while the caret is at the end of its text, so the key still moves the caret otherwise (→ in Spotlight). */
+  atFieldEnd?: true;
 }
 
 /** What a key event looks like to the matcher. */
@@ -41,6 +45,8 @@ export interface KeyEventLike {
   isComposing?: boolean;
   /** True when AltGr is held (Windows and Linux layouts that type characters with it). */
   altGraph?: boolean;
+  /** In a text field: whether the caret is at the end of its text with nothing selected. Unset elsewhere. */
+  caretAtEnd?: boolean;
 }
 
 /** Keys the OS keeps for itself. They're never bound (KEY-06). */
@@ -101,6 +107,8 @@ export interface CommandDescription {
   enabled: boolean;
   disabledReason?: string;
   checked?: boolean;
+  /** The key scope its shortcut works in, if any (`editor`, `findField`, …). */
+  handledBy?: string;
 }
 
 export class CommandError extends Error {}
@@ -142,6 +150,7 @@ export class CommandRegistry<S> {
     if (chord) d.shortcut = chord;
     if (def.checked) d.checked = def.checked(state);
     if (!d.enabled && def.disabledReason) d.disabledReason = def.disabledReason;
+    if (def.shortcut?.handledBy) d.handledBy = def.shortcut.handledBy;
     return d;
   }
 
@@ -184,6 +193,8 @@ export class CommandRegistry<S> {
       for (const [id, def] of this.#commands) {
         const where = def.shortcut?.handledBy;
         if (scopes.length ? !where || !scopes.includes(where) : where) continue;
+        if (def.shortcut?.atFieldEnd && event.caretAtEnd === false) continue;
+        if (def.shortcut?.whenEnabled && def.enabled && !def.enabled(this.getState())) continue;
         for (const chord of [...chordsFor(def.shortcut, this.platform), ...(def.shortcut?.quiet ?? [])]) if (chordMatches(chord, event, this.platform, byCode)) return id;
       }
     }
