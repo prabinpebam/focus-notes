@@ -54,7 +54,8 @@
               "value": {
                 "bind": "vm.settings.section"
               },
-              "orientation": "vertical"
+              "orientation": "vertical",
+              "autoFocus": true
             },
             "children": [
               {

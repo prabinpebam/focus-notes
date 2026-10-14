@@ -448,11 +448,11 @@
     },
     "layoutWidth": {
       "$type": "dimension",
-      "$value": "{ref.size.56}"
+      "$value": "{ref.size.84}"
     },
     "layoutHeight": {
       "$type": "dimension",
-      "$value": "{ref.size.36}"
+      "$value": "{ref.size.56}"
     },
     "snapLayoutsDelay": {
       "$type": "duration",

@@ -57,9 +57,18 @@ export const focusProblem = (page: Page) => page.evaluate(() => {
   const x = Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1), y = Math.min(Math.max(r.top + Math.min(r.height / 2, 10), 0), innerHeight - 1);
   if (r.bottom < 0 || r.top > innerHeight) return `${el.getAttribute("aria-label") ?? el.tagName} is off screen`;
   const hit = document.elementFromPoint(x, y);
-  if (hit && !el.contains(hit) && !hit.contains(el) && !(textEntry && el.contains(hit))) {
+  // A box that paints nothing (the window's invisible title bar band, D-104) hides nothing under it.
+  const seeThrough = (n: Element) => {
+    const c = getComputedStyle(n);
+    const clear = (v: string) => v === "transparent" || /rgba\(.*,\s*0\)$/.test(v);
+    return clear(c.backgroundColor) && c.backgroundImage === "none" && c.boxShadow === "none" && c.backdropFilter === "none"
+      && ["Top", "Right", "Bottom", "Left"].every((side) => parseFloat(c.getPropertyValue(`border-${side.toLowerCase()}-width`)) === 0 || clear(c.getPropertyValue(`border-${side.toLowerCase()}-color`)))
+      && ![...n.childNodes].some((t) => t.nodeType === Node.TEXT_NODE && t.textContent?.trim());
+  };
+  const cover = hit && seeThrough(hit) ? document.elementsFromPoint(x, y).find((n) => !seeThrough(n) || n.contains(el) || el.contains(n)) ?? hit : hit;
+  if (cover && !el.contains(cover) && !cover.contains(el) && !(textEntry && el.contains(cover))) {
     // Covered only if the thing on top isn't part of the same popup or a tooltip about it.
-    if (!hit.closest('[role="tooltip"]')) return `${el.getAttribute("aria-label") ?? el.tagName} is covered by ${hit.getAttribute("aria-label") ?? hit.tagName}`;
+    if (!cover.closest('[role="tooltip"]')) return `${el.getAttribute("aria-label") ?? el.tagName} is covered by ${cover.getAttribute("aria-label") ?? cover.tagName}`;
   }
   return "";
 });

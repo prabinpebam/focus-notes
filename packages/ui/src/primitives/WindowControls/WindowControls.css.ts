@@ -46,9 +46,11 @@ export const close = style({
   },
 });
 
-export const popover = style({ zIndex: t.layer, outline: "none" });
+// Never wider than the window less its edges: in a narrow window (320 px, WCAG 1.4.10) the layouts wrap.
+export const popover = style({ zIndex: t.layer, outline: "none", maxWidth: `calc(100% - 2 * ${t.inset})` });
 export const flyout = style({
   display: "flex",
+  flexWrap: "wrap",
   gap: t.flyoutGap,
   marginTop: t.flyoutOffset,
   padding: t.flyoutPadding,

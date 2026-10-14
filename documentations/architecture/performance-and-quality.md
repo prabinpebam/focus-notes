@@ -146,11 +146,11 @@ Each stage's hardening work package audits everything built so far (M1: WP-1.11,
 
 | Check | How |
 | --- | --- |
-| No axe violations, contrast included | Every surface opened from the keyboard (the canvas, the trigger toolbar and a tooltip, the ⋯ menu and a submenu, find and replace, the cheat sheet, Files, Move to…, the delete confirmation, the formatting toolbar, the link editor and card, the slash menu, the table controls and cell menu, a toast), in Paper, Ink, and both High contrast themes, and in forced colors |
+| No axe violations, contrast included | Every surface opened from the keyboard (the canvas, the trigger toolbar and a tooltip, the ⋯ menu and a submenu, find and replace, the cheat sheet, Files, Move to…, the delete confirmation, the formatting toolbar, the link editor and card, the slash menu, the table controls and cell menu, a toast; on Windows and Linux the window controls, Snap Layouts, and the system menu; Settings; and the first run's Welcome, Git, and Sign in steps), in Paper, Ink, and both High contrast themes, and in forced colors |
 | Targets (2.5.8) | Every visible control outside the note's text is at least 24 × 24 px, or a 24 px circle on it touches no other target |
-| Focus (2.4.7, 2.4.11) | The focused control in each surface, and the next one after <kbd>Tab</kbd>, shows a 2 px ring or a fill and isn't covered |
+| Focus (2.4.7, 2.4.11) | The focused control in each surface, and the next one after <kbd>Tab</kbd>, shows a 2 px ring or a fill and isn't covered by anything that paints (the window's title bar band is an invisible box over the note's top, and covers nothing) |
 | Landmarks | A tooltip opened by keyboard focus renders inside its control's landmark, next to it |
-| Reflow (1.4.10) | At 320 CSS px (400% zoom), no surface scrolls sideways or spills out of the window |
+| Reflow (1.4.10) | At 320 CSS px (400% zoom), no surface scrolls sideways or spills out of the window. On Windows and Linux that's the window as drawn, inside its shadow margin (D-104) |
 | Motion (2.3.3) | With reduced motion, nothing animates as any surface opens or closes |
 | Keyboard only | The whole M1 demo, with a check that no pointer event happened |
 

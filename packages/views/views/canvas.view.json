@@ -261,6 +261,12 @@
                     "get": "event.id"
                   }
                 }
+              },
+              "dismiss": {
+                "run": "toolbar.setOpen",
+                "args": {
+                  "open": false
+                }
               }
             }
           }

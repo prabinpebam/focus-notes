@@ -21,7 +21,7 @@ export const contract = defineContract({
     reveal: { kind: "boolean", bindable: true, description: "Shows the buttons without hover: the window isn't active, or the toolbar is open." },
     layouts: { kind: "list", of: "menuSections", required: true, description: "The picker's layouts (halves, thirds, quarters, maximize) and their zones, each a command." },
   },
-  events: { action: { payload: { id: "text" } } },
+  events: { action: { payload: { id: "text" } }, dismiss: {} },
   slots: {},
   states: ["hidden", "shown", "buttonHover", "closeHover", "focusVisible", "layoutsOpen", "zoneHover"],
   tokens: "cmp.windowControls.*",

@@ -6,15 +6,17 @@
  * 320 CSS px (1.4.10), no motion with reduced motion (2.3.3), and system colors in forced colors.
  * The screen-reader passes are scripted in Performance and quality → Accessibility audit.
  */
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type ElectronApplication, type Page } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { caret, launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { caret, launch, quit, tempDirs, windowBox, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { focusProblem, smallTargets } from "./a11y-checks.ts";
 
 const mac = process.platform === "darwin";
 const mod = mac ? "Meta" : "Control";
+/** Windows and Linux draw their own window (D-14). */
+const custom = !mac;
 const NOTE = [
   "# Audit", "",
   "A paragraph with a [link](https://example.com/audit) and more words to select here.", "",
@@ -24,6 +26,35 @@ const NOTE = [
 ].join("\n") + "\n";
 
 const editorOf = (page: Page) => page.getByRole("textbox", { name: "Note" });
+
+/**
+ * 400% zoom: the window as drawn is 320 × 200 CSS px. On Windows and Linux the page is the window
+ * plus its transparent shadow margin (D-104), which zooms with the page, so the page is that much larger.
+ */
+async function reflowTo320(page: Page, app: ElectronApplication) {
+  const margin = await page.evaluate(() => Math.round(document.querySelector("[data-app-root]")?.getBoundingClientRect().left ?? 0));
+  await app.evaluate(({ BrowserWindow }, m) => {
+    const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
+    win.unmaximize();
+    win.setContentSize((320 + 2 * m) * 4, (200 + 2 * m) * 4);
+    win.webContents.setZoomFactor(4);
+  }, margin);
+  await expect.poll(async () => Math.round((await windowBox(page)).width)).toBe(320);
+}
+
+/** 1.4.10: nothing scrolls sideways, and popups, panels, and dialogs stay inside the window as drawn. */
+const overflowProblems = (page: Page) => page.evaluate(() => {
+  const out: string[] = [];
+  if (document.documentElement.scrollWidth > innerWidth + 1) out.push(`the page scrolls sideways (${document.documentElement.scrollWidth} px)`);
+  const root = document.querySelector("[data-app-root]");
+  const win = root?.getBoundingClientRect() ?? { left: 0, right: innerWidth };
+  for (const el of document.querySelectorAll('[role="menu"], [role="dialog"], [role="toolbar"], [role="region"], [role="listbox"], [role="group"], [role="main"], aside')) {
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || el.closest("[inert]")) continue;
+    if (r.left < win.left - 1 || r.right > win.right + 1) out.push(`${el.getAttribute("aria-label") ?? el.getAttribute("role")} spans ${Math.round(r.left)}–${Math.round(r.right)} of ${Math.round(win.left)}–${Math.round(win.right)}`);
+  }
+  return out;
+});
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
 
 async function start(): Promise<Launched> {
@@ -153,6 +184,39 @@ const SURFACES: { name: string; open: (page: Page) => Promise<void> }[] = [
     await page.keyboard.press("Shift+F10");
     await expect(page.getByRole("menu", { name: "Cell options" })).toBeVisible();
   } },
+  // The custom window on Windows and Linux (WP-2.1, D-104): its controls, Snap Layouts, and system menu.
+  ...(custom ? [
+    { name: "window controls", open: async (page: Page) => {
+      // Tab from the trigger's toolbar goes on to the window's buttons.
+      await page.keyboard.press(`${mod}+.`);
+      await expect(page.getByRole("toolbar", { name: "Toolbar" }).locator(":focus")).toHaveCount(1);
+      await page.keyboard.press("Tab");
+      await expect(page.getByRole("button", { name: "Minimize" })).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(page.getByRole("button", { name: "Maximize" })).toBeFocused();
+    } },
+    { name: "Snap layouts", open: async (page: Page) => {
+      await page.keyboard.press(`${mod}+.`);
+      await expect(page.getByRole("toolbar", { name: "Toolbar" }).locator(":focus")).toHaveCount(1);
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Tab");
+      await expect(page.getByRole("button", { name: "Maximize" })).toBeFocused();
+      await page.keyboard.press("ArrowDown");
+      await expect(page.getByRole("dialog", { name: "Snap layouts" }).getByRole("button", { name: "Left half" })).toBeFocused();
+    } },
+    { name: "system menu", open: async (page: Page) => {
+      await page.keyboard.press("Alt+Space");
+      await expect(page.getByRole("menu", { name: "Window menu" }).getByRole("menuitem", { name: "Move" })).toBeFocused();
+    } },
+  ] : []),
+  // Settings (WP-3.6, D-103): on the desktop it's always there to open.
+  { name: "Settings", open: async (page) => {
+    await page.keyboard.press(`${mod}+,`);
+    const settings = page.getByRole("dialog", { name: "Settings" });
+    await expect(settings).toBeVisible();
+    await expect(settings.getByRole("tab", { name: "Account" })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => Boolean(document.activeElement?.closest('[role="dialog"]')))).toBe(true);
+  } },
   { name: "toast", open: async (page) => {
     // Two lines pasted into one cell: the toast says what happened to them.
     await caretInTable(page);
@@ -218,6 +282,77 @@ for (const [mode, theme] of [["light", "Paper"], ["dark", "Ink"], ["light", "Hig
   });
 }
 
+/** A new install (WP-3.2, D-101), in a theme chosen before it starts. */
+async function startFirstRun(mode: "light" | "dark", theme: string): Promise<Launched> {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, appearance: mode, ...(mode === "light" ? { lightTheme: theme } : { darkTheme: theme }) }));
+  const l = await launch(dirs, {}, { firstRun: true });
+  await expect(l.page.getByRole("button", { name: "Get started" })).toBeFocused();
+  await expect.poll(() => l.page.evaluate(() => document.documentElement.dataset.theme)).toBe(theme);
+  return l;
+}
+
+/** The first run's card by keyboard, through the steps a new install shows offline: Welcome, Git, and Sign in. */
+async function walkFirstRun(page: Page, check: (step: string) => Promise<void>) {
+  const card = page.getByRole("main", { name: "Set up Focus Notes" });
+  await settled(page);
+  await check("first run: Welcome");
+  await page.keyboard.press("Enter");
+  await expect(card.getByRole("heading", { name: "Git" })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Continue" })).toBeFocused();
+  await settled(page);
+  await check("first run: Git");
+  await page.keyboard.press("Enter");
+  await expect(card.getByRole("heading", { name: "Sign in to GitHub" })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Sign in with GitHub" })).toBeFocused();
+  await settled(page);
+  await check("first run: Sign in");
+}
+
+for (const [mode, theme] of [["light", "paper"], ["dark", "ink"], ["light", "contrast-light"], ["dark", "contrast-dark"]] as const) {
+  test(`A11Y-01: the first run's card in ${theme} has no axe violations, 24 px targets, and visible focus`, async () => {
+    const l = await startFirstRun(mode, theme);
+    const { page } = l;
+    const problems: string[] = [];
+    await walkFirstRun(page, async (step) => {
+      for (const v of await axeViolations(page)) problems.push(`${step}: ${v}`);
+      for (const t of await smallTargets(page)) problems.push(`${step}: target under 24 px: ${t}`);
+      const f = await focusProblem(page);
+      if (f) problems.push(`${step}: ${f}`);
+      await page.keyboard.press("Tab");
+      const g = await focusProblem(page);
+      if (g) problems.push(`${step}, after Tab: ${g}`);
+      await page.keyboard.press("Shift+Tab");
+    });
+    expect(problems).toEqual([]);
+    await quit(l);
+  });
+}
+
+test("A11Y-01: the first run's card in forced colors uses system colors and keeps a visible focus, and fits at 320 CSS px", async () => {
+  const l = await startFirstRun("light", "paper");
+  const { page } = l;
+  await page.emulateMedia({ forcedColors: "active" });
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--fn-color-canvas").trim())).toBe("Canvas");
+  const problems: string[] = [];
+  await walkFirstRun(page, async (step) => {
+    for (const v of await axeViolations(page)) problems.push(`${step}: ${v}`);
+    const f = await focusProblem(page);
+    if (f) problems.push(`${step}: ${f}`);
+  });
+  await quit(l);
+
+  const n = await startFirstRun("light", "paper");
+  await reflowTo320(n.page, n.app);
+  await walkFirstRun(n.page, async (step) => {
+    for (const o of await overflowProblems(n.page)) problems.push(`${step} at 320 px: ${o}`);
+    const f = await focusProblem(n.page);
+    if (f) problems.push(`${step} at 320 px: ${f}`);
+  });
+  expect(problems).toEqual([]);
+  await quit(n);
+});
+
 test("A11Y-01: a tooltip opened by keyboard focus is inside a landmark, and names its control", async () => {
   const l = await start();
   const { page } = l;
@@ -243,29 +378,12 @@ test("A11Y-01: at 320 CSS px (400% zoom) every surface fits without sideways scr
   test.setTimeout(120_000);
   const l = await start();
   const { page, app } = l;
-  await app.evaluate(({ BrowserWindow }) => {
-    const win = BrowserWindow.getAllWindows()[0]!;
-    win.unmaximize();
-    win.setContentSize(1280, 800);
-    win.webContents.setZoomFactor(4);
-  });
-  await expect.poll(() => page.evaluate(() => innerWidth)).toBeLessThanOrEqual(320);
+  await reflowTo320(page, app);
   const problems: string[] = [];
   for (const s of SURFACES.filter((x) => !["tooltip from keyboard focus", "delete confirmation"].includes(x.name))) {
     await s.open(page);
     await settled(page);
-    const overflow = await page.evaluate(() => {
-      const out: string[] = [];
-      if (document.documentElement.scrollWidth > innerWidth + 1) out.push(`the page scrolls sideways (${document.documentElement.scrollWidth} px)`);
-      // Popups, panels, and dialogs stay inside the window.
-      for (const el of document.querySelectorAll('[role="menu"], [role="dialog"], [role="toolbar"], [role="region"], [role="listbox"], aside')) {
-        const r = el.getBoundingClientRect();
-        if (r.width === 0 || el.closest("[inert]")) continue;
-        if (r.left < -1 || r.right > innerWidth + 1) out.push(`${el.getAttribute("aria-label") ?? el.getAttribute("role")} spans ${Math.round(r.left)}–${Math.round(r.right)} of ${innerWidth}`);
-      }
-      return out;
-    });
-    for (const o of overflow) problems.push(`${s.name}: ${o}`);
+    for (const o of await overflowProblems(page)) problems.push(`${s.name}: ${o}`);
     await reset(page);
   }
   expect(problems).toEqual([]);

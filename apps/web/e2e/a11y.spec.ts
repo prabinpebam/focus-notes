@@ -33,6 +33,10 @@ const SURFACES: { name: string; open: (page: Page) => Promise<void> }[] = [
     await page.keyboard.press("End");
     await page.keyboard.press("ArrowDown");
     await expect(page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: /^Export my notes/ })).toBeVisible();
+    // Settings manage the desktop's GitHub account (D-103): here it's unavailable and says why (UI-07).
+    const settings = page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: /^Settings…/ });
+    await expect(settings).toHaveAttribute("aria-disabled", "true");
+    await expect(settings).toHaveAccessibleName(/ Settings manage your GitHub account, so they're in the desktop app$/);
   } },
 ];
 

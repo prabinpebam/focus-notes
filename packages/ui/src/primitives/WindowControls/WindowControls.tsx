@@ -16,6 +16,8 @@ export interface WindowControlsProps {
   reveal?: boolean;
   layouts: MenuSection[];
   onAction?: (payload: { id: string }) => void;
+  /** Esc on a button (with the picker closed): back to writing, as from the rest of the chrome. */
+  onDismiss?: () => void;
 }
 
 type Open = false | "hover" | "keyboard";
@@ -25,7 +27,7 @@ type Open = false | "hover" | "keyboard";
  * close, hidden at rest like the rest of the chrome. Hovering maximize for a moment, or pressing ↓
  * on it, opens the Snap Layouts picker: each layout is a small screen whose zones place the window.
  */
-export function WindowControls({ label, minimizeLabel, maximizeLabel, restoreLabel, closeLabel, layoutsLabel, maximized, reveal, layouts, onAction }: WindowControlsProps) {
+export function WindowControls({ label, minimizeLabel, maximizeLabel, restoreLabel, closeLabel, layoutsLabel, maximized, reveal, layouts, onAction, onDismiss }: WindowControlsProps) {
   const maxRef = useRef<HTMLButtonElement | null>(null);
   const flyRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState<Open>(false);
@@ -68,7 +70,19 @@ export function WindowControls({ label, minimizeLabel, maximizeLabel, restoreLab
   };
 
   return (
-    <div role="group" aria-label={label} className={s.root} data-window-controls="" data-reveal={reveal || open ? "" : undefined}>
+    <div
+      role="group"
+      aria-label={label}
+      className={s.root}
+      data-window-controls=""
+      data-reveal={reveal || open ? "" : undefined}
+      onKeyDown={(e) => {
+        // The picker handles its own Esc (back to maximize); on a button, Esc leaves the chrome.
+        if (e.key !== "Escape" || open || !(e.target instanceof HTMLButtonElement) || flyRef.current?.contains(e.target)) return;
+        e.preventDefault();
+        onDismiss?.();
+      }}
+    >
       <Button className={s.button} aria-label={minimizeLabel} onPress={() => act("window.minimize")}>
         <Icon name="minimize" size="s" />
       </Button>

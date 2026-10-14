@@ -176,7 +176,7 @@ test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable, later one
   // The menu holds what UI-07 lists, in its groups.
   const labelOf = (el: Element | null) => document.getElementById(el?.getAttribute("aria-labelledby") ?? "")?.firstElementChild?.firstElementChild?.textContent ?? "";
   const labels = await menu.getByRole("menuitem").evaluateAll((els, fn) => els.map((e) => new Function("el", `return (${fn})(el)`)(e) as string), labelOf.toString());
-  expect(labels).toEqual(expect.arrayContaining(["Smaller text", "Larger text", "Reset text size", "Full screen", "Find", "Find and replace", "Share and visibility…", "Settings", "Keyboard shortcuts", "Help and docs"]));
+  expect(labels).toEqual(expect.arrayContaining(["Smaller text", "Larger text", "Reset text size", "Full screen", "Find", "Find and replace", "Share and visibility…", "Settings…", "Keyboard shortcuts", "Help and docs"]));
   // Arrow keys reach every item, unavailable ones included, so a screen reader hears why (the reason is in its name).
   const visited: string[] = [];
   const seen = new Set<string>();
@@ -187,21 +187,24 @@ test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable, later one
     visited.push(label);
     await page.keyboard.press("ArrowDown");
   }
-  expect(visited).toEqual(expect.arrayContaining(["Share and visibility…", "Settings", "Help and docs", "Keyboard shortcuts"]));
+  expect(visited).toEqual(expect.arrayContaining(["Share and visibility…", "Settings…", "Help and docs", "Keyboard shortcuts"]));
 
   const share = menu.getByRole("menuitem", { name: /^Share and visibility…/ });
   await expect(share).toHaveAttribute("aria-disabled", "true");
   await expect(share).toHaveAccessibleName("Share and visibility… Sharing and visibility arrive in a later preview");
   await expect(share.getByText("Sharing and visibility arrive in a later preview")).toBeVisible();
-  const settings = menu.getByRole("menuitem", { name: /^Settings/ });
-  await expect(settings).toHaveAttribute("aria-disabled", "true");
-  await expect(settings).toHaveAccessibleName(/^Settings .+ Settings arrive in a later preview$/);
-  await expect(menu.getByRole("menuitem", { name: /^Help and docs/ })).toHaveAccessibleName("Help and docs Help and docs arrive in a later preview");
+  // Settings is the desktop's own (D-103): available, with its shortcut in its name. The browser
+  // shows it unavailable, saying Settings are in the desktop app.
+  const settings = menu.getByRole("menuitem", { name: /^Settings…/ });
+  await expect(settings).not.toHaveAttribute("aria-disabled", "true");
+  await expect(settings).toHaveAccessibleName(process.platform === "darwin" ? "Settings… ⌘," : "Settings… Ctrl+,");
+  const help = menu.getByRole("menuitem", { name: /^Help and docs/ });
+  await expect(help).toHaveAccessibleName("Help and docs Help and docs arrive in a later preview");
   // Choosing an unavailable item does nothing and keeps the menu open.
-  await settings.focus();
+  await help.focus();
   await page.keyboard.press("Enter");
   await expect(menu).toBeVisible();
-  await expect(settings).toBeFocused();
+  await expect(help).toBeFocused();
 
   // An available item runs and closes everything; the panel it opens takes focus.
   await menu.getByRole("menuitem", { name: /^Keyboard shortcuts/ }).focus();

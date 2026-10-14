@@ -2712,6 +2712,19 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "autoFocus": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -3434,6 +3447,9 @@
           "additionalProperties": false,
           "properties": {
             "action": {
+              "$ref": "#/$defs/actions"
+            },
+            "dismiss": {
               "$ref": "#/$defs/actions"
             }
           }

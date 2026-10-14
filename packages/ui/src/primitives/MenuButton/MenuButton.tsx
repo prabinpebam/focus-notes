@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { Button, Header, Keyboard, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator, SubmenuTrigger, Text } from "react-aria-components";
 import { IconButton } from "../IconButton/IconButton.tsx";
 import { Icon } from "../Icon/Icon.tsx";
@@ -82,8 +82,21 @@ const markUnavailable = (unavailable: boolean) => (el: HTMLDivElement | null) =>
 export function CommandMenu({ label, sections, onAction, autoFocus }: { label: string; sections: Section[]; onAction?: ((payload: { id: string }) => void) | undefined; autoFocus?: boolean }) {
   const checkable = sections.some((sec) => sec.items.some((i) => i.checked !== undefined));
   const unavailable = new Set(sections.flatMap((sec) => sec.items.filter((i) => i.disabled && !i.items).map((i) => i.id)));
+  // Opened from the keyboard, it starts on its first item that does something (the system menu's
+  // Move while Restore is unavailable): unavailable items stay reachable, but aren't where it starts.
+  const all = sections.flatMap((sec) => sec.items);
+  const start = all.find((i) => !unavailable.has(i.id))?.id;
+  const later = Boolean(autoFocus && start !== undefined && start !== all[0]?.id);
+  // Only as it opens: the item takes focus when it's first drawn (the collection draws its items
+  // after the menu), and the menu's own focus handling follows it.
+  const started = useRef(false);
+  const startHere = (id: string) => (el: HTMLDivElement | null) => {
+    if (!el || !later || id !== start || started.current) return;
+    started.current = true;
+    el.focus();
+  };
   return (
-        <Menu className={s.menu} aria-label={label} shouldCloseOnSelect {...(autoFocus ? { autoFocus: "first" as const } : {})} onAction={(key) => { if (!unavailable.has(String(key))) onAction?.({ id: String(key) }); }}>
+        <Menu className={s.menu} aria-label={label} shouldCloseOnSelect {...(autoFocus && !later ? { autoFocus: "first" as const } : {})} onAction={(key) => { if (!unavailable.has(String(key))) onAction?.({ id: String(key) }); }}>
           {sections.map((sec, index) => (
             <Fragment key={sec.id}>
               {index > 0 ? <Separator className={s.separator} /> : null}
@@ -101,7 +114,10 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
                     id={item.id}
                     className={s.item}
                     textValue={item.label}
-                    ref={markUnavailable(Boolean(item.disabled))}
+                    ref={(el: HTMLDivElement | null) => {
+                      markUnavailable(Boolean(item.disabled))(el);
+                      startHere(item.id)(el);
+                    }}
                     {...(item.disabled ? { shouldCloseOnSelect: false } : {})}
                   >
                     {({ isSelected }) => (
