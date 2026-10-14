@@ -7,7 +7,6 @@
   "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "font": { "$type": "fontFamily", "$value": "{font.ui}" },
   "fontSize": { "$type": "dimension", "$value": "{font.uiBody}" },
-  "captionSize": { "$type": "dimension", "$value": "{font.uiCaption}" },
   "uiLineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" },
   "selection": { "$type": "color", "$value": "{color.selection}" },
   "focusRing": { "$type": "color", "$value": "{color.focusRing}" },

@@ -24,6 +24,8 @@ ramp.forEach(([size, before], i) => {
   globalStyle(p(`> * + h${i + 1}`), { marginTop: `calc(${before} * 1em)` });
 });
 globalStyle(`:where(${prose}) :where(ul, ol)`, { margin: 0, paddingInlineStart: t.space.l });
+// Numbers are wider than bullets: an ordered list keeps "10." inside the column (D-111, inside its container).
+globalStyle(`:where(${prose}) :where(ol)`, { paddingInlineStart: `calc(2 * ${t.space.l})` });
 globalStyle(p("li > * + *"), { marginTop: t.space.s });
 globalStyle(p("li + li"), { marginTop: t.listItemGap });
 globalStyle(`:where(${prose}) :where(blockquote)`, { margin: 0, paddingInlineStart: t.space.m, borderInlineStartStyle: "solid", borderInlineStartWidth: t.quoteBorderWidth, borderInlineStartColor: t.quoteBorder, color: t.quoteText });

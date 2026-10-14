@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { views } from "../src/index.ts";
+import { views, pages } from "../src/index.ts";
 
 const root = join(import.meta.dirname, "..", "..", "..");
 
@@ -53,9 +53,9 @@ describe("all app UI is view documents (DSY-06)", () => {
     }
   });
 
-  it("every view document on disk is registered, so the runtime renders only these", () => {
+  it("every view document on disk is registered, as an app view or a published page, so the runtime renders only these", () => {
     const files = readdirSync(join(root, "packages", "views", "views")).filter((f) => f.endsWith(".view.json"));
-    expect(files.map((f) => f.replace(".view.json", "")).sort()).toEqual(Object.keys(views).sort());
+    expect(files.map((f) => f.replace(".view.json", "")).sort()).toEqual(Object.keys({ ...views, ...pages }).sort());
   });
 
   it("no markup or styles outside packages/ui, and every view passes ui:check", () => {

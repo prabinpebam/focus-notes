@@ -52,7 +52,6 @@ export const footer = style({
   ...column,
   paddingBlock: t.sectionGap,
   color: t.muted,
-  fontSize: t.captionSize,
   borderBlockStartStyle: "solid",
   borderBlockStartWidth: t.borderWidth,
   borderBlockStartColor: t.border,
