@@ -49,6 +49,8 @@ interface Ctx {
   setNote: (patch: Partial<AppState["note"]>) => void;
   persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
   format?: WorkspaceFormatOptions;
+  /** The open note changed outside while it has unsaved edits: both versions go to the resolver (FIL-12). */
+  outside?: (path: string, mine: string, theirs: string) => void;
 }
 
 export function registerWorkspaceFeatures(ctx: Ctx) {
@@ -121,8 +123,9 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
       loaded(path, text);
       return;
     }
-    // Unsaved edits are kept; choosing between the two versions is the conflict resolver (FIL-12).
-    toast(catalog.format("toast.changedOutside", { note: stemOf(nameOf(path)) }));
+    // Unsaved edits are kept, and the next save waits for a choice between the two versions (FIL-12).
+    if (ctx.outside) ctx.outside(path, n.markdown, text);
+    else toast(catalog.format("toast.changedOutside", { note: stemOf(nameOf(path)) }));
   }
 
   function onChange(changes: WorkspaceChange[]): void {

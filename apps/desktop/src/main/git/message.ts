@@ -24,7 +24,9 @@ export type BatchOp =
   | { op: "visibility"; path: string; to: "public" | "private" }
   | { op: "import"; path: string }
   /** A note put back from history: Recently deleted's Restore, or a delete's Undo (FIL-10). */
-  | { op: "restore"; path: string };
+  | { op: "restore"; path: string }
+  /** A new note: a copy the conflict resolver keeps (FIL-12). */
+  | { op: "create"; path: string };
 
 const parent = (p: string) => (p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "");
 const KEEP = "/.gitkeep";
@@ -90,7 +92,7 @@ export function batchMessage(ops: BatchOp[], changes: Change[] = []): string {
   const movedTo = new Set(main.flatMap((o) => (o.op === "move" ? [o.to] : o.op === "visibility" ? [o.path] : [])));
   const line = (o: (typeof main)[number]) => (o.op === "createFolder" ? `Create folder ${o.path}` : o.op === "delete" ? `Delete ${o.path}`
     : o.op === "move" ? describe({ status: "R", from: o.from, path: o.to })
-      : o.op === "visibility" ? `Make ${o.to}: ${o.path}` : o.op === "import" ? `Import ${o.path}` : o.op === "restore" ? `Restore ${o.path}` : "");
+      : o.op === "visibility" ? `Make ${o.to}: ${o.path}` : o.op === "import" ? `Import ${o.path}` : o.op === "restore" ? `Restore ${o.path}` : o.op === "create" ? `Create ${o.path}` : "");
   const linkNotes = writes.filter((w) => !movedTo.has(w.path)).length;
   const links = linkNotes ? [`Update links in ${plural(linkNotes, "note", "notes")}`] : [];
   if (!main.length) return changes.length ? message(saveMessage(changes), []) : "Update notes";
@@ -106,6 +108,7 @@ export function batchMessage(ops: BatchOp[], changes: Change[] = []): string {
     if (kind === "visibility" && first.op === "visibility") subject = `Make ${plural(main.length, "item", "items")} ${first.to}`;
     else if (kind === "import") subject = `Import ${plural(main.length, "note", "notes")}`;
     else if (kind === "restore") subject = `Restore ${plural(main.length, "note", "notes")}`;
+    else if (kind === "create") subject = `Create ${plural(main.length, "note", "notes")}`;
     else if (kind === "move") {
       const dests = new Set(main.map((o) => (o.op === "move" ? parent(o.to) : "")));
       subject = dests.size === 1 ? `Move ${plural(main.length, "item", "items")} to ${[...dests][0] || "the top"}` : `Move ${plural(main.length, "item", "items")}`;

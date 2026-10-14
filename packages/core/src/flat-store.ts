@@ -76,6 +76,16 @@ export function planFlatOps(notes: readonly FlatNote[], folders: readonly string
       const written = { ...n, text: op.text, updated: now };
       live.set(op.path, written);
       writePut(written);
+    } else if (op.op === "create") {
+      // A new note, never over another (FIL-12's copies).
+      if (exists(op.path)) throw new OpError("taken");
+      const parent = parentOf(op.path);
+      if (parent && !isFolder(parent)) throw new OpError("notFound");
+      if (typeof op.text !== "string") throw new OpError("invalid");
+      const created = { path: op.path, text: op.text, updated: now };
+      live.set(op.path, created);
+      dead.delete(op.path);
+      writePut(created);
     } else {
       if (!exists(op.path)) throw new OpError("notFound");
       for (const [p, n] of [...live]) {

@@ -28,6 +28,7 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
   let asked = 0;
   const describe = (p: SyncProblem) => catalog.format(`sync.problem.${p}`);
   const retry = () => ({ command: "note.save", label: catalog.format("toast.retry") });
+  const resolve = () => ({ command: "conflict.open", label: catalog.format("conflict.resolve") });
   const apply = (r: SyncReport, quiet = false) => {
     const before = store.state.sync.problem;
     const problem = r.state === "problem" ? r.problem ?? "failed" : undefined;
@@ -35,7 +36,8 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
     if (store.state.sync.git === r.git && before === problem) return;
     store.update((s) => ({ ...s, sync: { git: r.git, ...(problem ? { problem } : {}) } }));
     // Only problems are shown, and only when they first appear (EDT-11).
-    if (problem && problem !== before && !quiet && !asked) toast(describe(problem), { tone: "error", action: retry() });
+    // A conflict offers the resolver instead of Retry (Feedback → Save and sync status).
+    if (problem && problem !== before && !quiet && !asked) toast(describe(problem), { tone: "error", action: problem === "conflict" ? resolve() : retry() });
   };
   return {
     start() {
@@ -54,7 +56,7 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
         asked--;
       }
       apply(r, true);
-      if (r.state === "problem") throw new SyncFailed(describe(r.problem ?? "failed"));
+      if (r.state === "problem") throw new SyncFailed(describe(r.problem ?? "failed"), r.problem ?? "failed");
     },
     /** Switching notes commits and pushes the one being left, in the background. */
     switched(): void {
@@ -64,4 +66,10 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
 }
 
 /** A sync that failed when the person asked for it: the toast says why, and offers Retry. */
-export class SyncFailed extends Error {}
+export class SyncFailed extends Error {
+  readonly problem: SyncProblem;
+  constructor(message: string, problem: SyncProblem) {
+    super(message);
+    this.problem = problem;
+  }
+}

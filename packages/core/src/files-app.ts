@@ -10,14 +10,15 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { sourceOf } from "./notes.ts";
+import { groupByDay, type DeletedNote } from "./history.ts";
 import { planLinkWrites, rewriteLinks, sameRootOf, type LinkWrite, type PathMove } from "./links.ts";
 import {
   actedOn, ancestorsOf, destinations, isRootRow, keepShowing, NO_SELECTION, rebase, rootRowId, select, selectAll, targetFolder, titleOfNode,
   topLevel, visibleRows, type FileRow, type Selection,
 } from "./files.ts";
 import {
-  applyChanges, buildTree, dirOf, findNode, joinPath, planCreateFolder, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf,
-  visibilityOf, type RefusalReason, type WorkspaceTree,
+  applyChanges, buildTree, dirOf, findNode, isWithin, joinPath, planCreateFolder, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf,
+  visibilityOf, walk, type RefusalReason, type WorkspaceTree,
 } from "./workspace.ts";
 
 export interface FilesState {
@@ -38,12 +39,15 @@ export interface FilesState {
    * Make public or private keeps each item's folder path (`dest` unset); a drop or Move to… has one.
    */
   confirm?: { kind: "delete"; paths: string[]; notes: number; name: string } | { kind: "visibility"; to: "public" | "private"; paths: string[]; dest?: string; name: string };
-  /** Move to… (IA-CMP-MOVE). */
-  move: { open: boolean; query: string; activeId: string; paths: string[]; focus: number };
+  /** Move to… (IA-CMP-MOVE). `restore` is a deleted note being restored to a chosen folder (FIL-10). */
+  move: { open: boolean; query: string; activeId: string; paths: string[]; focus: number; restore?: string };
+  /** Recently deleted, in place of the tree (FIL-10). `notes` is undefined until it's first listed. */
+  recent: { open: boolean; loading: boolean; notes?: readonly DeletedNote[]; focus: number };
 }
 export const FILES_CLOSED: FilesState = {
   open: false, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", focusRequest: 0, pending: [],
   move: { open: false, query: "", activeId: "", paths: [], focus: 0 },
+  recent: { open: false, loading: false, focus: 0 },
 };
 
 interface Ctx {
@@ -52,7 +56,7 @@ interface Ctx {
   viewModels: ViewModelRegistry<AppState>;
   catalog: MessageCatalog;
   bridge: PlatformBridge;
-  toast: (message: string, opts?: { tone?: "info" | "error" }) => number;
+  toast: (message: string, opts?: { tone?: "info" | "error"; action?: { command: string; label: string; args?: Record<string, unknown> } }) => number;
   announce: (text: string) => void;
   load: (path: string) => Promise<void>;
   /** Runs after pending edits are written, with saves held until it finishes, so none lands in the old place. */
@@ -126,7 +130,7 @@ export function registerFiles(ctx: Ctx) {
     // The current note may be in a folder that only now shows; focus falls back to the first row.
     setFiles((f) => ({ selection: keepShowing(f.selection, rowsOf(store.state)) }));
   };
-  const close = () => setFiles(() => ({ open: false, edit: undefined, confirm: undefined, move: { ...files().move, open: false } }));
+  const close = () => setFiles((f) => ({ open: false, edit: undefined, confirm: undefined, move: { ...f.move, open: false }, recent: { ...f.recent, open: false } }));
   commands.register({ id: "files.open", title: "command.files.open", icon: "open", enabled: () => Boolean(ws), run: () => (files().open ? close() : reveal()) });
   commands.register({
     id: "files.reveal", title: "command.files.reveal", shortcut: { default: "Mod+Shift+E" }, layer: "power", group: "files",
@@ -187,6 +191,24 @@ export function registerFiles(ctx: Ctx) {
   /** The toast says how many other notes changed (UC-FILE-07). */
   const withLinks = (done: string, writes: readonly LinkWrite[]) => (writes.length ? catalog.format("files.linksUpdated", { done, count: writes.length }) : done);
 
+  // ---- Undo (DD-FB-01): the toast's action puts the change back ----
+  const undos = new Map<number, () => Promise<void>>();
+  let undoId = 0;
+  const undoAction = (fn: () => Promise<void>) => {
+    undos.set(++undoId, fn);
+    // Toasts with Undo stay 10 s and at most two show; older ones can't be undone any more.
+    for (const k of [...undos.keys()].slice(0, -4)) undos.delete(k);
+    return { command: "files.undo", label: catalog.format("files.undo"), args: { n: undoId } };
+  };
+  commands.register<{ n: number }>({
+    id: "files.undo", title: "command.files.undo",
+    run: async ({ n }) => {
+      const fn = undos.get(Number(n));
+      undos.delete(Number(n));
+      if (fn) await fn();
+    },
+  });
+
   // ---- showing changes at once (PRF-09) ----
   let queue: Promise<unknown> = Promise.resolve();
   const rescan = async () => {
@@ -197,7 +219,11 @@ export function registerFiles(ctx: Ctx) {
    * Shows `next` now, then writes the batch. Success changes nothing visible but the saving sign;
    * a refusal puts the tree and the selection back and says why (Desktop and Git → Changes shown before they're saved).
    */
-  async function perform(next: WorkspaceTree, ops: WorkspaceOp[], o: { touched: string[]; moves?: { from: string; to: string }[]; deletes?: string[]; select?: string[]; done: string; failed: (why: string) => string; open?: string[] }) {
+  async function perform(next: WorkspaceTree, ops: WorkspaceOp[], o: {
+    touched: string[]; moves?: { from: string; to: string }[]; deletes?: string[]; select?: string[]; done: string; failed: (why: string) => string; open?: string[];
+    /** Puts it back: offered as the toast's Undo once the change is saved (DD-FB-01). */
+    undo?: () => Promise<void>;
+  }) {
     const before = tree();
     const beforeFiles = files();
     const moves = o.moves ?? [];
@@ -235,8 +261,10 @@ export function registerFiles(ctx: Ctx) {
         ctx.setNote({ path: undefined, saveState: "saved" });
         await ctx.load(await bridge.defaultNotePath());
       }
-      toast(withLinks(o.done, writes));
+      toast(withLinks(o.done, writes), o.undo ? { action: undoAction(o.undo) } : {});
       announce(withLinks(o.done, writes));
+      // Recently deleted is listed again the next time it opens.
+      if (o.deletes?.length) setFiles((f) => ({ recent: { ...f.recent, notes: undefined } }));
     } catch (e) {
       // The screen as it is now: anything else that changed meanwhile is read again.
       const untouched = tree() === next;
@@ -269,6 +297,22 @@ export function registerFiles(ctx: Ctx) {
       touched: plan.moves.map((m) => m.to), moves: plan.moves, open: dest === rootOf(tree(), dest)?.path ? [] : [dest],
       done: catalog.format("files.moved", { what, where }),
       failed: (why) => catalog.format("files.moveFailed", { what, reason: why }),
+      undo: () => moveBack(plan.moves, what),
+    });
+  }
+  /** Undo for a move: each item back to the folder it came from, as one batch that updates links again. */
+  async function moveBack(moves: readonly { from: string; to: string }[], what: string): Promise<void> {
+    let t = tree();
+    const back: { from: string; to: string }[] = [];
+    for (const m of moves) {
+      const p = planMove(t, [m.to], dirOf(m.from));
+      if (p.kind === "refused") return void refused("files.undoFailed", { what }, p.reason);
+      t = p.tree;
+      back.push(...p.moves);
+    }
+    await perform(t, back.map((m) => ({ op: "move" as const, from: m.from, to: m.to })), {
+      touched: back.map((m) => m.to), moves: back, done: catalog.format("files.movedBack", { what }),
+      failed: (why) => catalog.format("files.undoFailed", { what, reason: why }),
     });
   }
   commands.register<{ source: string; target: string }>({
@@ -284,6 +328,8 @@ export function registerFiles(ctx: Ctx) {
     const q = m.query.trim().toLocaleLowerCase();
     const from = rootOf(s.workspace.tree, m.paths[0] ?? "");
     return destinations(s.workspace.tree, m.paths)
+      // Restore to… stays in the note's own section: a restore never changes who can see it (FIL-10).
+      .filter((d) => !m.restore || d.root.id === from?.id)
       .map((d) => {
         const label = d.depth === 0 ? rootLabel(d.root.id) : d.name;
         const where = d.depth === 0 ? "" : rootLabel(d.root.id) + " · " + dirOf(d.path).slice(d.root.path.length).replace(/^[\\/:]+/, "").replace(/\\/g, "/");
@@ -298,6 +344,7 @@ export function registerFiles(ctx: Ctx) {
       .filter((d) => !q || d.label.toLocaleLowerCase().includes(q));
   };
   const firstEnabled = (s: AppState) => moveList(s).find((d) => !d.disabled)?.id ?? "";
+
   const setMove = (patch: Partial<FilesState["move"]>) => setFiles((f) => ({ move: { ...f.move, ...patch } }));
   commands.register({
     id: "files.moveTo", title: "command.files.moveTo", icon: "folder", shortcut: { default: "Mod+Shift+M", handledBy: "files" }, layer: "power", group: "files",
@@ -329,24 +376,47 @@ export function registerFiles(ctx: Ctx) {
       const dest = typeof id === "string" && id !== "" ? id : files().move.activeId;
       const item = moveList(store.state).find((d) => d.id === dest);
       if (!item || item.disabled) return;
-      const paths = files().move.paths;
-      setFiles((f) => ({ move: { ...f.move, open: false }, focusRequest: f.focusRequest + 1 }));
+      const { paths, restore } = files().move;
+      setFiles((f) => ({ move: { ...f.move, open: false, restore: undefined }, focusRequest: f.focusRequest + 1 }));
+      if (restore) return void doRestore([restore], dest);
       doMove(paths, dest);
     },
   });
   commands.register({ id: "move.chooseActive", title: "command.move.choose", shortcut: { default: "Enter", handledBy: "moveField" }, layer: "power", group: "files", run: (_a, c) => c.run("move.choose", { id: "" }) });
-  commands.register<{ open: boolean }>({ id: "move.setOpen", title: "command.files.moveTo", run: ({ open }) => { if (!open) setFiles((f) => ({ move: { ...f.move, open: false }, focusRequest: f.focusRequest + 1 })); } });
+  commands.register<{ open: boolean }>({ id: "move.setOpen", title: "command.files.moveTo", run: ({ open }) => { if (!open) setFiles((f) => ({ move: { ...f.move, open: false, restore: undefined }, focusRequest: f.focusRequest + 1 })); } });
 
   // ---- deleting (FIL-01, FIL-02) ----
   function doDelete(paths: string[]): void {
     const plan = planDelete(tree(), paths);
     const what = whatOf(paths);
     if (plan.kind === "refused") return void refused("files.deleteFailed", { what }, plan.reason);
+    // Folders that go with it, parent first, so Undo can put notes back where they were.
+    const folders = [...walk(tree())].filter((x) => x.node.kind === "folder" && paths.some((p) => isWithin(p, x.path))).map((x) => x.path).sort((a, b) => a.length - b.length);
     void perform(plan.tree, paths.map((path) => ({ op: "delete" as const, path })), {
       touched: [], deletes: paths,
       done: catalog.format(bridge.platform === "web" ? "files.deleted" : "files.trashed", { what }),
       failed: (why) => catalog.format("files.deleteFailed", { what, reason: why }),
+      // With Git, a delete is a commit, so Undo restores it from history (FIL-10).
+      ...(canRestore(store.state) ? { undo: () => undelete(paths, folders, what) } : {}),
     });
+  }
+  /** Undo for a delete: its folders made again, then its notes restored from history where they were. */
+  async function undelete(paths: readonly string[], folders: readonly string[], what: string): Promise<void> {
+    try {
+      await ctx.exclusive(async () => {
+        const ids = (await ws!.deleted!()).filter((d) => paths.some((p) => isWithin(p, d.path))).map((d) => d.id);
+        if (folders.length) await ws!.apply!(folders.map((path) => ({ op: "createFolder" as const, path })));
+        if (ids.length) await ws!.restore!(ids);
+      });
+      await rescan();
+      setFiles((f) => ({ recent: { ...f.recent, notes: undefined } }));
+      const done = catalog.format("files.restored", { what });
+      toast(done);
+      announce(done);
+    } catch (e) {
+      await rescan();
+      refused("files.undoFailed", { what }, opErrorCode(e));
+    }
   }
   commands.register({
     id: "files.delete", title: "command.files.delete", icon: "delete", shortcut: { macos: "Mod+Backspace", default: "Delete", handledBy: "filesTree" }, layer: "basic", group: "files",
@@ -418,6 +488,58 @@ export function registerFiles(ctx: Ctx) {
       },
     });
   }
+
+  // ---- Recently deleted (FIL-10) ----
+  /** Restoring needs Git history: a desktop workspace with a repository. */
+  const canRestore = (s: AppState) => Boolean(ws?.deleted && ws.restore && ws.apply) && s.sync.git && s.workspace.access === "write";
+  const recent = () => files().recent;
+  const setRecent = (patch: Partial<FilesState["recent"]>) => setFiles((f) => ({ recent: { ...f.recent, ...patch } }));
+  async function listDeleted(): Promise<void> {
+    setRecent({ loading: true });
+    const notes = await ws!.deleted!().catch(() => [] as DeletedNote[]);
+    setRecent({ loading: false, notes });
+  }
+  commands.register({
+    id: "files.showDeleted", title: "command.files.showDeleted", icon: "history",
+    enabled: canRestore,
+    run: async () => {
+      if (!files().open) reveal();
+      setFiles((f) => ({ edit: undefined, recent: { ...f.recent, open: true, focus: f.recent.focus + 1 } }));
+      await listDeleted();
+    },
+  });
+  commands.register({ id: "files.hideDeleted", title: "command.files.hideDeleted", run: () => setFiles((f) => ({ recent: { ...f.recent, open: false }, focusRequest: f.focusRequest + 1 })) });
+  const deletedNote = (id: string) => recent().notes?.find((n) => n.id === id);
+  /** Puts deleted notes back, in place or in a chosen folder of their section, in one commit (FIL-10). */
+  async function doRestore(ids: string[], folder?: string): Promise<void> {
+    const notes = ids.map(deletedNote).filter((n): n is DeletedNote => Boolean(n));
+    const what = notes.length === 1 ? catalog.format("files.quoted", { name: notes[0]!.title }) : catalog.format("files.items", { count: ids.length });
+    try {
+      const back = await ctx.exclusive(() => ws!.restore!(ids, folder));
+      setTree(applyChanges(tree(), back.map((r) => ({ path: r.path, kind: "note" as const, exists: true, title: r.title }))));
+      setFiles((f) => ({
+        recent: { ...f.recent, notes: f.recent.notes?.filter((n) => !ids.includes(n.id)), focus: f.recent.focus + 1 },
+        expanded: [...new Set([...f.expanded, ...back.flatMap((r) => ancestorsOf(tree(), r.path))])],
+        selection: back[0] ? { selected: back.map((r) => r.path), anchor: back[0].path, focus: back[0].path } : f.selection,
+      }));
+      const where = back[0] ? folderLabel(dirOf(back[0].path)) : "";
+      const done = catalog.format("files.restoredTo", { what, where: catalog.format("files.quoted", { name: where }) });
+      toast(done);
+      announce(done);
+    } catch (e) {
+      refused("files.restoreFailed", { what }, opErrorCode(e));
+    }
+  }
+  commands.register<{ id: string }>({ id: "files.restore", title: "command.files.restore", enabled: canRestore, run: ({ id }) => doRestore([String(id)]) });
+  commands.register<{ id: string }>({
+    id: "files.restoreTo", title: "command.files.restoreTo", enabled: canRestore,
+    run: ({ id }) => {
+      const n = deletedNote(String(id));
+      if (!n) return;
+      setMove({ open: true, query: "", paths: [n.path], restore: n.id, focus: files().move.focus + 1, activeId: "" });
+      setMove({ activeId: firstEnabled(store.state) });
+    },
+  });
 
   // ---- creating and renaming (FIL-01, FIL-02) ----
   commands.register({
@@ -608,9 +730,10 @@ export function registerFiles(ctx: Ctx) {
       const m = s.ui.files.move;
       if (!m.open) return { open: false, title: "", query: "", activeId: "", focus: m.focus, summary: "", items: [] };
       const items = moveList(s);
-      const what = whatOf(m.paths);
+      const restoring = m.restore ? s.ui.files.recent.notes?.find((n) => n.id === m.restore) : undefined;
+      const what = restoring ? catalog.format("files.quoted", { name: restoring.title }) : whatOf(m.paths);
       return {
-        open: true, title: catalog.format("move.title", { what }), query: m.query, activeId: m.activeId, focus: m.focus, items,
+        open: true, title: catalog.format(restoring ? "move.restoreTitle" : "move.title", { what }), query: m.query, activeId: m.activeId, focus: m.focus, items,
         summary: items.length ? catalog.format("move.count", { count: items.length }) : catalog.format("move.none"),
       };
     },
@@ -632,6 +755,46 @@ export function registerFiles(ctx: Ctx) {
         open: true, title: catalog.format("files.confirm.title"), danger: true,
         message: catalog.format(pub ? "files.confirm.public" : "files.confirm.message", { what: c.name, notes: c.notes }),
         confirmLabel: catalog.format(pub ? "files.confirm.unpublish" : "files.confirm.delete", { notes: c.notes }),
+      };
+    },
+  });
+
+  // Recently deleted in the Files sheet: its footer, and the list that opens in place (Files → Deleting and restoring).
+  const DELETED_NOTE = { type: "object" as const, properties: { id: { type: "string" as const }, title: { type: "string" as const }, description: { type: "string" as const } } };
+  const dayLabel = (at: number, today: Date) => {
+    const d = new Date(at);
+    const days = Math.round((new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() - new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) / 86_400_000);
+    return days === 0 ? catalog.format("deleted.today") : days === 1 ? catalog.format("deleted.yesterday") : catalog.format("deleted.day", { at });
+  };
+  viewModels.register({
+    id: "vm.deleted",
+    schema: {
+      type: "object",
+      properties: {
+        available: { type: "boolean" }, open: { type: "boolean" }, loading: { type: "boolean" }, footer: { type: "string" }, focus: { type: "number" },
+        groups: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, notes: { type: "array", items: DELETED_NOTE } } } },
+        empty: { type: "boolean" }, status: { type: "string" },
+      },
+    },
+    reads: ["ui.files.recent", "ui.files.open", "sync.git", "workspace.access", "workspace.tree"],
+    select: (s) => {
+      const r = s.ui.files.recent;
+      const available = s.ui.files.open && canRestore(s);
+      const count = r.notes?.length;
+      const footer = available ? catalog.format(count === undefined ? "deleted.footer" : "deleted.footerCount", { count: count ?? 0 }) : "";
+      if (!available || !r.open) return { available, open: false, loading: false, footer, focus: r.focus, groups: [], empty: false, status: "" };
+      const now = new Date();
+      const groups = groupByDay(r.notes ?? []).map((g) => ({
+        id: g.day, label: dayLabel(g.at, now),
+        notes: g.notes.map((n) => ({
+          id: n.id, title: n.title,
+          description: n.folder ? catalog.format("deleted.where", { root: catalog.format(`files.root.${n.root}`), folder: n.folder, at: n.deletedAt })
+            : catalog.format("deleted.whereRoot", { root: catalog.format(`files.root.${n.root}`), at: n.deletedAt }),
+        })),
+      }));
+      return {
+        available, open: true, loading: r.loading, footer, focus: r.focus, groups, empty: !r.loading && !groups.length,
+        status: r.loading ? catalog.format("deleted.loading") : catalog.format("deleted.count", { count: count ?? 0 }),
       };
     },
   });

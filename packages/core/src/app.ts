@@ -17,6 +17,7 @@ import { joinPath, newNoteFolder } from "./workspace.ts";
 import { registerImport, IMPORT_CLOSED, type ImportState } from "./import-app.ts";
 import { appStateOfSettings, parseSettings, settingsFileOf, splitAppState, type SettingsFile } from "./settings.ts";
 import { registerSync, NO_SYNC, SyncFailed, type SyncState } from "./sync-app.ts";
+import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -63,6 +64,8 @@ export interface AppState {
     files: FilesState;
     /** Import notes on the desktop: where a chosen bundle's notes go (FRE-10). */
     importNotes: ImportState;
+    /** The conflict resolver (FIL-12, IA-CMP-CONFLICT). */
+    conflict: ConflictState;
   };
   /** Synced settings (PRV-03): no private repository to sync through, or syncing off or on. */
   settingsSync: "unavailable" | "off" | "on";
@@ -104,8 +107,8 @@ export interface ToastState {
   id: number;
   message: string;
   tone: "info" | "error";
-  /** A command the toast offers ([Undo], [Retry]) and its label. */
-  action?: { command: string; label: string };
+  /** A command the toast offers ([Undo], [Retry], [Resolve]), its label, and its arguments. */
+  action?: { command: string; label: string; args?: Record<string, unknown> };
   paused: boolean;
 }
 
@@ -174,7 +177,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -234,7 +237,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const setNote = (patch: Partial<AppState["note"]>) =>
     store.update((s) => ({ ...s, note: { ...s.note, ...patch } }));
   const sync = registerSync({ store, bridge, catalog, toast });
-  const workspace = registerWorkspaceFeatures({ store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}) });
+  const workspace = registerWorkspaceFeatures({
+    store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
+    // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).
+    outside: (path, mine, theirs) => conflicts.outside(path, mine, theirs),
+  });
 
   async function writeNow(): Promise<void> {
     clearTimeout(saveTimer);
@@ -242,6 +249,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     const { path, markdown, saveState } = store.state.note;
     // Never into a workspace this app mustn't write (DST-05); the text stays unsaved, not lost.
     if (!path || saveState === "saved" || noteReadOnly(store.state)) return;
+    // The file changed outside while this was unsaved: nothing overwrites it until a choice is made (D-92).
+    if (conflicts.holds(path)) return;
     setNote({ saveState: "saving" });
     try {
       await bridge.writeNote(path, markdown);
@@ -282,6 +291,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const md = await bridge.readNote(path);
       setNote({ path, key: `${path}#${Date.now()}`, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
       workspace.loaded(path, md);
+      // A note sync found changed elsewhere opens the resolver when it's opened (IA-CMP-CONFLICT).
+      conflicts.offer(path);
       // A private note's name is private: it's never written to this browser's storage (D-90).
       if (sourceOf(path) !== "private") await persistAppState({ lastNotePath: path });
     } catch {
@@ -293,6 +304,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   async function flush(): Promise<boolean> {
     if (saveTimer || store.state.note.saveState === "unsaved" || store.state.note.saveState === "error") saving = saving.then(writeNow);
     await saving;
+    // Text that can't be written without overwriting the other version asks for a choice instead.
+    if (conflicts.holds(store.state.note.path) && store.state.note.saveState !== "saved") {
+      conflicts.offer(store.state.note.path);
+      return false;
+    }
     return store.state.note.saveState === "saved" || !store.state.note.path;
   }
 
@@ -320,7 +336,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     layer: "basic", group: "app",
     // Saving is a wait the person started, so it goes through the task tracker (PRF-08). With Git,
     // it also commits and pushes now, and says "Saved and synced" or why it couldn't (D-23).
-    run: () => tracker.run("note.save", "task.saving", async () => {
+    // A note waiting for a conflict choice asks for it instead (FIL-12).
+    run: () => (conflicts.holds(store.state.note.path) ? Promise.resolve(conflicts.offer(store.state.note.path)) : tracker.run("note.save", "task.saving", async () => {
       // What's on screen is what's saved: the editor hands over text it hasn't sent yet.
       editorAction(FLUSH_EDITOR);
       clearTimeout(saveTimer);
@@ -329,9 +346,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       await saving;
       if (store.state.note.saveState === "error") throw new Error("save failed");
       await sync.saveNow();
-    }, store.state.sync.git ? "task.synced" : "task.saved").catch((e: unknown) => {
-      const retry = { command: "note.save", label: catalog.format("toast.retry") };
-      toast(e instanceof SyncFailed ? e.message : catalog.format("toast.saveFailed"), { tone: "error", action: retry });
+    }, store.state.sync.git ? "task.synced" : "task.saved")).catch((e: unknown) => {
+      const conflict = e instanceof SyncFailed && e.problem === "conflict";
+      const action = conflict ? { command: "conflict.open", label: catalog.format("conflict.resolve") } : { command: "note.save", label: catalog.format("toast.retry") };
+      toast(e instanceof SyncFailed ? e.message : catalog.format("toast.saveFailed"), { tone: "error", action });
     }),
   });
   commands.register<{ value: string }>({
@@ -583,7 +601,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const t = store.state.ui.toasts.find((x) => x.id === Number(id));
       if (!t?.action) return;
       dismissToast(t.id);
-      await ctx.run(t.action.command);
+      await ctx.run(t.action.command, t.action.args);
     },
   });
   commands.register<{ id: number; paused: boolean }>({
@@ -679,6 +697,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     appState: () => appState, persistAppState, itemSchema: ITEM_SCHEMA, describeItem,
   });
   registerImport({ store, commands, viewModels, catalog, bridge, tracker, toast, menu: extraMenu });
+  const conflicts = registerConflicts({
+    store, commands, viewModels, catalog, bridge, tracker, toast, announce, exclusive, setNote, flush,
+    loaded: (path, md) => workspace.loaded(path, md),
+    ...(options.clock ? { now: options.clock.now } : {}),
+  });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
   // keeps them on this device as they are now, and deletes the file.
   commands.register({
@@ -886,7 +909,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       },
     },
     // Not note.markdown: typing never re-selects the canvas (PRF-11). It shows one note, by path.
-    reads: ["note.key", "note.initialMarkdown", "note.status", "note.saveState", "note.path", "workspace.access", "workspace.folder", "sync"],
+    reads: ["note.key", "note.initialMarkdown", "note.status", "note.saveState", "note.path", "workspace.access", "workspace.folder", "sync", "ui.conflict.held"],
     shows: (s) => (s.note.path ? [{ kind: "note", path: s.note.path }] : []),
     select: (s) => ({
       noteKey: s.note.key,
@@ -896,9 +919,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       saveProblem: s.note.saveState === "error",
       readOnly: noteReadOnly(s),
       // The trigger's dot shows a save or sync problem (Feedback → Save and sync status).
-      problem: s.note.saveState === "error" || Boolean(s.sync.problem),
+      problem: s.note.saveState === "error" || Boolean(s.sync.problem) || Boolean(s.ui.conflict.held),
       problemLabel: s.note.saveState === "error" ? (catalog.has("trigger.saveProblem") ? catalog.format("trigger.saveProblem") : "")
-        : s.sync.problem && catalog.has("trigger.syncProblem") ? catalog.format("trigger.syncProblem") : "",
+        : s.ui.conflict.held && catalog.has("trigger.conflict") ? catalog.format("trigger.conflict")
+          : s.sync.problem && catalog.has("trigger.syncProblem") ? catalog.format("trigger.syncProblem") : "",
     }),
   });
 

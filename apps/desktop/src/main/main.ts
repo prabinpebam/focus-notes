@@ -218,7 +218,7 @@ const writesDone = (p: string) => Promise.allSettled([...writeQueues].filter(([k
 async function applyOps(raw: unknown): Promise<BatchOp[]> {
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > 5000) throw refuse("invalid");
   type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string }
-    | { op: "write"; path: string; text: string; root: string };
+    | { op: "write" | "create"; path: string; text: string; root: string };
   const ops = raw.map((op: unknown): Op => {
     const o = op as Record<string, unknown>;
     if (o?.op === "createFolder" || o?.op === "delete") return { op: o.op, ...opPath(o.path) };
@@ -229,10 +229,10 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
       if (from.root !== to.root && !isWorkspace()) throw refuse("invalid");
       return { op: "move" as const, path: from.path, to: to.path, root: from.root };
     }
-    if (o?.op === "write") {
+    if (o?.op === "write" || o?.op === "create") {
       const at = opPath(o.path);
       if (typeof o.text !== "string" || !isMarkdown(at.path)) throw refuse("invalid");
-      return { op: "write" as const, ...at, text: o.text };
+      return { op: o.op, ...at, text: o.text };
     }
     throw refuse("invalid");
   });
@@ -276,6 +276,12 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         if (old === undefined) throw refuse("notFound");
         await atomicWrite(op.path, op.text);
         undo.push(() => atomicWrite(op.path, old));
+      } else if (op.op === "create") {
+        // A new note, never over another (the conflict resolver's copies, FIL-12).
+        if (existsSync(op.path)) throw refuse("taken");
+        if (!(await isDir(dirname(op.path)))) throw refuse("notFound");
+        await writeFile(op.path, op.text, { encoding: "utf8", flag: "wx" });
+        undo.push(() => rm(op.path, { force: true }));
       }
     }
     for (const op of ops) {
