@@ -76,6 +76,66 @@ export interface SearchResults {
   ms: number;
 }
 
+/**
+ * Find in all notes (FND-04): every match of a query in the notes' visible text, matched exactly as
+ * the find bar matches in one note (case and accents ignored by default, whole word, regular expression).
+ */
+export interface FindQuery {
+  text: string;
+  caseSensitive?: boolean;
+  wholeWord?: boolean;
+  regex?: boolean;
+  /** Only notes in these roots (`is:public`, `is:private`). */
+  roots?: readonly RootId[];
+  /** Only notes in this folder, a path relative to its root (`in:essays/`). */
+  within?: string;
+  /** At most this many matches listed in all (1,000 unless given, never more than 5,000). Every match is counted. */
+  limit?: number;
+}
+
+export interface FindMatch {
+  /** Its place among the note's matches, from 0: the find bar shows it as "index + 1 of count". */
+  index: number;
+  /** The line it's on, from 0: one line per block of the note's visible text. */
+  line: number;
+  /**
+   * Where the editor finds it again, even where the index and the editor see a block differently
+   * (a block the editor shows as raw Markdown, a table): its line's `lineKey`, how many earlier
+   * lines read the same, and its place among that line's matches.
+   */
+  lineKey: number;
+  lineNth: number;
+  occurrence: number;
+  /** The line around the match, on one line, with the match marked. */
+  snippet: { text: string; highlights: Range[] };
+}
+
+export interface FindNote {
+  path: string;
+  rel: string;
+  root: RootId;
+  title: string;
+  /** Every match in the note, listed or not. */
+  count: number;
+  /** The matches listed, in order (fewer than `count` once the limit is reached). */
+  matches: FindMatch[];
+}
+
+export interface FindResults {
+  query: FindQuery;
+  /** Notes with a match: by root (private, public, then this browser's), then by path. */
+  notes: FindNote[];
+  /** Every match, in every note. */
+  total: number;
+  /** Some matches weren't listed: the limit was reached. */
+  truncated: boolean;
+  /** The query is a regular expression that doesn't compile. */
+  invalid: boolean;
+  /** Notes whose text wasn't indexed yet, so couldn't be searched. */
+  unread: number;
+  ms: number;
+}
+
 /** How far the index has got (Spotlight's "Indexing 1,240 / 5,000"). Titles are searchable from the start. */
 export interface IndexStatus {
   /** Notes the index knows. */
@@ -116,6 +176,8 @@ export interface SearchIndexClient {
   /** Sends changes, in order. A query sent after them sees them (full text once it's indexed). */
   apply(ops: readonly IndexOp[]): void;
   query(query: SearchQuery): Promise<SearchResults>;
+  /** Find in all notes (FND-04): exact matches in every indexed note's text, by note. */
+  find(query: FindQuery): Promise<FindResults>;
   status(): IndexStatus;
   onStatus(listener: (status: IndexStatus) => void): () => void;
   /** Resolves once everything sent so far is indexed. */

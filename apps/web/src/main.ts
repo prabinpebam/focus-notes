@@ -14,5 +14,6 @@ mountApp(root, { app, views });
 // Hand over pending text whenever the page might go away (QLT-03).
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") void flushApp(app); });
 addEventListener("pagehide", () => void flushApp(app));
-// The search index (WP-4.1) builds in its worker once the first note is open, never before; Spotlight asks it (WP-4.2).
+// The search index (WP-4.1) builds in its worker once the first note is open, never before; Spotlight
+// (WP-4.2) and Find in all notes (WP-4.3) ask it.
 void app.start().then(() => app.useSearch(startSearch(app, createSearchWorker(searchWorkerUrl))));

@@ -173,9 +173,9 @@ test("SPT-02, SPT-04, KEY-01: one ranked list with live states, recent notes, an
   await expect(option(page, /On focus/)).toContainText("essays/on-focus.md · Public");
   await expect(results(page).getByRole("group", { name: "In notes" }).getByRole("option", { name: /Ideas/ })).toContainText("Keep a foc list");
   await expect(results(page).getByRole("group", { name: "Actions" }).getByRole("option")).toHaveText([/Create note “foc”/, /Find “foc” in all notes/]);
-  // Find in all notes arrives with WP-4.3: until then it says so.
-  await expect(option(page, /Find “foc” in all notes/)).toHaveAttribute("aria-disabled", "true");
-  await expect(option(page, /Find “foc” in all notes/)).toContainText("arrives in a later preview");
+  await expect(option(page, /Find “foc” in all notes/)).not.toHaveAttribute("aria-disabled", "true");
+  // Matches are marked, as Find in all notes marks them (one ResultList, D-109, D-110).
+  await expect(results(page).getByRole("group", { name: "In notes" }).getByRole("option", { name: /Ideas/ }).locator("mark")).toHaveText(["foc"]);
 
   // Running a toggle leaves Spotlight open and its row shows the new state; Esc closes it.
   while (!(await active(page).textContent())?.startsWith("Focus mode")) await page.keyboard.press("ArrowDown");
@@ -192,6 +192,20 @@ test("SPT-02, SPT-04, KEY-01: one ranked list with live states, recent notes, an
   await page.keyboard.press("Enter");
   await expect(editor(page).locator("h1")).toHaveText("Zebra crossings");
   await expect.poll(() => existsSync(join(l.docs, "private", "notes", "zebra-crossings.md")), { timeout: 10_000 }).toBe(true);
+
+  // No match: Find in all notes opens its sheet searching for the query (WP-4.3, D-110).
+  await open(page);
+  await search(page, "foc list");
+  while (!(await active(page).textContent())?.startsWith("Find “foc list” in all notes")) await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(spotlight(page)).toBeHidden();
+  const sheet = page.getByRole("complementary", { name: "Find in all notes" });
+  await expect(sheet.getByRole("combobox", { name: "Search all notes" })).toHaveValue("foc list");
+  await expect(sheet.getByRole("combobox", { name: "Search all notes" })).toBeFocused();
+  await expect(sheet.getByRole("listbox", { name: "Matches" }).getByRole("group", { name: /^Ideas/ }).getByRole("option")).toHaveCount(1, { timeout: 20_000 });
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await expect(sheet).toBeHidden();
 
   // KEY-01: Mod+Shift+P lists every command, each with its shortcut.
   await open(page, `${mod}+Shift+P`);

@@ -1358,7 +1358,8 @@
             "pickerField",
             "moveField",
             "repoField",
-            "spotlightField"
+            "spotlightField",
+            "findAllField"
           ],
           "default": "none"
         },
@@ -1551,6 +1552,18 @@
               "t": "field.clear"
             },
             "keyScope": "spotlightField"
+          }
+        },
+        {
+          "name": "keyScope findAllField",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "keyScope": "findAllField"
           }
         }
       ]
@@ -1968,7 +1981,7 @@
     {
       "type": "ResultList",
       "tier": "primitive",
-      "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant), in labeled groups, with matches in bold and each row's state.",
+      "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant). Header items head labeled groups; highlights mark where the query matched; a row can show its state.",
       "props": {
         "label": {
           "kind": "message",
@@ -1990,6 +2003,15 @@
           ],
           "default": "fill",
           "description": "Fills its container, or the slash menu's fixed width."
+        },
+        "height": {
+          "kind": "enum",
+          "values": [
+            "content",
+            "fill"
+          ],
+          "default": "content",
+          "description": "As tall as its items up to a popover's height, or the height its container gives it (a side sheet)."
         }
       },
       "events": {
@@ -2069,6 +2091,33 @@
             "activeId": {
               "get": "vm.gallery.spotlightFirst"
             }
+          }
+        },
+        {
+          "name": "groups with descriptions and matches, height fill",
+          "props": {
+            "label": {
+              "t": "findAll.results"
+            },
+            "items": {
+              "get": "vm.gallery.matches"
+            },
+            "activeId": {
+              "get": "vm.gallery.matchFirst"
+            },
+            "height": "fill"
+          }
+        },
+        {
+          "name": "height content",
+          "props": {
+            "label": {
+              "t": "find.label"
+            },
+            "items": {
+              "get": "vm.gallery.results"
+            },
+            "height": "content"
           }
         }
       ]
@@ -5623,7 +5672,7 @@
     {
       "type": "Sheet",
       "tier": "layout",
-      "description": "A side sheet over the canvas (Files on the left, Theme on the right). Not modal; closes on Esc or a click on the canvas.",
+      "description": "A side sheet over the canvas (Files on the left, Theme and Find in all notes on the right). Not modal; closes on Esc or a click on the canvas.",
       "props": {
         "label": {
           "kind": "message",
@@ -5641,7 +5690,8 @@
           "kind": "enum",
           "values": [
             "files",
-            "theme"
+            "theme",
+            "find"
           ],
           "default": "files",
           "description": "A layout.sheet* token."
@@ -5650,7 +5700,8 @@
           "kind": "enum",
           "values": [
             "none",
-            "files"
+            "files",
+            "findAll"
           ],
           "default": "none",
           "description": "Keys registered for this scope work while focus is inside."
@@ -5743,6 +5794,44 @@
                 "value": {
                   "t": "gallery.sample"
                 }
+              }
+            }
+          ]
+        },
+        {
+          "name": "end, find width",
+          "props": {
+            "label": {
+              "t": "findAll.title"
+            },
+            "side": "end",
+            "width": "find",
+            "keyScope": "findAll"
+          },
+          "slots": {
+            "header": [
+              {
+                "type": "Heading",
+                "props": {
+                  "level": "2",
+                  "value": {
+                    "t": "findAll.title"
+                  }
+                }
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "ResultList",
+              "props": {
+                "label": {
+                  "t": "findAll.results"
+                },
+                "items": {
+                  "get": "vm.gallery.matches"
+                },
+                "height": "fill"
               }
             }
           ]

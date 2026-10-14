@@ -50,6 +50,10 @@
     "SPT-07.fullTextP95Ms": {
       "budget": 100,
       "unit": "ms"
+    },
+    "FND-04.findAllP95Ms": {
+      "budget": 300,
+      "unit": "ms"
     }
   },
   "baselinePlatform": "win32",

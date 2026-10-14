@@ -52,8 +52,10 @@ export interface SpotlightSearch {
 
 /** Spotlight's keypress-to-visible measure on the User Timing timeline (SPT-07). */
 export const SPOTLIGHT_MEASURE = "fn:spotlight.open";
-/** Find in all notes is WP-4.3's; Spotlight offers it once that command exists. */
+/** No match offers Find in all notes (WP-4.3), which opens on the query; disabled only while that command is. */
 export const FIND_ALL_NOTES = "find.allNotes";
+/** A group's header item in the list: its ID is this and the group's (row IDs are `group:key`). */
+export const GROUP_HEADER = "group/";
 /** The empty field's suggestions (Spotlight → Empty and no-result states). */
 export const SUGGESTIONS = ["note.new", "focus.toggle", "appearance.toggle"] as const;
 
@@ -452,6 +454,11 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
 
   // ---- what results do ----
   const actionsOf = (kind: SpotlightRow["kind"]) => kind !== "create" && kind !== "find" && kind !== "help";
+  /** Why Find in all notes can't run now: its own reason, as a command's row shows it. */
+  function findAllReason(): string {
+    const reason = commands.has(FIND_ALL_NOTES) ? commands.describe(FIND_ALL_NOTES).disabledReason : undefined;
+    return reason ? msg(reason) : msg("spotlight.unavailable");
+  }
   function rowEnabled(r: SpotlightRow): boolean {
     if (r.kind === "find") return commands.has(FIND_ALL_NOTES) && commands.describe(FIND_ALL_NOTES).enabled;
     if (r.kind === "create") return commands.describe("note.new").enabled;
@@ -623,7 +630,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
 
   // ---- the view model ----
   const describeRow = (r: SpotlightRow, s: AppState) => {
-    const base = { id: r.id, label: r.label, highlights: r.highlights.map((x) => [x[0], x[1]]), group: msg(`spotlight.group.${r.group}`) };
+    const base = { id: r.id, label: r.label, highlights: r.highlights.map((x) => [x[0], x[1]]) };
     switch (r.kind) {
       case "note":
       case "text": {
@@ -654,7 +661,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       case "create":
         return { ...base, label: msg("spotlight.create", { query: r.label }), highlights: [], icon: "add", shortcut: formatChord("Mod+N", bridge.platform), ...(!rowEnabled(r) ? { disabled: true, description: msg("command.note.new.readOnly") } : {}) };
       case "find":
-        return { ...base, label: msg("spotlight.find", { query: r.label }), highlights: [], icon: "search", ...(!rowEnabled(r) ? { disabled: true, description: msg("spotlight.reason.findAllNotes") } : {}) };
+        return { ...base, label: msg("spotlight.find", { query: r.label }), highlights: [], icon: "search", ...(!rowEnabled(r) ? { disabled: true, description: findAllReason() } : {}) };
       default:
         return { ...base, icon: ICON_OF_GROUP[r.group] ?? "info" };
     }
@@ -669,7 +676,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     type: "object" as const,
     properties: {
       id: { type: "string" as const }, label: { type: "string" as const }, description: { type: "string" as const }, icon: { type: "string" as const },
-      shortcut: { type: "string" as const }, state: { type: "string" as const }, disabled: { type: "boolean" as const }, group: { type: "string" as const },
+      shortcut: { type: "string" as const }, state: { type: "string" as const }, disabled: { type: "boolean" as const }, header: { type: "boolean" as const },
       highlights: { type: "array" as const, items: { type: "array" as const, items: { type: "number" as const } } },
       descriptionHighlights: { type: "array" as const, items: { type: "array" as const, items: { type: "number" as const } } },
     },
@@ -710,7 +717,11 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
           listLabel: msg("spotlight.actionsList"),
         };
       }
-      const items = p.rows.map((r) => describeRow(r, s));
+      // Each group is headed by its label (ResultList's header items): Top hit, Notes, Commands…
+      const items = p.rows.flatMap((r, i) => [
+        ...(r.group !== p.rows[i - 1]?.group ? [{ id: `${GROUP_HEADER}${r.group}`, label: msg(`spotlight.group.${r.group}`), header: true }] : []),
+        describeRow(r, s),
+      ]);
       const count = p.rows.filter((r) => r.kind !== "create" && r.kind !== "find").length;
       const summary = p.busy ? "" : count ? msg("spotlight.count", { count }) : p.query ? msg("spotlight.none", { query: p.query }) : "";
       return {

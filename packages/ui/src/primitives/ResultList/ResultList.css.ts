@@ -25,6 +25,8 @@ minimalScrollbar(list, t);
 
 /** Fills its container (Spotlight, Move to), or the slash menu's fixed width. */
 export const width = styleVariants({ fill: {}, menu: { width: t.menuWidth, maxWidth: "100%" } });
+/** As tall as its items up to a popover's height, or the height a side sheet gives it. */
+export const height = styleVariants({ content: {}, fill: { maxHeight: "none", flexGrow: 1, minHeight: 0 } });
 
 export const item = style({
   display: "flex",
@@ -44,15 +46,21 @@ export const text = style({ display: "flex", flexDirection: "column", flexGrow: 
 export const label = style({ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
 export const description = style({ color: t.textMuted, fontSize: t.captionSize, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
 export const shortcut = style({ flexShrink: 0, color: t.textMuted, fontSize: t.captionSize });
-/** A command's or setting's current state, at the end of its row. */
+/** A command's or setting's current state, or a match's place, at the end of its row. */
 export const state = style({ flexShrink: 0, color: t.state, fontSize: t.captionSize });
-/** The characters that matched the query. */
-export const match = style({ color: t.match, fontWeight: t.matchWeight });
-export const group = style({ display: "flex", flexDirection: "column", gap: t.gap, selectors: { "& + &": { marginBlockStart: t.groupGap } } });
-export const groupLabel = style({
-  paddingInline: t.groupLabelPaddingInline,
-  paddingBlock: t.groupLabelPaddingBlock,
-  color: t.groupLabel,
-  fontSize: t.captionSize,
-  fontWeight: t.groupLabelWeight,
+/**
+ * Where the query matched: marked as the find bar marks a match in the note, its text keeping AA
+ * contrast on it (D-100), and bold, so a few matched letters still stand out (D-109, D-110).
+ */
+export const match = style({ backgroundColor: t.match, color: t.matchText, borderRadius: t.matchRadius, fontWeight: t.matchWeight });
+
+/** A group: its heading, then its items (Spotlight's Top hit, Notes…; Find in all notes' note). */
+export const group = style({ display: "flex", flexDirection: "column", gap: t.gap, selectors: { "&:not(:first-child)": { marginBlockStart: t.groupGap } } });
+export const header = style({
+  display: "flex",
+  flexDirection: "column",
+  paddingInline: t.itemPaddingInline,
+  paddingBlock: t.headerPaddingBlock,
+  minWidth: 0,
 });
+export const headerLabel = style({ color: t.header, fontSize: t.captionSize, fontWeight: t.headerWeight, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });

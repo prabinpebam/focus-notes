@@ -46,9 +46,9 @@ export function serveSearch(port: PortLike, engine = new SearchEngine()): Search
       engine.apply(m.ops);
       status();
       if (engine.status().pending) schedule();
-    } else if (m.type === "query") {
+    } else if (m.type === "query" || m.type === "find") {
       try {
-        post({ type: "result", id: m.id, results: engine.query(m.query) });
+        post(m.type === "query" ? { type: "result", id: m.id, results: engine.query(m.query) } : { type: "found", id: m.id, results: engine.find(m.query) });
       } catch (e) {
         post({ type: "error", id: m.id, message: e instanceof Error ? e.message : String(e) });
       }

@@ -98,6 +98,14 @@ const SURFACES: { name: string; open: (page: Page) => Promise<void> }[] = [
     await page.keyboard.type("a");
     await expect(bar.getByRole("status").first()).toHaveText(/of \d+$/);
   } },
+  { name: "find in all notes", open: async (page) => {
+    // WP-4.3 (D-110): the sheet with grouped results, each line's match marked.
+    await page.keyboard.press(`${mod}+Shift+F`);
+    const sheet = page.getByRole("complementary", { name: "Find in all notes" });
+    await expect(sheet.getByRole("combobox", { name: "Search all notes" })).toBeFocused();
+    await page.keyboard.type("an");
+    await expect(sheet.getByRole("option").first()).toBeVisible({ timeout: 15_000 });
+  } },
   { name: "cheat sheet", open: async (page) => {
     await page.keyboard.press(`${mod}+Shift+Slash`);
     await expect(page.getByRole("searchbox", { name: "Search shortcuts" })).toBeFocused();

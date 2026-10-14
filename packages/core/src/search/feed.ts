@@ -14,7 +14,7 @@ import type { AppState } from "../app.ts";
 import type { PlatformBridge } from "../bridge.ts";
 import { sourceOf } from "../notes.ts";
 import { buildTree, walk, type RootId, type TreeNode, type WorkspaceRoot, type WorkspaceTree } from "../workspace.ts";
-import type { IndexOp, IndexStatus, SearchIndexClient, SearchItem, SearchQuery, SearchResults } from "./types.ts";
+import type { FindQuery, FindResults, IndexOp, IndexStatus, SearchIndexClient, SearchItem, SearchQuery, SearchResults } from "./types.ts";
 
 export interface SearchHost {
   store: Store<AppState>;
@@ -24,6 +24,8 @@ export interface SearchHost {
 /** The search index as the app uses it: what Spotlight (WP-4.2) and Find in all notes (WP-4.3) call. */
 export interface SearchService {
   query(query: SearchQuery): Promise<SearchResults>;
+  /** Find in all notes (FND-04): every exact match in the notes indexed so far, by note. */
+  find(query: FindQuery): Promise<FindResults>;
   /** How far indexing has got, for "Indexing 1,240 / 5,000". */
   status(): IndexStatus;
   onStatus(listener: (status: IndexStatus) => void): () => void;
@@ -229,6 +231,7 @@ export function startSearch(host: SearchHost, index: SearchIndexClient, options:
 
   return {
     query: (q) => index.query(q),
+    find: (q) => index.find(q),
     status: () => index.status(),
     onStatus: (l) => index.onStatus(l),
     setItems: (kind, items) => send([{ op: "items", kind, items }]),

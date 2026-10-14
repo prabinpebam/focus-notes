@@ -17,6 +17,7 @@
     "vm.unlock",
     "vm.about",
     "vm.files",
+    "vm.findAll",
     "vm.move",
     "vm.confirm",
     "vm.firstRun",
@@ -3521,6 +3522,223 @@
                 }
               }
             ]
+          }
+        ]
+      },
+      {
+        "type": "Sheet",
+        "id": "findAll",
+        "when": {
+          "get": "vm.findAll.open"
+        },
+        "props": {
+          "label": {
+            "t": "findAll.title"
+          },
+          "side": "end",
+          "width": "find",
+          "keyScope": "findAll"
+        },
+        "on": {
+          "close": {
+            "run": "findAll.close"
+          }
+        },
+        "slots": {
+          "header": [
+            {
+              "type": "Inline",
+              "props": {
+                "justify": "between",
+                "gap": "s"
+              },
+              "children": [
+                {
+                  "type": "Heading",
+                  "props": {
+                    "level": "2",
+                    "value": {
+                      "t": "findAll.title"
+                    }
+                  }
+                },
+                {
+                  "type": "IconButton",
+                  "props": {
+                    "icon": "dismiss",
+                    "label": {
+                      "get": "vm.findAll.actions.close.label"
+                    },
+                    "tone": "muted"
+                  },
+                  "on": {
+                    "press": {
+                      "run": "findAll.close"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "SearchField",
+              "props": {
+                "label": {
+                  "t": "findAll.field"
+                },
+                "placeholder": {
+                  "t": "findAll.field"
+                },
+                "clearLabel": {
+                  "t": "field.clear"
+                },
+                "value": {
+                  "bind": "vm.findAll.query"
+                },
+                "focusRequest": {
+                  "get": "vm.findAll.focus"
+                },
+                "invalid": {
+                  "get": "vm.findAll.invalid"
+                },
+                "keyScope": "findAllField",
+                "controls": "findAllList",
+                "activeId": {
+                  "get": "vm.findAll.activeId"
+                }
+              }
+            },
+            {
+              "type": "Inline",
+              "props": {
+                "justify": "between",
+                "gap": "s"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "get": "vm.findAll.summary"
+                    },
+                    "role": "caption",
+                    "tone": {
+                      "get": "vm.findAll.summaryTone"
+                    },
+                    "announce": true
+                  }
+                },
+                {
+                  "type": "Inline",
+                  "props": {
+                    "gap": "xs"
+                  },
+                  "children": [
+                    {
+                      "type": "IconButton",
+                      "props": {
+                        "icon": "matchCase",
+                        "label": {
+                          "get": "vm.findAll.actions.case.label"
+                        },
+                        "shortcut": {
+                          "get": "vm.findAll.actions.case.shortcut"
+                        },
+                        "tone": "muted",
+                        "toggle": true,
+                        "pressed": {
+                          "get": "vm.findAll.caseSensitive"
+                        }
+                      },
+                      "on": {
+                        "press": {
+                          "run": "findAll.toggle.caseSensitive"
+                        }
+                      }
+                    },
+                    {
+                      "type": "IconButton",
+                      "props": {
+                        "icon": "wholeWord",
+                        "label": {
+                          "get": "vm.findAll.actions.word.label"
+                        },
+                        "shortcut": {
+                          "get": "vm.findAll.actions.word.shortcut"
+                        },
+                        "tone": "muted",
+                        "toggle": true,
+                        "pressed": {
+                          "get": "vm.findAll.wholeWord"
+                        }
+                      },
+                      "on": {
+                        "press": {
+                          "run": "findAll.toggle.wholeWord"
+                        }
+                      }
+                    },
+                    {
+                      "type": "IconButton",
+                      "props": {
+                        "icon": "regex",
+                        "label": {
+                          "get": "vm.findAll.actions.regex.label"
+                        },
+                        "shortcut": {
+                          "get": "vm.findAll.actions.regex.shortcut"
+                        },
+                        "tone": "muted",
+                        "toggle": true,
+                        "pressed": {
+                          "get": "vm.findAll.regex"
+                        }
+                      },
+                      "on": {
+                        "press": {
+                          "run": "findAll.toggle.regex"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "ResultList",
+            "id": "findAllList",
+            "props": {
+              "label": {
+                "t": "findAll.results"
+              },
+              "items": {
+                "get": "vm.findAll.items"
+              },
+              "activeId": {
+                "get": "vm.findAll.activeId"
+              },
+              "height": "fill"
+            },
+            "on": {
+              "action": {
+                "run": "findAll.choose",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              },
+              "activeChange": {
+                "run": "findAll.setActive",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              }
+            }
           }
         ]
       },

@@ -8,6 +8,8 @@
  *   at a time, with typos.
  * - `SPT-07.fullTextP95Ms`: full text with snippets, typed a word at a time, with typos.
  * - `SPT-07.indexBuildMs`: from the first change to every note's text indexed (reported, no budget).
+ * - `FND-04.findAllP95Ms`: Find in all notes, every match in 5,000 notes counted and the first 1,000
+ *   listed with their lines, for words, phrases, whole words, case, and regular expressions.
  */
 import { fixtureNotes } from "./fixtures.ts";
 import { searchThread } from "./search-client.ts";
@@ -31,6 +33,7 @@ export async function measureSearch(runs = 3): Promise<Record<string, number>> {
   const build: number[] = [];
   const title: number[] = [];
   const text: number[] = [];
+  const find: number[] = [];
   for (let run = 0; run < runs; run++) {
     const index = searchThread();
     try {
@@ -54,6 +57,19 @@ export async function measureSearch(runs = 3): Promise<Record<string, number>> {
         text.push(await timed({ text: words.slice(1, 3).map(typo).join(" "), scope: "text" }));
         text.push(await timed({ text: words.slice(2, 4).join(" ").slice(0, 3 + (i % 4)), scope: "text" }));
       }
+      const found = async (q: Parameters<typeof index.find>[0]) => {
+        const t = performance.now();
+        await index.find(q);
+        return performance.now() - t;
+      };
+      for (const [i, words] of bodies.entries()) {
+        find.push(await found({ text: words[1]! }));
+        find.push(await found({ text: words.slice(1, 3).join(" "), caseSensitive: i % 2 === 0 }));
+        find.push(await found({ text: words[2]!, wholeWord: true }));
+        find.push(await found({ text: `${words[1]!.slice(0, 3)}\\w+`, regex: true }));
+      }
+      // The most common word: every note matches, and the listing stops at 1,000.
+      find.push(await found({ text: "the" }));
     } finally {
       index.dispose();
     }
@@ -63,5 +79,6 @@ export async function measureSearch(runs = 3): Promise<Record<string, number>> {
     "SPT-07.titleQueryP95Ms": round(p95(title)),
     "SPT-07.fullTextP95Ms": round(p95(text)),
     "SPT-07.indexBuildMs": Math.round(median(build)),
+    "FND-04.findAllP95Ms": round(p95(find)),
   };
 }

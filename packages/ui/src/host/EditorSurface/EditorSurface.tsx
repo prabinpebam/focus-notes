@@ -3,7 +3,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   applyLink, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
-  focusAtEnd, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
+  focusAtEnd, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
@@ -374,6 +374,17 @@ export function EditorSurface({
         const { from, to, empty } = editor.state.selection;
         const text = empty ? "" : editor.state.doc.textBetween(from, to, "\n");
         if (text && !text.includes("\n") && text.length <= 200) findRef.current.onFindPrefill?.({ value: text });
+        return;
+      }
+      if (id === "find.select") {
+        // A match opened from Find in all notes (FND-04): search for it as the find bar will, and
+        // select exactly that match. Focus goes to the find bar, so Enter steps on from there.
+        const o = { query: String(args.query ?? ""), replace: replaceRef.current, caseSensitive: Boolean(args.caseSensitive), wholeWord: Boolean(args.wholeWord), regex: Boolean(args.regex) };
+        const line = typeof args.lineKey === "number" ? { lineKey: args.lineKey, lineNth: Number(args.lineNth) || 0, occurrence: Number(args.occurrence) || 0 } : {};
+        selectFindTarget(editor, o, { index: Number(args.index) || 0, ...line });
+        const st = findStatus(editor.state);
+        lastFind.current = `${st.count}:${st.current}:${st.invalid}`;
+        findRef.current.onFindResult?.({ ...st, wrapped: false, replaced: 0 });
         return;
       }
       if (id === "slash.insert") {

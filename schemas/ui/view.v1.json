@@ -2072,7 +2072,8 @@
                     "pickerField",
                     "moveField",
                     "repoField",
-                    "spotlightField"
+                    "spotlightField",
+                    "findAllField"
                   ]
                 },
                 {
@@ -2601,7 +2602,7 @@
     },
     "c_ResultList": {
       "type": "object",
-      "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant), in labeled groups, with matches in bold and each row's state.",
+      "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant). Header items head labeled groups; highlights mark where the query matched; a row can show its state.",
       "required": [
         "type",
         "props"
@@ -2661,6 +2662,22 @@
                   "enum": [
                     "fill",
                     "menu"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "content",
+                    "fill"
                   ]
                 },
                 {
@@ -4635,7 +4652,7 @@
     },
     "c_Sheet": {
       "type": "object",
-      "description": "A side sheet over the canvas (Files on the left, Theme on the right). Not modal; closes on Esc or a click on the canvas.",
+      "description": "A side sheet over the canvas (Files on the left, Theme and Find in all notes on the right). Not modal; closes on Esc or a click on the canvas.",
       "required": [
         "type",
         "props"
@@ -4700,7 +4717,8 @@
                 {
                   "enum": [
                     "files",
-                    "theme"
+                    "theme",
+                    "find"
                   ]
                 },
                 {
@@ -4716,7 +4734,8 @@
                 {
                   "enum": [
                     "none",
-                    "files"
+                    "files",
+                    "findAll"
                   ]
                 },
                 {

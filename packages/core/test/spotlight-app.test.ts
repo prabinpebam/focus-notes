@@ -85,9 +85,15 @@ async function started(d = desktop(), opts: { search?: boolean } = {}) {
   return { app, ...d };
 }
 const sp = (app: App) => app.store.state.ui.spotlight;
-const vm = (app: App) => app.viewModels.select("vm.spotlight", app.store.state) as {
-  open: boolean; mode: string; query: string; activeId: string; summary: string; status: string; actionsTitle: string;
-  items: { id: string; label: string; icon?: string; group?: string; state?: string; shortcut?: string; description?: string; disabled?: boolean; highlights: number[][] }[];
+type Item = { id: string; label: string; icon?: string; header?: boolean; state?: string; shortcut?: string; description?: string; disabled?: boolean; highlights: number[][] };
+type Vm = { open: boolean; mode: string; query: string; activeId: string; summary: string; status: string; actionsTitle: string; items: Item[] };
+/** The view model as ResultList shows it: header items head the groups after them. */
+const rawVm = (app: App) => app.viewModels.select("vm.spotlight", app.store.state) as Vm;
+/** The same, its results only, each with the label of the group it's in. */
+const vm = (app: App) => {
+  const raw = rawVm(app);
+  let group = "";
+  return { ...raw, items: raw.items.flatMap((i) => (i.header ? ((group = i.label), []) : [{ ...i, group }])) };
 };
 /** Types into the field and waits for the answers, full text included. */
 async function type(app: App, value: string) {
@@ -143,6 +149,13 @@ describe("SPT-02: one ranked list of notes, headings, text, folders, commands, a
     expect(vm(app).activeId).toBe(items[0]!.id);
     expect(items[0]!.highlights.length).toBeGreaterThan(0);
     expect(vm(app).summary).toMatch(/results$/);
+    // Each group is headed once, by a header item with its label, before its first result.
+    const raw = rawVm(app).items;
+    expect(raw[0]).toMatchObject({ header: true, label: "Top hit" });
+    const headers = raw.filter((i) => i.header).map((i) => i.label);
+    expect(new Set(headers).size).toBe(headers.length);
+    expect(headers).toEqual(expect.arrayContaining(["Notes", "Commands", "Settings", "In notes", "Actions"]));
+    expect(raw.filter((i) => i.header).every((i) => !i.highlights?.length && !i.disabled)).toBe(true);
   });
 
   it("finds headings in every note and folders by name, and shows a note's path and who can see it", async () => {
@@ -186,27 +199,26 @@ describe("SPT-04: states, the empty field, and no match", () => {
     expect(vm(app).status).toBe("Type ? for help");
   });
 
-  it("no match offers Create note, which makes a note named after the query, and Find in all notes once it exists", async () => {
+  it("no match offers Create note, which makes a note named after the query, and Find in all notes, which searches for it", async () => {
     const { app, files } = await started();
     await app.commands.run("spotlight.open");
     await type(app, "Zebra crossings");
-    expect(vm(app).items.map((i) => [i.label, Boolean(i.disabled)])).toEqual([["Create note “Zebra crossings”", false], ["Find “Zebra crossings” in all notes", true]]);
-    expect(vm(app).items[1]!.description).toBe("Find in all notes arrives in a later preview");
+    expect(vm(app).items.map((i) => [i.label, Boolean(i.disabled)])).toEqual([["Create note “Zebra crossings”", false], ["Find “Zebra crossings” in all notes", false]]);
     await app.commands.run("spotlight.run");
     expect(sp(app).open).toBe(false);
     await vi.waitFor(() => expect(app.store.state.note.path).toBe(`${PRIV}/zebra-crossings.md`));
     expect(files[`${PRIV}/zebra-crossings.md`]).toBe("# Zebra crossings\n\n");
 
-    // Find in all notes (WP-4.3) is offered as soon as its command is registered.
-    const asked: unknown[] = [];
-    app.commands.register<{ query: string }>({ id: "find.allNotes", title: "command.find.open", run: (a) => { asked.push(a.query); } });
+    // Find in all notes (WP-4.3) runs `find.allNotes` with the query: its sheet opens on it, searching.
     await app.commands.run("spotlight.open");
     await type(app, "nothing like this");
     const find = vm(app).items.at(-1)!;
     expect(find.disabled).toBeUndefined();
     await app.commands.run("spotlight.setActive", { id: find.id });
     await app.commands.run("spotlight.run");
-    expect(asked).toEqual(["nothing like this"]);
+    expect(sp(app).open).toBe(false);
+    expect(app.store.state.ui.findAll).toMatchObject({ open: true, query: "nothing like this" });
+    expect(app.viewModels.select("vm.findAll", app.store.state)).toMatchObject({ open: true, query: "nothing like this" });
   });
 });
 
