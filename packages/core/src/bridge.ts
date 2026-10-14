@@ -158,6 +158,27 @@ export interface WorkspaceBridge {
   restore?(ids: string[], folder?: string): Promise<{ path: string; title: string }[]>;
   /** Changes made outside the app, in batches (the desktop's file watcher). */
   onChange?(listener: (changes: WorkspaceChange[]) => void): () => void;
+  /**
+   * Whether the workspace can be removed from this computer (FRE-07): only a Git workspace whose
+   * two repositories have nothing that isn't on their remote. Never removes anything.
+   */
+  removal?(): Promise<RemovalCheck>;
+  /**
+   * Removes the workspace's local clone and what the data inventory lists for it (PRV-02), after
+   * checking again; nothing on GitHub is touched. Resolves `removed` (the window then starts again)
+   * or why not.
+   */
+  remove?(): Promise<RemovalCheck>;
+}
+
+/** Removing the workspace from this computer: ready, changes not on GitHub yet, not a Git workspace, done, or failed. */
+export interface RemovalCheck {
+  state: "ready" | "unpushed" | "notGit" | "removed" | "failed";
+  /** Changes not on the remote: uncommitted files, commits not pushed, and stashes, in both repositories. */
+  waiting: number;
+  folder: string;
+  /** The repositories the notes stay in, as owner/name: the notes repository first. */
+  repositories: string[];
 }
 
 /** One file operation in a batch (Files panel, D-94). Paths are the shell's own. */

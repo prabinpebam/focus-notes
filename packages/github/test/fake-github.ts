@@ -40,6 +40,8 @@ export class FakeGitHub {
   /** Every request as sent, headers included, for checking where the token went. */
   readonly raw: { url: string; init?: RequestInit }[] = [];
   offline = false;
+  /** Other accounts, by token: they can only ask who they are (`GET /user`), for switching account. */
+  readonly others = new Map<string, { login: string; id: number; name: string }>();
   /** "POST /repos/ada/notes-private/keys" → answers to give instead, one per matching call. */
   readonly failures = new Map<string, { status: number; message: string }[]>();
   /** Called when a repository is made, so an integration test can make its Git remote. */
@@ -48,6 +50,11 @@ export class FakeGitHub {
   constructor(token = "ghp_FAKE0123456789abcdefTOKEN") {
     this.token = token;
     this.add({ owner: "prabinpebam", name: "focus-notes-workspace", isTemplate: true, files: [".focus-notes/workspace.json", "notes/.gitkeep", "AGENTS.md", "README.md"] });
+  }
+
+  /** Another account the fake knows, by its token (FRE-07: switching account). */
+  addAccount(token: string, account: { login: string; id: number; name: string }): void {
+    this.others.set(token, account);
   }
 
   add(r: { owner: string; name: string; private?: boolean; isTemplate?: boolean; template?: string; files?: string[]; canPush?: boolean }): FakeRepo {
@@ -90,7 +97,10 @@ export class FakeGitHub {
     const path = url.pathname;
     const body = typeof init?.body === "string" ? (JSON.parse(init.body) as Record<string, unknown>) : undefined;
     this.calls.push({ method, path, ...(body !== undefined ? { body } : {}) });
-    if (new Headers(init?.headers).get("Authorization") !== `Bearer ${this.token}`) return json(401, { message: "Bad credentials" });
+    const auth = new Headers(init?.headers).get("Authorization") ?? "";
+    const other = this.others.get(auth.replace(/^Bearer /, ""));
+    if (auth !== "Bearer " + this.token && !(auth.startsWith("Bearer ") && other)) return json(401, { message: "Bad credentials" });
+    if (other) return method === "GET" && path === "/user" ? json(200, other) : json(403, { message: "Resource not accessible" });
     const planned = this.failures.get(`${method} ${path}`)?.shift();
     if (planned) return json(planned.status, { message: planned.message });
     return this.route(method, path, body);

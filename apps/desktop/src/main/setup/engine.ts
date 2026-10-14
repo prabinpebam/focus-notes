@@ -9,7 +9,7 @@
  * token, the vault passphrase, or the deploy key.
  */
 import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { GitHubApi, GitHubError, sealSecret, type Fetch } from "@focus-notes/github";
 import { validateAccess, type AccessFile } from "@focus-notes/seal/publish";
@@ -176,11 +176,16 @@ export class SetupEngine {
     });
   }
 
-  /** Forgets every step (Run setup again). Nothing on GitHub or on disk is removed. */
+  /**
+   * Forgets every step and deletes `setup.json` (Run setup again, signing out, and removing the
+   * workspace: PRV-02), and drops the token it was given. Nothing on GitHub or in the workspace is
+   * removed; the next start writes the file again.
+   */
   reset(): Promise<SetupReport> {
     return this.#queue.run(async () => {
       this.#p = { version: 1, steps: {} };
-      await this.#save();
+      this.#api = undefined;
+      await rm(this.#d.progressFile, { force: true });
       this.#emit();
       return this.report();
     });

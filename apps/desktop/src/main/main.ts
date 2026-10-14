@@ -26,16 +26,22 @@ import type { BatchOp } from "./git/message.ts";
 import { Account } from "./first-run/account.ts";
 import { createToolRunner } from "./first-run/tools.ts";
 import { applyLocalIdentity, checkWorkspace, cloneWorkspace } from "./first-run/workspace.ts";
-import type { ConflictChoice } from "@focus-notes/core";
+import type { ConflictChoice, RemovalCheck } from "@focus-notes/core";
+import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
+import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 const customWindow = process.argv.includes("--custom-window") && platform !== "macos";
 
 if (process.env.FOCUS_NOTES_USER_DATA) app.setPath("userData", resolve(process.env.FOCUS_NOTES_USER_DATA));
+/** A file in the app's data folder: only those the data inventory names (PRV-02). */
+const dataFile = (f: DataFile) => join(app.getPath("userData"), f);
+// Chromium's working files go in one folder of the data folder, which the inventory lists as one item.
+app.setPath("sessionData", join(app.getPath("userData"), CHROMIUM_FOLDERS.session));
 /** Where a new workspace goes unless another folder is chosen: Documents/Focus Notes. */
 const defaultHome = () => resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPath("documents"), "Focus Notes"));
 /** The workspace the first run opened (D-98), kept by the main process only: the renderer can't name a folder. */
-const workspaceFile = () => join(app.getPath("userData"), "workspace.json");
+const workspaceFile = () => dataFile(DATA_FILES.workspace);
 let chosenHome: string | undefined;
 function readChosenHome(): string | undefined {
   try {
@@ -46,7 +52,7 @@ function readChosenHome(): string | undefined {
   }
 }
 const notesHome = () => chosenHome ?? defaultHome();
-const stateFile = () => join(app.getPath("userData"), "state.json");
+const stateFile = () => dataFile(DATA_FILES.state);
 
 // Test seams, never in a packaged app: a local fake of GitHub's API and local bare remotes, so the
 // journeys make no network request; and a log of every program started, to check no token is in one.
@@ -127,7 +133,7 @@ const setupGit: GitRunner = (call) => {
 };
 const setup = () => (setupEngine ??= SetupEngine.open({
   git: setupGit,
-  progressFile: join(app.getPath("userData"), "setup.json"),
+  progressFile: dataFile(DATA_FILES.setup),
   token: () => account.token(),
   fetch: apiFetch,
   remoteUrl,
@@ -153,8 +159,9 @@ const account = new Account({
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("firstRun:signIn", p);
   },
   log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
+  signedOutFile: dataFile(DATA_FILES.account),
 });
-const firstRunFile = () => join(app.getPath("userData"), "first-run.json");
+const firstRunFile = () => dataFile(DATA_FILES.firstRun);
 /** A name and email for only the notes workspace, kept until the workspace has them (not secret). */
 let workspaceIdentity: { name: string; email: string } | undefined;
 /** Where a new or cloned workspace goes: Documents/Focus Notes unless another folder was chosen. */
@@ -171,8 +178,50 @@ function readFirstRun(): void {
     // Nothing chosen yet.
   }
 }
-/** The folder setup makes the workspace in: the one it started with, or the chosen one. */
-const setupFolder = async () => (await setup()).report().options?.folder ?? targetFolder ?? defaultHome();
+/** The folder setup makes the workspace in: the one it started with, the chosen one, or the open workspace (Run setup again). */
+const setupFolder = async () => (await setup()).report().options?.folder ?? targetFolder ?? (isWorkspace() ? notesHome() : defaultHome());
+/**
+ * Deletes what the data inventory lists for signing out or removing the workspace (PRV-02): setup's
+ * progress (through the engine, so it forgets too), the first run's workspace identity, and, for
+ * removing, the workspace folder's name; Chromium's caches and web storage are emptied too. The
+ * renderer forgets the recent note in state.json itself, since it owns that file.
+ */
+async function forgetLocal(event: "signOut" | "removeWorkspace"): Promise<void> {
+  if (setupEngine) await (await setupEngine).reset().catch(() => {});
+  workspaceIdentity = undefined;
+  targetFolder = undefined;
+  pendingWorkspace = undefined;
+  await forgetLocalData(app.getPath("userData"), event);
+  await session.defaultSession.clearCache().catch(() => {});
+  await session.defaultSession.clearStorageData().catch(() => {});
+}
+/**
+ * Removes the workspace's local clone (FRE-07): checked again here, with the watcher and Git
+ * stopped first so nothing writes into it, and only when everything is on the remote. Afterwards
+ * the window starts again with no workspace, at the first run's Your workspace step.
+ */
+async function removeLocalWorkspace(): Promise<RemovalCheck> {
+  const folder = notesHome();
+  const first = await removalCheck(setupRunner, folder);
+  if (first.state !== "ready") return first;
+  await Promise.allSettled([...writeQueues.values()]);
+  watcher?.close();
+  watcher = undefined;
+  const old = gitSync;
+  armGit();
+  await old?.dispose();
+  const r = await removeWorkspace(setupRunner, folder);
+  if (r.state !== "removed") {
+    watcher = watchWorkspace(() => mainWindow);
+    startGit();
+    return r;
+  }
+  chosenHome = undefined;
+  await forgetLocal("removeWorkspace");
+  process.stdout.write("[focus-notes] workspace-removed\n");
+  setTimeout(() => mainWindow?.webContents.reload(), 0);
+  return r;
+}
 async function chooseFolder(title: string): Promise<string | undefined> {
   const w = mainWindow;
   const opts = { title, defaultPath: dirname(defaultHome()), properties: ["openDirectory" as const, "createDirectory" as const, "promptToCreate" as const] };
@@ -700,7 +749,15 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (typeof token !== "string" || token.length > 255) throw new Error("Not a token");
     return account.useToken(token);
   });
-  handle("firstRun:signOut", () => account.signOut());
+  handle("firstRun:signOut", async (options) => {
+    const s = await account.signOut({ git: (options as { git?: unknown } | undefined)?.git !== false });
+    if (!s.account || s.signedOut) await forgetLocal("signOut");
+    return s;
+  });
+  handle("firstRun:beginSwitch", () => account.beginSwitch());
+  handle("firstRun:endSwitch", () => account.endSwitch());
+  handle("workspace:removal", () => removalCheck(setupRunner, notesHome()));
+  handle("workspace:remove", () => removeLocalWorkspace());
   handle("firstRun:identity", () => account.identity());
   handle("firstRun:setIdentity", async (i, scope) => {
     const id = { name: String(i?.name ?? "").trim(), email: String(i?.email ?? "").trim() };

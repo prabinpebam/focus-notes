@@ -41,6 +41,9 @@ contextBridge.exposeInMainWorld("focusNotes", {
     // Recently deleted (FIL-10): found from Git history, put back by the main process.
     deleted: () => ipcRenderer.invoke("history:deleted"),
     restore: (ids: string[], folder?: string) => ipcRenderer.invoke("history:restore", ids, folder),
+    // Remove this workspace from this computer (FRE-07): the main process checks everything is on GitHub, twice.
+    removal: () => ipcRenderer.invoke("workspace:removal"),
+    remove: () => ipcRenderer.invoke("workspace:remove"),
     onChange: (listener: (changes: unknown[]) => void) => {
       const handler = (_e: unknown, changes: unknown[]) => listener(changes);
       ipcRenderer.on("workspace:changed", handler);
@@ -92,7 +95,10 @@ contextBridge.exposeInMainWorld("focusNotes", {
       return () => ipcRenderer.removeListener("firstRun:signIn", handler);
     },
     useToken: (token: string) => ipcRenderer.invoke("firstRun:useToken", token),
-    signOut: () => ipcRenderer.invoke("firstRun:signOut"),
+    signOut: (options?: { git?: boolean }) => ipcRenderer.invoke("firstRun:signOut", { git: options?.git !== false }),
+    // Switch account (FRE-07): the main process takes the credential out of Git's helper, and puts it back if no one signs in.
+    beginSwitch: () => ipcRenderer.invoke("firstRun:beginSwitch"),
+    endSwitch: () => ipcRenderer.invoke("firstRun:endSwitch"),
     identity: () => ipcRenderer.invoke("firstRun:identity"),
     setIdentity: (identity: unknown, scope: string) => ipcRenderer.invoke("firstRun:setIdentity", identity, scope),
     repositories: () => ipcRenderer.invoke("firstRun:repositories"),

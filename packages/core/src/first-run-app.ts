@@ -22,10 +22,16 @@ import {
 export * from "./first-run.ts";
 
 export type SignInPhase = "idle" | "code" | "window" | "waiting" | "token";
+/**
+ * Why the card shows: a new install's first run; Run setup again (from Git, FRE-07); or signing in
+ * again or switching account (the Sign in step alone, FRE-07).
+ */
+export type FirstRunScope = "install" | "setup" | "account";
 export type WorkspaceMode = "create" | "clone" | "local";
 
 export interface FirstRunState {
   active: boolean;
+  scope: FirstRunScope;
   step: FirstRunStep;
   /** A check or an action is under way. */
   busy: boolean;
@@ -60,7 +66,7 @@ export interface FirstRunState {
 }
 
 export const FIRST_RUN_INACTIVE: FirstRunState = {
-  active: false, step: "welcome", busy: false, other: false,
+  active: false, scope: "install", step: "welcome", busy: false, other: false,
   signIn: { phase: "idle", code: "", helper: "" }, token: "", tokenError: false,
   identity: { name: "", email: "", source: "none", scope: "global", error: "" },
   workspace: {
@@ -86,6 +92,10 @@ interface Ctx<St extends S> {
   viewModels: ViewModelRegistry<St>;
   toast: (message: string, opts?: { tone?: "info" | "error" }) => unknown;
   persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
+  /** Saves and puts away the open note while the card shows again over the canvas. False if it couldn't be saved. */
+  hold?: () => Promise<boolean>;
+  /** Opens the note put away again. False if there was none. */
+  release?: () => Promise<boolean>;
 }
 
 /** The setup has made the workspace on this computer: cloned and linked (Writing starts before setup finishes). */
@@ -93,7 +103,7 @@ export const workspaceMade = (r?: SetupReport) => Boolean(r && !r.running && ["c
 
 const FONTS = CONTENT_FONTS.slice(0, 4);
 
-export function registerFirstRun<St extends S>({ store, bridge, catalog, commands, viewModels, toast, persistAppState }: Ctx<St>) {
+export function registerFirstRun<St extends S>({ store, bridge, catalog, commands, viewModels, toast, persistAppState, hold, release }: Ctx<St>) {
   const fr = bridge.firstRun;
   const state = () => store.state.firstRun;
   const set = (patch: Partial<FirstRunState>) => store.update((s) => ({ ...s, firstRun: { ...s.firstRun, ...patch } }));
@@ -112,16 +122,19 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       set({ busy: false });
     }
   };
+  /** The login the app is signed in as: Git's account, unless Focus Notes alone was signed out (FRE-07). */
+  const signedInAs = (a: AccountStatus | undefined) => (a?.account && !a.signedOut ? a.account.login : "");
   const applyAccount = (a: AccountStatus | undefined) => {
     set({ account: a ?? { gcm: state().account?.gcm ?? false, gh: state().account?.gh ?? false, problem: "failed" } });
-    if (a?.account) setLogin(a.account.login);
+    if (signedInAs(a)) setLogin(signedInAs(a));
   };
 
   // ---- what each step finds out on arrival ----
   const arrive: Partial<Record<FirstRunStep, () => Promise<void>>> = {
     git: async () => { set({ git: await busy(() => fr!.git()) ?? { installed: false, ok: false, gcm: false, gh: false } }); },
     signIn: async () => {
-      set({ other: false, token: "", tokenError: false });
+      // Switching account starts at "a different account" (FRE-07).
+      set({ other: state().scope === "account" && state().other, token: "", tokenError: false });
       setSignIn({ phase: "idle", code: "", helper: "" });
       applyAccount(await busy(() => fr!.account()));
     },
@@ -135,10 +148,30 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     },
   };
   const go = async (step: FirstRunStep) => {
+    // Signing in again or switching account is the Sign in step alone.
+    if (state().scope === "account" && step !== "signIn") return close(true);
     set({ step, focus: state().focus + 1 });
     await persistAppState({ firstRun: step });
     await arrive[step]?.();
   };
+  /**
+   * The card closes and writing carries on: the note put away comes back (Run setup again, Sign in,
+   * Switch account), or a new one on a new install. An account flow ends in the shell, which puts
+   * the old sign-in back if no account signed in (FRE-07).
+   */
+  const close = async (finished: boolean) => {
+    const { scope } = state();
+    set({ active: false, scope: "install", other: false, busy: false });
+    setSignIn({ phase: "idle", code: "" });
+    if (scope === "account") {
+      const a = (await fr?.endSwitch?.().catch(() => undefined)) ?? state().account;
+      setLogin(signedInAs(a));
+      if (finished && signedInAs(a)) toast(catalog.format("toast.signedIn", { login: signedInAs(a) }));
+    } else await persistAppState({ firstRun: "done" });
+    if (!(await release?.()) && scope === "install") await commands.run("note.new");
+  };
+  /** The first step of each scope, where Esc leaves instead of going back. */
+  const firstStep = (scope: FirstRunScope): FirstRunStep | undefined => (scope === "setup" ? "git" : scope === "account" ? "signIn" : undefined);
 
   const ready = () => {
     const s = store.state;
@@ -166,6 +199,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     if (s.active && s.step === "signIn" && s.signIn.phase !== "idle" && s.signIn.phase !== "token") return commands.run("firstRun.cancelSignIn");
     if (s.active && s.signIn.phase === "token") return setSignIn({ phase: "idle" });
     if (!s.active || s.busy) return;
+    if (firstStep(s.scope) === s.step) return close(false);
     const prev = prevStep(s.step);
     if (prev !== s.step) await go(prev);
   } });
@@ -177,10 +211,11 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   reg("firstRun.checkAccount", () => arrive.signIn!());
   reg("firstRun.useExisting", async () => {
     const a = state().account;
-    if (a?.account) return go("identity");
-    if (a?.cliAccount) {
+    if (a?.account && !a.signedOut) return go("identity");
+    // The GitHub CLI's session, or the account Git kept when Focus Notes alone signed out (FRE-07).
+    if (a?.cliAccount || a?.signedOut) {
       applyAccount(await busy(() => fr!.useExisting()));
-      if (state().account?.account) await go("identity");
+      if (signedInAs(state().account)) await go("identity");
     }
   });
   reg("firstRun.otherAccount", () => set({ other: true, focus: state().focus + 1 }));
@@ -326,28 +361,14 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   reg<{ value: string }>("firstRun.setFocus", (a) => ((a.value === "on") !== store.state.focusMode ? commands.run("focus.toggle") : undefined));
 
   // ---- Ready ----
-  reg("firstRun.finish", async () => {
-    set({ active: false });
-    await persistAppState({ firstRun: "done" });
-    // Start writing: a new note, private by default (D-05).
-    await commands.run("note.new");
-  });
+  // Start writing: a new note, private by default (D-05), or the note put away for Run setup again.
+  reg("firstRun.finish", () => close(true));
 
-  // ---- the account pill (UI-12): Sync now and Sign out ----
+  // ---- the account pill (UI-12): Sync now; Sign out is Settings' (settings-app.ts) ----
   commands.register({
     id: "sync.now", title: "command.sync.now", icon: "save",
     enabled: (s) => s.sync.git,
     run: (_a, c) => c.run("note.save"),
-  });
-  commands.register({
-    id: "account.signOut", title: "command.account.signOut", icon: "dismiss",
-    enabled: (s) => Boolean(s.account.login),
-    run: async () => {
-      const r = await fr?.signOut().catch(() => undefined);
-      if (!r || r.account) return void toast(catalog.format("toast.signOutFailed"), { tone: "error" });
-      setLogin("");
-      toast(catalog.format("toast.signedOut"));
-    },
   });
 
   const STEP_ENUM = [...FIRST_RUN_STEPS];
@@ -358,7 +379,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     schema: {
       type: "object",
       properties: {
-        open: { type: "boolean" }, step: { type: "string", enum: STEP_ENUM }, title: { type: "string" }, progress: { type: "string" },
+        open: { type: "boolean" }, step: { type: "string", enum: STEP_ENUM }, title: { type: "string" }, progress: { type: "string" }, showProgress: { type: "boolean" },
         busy: { type: "boolean" }, focus: { type: "number" }, canContinue: { type: "boolean" },
         gitState: { type: "string", enum: ["checking", "ok", "old", "missing"] }, gitText: { type: "string" }, installText: { type: "string" }, installCommand: { type: "string" },
         signIn: { type: "string", enum: ["checking", "found", "cli", "choose", "code", "window", "waiting", "token"] },
@@ -391,6 +412,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const a = f.account;
       const helperName = a?.gcm ? catalog.format("firstRun.helper.gcm") : catalog.format("firstRun.helper.gh");
       // found: Git is signed in (Continue as @login); cli: the GitHub CLI is; choose: neither, or a different account.
+      // An account Git kept when Focus Notes alone signed out is offered like any found one (FRE-07).
       const signIn = f.signIn.phase !== "idle" ? f.signIn.phase
         : !a || (f.busy && f.step === "signIn") ? "checking" : a.account && !f.other ? "found" : a.cliAccount && !f.other ? "cli" : "choose";
       const shown = signIn === "cli" ? a?.cliAccount : a?.account;
@@ -403,7 +425,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const id = f.identity;
       return {
         open: f.active, step: f.step, title: catalog.format(`firstRun.${f.step}.title`),
-        progress: catalog.format("firstRun.progress", { n: i + 1, total: FIRST_RUN_STEPS.length }),
+        progress: catalog.format("firstRun.progress", { n: i + 1, total: FIRST_RUN_STEPS.length }), showProgress: f.scope !== "account",
         busy: f.busy, focus: f.focus, canContinue: canContinue(f.step, { ...(g ? { git: g } : {}), ...(a ? { account: a } : {}), identity: id, workspaceReady: workspaceMade(s.setup.report) }),
         gitState, gitText: g?.version ? catalog.format(g.ok ? "firstRun.git.ok" : "firstRun.git.old", { version: g.version }) : "",
         installText: catalog.format(`firstRun.git.install.${platform}`), installCommand: catalog.format(`firstRun.git.command.${platform}`),
@@ -438,7 +460,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   const askAccount = () => {
     if (accountAsked || !fr || state().active || !store.state.sync.git) return;
     accountAsked = true;
-    void fr.account().then((a) => setLogin(a.account?.login ?? ""), () => {});
+    void fr.account().then((a) => setLogin(signedInAs(a)), () => {});
   };
 
   return {
@@ -453,6 +475,24 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       set({ active: true, step, focus: state().focus + 1 });
       void arrive[step]?.();
       return true;
+    },
+    /**
+     * Shows the card again over the canvas (FRE-07): Run setup again from Git, or the Sign in step
+     * alone to sign in again or switch account (`other` starts at "a different account"). The open
+     * note is saved and put away until the card closes. Resolves to whether it's showing.
+     */
+    async again(scope: "setup" | "account", opts: { other?: boolean } = {}): Promise<boolean> {
+      const step = firstStep(scope)!;
+      if (!fr || state().active || (hold && !(await hold()))) return false;
+      set({ active: true, scope, step, other: Boolean(opts.other), busy: false, focus: state().focus + 1 });
+      setSignIn({ phase: "idle", code: "", helper: "" });
+      if (scope === "setup") await persistAppState({ firstRun: step });
+      void arrive[step]?.();
+      return true;
+    },
+    /** Whether the card is showing. */
+    get active() {
+      return state().active;
     },
   };
 }

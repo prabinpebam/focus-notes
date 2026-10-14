@@ -27,3 +27,5 @@ export * from "./settings.ts";
 export * from "./import-app.ts";
 export * from "./history.ts";
 export * from "./conflict-app.ts";
+export * from "./inventory.ts";
+export * from "./settings-app.ts";

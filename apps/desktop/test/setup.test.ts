@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { createPrivateKey, createPublicKey, sign, verify } from "node:crypto";
-import { mkdtempSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SETUP_STEPS, type SetupOptions, type SetupReport, type SetupStepId } from "@focus-notes/core/setup";
@@ -299,7 +299,8 @@ describe("FRE-08: progress survives quitting", () => {
     await expect(e.start({ ...OPTIONS(), instance: "journal" })).rejects.toThrow(/reset/);
     const r = await e.reset();
     expect(r.steps.every((s) => s.state === "pending")).toBe(true);
-    expect(JSON.parse(readFileSync(h.progressFile, "utf8"))).toEqual({ version: 1, steps: {} });
+    // Run setup again forgets the progress file itself (PRV-02, the data inventory).
+    expect(existsSync(h.progressFile)).toBe(false);
   });
 
   it("checks the options: two different repository names GitHub accepts, and an absolute folder", () => {

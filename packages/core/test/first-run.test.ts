@@ -399,7 +399,11 @@ describe("UI-12: the desktop's account pill", () => {
     expect(pill().text).toBe("@ada · Not synced");
     await t.run("sync.now");
     expect(t.calls).toContain("sync");
+    // Sign out asks first (FRE-07): Git's sign-in goes too unless it's kept for the terminal.
     await t.run("account.signOut");
+    expect(t.calls).not.toContain("signOut");
+    expect(t.app.viewModels.select("vm.signOut", t.app.store.state)).toMatchObject({ open: true, git: "remove" });
+    await t.run("account.signOutNow");
     expect(t.calls).toContain("signOut");
     expect(pill().visible).toBe(false);
   });

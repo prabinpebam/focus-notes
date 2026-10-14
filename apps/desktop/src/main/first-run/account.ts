@@ -14,6 +14,8 @@ import {
   deviceCode, gitIsNewEnough, parseGitVersion, signInProblem, suggestIdentity,
   type AccountStatus, type GitCheck, type GitHubAccount, type Identity, type SignInProblem, type SignInProgress,
 } from "@focus-notes/core/first-run";
+import { existsSync } from "node:fs";
+import { rm, writeFile } from "node:fs/promises";
 import type { GitRunner } from "../git/run.ts";
 import { CREDENTIAL_QUERY, githubToken } from "../setup/credential.ts";
 import { findProgram, gitProgramDirs, isGcmHelper, isGhHelper, type ToolProcess, type ToolRunner } from "./tools.ts";
@@ -30,6 +32,11 @@ export interface AccountDeps {
   onProgress?: (p: SignInProgress) => void;
   /** Problems and steps only, never a token. */
   log?: (line: string) => void;
+  /**
+   * Where the app remembers that it was signed out while Git kept its sign-in (FRE-07): the data
+   * folder's `account.json`, holding no login or token. Without it, signing out always removes Git's.
+   */
+  signedOutFile?: string;
 }
 
 /** A device code lasts 15 minutes; a sign-in that takes longer has expired. */
@@ -42,6 +49,8 @@ export class Account {
   /** The checked token and its account, in memory only, for this session. */
   #session: { token: string; account: GitHubAccount } | undefined;
   #signIn: ToolProcess | undefined;
+  /** The credential taken out of Git's helper for Switch account, put back if no one signs in (memory only). */
+  #previous: { token: string; account: GitHubAccount } | undefined;
 
   constructor(deps: AccountDeps) {
     this.#d = deps;
@@ -84,16 +93,33 @@ export class Account {
     }
   }
 
+  /** Focus Notes was signed out while Git kept its sign-in. */
+  get #signedOut(): boolean {
+    return Boolean(this.#d.signedOutFile && existsSync(this.#d.signedOutFile));
+  }
+  async #markSignedOut(on: boolean): Promise<void> {
+    const f = this.#d.signedOutFile;
+    if (!f) return;
+    if (on) await writeFile(f, `${JSON.stringify({ version: 1, signedOut: true })}\n`);
+    else await rm(f, { force: true });
+  }
+
   /** Where signing in stands: Git's credential first (FRE-04), then a GitHub CLI session Git doesn't use yet. */
   async status(): Promise<AccountStatus> {
     const helpers = await this.#helpers();
     const ghProgram = this.#ghProgram();
-    const base = { gcm: helpers.some(isGcmHelper) && Boolean(await this.#gcmProgram()), gh: Boolean(ghProgram) };
+    const via = helpers.some(isGcmHelper) ? "gcm" as const : helpers.some(isGhHelper) ? "gh" as const : "helper" as const;
+    const base = { gcm: helpers.some(isGcmHelper) && Boolean(await this.#gcmProgram()), gh: Boolean(ghProgram), via };
     let problem: SignInProblem | undefined;
     const token = await githubToken(this.#d.git, this.#d.home);
     if (token) {
       const a = await this.#verify(token);
       if (typeof a !== "string") {
+        // Signed out of Focus Notes alone (FRE-07): Git's account is offered, not used.
+        if (this.#signedOut) {
+          this.#session = undefined;
+          return { ...base, account: a, signedOut: true };
+        }
         this.#session = { token, account: a };
         return { ...base, account: a };
       }
@@ -129,8 +155,16 @@ export class Account {
     return this.#session?.account;
   }
 
-  /** Continue as @login with the GitHub CLI's session: Git starts using it (`gh auth setup-git`). */
+  /**
+   * Continue as @login: the account Git kept when Focus Notes alone signed out (FRE-07), or the
+   * GitHub CLI's session, which Git starts using (`gh auth setup-git`).
+   */
   async useExisting(): Promise<AccountStatus> {
+    if (this.#signedOut) {
+      await this.#markSignedOut(false);
+      const s = await this.status();
+      if (s.account) return s;
+    }
     const gh = this.#ghProgram();
     if (gh) await this.#d.tools(gh, { args: ["auth", "setup-git", "--hostname", "github.com"], cwd: this.#d.home, env: this.#d.env, timeoutMs: 30_000 }).done;
     return this.status();
@@ -171,6 +205,8 @@ export class Account {
       return { gcm: Boolean(gcm), gh: Boolean(this.#ghProgram()), problem };
     }
     if (gh) await this.#d.tools(gh, { args: ["auth", "setup-git", "--hostname", "github.com"], cwd: this.#d.home, env: this.#d.env, timeoutMs: 30_000 }).done;
+    // Signing in is signing Focus Notes in too.
+    await this.#markSignedOut(false);
     const s = await this.status();
     return s.account ? s : { ...s, problem: s.problem ?? "failed" };
   }
@@ -198,23 +234,72 @@ export class Account {
     await this.#git(["credential", "approve"], credential);
     // The helper has it only if Git now answers with it.
     if ((await githubToken(this.#d.git, this.#d.home)) !== t) return { ...base, problem: "noHelper" };
+    await this.#markSignedOut(false);
     this.#session = { token: t, account: a };
     return { ...base, account: a };
   }
 
-  /** Removes the GitHub credential from Git's helper, which signs the terminal out too (FRE-07). */
-  async signOut(): Promise<AccountStatus> {
+  /** Takes the GitHub credential out of Git's helper (`git credential reject` with the login, when known). */
+  async #reject(login: string | undefined): Promise<void> {
+    await this.#git(["credential", "reject"], login ? CREDENTIAL_QUERY.replace("\n\n", `\nusername=${login}\n\n`) : CREDENTIAL_QUERY);
+  }
+
+  /**
+   * Signs Focus Notes out (FRE-07). With `git` (the default), the GitHub credential leaves Git's
+   * helper, which signs the terminal out too (`gh auth logout` as well when the GitHub CLI is the
+   * helper). Without it, Git keeps its sign-in and only `account.json` says the app is signed out.
+   */
+  async signOut(opts: { git?: boolean } = {}): Promise<AccountStatus> {
     this.cancel();
+    this.#previous = undefined;
+    if (opts.git === false) {
+      await this.#markSignedOut(true);
+      this.#session = undefined;
+      const { cliAccount: _cli, ...rest } = await this.status();
+      return rest;
+    }
     const helpers = await this.#helpers();
     const login = this.#session?.account.login;
-    await this.#git(["credential", "reject"], login ? CREDENTIAL_QUERY.replace("\n\n", `\nusername=${login}\n\n`) : CREDENTIAL_QUERY);
+    await this.#reject(login);
     const gh = this.#ghProgram();
     if (gh && helpers.some(isGhHelper)) await this.#d.tools(gh, { args: ["auth", "logout", "--hostname", "github.com"], cwd: this.#d.home, env: this.#d.env, timeoutMs: 30_000 }).done;
     this.#session = undefined;
+    // Nothing for the mark to hold back now.
+    await this.#markSignedOut(false);
     const s = await this.status();
     // The GitHub CLI's own session isn't Git's: it isn't offered again right after signing out.
     const { cliAccount: _cli, ...rest } = s;
     return rest;
+  }
+
+  /**
+   * Switch account (FRE-07), begun: the credential is taken out of Git's helper and kept in memory,
+   * so the helper signs in as someone else. With the GitHub CLI as the helper, `gh auth login` adds
+   * and switches accounts itself, so nothing is taken out.
+   */
+  async beginSwitch(): Promise<AccountStatus> {
+    this.cancel();
+    if (!this.#session) await this.status();
+    const s = this.#session;
+    const helpers = await this.#helpers();
+    if (s && !helpers.some(isGhHelper)) {
+      this.#previous = s;
+      await this.#reject(s.account.login);
+    }
+    this.#session = undefined;
+    const { cliAccount: _cli, ...rest } = await this.status();
+    return rest;
+  }
+  /** Switch account, ended: if no account signed in meanwhile, the old credential goes back into Git's helper. */
+  async endSwitch(): Promise<AccountStatus> {
+    const prev = this.#previous;
+    this.#previous = undefined;
+    let s = await this.status();
+    if (!s.account && prev) {
+      await this.#git(["credential", "approve"], `protocol=https\nhost=github.com\nusername=${prev.account.login}\npassword=${prev.token}\n\n`);
+      s = await this.status();
+    }
+    return s;
   }
 
   /** The identity on commits: Git's own, or suggested from GitHub with the private noreply address (FRE-05). */

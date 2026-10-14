@@ -85,7 +85,8 @@ describe("the default keymap (KEY-02, KEY-06)", () => {
     it(`${platform}: every shortcut has a layer and a group`, () => {
       for (const id of app.commands.ids()) {
         const d = app.commands.describe(id);
-        if (d.shortcut) expect(all.some((b) => b.id === id) || id === "spotlight.open", id).toBe(true);
+        // Planned commands aren't bindings yet: Spotlight until M4, and Settings in a shell with no account (this one).
+        if (d.shortcut) expect(all.some((b) => b.id === id) || id === "spotlight.open" || id === "settings.open", id).toBe(true);
       }
     });
   }

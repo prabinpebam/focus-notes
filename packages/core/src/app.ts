@@ -20,6 +20,7 @@ import { registerSync, NO_SYNC, SyncFailed, type SyncState } from "./sync-app.ts
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
+import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -68,6 +69,8 @@ export interface AppState {
     importNotes: ImportState;
     /** The conflict resolver (FIL-12, IA-CMP-CONFLICT). */
     conflict: ConflictState;
+    /** Settings (IA-VIEW-SETTINGS): Account and Workspace, with signing out and removing the workspace (FRE-07). */
+    settings: SettingsState;
   };
   /** Synced settings (PRV-03): no private repository to sync through, or syncing off or on. */
   settingsSync: "unavailable" | "off" | "on";
@@ -146,7 +149,8 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
     ],
   },
   { id: "edit", label: "menu.edit", items: ["find.open", "find.replace"] },
-  { id: "help", label: "menu.help", items: ["shortcuts.open"] },
+  // Settings shows only where there's a GitHub account to manage (the desktop, FRE-07).
+  { id: "help", label: "menu.help", items: ["settings.open", "shortcuts.open"] },
 ];
 
 export interface App {
@@ -185,7 +189,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, settings: SETTINGS_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -231,13 +235,16 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   /** What this device keeps (`state.json`), and the synced settings file while syncing is on (PRV-03). */
   let deviceState: AppStateFile = { version: 1 };
   let settingsFile: SettingsFile | undefined;
+  /** A patch's undefined values remove those keys (the recent note, forgotten on sign out, PRV-02). */
+  const merge = (base: AppStateFile, patch: Partial<AppStateFile>) =>
+    Object.fromEntries(Object.entries({ ...base, ...patch }).filter(([, v]) => v !== undefined)) as unknown as AppStateFile;
   const saveDevice = (patch: Partial<AppStateFile>) => {
-    deviceState = { ...deviceState, ...patch };
+    deviceState = merge(deviceState, patch);
     return bridge.saveAppState(deviceState);
   };
   const saveSettings = () => bridge.settings!.save(`${JSON.stringify(settingsFile, null, 2)}\n`);
   const persistAppState = async (patch: Partial<AppStateFile>) => {
-    appState = { ...appState, ...patch };
+    appState = merge(appState, patch);
     const { device, synced } = splitAppState(patch);
     // While syncing, the synced settings go to the private repository and the rest stays here (D-46).
     if (!settingsFile || !Object.keys(synced).length) return saveDevice(patch);
@@ -249,7 +256,27 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store.update((s) => ({ ...s, note: { ...s.note, ...patch } }));
   const sync = registerSync({ store, bridge, catalog, toast });
   const setup = registerSetup({ store, bridge, catalog, commands, viewModels });
-  const firstRun = registerFirstRun({ store, bridge, catalog, commands, viewModels, toast, persistAppState });
+  /** The note put away while the first run's card shows again (Run setup again, Sign in, Switch account). */
+  let held: string | undefined;
+  const firstRun = registerFirstRun({
+    store, bridge, catalog, commands, viewModels, toast, persistAppState,
+    hold: async () => {
+      editorAction(FLUSH_EDITOR);
+      if (!(await flush())) return false;
+      held = store.state.note.path;
+      // The editor goes away until the card closes; the note is read again from disk then.
+      setNote({ status: "loading" });
+      return true;
+    },
+    release: async () => {
+      const path = held;
+      held = undefined;
+      if (!path) return false;
+      await load(path);
+      return true;
+    },
+  });
+  registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o) });
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
     // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).
@@ -787,7 +814,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       open: s.ui.toolbarOpen,
       items: DEFAULT_TOOLBAR.map(describeItem),
       // Sync appearance joins the Theme group where there's a private repository to sync through (PRV-03).
-      more: [...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({
+      more: [...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => (bridge.firstRun ? g : { ...g, items: g.items.filter((e) => e !== "settings.open") })).map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({
         id: g.id, label: catalog.format(g.label),
         items: g.items.map((e) => (typeof e === "string" ? describeItem(e) : { id: e.submenu, label: catalog.format(e.label), items: e.items.map(describeItem) })),
       })),

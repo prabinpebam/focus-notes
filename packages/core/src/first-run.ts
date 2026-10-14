@@ -64,6 +64,13 @@ export interface AccountStatus {
   gcm: boolean;
   gh: boolean;
   problem?: SignInProblem;
+  /**
+   * Focus Notes was signed out while Git kept its sign-in for the terminal (FRE-07): `account` is
+   * the one Git still has, which the app doesn't use until Continue as @login.
+   */
+  signedOut?: boolean;
+  /** Which of Git's helpers holds the credential: Git Credential Manager, the GitHub CLI, or another (a token in the OS keychain). */
+  via?: "gcm" | "gh" | "helper";
 }
 
 /** A sign-in through a helper, as it goes: the code to type on GitHub, or the helper's own window. */
@@ -139,6 +146,10 @@ export const FIRST_RUN_PAGES = {
   gcm: "https://github.com/git-ecosystem/git-credential-manager/blob/main/docs/install.md",
   gh: "https://cli.github.com/",
   sso: "https://docs.github.com/en/authentication/authenticating-with-saml-single-sign-on/authorizing-a-personal-access-token-for-use-with-saml-single-sign-on",
+  /** Where an app's authorization (GCM's, the GitHub CLI's) is revoked fully (FRE-07). */
+  authorizations: "https://github.com/settings/applications",
+  /** Where a fine-grained token is revoked. */
+  tokens: "https://github.com/settings/personal-access-tokens",
 } as const;
 export type FirstRunPage = keyof typeof FIRST_RUN_PAGES;
 
@@ -178,8 +189,20 @@ export interface FirstRunBridge {
   onSignIn(listener: (p: SignInProgress) => void): () => void;
   /** Checks a pasted fine-grained token with the API, then stores it only in Git's helper. */
   useToken(token: string): Promise<AccountStatus>;
-  /** Removes the GitHub credential from Git's helper, which signs the terminal out too (FRE-07). */
-  signOut(): Promise<AccountStatus>;
+  /**
+   * Signs Focus Notes out (FRE-07). With `git` (the default), also removes the GitHub credential
+   * from Git's helper, which signs the terminal out too; without it, Git keeps its sign-in and the
+   * app remembers only that it's signed out. Either way the shell deletes what the data inventory
+   * lists for signing out (PRV-02).
+   */
+  signOut(options?: { git?: boolean }): Promise<AccountStatus>;
+  /**
+   * Starts Switch account (FRE-07): the current credential is taken out of Git's helper (kept in
+   * the shell's memory), so the helper signs in as someone else.
+   */
+  beginSwitch?(): Promise<AccountStatus>;
+  /** Ends it: if no account signed in meanwhile, the old credential goes back into Git's helper. */
+  endSwitch?(): Promise<AccountStatus>;
   identity(): Promise<Identity>;
   /** Applies a name and email to all repositories, or only to the notes workspace. False if refused. */
   setIdentity(identity: { name: string; email: string }, scope: IdentityScope): Promise<boolean>;
@@ -200,7 +223,7 @@ export interface FirstRunBridge {
 export function canContinue(step: FirstRunStep, s: { git?: GitCheck; account?: AccountStatus; identity?: { name: string; email: string }; workspaceReady?: boolean }): boolean {
   switch (step) {
     case "git": return Boolean(s.git?.ok);
-    case "signIn": return Boolean(s.account?.account);
+    case "signIn": return Boolean(s.account?.account && !s.account.signedOut);
     case "identity": return Boolean(s.identity && !identityProblem(s.identity));
     case "workspace": return Boolean(s.workspaceReady);
     default: return true;

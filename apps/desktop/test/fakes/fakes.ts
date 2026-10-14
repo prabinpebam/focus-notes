@@ -19,6 +19,8 @@ export interface Fakes {
   store(token?: string, login?: string): void;
   /** The GitHub CLI's own session. */
   session(token: string, login?: string): void;
+  /** The account the next sign-ins through GCM or the GitHub CLI end up as (switching account). */
+  signInAs(token: string, login: string): void;
   /** How the next sign-ins end: "ok", "declined", "expired", "offline". */
   outcomes(list: string[]): void;
   /** Every argument list the fakes were given. */
@@ -73,6 +75,7 @@ export function makeFakes(opts: { token: string; login?: string; gcm?: boolean; 
     root, env, home, gitconfig,
     store: (token, login = "ada") => writeFileSync(join(root, "store.json"), JSON.stringify(token ? { "github.com": { username: login, password: token } } : {})),
     session: (token, login = "ada") => writeFileSync(join(root, "session.json"), JSON.stringify({ token, login })),
+    signInAs: (token, login) => writeFileSync(join(root, "config.json"), JSON.stringify({ ...JSON.parse(readFileSync(join(root, "config.json"), "utf8")), token, login })),
     outcomes: (list) => writeFileSync(join(root, "outcomes.json"), JSON.stringify(list)),
     argv: () => read("argv.log"),
     stored: () => read("store.json"),
