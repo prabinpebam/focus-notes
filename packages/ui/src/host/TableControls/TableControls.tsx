@@ -134,7 +134,9 @@ export function TableControls({
   }, [g, menu]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The context menu, asked for by the editor (right-click, Shift+F10, the Menu key).
-  const lastRequest = useRef(menuRequest);
+  // From 0: the controls mount with the table, and a request made in the same update (the caret
+  // arriving with Shift+F10) must open the menu. The count restarts whenever the caret leaves a table.
+  const lastRequest = useRef(0);
   useEffect(() => {
     if (menuRequest === lastRequest.current) return;
     lastRequest.current = menuRequest;

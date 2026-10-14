@@ -10,6 +10,8 @@
     "borderStrong": { "$value": "{ref.color.ink.600}" },
     "text": { "$value": "{ref.color.ink.50}" },
     "textMuted": { "$value": "{ref.color.ink.400}" },
+    "onSelection": { "$value": "{ref.color.ink.50}" },
+    "onSelectionMuted": { "$value": "{ref.color.ink.400}" },
     "textPlaceholder": { "$value": "{ref.color.ink.500}" },
     "textDisabled": { "$value": "{ref.color.ink.500}" },
     "textInverse": { "$value": "{ref.color.ink.900}" },

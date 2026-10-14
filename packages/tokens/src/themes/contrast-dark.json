@@ -28,6 +28,12 @@
     "textMuted": {
       "$value": "{ref.color.hcDark.muted}"
     },
+    "onSelection": {
+      "$value": "{ref.color.hcDark.text}"
+    },
+    "onSelectionMuted": {
+      "$value": "{ref.color.hcDark.muted}"
+    },
     "textPlaceholder": {
       "$value": "{ref.color.hcDark.placeholder}"
     },

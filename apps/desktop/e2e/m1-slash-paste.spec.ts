@@ -4,7 +4,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { caret, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mac = process.platform === "darwin";
@@ -86,7 +86,7 @@ test("EDT-06: / opens the block menu under the caret; typing filters, arrows and
   const editor = page.getByRole("textbox", { name: "Note" });
   const menu = page.getByRole("listbox", { name: "Insert a block" });
 
-  await page.keyboard.press(`${mod}+End`);
+  await page.keyboard.press(caret.docEnd);
   await page.keyboard.press("Enter");
   await page.keyboard.type("/");
   await expect(menu).toBeVisible();
@@ -177,7 +177,7 @@ test("EDT-09: pasting from a web page and from Word gives headings, lists, links
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
   {
-    await page.keyboard.press(`${mod}+End`);
+    await page.keyboard.press(caret.docEnd);
     await page.keyboard.press("Enter");
     await paste(page, {
       text: "Heading Para with bold and a link. One Two",
@@ -192,7 +192,7 @@ test("EDT-09: pasting from a web page and from Word gives headings, lists, links
     await expect(page.getByText("Images can't be added to notes yet, so they were left out.")).toBeVisible();
 
     // Out of the pasted list: Enter on an empty item leaves one level at a time.
-    await page.keyboard.press(`${mod}+End`);
+    await page.keyboard.press(caret.docEnd);
     await page.keyboard.press("Enter");
     for (let i = 0; i < 3 && (await page.evaluate(() => Boolean((getSelection()?.anchorNode as Element | null)?.closest?.("li")))); i++) await page.keyboard.press("Enter");
     const bullet = (level: number, text: string) => `<p class=MsoListParagraphCxSpMiddle style='margin-left:.5in;text-indent:-.25in;mso-list:l0 level${level} lfo1'><![if !supportLists]><span style='font-family:Symbol'><span style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span></span><![endif]>${text}<o:p></o:p></p>`;
@@ -217,14 +217,14 @@ test("EDT-09: Markdown text becomes blocks, and Mod+Shift+V pastes plain text as
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
   {
-    await page.keyboard.press(`${mod}+End`);
+    await page.keyboard.press(caret.docEnd);
     await page.keyboard.press("Enter");
     await paste(page, { text: "# Plan\n\n- [ ] draft\n- [x] outline\n\nSee [docs](https://example.com) and `code`.\n" });
     await expect(editor.locator("h1").nth(1)).toHaveText("Plan");
     await expect(editor.locator("ul[data-type=taskList] li")).toHaveCount(2);
     await expect(editor.locator("code")).toHaveText("code");
 
-    await page.keyboard.press(`${mod}+End`);
+    await page.keyboard.press(caret.docEnd);
     await page.keyboard.press("Enter");
     await paste(page, { text: "**not bold** and # not a heading", html: "<b>html that would be bold</b>" }, { plain: true });
     await expect(editor).toContainText("**not bold** and # not a heading");
@@ -250,9 +250,9 @@ test("SEC-02: Trusted Types are required; raw HTML in a note is text; nothing in
   expect(await page.title()).not.toBe("pwned");
 
   // Everyday use touches every library sink: toolbar, menus, live regions, the cheat sheet, find.
-  await page.keyboard.press(`${mod}+End`);
+  await page.keyboard.press(caret.docEnd);
   await page.keyboard.type(" more");
-  await page.keyboard.press("Shift+Home");
+  await page.keyboard.press(caret.selectToLineStart);
   await expect(page.getByRole("toolbar", { name: "Text formatting" })).toBeVisible();
   await page.keyboard.press(`${mod}+B`);
   await page.keyboard.press(`${mod}+F`);

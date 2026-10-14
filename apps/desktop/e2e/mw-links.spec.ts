@@ -8,7 +8,7 @@
 import { test, expect } from "@playwright/test";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs } from "./helpers.ts";
+import { caret, launch, quit, tempDirs } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const rename = process.platform === "darwin" ? "Enter" : "F2";
@@ -41,7 +41,7 @@ test("FIL-09: renames and moves update relative links in other notes on disk, by
   const toast = (text: string) => page.locator("#toasts").getByText(text);
 
   // Typing in the open note, then moving a note it links to: what was typed is kept (saved first).
-  await page.keyboard.press(`${mod}+End`);
+  await page.keyboard.press(caret.docEnd);
   await page.keyboard.press("Enter");
   await page.keyboard.type("Typed before the move.");
 

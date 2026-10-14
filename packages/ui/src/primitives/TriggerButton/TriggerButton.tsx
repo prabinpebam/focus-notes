@@ -21,7 +21,8 @@ export function TriggerButton({ label, shortcut, tone = "red", expanded, id, onP
         id={id}
         className={s.ring}
         aria-label={label}
-        aria-haspopup="menu"
+        // It opens a non-modal dialog holding the toolbar (MorphPanel), not a menu.
+        aria-haspopup="dialog"
         aria-expanded={expanded ?? false}
         data-trigger=""
         onPress={onPress}

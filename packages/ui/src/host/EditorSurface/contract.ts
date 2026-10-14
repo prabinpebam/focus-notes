@@ -9,6 +9,7 @@ export const contract = defineContract({
     initialValue: { kind: "text", required: true },
     label: { kind: "message", required: true },
     placeholder: { kind: "message" },
+    emptyHeader: { kind: "message", description: "What an empty table header cell shows and is called, with {index} for its column's number." },
     readOnly: { kind: "boolean", default: false },
     focusMode: { kind: "boolean", default: false },
     keymap: { kind: "list", of: "keyBindings", description: "Editor key bindings from the command registry." },

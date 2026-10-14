@@ -24,7 +24,7 @@ export const list = style({
 minimalScrollbar(list, t);
 
 /** Fills its container (Spotlight, Move to), or the slash menu's fixed width. */
-export const width = styleVariants({ fill: {}, menu: { width: t.menuWidth } });
+export const width = styleVariants({ fill: {}, menu: { width: t.menuWidth, maxWidth: "100%" } });
 
 export const item = style({
   display: "flex",

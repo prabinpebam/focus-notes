@@ -2,13 +2,18 @@
  * WP-1.10 journeys: find in the note (FND-01) and replace (FND-02), keyboard-complete, announced,
  * and with focus returning to the note on the current match.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mac = process.platform === "darwin";
+/** Waits for fades and color transitions to end, so contrast is checked on what people finally see. */
+const settledAxe = async (page: Page) => {
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+  return axeViolations(page);
+};
 const mod = mac ? "Meta" : "Control";
 
 test("FND-01: Mod+F fills from the selection, counts, steps with Enter, wraps, and Esc returns to the match", async () => {
@@ -36,7 +41,7 @@ test("FND-01: Mod+F fills from the selection, counts, steps with Enter, wraps, a
     return matchBox.y - (barBox.y + barBox.height);
   };
   await expect.poll(gap).toBeGreaterThanOrEqual(0);
-  expect(await axeViolations(page)).toEqual([]);
+  expect(await settledAxe(page)).toEqual([]);
   await page.screenshot({ path: "../../test-results/screens/find-bar.png" });
 
   // Enter steps forward and wraps; Shift+Enter steps back.
@@ -100,14 +105,14 @@ test("FND-02: replace current and replace all, one undo step, formatting kept, a
   // Typing selected the first match; Enter in the replace field replaces it and moves on.
   await replace.press("Enter");
   await expect(bar.getByRole("status").first()).toHaveText(/of 99$/);
-  expect(await axeViolations(page)).toEqual([]);
+  expect(await settledAxe(page)).toEqual([]);
 
   // Replace all: one step, announced.
   await page.keyboard.press(mac ? "Meta+Enter" : "Control+Alt+Enter");
   // Confirmed by a toast (IA-CMP-TOAST), announced politely, with a close button.
   const toast = page.getByRole("status").filter({ hasText: "Replaced 99 matches" });
   await expect(toast).toBeVisible();
-  expect(await axeViolations(page)).toEqual([]);
+  expect(await settledAxe(page)).toEqual([]);
   await page.screenshot({ path: "../../test-results/screens/toast.png" });
   await expect(bar.getByRole("status").first()).toHaveText("No results");
   await page.keyboard.press("Escape");

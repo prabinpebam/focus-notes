@@ -1,15 +1,16 @@
 /**
  * WP-1.6 journeys: the trigger opens the toolbar (UI-03), at most six actions plus ⋯ (UI-04),
- * keyboard and screen-reader complete (UI-05), the default actions (UI-07), command-driven (DSY-12).
+ * keyboard and screen-reader complete (UI-05), the default actions and the ⋯ menu (UI-07), all
+ * command-driven (DSY-12). UI-10 is in m1-canvas, DSY-06 in packages/views/test.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { readdirSync } from "node:fs";
 import { launch, quit, tempDirs } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 
-test("the trigger opens the toolbar: six actions, then ⋯", async () => {
+test("UI-04, UI-05: the trigger opens the toolbar: six actions, then ⋯, one tab stop", async () => {
   const l = await launch(tempDirs());
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
@@ -34,7 +35,7 @@ test("the trigger opens the toolbar: six actions, then ⋯", async () => {
   await quit(l);
 });
 
-test("toolbar actions run their commands and show their state", async () => {
+test("UI-07: toolbar actions run their commands and show their state", async () => {
   const l = await launch(tempDirs());
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
@@ -72,7 +73,7 @@ test("toolbar actions run their commands and show their state", async () => {
   await quit(l);
 });
 
-test("⋯ holds the rest: text size steps and the theme mode, each showing its state", async () => {
+test("UI-07: ⋯ holds the rest: text size steps and the theme mode, each showing its state", async () => {
   const l = await launch(tempDirs());
   const { page } = l;
   await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
@@ -107,5 +108,135 @@ test("New note creates an untitled note next to the current one and puts the car
   await expect(editor).toBeFocused();
   await page.keyboard.type("Fresh");
   await expect.poll(() => readdirSync(dirs.docs).sort()).toEqual(["Untitled.md", "Welcome.md"]);
+  await quit(l);
+});
+
+const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+
+test("UI-03: click, Enter, Space, Mod+. and F10 open the toolbar; Esc and a click outside close it", async () => {
+  const l = await launch(tempDirs());
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  const trigger = page.getByRole("button", { name: "Focus Notes menu" });
+  const toolbar = page.getByRole("toolbar", { name: "Toolbar" });
+
+  await trigger.click();
+  await expect(toolbar).toBeVisible();
+  // A click outside (on the note) closes it.
+  const box = (await editor.boundingBox())!;
+  await page.mouse.click(box.x + 20, box.y + 20);
+  await expect(toolbar).toBeHidden();
+  await settled(page);
+
+  for (const key of ["Enter", "Space"]) {
+    await trigger.focus();
+    await page.keyboard.press(key);
+    await expect(toolbar).toBeVisible();
+    await expect(toolbar.getByRole("button", { name: "New note" })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(toolbar).toBeHidden();
+    await expect(editor).toBeFocused();
+    await settled(page);
+  }
+  const shortcuts = process.platform === "darwin" ? [`${mod}+.`] : [`${mod}+.`, "F10"];
+  for (const key of shortcuts) {
+    await page.keyboard.press(key);
+    await expect(toolbar).toBeVisible();
+    await expect(toolbar.getByRole("button", { name: "New note" })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(toolbar).toBeHidden();
+    await expect(editor).toBeFocused();
+    await settled(page);
+  }
+  await quit(l);
+});
+
+test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable, later ones are unavailable and say why", async () => {
+  const l = await launch(tempDirs());
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  const trigger = page.getByRole("button", { name: "Focus Notes menu" });
+  // The trigger names itself, says it opens a dialog, and says whether it's open.
+  await expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+  await page.keyboard.press(`${mod}+.`);
+  await expect(page.getByRole("button", { name: "New note" })).toBeFocused();
+  await page.keyboard.press("End");
+  const more = page.getByRole("button", { name: "More" });
+  await expect(more).toBeFocused();
+  await expect(more).toHaveAttribute("aria-haspopup", "true");
+  await page.keyboard.press("ArrowDown");
+  const menu = page.getByRole("menu", { name: "More" });
+  await expect(menu).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+
+  // The menu holds what UI-07 lists, in its groups.
+  const labelOf = (el: Element | null) => document.getElementById(el?.getAttribute("aria-labelledby") ?? "")?.firstElementChild?.firstElementChild?.textContent ?? "";
+  const labels = await menu.getByRole("menuitem").evaluateAll((els, fn) => els.map((e) => new Function("el", `return (${fn})(el)`)(e) as string), labelOf.toString());
+  expect(labels).toEqual(expect.arrayContaining(["Smaller text", "Larger text", "Reset text size", "Full screen", "Find", "Find and replace", "Share and visibility…", "Settings", "Keyboard shortcuts", "Help and docs"]));
+  // Arrow keys reach every item, unavailable ones included, so a screen reader hears why (the reason is in its name).
+  const visited: string[] = [];
+  const seen = new Set<string>();
+  for (let i = 0; i < 40; i++) {
+    const [id, label] = await page.evaluate((fn) => [document.activeElement?.id ?? "", (new Function("el", `return (${fn})(el)`)(document.activeElement) as string) || document.activeElement?.textContent || ""], labelOf.toString());
+    if (seen.has(id)) break;
+    seen.add(id);
+    visited.push(label);
+    await page.keyboard.press("ArrowDown");
+  }
+  expect(visited).toEqual(expect.arrayContaining(["Share and visibility…", "Settings", "Help and docs", "Keyboard shortcuts"]));
+
+  const share = menu.getByRole("menuitem", { name: /^Share and visibility…/ });
+  await expect(share).toHaveAttribute("aria-disabled", "true");
+  await expect(share).toHaveAccessibleName("Share and visibility… Sharing and visibility arrive in a later preview");
+  await expect(share.getByText("Sharing and visibility arrive in a later preview")).toBeVisible();
+  const settings = menu.getByRole("menuitem", { name: /^Settings/ });
+  await expect(settings).toHaveAttribute("aria-disabled", "true");
+  await expect(settings).toHaveAccessibleName(/^Settings .+ Settings arrive in a later preview$/);
+  await expect(menu.getByRole("menuitem", { name: /^Help and docs/ })).toHaveAccessibleName("Help and docs Help and docs arrive in a later preview");
+  // Choosing an unavailable item does nothing and keeps the menu open.
+  await settings.focus();
+  await page.keyboard.press("Enter");
+  await expect(menu).toBeVisible();
+  await expect(settings).toBeFocused();
+
+  // An available item runs and closes everything; the panel it opens takes focus.
+  await menu.getByRole("menuitem", { name: /^Keyboard shortcuts/ }).focus();
+  await page.keyboard.press("Enter");
+  await expect(menu).toBeHidden();
+  await expect(page.getByRole("dialog", { name: "Keyboard shortcuts" })).toBeVisible();
+  await expect(page.getByRole("searchbox", { name: "Search shortcuts" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(editor).toBeFocused();
+  await quit(l);
+});
+
+test("UI-05: every toolbar control shows a visible focus ring and is at least 24 × 24 px", async () => {
+  const l = await launch(tempDirs());
+  const { page } = l;
+  await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+  await page.keyboard.press(`${mod}+.`);
+  const toolbar = page.getByRole("toolbar", { name: "Toolbar" });
+  await expect(toolbar).toBeVisible();
+  await settled(page);
+  const buttons = toolbar.getByRole("button");
+  const count = await buttons.count();
+  for (let i = 0; i < count; i++) {
+    const b = buttons.nth(i);
+    if (i > 0) await page.keyboard.press("ArrowRight");
+    await expect(b).toBeFocused();
+    const ring = await b.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { style: cs.outlineStyle, width: parseFloat(cs.outlineWidth), visible: el.hasAttribute("data-focus-visible") };
+    });
+    expect(ring, await b.getAttribute("aria-label") ?? "").toEqual({ style: "solid", width: 2, visible: true });
+    const box = (await b.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(24);
+    expect(box.height).toBeGreaterThanOrEqual(24);
+  }
+  await page.keyboard.press("Escape");
   await quit(l);
 });

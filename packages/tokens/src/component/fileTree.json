@@ -69,6 +69,14 @@
         "$type": "color",
         "$value": "{color.selection}"
       },
+      "selectionText": {
+        "$type": "color",
+        "$value": "{color.onSelection}"
+      },
+      "selectionTextMuted": {
+        "$type": "color",
+        "$value": "{color.onSelectionMuted}"
+      },
       "accent": {
         "$type": "color",
         "$value": "{color.accent}"

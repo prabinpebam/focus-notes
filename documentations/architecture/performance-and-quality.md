@@ -38,7 +38,7 @@ Measure before fixing anything. Guesses about what's slow are usually wrong: in 
 
 ### Marks and spans
 
-- **Every wait a person feels** has a `performance.mark` at the input and a `performance.measure` at the visible result, named `fn:<area>.<action>`: for example `fn:view.open.files`, `fn:file.move`, `fn:note.open`, `fn:sync.commit`, and `fn:theme.preview`.
+- **Every wait a person feels** has a `performance.mark` at the input and a `performance.measure` at the visible result, named `fn:<area>.<action>`: for example `fn:view.open.files`, `fn:file.move`, `fn:note.open`, `fn:sync.commit`, and `fn:theme.preview`. Built so far (D-100): `fn:note.open`, from the request to open a note to the first frame showing it with the caret ready, and a `fn:note.saved` mark at each write to disk, which the journeys and the benchmark compare with the last keystroke (PRF-03).
 - **The main process records named spans** inside each bridge call: `git.status`, `git.commit`, `git.push`, `content.read`, `content.parse`, `content.serialize`, and `content.write`. Each bridge reply carries its spans, so the renderer can join them to its own measure.
 - **The last 2,000 measures** stay in memory, in a ring buffer. Nothing is written to disk except the summary in the diagnostic report, and nothing is ever sent (D-55).
 - **Count the work, not only the time.** The benchmark also records Git processes started, notes parsed, and nodes rendered per view, so a fix targets what's actually heavy.
@@ -50,7 +50,7 @@ Measure before fixing anything. Guesses about what's slow are usually wrong: in 
 | Part | Rule |
 | --- | --- |
 | Workspace | A throwaway copy of a fixture workspace (10,000 notes, a `private/` submodule, and a local bare remote for each repository), created in a temporary folder and initialized as real Git repositories. It never opens the user's real notes. |
-| What it times | Start-up cold and warm. Each view opened cold and warm. Each interaction, from the click or key to the visible result. The main-process spans for each step. Typing (PRF-01). |
+| What it times | Start-up cold and warm. Each view opened cold and warm. Each interaction, from the click or key to the visible result. The main-process spans for each step. Typing (PRF-01). Built so far: start-up (PRF-02), the renderer's overhead (DSY-11), Git status (PRF-07), and opening a 10,000-word note from Files and the write after a burst of typing (PRF-03); typing is timed in the journeys. |
 | Repetitions | Each measure runs at least 5 times. The report gives p50 and p95. |
 | Budgets file | `tools/bench/budgets.json`, committed. Each measure has a budget, a baseline, and a noise allowance. Changing a baseline is a reviewed commit with the benchmark report attached. |
 | `--compare <report>` | Prints each measure against the baseline or another report, with the change in percent. |
@@ -120,6 +120,7 @@ Measure before fixing anything. Guesses about what's slow are usually wrong: in 
 - **Windows processes:** each process costs about 80 ms on Windows, so the app and its tests batch Git calls rather than running one per question.
 - **Ports:** a server port closed by one test can stay in use for a few seconds on Windows. Test servers ask the system for a free port each time.
 - **Caches:** unit tests, integration tests, and builds never use the Git status cache. They ask Git directly.
+- **Waits:** a journey waits for the state it needs (the menu has focused an item, the note has the new text, the scroll has happened), never for a fixed time, and uses each platform's caret keys (macOS moves by line and note with <kbd>⌘</kbd> and the arrows). `FOCUS_NOTES_E2E_CPU_THROTTLE=4` slows the app's renderer 4×, with `CI=1` for CI's budgets, to find races before a CI runner does (D-100).
 
 ### Support matrix (tested each release)
 
@@ -138,6 +139,32 @@ Measure before fixing anything. Guesses about what's slow are usually wrong: in 
 - **Zoom and reflow:** usable at 200% interface size and at a 320 px wide viewport.
 - **Motion and transparency:** reduced-motion and reduced-transparency settings are honored everywhere (see [Foundations](../design/foundations.md)).
 - An accessibility conformance report is published with version 1.0.
+
+### Accessibility audit
+
+Each stage's hardening work package audits everything built so far (M1: WP-1.11, D-100). The automated part is the journeys in `apps/desktop/e2e/m1-a11y.spec.ts` and the demo journeys (`m1-demo.spec.ts`), which run on every build:
+
+| Check | How |
+| --- | --- |
+| No axe violations, contrast included | Every surface opened from the keyboard (the canvas, the trigger toolbar and a tooltip, the ⋯ menu and a submenu, find and replace, the cheat sheet, Files, Move to…, the delete confirmation, the formatting toolbar, the link editor and card, the slash menu, the table controls and cell menu, a toast), in Paper, Ink, and both High contrast themes, and in forced colors |
+| Targets (2.5.8) | Every visible control outside the note's text is at least 24 × 24 px, or a 24 px circle on it touches no other target |
+| Focus (2.4.7, 2.4.11) | The focused control in each surface, and the next one after <kbd>Tab</kbd>, shows a 2 px ring or a fill and isn't covered |
+| Landmarks | A tooltip opened by keyboard focus renders inside its control's landmark, next to it |
+| Reflow (1.4.10) | At 320 CSS px (400% zoom), no surface scrolls sideways or spills out of the window |
+| Motion (2.3.3) | With reduced motion, nothing animates as any surface opens or closes |
+| Keyboard only | The whole M1 demo, with a check that no pointer event happened |
+
+The browser's dialogs (Quick open, *Unlock*, *Use this app for yourself*) are checked by the web journeys. The screen-reader passes can't be automated. Before each stage gate the owner runs this script with NVDA (Windows) and VoiceOver (macOS), and records the result in the gate issue:
+
+1. Start the app: the note is announced as an editable "Note" with its text, and the caret is at its end.
+2. Press <kbd>Mod</kbd>+<kbd>.</kbd>: "Toolbar", then the focused action and its shortcut. Arrow through all seven; each is named, and Focus mode says whether it's on.
+3. On ⋯, press <kbd>↓</kbd>: a menu of five groups. Arrow to *Share and visibility…*: it's unavailable and says why. Arrow to *Light theme* and press <kbd>→</kbd>: a submenu, with the current theme checked. <kbd>Esc</kbd> twice returns to the note.
+4. Write a heading, a list, a task, a quote, and code with Markdown shortcuts; each block is announced as what it became.
+5. Select a word with <kbd>Shift</kbd>+<kbd>Ctrl</kbd>+<kbd>←</kbd> (<kbd>⌥⇧←</kbd>), press <kbd>Alt</kbd>+<kbd>F10</kbd>: "Text formatting" toolbar; make it bold; <kbd>Esc</kbd> returns with the selection. <kbd>Mod</kbd>+<kbd>K</kbd>: the link editor's address field; Enter makes the link.
+6. Type `/table`: the block menu's active row is read as the arrows move. Insert the table; <kbd>Tab</kbd> through cells (each read with its column header, "Column 3" for an empty one); <kbd>Shift</kbd>+<kbd>F10</kbd> opens the cell menu.
+7. <kbd>Mod</kbd>+<kbd>F</kbd>, type a word: the count is announced; replace all: the toast is announced; <kbd>Mod</kbd>+<kbd>Z</kbd> restores it.
+8. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>/</kbd>: the cheat sheet's search field; type "bold": "1 shortcut".
+9. <kbd>Mod</kbd>+<kbd>O</kbd>: the Files tree, with the open note selected; open another note and back.
 
 ## Language and text
 

@@ -58,6 +58,12 @@
     "selection": {
       "$value": "{ref.system.highlight}"
     },
+    "onSelection": {
+      "$value": "{ref.system.highlightText}"
+    },
+    "onSelectionMuted": {
+      "$value": "{ref.system.highlightText}"
+    },
     "focusRing": {
       "$value": "{ref.system.highlight}"
     },

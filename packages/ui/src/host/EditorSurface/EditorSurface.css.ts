@@ -117,6 +117,10 @@ globalStyle(p("th, td"), {
   borderInlineEndWidth: t.tableBorderWidth,
   borderBlockEndWidth: t.tableBorderWidth,
   borderColor: t.tableBorder,
+  // Each cell paints on its own, so typing in one repaints that cell rather than the whole table:
+  // in a 200 × 10 table whose cells wrap, keystroke to paint drops from hundreds of ms to under one
+  // frame (PRF-01, D-100). Cells never draw outside themselves; the controls are an overlay.
+  contain: "paint",
 });
 globalStyle(p("th:last-child, td:last-child"), { borderInlineEndStyle: "none" });
 globalStyle(p("tr:last-child > th, tr:last-child > td"), { borderBlockEndStyle: "none" });
@@ -130,10 +134,12 @@ globalStyle(p('[data-align="left"]'), { textAlign: "start" });
 globalStyle(p(".selectedCell"), { backgroundColor: t.tableSelection });
 globalStyle(p("th p, td p"), { margin: 0 });
 
-// Find highlights (FND-01): every match, and the current one stronger and outlined.
-globalStyle(`${prose} .ProseMirror-search-match`, { backgroundColor: t.findMatch, borderRadius: t.findMatchOutlineWidth });
+// Find highlights (FND-01): every match, and the current one stronger and outlined. A match's text
+// is the text color, so a link or code in it keeps AA contrast on the highlight (D-100).
+globalStyle(`${prose} .ProseMirror-search-match`, { backgroundColor: t.findMatch, color: t.findMatchText, borderRadius: t.findMatchOutlineWidth });
 globalStyle(`${prose} .ProseMirror-active-search-match`, {
   backgroundColor: t.findMatchActive,
+  color: t.findMatchText,
   outlineStyle: "solid",
   outlineWidth: t.findMatchOutlineWidth,
   outlineColor: t.findMatchOutline,
@@ -144,4 +150,15 @@ globalStyle(p(".ProseMirror-hideselection *::selection"), { backgroundColor: "tr
 globalStyle(`${prose}.ProseMirror-hideselection`, { caretColor: "transparent" });
 
 /** The selection, kept visible while the link editor's field has focus (Text formatting → Link editor). */
-export const ghost = style({ backgroundColor: t.selectionGhost });
+// Text keeps its contrast on it, also in forced colors (HighlightText on Highlight).
+export const ghost = style({ backgroundColor: t.selectionGhost, color: t.selectionGhostText });
+// An empty header cell's column name: muted, zero-width so the caret stays at the cell's start, and
+// never selected or clicked.
+export const emptyHeader = style({
+  display: "inline-block",
+  width: 0,
+  whiteSpace: "nowrap",
+  color: t.placeholder,
+  pointerEvents: "none",
+  userSelect: "none",
+});

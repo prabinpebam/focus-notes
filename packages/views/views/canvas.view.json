@@ -496,6 +496,12 @@
               }
             }
           },
+          "emptyHeader": {
+            "t": "table.emptyHeader",
+            "args": {
+              "index": "{index}"
+            }
+          },
           "keymap": {
             "get": "vm.app.editorKeymap"
           },
@@ -1176,7 +1182,8 @@
                   {
                     "type": "Inline",
                     "props": {
-                      "gap": "xs"
+                      "gap": "xs",
+                      "wrap": true
                     },
                     "children": [
                       {
@@ -2197,7 +2204,8 @@
                       "label": {
                         "t": "files.confirm.cancel"
                       },
-                      "variant": "secondary"
+                      "variant": "secondary",
+                      "autoFocus": true
                     },
                     "on": {
                       "press": {

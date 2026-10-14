@@ -28,6 +28,12 @@
     "textMuted": {
       "$value": "{ref.color.forestDark.400}"
     },
+    "onSelection": {
+      "$value": "{ref.color.forestDark.50}"
+    },
+    "onSelectionMuted": {
+      "$value": "{ref.color.forestDark.400}"
+    },
     "textPlaceholder": {
       "$value": "{ref.color.forestDark.500}"
     },

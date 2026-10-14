@@ -79,7 +79,9 @@ export function registerTables({ store, commands, viewModels, catalog, bridge, e
         rows: Math.max(0, int(a.rows, 0)), cols: Math.max(0, int(a.cols, 0)), header: typeof a.header === "string" ? a.header : "",
         align: a.align === "left" || a.align === "center" || a.align === "right" ? a.align : "",
         insertAxis: axis, insertIndex: int(a.insertIndex, 0), selection: kinds.includes(a.selection as TableSelectionKind) ? (a.selection as TableSelectionKind) : "none",
-        menuRequest: prev.menuRequest,
+        // Counted only while the caret is in a table: the controls appear with the table, so a request
+        // made as the caret arrives (Shift+F10 straight after an arrow key) is the first they see.
+        menuRequest: a.inTable ? prev.menuRequest : 0,
       };
       if (JSON.stringify(next) !== JSON.stringify(prev)) set(next);
     },

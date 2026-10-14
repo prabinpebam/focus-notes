@@ -9,7 +9,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { launch, quit } from "./helpers.ts";
+import { caret, launch, quit } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const git = (cwd: string, ...args: string[]) =>
@@ -68,7 +68,7 @@ async function typeAtEnd(page: import("@playwright/test").Page, text: string) {
   const editor = page.getByRole("textbox", { name: "Note" });
   await expect(editor).toContainText("First line.");
   await editor.click();
-  await page.keyboard.press(`${mod}+End`);
+  await page.keyboard.press(caret.docEnd);
   await page.keyboard.type(text);
 }
 

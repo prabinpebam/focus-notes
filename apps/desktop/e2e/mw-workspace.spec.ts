@@ -6,7 +6,7 @@
 import { test, expect } from "@playwright/test";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs } from "./helpers.ts";
+import { caret, launch, quit, tempDirs } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -33,7 +33,7 @@ test("PRF-11: a change made in another editor shows in the open note within 500 
 
   // The reloaded note is still the one being written: typing saves to the same file.
   await editor.click();
-  await page.keyboard.press(`${mod}+End`);
+  await page.keyboard.press(caret.docEnd);
   await page.keyboard.type(" And mine.");
   await expect.poll(() => readFileSync(note, "utf8"), { timeout: 5000 }).toBe("# After\n\nChanged in another editor. And mine.\n");
   await quit(l);
@@ -81,7 +81,7 @@ test("DST-05: a workspace saved by a newer Focus Notes opens read-only, says why
   await expect(page.getByRole("button", { name: "Read only · Needs a newer Focus Notes" })).toBeVisible();
 
   await editor.click();
-  await page.keyboard.press(`${mod}+End`);
+  await page.keyboard.press(caret.docEnd);
   await page.keyboard.type(" Typed anyway.");
   await page.keyboard.press(`${mod}+S`);
   await page.keyboard.press(`${mod}+N`);

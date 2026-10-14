@@ -1,4 +1,6 @@
+import { useContext } from "react";
 import { Button as AriaButton, ToggleButton } from "react-aria-components";
+import { CompanionContext } from "../../behaviors/anchors.ts";
 import { Icon } from "../Icon/Icon.tsx";
 import { Tooltip } from "../Tooltip/Tooltip.tsx";
 import type { IconName } from "../../icon-names.ts";
@@ -17,17 +19,22 @@ export interface ButtonProps {
   disabled?: boolean;
   /** Required with `disabled`: a disabled button stays focusable and says why (Foundations → States). */
   disabledReason?: string;
+  /** Takes focus when it appears: in a confirmation, the choice that changes nothing (APG alert dialog). */
+  autoFocus?: boolean;
   id?: string;
   onPress?: () => void;
 }
 
-export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, busy, disabled, disabledReason, id, onPress }: ButtonProps) {
+export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, busy, disabled, disabledReason, autoFocus, id, onPress }: ButtonProps) {
   const inert = disabled || busy;
+  const keepNoteFocus = useContext(CompanionContext);
   const common = {
     id,
     className: [s.base, s.size[size], s.variant[variant]].join(" "),
     "aria-disabled": inert ? ("true" as const) : undefined,
     "aria-busy": busy ? ("true" as const) : undefined,
+    ...(autoFocus ? { autoFocus: true } : {}),
+    preventFocusOnPress: keepNoteFocus,
   };
   const content = (
     <>

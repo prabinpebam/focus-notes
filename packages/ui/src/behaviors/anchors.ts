@@ -1,3 +1,4 @@
+import { createContext } from "react";
 /**
  * Where the editor's floating companions point (the formatting toolbar, the link editor, the hover
  * card): the editor surface publishes rectangles in viewport coordinates, and Positioner follows them.
@@ -32,6 +33,12 @@ export const anchors = {
 
 /** Marks an element as part of the editor's companions: focus or the pointer there keeps them open. */
 export const COMPANION_ATTR = "data-editor-companion";
+/**
+ * Inside an editor companion (the formatting toolbar, the link editor and card), a pointer press
+ * leaves focus in the note: the note never blurs and refocuses, so nothing puts back an older
+ * selection (ProseMirror restores its own on focus). The keyboard still moves into them.
+ */
+export const CompanionContext = createContext(false);
 /** Dispatched on window when focus or the pointer leaves a companion for somewhere else. */
 export const COMPANION_LEAVE_EVENT = "focus-notes:companion-leave";
 /** True while the pointer is over a companion, so the hover card waits (Text formatting → Hover a link). */

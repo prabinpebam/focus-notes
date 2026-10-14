@@ -23,6 +23,11 @@ export interface TableHooks {
   onCopyText?: (text: string, format: "markdown" | "tsv") => void;
   onContextMenu?: () => void;
   onNotice?: (kind: string, args: Record<string, number>) => void;
+  /**
+   * What an empty header cell shows and is called ("Column 3"), drawn by the design system. A header
+   * with no text would name nothing for its column (A11Y-01, axe empty-table-header).
+   */
+  emptyHeader?: (index: number) => HTMLElement;
 }
 const hooks = new WeakMap<object, TableHooks>();
 export const setTableHooks = (editor: object, h: TableHooks): void => void hooks.set(editor, h);

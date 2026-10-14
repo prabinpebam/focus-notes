@@ -42,19 +42,34 @@ test("UI-10: the trigger sits 40 px down, its dot grows on hover, and it morphs 
 
   // Opening: the circle grows into the toolbar's shape, centered where it was, then the buttons appear.
   const width = await page.evaluate(() => window.innerWidth);
+  // The width transition is caught as it starts and measured halfway through, so the check doesn't
+  // depend on sampling frames in time on a slow or throttled machine.
+  await page.evaluate(() => {
+    const w = window as unknown as { __midway?: { w: number; duration: number } };
+    const root = document.querySelector("[data-morph-panel]") as HTMLElement;
+    const onRun = (e: TransitionEvent) => {
+      if (e.target !== root || e.propertyName !== "width") return;
+      root.removeEventListener("transitionrun", onRun);
+      const a = root.getAnimations().find((x) => (x as CSSTransition).transitionProperty === "width")!;
+      const duration = Number(a.effect!.getTiming().duration);
+      a.pause();
+      a.currentTime = duration / 2;
+      w.__midway = { w: root.getBoundingClientRect().width, duration };
+      a.play();
+    };
+    root.addEventListener("transitionrun", onRun);
+  });
   await page.keyboard.press(`${mod}+.`);
-  const during: number[] = [];
-  for (let i = 0; i < 6; i++) {
-    during.push((await panel(page)).w);
-    await page.waitForTimeout(40);
-  }
+  const midway = await page.waitForFunction(() => (window as unknown as { __midway?: { w: number; duration: number } }).__midway).then((h) => h.jsonValue() as Promise<{ w: number; duration: number }>);
   await expect.poll(async () => (await panel(page)).contentOpacity).toBe(1);
   const open = await panel(page);
   expect(Math.abs(open.cx - width / 2)).toBeLessThan(1.5);
   expect(Math.round(open.y)).toBe(40);
   expect(open.w).toBeGreaterThan(200);
   // It grew through sizes in between rather than jumping.
-  expect(during.some((w) => w > 31 && w < open.w - 1)).toBe(true);
+  expect(midway.duration).toBeGreaterThan(0);
+  expect(midway.w).toBeGreaterThan(31);
+  expect(midway.w).toBeLessThan(open.w - 1);
   await expect(page.getByRole("toolbar", { name: "Toolbar" }).getByRole("button", { name: "New note" })).toBeFocused();
   await page.screenshot({ path: "../../test-results/screens/trigger-open.png", clip: { x: 0, y: 0, width, height: 120 } });
 

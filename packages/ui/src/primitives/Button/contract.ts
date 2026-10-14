@@ -17,6 +17,7 @@ export const contract = defineContract({
     busy: { kind: "boolean", default: false },
     disabled: { kind: "boolean", default: false },
     disabledReason: { kind: "message", requiredWhen: "disabled" },
+    autoFocus: { kind: "boolean", default: false, description: "Takes focus when it appears: in a confirmation, the choice that changes nothing (APG alert dialog)." },
   },
   events: { press: {} },
   slots: {},

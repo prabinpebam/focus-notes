@@ -1,4 +1,6 @@
+import { useContext } from "react";
 import { Button as AriaButton, ToggleButton } from "react-aria-components";
+import { CompanionContext } from "../../behaviors/anchors.ts";
 import { Icon } from "../Icon/Icon.tsx";
 import { Tooltip } from "../Tooltip/Tooltip.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
@@ -26,8 +28,9 @@ export interface IconButtonProps {
 
 export function IconButton({ icon, label, shortcut, tone = "default", toggle, pressed, mixed, disabled, disabledReason, busy, busyLabel, id, onPress }: IconButtonProps) {
   const className = `${s.base} ${s.tone[tone]}`;
+  const keepNoteFocus = useContext(CompanionContext);
   const name = busyLabel || label;
-  const common = { id, className, "aria-label": name, "aria-disabled": disabled ? ("true" as const) : undefined, "aria-busy": busy ? ("true" as const) : undefined };
+  const common = { id, className, "aria-label": name, "aria-disabled": disabled ? ("true" as const) : undefined, "aria-busy": busy ? ("true" as const) : undefined, preventFocusOnPress: keepNoteFocus };
   const glyph = busy ? <Spinner size="s" /> : <Icon name={icon} />;
   const button = toggle && mixed ? (
     <AriaButton {...common} aria-pressed="mixed" onPress={disabled || busy ? undefined : onPress}>

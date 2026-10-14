@@ -1002,6 +1002,19 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "autoFocus": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -4447,6 +4460,19 @@
               ]
             },
             "placeholder": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "emptyHeader": {
               "anyOf": [
                 {
                   "$ref": "#/$defs/message"

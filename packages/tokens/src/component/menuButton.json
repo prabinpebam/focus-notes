@@ -73,6 +73,10 @@
         "$type": "color",
         "$value": "{color.focusRing}"
       },
+      "focusWidth": {
+        "$type": "dimension",
+        "$value": "{border.focus}"
+      },
       "disabledOpacity": {
         "$type": "number",
         "$value": "{opacity.disabled}"
@@ -88,6 +92,10 @@
       "captionSize": {
         "$type": "dimension",
         "$value": "{font.uiCaption}"
+      },
+      "reasonPaddingBlock": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
       },
       "headerWeight": {
         "$type": "fontWeight",

@@ -20,6 +20,9 @@ export const base = style({
   top: yVar,
   zIndex: t.layer,
   display: "flex",
+  // Never wider than the window less its edges, so it reflows at 320 px (WCAG 1.4.10). Fixed, so
+  // the percentage is of the window.
+  maxWidth: `calc(100% - 2 * ${edgeVar})`,
   animationName: enter,
   animationDuration: t.duration,
   animationTimingFunction: t.easing,

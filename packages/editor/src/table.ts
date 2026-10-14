@@ -5,6 +5,7 @@
  */
 import { Extension, type AnyExtension, type Editor } from "@tiptap/core";
 import { Plugin, PluginKey, TextSelection } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { Fragment, Slice, type Node as PMNode } from "@tiptap/pm/model";
 import { closeHistory } from "@tiptap/pm/history";
 import type { EditorView } from "@tiptap/pm/view";
@@ -167,6 +168,24 @@ function copyCells(view: EditorView, event: ClipboardEvent, cut: boolean, editor
   return true;
 }
 
+/**
+ * Empty header cells show their column's name, muted, as a widget that isn't part of the note: it
+ * names the column for assistive technology and says what the cell is for. Recomputed only when the
+ * document changes, over top-level blocks and header rows alone, so typing in a cell stays cheap.
+ */
+function emptyHeaders(doc: PMNode, render: (index: number) => HTMLElement): DecorationSet {
+  const decos: Decoration[] = [];
+  doc.forEach((block, offset) => {
+    if (block.type.name !== "table" || !block.firstChild) return;
+    const rowPos = offset + 1;
+    block.firstChild.forEach((cell, cellOffset, index) => {
+      if (cell.type.name !== "tableHeader" || cell.textContent !== "" || cell.firstChild?.childCount) return;
+      decos.push(Decoration.widget(rowPos + 1 + cellOffset + 2, () => render(index + 1), { side: -1, ignoreSelection: true, key: `empty-header-${index + 1}` }));
+    });
+  });
+  return DecorationSet.create(doc, decos);
+}
+
 export const TableKit = Extension.create<TableHooks>({
   name: "tableKit",
   // Before the paste pipeline and the default keys, so a range pasted into a cell fills cells.
@@ -182,10 +201,18 @@ export const TableKit = Extension.create<TableHooks>({
   },
   addProseMirrorPlugins() {
     const editor = this.editor;
+    const { emptyHeader } = this.options;
     return [
-      new Plugin({
+      new Plugin<DecorationSet>({
         key: new PluginKey("tableKit"),
+        state: {
+          init: (_c, state) => (emptyHeader ? emptyHeaders(state.doc, emptyHeader) : DecorationSet.empty),
+          apply: (tr, old) => (emptyHeader && tr.docChanged ? emptyHeaders(tr.doc, emptyHeader) : old),
+        },
         props: {
+          decorations(state) {
+            return this.getState(state);
+          },
           handleKeyDown: (view, event) => cellModeKey(view, event),
           handlePaste: (view, event, slice) => pasteIntoTables(view, event, slice, editor),
           handleDOMEvents: {

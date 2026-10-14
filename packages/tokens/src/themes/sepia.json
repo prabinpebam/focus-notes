@@ -28,6 +28,12 @@
     "textMuted": {
       "$value": "{ref.color.sepia.600}"
     },
+    "onSelection": {
+      "$value": "{ref.color.sepia.900}"
+    },
+    "onSelectionMuted": {
+      "$value": "{ref.color.sepia.600}"
+    },
     "textPlaceholder": {
       "$value": "{ref.color.sepia.500}"
     },

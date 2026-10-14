@@ -3,7 +3,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   applyLink, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
-  setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
+  focusAtEnd, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
@@ -22,6 +22,8 @@ export interface EditorSurfaceProps {
   initialValue: string;
   label: string;
   placeholder?: string;
+  /** What an empty table header cell shows and is called, with "{index}" for its column's number. */
+  emptyHeader?: string;
   readOnly?: boolean;
   /** Focus mode: only the caret's visual row at full strength (FOC-01). */
   focusMode?: boolean;
@@ -75,6 +77,26 @@ const FIND_DEBOUNCE_MS = 60;
 const SERIALIZE_DELAY_MS = 150;
 /** Dispatched on window by the runtime before a flush; surfaces hand over pending text synchronously. */
 export const FLUSH_EVENT = "focus-notes:flush";
+
+/**
+ * Focuses the note now, keeping its selection. Tiptap's focus command waits a frame, and its focus
+ * then writes the selection it had over one the person made in between (a click and drag, keys), so
+ * a deferred caller reads the selection first and focuses directly.
+ */
+/** An empty table header's column name: real, muted text the note doesn't hold (see the editor's TableHooks). */
+function emptyHeaderElement(text: string): HTMLElement {
+  const span = document.createElement("span");
+  span.className = s.emptyHeader;
+  span.contentEditable = "false";
+  span.textContent = text;
+  return span;
+}
+
+function focusNote(editor: Editor): void {
+  if (editor.isDestroyed) return;
+  syncSelection(editor);
+  editor.view.focus();
+}
 /** Dispatched when a panel closes: the caret goes back exactly where it was (Main UI → Dismiss). */
 export const REFOCUS_EVENT = "focus-notes:refocus";
 /** Dispatched on window with `detail.id` to run an editor command from a menu or Spotlight. */
@@ -82,7 +104,7 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({
-  documentKey, initialValue, label, placeholder, readOnly, focusMode, keymap,
+  documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, linkEditing,
   slashOpen, slashActive = "", slashList,
   id, onChange, onReady, onFindResult, onFindPrefill, onFormat, onLinkEdit, onOpenLink, onSlash, onSlashMove, onPasteNotice,
@@ -113,6 +135,8 @@ export function EditorSurface({
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const last = useRef(initialValue);
   const editorRef = useRef<Editor | null>(null);
+  const emptyHeaderRef = useRef(emptyHeader);
+  emptyHeaderRef.current = emptyHeader;
 
   /** Arrows, Enter, Tab, and Esc while the slash menu is open (Text formatting → Slash menu → Keyboard). */
   const slashKey = (event: KeyboardEvent): boolean => {
@@ -144,6 +168,7 @@ export function EditorSurface({
         ...coreExtensions(keymap ?? [], {
           openLink: (href) => formatRef.current.onOpenLink?.({ href }),
           ghostClass: s.ghost,
+          emptyHeader: (index) => emptyHeaderElement((emptyHeaderRef.current ?? "").replace("{index}", String(index))),
           onPasteNotice: (kind, args = {}) => formatRef.current.onPasteNotice?.({ kind, rows: args.rows ?? 0, cols: args.cols ?? 0, addedRows: args.addedRows ?? 0, addedCols: args.addedCols ?? 0 }),
           onTableChange: (c) => tableRef.current.onTableChange?.({ kind: c.kind, index: c.index ?? 0, align: c.align ?? "" }),
           onTableCopy: (text, format) => tableRef.current.onTableCopy?.({ text, format }),
@@ -157,7 +182,8 @@ export function EditorSurface({
       ],
       content: session.doc as object,
       editable: !readOnly,
-      autofocus: "end",
+      // Focused at the end once mounted (below), at once rather than a frame later.
+      autofocus: false,
       immediatelyRender: true,
       // The design system styles the editor; Tiptap's own <style> tag would be blocked by the CSP anyway.
       injectCSS: false,
@@ -207,6 +233,17 @@ export function EditorSurface({
   useEffect(() => {
     last.current = initialValue;
   }, [documentKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ProseMirror puts its own selection back 20 ms after the note gains focus unless it has read a
+  // newer one by then. A click in the note right after focus came back (from a menu, on a busy
+  // machine) is read as soon as the browser has placed it, before that.
+  useEffect(() => {
+    if (!editor) return;
+    const dom = editor.view.dom;
+    const onDown = () => setTimeout(() => { if (!editor.isDestroyed) syncSelection(editor); }, 0);
+    dom.addEventListener("mousedown", onDown, true);
+    return () => dom.removeEventListener("mousedown", onDown, true);
+  }, [editor]);
 
   // The slash menu (EDT-06): the editor reports the query; the menu is a view node under the `/`.
   useEffect(() => {
@@ -260,7 +297,7 @@ export function EditorSurface({
   // Closing the find bar puts the caret back in the note, on the current match (VS Code behavior).
   const wasOpen = useRef(false);
   useEffect(() => {
-    if (wasOpen.current && !findOpen && editor && !editor.isDestroyed) requestAnimationFrame(() => editor.commands.focus());
+    if (wasOpen.current && !findOpen && editor && !editor.isDestroyed) requestAnimationFrame(() => focusNote(editor));
     wasOpen.current = Boolean(findOpen);
   }, [findOpen, editor]);
 
@@ -323,7 +360,7 @@ export function EditorSurface({
     window.addEventListener(FLUSH_EVENT, flush);
     // After a panel's own focus restoration, put the caret back in the note.
     const refocus = () => requestAnimationFrame(() => {
-      if (editor && !editor.isDestroyed) editor.commands.focus();
+      if (editor) focusNote(editor);
     });
     window.addEventListener(REFOCUS_EVENT, refocus);
     const runAction = (e: Event) => {
@@ -381,13 +418,20 @@ export function EditorSurface({
         action(editor);
         return;
       }
-      editor.commands.focus();
+      editor.view.focus();
       action(editor);
-      // A menu that ran it (Turn into) hands focus back to its button as it closes; the caret belongs in the note.
+      // A menu that ran it (Turn into) hands focus back to its button as it closes, a render or more
+      // later; the caret belongs in the note. Whenever that happens (within a second), focus comes back.
       if (active?.closest("[data-floating-child]")) {
-        requestAnimationFrame(() => {
-          if (!editor.isDestroyed && inCompanion(document.activeElement)) editor.view.focus();
-        });
+        const back = () => {
+          if (!editor.isDestroyed && (inCompanion(document.activeElement) || document.activeElement === document.body)) focusNote(editor);
+        };
+        const onFocusIn = (e: FocusEvent) => {
+          if (inCompanion(e.target as Element | null)) back();
+        };
+        document.addEventListener("focusin", onFocusIn, true);
+        requestAnimationFrame(back);
+        setTimeout(() => document.removeEventListener("focusin", onFocusIn, true), 1000);
       }
     };
     const runLinkAction = (id: string, args: Record<string, unknown>): boolean => {
@@ -424,6 +468,12 @@ export function EditorSurface({
       window.removeEventListener(EDITOR_ACTION_EVENT, runAction);
     };
   }, [editor, session]);
+
+  // The caret starts at the note's end, once every tracker above is listening (the reading zone
+  // places it). At once rather than through Tiptap's autofocus, which focuses a frame later.
+  useEffect(() => {
+    if (editor) focusAtEnd(editor);
+  }, [editor]);
 
   return (
     <main className={s.scroller} data-editor-scroller="" data-find-open={findOpen ? "" : undefined} aria-label={label} ref={scrollerRef}>

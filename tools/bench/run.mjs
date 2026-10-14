@@ -97,7 +97,51 @@ async function gitStatus() {
   }
 }
 
-const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()) } };
+// PRF-03: opening a 10,000-word note from Files, from the request to the first frame showing it,
+// and how long after the last keystroke the text is on disk. The app reports both on the User Timing
+// timeline ("fn:note.open", "fn:note.saved"); Playwright drives it as a person would.
+async function noteTimes() {
+  const { _electron } = createRequire(join(root, "apps", "desktop", "package.json"))("@playwright/test");
+  const { tenThousandWords } = await import(pathToFileURL(join(import.meta.dirname, "fixtures.ts")).href);
+  const docs = throwawayWorkspace();
+  writeFileSync(join(docs, "long.md"), tenThousandWords());
+  const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
+  const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs } });
+  try {
+    const page = await app.firstWindow();
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+    const editor = page.getByRole("textbox", { name: "Note" });
+    await editor.waitFor();
+    await page.waitForFunction(() => document.activeElement?.hasAttribute("data-editor"));
+    const opens = () => page.evaluate(() => performance.getEntriesByName("fn:note.open", "measure").map((e) => e.duration));
+    const open = [];
+    for (let i = 0; i < 2 * Math.max(runs, 3); i++) {
+      const name = i % 2 === 0 ? "Long note" : "Bench fixture";
+      await page.keyboard.press(`${mod}+O`);
+      const row = page.getByRole("complementary", { name: "Files" }).getByRole("treeitem", { name, exact: true });
+      await row.click();
+      const before = (await opens()).length;
+      await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowDown" : "Enter");
+      await page.waitForFunction((n) => performance.getEntriesByName("fn:note.open", "measure").length > n, before);
+      if (name === "Long note") open.push((await opens()).at(-1));
+    }
+    // In the long note: a burst of typing at the end, then the wait for the disk.
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowDown" : "Control+End");
+    const saves = [];
+    for (let i = 0; i < Math.max(runs, 3); i++) {
+      await page.evaluate(() => { window.__lastKey = 0; window.addEventListener("keydown", (e) => { window.__lastKey = e.timeStamp; }, true); });
+      await page.keyboard.type(` burst ${i}`, { delay: 25 });
+      const last = await page.evaluate(() => window.__lastKey);
+      await page.waitForFunction((t) => performance.getEntriesByName("fn:note.saved", "mark").some((m) => m.startTime > t), last, { timeout: 5000 });
+      saves.push(await page.evaluate((t) => performance.getEntriesByName("fn:note.saved", "mark").find((m) => m.startTime > t).startTime - t, last));
+    }
+    return { "PRF-03.openNoteMs": Math.round(median(open)), "PRF-03.saveAfterTypingMs": Math.round(median(saves)) };
+  } finally {
+    await app.close();
+  }
+}
+
+const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()), ...(await noteTimes()) } };
 mkdirSync(join(root, "test-results"), { recursive: true });
 writeFileSync(join(root, "test-results", "bench.json"), JSON.stringify(report, null, 2));
 

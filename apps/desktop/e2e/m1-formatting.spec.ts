@@ -5,7 +5,7 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { caret, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mac = process.platform === "darwin";
@@ -88,9 +88,13 @@ test("EDT-12, EDT-03: a selection shows the toolbar above it, and each button to
   await expect(bold).toHaveAttribute("aria-pressed", "false");
   await expect(editor.locator("strong")).toHaveCount(0);
   await bold.click();
+  // Bold widens the word, so the next word is measured only once it's applied.
+  await expect(editor.locator("strong")).toHaveText("Bold");
 
   for (const [w, name, tag] of [["italic", "Italic", "em"], ["strike", "Strikethrough", "s"], ["code", "Inline code", "code"]] as const) {
     await dragSelect(page, w);
+    // The toolbar follows the new selection, with none of its marks, before a button is pressed.
+    for (const mark of ["Bold", "Italic", "Strikethrough", "Inline code"]) await expect(toolbar.getByRole("button", { name: mark, exact: true })).toHaveAttribute("aria-pressed", "false");
     const button = toolbar.getByRole("button", { name, exact: true });
     await button.click();
     await expect(button).toHaveAttribute("aria-pressed", "true");
@@ -133,8 +137,8 @@ test("EDT-12: Alt+F10 moves into the toolbar, arrows move, Esc returns with the 
   const editor = page.getByRole("textbox", { name: "Note" });
   const toolbar = page.getByRole("toolbar", { name: "Text formatting" });
   // A keyboard selection: Shift+Home from the end of the line.
-  await page.keyboard.press(mac ? "Meta+ArrowDown" : "Control+End");
-  await page.keyboard.press("Shift+Home");
+  await page.keyboard.press(caret.docEnd);
+  await page.keyboard.press(caret.selectToLineStart);
   await expect(toolbar).toBeVisible();
   // Opening it doesn't move focus.
   await expect(editor).toBeFocused();
@@ -174,8 +178,10 @@ test("EDT-12: Alt+F10 moves into the toolbar, arrows move, Esc returns with the 
   await menu.getByRole("menuitemcheckbox", { name: /^Heading 2/ }).click();
   await expect(editor.locator("h2")).toHaveText("First line of text.");
   await expect(toolbar.getByRole("button", { name: "Turn into: Heading 2" })).toBeVisible();
+  // The menu hands focus back to the note once it has closed.
+  await expect(editor).toBeFocused();
   await page.keyboard.press("Escape");
-  await page.keyboard.press("End");
+  await page.keyboard.press(caret.lineEnd);
   await expect(toolbar).toBeHidden();
   await expect.poll(l.saved, { timeout: 5000 }).toBe("# Notes\n\n## **First line of text.**\n");
   await quit(l);
@@ -188,7 +194,7 @@ test("UI-06: the toolbar shows only for a selection and leaves when it's not nee
   const toolbar = page.getByRole("toolbar", { name: "Text formatting" });
 
   // Typing never shows it.
-  await page.keyboard.press(mac ? "Meta+ArrowDown" : "Control+End");
+  await page.keyboard.press(caret.docEnd);
   await page.keyboard.type(" More words.");
   await page.waitForTimeout(500);
   await expect(toolbar).toBeHidden();
@@ -294,7 +300,7 @@ test("EDT-13: Mod+K edits links in place; the hover card opens, copies, edits, a
   await expect(editor.locator('a[href="https://example.com/new"]')).toHaveText("docs");
 
   // Hovering a link shows the card; it leaves when the pointer does.
-  await page.keyboard.press(mac ? "Meta+ArrowDown" : "Control+End");
+  await page.keyboard.press(caret.docEnd);
   await expect(card).toBeHidden();
   const link = await wordBox(page, "docs");
   await page.mouse.move(link.x, link.y);
@@ -331,7 +337,7 @@ test("EDT-13: Mod+K edits links in place; the hover card opens, copies, edits, a
   await expect(editor.locator('a[href="https://example.com/guide"]')).toHaveText("guide");
 
   // Mod+K with nothing selected asks for the text too, and inserts a new link at the caret.
-  await page.keyboard.press(mac ? "Meta+ArrowDown" : "Control+End");
+  await page.keyboard.press(caret.docEnd);
   await page.keyboard.type(" See ");
   await page.keyboard.press(`${mod}+k`);
   await expect(url).toBeFocused();

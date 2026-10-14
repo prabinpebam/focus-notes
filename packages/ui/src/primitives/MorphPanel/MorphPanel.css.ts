@@ -33,7 +33,9 @@ export const root = style({
       backgroundColor: `color-mix(in srgb, ${t.background} calc(${t.opacity} * 100%), transparent)`,
       backdropFilter: `blur(${t.blur})`,
       boxShadow: t.shadow,
-      overflow: "hidden",
+      // Clipped, never scrolled: focus moving to an action while the shape still grows (a slow machine)
+      // would otherwise scroll it, shifting the buttons and closing their tooltip.
+      overflow: "clip",
     },
   },
 });

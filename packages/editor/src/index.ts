@@ -210,13 +210,17 @@ export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Rec
   },
 };
 
+import { SelectionSync, syncSelection } from "./sync.ts";
+export { syncSelection };
+
 /**
- * Input events outrank selectionchange in Chromium, so a key pressed right after moving the selection
- * (fast typists, macros, a double-click then a shortcut) can arrive before ProseMirror has read it.
- * Commands that act on the selection read it first.
+ * Puts the caret at the note's end, scrolled into view, and focuses it now. Tiptap's own autofocus focuses a frame later,
+ * and that focus writes its selection back over one made by a key pressed in between.
  */
-export function syncSelection(editor: Editor): void {
-  (editor.view as unknown as { domObserver?: { flush?: () => void } }).domObserver?.flush?.();
+export function focusAtEnd(editor: Editor): void {
+  if (editor.isDestroyed) return;
+  editor.view.dispatch(editor.state.tr.setSelection(Selection.atEnd(editor.state.doc)).scrollIntoView());
+  editor.view.focus();
 }
 
 /** A registry chord ("Mod+Shift+X") as a ProseMirror key name ("Mod-Shift-x"). */
@@ -269,6 +273,8 @@ export interface CoreOptions {
   openLink?: (href: string) => void;
   /** The class that keeps the selection visible while the link editor has focus. */
   ghostClass?: string;
+  /** Draws an empty header cell's column name ("Column 3"), see TableHooks. */
+  emptyHeader?: (index: number) => HTMLElement;
   /**
    * What a paste did that's worth saying: images left out (until EXT-03), a range pasted into a
    * table (`tablePasted`, with its size and how the table grew), or line breaks kept off a cell.
@@ -291,6 +297,7 @@ export const EDITOR_OPTIONS = { enablePasteRules: false } as const;
 /** The schema shared by the editor surface, tests, and (later) the publisher. */
 export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions = {}): AnyExtension[] {
   return [
+    SelectionSync,
     // Strike and line-break keys follow the app keymap (KEY-02), not Tiptap's defaults.
     StarterKit.configure({ underline: false, link: false, trailingNode: false, strike: false, hardBreak: false }),
     Strike.extend({ addKeyboardShortcuts: () => ({}) }),
@@ -317,6 +324,7 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
       ...(options.onTableChange ? { onChange: options.onTableChange } : {}),
       ...(options.onTableCopy ? { onCopyText: options.onTableCopy } : {}),
       ...(options.onTableMenu ? { onContextMenu: options.onTableMenu } : {}),
+      ...(options.emptyHeader ? { emptyHeader: options.emptyHeader } : {}),
     }),
   ];
 }

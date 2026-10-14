@@ -107,6 +107,11 @@ export function trackFormatting(editor: Editor, scroller: HTMLElement, emit: (p:
 
   const evaluate = () => {
     if (editor.isDestroyed) return;
+    // The hovered link as it is now: an edit can change its address or replace its element.
+    if (hover) {
+      const link = hover.el.isConnected && view.dom.contains(hover.el) ? linkAround(editor.state, view.posAtDOM(hover.el, 0)) : null;
+      hover = link ? { el: hover.el, ...link } : null;
+    }
     const info = formatState(editor.state);
     const focused = view.hasFocus() || companionFocused;
     if (dismissedAt !== null && dismissedAt !== selKey()) dismissedAt = null;

@@ -4,6 +4,7 @@
  */
 import { Extension, type Editor } from "@tiptap/core";
 import type { EditorState } from "@tiptap/pm/state";
+import { syncSelection } from "./sync.ts";
 import { Fragment, Slice } from "@tiptap/pm/model";
 import {
   search, SearchQuery, setSearchState, getMatchHighlights, getSearchState,
@@ -75,6 +76,8 @@ export const Find = Extension.create({
 
 /** Sets the active query. It isn't an edit, so it never enters the undo history. */
 export function setFind(editor: Editor, o: FindOptions): void {
+  // Runs from an effect, after a pause in typing: read any selection the keys just made first.
+  syncSelection(editor);
   const tr = setSearchState(editor.state.tr, buildQuery(o)).setMeta("addToHistory", false);
   editor.view.dispatch(tr);
 }

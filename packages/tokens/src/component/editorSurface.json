@@ -33,6 +33,10 @@
         "$type": "color",
         "$value": "{color.findMatchActive}"
       },
+      "findMatchText": {
+        "$type": "color",
+        "$value": "{color.onSelection}"
+      },
       "findMatchOutline": {
         "$type": "color",
         "$value": "{color.text}"
@@ -252,6 +256,10 @@
       "selectionGhost": {
         "$type": "color",
         "$value": "{color.selection}"
+      },
+      "selectionGhostText": {
+        "$type": "color",
+        "$value": "{color.onSelection}"
       },
       "tableBorder": {
         "$type": "color",

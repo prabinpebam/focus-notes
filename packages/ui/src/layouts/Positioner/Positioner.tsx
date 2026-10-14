@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { FloatingContext } from "../Layer/floating.ts";
-import { anchors, place, companion, COMPANION_ATTR, COMPANION_LEAVE_EVENT, inCompanion, type AnchorName } from "../../behaviors/anchors.ts";
+import { anchors, place, companion, CompanionContext, COMPANION_ATTR, COMPANION_LEAVE_EVENT, inCompanion, type AnchorName } from "../../behaviors/anchors.ts";
 import type { Space } from "../Stack/Stack.tsx";
 import * as s from "./Positioner.css.ts";
 
@@ -63,14 +63,19 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       off();
       resize.disconnect();
       removeEventListener("resize", schedule);
-      // Gone from under the pointer: pointerleave never comes.
-      companion.hovered = false;
+      // Gone from under the pointer: pointerleave never comes, so say it left (a hover card that
+      // was kept for the pointer on it lets go).
+      if (companion.hovered) {
+        companion.hovered = false;
+        window.dispatchEvent(new Event(COMPANION_LEAVE_EVENT));
+      }
     };
   }, [anchor, placement, align]);
 
   const leave = () => window.dispatchEvent(new Event(COMPANION_LEAVE_EVENT));
   return (
     <FloatingContext.Provider value={true}>
+      <CompanionContext.Provider value={true}>
       <div
         id={id}
         ref={ref}
@@ -91,6 +96,7 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       >
         {children}
       </div>
+      </CompanionContext.Provider>
     </FloatingContext.Provider>
   );
 }

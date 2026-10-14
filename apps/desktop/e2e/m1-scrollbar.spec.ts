@@ -16,8 +16,9 @@ test("UI-09: the scrollbar hides at rest, shows while scrolling and on hover, an
     const button = getComputedStyle(el, "::-webkit-scrollbar-button").display;
     return { gutter: el.offsetWidth - el.clientWidth, thumb, button, contentLeft: el.querySelector("[data-editor]")!.getBoundingClientRect().left, scrolling: "scrolling" in el.dataset, hover: "scrollbarHover" in el.dataset };
   });
-  // Opening scrolls to the caret, which shows the scrollbar briefly; then it goes idle.
-  await expect.poll(async () => (await state()).scrolling, { timeout: 3000 }).toBe(false);
+  // Opening scrolls to the caret at the end, which shows the scrollbar briefly; then it goes idle.
+  // (Waiting for idle alone could pass before that scroll has started.)
+  await expect.poll(async () => (await scroller.evaluate((el) => el.scrollTop)) > 0 && !(await state()).scrolling, { timeout: 3000 }).toBe(true);
   const rest = await state();
   expect(rest.gutter).toBeGreaterThan(0); // space is reserved
   expect(rest.button).toBe("none"); // no arrows

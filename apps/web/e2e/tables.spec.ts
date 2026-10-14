@@ -30,7 +30,8 @@ test("TBL-01, TBL-03, TBL-07: /table, Tab between cells, and hover handles in th
   await page.keyboard.type("Name");
   await page.keyboard.press("Tab");
   await page.keyboard.type("Owner");
-  await expect(table.locator("th")).toHaveText(["Name", "Owner", ""]);
+  // An empty header shows its column's name, muted, which is never saved (D-100).
+  await expect(table.locator("th")).toHaveText(["Name", "Owner", "Column 3"]);
   // Tab in the last cell adds a row.
   for (let i = 0; i < 8; i++) await page.keyboard.press("Tab");
   await expect(table.locator("tr")).toHaveCount(4);

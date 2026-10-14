@@ -104,6 +104,35 @@ export interface ToastState {
 }
 
 export const SAVE_DELAY_MS = 400;
+/**
+ * PRF-03's measures, on the User Timing timeline: opening a note, from the request to the first
+ * frame that shows it with the caret ready, and each write's end, which a journey compares with the
+ * last keystroke. Best effort: hosts without the API skip them.
+ */
+export const OPEN_MEASURE = "fn:note.open";
+export const SAVED_MARK = "fn:note.saved";
+const timing = {
+  mark(name: string): number | undefined {
+    try {
+      return performance.mark(name).startTime;
+    } catch {
+      return undefined;
+    }
+  },
+  measure(name: string, start: number): void {
+    try {
+      performance.measure(name, { start, end: performance.now() });
+    } catch {
+      // Not every host has the User Timing API.
+    }
+  },
+};
+/** After the next frame is painted (two animation frames), or at once where there are no frames. */
+const afterPaint = (fn: () => void) => {
+  const raf = (globalThis as { requestAnimationFrame?: (cb: () => void) => number }).requestAnimationFrame;
+  if (raf) raf(() => raf(fn));
+  else fn();
+};
 /** The editor action that asks the editor to hand over text it hasn't sent yet (the runtime's flush). */
 export const FLUSH_EDITOR = "note.flush";
 /** Note text sizes in px (THM-06). */
@@ -129,8 +158,21 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
     ],
   },
   { id: "edit", label: "menu.edit", items: ["find.open", "find.replace"] },
-  { id: "help", label: "menu.help", items: ["shortcuts.open"] },
+  { id: "note", label: "menu.note", items: ["note.share"] },
+  { id: "app", label: "menu.app", items: ["settings.open", "shortcuts.open", "help.open"] },
 ];
+/**
+ * ⋯ items whose feature arrives in a later work package: present now, disabled, and saying why
+ * (UI-07, Foundations → States), rather than hidden. Each becomes a real command when it lands.
+ */
+export const PLANNED_MENU_COMMANDS = [
+  // Share and visibility: the popover arrives with sharing (WP-5.3); moving a note between Public and Private with WP-3.4.
+  { id: "note.share", title: "command.note.share", icon: "share", disabledReason: "command.note.share.reason" },
+  // Settings (IA-VIEW-SETTINGS) arrives with the secondary views; Mod+, is reserved for it.
+  { id: "settings.open", title: "command.settings.open", icon: "settings", disabledReason: "command.settings.open.reason", shortcut: { default: "Mod+," } },
+  // Help and docs open the product site's help, which arrives with the product site (WP-5.6).
+  { id: "help.open", title: "command.help.open", icon: "info", disabledReason: "command.help.open.reason" },
+] as const;
 
 export interface App {
   store: Store<AppState>;
@@ -227,6 +269,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     setNote({ saveState: "saving" });
     try {
       await bridge.writeNote(path, markdown);
+      timing.mark(SAVED_MARK);
       // The file name follows the title (FIL-07); a rename keeps the editor as it is.
       await workspace.written(path, markdown);
       // Only mark saved if nothing changed while writing.
@@ -250,7 +293,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     }, SAVE_DELAY_MS);
   };
 
+  let opening: number | undefined;
   async function load(path: string): Promise<void> {
+    opening = timing.mark("fn:note.open.start");
     // Never replace a note whose latest text isn't on disk (data safety, QLT-03).
     editorAction(FLUSH_EDITOR);
     if (!(await flush())) return;
@@ -613,10 +658,25 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     run: ({ value }) => { if (value === "mac" || value === "pc") setShortcuts({ platform: value }); },
   });
 
+  for (const p of PLANNED_MENU_COMMANDS) {
+    commands.register({
+      id: p.id, title: p.title, icon: p.icon, disabledReason: p.disabledReason,
+      ...("shortcut" in p ? { shortcut: p.shortcut, layer: "basic" as const, group: "app" as const, planned: true as const } : {}),
+      enabled: () => false,
+      run: () => {},
+    });
+  }
+
   commands.register({
     id: "app.ready",
     title: "command.app.ready",
-    run: () => bridge.markReady?.(),
+    // The editor for the note just loaded is built and focused: once it's painted, the open is done.
+    run: () => {
+      bridge.markReady?.();
+      const start = opening;
+      opening = undefined;
+      if (start !== undefined) afterPaint(() => timing.measure(OPEN_MEASURE, start));
+    },
   });
 
   // Menu groups only some shells have (the web app's Notes group), placed before Help.

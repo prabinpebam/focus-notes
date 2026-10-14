@@ -33,12 +33,17 @@ export const item = style({
   selectors: {
     "&[data-focused]": { backgroundColor: t.hover },
     "&[data-pressed]": { backgroundColor: t.pressed },
-    "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.borderWidth },
+    "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth },
     "&[data-disabled]": { opacity: t.disabledOpacity },
   },
 });
 
-export const label = style({ flexGrow: 1 });
+// The label, and under it why an unavailable item is unavailable (Foundations → States). The reason
+// keeps full contrast; only the label dims.
+export const label = style({ flexGrow: 1, display: "flex", flexDirection: "column", paddingBlock: t.reasonPaddingBlock });
+export const labelRow = style({ display: "flex", alignItems: "center", gap: t.gap });
+export const labelText = style({ flexGrow: 1, selectors: { [`${item}[aria-disabled="true"] &`]: { opacity: t.disabledOpacity } } });
+export const reason = style({ color: t.textMuted, fontSize: t.captionSize });
 export const check = style({ width: t.captionSize, display: "inline-flex", justifyContent: "center", color: t.text });
 export const shortcut = style({ color: t.textMuted, fontSize: t.captionSize });
 export const separator = style({ height: t.separatorWidth, backgroundColor: t.separator, marginBlock: t.padding });

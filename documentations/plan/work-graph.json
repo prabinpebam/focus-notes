@@ -518,7 +518,7 @@
         "experience/main-ui.html"
       ],
       "lookahead": false,
-      "status": "building"
+      "status": "verifying"
     },
     {
       "id": "WP-1.7",
@@ -674,7 +674,7 @@
         "architecture/performance-and-quality.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-2.1",

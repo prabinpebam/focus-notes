@@ -10,6 +10,19 @@ export interface Launched {
   readyMs: () => Promise<number>;
 }
 
+const mac = process.platform === "darwin";
+/**
+ * Caret keys as each platform's text editing has them. macOS moves to a line's and the note's ends
+ * with ⌘ and the arrows; Home and End only scroll there, and ⌘End does nothing.
+ */
+export const caret = {
+  docStart: mac ? "Meta+ArrowUp" : "Control+Home",
+  docEnd: mac ? "Meta+ArrowDown" : "Control+End",
+  lineStart: mac ? "Meta+ArrowLeft" : "Home",
+  lineEnd: mac ? "Meta+ArrowRight" : "End",
+  selectToLineStart: mac ? "Meta+Shift+ArrowLeft" : "Shift+Home",
+} as const;
+
 export const tempDirs = () => ({
   userData: mkdtempSync(join(tmpdir(), "fn-user-")),
   docs: mkdtempSync(join(tmpdir(), "fn-docs-")),
@@ -23,6 +36,9 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
   });
   app.process().stdout?.on("data", (d: Buffer) => log.push(...d.toString().split("\n").filter(Boolean)));
   const page = await app.firstWindow();
+  // FOCUS_NOTES_E2E_CPU_THROTTLE=4 slows the renderer down like a busy CI runner, to reproduce races.
+  const throttle = Number(process.env.FOCUS_NOTES_E2E_CPU_THROTTLE ?? 0);
+  if (throttle > 1) await (await page.context().newCDPSession(page)).send("Emulation.setCPUThrottlingRate", { rate: throttle });
   const readyMs = async () => {
     for (let i = 0; i < 100; i++) {
       const line = log.find((l) => l.includes("ready-ms="));

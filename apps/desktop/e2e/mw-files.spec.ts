@@ -131,6 +131,8 @@ test("FIL-01, FIL-02: the panel opens by keyboard and from the toolbar; notes an
   // New note goes into the focused folder; the panel closes and the caret is in the note.
   await page.keyboard.press(`${mod}+N`);
   await expect(files).toBeHidden();
+  // The new, empty note has opened (until then the keys would go to the note being left).
+  await expect(editor).toHaveText("");
   await expect(editor).toBeFocused();
   await page.keyboard.type("# Plan for drafts");
   await expect.poll(() => ls(join(dirs.docs, "Projects", "Drafts")), { timeout: 5000 }).toEqual(["plan-for-drafts.md"]);

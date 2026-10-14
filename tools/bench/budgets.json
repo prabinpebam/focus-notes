@@ -26,6 +26,14 @@
     "PRF-07.cachedStatusMs": {
       "budget": 5,
       "unit": "ms"
+    },
+    "PRF-03.openNoteMs": {
+      "budget": 150,
+      "unit": "ms"
+    },
+    "PRF-03.saveAfterTypingMs": {
+      "budget": 1000,
+      "unit": "ms"
     }
   },
   "baselinePlatform": "win32",

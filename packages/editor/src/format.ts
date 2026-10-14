@@ -9,6 +9,7 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { closeHistory } from "@tiptap/pm/history";
 import type { ResolvedPos } from "@tiptap/pm/model";
 import { CellSelection } from "@tiptap/pm/tables";
+import { syncSelection } from "./sync.ts";
 
 export type MarkState = "on" | "off" | "mixed";
 /** The marks the toolbar toggles, in its order. */
@@ -262,5 +263,7 @@ export const SelectionGhost = Extension.create<{ className: string }>({
 });
 export function setSelectionGhost(editor: Editor, on: boolean): void {
   if (ghostKey.getState(editor.state) === on) return;
+  // Runs from an effect as the link editor closes: read any selection the keys just made first.
+  syncSelection(editor);
   editor.view.dispatch(editor.state.tr.setMeta(ghostKey, on).setMeta("addToHistory", false));
 }

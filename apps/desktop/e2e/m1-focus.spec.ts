@@ -4,7 +4,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs } from "./helpers.ts";
+import { caret, launch, quit, tempDirs } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -50,7 +50,7 @@ test("FOC-01, FOC-02: only the caret's visual row is bright, and the band follow
   expect(b.band.top - a.band.top).toBeCloseTo(lineHeight, 0);
 
   // Typing that wraps, and End, keep the band on the caret.
-  await page.keyboard.press("End");
+  await page.keyboard.press(caret.lineEnd);
   await page.keyboard.type(" more words that keep going");
   await page.waitForTimeout(250);
   const c = await bandAndRows(page);
@@ -97,7 +97,7 @@ test("FOC-06: a selection across rows widens the band, and an empty note still h
   const editor = page.getByRole("textbox", { name: "Note" });
   await expect(editor).toBeFocused();
   await editor.locator("p").first().click();
-  await page.keyboard.press(`${mod}+Home`);
+  await page.keyboard.press(caret.docStart);
   await page.waitForTimeout(200);
   const one = await bandAndRows(page);
   await page.keyboard.press("Shift+ArrowDown");
