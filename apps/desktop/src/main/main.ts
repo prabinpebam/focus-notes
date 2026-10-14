@@ -373,6 +373,8 @@ let restored: RestoredNote[] = [];
 
 /** The most notes the search index reads in one call (`notes:read`). */
 const NOTES_PER_READ = 64;
+/** Files it reads at once (Node has four file threads by default). */
+const FILES_AT_ONCE = 2;
 
 /** Only Markdown files, given as absolute paths, may be read or written. */
 function notePath(p: unknown): string {
@@ -718,7 +720,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // The search index's reads (D-107): a batch per call, past the snapshot, which is for opened notes.
   handle("notes:read", async (ps) => {
     if (!Array.isArray(ps) || ps.length > NOTES_PER_READ) throw new Error(`Up to ${NOTES_PER_READ} note paths are required`);
-    return Promise.all(ps.map(async (p) => readFile(notePath(p), "utf8").catch(() => null)));
+    const paths = ps.map((p) => { try { return notePath(p); } catch { return undefined; } });
+    // A few files at a time, so the app's own reads and writes (opening a note, saving) never wait
+    // behind a whole batch for Node's file threads.
+    const out: (string | null)[] = [];
+    for (let i = 0; i < paths.length; i += FILES_AT_ONCE) {
+      out.push(...(await Promise.all(paths.slice(i, i + FILES_AT_ONCE).map((p) => (p ? readFile(p, "utf8").catch(() => null) : null)))));
+    }
+    return out;
   });
   handle("note:write", async (p, content) => {
     if (typeof content !== "string") throw new Error("Content must be text");
