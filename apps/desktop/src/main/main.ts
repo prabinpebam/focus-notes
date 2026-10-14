@@ -80,7 +80,7 @@ const withGit = (fn: (g: GitSync) => void) => {
 let startGit: () => void = () => {};
 let gitOpening: Promise<GitSync | undefined>;
 /** Opened once the caret is ready, so Git never competes with the first frame (PRF-02, PRF-07). Again after the workspace changes. */
-const armGit = () => (gitOpening = new Promise<GitSync | undefined>((resolve) => {
+const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], gitOpening = new Promise<GitSync | undefined>((resolve) => {
   startGit = () => {
     startGit = () => {};
     const idleMs = envMs("FOCUS_NOTES_IDLE_COMMIT_MS");
