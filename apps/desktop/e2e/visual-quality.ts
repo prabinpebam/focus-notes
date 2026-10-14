@@ -114,12 +114,18 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
     const cs = getComputedStyle(el);
     return [cs.overflowX, cs.overflowY].some((o) => o !== "visible");
   };
-  /** The part of `el` that shows: cut by every clipping ancestor up to (not including) `stop`. */
+  /**
+   * The part of `el` that shows: cut by every clipping ancestor up to (not including) `stop`. A
+   * scroller cuts at its content box: what scrolls past it into its padding is under its fading edge.
+   */
   const visiblePart = (el: Element, stop: Element | null): Box | null => {
     let r = rect(el);
     for (let a = el.parentElement; a && a !== stop; a = a.parentElement) {
       if (!clips(a)) continue;
-      const c = rect(a);
+      const ac = getComputedStyle(a);
+      const scroller = ac.overflowY === "auto" || ac.overflowY === "scroll";
+      const o = rect(a);
+      const c = scroller ? { left: o.left, right: o.right, top: o.top + a.clientTop + parseFloat(ac.paddingTop), bottom: o.top + a.clientTop + a.clientHeight - parseFloat(ac.paddingBottom) } : o;
       r = { left: Math.max(r.left, c.left), top: Math.max(r.top, c.top), right: Math.min(r.right, c.right), bottom: Math.min(r.bottom, c.bottom) };
       if (r.right - r.left <= 0.5 || r.bottom - r.top <= 0.5) return null;
     }
