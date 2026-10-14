@@ -64,8 +64,15 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   let toolbarWasOpen = app.store.state.ui.toolbarOpen;
   let sheetWasOpen = app.store.state.ui.shortcuts.open;
   let filesWereOpen = app.store.state.ui.files.open;
+  let findAllWasOpen = app.store.state.ui.findAll.open;
   app.store.subscribe(() => {
-    const { toolbarOpen, shortcuts, find, files } = app.store.state.ui;
+    const { toolbarOpen, shortcuts, find, files, findAll } = app.store.state.ui;
+    // Find in all notes closing: back to the note, unless a match it opened has the find bar's focus.
+    if (findAllWasOpen && !findAll.open) {
+      const asked = find.focusFind;
+      setTimeout(() => { if (app.store.state.ui.find.focusFind === asked) window.dispatchEvent(new Event(REFOCUS_EVENT)); }, 0);
+    }
+    findAllWasOpen = findAll.open;
     // Not when the toolbar closed because the find bar, the cheat sheet, or the Files panel took focus.
     if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open && !files.open) || (sheetWasOpen && !shortcuts.open) || (filesWereOpen && !files.open)) {
       setTimeout(() => window.dispatchEvent(new Event(REFOCUS_EVENT)), 0);

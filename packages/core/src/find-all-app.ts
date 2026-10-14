@@ -116,7 +116,8 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
     const f = state();
     set({ open: true, focus: f.focus + 1, ...(query !== undefined ? { query } : {}) });
     store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
-    if (query !== undefined || !f.results) schedule(0);
+    // Asked again on opening: notes may have changed while it was closed.
+    if (parseFindQuery(query ?? f.query).text) schedule(0);
   };
   const close = () => set({ open: false });
 
@@ -140,6 +141,19 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
     set({ activeId: rows[next]!.id });
     return rows[next]!.id;
   };
+
+  // Locking the vault (the browser, D-90) takes its notes out of the results at once, before the
+  // index is asked again: nothing private stays on screen, or in F4's reach.
+  let vault = store.state.instance.vault;
+  store.subscribe(() => {
+    const was = vault;
+    vault = store.state.instance.vault;
+    if (was !== "unlocked" || vault === "unlocked") return;
+    asked++;
+    set({ results: undefined, activeId: "", searching: false });
+    opened = "";
+    if (state().open && parseFindQuery(state().query).text) schedule(0);
+  });
 
   commands.register<{ query: string }>({
     id: "find.allNotes", title: "command.find.allNotes", icon: "search",
@@ -177,8 +191,8 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
     const id = opened === state().activeId ? move(dir, true) : state().activeId;
     if (id) await chosen(id);
   };
-  commands.register({ id: "find.nextResult", title: "command.find.nextResult", shortcut: { default: "F4" }, layer: "power", group: "find", run: step(1) });
-  commands.register({ id: "find.prevResult", title: "command.find.prevResult", shortcut: { default: "Shift+F4" }, layer: "power", group: "find", run: step(-1) });
+  commands.register({ id: "find.nextResult", title: "command.find.nextResult", shortcut: { default: "F4" }, layer: "pro", group: "find", run: step(1) });
+  commands.register({ id: "find.prevResult", title: "command.find.prevResult", shortcut: { default: "Shift+F4" }, layer: "pro", group: "find", run: step(-1) });
 
   const where = (note: FindNote) => {
     const root = note.root === "local" ? "" : catalog.format(`files.root.${note.root}`);

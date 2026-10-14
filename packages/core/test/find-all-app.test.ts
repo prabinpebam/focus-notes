@@ -156,6 +156,16 @@ describe("results", () => {
 });
 
 describe("jumping to a match", () => {
+  it("drops every result the moment the vault locks, so nothing private stays on screen", async () => {
+    const { app, vm, type } = await started();
+    app.store.update((s) => ({ ...s, instance: { ...s.instance, vault: "unlocked" } }));
+    await app.commands.run("find.allNotes");
+    await type("focus");
+    expect(vm().items.length).toBeGreaterThan(0);
+    app.store.update((s) => ({ ...s, instance: { ...s.instance, vault: "locked" } }));
+    expect(app.store.state.ui.findAll.results).toBeUndefined();
+    expect(vm().items).toEqual([]);
+  });
   it("opens the note and selects that match, with the find bar open on it and its field focused", async () => {
     const { app, vm, actions, type } = await started();
     await app.commands.run("find.allNotes");

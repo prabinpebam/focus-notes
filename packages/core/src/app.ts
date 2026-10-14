@@ -783,7 +783,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const jump = pendingJump;
       if (jump && jump.path === store.state.note.path) {
         pendingJump = undefined;
-        showJump(jump.jump);
+        // Once the new editor has finished setting up (its caret placed, its listeners on).
+        afterPaint(() => showJump(jump.jump));
       }
     },
   });
