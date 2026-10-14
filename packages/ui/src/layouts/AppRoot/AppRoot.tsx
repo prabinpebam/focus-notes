@@ -1,5 +1,6 @@
 /// <reference path="../../env.d.ts" />
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { UNSAFE_PortalProvider } from "react-aria";
 import "@focus-notes/tokens/tokens.css";
 // Bundled content fonts (OFL, D-29), self-hosted: nothing loads from a font service.
 import "@fontsource/inter/400.css";
@@ -37,6 +38,12 @@ export interface AppRootProps {
   /** Note text size in px (THM-06). Overrides the font.size token at run time. */
   contentSize?: number;
   focusMode?: boolean;
+  /**
+   * The window's shape where the app draws the window itself (Windows and Linux, D-14): rounded, with
+   * 20 px corners and the drawn shadow in a transparent margin, or square (maximized, snapped, full
+   * screen, or opaque). Native: the system's own window (macOS, the browser).
+   */
+  frame?: "native" | "rounded" | "square";
   lang?: string;
   children?: ReactNode;
 }
@@ -47,7 +54,15 @@ const THEME_FOR = { light: "paper", dark: "ink" } as const;
  * The root of every app view. Applies the theme and the token modes (DSY-03) to the document:
  * scheme, platform, reduced motion, reduced transparency, and pointer type.
  */
-export function AppRoot({ scheme, theme, contentFont, uiScale, platform, contentSize, focusMode, lang = "en", children }: AppRootProps) {
+export function AppRoot({ scheme, theme, contentFont, uiScale, platform, contentSize, focusMode, frame = "native", lang = "en", children }: AppRootProps) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    // The page around a drawn window is transparent, and fixed layers are placed inside the window (frame.ts).
+    const html = document.documentElement;
+    if (frame === "native") delete html.dataset.windowFrame;
+    else html.dataset.windowFrame = frame;
+  }, [frame]);
+
   useEffect(() => {
     const html = document.documentElement;
     const id = theme ?? THEME_FOR[scheme];
@@ -105,5 +120,8 @@ export function AppRoot({ scheme, theme, contentFont, uiScale, platform, content
     };
   }, []);
 
-  return <div className={s.root}>{children}</div>;
+  const root = <div ref={rootRef} className={`${s.root} ${s.frame[frame]}`} data-app-root="">{children}</div>;
+  // In a drawn window, menus, tooltips, and dialogs open inside it: clipped to its corners, never in the shadow margin.
+  if (frame === "native") return root;
+  return <UNSAFE_PortalProvider getContainer={() => rootRef.current}>{root}</UNSAFE_PortalProvider>;
 }

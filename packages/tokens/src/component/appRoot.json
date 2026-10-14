@@ -5,5 +5,11 @@
   "fontSize": { "$type": "dimension", "$value": "{font.uiBody}" },
   "selection": { "$type": "color", "$value": "{color.selection}" },
   "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
-  "scrim": { "$type": "color", "$value": "{color.scrim}" }
+  "scrim": { "$type": "color", "$value": "{color.scrim}" },
+  "windowRadius": { "$type": "dimension", "$value": "{window.radius}" },
+  "windowMargin": { "$type": "dimension", "$value": "{window.margin}" },
+  "windowShadow": { "$type": "shadow", "$value": "{shadow.1}" },
+  "windowBorder": { "$type": "color", "$value": "{color.border}" },
+  "windowBorderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "windowOutside": { "$type": "color", "$value": "{color.none}" }
 } } }

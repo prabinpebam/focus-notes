@@ -5,6 +5,7 @@ import * as menuStyles from "../../primitives/MenuButton/MenuButton.css.ts";
 import { Icon } from "../../primitives/Icon/Icon.tsx";
 import { tableGeometry, type Box, type TableGeometry } from "../../behaviors/table-geometry.ts";
 import { COMPANION_ATTR } from "../../behaviors/anchors.ts";
+import { fixedBox } from "../../behaviors/frame.ts";
 import type { MenuSection } from "../../data.ts";
 import * as s from "./TableControls.css.ts";
 
@@ -47,8 +48,10 @@ function usePlace(ref: RefObject<HTMLElement | null>, x: number, y: number, w?: 
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    el.style.setProperty(name(s.xVar), `${Math.round(x)}px`);
-    el.style.setProperty(name(s.yVar), `${Math.round(y)}px`);
+    // The editor's geometry is in viewport coordinates; inside the drawn window (D-14) it moves into the window's.
+    const o = fixedBox(el);
+    el.style.setProperty(name(s.xVar), `${Math.round(x - o.left)}px`);
+    el.style.setProperty(name(s.yVar), `${Math.round(y - o.top)}px`);
     if (w !== undefined) el.style.setProperty(name(s.wVar), `${Math.round(w)}px`);
     if (h !== undefined) el.style.setProperty(name(s.hVar), `${Math.round(h)}px`);
   });

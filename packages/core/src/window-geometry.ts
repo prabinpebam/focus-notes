@@ -4,6 +4,10 @@
  * Pure functions on device-independent pixels (DIP), as Electron reports screens and windows. The
  * desktop's main process applies them; nothing here touches a window.
  */
+import { windowMetrics } from "@focus-notes/tokens";
+
+/** The `window.*` tokens, resolved: the shadow margin, the handles, the minimum size, and the Snap Layouts delay. */
+export const WINDOW_METRICS = windowMetrics;
 export interface Point { x: number; y: number }
 export interface Size { width: number; height: number }
 export interface Rect { x: number; y: number; width: number; height: number }
@@ -59,7 +63,7 @@ export const contentBounds = (outer: Rect, margin: number): Rect => inset(outer,
  * edges. Corners are `corner` squares at the band's corners. The rest of the margin is "outside".
  */
 export function hitZone(p: Point, size: Size, m: FrameMetrics, resizable = true): HitZone {
-  const frame = inset({ x: 0, y: 0, ...size }, m.margin);
+  const frame = inset({ x: 0, y: 0, width: size.width, height: size.height }, m.margin);
   if (!resizable) return contains(frame, p) ? "inside" : "outside";
   const outer = inset(frame, -Math.min(m.edge, m.margin));
   const inner = m.margin >= m.edge ? frame : inset(frame, m.edge - m.margin);

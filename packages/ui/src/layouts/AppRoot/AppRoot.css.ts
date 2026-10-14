@@ -1,4 +1,4 @@
-import { globalStyle, style } from "@vanilla-extract/css";
+import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.appRoot;
@@ -19,4 +19,22 @@ export const root = style({
   height: "100%",
   backgroundColor: t.background,
   color: t.text,
+});
+
+// The app-built window (D-14): the page is transparent and the window is drawn inside it, with the
+// 20 px corners and the shadow in the margin around it. The window is the containing block for fixed
+// layers, so they're placed and clipped inside it; square when maximized, snapped, or full screen.
+globalStyle(":root[data-window-frame], :root[data-window-frame] body", { backgroundColor: t.windowOutside });
+const drawn = {
+  position: "absolute",
+  height: "auto",
+  overflow: "hidden",
+  contain: "layout",
+  // Heights given as parts of the window (the reading zone, the note's end) measure the drawn window, not the page.
+  containerType: "size",
+} as const;
+export const frame = styleVariants({
+  native: {},
+  rounded: { ...drawn, inset: t.windowMargin, borderRadius: t.windowRadius, boxShadow: `${t.windowShadow}, 0 0 0 ${t.windowBorderWidth} ${t.windowBorder}` },
+  square: { ...drawn, inset: 0, borderRadius: 0 },
 });
