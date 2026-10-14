@@ -32,3 +32,18 @@ export function minimalScrollbar(scroller: string, t: ScrollbarTokens): void {
   // In Windows contrast themes the thumb never hides, so it's always findable (Foundations → Scrollbars).
   globalStyle(`${scroller}::-webkit-scrollbar-thumb`, { "@media": { "(forced-colors: active)": { backgroundColor: t.scrollbarThumb } } });
 }
+
+/**
+ * Fading scroll edges (D-111): the content fades out over `scrollFade` at an edge with more to
+ * scroll to, as `useFadingEdges` marks it, so text never ends at a hard cut under a header or a
+ * footer. None in forced colors, where the system's colors draw every edge plainly.
+ */
+export function fadingEdges(scroller: string, t: { scrollFade: string }): void {
+  const top = `linear-gradient(transparent 0, black ${t.scrollFade})`;
+  const bottom = `linear-gradient(black calc(100% - ${t.scrollFade}), transparent 100%)`;
+  const both = `linear-gradient(transparent 0, black ${t.scrollFade}, black calc(100% - ${t.scrollFade}), transparent 100%)`;
+  globalStyle(`${scroller}[data-fade-top]`, { maskImage: top, WebkitMaskImage: top });
+  globalStyle(`${scroller}[data-fade-bottom]`, { maskImage: bottom, WebkitMaskImage: bottom });
+  globalStyle(`${scroller}[data-fade-top][data-fade-bottom]`, { maskImage: both, WebkitMaskImage: both });
+  globalStyle(`${scroller}[data-fade-top], ${scroller}[data-fade-bottom]`, { "@media": { "(forced-colors: active)": { maskImage: "none", WebkitMaskImage: "none" } } });
+}

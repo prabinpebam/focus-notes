@@ -1,6 +1,6 @@
 import { style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
-import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
+import { fadingEdges, minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.resultList;
 
@@ -8,10 +8,11 @@ export const list = style({
   display: "flex",
   flexDirection: "column",
   gap: t.gap,
-  padding: t.padding,
+  // Its scrollbar's room is kept at both edges, so its items keep the same inset on both sides,
+  // scrolling or not (UI-09, D-111).
   maxHeight: t.maxHeight,
   overflowY: "auto",
-  scrollbarGutter: "stable",
+  scrollbarGutter: "stable both-edges",
   fontFamily: t.font,
   fontSize: t.fontSize,
   color: t.text,
@@ -22,11 +23,16 @@ export const list = style({
   },
 });
 minimalScrollbar(list, t);
+fadingEdges(list, t);
 
-/** Fills its container (Spotlight, Move to), or the slash menu's fixed width. */
-export const width = styleVariants({ fill: {}, menu: { width: t.menuWidth, maxWidth: "100%" } });
-/** As tall as its items up to a popover's height, or the height a side sheet gives it. */
-export const height = styleVariants({ content: {}, fill: { maxHeight: "none", flexGrow: 1, minHeight: 0 } });
+/**
+ * Fills its container (Spotlight, Move to), or the slash menu's fixed width. The slash menu scrolls
+ * as a menu does, with the wheel and the arrow keys and its fading edges, no scrollbar taking room
+ * from its items (D-111).
+ */
+export const width = styleVariants({ fill: {}, menu: { width: t.menuWidth, maxWidth: "100%", scrollbarWidth: "none", scrollbarGutter: "auto" } });
+/** As tall as its items up to a popover's height, or as tall as all of them in a side sheet, whose body scrolls it. */
+export const height = styleVariants({ content: {}, fill: { maxHeight: "none", flexShrink: 0, overflowY: "visible", scrollbarGutter: "auto" } });
 
 export const item = style({
   display: "flex",

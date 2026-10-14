@@ -312,6 +312,10 @@
       "tableBarGap": {
         "$type": "dimension",
         "$value": "{space.xs}"
+      },
+      "scrollFade": {
+        "$type": "dimension",
+        "$value": "{layout.scrollFade}"
       }
     }
   }

@@ -1,6 +1,6 @@
 import { createVar, globalStyle, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
-import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
+import { fadingEdges, minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.editorSurface;
 
@@ -22,6 +22,7 @@ export const scroller = style({
 
 // The minimal scrollbar (D-73, UI-09).
 minimalScrollbar(scroller, t);
+fadingEdges(scroller, t);
 
 export const column = style({
   position: "relative",
@@ -90,7 +91,9 @@ globalStyle(p('ul[data-type="taskList"]'), { listStyle: "none", paddingInlineSta
 globalStyle(p('ul[data-type="taskList"] li'), { display: "flex", alignItems: "flex-start", gap: t.space.s });
 globalStyle(p('ul[data-type="taskList"] li > label'), { flexShrink: 0, userSelect: "none", display: "inline-flex", alignItems: "center", height: `calc(${t.lineHeight} * 1em)` });
 globalStyle(p('ul[data-type="taskList"] li > label input'), { width: t.checkboxSize, height: t.checkboxSize, margin: 0, accentColor: t.checkbox });
-globalStyle(p('ul[data-type="taskList"] li > div'), { flexGrow: 1, minWidth: 0 });
+// The text sits beside the checkbox, never below it: the space between a list item's blocks isn't for
+// it, so the checkbox stays centered on the first line (D-111, aligned rows).
+globalStyle(p('ul[data-type="taskList"] li > div'), { flexGrow: 1, minWidth: 0, marginTop: 0 });
 globalStyle(p('ul[data-type="taskList"] li[data-checked="true"] > div'), { color: t.checkedText, textDecoration: "line-through" });
 globalStyle(p("::selection"), { backgroundColor: t.selection });
 

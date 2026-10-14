@@ -14,6 +14,7 @@ import { trackTables, type TablePayload, type TableTracker } from "./table-track
 import { resultItemId } from "../../primitives/ResultList/ResultList.tsx";
 import { inCompanion } from "../../behaviors/anchors.ts";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
+import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import * as s from "./EditorSurface.css.ts";
 
 export interface EditorSurfaceProps {
@@ -120,6 +121,7 @@ export function EditorSurface({
   const columnRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
   useAutoHideScrollbar(scrollerRef);
+  useFadingEdges(scrollerRef);
   const session = useMemo(() => new MarkdownSession(initialValue), [documentKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
