@@ -82,7 +82,7 @@ A custom theme is a JSON file of one kind (light or dark) that names a base them
 - Token values are validated (colors, numbers in range, no `url()` and no raw CSS), so a shared theme file can't inject CSS (UNSUP-THEME-01). Fonts and reading settings aren't part of a theme (see above).
 - Custom themes are created in the [theme manager](../design/views/theme-manager.html): duplicate and edit, generate from a color (THM-11), shuffle (THM-12), or import a VS Code theme, a base16 scheme, or a theme file (THM-10).
 - Custom themes are stored in the private repository at `private/.focus-notes/themes/*.json`, which makes them version-controlled and lets them sync across devices without being published (THM-04, D-46). Without a private repository they fall back to `.focus-notes/themes/` in the notes repository, which is public.
-- The chosen appearance, the light and dark slots, and reading settings are per device by default. Opting in to *Sync appearance* stores them in `private/.focus-notes/settings.json` instead (THM-05, D-46).
+- The chosen appearance, the light and dark slots, and reading settings are per device by default. Opting in to *Sync appearance* stores them in `private/.focus-notes/settings.json` instead (THM-05, D-46). On the desktop it's in the ⋯ menu's Theme group wherever the workspace has a private repository; the interface scale and focus mode stay per device ([Desktop and Git → Synced settings](../architecture/desktop-and-git.md#synced-settings), D-99).
 ## Where themes apply
 
 | Surface | Uses the theme? |

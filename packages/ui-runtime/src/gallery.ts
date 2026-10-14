@@ -101,6 +101,13 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     ],
     treeEditLabel: "Folder name",
     treeEditError: "That name is taken here.",
+    versionBlocks: [
+      { id: "m0", text: "# On focus", changed: false },
+      { id: "m1", text: "Attention is a garden.", changed: false },
+      { id: "m2", text: "Written on this computer, on the train.", changed: true },
+      { id: "m3", text: "- one\n- two", changed: false },
+    ],
+    versionEmpty: [],
   };
   const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, icon: { type: "string" as const }, shortcut: { type: "string" as const }, checked: { type: "boolean" as const }, disabled: { type: "boolean" as const }, reason: { type: "string" as const } } };
   app.viewModels.register({
@@ -125,6 +132,8 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         treeEditing: { type: "array", items: { type: "object" } },
         treeEditLabel: { type: "string" },
         treeEditError: { type: "string" },
+        versionBlocks: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
+        versionEmpty: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
       },
     },
     select: () => ({ fixtures, toolbar, menu, ...extras }),

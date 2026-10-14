@@ -1,0 +1,23 @@
+{ "cmp": { "versionPane": {
+  "background": { "$type": "color", "$value": "{color.surfaceSunken}" },
+  "border": { "$type": "color", "$value": "{color.border}" },
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "radius": { "$type": "dimension", "$value": "{radius.control}" },
+  "padding": { "$type": "dimension", "$value": "{space.m}" },
+  "gap": { "$type": "dimension", "$value": "{space.s}" },
+  "minWidth": { "$type": "dimension", "$value": "{layout.versionPaneMin}" },
+  "headingFont": { "$type": "fontFamily", "$value": "{font.ui}" },
+  "headingSize": { "$type": "dimension", "$value": "{font.uiBody}" },
+  "headingWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
+  "headingColor": { "$type": "color", "$value": "{color.text}" },
+  "font": { "$type": "fontFamily", "$value": "{font.content}" },
+  "size": { "$type": "dimension", "$value": "{font.uiBody}" },
+  "lineHeight": { "$type": "number", "$value": "{font.lineHeight}" },
+  "text": { "$type": "color", "$value": "{color.text}" },
+  "muted": { "$type": "color", "$value": "{color.textMuted}" },
+  "blockPadding": { "$type": "dimension", "$value": "{space.xs}" },
+  "blockRadius": { "$type": "dimension", "$value": "{radius.small}" },
+  "changed": { "$type": "color", "$value": "{color.findMatch}" },
+  "changedMark": { "$type": "color", "$value": "{color.findMatchActive}" },
+  "markWidth": { "$type": "dimension", "$value": "{border.selectedBar}" }
+} } }

@@ -39,9 +39,10 @@ import { contract as TextField } from "./primitives/TextField/contract.ts";
 import { contract as PillButton } from "./primitives/PillButton/contract.ts";
 import { contract as FileTree } from "./primitives/FileTree/contract.ts";
 import { contract as Sheet } from "./layouts/Sheet/contract.ts";
+import { contract as VersionPane } from "./primitives/VersionPane/contract.ts";
 
 export const contracts: readonly Contract[] = [
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane,
   Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet,
   EditorSurface, TableControls,
   Trigger, Toolbar, Dialog,

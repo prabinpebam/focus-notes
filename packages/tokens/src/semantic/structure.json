@@ -215,6 +215,12 @@
     "dialogL": {
       "$value": "{ref.size.760}"
     },
+    "dialogXL": {
+      "$value": "{ref.size.1040}"
+    },
+    "versionPaneMin": {
+      "$value": "{ref.size.320}"
+    },
     "dialogMaxHeight": {
       "$value": "{ref.size.85vh}"
     },

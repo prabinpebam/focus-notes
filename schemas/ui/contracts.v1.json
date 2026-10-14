@@ -1608,7 +1608,8 @@
           "kind": "enum",
           "values": [
             "s",
-            "l"
+            "l",
+            "xl"
           ],
           "default": "l"
         }
@@ -1672,6 +1673,26 @@
             },
             "open": true,
             "size": "l"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "size xl",
+          "props": {
+            "label": {
+              "t": "shortcuts.title"
+            },
+            "open": true,
+            "size": "xl"
           },
           "children": [
             {
@@ -2398,6 +2419,81 @@
             },
             "editError": {
               "get": "vm.gallery.treeEditError"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "VersionPane",
+      "tier": "primitive",
+      "description": "One version of a note in the conflict resolver: its blocks as plain text, with the blocks that differ from the other version highlighted.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "Which version: This computer, or the other version and when it was made."
+        },
+        "blocks": {
+          "kind": "list",
+          "of": "versionBlocks",
+          "required": true
+        },
+        "emptyText": {
+          "kind": "message",
+          "required": true,
+          "description": "Shown when this version has no blocks (deleted, or empty)."
+        },
+        "changedLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "Said before each highlighted block, so the difference isn't only a color."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest",
+        "changed",
+        "empty"
+      ],
+      "tokens": "cmp.versionPane.*",
+      "a11y": {
+        "pattern": "region (labelled), changed blocks prefixed for screen readers",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "with changed blocks",
+          "props": {
+            "label": {
+              "t": "conflict.mine"
+            },
+            "blocks": {
+              "get": "vm.gallery.versionBlocks"
+            },
+            "emptyText": {
+              "t": "conflict.emptyNote"
+            },
+            "changedLabel": {
+              "t": "conflict.changed"
+            }
+          }
+        },
+        {
+          "name": "deleted version",
+          "props": {
+            "label": {
+              "t": "conflict.theirs"
+            },
+            "blocks": {
+              "get": "vm.gallery.versionEmpty"
+            },
+            "emptyText": {
+              "t": "conflict.deletedThere"
+            },
+            "changedLabel": {
+              "t": "conflict.changed"
             }
           }
         }
@@ -5200,6 +5296,9 @@
         },
         "default": {
           "accepts": "any"
+        },
+        "footer": {
+          "accepts": "any"
         }
       },
       "states": [
@@ -5231,6 +5330,18 @@
                   "value": {
                     "t": "files.heading"
                   }
+                }
+              }
+            ],
+            "footer": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "deleted.footer"
+                  },
+                  "variant": "subtle",
+                  "icon": "history"
                 }
               }
             ]
@@ -5744,9 +5855,11 @@
           "kind": "enum",
           "values": [
             "s",
-            "l"
+            "l",
+            "xl"
           ],
-          "default": "l"
+          "default": "l",
+          "description": "xl is the conflict resolver's: most of the window, up to layout.dialogXL."
         }
       },
       "events": {
@@ -5824,6 +5937,29 @@
                 }
               }
             ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "size xl",
+          "props": {
+            "title": {
+              "t": "shortcuts.title"
+            },
+            "closeLabel": {
+              "t": "dialog.close"
+            },
+            "open": true,
+            "size": "xl"
           },
           "children": [
             {

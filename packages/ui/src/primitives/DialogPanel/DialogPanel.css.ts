@@ -36,6 +36,7 @@ export const modal = style({
 export const size = {
   s: style({ maxWidth: t.width.s }),
   l: style({ maxWidth: t.width.l }),
+  xl: style({ maxWidth: t.width.xl }),
 };
 
 export const dialog = style({

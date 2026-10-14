@@ -179,7 +179,10 @@ describe("changes from outside the app (PRF-11)", () => {
     f.emit([{ path: `${ROOT}/welcome.md`, kind: "note", exists: true }]);
     await settle();
     expect(app.store.state.note.markdown).toBe("# Typing\n");
-    expect(toasts(app)).toEqual([messages["toast.changedOutside"]!.replace("{note}", "welcome")]);
+    // Named by its title; the next save waits for a choice in the resolver (D-92, FIL-12).
+    expect(toasts(app)).toEqual([messages["toast.changedOutside"]!.replace("{note}", "Typing")]);
+    expect(await app.flush()).toBe(false);
+    expect(f.files[`${ROOT}/welcome.md`]).toBe("# Theirs\n");
   });
   it("keeps the tree current, and re-reads the format when its file changes", async () => {
     const f = setup();

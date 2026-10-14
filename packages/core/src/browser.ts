@@ -176,7 +176,8 @@ export function registerBrowserFeatures(ctx: BrowserContext): { start(): Promise
       ctx.toast(count < 0 ? catalog.format("toast.exportFailed") : catalog.format("toast.exported", { count }), count < 0 ? { tone: "error" } : {});
     },
   });
-  commands.register({
+  // The desktop imports into its workspace instead (import-app.ts, FRE-10).
+  if (!bridge.workspace?.chooseBundle) commands.register({
     id: "notes.import", title: "command.notes.import", icon: "import",
     enabled: () => Boolean(bridge.importNotes),
     run: async () => {

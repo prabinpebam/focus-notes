@@ -9,8 +9,12 @@ import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "nod
 import { existsSync, readFileSync, realpathSync, watch, type FSWatcher } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
+import { randomUUID } from "node:crypto";
 import { readWorkspaceFormat } from "@focus-notes/core/workspace-format";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
+import { BUNDLE_MAX_BYTES, parseBundle, planImport, safeWorkspacePath, type Bundle } from "@focus-notes/core/notes";
+import { parseSettings } from "@focus-notes/core/settings";
+import { restorePlace, titleOrName } from "@focus-notes/core/history";
 import { GitSync, NO_GIT } from "./git/sync.ts";
 import { createRunner, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
@@ -22,6 +26,7 @@ import type { BatchOp } from "./git/message.ts";
 import { Account } from "./first-run/account.ts";
 import { createToolRunner } from "./first-run/tools.ts";
 import { applyLocalIdentity, checkWorkspace, cloneWorkspace } from "./first-run/workspace.ts";
+import type { ConflictChoice } from "@focus-notes/core";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 const customWindow = process.argv.includes("--custom-window") && platform !== "macos";
@@ -342,25 +347,27 @@ const writesDone = (p: string) => Promise.allSettled([...writeQueues].filter(([k
  * fails the earlier ones are undone. A write replaces a moved or linking note's text (links that
  * follow the move, FIL-09), and is undone by writing the old text back. Deletes go last, to the
  * system trash, until Git keeps them (FIL-10).
- * A move between roots changes visibility, which arrives with Git (WP-3.4), so it's refused here.
+ * A move between the Private and Public roots changes who can see it (FIL-06): the folders it needs
+ * in the other root are made, and taken away again if the batch is undone.
  */
 async function applyOps(raw: unknown): Promise<BatchOp[]> {
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > 5000) throw refuse("invalid");
   type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string }
-    | { op: "write"; path: string; text: string; root: string };
+    | { op: "write" | "create"; path: string; text: string; root: string };
   const ops = raw.map((op: unknown): Op => {
     const o = op as Record<string, unknown>;
     if (o?.op === "createFolder" || o?.op === "delete") return { op: o.op, ...opPath(o.path) };
     if (o?.op === "move") {
       const from = opPath(o.from);
       const to = opPath(o.to);
-      if (from.root !== to.root) throw refuse("invalid");
+      // Only a workspace's two roots can be crossed (D-84); anything else stays in its root.
+      if (from.root !== to.root && !isWorkspace()) throw refuse("invalid");
       return { op: "move" as const, path: from.path, to: to.path, root: from.root };
     }
-    if (o?.op === "write") {
+    if (o?.op === "write" || o?.op === "create") {
       const at = opPath(o.path);
       if (typeof o.text !== "string" || !isMarkdown(at.path)) throw refuse("invalid");
-      return { op: "write" as const, ...at, text: o.text };
+      return { op: o.op, ...at, text: o.text };
     }
     throw refuse("invalid");
   });
@@ -385,6 +392,11 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         if (st.isDirectory() && inside(from, to)) throw refuse("intoItself");
         const caseOnly = from.toLowerCase() === to.toLowerCase();
         if (!caseOnly && existsSync(to)) throw refuse("taken");
+        if (!inside(op.root, to)) {
+          // Into the other root: the same folder path there is made if it's missing (Files and sharing → Changing visibility).
+          const made = await mkdir(dirname(to), { recursive: true });
+          if (made) undo.push(() => rm(made, { recursive: true, force: true }));
+        }
         if (!(await isDir(dirname(to)))) throw refuse("notFound");
         await writesDone(from);
         if (caseOnly && from !== to) {
@@ -399,6 +411,12 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         if (old === undefined) throw refuse("notFound");
         await atomicWrite(op.path, op.text);
         undo.push(() => atomicWrite(op.path, old));
+      } else if (op.op === "create") {
+        // A new note, never over another (the conflict resolver's copies, FIL-12).
+        if (existsSync(op.path)) throw refuse("taken");
+        if (!(await isDir(dirname(op.path)))) throw refuse("notFound");
+        await writeFile(op.path, op.text, { encoding: "utf8", flag: "wx" });
+        undo.push(() => rm(op.path, { force: true }));
       }
     }
     for (const op of ops) {
@@ -413,6 +431,139 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
   // What was done, for the batch's one commit.
   return ops.map((op): BatchOp => (op.op === "move" ? { op: "move", from: op.path, to: op.to } : { op: op.op, path: op.path }));
 }
+
+// ---- Recently deleted and conflicts (FIL-10, FIL-12) ----
+
+/** A folder deleted notes may be restored into: a root, or a folder in one, that's there. */
+async function restoreFolder(p: unknown): Promise<string> {
+  if (typeof p !== "string" || !p || !isAbsolute(p) || resolve(p) !== p) throw refuse("invalid");
+  const root = roots().find((r) => inside(r.path, p));
+  if (!root || relative(root.path, p).split(sep).some((part) => part.startsWith(".")) || !(await isDir(p))) throw refuse("notFound");
+  return p;
+}
+/**
+ * Puts deleted notes back from Git history (FIL-10), all or nothing and never over a file (`wx`):
+ * where each was, in its root when its folder is gone, or in the chosen folder of the same root
+ * (Restore to… doesn't change who can see a note). One commit, like any batch.
+ */
+async function restoreNotes(rawIds: unknown, rawFolder: unknown): Promise<{ path: string; title: string }[]> {
+  const g = await gitOpening;
+  if (!g || !isWorkspace()) throw refuse("notFound");
+  if (!Array.isArray(rawIds) || !rawIds.length || rawIds.length > 1000 || rawIds.some((i) => typeof i !== "string")) throw refuse("invalid");
+  const folder = rawFolder === undefined || rawFolder === null ? undefined : await restoreFolder(rawFolder);
+  const planned: { path: string; text: string; title: string }[] = [];
+  const names = new Map<string, string[]>();
+  for (const id of rawIds as string[]) {
+    const d = await g.readDeleted(id);
+    if (!d) throw refuse("notFound");
+    const root = roots().find((r) => r.id === d.root);
+    if (!root || !inside(root.path, d.path) || d.path === root.path || (folder && !inside(root.path, folder))) throw refuse("invalid");
+    await assertWritable(d.path).catch(() => { throw refuse("readOnly"); });
+    const dir = folder ?? ((await isDir(dirname(d.path))) ? dirname(d.path) : root.path);
+    const taken = names.get(dir) ?? (await readdir(dir).catch(() => [] as string[]));
+    names.set(dir, taken);
+    const path = restorePlace({ original: d.path, root: root.path, folder: dir, folderExists: true, taken });
+    taken.push(basename(path));
+    planned.push({ path, text: d.text, title: titleOrName(d.text, path) });
+  }
+  const written: string[] = [];
+  try {
+    for (const p of planned) {
+      await writeFile(p.path, p.text, { encoding: "utf8", flag: "wx" });
+      written.push(p.path);
+    }
+  } catch (error) {
+    for (const w of written.reverse()) await rm(w, { force: true }).catch(() => {});
+    throw refuse((error as NodeJS.ErrnoException).code === "EEXIST" ? "taken" : "failed");
+  }
+  await g.commitBatch(planned.map((p) => ({ op: "restore", path: p.path })));
+  return planned.map(({ path, title }) => ({ path, title }));
+}
+/** The resolver's choices, checked: notes in the workspace, one of three outcomes, a short copy title. */
+function conflictChoices(raw: unknown): ConflictChoice[] {
+  if (!Array.isArray(raw) || raw.length > 1000) throw new Error("invalid");
+  return raw.map((c: unknown) => {
+    const o = c as Record<string, unknown>;
+    if (typeof o?.path !== "string" || !isAbsolute(o.path) || !inside(notesHome(), o.path) || !["mine", "theirs", "both"].includes(String(o.choice))) throw new Error("invalid");
+    if (o.copyTitle !== undefined && (typeof o.copyTitle !== "string" || o.copyTitle.length > 300)) throw new Error("invalid");
+    return { path: resolve(o.path), choice: o.choice as ConflictChoice["choice"], ...(typeof o.copyTitle === "string" ? { copyTitle: o.copyTitle } : {}) };
+  });
+}
+
+// ---- importing browser notes (FRE-10, D-90) ----
+// Only this process reads the bundle: the renderer gets a handle and a count, never the file.
+let chosenBundle: { id: string; bundle: Bundle } | undefined;
+const fold = (p: string) => p.normalize("NFC").toLowerCase();
+/** Every note's path in a root, relative with forward slashes; dot folders skipped as in the scan. */
+async function notesIn(dir: string, base = dir, out: string[] = []): Promise<string[]> {
+  for (const d of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+    if (d.name.startsWith(".")) continue;
+    const p = join(dir, d.name);
+    if (d.isDirectory()) await notesIn(p, base, out);
+    else if (d.isFile() && isMarkdown(d.name)) out.push(relative(base, p).split(sep).join("/"));
+  }
+  return out;
+}
+async function chooseBundle(w: BrowserWindow | undefined): Promise<{ id: string; name: string; notes: number } | undefined> {
+  const opts = { properties: ["openFile" as const], filters: [{ name: "Focus Notes export", extensions: ["json"] }] };
+  const res = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
+  const file = res.canceled ? undefined : res.filePaths[0];
+  if (!file) return undefined;
+  // A file that's too large is refused unread (web-app.md → Moving notes).
+  const st = await stat(file).catch(() => undefined);
+  if (!st?.isFile()) throw new Error("invalid");
+  if (st.size > BUNDLE_MAX_BYTES) throw new Error("tooLarge");
+  let bundle: Bundle;
+  try {
+    bundle = parseBundle(await readFile(file, "utf8"));
+  } catch {
+    throw new Error("invalid");
+  }
+  chosenBundle = { id: randomUUID(), bundle };
+  return { id: chosenBundle.id, name: basename(file), notes: bundle.notes.length };
+}
+/**
+ * Adds the chosen bundle's notes to a root, all or nothing, never replacing a file (`wx`), then
+ * commits them as one batch in that root's repository.
+ */
+async function importBundle(id: unknown, to: unknown): Promise<{ added: number; renamed: number }> {
+  if (!chosenBundle || chosenBundle.id !== id) throw refuse("notFound");
+  const root = isWorkspace() ? roots().find((r) => r.id === to) : undefined;
+  if (!root) throw refuse("invalid");
+  await assertWritable(root.path).catch(() => { throw refuse("readOnly"); });
+  const { bundle } = chosenBundle;
+  const existing = new Map<string, string | undefined>((await notesIn(root.path)).map((p) => [p, undefined]));
+  // Only the notes a bundle note could be the same as are read, to skip identical copies.
+  const named = new Set(bundle.notes.map((n) => fold(safeWorkspacePath(n.path))));
+  for (const p of existing.keys()) if (named.has(fold(p))) existing.set(p, await readFile(join(root.path, ...p.split("/")), "utf8").catch(() => undefined));
+  const plan = planImport(bundle, existing, { foldCase: true });
+  const written: string[] = [];
+  const made: string[] = [];
+  try {
+    for (const n of plan) {
+      const abs = resolve(root.path, ...n.path.split("/"));
+      if (!inside(root.path, abs) || abs === root.path) throw refuse("invalid");
+      const dir = await mkdir(dirname(abs), { recursive: true });
+      if (dir) made.push(dir);
+      await writeFile(abs, n.text, { encoding: "utf8", flag: "wx" });
+      written.push(abs);
+    }
+  } catch (error) {
+    for (const p of written.reverse()) await rm(p, { force: true }).catch(() => {});
+    for (const d of made.reverse()) await rm(d, { recursive: true, force: true }).catch(() => {});
+    throw error instanceof Refused ? error : refuse("failed");
+  }
+  chosenBundle = undefined;
+  // Ordinary commits: one for the import, in the chosen root's repository (FRE-10, D-97).
+  if (written.length) await (await gitOpening)?.commitBatch(written.map((path) => ({ op: "import", path })));
+  return { added: plan.length, renamed: plan.filter((n) => n.renamed).length };
+}
+
+// ---- synced settings (PRV-03, D-46) ----
+// Only where there's a private repository to sync through; while the file exists, syncing is on.
+const privateDir = () => join(notesHome(), "private");
+const settingsFile = () => join(privateDir(), ".focus-notes", "settings.json");
+const settingsAvailable = () => isWorkspace() && existsSync(privateDir());
 
 /** Addresses a note's link may open in the browser: http, https, and mailto, well formed (EDT-13). */
 function isWebLink(url: string): boolean {
@@ -503,6 +654,26 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const done = await applyOps(ops);
     await (await gitOpening)?.commitBatch(done);
   });
+  handle("bundle:choose", () => chooseBundle(win()));
+  handle("bundle:import", (id, to) => importBundle(id, to));
+  handle("settings:load", async () => {
+    if (!settingsAvailable()) return { available: false };
+    const text = await readFile(settingsFile(), "utf8").catch(() => undefined);
+    return { available: true, ...(text !== undefined && text.length <= 64 * 1024 ? { text } : {}) };
+  });
+  handle("settings:save", async (text) => {
+    // Only a settings file, and only what's valid in it, is ever written (schemas/settings.schema.json).
+    const parsed = typeof text === "string" && text.length <= 64 * 1024 ? parseSettings(text) : undefined;
+    if (!settingsAvailable() || !parsed) throw new Error("Not a settings file");
+    await atomicWrite(settingsFile(), `${JSON.stringify(parsed, null, 2)}\n`);
+    withGit((g) => g.written(settingsFile()));
+  });
+  handle("settings:remove", async () => {
+    if (!settingsAvailable()) return;
+    await assertWritable(settingsFile());
+    await rm(settingsFile(), { force: true });
+    withGit((g) => g.written(settingsFile()));
+  });
   handle("sync:now", async (reason) => {
     const g = await gitOpening;
     return g ? g.request(reason === "switch" ? "switch" : "save") : NO_GIT;
@@ -573,6 +744,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!fromApp(e) || typeof page !== "string" || !Object.hasOwn(FIRST_RUN_PAGES, page)) return;
     void shell.openExternal(FIRST_RUN_PAGES[page as FirstRunPage]);
   });
+  handle("sync:conflicts", async () => (await gitOpening)?.conflicts() ?? []);
+  handle("sync:resolve", async (choices) => {
+    const checked = conflictChoices(choices);
+    const g = await gitOpening;
+    return g ? g.resolve(checked) : NO_GIT;
+  });
+  handle("history:deleted", async () => (isWorkspace() ? (await gitOpening)?.deleted() ?? [] : []));
+  handle("history:restore", (ids, folder) => restoreNotes(ids, folder));
   handle("window:fullScreen", async () => {
     const w = win();
     if (w) w.setFullScreen(!w.isFullScreen());
@@ -732,6 +911,10 @@ function watchWorkspace(win: () => BrowserWindow | undefined): FSWatcher | undef
   let timer: ReturnType<typeof setTimeout> | undefined;
   const report = async () => {
     timer = undefined;
+    // A pull or a conflict being settled rewrites files: they're read once it's over, so the app
+    // never sees a half-applied state (a rebase's conflict markers) as a change made outside.
+    await gitSync?.writable().catch(() => {});
+    if (timer) return; // More changes came meanwhile: they're reported together.
     const rels = [...pending];
     pending.clear();
     const changes: { path: string; kind: "note" | "folder" | "format"; exists: boolean; title?: string }[] = [];
@@ -803,6 +986,7 @@ app.on("window-all-closed", () => {
 // Quitting waits for writes already under way, so a preference saved just before closing is kept,
 // then commits and pushes (D-23) and releases the workspace's lock.
 let gitQuit = false;
+const QUIT_GIT_LIMIT_MS = 8_000;
 app.on("will-quit", (e) => {
   if (writeQueues.size === 0 && (gitQuit || !gitSync)) return;
   e.preventDefault();
@@ -810,7 +994,9 @@ app.on("will-quit", (e) => {
     .then(async () => {
       if (gitQuit) return;
       gitQuit = true;
-      await gitSync?.quit().catch(() => {});
+      // Quitting never hangs on the network: the commit is local, and a push that doesn't finish
+      // in time is retried at the next start.
+      await Promise.race([gitSync?.quit().catch(() => {}), new Promise((r) => setTimeout(r, QUIT_GIT_LIMIT_MS))]);
     })
     .then(() => app.quit());
 });

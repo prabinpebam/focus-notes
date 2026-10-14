@@ -965,7 +965,7 @@
         "architecture/desktop-and-git.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-3.5",
@@ -994,7 +994,7 @@
         "design/views/files.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-3.6",

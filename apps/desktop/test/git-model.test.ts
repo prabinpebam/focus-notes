@@ -5,7 +5,8 @@
 import { describe, expect, it } from "vitest";
 import { parseStatus, covers, pointerMoved, trackedChanges, STATUS_ARGS } from "../src/main/git/status.ts";
 import { StatusCache, filesKey, gitFiles } from "../src/main/git/cache.ts";
-import { batchMessage, changesOf, pointerMessage, saveMessage } from "../src/main/git/message.ts";
+import { batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage } from "../src/main/git/message.ts";
+import { bothChanged, parseRaw } from "../src/main/git/resolve.ts";
 import { Cadence, pointerDelay, retryDelay, type Clock } from "../src/main/git/cadence.ts";
 
 const z = (...records: string[]) => records.map((r) => `${r}\0`).join("");
@@ -219,6 +220,24 @@ class FakeClock implements Clock {
     this.t = end;
   }
 }
+
+describe("FIL-10, FIL-12: restoring and settling conflicts", () => {
+  it("says a restore and a resolution as what they are", () => {
+    expect(batchMessage([{ op: "restore", path: "notes/a.md" }])).toBe("Restore notes/a.md");
+    expect(batchMessage([{ op: "restore", path: "notes/a.md" }, { op: "restore", path: "notes/b.md" }])).toBe("Restore 2 notes\n\nRestore notes/a.md\nRestore notes/b.md");
+    expect(resolveMessage([{ path: "notes/a.md", choice: "mine" }, { path: "notes/b.md", choice: "both", copy: "notes/b-conflict-copy.md" }, { path: "notes/c.md", choice: "theirs", copy: "notes/c-your-version.md" }])).toBe(
+      "Resolve conflicts in 3 notes\n\nKeep this computer's version: notes/a.md\nKeep both: notes/b.md and notes/b-conflict-copy.md\nTake the other version: notes/c.md (this computer's kept as notes/c-your-version.md)",
+    );
+  });
+
+  it("finds the paths both sides changed to different results, from `git diff --raw -z`", () => {
+    const z = (o: string) => o.repeat(40);
+    const raw = (rows: [string, string, string][]) => rows.map(([st, oid, p]) => `:100644 100644 ${z("1")} ${oid} ${st}\0${p}\0`).join("");
+    const mine = parseRaw(raw([["M", z("a"), "notes/same.md"], ["M", z("b"), "notes/both.md"], ["D", z("0"), "notes/gone here.md"], ["M", z("c"), "notes/mine.md"]]));
+    const theirs = parseRaw(raw([["M", z("a"), "notes/same.md"], ["M", z("d"), "notes/both.md"], ["M", z("e"), "notes/gone here.md"], ["A", z("f"), "notes/theirs.md"]]));
+    expect(bothChanged({ base: "", head: "", upstream: "", mine, theirs }).sort()).toEqual(["notes/both.md", "notes/gone here.md"]);
+  });
+});
 
 describe("EDT-11 and D-23: the save cadence", () => {
   it("commits after 60 s with no typing, restarting with each write", () => {

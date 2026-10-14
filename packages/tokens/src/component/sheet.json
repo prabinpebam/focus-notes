@@ -72,6 +72,14 @@
       "offset": {
         "$type": "dimension",
         "$value": "{space.l}"
+      },
+      "footerBorder": {
+        "$type": "color",
+        "$value": "{color.border}"
+      },
+      "footerBorderWidth": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
       }
     }
   }
