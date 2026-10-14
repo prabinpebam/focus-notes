@@ -37,6 +37,9 @@ export const root = style({
       // would otherwise scroll it, shifting the buttons and closing their tooltip.
       overflow: "clip",
     },
+    // One floating thing at a time in the title bar: while the Snap Layouts picker is open (reached
+    // by Tab from the toolbar), the open toolbar steps back rather than sit under it (D-119).
+    ":root:has([data-picker-open]) &[data-open]": { visibility: "hidden" },
   },
 });
 
