@@ -47,6 +47,9 @@ importers:
 
   apps/desktop:
     devDependencies:
+      '@electron/fuses':
+        specifier: 1.8.0
+        version: 1.8.0
       '@focus-notes/core':
         specifier: workspace:*
         version: link:../../packages/core

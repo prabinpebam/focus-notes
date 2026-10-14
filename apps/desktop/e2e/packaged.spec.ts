@@ -7,6 +7,9 @@
 import { test, expect } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { FuseV1Options, getCurrentFuseWire } from "@electron/fuses";
+// The wire's bytes: '1' a fuse turned on, '0' turned off (@electron/fuses doesn't export its FuseState).
+const FuseState = { ENABLE: 0x31, DISABLE: 0x30 } as const;
 import { launch, quit, tempDirs } from "./helpers.ts";
 
 test.skip(!process.env.FOCUS_NOTES_E2E_EXE, "runs on the packaged app only (FOCUS_NOTES_E2E_EXE)");
@@ -34,4 +37,14 @@ test("packaged: it starts, shows the note, and has the app icon on the executabl
   expect(icon.packaged).toBe(true);
   expect(icon.window).toEqual({ width: 512, height: 512 });
   await quit(l);
+});
+
+test("SEC-01: the packaged executable's Electron fuses: no Node mode, no NODE_OPTIONS or inspector, only the integrity-checked ASAR, encrypted cookies", async () => {
+  const wire = await getCurrentFuseWire(process.env.FOCUS_NOTES_E2E_EXE!);
+  expect(wire[FuseV1Options.RunAsNode]).toBe(FuseState.DISABLE);
+  expect(wire[FuseV1Options.EnableNodeOptionsEnvironmentVariable]).toBe(FuseState.DISABLE);
+  expect(wire[FuseV1Options.EnableNodeCliInspectArguments]).toBe(FuseState.DISABLE);
+  expect(wire[FuseV1Options.EnableCookieEncryption]).toBe(FuseState.ENABLE);
+  expect(wire[FuseV1Options.EnableEmbeddedAsarIntegrityValidation]).toBe(FuseState.ENABLE);
+  expect(wire[FuseV1Options.OnlyLoadAppFromAsar]).toBe(FuseState.ENABLE);
 });
