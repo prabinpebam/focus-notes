@@ -16,6 +16,8 @@ const displayBounds = (app: ElectronApplication): Promise<Box> =>
   app.evaluate(({ BrowserWindow, screen }) => screen.getDisplayMatching(BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.getBounds()).bounds);
 const isMinimized = (app: ElectronApplication): Promise<boolean> =>
   app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.isMinimized());
+const isFocused = (app: ElectronApplication): Promise<boolean> =>
+  app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.isFocused());
 const workArea = (app: ElectronApplication): Promise<Box> =>
   app.evaluate(({ BrowserWindow, screen }) => screen.getDisplayMatching(BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.getBounds()).workArea);
 /** The drawn window inside the page: its corners, and where it sits in the transparent margin. */
@@ -246,7 +248,8 @@ test.describe("Windows and Linux: the app-built window", () => {
     const controls = page.getByRole("group", { name: "Window controls" });
     const close = page.getByRole("button", { name: "Close" });
     await page.mouse.move(400, 400);
-    await expect(controls).toHaveCSS("opacity", "0");
+    // Hidden at rest while the window is the active one (a CI display without a window manager may never make it so).
+    if (await isFocused(app)) await expect(controls).toHaveCSS("opacity", "0");
     await close.hover();
     await expect(controls).toHaveCSS("opacity", "1");
     const red = await close.evaluate((el) => getComputedStyle(el).backgroundColor);

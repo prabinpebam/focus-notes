@@ -27,7 +27,9 @@ test("M0: launch to the blank canvas, type, save as Markdown, and reopen", async
   // hidden until the pointer reaches the band or they have focus (DD-DSK-04).
   const windowButtons = await page.getByRole("group", { name: "Window controls" }).getByRole("button").count();
   expect(await page.getByRole("button").count() - windowButtons).toBe(1);
-  if (process.platform !== "darwin") await expect(page.getByRole("group", { name: "Window controls" })).toHaveCSS("opacity", "0");
+  // (They also show while the window isn't the active one, which a CI display without a window manager may never make it.)
+  const active = await first.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.isFocused());
+  if (process.platform !== "darwin" && active) await expect(page.getByRole("group", { name: "Window controls" })).toHaveCSS("opacity", "0");
 
   // The trigger: a 10 px dot in a 30 px circle, at the top center of the window (drawn inside a
   // shadow margin on Windows and Linux, D-14).
