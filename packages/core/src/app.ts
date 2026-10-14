@@ -23,6 +23,7 @@ import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./confli
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
 import { registerMenuBar } from "./menu-bar.ts";
+import { WarmUp } from "./warmup.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -157,6 +158,12 @@ const afterPaint = (fn: () => void) => {
   if (raf) raf(() => raf(fn));
   else fn();
 };
+/**
+ * Unsaved text is kept at least this often while typing goes on (QLT-03): in the recovery journal
+ * where there is one (the desktop), or by saving the note itself (the browser). With the editor's
+ * handover at the same pace, a crash loses at most about a second of typing.
+ */
+export const JOURNAL_INTERVAL_MS = 750;
 /** The editor action that asks the editor to hand over text it hasn't sent yet (the runtime's flush). */
 export const FLUSH_EDITOR = "note.flush";
 /** Note text sizes in px (THM-06). */
@@ -212,6 +219,8 @@ export interface App {
   idle(): Promise<void>;
   /** The page saw a key press that could be a menu bar item's key (DSK-05): that press isn't run again by the menu. */
   keySeen(): void;
+  /** The warm-up after start (PRF-10): shells and later features add the work it does. */
+  warmUp: WarmUp;
 }
 
 export const resolvedScheme = (s: AppState): Scheme =>
@@ -278,6 +287,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let saving: Promise<void> = Promise.resolve();
+  /** When the text not yet handed to a write first changed: the browser saves no later than a second after (QLT-03). */
+  let unsavedSince: number | undefined;
+  let journalTimer: ReturnType<typeof setTimeout> | undefined;
+  let journalAt = -Infinity;
+  const warmUp = new WarmUp({ enabled: bridge.warmUp !== false });
   let appState: AppStateFile = { version: 1 };
   /** What this device keeps (`state.json`), and the synced settings file while syncing is on (PRV-03). */
   let deviceState: AppStateFile = { version: 1 };
@@ -338,6 +352,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     if (!path || saveState === "saved" || noteReadOnly(store.state)) return;
     // The file changed outside while this was unsaved: nothing overwrites it until a choice is made (D-92).
     if (conflicts.holds(path)) return;
+    unsavedSince = undefined;
     setNote({ saveState: "saving" });
     try {
       await bridge.writeNote(path, markdown);
@@ -360,9 +375,26 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
   const schedule = () => {
     clearTimeout(saveTimer);
+    // Without a journal, typing that never pauses is still saved every JOURNAL_INTERVAL_MS (QLT-03).
+    const wait = bridge.journal || unsavedSince === undefined ? SAVE_DELAY_MS : Math.min(SAVE_DELAY_MS, Math.max(0, unsavedSince + JOURNAL_INTERVAL_MS - Date.now()));
     saveTimer = setTimeout(() => {
       saving = saving.then(writeNow);
-    }, SAVE_DELAY_MS);
+    }, wait);
+  };
+  /**
+   * The recovery journal (QLT-03): unsaved text goes to it at once, then at most once a second while
+   * typing goes on, so a crash loses at most about a second. Off the typing path: the shell writes it.
+   */
+  const journalSoon = () => {
+    const journal = bridge.journal;
+    if (!journal || journalTimer) return;
+    journalTimer = setTimeout(() => {
+      journalTimer = undefined;
+      const { path, markdown, saveState } = store.state.note;
+      if (!path || saveState === "saved") return;
+      journalAt = Date.now();
+      void journal.write(path, markdown).catch(() => {});
+    }, Math.max(0, journalAt + JOURNAL_INTERVAL_MS - Date.now()));
   };
 
   let opening: number | undefined;
@@ -450,8 +482,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // The instance's notes are read-only in the browser (D-90), and so is a workspace this app
       // mustn't write (DST-05); the editor doesn't change them either.
       if (noteReadOnly(store.state)) return;
+      warmUp.typed();
+      unsavedSince ??= Date.now();
       setNote({ markdown: value, saveState: "unsaved" });
       schedule();
+      journalSoon();
     },
   });
   commands.register({
@@ -757,6 +792,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const start = opening;
       opening = undefined;
       if (start !== undefined) afterPaint(() => timing.measure(OPEN_MEASURE, start));
+      // The caret is ready: the warm-up may begin (PRF-10).
+      warmUp.start();
     },
   });
 
@@ -1039,6 +1076,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store, commands, viewModels, messages: catalog, bridge, flush,
     idle: () => tracker.idle(),
     keySeen: () => menuBar.keySeen(),
+    warmUp,
     onEditorAction(listener) {
       editorListeners.add(listener);
       return () => editorListeners.delete(listener);
@@ -1079,6 +1117,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         await load(path);
         if (store.state.note.status === "error" && appState.lastNotePath) await load(await bridge.defaultNotePath());
       }
+      // What a crash left unsaved was put back before anything was read (QLT-03); say so, calmly.
+      const restored = (await bridge.journal?.restored().catch(() => undefined)) ?? [];
+      const copied = restored.find((r) => r.copy);
+      if (copied) toast(catalog.format("toast.restoredCopy", { note: copied.title, copy: copied.copy!.title }));
+      else if (restored.length) toast(catalog.format("toast.restored", { count: restored.length, note: restored[0]!.title }));
       workspace.start();
       sync.start();
       setup.start();

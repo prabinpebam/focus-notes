@@ -22,8 +22,45 @@ const listen = (channel: string) => (listener: (...args: unknown[]) => void) => 
   return () => ipcRenderer.removeListener(channel, handler);
 };
 
+/**
+ * The pointer near the window's edges (Windows and Linux: the click-through margin, D-104) or near
+ * the title bar band (macOS: the system's drag region hides the pointer from the page, D-106), and
+ * leaving the page. The shell reads where the pointer is itself, so the report carries nothing, and
+ * nothing is sent while the pointer is still or elsewhere (PRF-04): at most one report a frame while
+ * it moves in that zone, and one more as it leaves it.
+ */
+const pointerZone = /^(edge|top):(\d{1,3})$/.exec(params.get("pointer") ?? "");
+if (pointerZone) {
+  const top = pointerZone[1] === "top";
+  const size = Number(pointerZone[2]);
+  let near = false;
+  let queued = false;
+  const report = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      ipcRenderer.send("window:pointer");
+    });
+  };
+  // Mouse events, which Windows forwards to a window that ignores the mouse.
+  addEventListener("mousemove", (e) => {
+    const now = top ? e.clientY < size : Math.min(e.clientX, e.clientY, innerWidth - e.clientX, innerHeight - e.clientY) < size;
+    if (!now && !near) return;
+    near = now;
+    report();
+  }, { capture: true, passive: true });
+  addEventListener("mouseout", (e) => {
+    if (e.relatedTarget) return;
+    near = false;
+    report();
+  }, { capture: true, passive: true });
+}
+
 contextBridge.exposeInMainWorld("focusNotes", {
   platform,
+  // Off only when the main process says so: end-to-end tests (PRF-10).
+  warmUp: params.get("warmup") !== "0",
   readNote: (path: string) => ipcRenderer.invoke("note:read", path),
   writeNote: (path: string, content: string) => ipcRenderer.invoke("note:write", path, content),
   chooseNote: () => ipcRenderer.invoke("note:choose"),
@@ -63,6 +100,11 @@ contextBridge.exposeInMainWorld("focusNotes", {
       ipcRenderer.on("workspace:changed", handler);
       return () => ipcRenderer.removeListener("workspace:changed", handler);
     },
+  },
+  // The recovery journal (QLT-03): unsaved text, and what this launch restored after a crash.
+  journal: {
+    write: (path: string, text: string) => ipcRenderer.invoke("journal:write", path, text),
+    restored: () => ipcRenderer.invoke("journal:restored"),
   },
   // Synced settings in the private repository (PRV-03): the main process checks what it writes.
   settings: {

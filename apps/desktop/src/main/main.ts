@@ -31,6 +31,10 @@ import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/i
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
 import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
 import { AppMenuBar } from "./window/menu-bar.ts";
+import { SnapshotCache } from "@focus-notes/core/snapshot";
+import { textHash } from "@focus-notes/core/journal";
+import type { RestoredNote } from "@focus-notes/core";
+import { RecoveryJournal, restoreJournal } from "./journal.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 /** Windows and Linux: the transparent window with app-built window management; macOS: the system's (D-14). */
@@ -75,7 +79,9 @@ const WELCOME = `# Welcome to Focus Notes
 Everything you write here is saved as plain Markdown on your computer.
 `;
 
-if (!app.requestSingleInstanceLock()) app.quit();
+/** Only the first instance: a second start hands over to it and quits (its journal is the first one's). */
+const primary = app.requestSingleInstanceLock();
+if (!primary) app.quit();
 
 // ---- save and sync with Git (WP-3.3, D-23) ----
 // The workspace folder's own repository, if it is one; otherwise saving stays local, with no Git UI.
@@ -195,6 +201,7 @@ async function forgetLocal(event: "signOut" | "removeWorkspace"): Promise<void> 
   workspaceIdentity = undefined;
   targetFolder = undefined;
   pendingWorkspace = undefined;
+  await journal?.clear();
   await forgetLocalData(app.getPath("userData"), event);
   await session.defaultSession.clearCache().catch(() => {});
   await session.defaultSession.clearStorageData().catch(() => {});
@@ -290,14 +297,24 @@ async function assertWritable(p: string): Promise<void> {
   if (!inside(notesHome(), p) || p === formatFile()) return;
   if (readWorkspaceFormat(await readFormat()).access !== "write") throw new Error("This workspace is read-only for this version of Focus Notes");
 }
-/** A note's title from its first 16 KB, so the Files panel shows titles without reading whole notes. */
+/**
+ * A note's title from its first 16 KB, so the Files panel shows titles without reading whole notes.
+ * Kept in the snapshot, so a note that hasn't changed isn't opened again (PRF-10).
+ */
 async function readTitle(p: string): Promise<string | undefined> {
+  const st = await stat(p).catch(() => undefined);
+  if (!st) return undefined;
+  const key = { path: p, size: st.size, mtimeMs: st.mtimeMs };
+  const known = titles.get(key) ?? parsed.get(key);
+  if (known) return known.title;
   const h = await open(p, "r").catch(() => undefined);
   if (!h) return undefined;
   try {
     const buf = Buffer.alloc(16 * 1024);
     const { bytesRead } = await h.read(buf, 0, buf.length, 0);
-    return titleOfMarkdown(buf.subarray(0, bytesRead).toString("utf8"));
+    const title = titleOfMarkdown(buf.subarray(0, bytesRead).toString("utf8"));
+    titles.set(key, title ? { title } : {});
+    return title;
   } catch {
     return undefined;
   } finally {
@@ -320,6 +337,33 @@ async function listTree(dir: string, out: Entry[] = []): Promise<Entry[]> {
   out.push(...(await Promise.all(notes)));
   return out;
 }
+
+// ---- the parsed-note snapshot (PRF-10, Performance and quality → Less reading) ----
+// Each note read or written, keyed by path, size, and modification time: reopening one that hasn't
+// changed reads nothing. Titles from the Files panel's scan are kept the same way, on their own.
+type ParsedNote = { text: string; hash: string; title?: string };
+const parsed = new SnapshotCache<ParsedNote>({ maxBytes: 32 * 1024 * 1024, sizeOf: (n) => 2 * n.text.length + 96 });
+const titles = new SnapshotCache<{ title?: string }>({ maxBytes: 4 * 1024 * 1024, sizeOf: (t) => 2 * (t.title?.length ?? 0) + 96 });
+const parseNote = (text: string): ParsedNote => {
+  const title = titleOfMarkdown(text);
+  return { text, hash: textHash(text), ...(title ? { title } : {}) };
+};
+/** A note as it is on disk now: from the snapshot when its size and time haven't changed. */
+async function readParsed(path: string): Promise<ParsedNote> {
+  const h = await open(path, "r");
+  try {
+    const st = await h.stat();
+    const key = { path, size: st.size, mtimeMs: st.mtimeMs };
+    return parsed.get(key) ?? parsed.set(key, parseNote(await h.readFile("utf8")));
+  } finally {
+    await h.close();
+  }
+}
+
+// ---- the recovery journal (QLT-03) ----
+let journal: RecoveryJournal | undefined;
+/** What this launch restored from the journal, told to the renderer once. */
+let restored: RestoredNote[] = [];
 
 /** Only Markdown files, given as absolute paths, may be read or written. */
 function notePath(p: unknown): string {
@@ -367,6 +411,11 @@ async function writeNow(path: string, content: string): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     try {
       await rename(tmp, path);
+      // A write hands its result straight to the snapshot: the next read doesn't touch the disk (PRF-10).
+      if (isMarkdown(path)) {
+        const st = await stat(path).catch(() => undefined);
+        if (st) parsed.set({ path, size: st.size, mtimeMs: st.mtimeMs }, parseNote(content));
+      }
       return;
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
@@ -482,6 +531,18 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
   } catch (error) {
     for (const u of undo.reverse()) await u().catch(() => {});
     throw error instanceof Refused ? error : refuse("failed");
+  }
+  for (const op of ops) {
+    if (op.op === "move") {
+      parsed.move(op.path, op.to);
+      titles.move(op.path, op.to);
+      void journal?.moved(op.path, op.to);
+    } else if (op.op === "write") void journal?.saved(op.path, op.text);
+    else if (op.op === "delete") {
+      parsed.delete(op.path);
+      titles.delete(op.path);
+      void journal?.gone(op.path);
+    }
   }
   // What was done, for the batch's one commit.
   return ops.map((op): BatchOp => (op.op === "move" ? { op: "move", from: op.path, to: op.to } : { op: op.op, path: op.path }));
@@ -644,11 +705,14 @@ function handle(channel: string, fn: (...args: any[]) => unknown): void {
 }
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
-  handle("note:read", async (p) => readFile(notePath(p), "utf8"));
+  handle("note:read", async (p) => (await readParsed(notePath(p))).text);
   handle("note:write", async (p, content) => {
     if (typeof content !== "string") throw new Error("Content must be text");
     const path = notePath(p);
+    // The app saves its latest text: this supersedes every text the journal was sent before it (QLT-03).
+    const upTo = journal?.mark();
     await atomicWrite(path, content);
+    void journal?.saved(path, content, upTo);
     // Committed on the cadence: Mod+S, switching notes, quitting, or 60 s with no typing (D-23).
     withGit((g) => g.written(path));
   });
@@ -701,6 +765,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       await renameRetrying(a, tmp);
       await renameRetrying(tmp, b);
     } else await renameRetrying(a, b);
+    parsed.move(a, b);
+    void journal?.moved(a, b);
     withGit((g) => g.renamed(a, b));
   });
   // Each batch is one commit (FIL-05, D-94): resolved after the commit, so "saved" means saved (PRF-09).
@@ -828,6 +894,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const w = win();
     if (w) w.setFullScreen(!w.isFullScreen());
   });
+  // The recovery journal (QLT-03): unsaved text, appended off the typing path; and what this launch restored.
+  handle("journal:write", async (p, text) => {
+    if (typeof text !== "string") throw new Error("Content must be text");
+    await journal?.text(notePath(p), text);
+  });
+  handle("journal:restored", async () => restored.splice(0));
   handle("state:load", async () => {
     try {
       const s = JSON.parse(await readFile(stateFile(), "utf8"));
@@ -900,7 +972,8 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
       if (input.type === "keyDown" && input.meta && input.shift && !input.alt && !input.control && input.key.toLowerCase() === "v") win.webContents.pasteAndMatchStyle();
     });
   }
-  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, ...frame.query() } });
+  // End-to-end tests turn the warm-up after start off, so their timing stays the same (PRF-10).
+  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, ...frame.query(), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
 
   // Ask the renderer to save pending changes before the window closes (QLT-03). If saving fails,
   // the person decides; text is never discarded silently.
@@ -928,6 +1001,8 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
       });
       closing = false;
       if (response === 1) {
+        // The person chose to lose those changes: they aren't brought back at the next launch.
+        await journal?.clear();
         allowClose = true;
         win.close();
       }
@@ -1038,6 +1113,23 @@ app.whenReady().then(async () => {
   windowFrame = new AppWindowFrame(frameKind, join(app.getPath("userData"), DATA_FILES.window));
   registerIpc(() => mainWindow);
   await stat(notesHome()).catch(() => mkdir(notesHome(), { recursive: true }));
+  // What a crash left unsaved goes back into its notes before the window reads any (QLT-03).
+  // Only the first instance has a journal: it's the one writing it.
+  if (primary) journal = await RecoveryJournal.open(dataFile(DATA_FILES.journal), {
+    baseOf: async (p) => {
+      await (writeQueues.get(p) ?? Promise.resolve()).catch(() => {});
+      return readParsed(p).then((n) => n.hash, () => undefined);
+    },
+    log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
+  });
+  if (journal) restored = await restoreJournal(journal, {
+    read: (p) => readFile(p, "utf8").catch(() => undefined),
+    write: async (p, text) => {
+      await atomicWrite(p, text);
+      withGit((g) => g.written(p));
+    },
+  });
+  if (restored.length) process.stdout.write(`[focus-notes] journal: restored ${restored.length}\n`);
   mainWindow = createWindow(windowFrame);
   watcher = watchWorkspace(() => mainWindow);
   // Never on the path of the first frame: Git answers when it answers (PRF-07).
@@ -1057,9 +1149,10 @@ app.on("window-all-closed", () => {
 // Quitting waits for writes already under way, so a preference saved just before closing is kept,
 // then commits and pushes (D-23) and releases the workspace's lock.
 let gitQuit = false;
+let journalClosed = false;
 const QUIT_GIT_LIMIT_MS = 8_000;
 app.on("will-quit", (e) => {
-  if (writeQueues.size === 0 && (gitQuit || !gitSync)) return;
+  if (writeQueues.size === 0 && (gitQuit || !gitSync) && (journalClosed || !journal)) return;
   e.preventDefault();
   void Promise.allSettled([...writeQueues.values()])
     .then(async () => {
@@ -1068,6 +1161,11 @@ app.on("will-quit", (e) => {
       // Quitting never hangs on the network: the commit is local, and a push that doesn't finish
       // in time is retried at the next start.
       await Promise.race([gitSync?.quit().catch(() => {}), new Promise((r) => setTimeout(r, QUIT_GIT_LIMIT_MS))]);
+    })
+    // Everything is saved: the journal goes (it stays if something isn't).
+    .then(async () => {
+      if (!journalClosed) await journal?.close();
+      journalClosed = true;
     })
     .then(() => app.quit());
 });

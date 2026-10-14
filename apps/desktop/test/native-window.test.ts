@@ -24,7 +24,10 @@ const model: MenuBarModel = {
       ],
     },
     { id: "window", label: "Window", kind: "window", items: [{ kind: "role", role: "minimize" }] },
-    { id: "help", label: "Help", kind: "help", items: [{ kind: "command", id: "shortcuts.open", label: "Keyboard shortcuts", chord: "Mod+Shift+/", enabled: false }] },
+    { id: "help", label: "Help", kind: "help", items: [
+      { kind: "command", id: "shortcuts.open", label: "Keyboard shortcuts", chord: "Mod+Shift+/", enabled: false },
+      { kind: "command", id: "help.open", label: "Help and docs", enabled: false, reason: "Help and docs arrive in a later preview" },
+    ] },
   ],
 };
 const sub = (t: MenuItemConstructorOptions[], i: number) => t[i]!.submenu as MenuItemConstructorOptions[];
@@ -79,6 +82,9 @@ describe("DSK-05: the macOS menu bar", () => {
     expect((sub(t, 2)[1]!.submenu as MenuItemConstructorOptions[])[0]).toMatchObject({ id: "appearance.dark", type: "radio", checked: false });
     expect(sub(t, 2)[2]).toMatchObject({ id: "window.fullScreen", accelerator: "Control+Command+F" });
     expect(sub(t, 4)[0]).toMatchObject({ enabled: false, accelerator: "Shift+Command+/" });
+    expect(sub(t, 4)[0]!.toolTip).toBeUndefined();
+    // An unavailable item says why (D-100), as macOS's tooltip.
+    expect(sub(t, 4)[1]).toMatchObject({ id: "help.open", enabled: false, toolTip: "Help and docs arrive in a later preview" });
     const click = (o: MenuItemConstructorOptions, byKey: boolean) => (o.click as unknown as (a: unknown, b: unknown, e: { triggeredByAccelerator?: boolean }) => void)({}, undefined, { triggeredByAccelerator: byKey });
     click(sub(t, 2)[0]!, false);
     click(sub(t, 2)[2]!, true);
@@ -93,6 +99,8 @@ describe("DSK-05: the macOS menu bar", () => {
     expect(bad({ kind: "command", id: "../../evil", label: "X", enabled: true })).toBeUndefined();
     expect(bad({ kind: "command", id: "a.b", label: "", enabled: true })).toBeUndefined();
     expect(bad({ kind: "command", id: "a.b", label: "X" })).toBeUndefined();
+    expect(bad({ kind: "command", id: "a.b", label: "X", enabled: false, reason: "" })).toBeUndefined();
+    expect(bad({ kind: "command", id: "a.b", label: "X", enabled: false, reason: "x".repeat(201) })).toBeUndefined();
     expect(bad({ kind: "submenu", label: "S", items: [{ kind: "submenu", label: "T", items: [{ kind: "submenu", label: "U", items: [] }] }] })).toBeUndefined();
     expect(checkMenuModel({ menus: "no" })).toBeUndefined();
     expect(checkMenuModel(null)).toBeUndefined();
@@ -206,5 +214,31 @@ describe("DSK-02: macOS's traffic lights show on the title bar band", () => {
     bar.update();
     expect(w.calls).toEqual([false, true, false, true, false, true, false]);
     expect(bar.shown).toBe(false);
+    bar.stop();
+  });
+
+  it("follows the page's pointer reports once the caret is ready, and the window's own events", () => {
+    const w = new FakeMac();
+    let pointer: Point = { x: 500, y: 400 };
+    const bar = new MacTitleBar(w, () => pointer);
+    bar.update();
+    pointer = { x: 120, y: 60 };
+    bar.pointerMoved();
+    expect(w.calls).toEqual([false]);
+    bar.trackPointer();
+    bar.pointerMoved();
+    expect(w.calls).toEqual([false, true]);
+    pointer = { x: 500, y: 400 };
+    bar.pointerMoved();
+    expect(w.calls).toEqual([false, true, false]);
+    // Clicking the band to make the window active: the system's focus event, with the pointer on the band.
+    w.focused = false;
+    bar.update();
+    pointer = { x: 120, y: 60 };
+    w.focused = true;
+    bar.update();
+    expect(w.calls).toEqual([false, true, false, true]);
+    expect(bar.shown).toBe(true);
+    bar.stop();
   });
 });

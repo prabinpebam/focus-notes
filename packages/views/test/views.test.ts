@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { views } from "../src/index.ts";
 
@@ -61,6 +61,13 @@ describe("all app UI is view documents (DSY-06)", () => {
     expect(() => execFileSync(process.execPath, [join(root, "tools", "check-boundaries.mjs")], { cwd: root, stdio: "pipe" })).not.toThrow();
     expect(() => execFileSync(process.execPath, [join("src", "cli", "ui-check.ts")], { cwd: join(root, "packages", "ui-runtime"), stdio: "pipe" })).not.toThrow();
   }, 60_000);
+
+  it("names each message once in every catalog, so a merge can't silently swap a word", () => {
+    for (const f of readdirSync(join(root, "packages", "views", "messages")).filter((x) => x.endsWith(".json"))) {
+      const keys = [...readFileSync(join(root, "packages", "views", "messages", f), "utf8").matchAll(/^\s*"([^"]+)"\s*:/gm)].map((m) => m[1]);
+      expect(keys.filter((k, i) => keys.indexOf(k) !== i), f).toEqual([]);
+    }
+  });
 
   it("the desktop and web entries mount views and hold no markup or styles of their own", () => {
     for (const app of ["desktop", "web"]) {

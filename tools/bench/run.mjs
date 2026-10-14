@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { largeWorkspace } from "./large.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
 const budgetsPath = join(import.meta.dirname, "budgets.json");
@@ -109,7 +110,9 @@ async function noteTimes() {
   const docs = throwawayWorkspace();
   writeFileSync(join(docs, "long.md"), tenThousandWords());
   const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
-  const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs } });
+  // Set up already (FRE-01), and never reaching the network, as in the start times.
+  writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
+  const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9" } });
   try {
     const page = await app.firstWindow();
     const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -144,7 +147,8 @@ async function noteTimes() {
   }
 }
 
-const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()), ...(await noteTimes()) } };
+// PRF-04 and PRF-10: memory and idle CPU with 10,000 notes, and reopening an unchanged note.
+const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()), ...(await noteTimes()), ...(await largeWorkspace({ root, mainEntry })) } };
 mkdirSync(join(root, "test-results"), { recursive: true });
 writeFileSync(join(root, "test-results", "bench.json"), JSON.stringify(report, null, 2));
 

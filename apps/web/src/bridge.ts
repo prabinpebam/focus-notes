@@ -171,6 +171,8 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
 
   const bridge: WebBridge = {
     platform: "web",
+    // The warm-up after start is off under test automation, so the journeys' timing stays the same (PRF-10).
+    warmUp: !globalThis.navigator?.webdriver,
     db,
     instance,
     workspace,

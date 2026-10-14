@@ -2,7 +2,7 @@
 import { createElement, Fragment, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { FLUSH_EDITOR, type App } from "@focus-notes/core";
-import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, slashCatalog } from "@focus-notes/ui";
+import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, slashCatalog, preloadViews } from "@focus-notes/ui";
 import { ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
 
 export interface MountOptions {
@@ -24,6 +24,8 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   // The slash menu offers the editor's registered blocks (EDT-06, EXT-01).
   void app.commands.run("slash.register", { entries: slashCatalog() });
   const deps: RuntimeDeps = { app, registry, contracts: contractByType, views };
+  // The warm-up after start loads the code of the views opened first, at idle priority (PRF-10).
+  app.warmUp.add({ id: "views", run: async () => void (await preloadViews()) });
   const root = createRoot(el);
   const Text = registry.Text!;
   const fallback = createElement(Text, { value: app.messages.has("app.viewFailed") ? app.messages.format("app.viewFailed") : "This panel couldn't load." });
@@ -37,6 +39,8 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     // A key a menu bar item could have (macOS, DSK-05): the page has it first, so the menu leaves it alone.
     if ((e.metaKey || e.ctrlKey || e.altKey || /^F\d+$/.test(e.key)) && !MODIFIERS.has(e.key)) app.keySeen();
     // keyCode 229 is the IME's own keydown on some platforms, before isComposing is set (KEY-06).
+    // The warm-up waits while someone types (PRF-10).
+    app.warmUp.typed();
     if (e.defaultPrevented || e.isComposing || e.keyCode === 229) return;
     // Key scopes focus is inside, innermost first (data-key-scope on primitives and layouts).
     const scopes: string[] = [];

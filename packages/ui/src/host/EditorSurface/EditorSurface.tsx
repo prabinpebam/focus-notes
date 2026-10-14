@@ -75,6 +75,11 @@ export interface EditorSurfaceProps {
 const FIND_DEBOUNCE_MS = 60;
 /** Serializing is kept off the typing path: it runs after a short pause (PRF-01). */
 const SERIALIZE_DELAY_MS = 150;
+/**
+ * While typing goes on, text is still handed over this often, so the recovery journal keeps up
+ * (QLT-03). The same pace as the journal (JOURNAL_INTERVAL_MS in core): each handover is kept at once.
+ */
+const SERIALIZE_MAX_WAIT_MS = 750;
 /** Dispatched on window by the runtime before a flush; surfaces hand over pending text synchronously. */
 export const FLUSH_EVENT = "focus-notes:flush";
 
@@ -133,6 +138,8 @@ export function EditorSurface({
   findOptionsRef.current = findOptions;
   const lastFind = useRef("");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  /** When the text not yet handed over first changed. */
+  const pendingSince = useRef<number | undefined>(undefined);
   const last = useRef(initialValue);
   const editorRef = useRef<Editor | null>(null);
   const emptyHeaderRef = useRef(emptyHeader);
@@ -208,16 +215,20 @@ export function EditorSurface({
       },
       onUpdate: ({ editor: ed }) => {
         clearTimeout(timer.current);
+        pendingSince.current ??= Date.now();
+        const wait = Math.max(0, Math.min(SERIALIZE_DELAY_MS, pendingSince.current + SERIALIZE_MAX_WAIT_MS - Date.now()));
         timer.current = setTimeout(() => {
+          pendingSince.current = undefined;
           const value = session.serialize(ed.getJSON() as PMNode);
           if (value !== last.current) {
             last.current = value;
             onChangeRef.current?.({ value });
           }
-        }, SERIALIZE_DELAY_MS);
+        }, wait);
       },
       onBlur: ({ editor: ed }) => {
         clearTimeout(timer.current);
+        pendingSince.current = undefined;
         const value = session.serialize(ed.getJSON() as PMNode);
         if (value !== last.current) {
           last.current = value;
@@ -351,6 +362,7 @@ export function EditorSurface({
       if (!editor || editor.isDestroyed) return;
       clearTimeout(timer.current);
       timer.current = undefined;
+      pendingSince.current = undefined;
       const value = session.serialize(editor.getJSON() as PMNode);
       if (value !== last.current) {
         last.current = value;

@@ -33,7 +33,7 @@ class FakeWin implements WinLike {
   moveTop = () => void this.calls.push("moveTop");
 }
 
-function setup(content: Rect = { x: 100, y: 100, width: 1000, height: 700 }, displays = [main], mode: Placement["mode"] = "normal") {
+function setup(content: Rect = { x: 100, y: 100, width: 1000, height: 700 }, displays = [main], mode: Placement["mode"] = "normal", forwardsMoves = true) {
   const placement: Placement = { content, mode, restore: content, fullScreen: false };
   const win = new FakeWin(CustomWindow.outer(placement, "custom"));
   const reports: WindowReport[] = [];
@@ -47,6 +47,7 @@ function setup(content: Rect = { x: 100, y: 100, width: 1000, height: 700 }, dis
     previewColor: () => "#4d2f6fed",
     notify: (r) => reports.push(r),
     save: (m) => saved.push(m),
+    forwardsMoves,
   }, placement);
   return { w, win, reports, saved, preview, point: (x: number, y: number) => (cursor = { x, y }) };
 }
@@ -178,6 +179,11 @@ describe("DSK-08: snapping, the system menu, and monitors", () => {
   });
   it("lets clicks in the shadow margin through, but not on the handles or the window", () => {
     const { w, win, point } = setup();
+    // Not before the caret is ready (PRF-02): the page's reports are followed from then on.
+    point(86, 500);
+    w.pointerCheck();
+    expect(win.ignore).toBeUndefined();
+    w.trackPointer();
     point(86, 500);
     w.pointerCheck();
     expect(win.ignore).toBe(true);
@@ -187,6 +193,32 @@ describe("DSK-08: snapping, the system menu, and monitors", () => {
     point(86, 500);
     w.pointerCheck();
     point(600, 400);
+    w.pointerCheck();
+    expect(win.ignore).toBe(false);
+    // Windows forwards the moves of an ignoring window to the page, so a pointer that leaves changes nothing until it's back.
+    point(86, 500);
+    w.pointerCheck();
+    point(20, 500);
+    w.pointerCheck();
+    expect(win.ignore).toBe(true);
+    // A hidden window takes the pointer again.
+    win.isVisible = () => false;
+    w.pointerCheck();
+    expect(win.ignore).toBe(false);
+  });
+  it("on Linux, which can't forward moves to an ignoring window, takes the pointer again once it leaves the margin", () => {
+    const { w, win, point } = setup(undefined, undefined, undefined, false);
+    w.trackPointer();
+    point(86, 500);
+    w.pointerCheck();
+    expect(win.ignore).toBe(true);
+    expect(w.watching).toBe(true);
+    point(20, 500);
+    w.pointerCheck();
+    expect(win.ignore).toBe(false);
+    expect(w.watching).toBe(false);
+    w.stop();
+    point(86, 500);
     w.pointerCheck();
     expect(win.ignore).toBe(false);
   });

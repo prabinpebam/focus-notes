@@ -3,7 +3,8 @@
  * windows lose native resizing, snapping, maximize, and the shadow, so this does them: it moves and
  * resizes the window as the renderer's window frame reports the pointer, previews and applies snap
  * zones, maximizes and restores itself, runs the system menu's keyboard Move and Size, and lets
- * clicks in the shadow margin through to whatever is behind. The geometry is core's window-geometry.
+ * clicks in the shadow margin through to whatever is behind, as the page reports the pointer near
+ * the edges. The geometry is core's window-geometry.
  */
 import {
   clampToDisplays, contentBounds, displayFor, DRAG_THRESHOLD, fitToDisplay, hitZone, keyboardStep, layoutsFor, needsRemeasure, outerBounds,
@@ -53,10 +54,16 @@ interface Options {
   previewColor: () => string;
   notify: (r: WindowReport) => void;
   save: (m: WindowMemory) => void;
+  /** The system forwards pointer moves to the page while the window ignores the mouse (Windows, not Linux). */
+  forwardsMoves: boolean;
 }
 
 const ARROWS: Record<string, ArrowKey> = { ArrowLeft: "Left", ArrowRight: "Right", ArrowUp: "Up", ArrowDown: "Down" };
 const metrics = { edge: WINDOW_METRICS.resizeEdge, corner: WINDOW_METRICS.resizeCorner };
+/** The page reports pointer moves this close to the window's edges (CSS px): the margin, a corner handle, and room for a fast move. */
+export const POINTER_EDGE_PX = WINDOW_METRICS.margin + WINDOW_METRICS.resizeCorner + 16;
+/** How often Linux checks a pointer in the margin of an ignoring window, which the page can't see. */
+export const POINTER_WATCH_MS = 50;
 
 export class CustomWindow {
   readonly #win: WinLike;
@@ -71,7 +78,9 @@ export class CustomWindow {
   #full = false;
   #beforeFull: Rect | undefined;
   #previewing = false;
-  #timer: ReturnType<typeof setInterval> | undefined;
+  #tracking = false;
+  /** Linux only, while the pointer is in the margin of an ignoring window. */
+  #watch: ReturnType<typeof setInterval> | undefined;
 
   constructor(win: WinLike, o: Options, placement: Placement) {
     this.#win = win;
@@ -305,32 +314,55 @@ export class CustomWindow {
 
   /**
    * Clicks in the shadow margin pass through to whatever is behind (Window management → Shadow).
-   * The pointer is checked against the margin and the handles a few times a second; Linux can't
-   * forward pointer moves to an ignoring window, so this is how both find their way back.
+   * Nothing polls (PRF-04): the page reports the pointer moving near the window's edges
+   * (`window:pointer`, from the moment the caret is ready, PRF-02), and this checks it against the
+   * margin and the handles. While the window ignores the mouse, Windows still forwards the moves to
+   * the page. Linux can't, so there, and only while the pointer is in the margin of an ignoring
+   * window, the pointer is checked every `POINTER_WATCH_MS` until it leaves the margin or the
+   * window hides (D-104).
    */
-  watchPointer(intervalMs = 50): void {
-    this.#timer ??= setInterval(() => this.pointerCheck(), intervalMs);
-    this.#timer.unref?.();
+  trackPointer(): void {
+    this.#tracking = true;
   }
   stop(): void {
-    clearInterval(this.#timer);
-    this.#timer = undefined;
+    this.#tracking = false;
+    this.#stopWatch();
     if (this.#previewing) this.#o.preview().hide();
   }
   pointerCheck(): void {
-    if (this.#drag || this.#keys || this.#win.isDestroyed() || !this.#win.isVisible() || this.#win.isMinimized()) return;
-    const b = this.#win.getBounds();
+    const w = this.#win;
+    if (!this.#tracking || w.isDestroyed()) return this.#stopWatch();
+    // A hidden or minimized window takes the pointer again when it's back, where the page can see it.
+    if (!w.isVisible() || w.isMinimized()) return this.#setIgnore(false);
+    if (this.#drag || this.#keys) return;
+    const b = w.getBounds();
     const c = this.#o.screen.getCursorScreenPoint();
     const p = { x: c.x - b.x, y: c.y - b.y };
-    if (p.x < 0 || p.y < 0 || p.x >= b.width || p.y >= b.height) return;
+    // Out of the window: where the system forwards moves nothing changes; elsewhere the window takes the pointer again, so it sees it come back.
+    if (p.x < 0 || p.y < 0 || p.x >= b.width || p.y >= b.height) return this.#o.forwardsMoves ? undefined : this.#setIgnore(false);
     this.#setIgnore(hitZone(p, { width: b.width, height: b.height }, { margin: this.margin(), ...metrics }, this.resizable()) === "outside");
+  }
+  /** Whether the pointer is being checked on a timer now: on Linux, only while it's in the margin. */
+  get watching(): boolean {
+    return this.#watch !== undefined;
   }
   get passingThrough(): boolean {
     return this.#ignoring;
   }
   #setIgnore(ignore: boolean): void {
-    if (ignore === this.#ignoring) return;
-    this.#ignoring = ignore;
-    this.#win.setIgnoreMouseEvents(ignore, ignore ? { forward: true } : undefined);
+    if (ignore !== this.#ignoring) {
+      this.#ignoring = ignore;
+      if (!this.#win.isDestroyed()) this.#win.setIgnoreMouseEvents(ignore, ignore ? { forward: true } : undefined);
+    }
+    // The page can't see a pointer the window ignores unless the system forwards its moves.
+    if (ignore && !this.#o.forwardsMoves) {
+      this.#watch ??= setInterval(() => this.pointerCheck(), POINTER_WATCH_MS);
+      this.#watch.unref?.();
+    } else this.#stopWatch();
+  }
+  #stopWatch(): void {
+    if (this.#watch === undefined) return;
+    clearInterval(this.#watch);
+    this.#watch = undefined;
   }
 }

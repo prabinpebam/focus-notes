@@ -43,8 +43,11 @@ export function checkMenuModel(raw: unknown): MenuBarModel | undefined {
         return { kind: "separator" };
       case "command":
         if (typeof i.id !== "string" || !ID.test(i.id) || !text(i.label) || !chord || typeof i.enabled !== "boolean") return undefined;
-        if ((i.checked !== undefined && typeof i.checked !== "boolean") || (i.radio !== undefined && i.radio !== true)) return undefined;
-        return { kind: "command", id: i.id, label: i.label as string, enabled: i.enabled, ...(i.chord ? { chord: i.chord as string } : {}), ...(typeof i.checked === "boolean" ? { checked: i.checked } : {}), ...(i.radio ? { radio: true as const } : {}) };
+        if ((i.checked !== undefined && typeof i.checked !== "boolean") || (i.radio !== undefined && i.radio !== true) || (i.reason !== undefined && !text(i.reason))) return undefined;
+        return {
+          kind: "command", id: i.id, label: i.label as string, enabled: i.enabled, ...(i.chord ? { chord: i.chord as string } : {}),
+          ...(typeof i.checked === "boolean" ? { checked: i.checked } : {}), ...(i.radio ? { radio: true as const } : {}), ...(i.reason ? { reason: i.reason as string } : {}),
+        };
       case "role":
         if (!ROLES.includes(i.role as string) || !chord || (i.id !== undefined && (typeof i.id !== "string" || !ID.test(i.id))) || (i.label !== undefined && !text(i.label))) return undefined;
         return { kind: "role", role: i.role as MenuRole, ...(i.id ? { id: i.id as string } : {}), ...(i.label ? { label: i.label as string } : {}), ...(i.chord ? { chord: i.chord as string } : {}) };
@@ -86,6 +89,8 @@ export function menuTemplate(model: MenuBarModel, choose: Choose): MenuItemConst
       label: i.label,
       enabled: i.enabled,
       ...(accelerator ? { accelerator } : {}),
+      // Why an unavailable item can't run yet (D-100), shown when the pointer rests on it.
+      ...(i.reason ? { toolTip: i.reason } : {}),
       ...(i.checked !== undefined ? { type: i.radio ? ("radio" as const) : ("checkbox" as const), checked: i.checked } : {}),
       click: (_item, _window, event) => choose(i.id, Boolean(event?.triggeredByAccelerator)),
     };

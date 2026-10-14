@@ -16,14 +16,14 @@ How fast Focus Notes must be, how big a workspace it must handle, how it's teste
 | Save to disk | ≤ 1 s after the last keystroke, off the typing path | Timestamp of the atomic write | PRF-03 |
 | Spotlight | See [Spotlight → Performance budgets](../experience/spotlight.html) | Built-in benchmark on 5,000 notes | SPT-07 |
 | Focus band update | Within the same frame as the caret move | Frame timeline | FOC-05 |
-| Memory | ≤ 350 MB resident with a 10,000-note workspace open | Process metrics after 10 minutes of use | PRF-04 |
-| Idle CPU | Near zero when not typing or syncing. No polling except the 5-minute fetch. | OS process sampling | PRF-04 |
+| Memory | ≤ 350 MB resident with a 10,000-note workspace open | Process metrics after 10 minutes of use (built: `PRF-04.memoryMB`, after scripted use of a generated 10,000-note workspace, with pages the processes share counted once, D-105) | PRF-04 |
+| Idle CPU | Near zero when not typing or syncing. No polling except the 5-minute fetch. | OS process sampling (built: `PRF-04.idleCpuPct`, every process over 10 s of idle, at most 1%; and a test that the code has no `setInterval` but the window's two pointer watches, each run only while the pointer is where the page can't see it and stopped as it leaves, D-104, D-105, D-106) | PRF-04 |
 | View rendering | ≤ 100 ms to a view's first frame, ≤ 10% overhead from the UI runtime | Benchmarks on Settings, Files, and Spotlight | DSY-11 |
 | Git status | One `git status` per repository per refresh, both repositories in parallel. A cached answer in ≤ 5 ms. No view's first frame waits for Git. | The `git.status` span and process count in the benchmark (built: `PRF-07.statusProcesses` and `PRF-07.cachedStatusMs`, D-97) | PRF-07 |
 | Waits explained | Acknowledged in the same frame as the input. A sign after 300 ms, kept ≥ 500 ms once shown, announced after 1 s, elapsed time after 3 s. | The task tracker's marks, with scripted slow operations | PRF-08 |
 | Structural change shown | ≤ 100 ms from the action to the change on screen (move, delete, create, or duplicate a note or folder), before the write or commit finishes | From the drop or key to the updated tree | PRF-09 |
-| Reopening a note | ≤ 50 ms for a note already read this session and unchanged on disk | From click to caret, warm | PRF-10 |
-| Start-up warm-up | Done within 10 s of start. Never pushes a keystroke past the PRF-01 budget. | Typing benchmark run during warm-up | PRF-10 |
+| Reopening a note | ≤ 50 ms for a note already read this session and unchanged on disk | From click to caret, warm (built: `PRF-10.reopenMs`, from the key in the Files panel to the note's text with the caret in it, D-105) | PRF-10 |
+| Start-up warm-up | Done within 10 s of start. Never pushes a keystroke past the PRF-01 budget. | Typing benchmark run during warm-up (from Spotlight's index, WP-4.1, its first heavy task, D-105) | PRF-10 |
 | External change | Affected views update ≤ 500 ms after the file watcher reports it. Unaffected views do no work. | A scripted edit from outside the app | PRF-11 |
 | Published pages (M5) | LCP ≤ 2.5 s, INP ≤ 200 ms, CLS ≤ 0.1, in lab runs only | Playwright lab runs in CI on a throttled profile | PRF-12 |
 | Installer size | ≤ 150 MB per platform | Release assets | PRF-05 |
@@ -74,6 +74,8 @@ Measure before fixing anything. Guesses about what's slow are usually wrong: in 
 - **Warm-up after start.** Once the canvas has a caret, the app loads the code of the first views people open (Files, Spotlight, Settings) and builds the Spotlight index in its worker, at idle priority. Warm-up pauses while someone types and never delays the first caret (PRF-02). A view opened before warm-up reaches it says what it's waiting for ("Indexing notes: 4,000 of 10,000") instead of showing a blank panel.
 - **Warm-up is off in end-to-end tests**, so timing and focus stay deterministic. The benchmark measures with it on and off.
 
+**As built (WP-2.6, D-105):** the main process keeps two snapshots, keyed by absolute path, size, and modification time: each note it reads or writes (its text, title, and hash, up to 32 MB) and the Files panel's titles (up to 4 MB), the least recently used going first. The editor's own document isn't cached; reopening an unchanged 1,500-word note in a 10,000-note workspace takes about 17 ms. The warm-up is `app.warmUp` in the app core: tasks run one at a time at idle priority once the caret is ready, wait until the keys have been quiet for half a second, and report how far they got. Today its one task loads the Files tree's code; Spotlight's index adds itself with WP-4.1. It's off in end-to-end tests, and the benchmark measures with it on.
+
 ### Published pages
 
 - **Images** (with the image block, EXT-03): `srcset` and `sizes` match the width the image is actually shown at, capped at the layout's maximum width, rather than the width of its frame.
@@ -93,6 +95,7 @@ Measure before fixing anything. Guesses about what's slow are usually wrong: in 
 ## Reliability
 
 - **No lost typing.** Each note's unsaved text is also written to a recovery journal in the app's data folder every second. After a crash, the next launch restores it with a message, then deletes the journal (QLT-03).
+  - **As built (WP-2.6, D-105):** while typing goes on, the editor hands its text over and the app keeps it in `recovery-journal.jsonl` every 750 ms, each record appended and flushed to the disk by the main process. At the next launch the text goes back into its note before anything reads it, or beside it as "⟨name⟩ (recovered)" when the note changed meanwhile, and one calm toast says so ([Feedback and dialogs](../design/components/feedback-and-dialogs.md#save-and-sync-status)). The journal is emptied whenever nothing is unsaved and deleted on a clean quit. A save supersedes every text the journal was sent before it, even one it doesn't match, since the app always saves its latest text: typing undone back to what's on disk and then saved never comes back at the next launch. Killing the main process at random points while typing, saving, and committing loses at most a second (0.64 s at worst over 40 rounds). The browser has no journal: it saves the note itself every 750 ms while typing goes on.
 - **Atomic writes** (temporary file, then rename) and Git commits mean disk never holds a half-written note.
 - **Retries:** sync and publish operations retry with backoff and can safely run twice. Every failure leaves the repository in a clean state (see [Desktop and Git](desktop-and-git.md#save-and-sync)).
 

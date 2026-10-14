@@ -6,8 +6,8 @@
  */
 import { BrowserWindow, ipcMain, screen, type BrowserWindowConstructorOptions, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { SNAP_ZONES, WINDOW_METRICS, type DisplayInfo, type Rect, type SnapZone } from "@focus-notes/core/window-geometry";
-import { CustomWindow, type PreviewLike } from "./custom-window.ts";
-import { MacTitleBar } from "./mac-title-bar.ts";
+import { CustomWindow, POINTER_EDGE_PX, type PreviewLike } from "./custom-window.ts";
+import { BAND_APPROACH_PX, MacTitleBar } from "./mac-title-bar.ts";
 import { initialPlacement, readWindowMemory, writeWindowMemory, type Placement } from "./placement.ts";
 
 export type FrameKind = "custom" | "opaque";
@@ -83,9 +83,17 @@ export class AppWindowFrame {
     };
   }
 
-  /** The window's state for the page's first frame, so it's drawn right from the start. */
+  /**
+   * The window's state for the page's first frame, so it's drawn right from the start, and where the
+   * page reports the pointer (`window:pointer`): near the edges of the click-through margin (Windows
+   * and Linux), or near the title bar band (macOS). Nothing else polls for it (PRF-04).
+   */
   query(): Record<string, string> {
-    return this.#custom ? { window: JSON.stringify(this.#custom.report()) } : {};
+    if (!this.kind) return { pointer: `top:${WINDOW_METRICS.titleBarHeight + BAND_APPROACH_PX}` };
+    return {
+      ...(this.#custom ? { window: JSON.stringify(this.#custom.report()) } : {}),
+      ...(this.kind === "custom" ? { pointer: `edge:${POINTER_EDGE_PX}` } : {}),
+    };
   }
 
   /** The theme's accent, for the snap preview (`cmp.windowFrame.snapPreview`). */
@@ -124,6 +132,8 @@ export class AppWindowFrame {
       previewColor: () => this.#previewColor(),
       notify: (r) => win.webContents.send("window:state", r),
       save: (m) => writeWindowMemory(this.#file, m),
+      // Electron forwards pointer moves to an ignoring window on Windows, not on Linux.
+      forwardsMoves: process.platform === "win32",
     }, p);
     this.#custom = custom;
     if (p.fullScreen) win.once("ready-to-show", () => custom.toggleFullScreen());
@@ -136,6 +146,10 @@ export class AppWindowFrame {
       }
     });
     const notify = () => custom.notify();
+    // A hidden or minimized window stops letting clicks through, and stops any pointer watch.
+    const check = () => custom.pointerCheck();
+    win.on("hide", check);
+    win.on("minimize", check);
     win.on("focus", notify);
     win.on("blur", () => {
       custom.endKeyboard(true);
@@ -161,10 +175,10 @@ export class AppWindowFrame {
     });
   }
 
-  /** Once the caret is ready: the click-through margin's pointer checks never compete with the first frame (PRF-02). */
+  /** Once the caret is ready: the page's pointer reports are followed, never competing with the first frame (PRF-02). */
   ready(): void {
-    this.#custom?.watchPointer();
-    this.#mac?.watchPointer();
+    this.#custom?.trackPointer();
+    this.#mac?.trackPointer();
   }
 
   /** F11 in the app-built window, which keeps full screen itself. False where the system does it (macOS). */
@@ -183,6 +197,12 @@ export class AppWindowFrame {
     // macOS: the traffic lights show while the toolbar is open, as the app-drawn controls do.
     ipcMain.on("window:reveal", (e, show: unknown) => {
       if (fromApp(e)) this.#mac?.reveal(show === true);
+    });
+    // The page saw the pointer near the margin or the band, or leave the page. It carries nothing: where the pointer is, the system says.
+    ipcMain.on("window:pointer", (e) => {
+      if (!fromApp(e)) return;
+      this.#custom?.pointerCheck();
+      this.#mac?.pointerMoved();
     });
     on("window:minimize", () => this.#custom?.minimize());
     on("window:maximize", () => this.#custom?.maximize());

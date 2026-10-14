@@ -305,3 +305,36 @@ test("DSK-01: macOS keeps the system's own window, with no drawn frame or window
   expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.isResizable())).toBe(true);
   await quit(l);
 });
+
+test("PRF-04: the page reports the pointer only near the shadow margin or the title bar band, and nothing polls for it", async () => {
+  const l = await start();
+  const { app, page } = l;
+  // Count the page's reports (D-104, D-106): the shell reads where the pointer is only when told.
+  await app.evaluate(({ ipcMain }) => {
+    const g = globalThis as unknown as { pointerReports: number };
+    g.pointerReports = 0;
+    ipcMain.on("window:pointer", () => void g.pointerReports++);
+  });
+  const reports = () => app.evaluate(() => (globalThis as unknown as { pointerReports: number }).pointerReports);
+  const settled = async () => {
+    await nextFrame(page);
+    return reports();
+  };
+  const { w, h } = await page.evaluate(() => ({ w: innerWidth, h: innerHeight }));
+  // The margin, 6 px from the page's left edge (Windows and Linux); on macOS, just under the band.
+  const near = custom ? { x: 6, y: Math.round(h / 2) } : { x: Math.round(w / 2), y: 50 };
+  await page.mouse.move(w / 2, h / 2);
+  const before = await settled();
+  for (let i = 1; i <= 5; i++) await page.mouse.move(w / 2 + i * 10, h / 2 + i * 5);
+  expect(await settled()).toBe(before);
+  await page.mouse.move(near.x, near.y);
+  const reported = await settled();
+  expect(reported).toBeGreaterThan(before);
+  // Back in the middle: one more report, so the shell sees the pointer leave, then nothing.
+  await page.mouse.move(w / 2, h / 2);
+  expect(await settled()).toBe(reported + 1);
+  for (let i = 1; i <= 5; i++) await page.mouse.move(w / 2 - i * 10, h / 2 - i * 5);
+  await page.waitForTimeout(500);
+  expect(await settled()).toBe(reported + 1);
+  await quit(l);
+});

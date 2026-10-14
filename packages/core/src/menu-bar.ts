@@ -41,12 +41,12 @@ const themes = (kind: "light" | "dark") => BUILT_IN_THEMES.filter((t) => t.kind 
 /** The menu bar, in the order of Keyboard shortcuts → Toolbar and menus. */
 export const MENU_BAR: readonly MenuBarMenu[] = [
   {
-    id: "app", label: "menu.app", kind: "app",
+    id: "app", label: "menu.appName", kind: "app",
     items: [{ role: "about" }, "-", "settings.open", "-", { role: "services" }, "-", { role: "hide" }, { role: "hideOthers" }, { role: "unhide" }, "-", { role: "quit" }],
   },
   {
     id: "file", label: "menu.file",
-    items: ["note.new", "note.open", "picker.open", "-", "note.save", "sync.now", "-", "files.makePublic", "files.makePrivate", "-", "notes.import", "-", { role: "close" }],
+    items: ["note.new", "note.open", "picker.open", "-", "note.save", "sync.now", "-", "note.share", "files.makePublic", "files.makePrivate", "-", "notes.import", "-", { role: "close" }],
   },
   {
     id: "edit", label: "menu.edit",
@@ -85,7 +85,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
     items: ["files.open", "files.reveal", "files.showDeleted", "-", "edit.docStart", "edit.docEnd", "-", "conflict.open", "toast.focus"],
   },
   { id: "window", label: "menu.window", kind: "window", items: [{ role: "minimize" }, { role: "zoom" }, "-", { role: "front" }] },
-  { id: "help", label: "menu.help", kind: "help", items: ["shortcuts.open"] },
+  { id: "help", label: "menu.help", kind: "help", items: ["shortcuts.open", "help.open"] },
 ];
 
 /**
@@ -110,7 +110,7 @@ export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
 
 /** A menu bar item as the shell builds it. `chord` is the registry's chord for the platform ("Mod+Shift+L"). */
 export type MenuBarItem =
-  | { kind: "command"; id: string; label: string; chord?: string; enabled: boolean; checked?: boolean; radio?: true }
+  | { kind: "command"; id: string; label: string; chord?: string; enabled: boolean; checked?: boolean; radio?: true; reason?: string }
   | { kind: "role"; role: MenuRole; id?: string; label?: string; chord?: string }
   | { kind: "separator" }
   | { kind: "submenu"; label: string; items: MenuBarItem[] };
@@ -130,6 +130,8 @@ export function menuBarModel(commands: CommandRegistry<AppState>, catalog: Messa
     return {
       kind: "command", id, label: catalog.format(d.title), enabled: d.enabled,
       ...(chord ? { chord } : {}), ...(d.checked !== undefined ? { checked: d.checked } : {}), ...(radio ? { radio } : {}),
+      // An unavailable item says why, as it does in ⋯ (D-100): macOS shows it when the pointer rests on the item.
+      ...(d.disabledReason ? { reason: catalog.format(d.disabledReason) } : {}),
     };
   };
   const tidy = (items: (MenuBarItem | undefined)[]): MenuBarItem[] => {

@@ -60,6 +60,28 @@ export interface PlatformBridge {
   window?: WindowBridge;
   /** macOS's native window: its menu bar and traffic lights (DSK-02, DSK-05, D-14). Absent elsewhere. */
   nativeWindow?: NativeWindowBridge;
+  /**
+   * The recovery journal (QLT-03): unsaved text is kept outside the note at least every second, and
+   * a crash's is restored at the next launch. The desktop's; absent in the browser, where the note
+   * itself is saved at least every second while typing goes on.
+   */
+  journal?: JournalBridge;
+  /** False turns the warm-up after start off, as in end-to-end tests (PRF-10). */
+  warmUp?: boolean;
+}
+
+export interface JournalBridge {
+  /** Keeps a note's unsaved text in the journal. */
+  write(path: string, text: string): Promise<void>;
+  /** What the shell restored from the journal at this launch, once: an empty list after the first ask. */
+  restored(): Promise<RestoredNote[]>;
+}
+
+/** A note whose unsaved text was restored after a crash, or kept beside it when it had changed since (`copy`). */
+export interface RestoredNote {
+  path: string;
+  title: string;
+  copy?: { path: string; title: string };
 }
 
 /**
