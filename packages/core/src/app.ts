@@ -412,6 +412,32 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     else journalTimer = setTimeout(write, wait);
   };
 
+  // Back and forward between notes (Keyboard shortcuts → App and window, KEY-03), as in a browser:
+  // opening a note drops the notes ahead of it; going back or forward only moves along the list.
+  const trail = { paths: [] as string[], at: -1, stepping: false };
+  const visited = (path: string) => {
+    if (trail.stepping || trail.paths[trail.at] === path) return;
+    trail.paths = [...trail.paths.slice(0, trail.at + 1), path].slice(-50);
+    trail.at = trail.paths.length - 1;
+  };
+  const stepTrail = async (dir: 1 | -1) => {
+    const to = trail.at + dir;
+    const path = trail.paths[to];
+    if (path === undefined) return;
+    trail.stepping = true;
+    try {
+      await load(path);
+    } finally {
+      trail.stepping = false;
+    }
+    if (store.state.note.path === path) trail.at = to;
+    else {
+      // A note that's gone (deleted, or its folder removed) leaves the trail.
+      trail.paths.splice(to, 1);
+      if (to < trail.at) trail.at--;
+    }
+  };
+
   let opening: number | undefined;
   async function load(path: string): Promise<void> {
     opening = timing.mark("fn:note.open.start");
@@ -428,6 +454,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const md = await bridge.readNote(path);
       setNote({ path, key: `${path}#${Date.now()}`, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
       workspace.loaded(path, md);
+      visited(path);
       // A note sync found changed elsewhere opens the resolver when it's opened (IA-CMP-CONFLICT).
       conflicts.offer(path);
       // A private note's name is private: it's never written to this browser's storage (D-90).
@@ -612,6 +639,18 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
   });
   commands.register({
+    id: "note.back", title: "command.note.back", icon: "history",
+    shortcut: { macos: "Mod+[", default: "Alt+Left" }, layer: "power", group: "app",
+    enabled: () => trail.at > 0, disabledReason: "command.note.back.none",
+    run: () => stepTrail(-1),
+  });
+  commands.register({
+    id: "note.forward", title: "command.note.forward", icon: "history",
+    shortcut: { macos: "Mod+]", default: "Alt+Right" }, layer: "power", group: "app",
+    enabled: () => trail.at < trail.paths.length - 1, disabledReason: "command.note.forward.none",
+    run: () => stepTrail(1),
+  });
+  commands.register({
     id: "window.fullScreen", title: "command.window.fullScreen", icon: "fullScreen",
     shortcut: { macos: "Ctrl+Mod+F", default: "F11", web: null }, layer: "writer", group: "app",
     enabled: () => Boolean(bridge.toggleFullScreen),
@@ -647,6 +686,17 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       run: () => { for (const l of editorListeners) l(spec.id); },
     });
   }
+
+  // Markdown has no underline (D-12): its key says so, once, instead of doing nothing (KEY-03).
+  let underlineHinted = false;
+  commands.register({
+    id: "format.underline", title: "command.format.underline", shortcut: { default: "Mod+U" }, layer: "basic", group: "formatting",
+    run: () => {
+      if (underlineHinted) return;
+      underlineHinted = true;
+      toast(catalog.format("toast.noUnderline"));
+    },
+  });
 
   // ---- find and replace (FND-01, FND-02) ----
   const setFind = (patch: Partial<FindState>) => store.update((s) => ({ ...s, ui: { ...s.ui, find: { ...s.ui.find, ...patch } } }));
