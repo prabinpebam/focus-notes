@@ -78,6 +78,20 @@ test.describe("Windows and Linux: the app-built window", () => {
     const l = await start();
     const { app, page } = l;
     await expect.poll(() => frame(page)).toMatchObject({ radius: "20px" });
+    // The window must fit its display after the drags below (180 × 120 px more), or restoring it
+    // from maximized fits it to the display instead of putting it back as it was. A CI runner's
+    // display (1024 × 768) is filled by the window at first, so it's made smaller there first.
+    const room = await workArea(app);
+    const start0 = await bounds(app);
+    const shrink = { x: Math.min(0, room.width - 300 - start0.width), y: Math.min(0, room.height - 200 - start0.height) };
+    if (shrink.x < 0 || shrink.y < 0) {
+      const se = (await page.locator('[data-window-handle="se"]').boundingBox())!;
+      await page.mouse.move(se.x + se.width / 2, se.y + se.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(se.x + se.width / 2 + shrink.x, se.y + se.height / 2 + shrink.y);
+      await page.mouse.up();
+      await expect.poll(() => bounds(app)).toEqual({ ...start0, width: start0.width + shrink.x, height: start0.height + shrink.y });
+    }
     const before = await bounds(app);
     const at = await band(page);
     await page.mouse.move(at.x, at.y);

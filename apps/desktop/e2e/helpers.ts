@@ -59,6 +59,10 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
   const log: string[] = [];
   const stateFile = join(dirs.userData, "state.json");
   if (!opts.firstRun && !existsSync(stateFile)) writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done" }));
+  // FOCUS_NOTES_E2E_WINDOW=1024x720 opens the window at a CI runner's size, to reproduce what only a small display shows.
+  const size = /^(\d+)x(\d+)$/.exec(process.env.FOCUS_NOTES_E2E_WINDOW ?? "");
+  const windowFile = join(dirs.userData, "window.json");
+  if (size && !existsSync(windowFile)) writeFileSync(windowFile, JSON.stringify({ version: 1, bounds: { x: 40, y: 40, width: Number(size[1]), height: Number(size[2]) } }));
   const base: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) if (v !== undefined && !(extraEnv.PATH && k.toUpperCase() === "PATH")) base[k] = v;
   if (!extraEnv.GIT_CONFIG_GLOBAL) {
