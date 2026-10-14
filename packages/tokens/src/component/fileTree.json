@@ -69,6 +69,10 @@
         "$type": "color",
         "$value": "{color.selection}"
       },
+      "current": {
+        "$type": "color",
+        "$value": "{color.pressed}"
+      },
       "selectionText": {
         "$type": "color",
         "$value": "{color.onSelection}"
@@ -144,10 +148,6 @@
       "scrollbarTrack": {
         "$type": "color",
         "$value": "{color.none}"
-      },
-      "scrollFade": {
-        "$type": "dimension",
-        "$value": "{layout.scrollFade}"
       }
     }
   }

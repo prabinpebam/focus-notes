@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { FloatingContext } from "../Layer/floating.ts";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
-import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import type { KeyScope } from "../../data.ts";
 import { fixedBox } from "../../behaviors/frame.ts";
 import { placeSheet } from "./place.ts";
@@ -43,7 +42,8 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
   const ref = useRef<HTMLElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useAutoHideScrollbar(bodyRef);
-  useFadingEdges(bodyRef);
+  const mainRef = useRef<HTMLDivElement | null>(null);
+  useAutoHideScrollbar(mainRef);
   const close = useRef(onClose);
   close.current = onClose;
   useEffect(() => {
@@ -65,6 +65,9 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
       const p = placed(el, side);
       el.style.setProperty(name(s.insetVar), `${p.inset}px`);
       el.style.setProperty(name(s.limitVar), `${p.width}px`);
+      // Too short for a fixed header: it scrolls with the content (Sheet.css.ts).
+      if (fixedBox(el).height - 2 * p.inset < px(el, s.shortVar)) el.dataset.short = "";
+      else delete el.dataset.short;
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(measure);
@@ -97,8 +100,11 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
         data-key-scope={keyScope === "none" ? undefined : keyScope}
         onKeyDown={keyDown}
       >
-        {header ? <div className={s.header}>{header}</div> : null}
-        <div className={s.body} ref={bodyRef}>{children}</div>
+        {/* The header and the body: the body scrolls, or in a short sheet both do (Sheet.css.ts). */}
+        <div className={s.main} ref={mainRef}>
+          {header ? <div className={s.header}>{header}</div> : null}
+          <div className={s.body} ref={bodyRef}>{children}</div>
+        </div>
         {footer ? <div className={s.footer}>{footer}</div> : null}
       </aside>
     </FloatingContext.Provider>

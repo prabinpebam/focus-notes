@@ -60,6 +60,10 @@
         "$type": "dimension",
         "$value": "{layout.dialogMaxHeight}"
       },
+      "minHeight": {
+        "$type": "dimension",
+        "$value": "{layout.dialogMinHeight}"
+      },
       "top": {
         "$type": "dimension",
         "$value": "{layout.dialogTop}"
@@ -123,10 +127,6 @@
       "focusWidth": {
         "$type": "dimension",
         "$value": "{border.focus}"
-      },
-      "scrollFade": {
-        "$type": "dimension",
-        "$value": "{layout.scrollFade}"
       },
       "bodySlack": {
         "$type": "dimension",

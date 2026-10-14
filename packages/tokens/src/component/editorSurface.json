@@ -316,6 +316,22 @@
       "scrollFade": {
         "$type": "dimension",
         "$value": "{layout.scrollFade}"
+      },
+      "edgeBlur": {
+        "$type": "dimension",
+        "$value": "{layout.scrollBlur}"
+      },
+      "edgeBlurMin": {
+        "$type": "dimension",
+        "$value": "{layout.scrollBlurMin}"
+      },
+      "edgeLayer": {
+        "$type": "number",
+        "$value": "{layer.mask}"
+      },
+      "edgeShown": {
+        "$type": "number",
+        "$value": "{opacity.full}"
       }
     }
   }

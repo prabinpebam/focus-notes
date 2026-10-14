@@ -2564,7 +2564,8 @@
           "open": {
             "get": "vm.confirm.open"
           },
-          "size": "s"
+          "size": "s",
+          "height": "content"
         },
         "on": {
           "openChange": {
@@ -2676,7 +2677,8 @@
           "open": {
             "get": "vm.import.open"
           },
-          "size": "s"
+          "size": "s",
+          "height": "content"
         },
         "on": {
           "openChange": {

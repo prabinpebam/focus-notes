@@ -37,9 +37,9 @@ export function Slider({ label, value, min, max, step, valueText, format = "numb
       <SliderTrack className={s.track}>
         {({ state }) => (
           <>
-            <span className={s.rail} />
-            <span className={s.fill} ref={(el) => el?.style.setProperty(fillVar, `${state.getThumbPercent(0) * 100}%`)} />
-            <SliderThumb className={s.thumb} />
+            <span className={s.rail} data-slider-rail="" />
+            <span className={s.fill} data-slider-fill="" ref={(el) => el?.style.setProperty(fillVar, `${state.getThumbPercent(0) * 100}%`)} />
+            <SliderThumb className={s.thumb} data-slider-thumb="" />
           </>
         )}
       </SliderTrack>

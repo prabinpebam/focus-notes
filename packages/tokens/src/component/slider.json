@@ -69,6 +69,10 @@
         "$type": "dimension",
         "$value": "{font.uiSecondary}"
       },
+      "labelSize": {
+        "$type": "dimension",
+        "$value": "{font.uiBody}"
+      },
       "weight": {
         "$type": "fontWeight",
         "$value": "{font.weightSemibold}"

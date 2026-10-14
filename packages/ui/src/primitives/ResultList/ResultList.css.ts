@@ -1,6 +1,6 @@
-import { style, styleVariants } from "@vanilla-extract/css";
+import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
-import { fadingEdges, minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
+import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.resultList;
 
@@ -9,10 +9,12 @@ export const list = style({
   flexDirection: "column",
   gap: t.gap,
   // Its scrollbar's room is kept at both edges, so its items keep the same inset on both sides,
-  // scrolling or not (UI-09, D-111).
+  // scrolling or not (UI-09), and that room sits in its surface's padding, so its rows line up with
+  // the field and the text above it (D-111).
   maxHeight: t.maxHeight,
   overflowY: "auto",
   scrollbarGutter: "stable both-edges",
+  marginInline: `calc(-1 * ${t.scrollbarSize})`,
   fontFamily: t.font,
   fontSize: t.fontSize,
   color: t.text,
@@ -23,16 +25,15 @@ export const list = style({
   },
 });
 minimalScrollbar(list, t);
-fadingEdges(list, t);
 
 /**
  * Fills its container (Spotlight, Move to), or the slash menu's fixed width. The slash menu scrolls
  * as a menu does, with the wheel and the arrow keys and its fading edges, no scrollbar taking room
  * from its items (D-111).
  */
-export const width = styleVariants({ fill: {}, menu: { width: t.menuWidth, maxWidth: "100%", scrollbarWidth: "none", scrollbarGutter: "auto" } });
+export const width = styleVariants({ fill: {}, menu: { width: t.menuWidth, maxWidth: "100%", scrollbarWidth: "none", scrollbarGutter: "auto", marginInline: 0 } });
 /** As tall as its items up to a popover's height, or as tall as all of them in a side sheet, whose body scrolls it. */
-export const height = styleVariants({ content: {}, fill: { maxHeight: "none", flexShrink: 0, overflowY: "visible", scrollbarGutter: "auto" } });
+export const height = styleVariants({ content: {}, fill: { maxHeight: "none", flexShrink: 0, overflowY: "visible", scrollbarGutter: "auto", marginInline: 0 } });
 
 export const item = style({
   display: "flex",
@@ -43,7 +44,8 @@ export const item = style({
   borderRadius: t.itemRadius,
   cursor: "default",
   selectors: {
-    '&[aria-selected="true"]': { backgroundColor: t.active, boxShadow: `inset ${t.barWidth} 0 0 ${t.activeBar}` },
+    // The active item shows by its background alone, never a side bar (D-111, selection by background).
+    '&[aria-selected="true"]': { backgroundColor: t.active, color: t.activeText, forcedColorAdjust: "none" },
     '&[aria-disabled="true"]': { opacity: t.disabledOpacity },
   },
 });
@@ -70,3 +72,5 @@ export const header = style({
   minWidth: 0,
 });
 export const headerLabel = style({ color: t.header, fontSize: t.captionSize, fontWeight: t.headerWeight, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
+// On the active item's background, its secondary text keeps its contrast (D-100, D-111).
+globalStyle(`${item}[aria-selected="true"] :is(${icon}, ${description}, ${shortcut}, ${state})`, { color: t.activeTextMuted });

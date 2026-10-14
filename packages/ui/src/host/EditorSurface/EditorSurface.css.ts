@@ -1,6 +1,6 @@
-import { createVar, globalStyle, style } from "@vanilla-extract/css";
-import { tokens } from "@focus-notes/tokens";
-import { fadingOverlay, minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
+import { createVar, globalStyle, style, styleVariants } from "@vanilla-extract/css";
+import { scrollEdge, tokens } from "@focus-notes/tokens";
+import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.editorSurface;
 
@@ -22,7 +22,63 @@ export const scroller = style({
 
 // The minimal scrollbar (D-73, UI-09).
 minimalScrollbar(scroller, t);
-fadingOverlay(scroller, { scrollFade: t.scrollFade, background: t.background, fadeDuration: t.focusDuration });
+
+// The note's scroll edges (D-111): where there's more to scroll to, its text blurs and fades out
+// over `scrollFade` (50 px). The blur ramps linearly from none at the band's inner edge to `edgeBlur`
+// (40 px) at the window's edge: `layout.scrollBands` stacked backdrop blurs, their radii stepping
+// evenly from `edgeBlurMin` to `edgeBlur`, each masked to its slice with ramps overlapping its
+// neighbors' so no step shows. Sticky layers over the note, never a mask on it (a mask over a long
+// note repaints all of it on every keystroke, PRF-01). Only the note has them: interface surfaces don't.
+/** How many bands, resolved at build time from `layout.scrollBands` (CSS can't loop over a token). */
+export const EDGE_BANDS = scrollEdge.bands;
+export const edge = style({
+  position: "sticky",
+  zIndex: t.edgeLayer,
+  display: "block",
+  height: t.scrollFade,
+  pointerEvents: "none",
+  opacity: 0,
+  transitionProperty: "opacity",
+  transitionDuration: t.focusDuration,
+  "@media": { "(forced-colors: active)": { display: "none" } },
+});
+export const edgeSide = styleVariants({
+  top: { top: 0, marginBlockEnd: `calc(-1 * ${t.scrollFade})`, selectors: { "[data-fade-top] > &": { opacity: t.edgeShown } } },
+  bottom: { bottom: 0, marginBlockStart: `calc(-1 * ${t.scrollFade})`, selectors: { "[data-fade-bottom] > &": { opacity: t.edgeShown } } },
+});
+/** A depth into the band, as a part of its range (0 at the window's edge, 1 at its inner edge). */
+const at = (f: number) => `calc(${t.scrollFade} * ${Math.round(Math.min(1, Math.max(0, f)) * 1000) / 1000})`;
+/**
+ * Band k (0 at the window's edge): fully on from the edge side of its slice, fading out across the
+ * next slice in, so each band hands over to the softer one inside it. The outermost holds to the
+ * edge; the innermost fades out at the band's inner edge, where the text is crisp.
+ */
+const bandMask = (dir: "bottom" | "top", k: number) => {
+  const n = EDGE_BANDS;
+  const from = k === 0 ? `black 0` : `transparent ${at((k - 1) / n)}, black ${at(k / n)}`;
+  return `linear-gradient(to ${dir}, ${from}, black ${at((k + 1) / n)}, transparent ${at((k + 2) / n)})`;
+};
+const band = (dir: "bottom" | "top", k: number) => {
+  const mask = bandMask(dir, k);
+  // Radii step evenly: edgeBlur at the edge band, edgeBlurMin at the innermost.
+  const share = EDGE_BANDS > 1 ? (EDGE_BANDS - 1 - k) / (EDGE_BANDS - 1) : 1;
+  const blur = `blur(calc(${t.edgeBlurMin} + (${t.edgeBlur} - ${t.edgeBlurMin}) * ${Math.round(share * 1000) / 1000}))`;
+  return style({
+    position: "absolute",
+    inset: 0,
+    // Unprefixed only: with the -webkit- one as well, the build keeps just that, which Chromium ignores.
+    backdropFilter: blur,
+    maskImage: mask,
+    // With reduced transparency, the fade alone (Foundations → Surfaces).
+    selectors: { ":root[data-transparency=\"reduced\"] &": { display: "none" } },
+  } as Parameters<typeof style>[0]);
+};
+export const blurTop = Array.from({ length: EDGE_BANDS }, (_, k) => band("bottom", k));
+export const blurBottom = Array.from({ length: EDGE_BANDS }, (_, k) => band("top", k));
+export const fade = styleVariants({
+  top: { position: "absolute", inset: 0, backgroundImage: `linear-gradient(to bottom, ${t.background}, transparent)` },
+  bottom: { position: "absolute", inset: 0, backgroundImage: `linear-gradient(to top, ${t.background}, transparent)` },
+});
 
 export const column = style({
   position: "relative",

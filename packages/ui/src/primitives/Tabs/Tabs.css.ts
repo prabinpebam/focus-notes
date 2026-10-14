@@ -16,7 +16,7 @@ export const root = {
 const listBase = style({ display: "flex", gap: t.gap, borderStyle: "solid", borderWidth: 0, borderColor: t.border });
 export const list = {
   // Across: they wrap onto another row rather than ever reach past their container (D-111).
-  horizontal: style([listBase, { borderBottomWidth: t.borderWidth, flexWrap: "wrap" }]),
+  horizontal: style([listBase, { flexWrap: "wrap" }]),
   vertical: style([listBase, { flexDirection: "column", flexGrow: 0, flexShrink: 0, flexBasis: t.listWidth, borderInlineEndWidth: t.borderWidth, paddingInlineEnd: t.gap }]),
 };
 const tabBase = style({
@@ -31,18 +31,19 @@ const tabBase = style({
   outline: "none",
   selectors: {
     "&[data-hovered]": { backgroundColor: t.hover },
-    "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing },
+// Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
+    "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
   },
 });
 export const tab = {
   horizontal: style([tabBase, {
-    borderTopLeftRadius: t.radius,
-    borderTopRightRadius: t.radius,
-    selectors: { "&[data-selected]": { color: t.selectedText, boxShadow: `inset 0 calc(-1 * ${t.indicatorWidth}) 0 ${t.indicator}` } },
+    borderRadius: t.radius,
+    // Selected by its background alone, never an underline or a side bar (D-111).
+    selectors: { "&[data-selected]": { color: t.selectedText, backgroundColor: t.selected, forcedColorAdjust: "none" } },
   }]),
   vertical: style([tabBase, {
     borderRadius: t.radius,
-    selectors: { "&[data-selected]": { color: t.selectedText, boxShadow: `inset ${t.indicatorWidth} 0 0 ${t.indicator}` } },
+    selectors: { "&[data-selected]": { color: t.selectedText, backgroundColor: t.selected, forcedColorAdjust: "none" } },
   }]),
 };
 const panelBase = style({ outline: "none", selectors: { "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing } } });

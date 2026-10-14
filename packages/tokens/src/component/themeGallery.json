@@ -37,17 +37,17 @@
         "$type": "dimension",
         "$value": "{border.hairline}"
       },
-      "selectedBorder": {
-        "$type": "color",
-        "$value": "{color.accent}"
-      },
-      "selectedWidth": {
-        "$type": "dimension",
-        "$value": "{border.selectedBar}"
-      },
       "hover": {
         "$type": "color",
         "$value": "{color.hover}"
+      },
+      "selected": {
+        "$type": "color",
+        "$value": "{color.selection}"
+      },
+      "selectedText": {
+        "$type": "color",
+        "$value": "{color.onSelection}"
       },
       "text": {
         "$type": "color",

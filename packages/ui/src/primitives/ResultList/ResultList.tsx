@@ -1,6 +1,5 @@
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
-import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import { Icon } from "../Icon/Icon.tsx";
 import type { ResultItem } from "../../data.ts";
 import type { IconName } from "../../icon-names.ts";
@@ -53,10 +52,21 @@ function marked(text: string, ranges: ResultItem["highlights"]): ReactNode {
 export function ResultList({ label, items, activeId, width = "fill", height = "content", id, onAction, onActiveChange }: ResultListProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   useAutoHideScrollbar(ref);
-  useFadingEdges(ref);
   useEffect(() => {
     if (!activeId) return;
     ref.current?.querySelector(`#${CSS.escape(resultItemId(id, activeId))}`)?.scrollIntoView({ block: "nearest" });
+    // The field driving the list keeps its place in view: in a short sheet that scrolls header and
+    // all, showing the active item never scrolls the focused field away (D-111).
+    const focus = document.activeElement;
+    if (!focus || focus === document.body || ref.current?.contains(focus)) return;
+    for (let sc = ref.current?.parentElement; sc; sc = sc.parentElement) {
+      if (!sc.contains(focus) || sc.scrollHeight <= sc.clientHeight) continue;
+      const o = getComputedStyle(sc).overflowY;
+      if (o !== "auto" && o !== "scroll") continue;
+      const over = sc.getBoundingClientRect().top + sc.clientTop - focus.getBoundingClientRect().top;
+      if (over > 0) sc.scrollTop -= over;
+      break;
+    }
   }, [activeId, id]);
   const onKeyDown = (e: KeyboardEvent) => {
     const enabled = items.filter((i) => !i.disabled && !i.header);

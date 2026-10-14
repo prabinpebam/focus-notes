@@ -9,6 +9,8 @@ export interface DialogProps {
   closeLabel: string;
   open?: boolean;
   size?: "s" | "l" | "xl";
+  /** stable (default): at least 400 px and never shrinking while open; content: as tall as its content (confirmations). */
+  height?: "stable" | "content";
   /** Controls that stay above the scrolling body. */
   toolbar?: ReactNode;
   id?: string;
@@ -17,12 +19,13 @@ export interface DialogProps {
 }
 
 /** A titled modal dialog with a close button (IA-CMP-DIALOG). */
-export function Dialog({ title, closeLabel, open, size = "l", toolbar, id, children, onOpenChange }: DialogProps) {
+export function Dialog({ title, closeLabel, open, size = "l", height = "stable", toolbar, id, children, onOpenChange }: DialogProps) {
   return (
     <DialogPanel
       label={title}
       {...(open !== undefined ? { open } : {})}
       size={size}
+      height={height}
       {...(id ? { id } : {})}
       {...(onOpenChange ? { onOpenChange } : {})}
       header={
