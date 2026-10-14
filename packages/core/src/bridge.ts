@@ -171,9 +171,12 @@ export interface WorkspaceBridge {
   remove?(): Promise<RemovalCheck>;
 }
 
-/** Removing the workspace from this computer: ready, changes not on GitHub yet, not a Git workspace, done, or failed. */
+/**
+ * Removing the workspace from this computer: ready, changes not on GitHub yet, not a Git
+ * repository, a folder that isn't a Focus Notes workspace, done, or failed.
+ */
 export interface RemovalCheck {
-  state: "ready" | "unpushed" | "notGit" | "removed" | "failed";
+  state: "ready" | "unpushed" | "notGit" | "notWorkspace" | "removed" | "failed";
   /** Changes not on the remote: uncommitted files, commits not pushed, and stashes, in both repositories. */
   waiting: number;
   folder: string;

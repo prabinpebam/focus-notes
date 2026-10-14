@@ -283,5 +283,11 @@ describe("PRV-02, FRE-07: Settings → Workspace → Remove this workspace from 
     await local.run("workspace.remove");
     expect(local.vm("vm.removeWorkspace")).toMatchObject({ state: "notGit", canRemove: false, canSync: false });
     expect(local.vm("vm.removeWorkspace").message).toBe("This workspace isn't saved to GitHub, so removing it would delete your only copy of its notes. Focus Notes won't remove it.");
+
+    const other = shell({ removal: [{ state: "notWorkspace", waiting: 0, folder: "/w", repositories: [] }] });
+    await other.app.start();
+    await other.run("workspace.remove");
+    expect(other.vm("vm.removeWorkspace")).toMatchObject({ state: "notWorkspace", canRemove: false, canSync: false });
+    expect(other.vm("vm.removeWorkspace").message).toBe("This folder isn't a Focus Notes workspace, so Focus Notes won't remove it.");
   });
 });

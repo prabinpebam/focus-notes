@@ -847,5 +847,6 @@
   "remove.failed": "Couldn't remove the workspace. Nothing on GitHub changed. Try again, or close Focus Notes and remove the folder yourself.",
   "remove.removed": "Removed this workspace from this computer.",
   "remove.cancel": "Cancel",
-  "settings.account.signOut": "Sign out…"
+  "settings.account.signOut": "Sign out…",
+  "remove.notWorkspace": "This folder isn't a Focus Notes workspace, so Focus Notes won't remove it."
 }

@@ -250,7 +250,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     schema: {
       type: "object",
       properties: {
-        open: { type: "boolean" }, busy: { type: "boolean" }, state: { type: "string", enum: ["checking", "ready", "unpushed", "notGit", "failed", "removed"] },
+        open: { type: "boolean" }, busy: { type: "boolean" }, state: { type: "string", enum: ["checking", "ready", "unpushed", "notGit", "notWorkspace", "failed", "removed"] },
         message: { type: "string" }, canRemove: { type: "boolean" }, canSync: { type: "boolean" }, checking: { type: "boolean" },
       },
     },

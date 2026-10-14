@@ -200,9 +200,11 @@ async function forgetLocal(event: "signOut" | "removeWorkspace"): Promise<void> 
  * stopped first so nothing writes into it, and only when everything is on the remote. Afterwards
  * the window starts again with no workspace, at the first run's Your workspace step.
  */
+/** Only a Focus Notes workspace (its format file is there) is ever removed: never just any repository. */
+const removal = async (): Promise<RemovalCheck> => (isWorkspace() ? removalCheck(setupRunner, notesHome()) : { state: "notWorkspace", waiting: 0, folder: notesHome(), repositories: [] });
 async function removeLocalWorkspace(): Promise<RemovalCheck> {
   const folder = notesHome();
-  const first = await removalCheck(setupRunner, folder);
+  const first = await removal();
   if (first.state !== "ready") return first;
   await Promise.allSettled([...writeQueues.values()]);
   watcher?.close();
@@ -756,7 +758,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("firstRun:beginSwitch", () => account.beginSwitch());
   handle("firstRun:endSwitch", () => account.endSwitch());
-  handle("workspace:removal", () => removalCheck(setupRunner, notesHome()));
+  handle("workspace:removal", () => removal());
   handle("workspace:remove", () => removeLocalWorkspace());
   handle("firstRun:identity", () => account.identity());
   handle("firstRun:setIdentity", async (i, scope) => {
