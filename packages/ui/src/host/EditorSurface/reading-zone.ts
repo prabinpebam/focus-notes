@@ -10,11 +10,15 @@ const varName = (ref: string) => ref.slice(4, -1);
  * readingZone.top and readingZone.bottom of the editor's height. ProseMirror's own scrolling uses
  * the band as its threshold and margin, so typing and arrow keys land inside it; clicks, focus, and
  * other selection moves are checked after the frame. A drag-selection waits for the pointer to lift.
+ * Scrolling never brings the caret back: not the wheel, nor pressing, dragging, or clicking the
+ * scrollbar (or the scroller around the note), nor the focus that such a press moves.
  * Returns a cleanup function.
  */
 export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column: HTMLElement, findOpen: boolean): () => void {
   let band = { top: 0, bottom: 0 };
   let pointerDown = false;
+  /** A press on the scrollbar or the scroller itself (not the note) is scrolling: it moves no caret. */
+  let scrollPress = false;
   let frame = 0;
 
   const measure = () => {
@@ -52,13 +56,34 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   const schedule = () => {
     if (!frame) frame = requestAnimationFrame(keep);
   };
-  const onDown = () => {
+  /** Whether a press lands on the scrollbar, or on the scroller rather than the note in it. */
+  const onScrollbar = (e: PointerEvent) => {
+    if (e.target === scroller) return true;
+    const box = scroller.getBoundingClientRect();
+    const x = e.clientX - box.left - scroller.clientLeft;
+    const y = e.clientY - box.top - scroller.clientTop;
+    return x >= scroller.clientWidth || x < 0 || y >= scroller.clientHeight;
+  };
+  const onDown = (e: PointerEvent) => {
     pointerDown = true;
+    scrollPress = onScrollbar(e);
+    if (scrollPress && frame) {
+      cancelAnimationFrame(frame);
+      frame = 0;
+    }
   };
   const onUp = () => {
     if (!pointerDown) return;
     pointerDown = false;
+    if (scrollPress) return;
     schedule();
+  };
+  // Focus coming back after a press on the scrollbar isn't a caret move; typing or a key is.
+  const onFocus = () => {
+    if (!scrollPress) schedule();
+  };
+  const onKey = () => {
+    scrollPress = false;
   };
 
   measure();
@@ -66,8 +91,9 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   ro.observe(scroller);
   editor.on("selectionUpdate", schedule);
   editor.on("update", schedule);
-  editor.on("focus", schedule);
+  editor.on("focus", onFocus);
   scroller.addEventListener("pointerdown", onDown);
+  window.addEventListener("keydown", onKey, true);
   window.addEventListener("pointerup", onUp);
   window.addEventListener("pointercancel", onUp);
   return () => {
@@ -75,8 +101,9 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
     if (frame) cancelAnimationFrame(frame);
     editor.off("selectionUpdate", schedule);
     editor.off("update", schedule);
-    editor.off("focus", schedule);
+    editor.off("focus", onFocus);
     scroller.removeEventListener("pointerdown", onDown);
+    window.removeEventListener("keydown", onKey, true);
     window.removeEventListener("pointerup", onUp);
     window.removeEventListener("pointercancel", onUp);
   };

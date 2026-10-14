@@ -170,3 +170,91 @@ test("UI-11: the note starts 25% down, the edited line stays between 25% and 65%
   await page.screenshot({ path: "../../test-results/screens/reading-zone.png" });
   await quit(l);
 });
+
+test("UI-11: scrolling never brings the caret back (wheel, the scrollbar's thumb and track); typing does", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Title\n\n" + Array.from({ length: 120 }, (_, i) => `Line ${i + 1} of a long note.`).join("\n\n") + "\n");
+  const l = await launch(dirs);
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  const scroller = page.locator("[data-editor-scroller]");
+  const top = () => scroller.evaluate((el) => el.scrollTop);
+  // Opening scrolls to the caret at the note's end.
+  await expect.poll(top).toBeGreaterThan(0);
+  /** Waits for the scroll to settle, then checks it stays put a while (the reading zone would act within a frame or two). */
+  const settled = async () => {
+    let last = -1;
+    await expect.poll(async () => { const now = await top(); const same = now === last; last = now; return same; }, { intervals: [120] }).toBe(true);
+    await page.waitForTimeout(300);
+    expect(await top()).toBe(last);
+    return last;
+  };
+  const end = await settled();
+  const box = (await scroller.boundingBox())!;
+  const bar = await scroller.evaluate((el: HTMLElement) => ({ left: el.getBoundingClientRect().left + el.clientLeft + el.clientWidth, width: el.offsetWidth - el.clientWidth - el.clientLeft }));
+  const barX = bar.left + bar.width / 2;
+
+  // The wheel.
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -1200);
+  const wheeled = await settled();
+  expect(wheeled).toBeLessThan(end - 600);
+
+  // Clicking the scrollbar's track above the thumb pages up, and stays there.
+  const trackY = box.y + box.height * 0.2;
+  expect(await page.evaluate(([x, y]) => (document.elementFromPoint(x!, y!) as HTMLElement | null)?.hasAttribute("data-editor-scroller"), [barX, trackY])).toBe(true);
+  await page.mouse.move(barX, trackY);
+  await page.mouse.down();
+  await page.mouse.up();
+  const paged = await settled();
+  expect(paged).toBeLessThan(wheeled);
+
+  // Pressing the thumb and letting go, and dragging it, scrolls only where it's put.
+  const thumb = () => scroller.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return r.top + ((el.scrollTop + el.clientHeight / 2) / el.scrollHeight) * el.clientHeight;
+  });
+  await page.mouse.move(barX, await thumb());
+  await page.mouse.down();
+  await page.mouse.up();
+  expect(await settled()).toBe(paged);
+  const y = await thumb();
+  await page.mouse.move(barX, y);
+  await page.mouse.down();
+  await page.mouse.move(barX, y - 60, { steps: 4 });
+  await page.mouse.up();
+  const dragged = await settled();
+  expect(dragged).toBeLessThan(paged);
+  await expect(editor).toBeFocused();
+
+  // Typing brings the caret back into the band.
+  await page.keyboard.type("x");
+  await expect.poll(async () => {
+    const z = await page.evaluate(() => {
+      const el = document.querySelector("[data-editor-scroller]") as HTMLElement;
+      const b = el.getBoundingClientRect();
+      const r = window.getSelection()!.getRangeAt(0).getClientRects()[0] ?? window.getSelection()!.getRangeAt(0).getBoundingClientRect();
+      return { top: r.top - b.top, bottom: r.bottom - b.top, h: el.clientHeight };
+    });
+    return z.top >= z.h * 0.25 - 2 && z.bottom <= z.h * 0.65 + 2;
+  }).toBe(true);
+  await quit(l);
+});
+
+test("D-111: the note's edges blur progressively, crisp at the band's inner edge and strongly blurred at the window's edge", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Title\n\n" + Array.from({ length: 120 }, (_, i) => `Line ${i + 1}: the quick brown fox jumps over the lazy dog, again and again.`).join("\n") + "\n");
+  const l = await launch(dirs);
+  const { page } = l;
+  await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+  const scroller = page.locator("[data-editor-scroller]");
+  await scroller.evaluate((el) => { el.scrollTop = (el.scrollHeight - el.clientHeight) / 2; });
+  await expect(page.locator('[data-scroll-edge="top"]')).toBeVisible();
+  await expect(page.locator('[data-scroll-edge="bottom"]')).toBeVisible();
+  await page.waitForTimeout(300);
+  const box = (await scroller.boundingBox())!;
+  await page.screenshot({ path: "../../test-results/screens/edge-blur-top.png", clip: { x: box.x, y: box.y, width: Math.min(box.width, 900), height: 60 } });
+  await page.screenshot({ path: "../../test-results/screens/edge-blur-bottom.png", clip: { x: box.x, y: box.y + box.height - 60, width: Math.min(box.width, 900), height: 60 } });
+  await quit(l);
+});
