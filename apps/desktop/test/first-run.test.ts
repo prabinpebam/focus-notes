@@ -112,7 +112,7 @@ describe("FRE-02 to FRE-04: signing in through Git's helpers", () => {
     const s = await w.account.signIn(true);
     expect(w.progress).toContainEqual({ phase: "code", code: "WDJB-MJHT", helper: "gh" });
     expect(s.account).toMatchObject({ login: "ada" });
-    expect(w.fakes.argv()).toContain('["gh","auth","login","--web","--hostname","github.com","--git-protocol","https"]');
+    expect(w.fakes.argv()).toContain('["gh","auth","login","--web","--hostname","github.com","--git-protocol","https","--scopes","workflow"]');
     w.noTokenInArgs();
   });
   it("FRE-02: declined, expired, and offline say why, and the next try works", { timeout: 60_000 }, async () => {

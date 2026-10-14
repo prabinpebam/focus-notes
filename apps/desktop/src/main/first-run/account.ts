@@ -120,9 +120,9 @@ export class Account {
     const s = this.#session;
     return s ? { api: new GitHubApi(s.token, this.#d.fetch), account: s.account } : undefined;
   }
-  /** The token for the setup engine, from Git's helper. Never stored here beyond this session. */
+  /** The token for the setup engine, read from Git's helper again each time it asks (after GitHub refused one, too). */
   async token(): Promise<string | undefined> {
-    if (!this.#session) await this.status();
+    await this.status();
     return this.#session?.token;
   }
   get account(): GitHubAccount | undefined {
@@ -148,7 +148,7 @@ export class Account {
     if (!gcm && !gh) return { gcm: false, gh: false, problem: "noHelper" };
     const helper = gcm ? "gcm" : "gh";
     const program = (gcm ?? gh)!;
-    const args = gcm ? ["github", "login", device ? "--device" : "--browser"] : ["auth", "login", "--web", "--hostname", "github.com", "--git-protocol", "https"];
+    const args = gcm ? ["github", "login", device ? "--device" : "--browser"] : ["auth", "login", "--web", "--hostname", "github.com", "--git-protocol", "https", "--scopes", "workflow"];
     let sentCode = false;
     this.#d.onProgress?.({ phase: helper === "gcm" && device ? "window" : "waiting", helper });
     const p = this.#d.tools(program, {
