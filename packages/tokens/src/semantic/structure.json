@@ -200,6 +200,9 @@
     "sheetTheme": {
       "$value": "{ref.size.380}"
     },
+    "sheetFind": {
+      "$value": "{ref.size.380}"
+    },
     "popover": {
       "$value": "{ref.size.360}"
     },

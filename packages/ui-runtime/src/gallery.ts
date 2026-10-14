@@ -83,6 +83,15 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
       { id: "basic", label: "Bulleted list", icon: "bulletList" },
       { id: "writer", label: "Table", description: "Unavailable here", icon: "table", disabled: true },
     ],
+    // Find in all notes: a note's heading, then its matching lines with the match marked.
+    matches: [
+      { id: "h:0", label: "On focus", description: "essays/on-focus.md · Public · 2 matches", header: true },
+      { id: "0:0", label: "Attention is a garden, and focus its gate.", highlights: [[33, 38]] },
+      { id: "0:1", label: "…one line at a time, in focus.", highlights: [[25, 30]] },
+      { id: "h:1", label: "Focus sessions", description: "journal/focus-sessions.md · Private · 1 match", header: true },
+      { id: "1:0", label: "Focus sessions", highlights: [[0, 5]] },
+    ],
+    matchFirst: "0:1",
     tree: [
       { id: "root:private", kind: "section", level: 1, label: "Private", expanded: true, hasChildren: true },
       { id: "journal", kind: "folder", level: 2, label: "journal", parent: "root:private", expanded: true, hasChildren: true, draggable: true, droppable: true },
@@ -133,6 +142,8 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         keysPc: { type: "array", items: { type: "string" } },
         keysPcSpoken: { type: "string" },
         results: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, description: { type: "string" }, icon: { type: "string" }, shortcut: { type: "string" }, disabled: { type: "boolean" } } } },
+        matches: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, description: { type: "string" }, header: { type: "boolean" }, highlights: { type: "array", items: { type: "array", items: { type: "number" } } } } } },
+        matchFirst: { type: "string" },
         tree: { type: "array", items: { type: "object" } },
         treeFocus: { type: "string" },
         treeEditing: { type: "array", items: { type: "object" } },

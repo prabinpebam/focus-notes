@@ -2071,7 +2071,8 @@
                     "replaceField",
                     "pickerField",
                     "moveField",
-                    "repoField"
+                    "repoField",
+                    "findAllField"
                   ]
                 },
                 {
@@ -2548,7 +2549,7 @@
     },
     "c_ResultList": {
       "type": "object",
-      "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant).",
+      "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant). Header items start labeled sections; highlights mark where a label matched.",
       "required": [
         "type",
         "props"
@@ -2608,6 +2609,22 @@
                   "enum": [
                     "fill",
                     "menu"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "content",
+                    "fill"
                   ]
                 },
                 {
@@ -4582,7 +4599,7 @@
     },
     "c_Sheet": {
       "type": "object",
-      "description": "A side sheet over the canvas (Files on the left, Theme on the right). Not modal; closes on Esc or a click on the canvas.",
+      "description": "A side sheet over the canvas (Files on the left, Theme and Find in all notes on the right). Not modal; closes on Esc or a click on the canvas.",
       "required": [
         "type",
         "props"
@@ -4647,7 +4664,8 @@
                 {
                   "enum": [
                     "files",
-                    "theme"
+                    "theme",
+                    "find"
                   ]
                 },
                 {
@@ -4663,7 +4681,8 @@
                 {
                   "enum": [
                     "none",
-                    "files"
+                    "files",
+                    "findAll"
                   ]
                 },
                 {

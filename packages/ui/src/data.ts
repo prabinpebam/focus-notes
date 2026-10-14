@@ -15,7 +15,7 @@ export interface CommandItem {
   busyLabel?: string;
 }
 
-/** A result in a ResultList (Spotlight, the slash menu, Move to). */
+/** A result in a ResultList (Spotlight, the slash menu, Move to, Find in all notes). */
 export interface ResultItem {
   id: string;
   label: string;
@@ -23,6 +23,10 @@ export interface ResultItem {
   icon?: string;
   shortcut?: string;
   disabled?: boolean;
+  /** A section's heading, not a result: the items after it, up to the next heading, are its group. */
+  header?: boolean;
+  /** Where the label matched, marked as a find match: [start, end) in UTF-16 code units. */
+  highlights?: readonly (readonly [number, number])[];
 }
 
 /** One block of a note's version in the conflict resolver (VersionPane), and whether the other version differs there. */
@@ -63,9 +67,10 @@ export interface TreeItem {
 /**
  * Key scopes (Keyboard shortcuts → Contexts decide): keys registered for a scope work only inside it.
  * `files` is the Files sheet, `filesTree` its tree, and `filesEdit` the tree's name field, which
- * stops the outer scopes so Delete and F2 edit the text there.
+ * stops the outer scopes so Delete and F2 edit the text there. `findAll` is the Find in all notes
+ * sheet and `findAllField` its search field.
  */
-export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "moveField", "firstRun", "repoField"] as const;
+export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "moveField", "firstRun", "repoField", "findAll", "findAllField"] as const;
 export type KeyScope = (typeof KEY_SCOPES)[number];
 
 /** One choice in a segmented control or filter. */

@@ -96,6 +96,26 @@
       "disabledOpacity": {
         "$type": "number",
         "$value": "{opacity.disabled}"
+      },
+      "headerPaddingTop": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "headerWeight": {
+        "$type": "fontWeight",
+        "$value": "{font.weightSemibold}"
+      },
+      "match": {
+        "$type": "color",
+        "$value": "{color.findMatch}"
+      },
+      "matchText": {
+        "$type": "color",
+        "$value": "{color.onSelection}"
+      },
+      "matchRadius": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
       }
     }
   }
