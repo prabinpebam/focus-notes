@@ -24,6 +24,9 @@ export const tile = style({
   color: t.text,
   cursor: "default",
   outline: "none",
+  // In forced colors the samples stay samples, and only the tile showing gets a border (its accent is
+  // Highlight there); the rest of the tile's colors are system colors through the tokens' own mode.
+  forcedColorAdjust: "none",
   transitionProperty: "background-color, border-color",
   transitionDuration: t.duration,
   transitionTimingFunction: t.easing,
@@ -48,7 +51,8 @@ export const swatch = style({
   backgroundColor: t.sampleCanvas,
   color: t.sampleText,
 });
-export const glyph = style({ fontFamily: t.glyphFont, fontSize: t.glyphSize });
+// "Aa" in the theme's text color and the content font: drawn, not text, so it's never part of a tile's name.
+export const glyph = style({ fontFamily: t.glyphFont, fontSize: t.glyphSize, "::before": { content: '"Aa"' } });
 export const marks = style({ display: "inline-flex", alignItems: "center", gap: t.padding });
 const mark = { display: "inline-block", width: t.dotSize, height: t.dotSize } as const;
 export const accent = style({ ...mark, borderRadius: t.swatchRadius, backgroundColor: t.sampleAccent });

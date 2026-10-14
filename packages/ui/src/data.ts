@@ -77,7 +77,7 @@ export interface ThemeTile {
   slot?: string;
   /** The contrast badge: AA or AAA. */
   badge: string;
-  /** Said after the name: its kind, slot, and badge. */
+  /** Said after the name: its kind and badge. */
   description?: string;
 }
 

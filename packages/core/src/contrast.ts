@@ -15,9 +15,12 @@ export interface ContrastPair {
   minHigh: number;
   /** Text (WCAG 1.4.3) or a non-text part that identifies a control or its state (WCAG 1.4.11). */
   role: "text" | "ui";
+  /** The foreground is drawn at this opacity (a tooltip's shortcut, `opacity.muted`). */
+  fgOpacity?: number;
 }
 
-const pair = (fg: string, bg: string, min: number, minHigh: number, role: ContrastPair["role"] = "text"): ContrastPair => ({ fg, bg, min, minHigh, role });
+const pair = (fg: string, bg: string, min: number, minHigh: number, role: ContrastPair["role"] = "text", fgOpacity?: number): ContrastPair =>
+  ({ fg, bg, min, minHigh, role, ...(fgOpacity !== undefined ? { fgOpacity } : {}) });
 
 /**
  * WCAG 1.4.3 (text, 4.5:1; 7:1 for High contrast) and 1.4.11 (interface parts, 3:1). A translucent
@@ -41,6 +44,9 @@ export const CONTRAST_PAIRS: readonly ContrastPair[] = [
   pair("color.danger", "color.canvas", 4.5, 7),
   pair("code.text", "code.background", 4.5, 7),
   pair("color.onAccent", "color.accent", 4.5, 7),
+  // Tooltips are inverted (cmp.tooltip): their text, and their shortcut at opacity.muted (0.75).
+  pair("color.textInverse", "color.text", 4.5, 7),
+  pair("color.textInverse", "color.text", 4.5, 7, "text", 0.75),
   // Selection and find highlights against the text on them.
   pair("color.onSelection", "color.selection", 4.5, 7),
   pair("color.onSelection", "color.findMatch", 4.5, 7),
@@ -90,7 +96,7 @@ export function pairRatio(colors: Readonly<Record<string, string>>, p: ContrastP
   const f = parseColor(fg);
   if (!b || !f) return NaN;
   const under = composite(b, canvas);
-  return ratioOf(composite(f, under), under);
+  return ratioOf(composite({ ...f, alpha: f.alpha * (p.fgOpacity ?? 1) }, under), under);
 }
 
 export interface ContrastResult extends ContrastPair {

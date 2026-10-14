@@ -61,8 +61,10 @@ export interface ThemeManagerState {
   draft?: ThemeDraft;
   /** Hex values being typed that aren't colors yet. */
   typing: Partial<Record<KeyColor, string>>;
+  /** The key color Fix last changed, and a count that moves focus back to its field (the Fix button goes away). */
+  fixed: { key?: KeyColor; n: number };
 }
-export const THEME_MANAGER_CLOSED: ThemeManagerState = { open: false, tab: "themes", focusRequest: 0, typing: {} };
+export const THEME_MANAGER_CLOSED: ThemeManagerState = { open: false, tab: "themes", focusRequest: 0, typing: {}, fixed: { n: 0 } };
 
 interface S {
   appearance: Appearance;
@@ -275,6 +277,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     const fixed = fixFor(colorsOf(base, draft), k, themeById(base)?.contrast === "high");
     if (!fixed) return;
     setColor(k, fixed);
+    set({ fixed: { key: k, n: state().fixed.n + 1 } });
     announce(catalog.format("colors.fixed", { name: catalog.format(`colors.key.${k}`), value: fixed }));
   });
 
@@ -305,7 +308,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
           type: "object",
           properties: {
             note: STR, failing: BOOL, summary: STR,
-            rows: { type: "array", items: { type: "object", properties: { id: STR, label: STR, value: STR, swatch: STR, invalid: BOOL, error: STR, status: STR, failing: BOOL, canFix: BOOL, fixLabel: STR } } },
+            rows: { type: "array", items: { type: "object", properties: { id: STR, label: STR, value: STR, swatch: STR, focusRequest: NUM, invalid: BOOL, error: STR, status: STR, failing: BOOL, canFix: BOOL, fixLabel: STR } } },
           },
         },
       },
@@ -325,7 +328,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         const slot = a.lightTheme === t.id ? catalog.format("theme.slot.light") : a.darkTheme === t.id ? catalog.format("theme.slot.dark") : "";
         const level = textContrast(colorsOf(t.id, st.draft)).level;
         const badge = catalog.format(`theme.level.${level}`);
-        return { id: t.id, label: name(t.id), kind: t.kind, slot, badge, description: [catalog.format(`theme.kind.${t.kind}`), slot, badge].filter(Boolean).join(", ") };
+        return { id: t.id, label: name(t.id), kind: t.kind, slot, badge, description: `${catalog.format(`theme.kind.${t.kind}`)}, ${badge}` };
       });
       const colors = colorsOf(showing, st.draft);
       const tc = textContrast(colors);
@@ -337,7 +340,9 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         const mine = results.filter((r) => tokens.includes(r.fg) || tokens.includes(r.bg));
         // The row names the closest pair, its own color's first ("Text on Background 8.2:1").
         const closest = (xs: typeof results) => [...xs].sort((x, y) => x.ratio / x.need - y.ratio / y.need)[0];
-        const own = mine.filter((r) => r.fg === tokens[0] || r.bg === tokens[0]);
+        // Text colors are named as the text ("Text on Background"), surfaces as what's on them.
+        const asFg = mine.filter((r) => r.fg === tokens[0]);
+        const own = asFg.length ? asFg : mine.filter((r) => r.bg === tokens[0]);
         const worst = closest(own.filter((r) => !r.pass)) ?? closest(mine.filter((r) => !r.pass));
         const shown = worst ?? closest(own.length ? own : mine);
         const label = (t: string) => catalog.format(`colors.token.${t}`);
@@ -348,7 +353,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         const typed = st.typing[k];
         const canFix = Boolean(worst) && fixFor(colors, k, high) !== undefined;
         return {
-          id: k, label: catalog.format(`colors.key.${k}`), value: typed ?? hex, swatch: hex, invalid: typed !== undefined, error: typed !== undefined ? catalog.format("colors.invalid") : "",
+          id: k, label: catalog.format(`colors.key.${k}`), value: typed ?? hex, swatch: hex, focusRequest: st.fixed.key === k ? st.fixed.n : 0, invalid: typed !== undefined, error: typed !== undefined ? catalog.format("colors.invalid") : "",
           status, failing: Boolean(worst), canFix, fixLabel: catalog.format("colors.fix", { name: catalog.format(`colors.key.${k}`) }),
         };
       });

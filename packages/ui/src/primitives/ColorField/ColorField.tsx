@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import * as s from "./ColorField.css.ts";
 
 export interface ColorFieldProps {
@@ -9,6 +9,8 @@ export interface ColorFieldProps {
   description?: string;
   invalid?: boolean;
   error?: string;
+  /** Each new value moves focus into the field. */
+  focusRequest?: number;
   id?: string;
   onCommit?: (payload: { value: string }) => void;
 }
@@ -21,9 +23,13 @@ const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
  * pointer-only picker is never needed. What's typed is committed on Enter or on leaving the field;
  * Esc puts back the value. The description (the contrast it's checked against) is said with it.
  */
-export function ColorField({ label, value = "", swatch, description, invalid, error, id, onCommit }: ColorFieldProps) {
+export function ColorField({ label, value = "", swatch, description, invalid, error, focusRequest, id, onCommit }: ColorFieldProps) {
   const [text, setText] = useState(value);
+  const input = useRef<HTMLInputElement | null>(null);
   useEffect(() => setText(value), [value]);
+  useEffect(() => {
+    if (focusRequest) input.current?.focus();
+  }, [focusRequest]);
   const base = useId();
   const descId = `${base}-d`;
   const commit = () => {
@@ -44,6 +50,7 @@ export function ColorField({ label, value = "", swatch, description, invalid, er
           }}
         />
         <input
+          ref={input}
           id={`${base}-i`}
           className={s.input}
           value={text}

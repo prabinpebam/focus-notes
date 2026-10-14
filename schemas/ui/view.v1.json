@@ -3769,6 +3769,17 @@
                   "$ref": "#/$defs/read"
                 }
               ]
+            },
+            "focusRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
             }
           },
           "required": [

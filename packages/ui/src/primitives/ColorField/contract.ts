@@ -11,6 +11,7 @@ export const contract = defineContract({
     description: { kind: "text", description: "Said with the field: the contrast it's checked against." },
     invalid: { kind: "boolean", default: false },
     error: { kind: "text", description: "Why the value isn't a color, shown instead of the description." },
+    focusRequest: { kind: "number", min: 0, description: "Each new value moves focus into the field (after Fix, whose button goes away)." },
   },
   events: { commit: { payload: { value: "text" } } },
   slots: {},

@@ -457,6 +457,9 @@
                                 },
                                 "error": {
                                   "get": "row.error"
+                                },
+                                "focusRequest": {
+                                  "get": "row.focusRequest"
                                 }
                               },
                               "on": {

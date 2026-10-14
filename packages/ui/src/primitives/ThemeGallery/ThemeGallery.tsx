@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { ThemeTile } from "../../data.ts";
 import * as s from "./ThemeGallery.css.ts";
 
@@ -26,11 +26,19 @@ export interface ThemeGalleryProps {
  */
 export function ThemeGallery({ label, items, value, previewing, focusRequest, id, onPreview, onChoose, onRevert }: ThemeGalleryProps) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const baseId = useId();
   const [active, setActive] = useState(value ?? items[0]?.id ?? "");
   const tile = (tid: string) => ref.current?.querySelector<HTMLElement>(`[data-tile="${CSS.escape(tid)}"]`) ?? null;
+  /** After Esc, focus goes back to the chosen theme's tile once it's showing again. */
+  const reverting = useRef(false);
   // The tab stop follows the theme showing while focus is elsewhere.
   useEffect(() => {
-    if (value && !ref.current?.contains(document.activeElement)) setActive(value);
+    if (!value) return;
+    if (reverting.current) {
+      reverting.current = false;
+      setActive(value);
+      tile(value)?.focus();
+    } else if (!ref.current?.contains(document.activeElement)) setActive(value);
   }, [value]);
   const showing = useRef(value);
   showing.current = value;
@@ -70,6 +78,7 @@ export function ThemeGallery({ label, items, value, previewing, focusRequest, id
       if (!previewing) return;
       e.preventDefault();
       e.stopPropagation();
+      reverting.current = true;
       onRevert?.();
       return;
     }
@@ -88,24 +97,26 @@ export function ThemeGallery({ label, items, value, previewing, focusRequest, id
           data-tile={t.id}
           data-theme-sample={t.id}
           aria-selected={t.id === value}
-          aria-label={[t.label, t.description].filter(Boolean).join(", ")}
+          {...(t.description ? { "aria-describedby": `${baseId}-${t.id}` } : {})}
           tabIndex={t.id === active ? 0 : -1}
           className={s.tile}
           onFocus={() => setActive(t.id)}
           onClick={() => onChoose?.({ id: t.id })}
         >
           <span className={s.swatch} aria-hidden="true">
-            <span className={s.glyph}>Aa</span>
+            <span className={s.glyph} />
             <span className={s.marks}>
               <span className={s.accent} />
               <span className={s.dot} />
             </span>
           </span>
-          <span className={s.name} aria-hidden="true">
+          {/* The name is what the tile shows ("Paper Light ✓"); its kind and badge are its description. */}
+          <span className={s.name}>
             <span className={s.label}>{t.label}</span>
-            {t.slot ? <span className={s.slot}>{t.slot}</span> : null}
-            <span className={s.badge}>{t.badge}</span>
+            {t.slot ? <span className={s.slot}>{` ${t.slot}`}</span> : null}
+            <span className={s.badge} aria-hidden="true">{t.badge}</span>
           </span>
+          {t.description ? <span id={`${baseId}-${t.id}`} hidden>{t.description}</span> : null}
         </div>
       ))}
     </div>

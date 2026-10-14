@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { themeValues } from "@focus-notes/tokens";
-import { createApp, saveWarning, type AppStateFile, type PlatformBridge } from "../src/index.ts";
+import { CONTRAST_PAIRS, createApp, saveWarning, type AppStateFile, type PlatformBridge } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 function shell(opts: { state?: Partial<AppStateFile>; settings?: string | null } = {}) {
@@ -192,6 +192,11 @@ describe("THM-13: Edit colors and the contrast guard", () => {
     await t.run("theme.choose", { id: "sepia" });
     await t.run("appearance.setMode", { value: "light" });
     expect(t.app.store.state.ui.theme.draft).toBeUndefined();
+  });
+
+  it("names every color the guard checks, in words", () => {
+    const tokens = new Set(CONTRAST_PAIRS.flatMap((p) => [p.fg, p.bg]));
+    for (const t of tokens) expect((en as Record<string, string>)[`colors.token.${t}`], t).toBeTruthy();
   });
 
   it("warns before saving a theme with hard-to-read pairs (the API custom themes save through)", async () => {

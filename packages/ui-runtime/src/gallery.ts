@@ -109,8 +109,8 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     ],
     versionEmpty: [],
     themeTiles: [
-      { id: "paper", label: "Paper", kind: "light", slot: "Light ✓", badge: "AAA", description: "light, Light ✓, AAA" },
-      { id: "ink", label: "Ink", kind: "dark", slot: "Dark ✓", badge: "AAA", description: "dark, Dark ✓, AAA" },
+      { id: "paper", label: "Paper", kind: "light", slot: "Light ✓", badge: "AAA", description: "light, AAA" },
+      { id: "ink", label: "Ink", kind: "dark", slot: "Dark ✓", badge: "AAA", description: "dark, AAA" },
       { id: "sepia", label: "Sepia", kind: "light", badge: "AAA", description: "light, AAA" },
       { id: "dusk", label: "Dusk", kind: "dark", badge: "AAA", description: "dark, AAA" },
       { id: "contrast-light", label: "High contrast", kind: "light", badge: "AAA", description: "light, AAA" },
