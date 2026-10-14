@@ -49,6 +49,7 @@ function residentMB(metrics) {
   const out = execFileSync("powershell", ["-NoProfile", "-Command", `Get-CimInstance Win32_PerfFormattedData_PerfProc_Process | Where-Object { @(${pids}) -contains $_.IDProcess } | ForEach-Object { '{0} {1}' -f $_.WorkingSetPrivate, $_.WorkingSet }`], { encoding: "utf8" });
   const rows = out.trim().split(/\r?\n/).map((l) => l.trim().split(" ").map(Number)).filter((r) => r.length === 2 && r.every(Number.isFinite));
   if (rows.length !== metrics.length) throw new Error(`Found memory for ${rows.length} of ${metrics.length} processes`);
+  // FOCUS_NOTES_BENCH_DETAIL=1 prints each process's memory, to find where it goes.
   if (process.env.FOCUS_NOTES_BENCH_DETAIL) console.error("DETAIL", execFileSync("powershell", ["-NoProfile", "-Command", `Get-CimInstance Win32_PerfFormattedData_PerfProc_Process | Where-Object { @(${pids}) -contains $_.IDProcess } | ForEach-Object { '{0}:{1}:{2}' -f $_.IDProcess, [int]($_.WorkingSetPrivate/1MB), [int]($_.WorkingSet/1MB) }`], { encoding: "utf8" }).trim().split(/\r?\n/).join(" "), metrics.map((m) => `${m.pid}=${m.type}`).join(" "));
   const priv = rows.reduce((n, [p]) => n + p, 0);
   const shared = Math.max(...rows.map(([p, ws]) => ws - p));
