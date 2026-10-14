@@ -21,7 +21,7 @@ export function buildUiSchema({ contracts, icons, tokenGroups }: SchemaInputs): 
       case "icon": return { anyOf: [{ enum: [...icons] }, ref("read")] };
       case "command": return { type: "string", pattern: "^[a-z][A-Za-z]*(\\.[a-z][A-Za-z]*)+$" };
       case "boolean": return { anyOf: [{ type: "boolean" }, ref("read"), ref("expr"), ...(spec.bindable ? [ref("bind")] : [])] };
-      case "number": return { anyOf: [{ type: "number", ...(spec.min !== undefined ? { minimum: spec.min } : {}), ...(spec.max !== undefined ? { maximum: spec.max } : {}) }, ref("read")] };
+      case "number": return { anyOf: [{ type: "number", ...(spec.min !== undefined ? { minimum: spec.min } : {}), ...(spec.max !== undefined ? { maximum: spec.max } : {}) }, ref("read"), ...(spec.bindable ? [ref("bind")] : [])] };
       case "text": return { anyOf: [ref("read"), ...(spec.bindable ? [ref("bind")] : [])] };
       case "ref": return { type: "string", pattern: "^[a-z][A-Za-z0-9-]*$" };
       case "list": return ref("read");
@@ -99,7 +99,7 @@ export function buildUiSchema({ contracts, icons, tokenGroups }: SchemaInputs): 
       ia: { type: "string", pattern: "^IA-(VIEW|CMP)-[A-Z]+$" },
       viewModels: { type: "array", items: { type: "string", pattern: "^vm\\.[a-z][A-Za-z0-9]*$" } },
       focus: { type: "string" },
-      overlay: { type: "boolean", description: "Hosted beside the app's main view: its root is a Stack of dialogs that show only when their view models open them (Settings)." },
+      overlay: { type: "boolean", description: "Hosted beside the app's main view: its root is a Stack of dialogs and side sheets that show only when their view models open them (Settings, the theme manager)." },
       local: { type: "object", additionalProperties: { type: ["string", "number", "boolean", "null"] } },
       root: ref("node"),
     },

@@ -188,8 +188,8 @@ export function checkUi(inputs: CheckInputs): Problem[] {
 
     walk(doc.root, "/root", {});
     if (doc.overlay) {
-      // A view hosted beside the main one adds only dialogs: no second app root, nothing on the canvas.
-      if (!isComponent(doc.root) || doc.root.type !== "Stack" || (doc.root.children ?? []).some((c) => !isComponent(c) || c.type !== "Dialog")) add("design", "/root", "an overlay view's root is a Stack of Dialogs");
+      // A view hosted beside the main one adds only dialogs and side sheets: no second app root, nothing on the canvas.
+      if (!isComponent(doc.root) || doc.root.type !== "Stack" || (doc.root.children ?? []).some((c) => !isComponent(c) || (c.type !== "Dialog" && c.type !== "Sheet"))) add("design", "/root", "an overlay view's root is a Stack of Dialogs and Sheets");
     } else if (!isComponent(doc.root) || doc.root.type !== "AppRoot") add("design", "/root", "a view's root is AppRoot");
     if (!doc.focus) add("accessibility", "/focus", "every view says where focus goes when it opens");
     else if (!ids.has(doc.focus)) add("references", "/focus", `focus target "${doc.focus}" isn't an id in this view`);

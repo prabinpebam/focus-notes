@@ -68,6 +68,25 @@ export interface TreeItem {
 export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "moveField", "firstRun", "repoField"] as const;
 export type KeyScope = (typeof KEY_SCOPES)[number];
 
+/** A theme in the theme manager's gallery (ThemeGallery). */
+export interface ThemeTile {
+  id: string;
+  label: string;
+  kind: "light" | "dark";
+  /** "Light ✓" or "Dark ✓" when it fills that slot. */
+  slot?: string;
+  /** The contrast badge: AA or AAA. */
+  badge: string;
+  /** Said after the name: its kind, slot, and badge. */
+  description?: string;
+}
+
+/** A color token's value for the root (AppRoot's themeColors): an edited copy of a theme. */
+export interface ColorValue {
+  id: string;
+  value: string;
+}
+
 /** One choice in a segmented control or filter. */
 export interface Option {
   id: string;

@@ -34,7 +34,7 @@
     },
     "overlay": {
       "type": "boolean",
-      "description": "Hosted beside the app's main view: its root is a Stack of dialogs that show only when their view models open them (Settings)."
+      "description": "Hosted beside the app's main view: its root is a Stack of dialogs and side sheets that show only when their view models open them (Settings, the theme manager)."
     },
     "local": {
       "type": "object",
@@ -272,6 +272,15 @@
         },
         {
           "$ref": "#/$defs/c_WindowControls"
+        },
+        {
+          "$ref": "#/$defs/c_ThemeGallery"
+        },
+        {
+          "$ref": "#/$defs/c_Slider"
+        },
+        {
+          "$ref": "#/$defs/c_ColorField"
         },
         {
           "$ref": "#/$defs/c_Stack"
@@ -3440,6 +3449,343 @@
         }
       }
     },
+    "c_ThemeGallery": {
+      "type": "object",
+      "description": "The theme manager's gallery (IA-VIEW-THEME): a tile per theme with a sample of its colors. Arrow keys move in two dimensions and preview, Enter or a click chooses, and Esc stops a preview.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ThemeGallery"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "items": {
+              "$ref": "#/$defs/read"
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "previewing": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "focusRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "items"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "preview": {
+              "$ref": "#/$defs/actions"
+            },
+            "choose": {
+              "$ref": "#/$defs/actions"
+            },
+            "revert": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_Slider": {
+      "type": "object",
+      "description": "A labelled slider for a number on steps, showing its value in words (Theme manager → Reading).",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Slider"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "min": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "max": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "step": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "valueText": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "format": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "number",
+                    "percent"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "min",
+            "max",
+            "step"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "change": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_ColorField": {
+      "type": "object",
+      "description": "A labelled hex color field with a swatch (Theme manager → Edit colors). The value is committed on Enter or on leaving the field, so typing never applies half a color.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ColorField"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "swatch": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "invalid": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "error": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "commit": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
     "c_Stack": {
       "type": "object",
       "description": "Children in a column, spaced by a space token.",
@@ -4233,6 +4579,62 @@
                   "$ref": "#/$defs/read"
                 }
               ]
+            },
+            "lineHeight": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 1.3,
+                  "maximum": 2
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "measure": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 50,
+                  "maximum": 100
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "paragraphSpacing": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "compact",
+                    "comfortable",
+                    "airy"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "focusDim": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0.15,
+                  "maximum": 0.6
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "themeColors": {
+              "$ref": "#/$defs/read"
             },
             "frame": {
               "anyOf": [

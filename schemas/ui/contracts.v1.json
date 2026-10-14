@@ -391,7 +391,7 @@
         "autoFocus": {
           "kind": "boolean",
           "default": false,
-          "description": "Takes focus when it appears: in a confirmation, the choice that changes nothing (APG alert dialog)."
+          "description": "Takes focus when it appears: in a confirmation, the choice that changes nothing (APG alert dialog); in the first run, a step's primary action, so Enter continues."
         }
       },
       "events": {
@@ -1356,7 +1356,8 @@
             "findField",
             "replaceField",
             "pickerField",
-            "moveField"
+            "moveField",
+            "repoField"
           ],
           "default": "none"
         },
@@ -1504,6 +1505,18 @@
             },
             "keyScope": "moveField"
           }
+        },
+        {
+          "name": "keyScope repoField",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "keyScope": "repoField"
+          }
         }
       ]
     },
@@ -1595,7 +1608,8 @@
           "kind": "enum",
           "values": [
             "s",
-            "l"
+            "l",
+            "xl"
           ],
           "default": "l"
         }
@@ -1659,6 +1673,26 @@
             },
             "open": true,
             "size": "l"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "size xl",
+          "props": {
+            "label": {
+              "t": "shortcuts.title"
+            },
+            "open": true,
+            "size": "xl"
           },
           "children": [
             {
@@ -1947,6 +1981,15 @@
         "value": {
           "kind": "text",
           "bindable": true
+        },
+        "orientation": {
+          "kind": "enum",
+          "values": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal",
+          "description": "vertical puts the list on the inline start, as Settings' categories."
         }
       },
       "events": {
@@ -1986,6 +2029,31 @@
             "value": {
               "get": "vm.gallery.optionFirst"
             }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "orientation vertical",
+          "props": {
+            "label": {
+              "t": "settings.categories"
+            },
+            "items": {
+              "get": "vm.gallery.options"
+            },
+            "value": {
+              "get": "vm.gallery.optionLast"
+            },
+            "orientation": "vertical"
           },
           "children": [
             {
@@ -2385,6 +2453,506 @@
             },
             "editError": {
               "get": "vm.gallery.treeEditError"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "VersionPane",
+      "tier": "primitive",
+      "description": "One version of a note in the conflict resolver: its blocks as plain text, with the blocks that differ from the other version highlighted.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "Which version: This computer, or the other version and when it was made."
+        },
+        "blocks": {
+          "kind": "list",
+          "of": "versionBlocks",
+          "required": true
+        },
+        "emptyText": {
+          "kind": "message",
+          "required": true,
+          "description": "Shown when this version has no blocks (deleted, or empty)."
+        },
+        "changedLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "Said before each highlighted block, so the difference isn't only a color."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest",
+        "changed",
+        "empty"
+      ],
+      "tokens": "cmp.versionPane.*",
+      "a11y": {
+        "pattern": "region (labelled), changed blocks prefixed for screen readers",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "with changed blocks",
+          "props": {
+            "label": {
+              "t": "conflict.mine"
+            },
+            "blocks": {
+              "get": "vm.gallery.versionBlocks"
+            },
+            "emptyText": {
+              "t": "conflict.emptyNote"
+            },
+            "changedLabel": {
+              "t": "conflict.changed"
+            }
+          }
+        },
+        {
+          "name": "deleted version",
+          "props": {
+            "label": {
+              "t": "conflict.theirs"
+            },
+            "blocks": {
+              "get": "vm.gallery.versionEmpty"
+            },
+            "emptyText": {
+              "t": "conflict.deletedThere"
+            },
+            "changedLabel": {
+              "t": "conflict.changed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "WindowControls",
+      "tier": "primitive",
+      "description": "The app-drawn minimize, maximize or restore, and close buttons of the Windows and Linux window (D-15), shown on hover, keyboard focus, or while the window isn't active, with the Snap Layouts picker on the maximize button.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "minimizeLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "maximizeLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "restoreLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "closeLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "layoutsLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The Snap Layouts picker's name."
+        },
+        "maximized": {
+          "kind": "boolean",
+          "bindable": true,
+          "description": "Shows Restore instead of Maximize."
+        },
+        "reveal": {
+          "kind": "boolean",
+          "bindable": true,
+          "description": "Shows the buttons without hover: the window isn't active, or the toolbar is open."
+        },
+        "layouts": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true,
+          "description": "The picker's layouts (halves, thirds, quarters, maximize) and their zones, each a command."
+        }
+      },
+      "events": {
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "hidden",
+        "shown",
+        "buttonHover",
+        "closeHover",
+        "focusVisible",
+        "layoutsOpen",
+        "zoneHover"
+      ],
+      "tokens": "cmp.windowControls.*",
+      "a11y": {
+        "pattern": "group of buttons; the picker is a non-modal dialog of zone buttons",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "shown",
+          "props": {
+            "label": {
+              "t": "window.controls"
+            },
+            "minimizeLabel": {
+              "t": "window.minimize"
+            },
+            "maximizeLabel": {
+              "t": "window.maximize"
+            },
+            "restoreLabel": {
+              "t": "window.restore"
+            },
+            "closeLabel": {
+              "t": "window.close"
+            },
+            "layoutsLabel": {
+              "t": "window.layouts"
+            },
+            "layouts": {
+              "get": "vm.gallery.snapLayouts"
+            },
+            "reveal": true
+          }
+        },
+        {
+          "name": "maximized",
+          "props": {
+            "label": {
+              "t": "window.controls"
+            },
+            "minimizeLabel": {
+              "t": "window.minimize"
+            },
+            "maximizeLabel": {
+              "t": "window.maximize"
+            },
+            "restoreLabel": {
+              "t": "window.restore"
+            },
+            "closeLabel": {
+              "t": "window.close"
+            },
+            "layoutsLabel": {
+              "t": "window.layouts"
+            },
+            "layouts": {
+              "get": "vm.gallery.snapLayouts"
+            },
+            "reveal": true,
+            "maximized": true
+          }
+        },
+        {
+          "name": "hidden until hover",
+          "props": {
+            "label": {
+              "t": "window.controls"
+            },
+            "minimizeLabel": {
+              "t": "window.minimize"
+            },
+            "maximizeLabel": {
+              "t": "window.maximize"
+            },
+            "restoreLabel": {
+              "t": "window.restore"
+            },
+            "closeLabel": {
+              "t": "window.close"
+            },
+            "layoutsLabel": {
+              "t": "window.layouts"
+            },
+            "layouts": {
+              "get": "vm.gallery.snapLayouts"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "ThemeGallery",
+      "tier": "primitive",
+      "description": "The theme manager's gallery (IA-VIEW-THEME): a tile per theme with a sample of its colors. Arrow keys move in two dimensions and preview, Enter or a click chooses, and Esc stops a preview.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "themeTiles",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "description": "The theme showing on the note: the selected tile."
+        },
+        "previewing": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The tile showing is a preview, so Esc goes back to the chosen theme (and doesn't close the sheet)."
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus to the selected tile."
+        }
+      },
+      "events": {
+        "preview": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "choose": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "revert": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "selected",
+        "focusVisible",
+        "previewing"
+      ],
+      "tokens": "cmp.themeGallery.*",
+      "a11y": {
+        "pattern": "listbox",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "first selected",
+          "props": {
+            "label": {
+              "t": "theme.gallery"
+            },
+            "items": {
+              "get": "vm.gallery.themeTiles"
+            },
+            "value": {
+              "get": "vm.gallery.themeFirst"
+            }
+          }
+        },
+        {
+          "name": "previewing",
+          "props": {
+            "label": {
+              "t": "theme.gallery"
+            },
+            "items": {
+              "get": "vm.gallery.themeTiles"
+            },
+            "value": {
+              "get": "vm.gallery.themeDark"
+            },
+            "previewing": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "Slider",
+      "tier": "primitive",
+      "description": "A labelled slider for a number on steps, showing its value in words (Theme manager → Reading).",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "number",
+          "bindable": true
+        },
+        "min": {
+          "kind": "number",
+          "required": true
+        },
+        "max": {
+          "kind": "number",
+          "required": true
+        },
+        "step": {
+          "kind": "number",
+          "required": true
+        },
+        "valueText": {
+          "kind": "text",
+          "description": "The value as shown: \"60 characters\"."
+        },
+        "format": {
+          "kind": "enum",
+          "values": [
+            "number",
+            "percent"
+          ],
+          "default": "number",
+          "description": "How the value is spoken: a number, or a percentage of 1."
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "number"
+          },
+          "binds": "value"
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "dragging",
+        "focusVisible"
+      ],
+      "tokens": "cmp.slider.*",
+      "a11y": {
+        "pattern": "slider",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "at the middle",
+          "props": {
+            "label": {
+              "t": "reading.measure"
+            },
+            "value": 75,
+            "min": 50,
+            "max": 100,
+            "step": 5,
+            "valueText": {
+              "get": "vm.gallery.query"
+            }
+          }
+        },
+        {
+          "name": "at the start",
+          "props": {
+            "label": {
+              "t": "reading.lineHeight"
+            },
+            "value": 1.3,
+            "min": 1.3,
+            "max": 2,
+            "step": 0.1
+          }
+        },
+        {
+          "name": "format percent",
+          "props": {
+            "label": {
+              "t": "reading.focusDim"
+            },
+            "value": 0.3,
+            "min": 0.15,
+            "max": 0.6,
+            "step": 0.05,
+            "format": "percent"
+          }
+        }
+      ]
+    },
+    {
+      "type": "ColorField",
+      "tier": "primitive",
+      "description": "A labelled hex color field with a swatch (Theme manager → Edit colors). The value is committed on Enter or on leaving the field, so typing never applies half a color.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "description": "The color, or what was typed if it isn't one."
+        },
+        "swatch": {
+          "kind": "text",
+          "description": "The color the swatch shows: #rgb or #rrggbb, anything else shows none."
+        },
+        "description": {
+          "kind": "text",
+          "description": "Said with the field: the contrast it's checked against."
+        },
+        "invalid": {
+          "kind": "boolean",
+          "default": false
+        },
+        "error": {
+          "kind": "text",
+          "description": "Why the value isn't a color, shown instead of the description."
+        }
+      },
+      "events": {
+        "commit": {
+          "payload": {
+            "value": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "focused",
+        "invalid"
+      ],
+      "tokens": "cmp.colorField.*",
+      "a11y": {
+        "pattern": "text box",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "with a swatch",
+          "props": {
+            "label": {
+              "t": "colors.key.text"
+            },
+            "value": {
+              "get": "vm.gallery.colorHex"
+            },
+            "swatch": {
+              "get": "vm.gallery.colorHex"
+            },
+            "description": {
+              "get": "vm.gallery.query"
+            }
+          }
+        },
+        {
+          "name": "invalid",
+          "props": {
+            "label": {
+              "t": "colors.key.accent"
+            },
+            "value": {
+              "get": "vm.gallery.query"
+            },
+            "invalid": true,
+            "error": {
+              "get": "vm.gallery.query"
             }
           }
         }
@@ -3246,7 +3814,8 @@
             "replaceField",
             "pickerField",
             "formatToolbar",
-            "linkEditor"
+            "linkEditor",
+            "firstRun"
           ],
           "default": "none",
           "description": "Keys registered for this scope work while focus is inside."
@@ -3585,6 +4154,24 @@
           ]
         },
         {
+          "name": "keyScope firstRun",
+          "props": {
+            "keyScope": "firstRun",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
           "name": "elevation 0",
           "props": {
             "elevation": "0",
@@ -3679,6 +4266,7 @@
           "kind": "enum",
           "values": [
             "topBand",
+            "topEnd",
             "belowTopBand",
             "fill",
             "center",
@@ -3696,6 +4284,7 @@
           "values": [
             "none",
             "banner",
+            "main",
             "complementary",
             "region"
           ],
@@ -3909,6 +4498,32 @@
           ]
         },
         {
+          "name": "position topEnd",
+          "props": {
+            "position": "topEnd"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "name": "position belowTopBand",
           "props": {
             "position": "belowTopBand"
@@ -4061,6 +4676,25 @@
           "name": "landmark banner",
           "props": {
             "landmark": "banner",
+            "label": {
+              "t": "gallery.sample"
+            }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "landmark main",
+          "props": {
+            "landmark": "main",
             "label": {
               "t": "gallery.sample"
             }
@@ -4335,6 +4969,49 @@
           "min": 0.9,
           "max": 1.5,
           "description": "Interface scale (DSY-03); note text is unaffected."
+        },
+        "lineHeight": {
+          "kind": "number",
+          "min": 1.3,
+          "max": 2,
+          "description": "Line spacing (Theme manager → Reading); unset is font.lineHeight."
+        },
+        "measure": {
+          "kind": "number",
+          "min": 50,
+          "max": 100,
+          "description": "Reading width in characters; unset is layout.measure."
+        },
+        "paragraphSpacing": {
+          "kind": "enum",
+          "values": [
+            "compact",
+            "comfortable",
+            "airy"
+          ],
+          "default": "comfortable",
+          "description": "Space between blocks: a token mode."
+        },
+        "focusDim": {
+          "kind": "number",
+          "min": 0.15,
+          "max": 0.6,
+          "description": "Focus mode's dim strength; unset is the theme's focus.dimOpacity."
+        },
+        "themeColors": {
+          "kind": "list",
+          "of": "colorValues",
+          "description": "An edited copy of the theme showing (Edit colors): color tokens and their hex values. Anything else is ignored."
+        },
+        "frame": {
+          "kind": "enum",
+          "values": [
+            "native",
+            "rounded",
+            "square"
+          ],
+          "default": "native",
+          "description": "The app-built window's shape on Windows and Linux (D-14): rounded with the drawn shadow, or square (maximized, snapped, full screen)."
         }
       },
       "events": {},
@@ -4713,6 +5390,136 @@
             "scheme": "light",
             "platform": "windows",
             "uiScale": 1.5
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "lineHeight 2, measure 50",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "lineHeight": 2,
+            "measure": 50
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "paragraphSpacing compact",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "paragraphSpacing": "compact"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "paragraphSpacing comfortable",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "paragraphSpacing": "comfortable"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "paragraphSpacing airy",
+          "props": {
+            "scheme": "dark",
+            "platform": "windows",
+            "paragraphSpacing": "airy",
+            "focusDim": 0.6
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "themeColors",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "themeColors": {
+              "get": "vm.gallery.colorValues"
+            }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "frame rounded",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "frame": "rounded"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "frame square",
+          "props": {
+            "scheme": "dark",
+            "platform": "linux",
+            "frame": "square"
           },
           "children": [
             {
@@ -5148,6 +5955,9 @@
         },
         "default": {
           "accepts": "any"
+        },
+        "footer": {
+          "accepts": "any"
         }
       },
       "states": [
@@ -5179,6 +5989,18 @@
                   "value": {
                     "t": "files.heading"
                   }
+                }
+              }
+            ],
+            "footer": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "deleted.footer"
+                  },
+                  "variant": "subtle",
+                  "icon": "history"
                 }
               }
             ]
@@ -5501,6 +6323,102 @@
       "fixtures": []
     },
     {
+      "type": "WindowFrame",
+      "tier": "host",
+      "description": "The app-built window's behavior on Windows and Linux (D-14): moving by the title bar band (with double-click to maximize and right-click for the system menu), the resize handles on every edge and corner, and the app-drawn system menu. The window's shape and shadow are AppRoot's `frame`.",
+      "props": {
+        "frame": {
+          "kind": "enum",
+          "values": [
+            "native",
+            "rounded",
+            "square"
+          ],
+          "default": "native",
+          "description": "Native draws nothing. Rounded puts the handles in the shadow margin; square puts them just inside the edges."
+        },
+        "resizable": {
+          "kind": "boolean",
+          "bindable": true,
+          "description": "Shows the resize handles: not while maximized or full screen."
+        },
+        "menu": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true,
+          "description": "The system menu: Restore, Move, Size, Minimize, Maximize, Snap left, Snap right, Close."
+        },
+        "menuLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "menuRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value opens the system menu."
+        },
+        "menuX": {
+          "kind": "number",
+          "description": "Where the menu opens, in the window; -1 opens it under the band's start (Alt+Space)."
+        },
+        "menuY": {
+          "kind": "number"
+        },
+        "keyboard": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "move",
+            "size"
+          ],
+          "default": "none",
+          "description": "The system menu's Move or Size is running: the arrow keys, Enter, and Esc go to it."
+        }
+      },
+      "events": {
+        "drag": {
+          "payload": {
+            "phase": "text",
+            "kind": "text",
+            "x": "number",
+            "y": "number",
+            "shift": "boolean"
+          }
+        },
+        "toggleMaximize": {},
+        "menu": {
+          "payload": {
+            "x": "number",
+            "y": "number"
+          }
+        },
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "key": {
+          "payload": {
+            "key": "text",
+            "fine": "boolean"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "moving",
+        "resizing",
+        "menuOpen"
+      ],
+      "tokens": "cmp.windowFrame.*",
+      "a11y": {
+        "pattern": "menu (the system menu); the handles are pointer-only, with Move and Size in the menu for the keyboard",
+        "name": "menuLabel"
+      },
+      "fixtures": []
+    },
+    {
       "type": "Trigger",
       "tier": "compound",
       "description": "The trigger at the top center. Opens the toolbar under itself, and shows a save problem in its dot.",
@@ -5696,9 +6614,11 @@
           "kind": "enum",
           "values": [
             "s",
-            "l"
+            "l",
+            "xl"
           ],
-          "default": "l"
+          "default": "l",
+          "description": "xl is the conflict resolver's: most of the window, up to layout.dialogXL."
         }
       },
       "events": {
@@ -5776,6 +6696,29 @@
                 }
               }
             ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "size xl",
+          "props": {
+            "title": {
+              "t": "shortcuts.title"
+            },
+            "closeLabel": {
+              "t": "dialog.close"
+            },
+            "open": true,
+            "size": "xl"
           },
           "children": [
             {

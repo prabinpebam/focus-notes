@@ -64,15 +64,17 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   let toolbarWasOpen = app.store.state.ui.toolbarOpen;
   let sheetWasOpen = app.store.state.ui.shortcuts.open;
   let filesWereOpen = app.store.state.ui.files.open;
+  let themeWasOpen = app.store.state.ui.theme.open;
   app.store.subscribe(() => {
-    const { toolbarOpen, shortcuts, find, files } = app.store.state.ui;
-    // Not when the toolbar closed because the find bar, the cheat sheet, or the Files panel took focus.
-    if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open && !files.open) || (sheetWasOpen && !shortcuts.open) || (filesWereOpen && !files.open)) {
+    const { toolbarOpen, shortcuts, find, files, theme } = app.store.state.ui;
+    // Not when the toolbar closed because the find bar, the cheat sheet, the Files panel, or the theme manager took focus.
+    if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open && !files.open && !theme.open) || (sheetWasOpen && !shortcuts.open) || (filesWereOpen && !files.open) || (themeWasOpen && !theme.open)) {
       setTimeout(() => window.dispatchEvent(new Event(REFOCUS_EVENT)), 0);
     }
     toolbarWasOpen = toolbarOpen;
     sheetWasOpen = shortcuts.open;
     filesWereOpen = files.open;
+    themeWasOpen = theme.open;
   });
   return root;
 }

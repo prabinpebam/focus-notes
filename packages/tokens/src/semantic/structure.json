@@ -233,6 +233,12 @@
     "findBarClearance": {
       "$value": "{ref.size.64}"
     },
+    "themeTile": {
+      "$value": "{ref.size.158}"
+    },
+    "themeSwatch": {
+      "$value": "{ref.size.56}"
+    },
     "blockGap": {
       "$value": "{ref.size.em150}"
     },

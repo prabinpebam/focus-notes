@@ -12,13 +12,13 @@ export type PropSpec =
   | { kind: "icon"; required?: boolean; description?: string }
   | { kind: "command"; required?: boolean; description?: string }
   | { kind: "boolean"; default?: boolean; bindable?: boolean; description?: string }
-  | { kind: "number"; min?: number; max?: number; default?: number; description?: string }
+  | { kind: "number"; min?: number; max?: number; default?: number; bindable?: boolean; description?: string }
   /** Text that comes from data (a note, a file name). Never a literal in a view. */
   | { kind: "text"; bindable?: boolean; required?: boolean; description?: string }
   /** An element ID in the same view, for anchors and tooltips. */
   | { kind: "ref"; description?: string }
   /** Structured data from a view model (menu sections, command items). Only ever a read. */
-  | { kind: "list"; of: "commandItems" | "menuSections" | "options" | "keyCaps" | "keyBindings" | "resultItems" | "treeItems" | "versionBlocks"; required?: boolean; description?: string };
+  | { kind: "list"; of: "commandItems" | "menuSections" | "options" | "keyCaps" | "keyBindings" | "resultItems" | "treeItems" | "versionBlocks" | "themeTiles" | "colorValues"; required?: boolean; description?: string };
 
 export type PropKind = PropSpec["kind"];
 

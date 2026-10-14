@@ -1,0 +1,102 @@
+{
+  "cmp": {
+    "colorField": {
+      "gap": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
+      },
+      "rowGap": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "height": {
+        "$type": "dimension",
+        "$value": "{size.controlM}"
+      },
+      "paddingInline": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "swatchSize": {
+        "$type": "dimension",
+        "$value": "{size.iconL}"
+      },
+      "swatchRadius": {
+        "$type": "dimension",
+        "$value": "{radius.small}"
+      },
+      "swatchBorder": {
+        "$type": "color",
+        "$value": "{color.borderStrong}"
+      },
+      "swatchEmpty": {
+        "$type": "color",
+        "$value": "{color.surfaceSunken}"
+      },
+      "radius": {
+        "$type": "dimension",
+        "$value": "{radius.control}"
+      },
+      "border": {
+        "$type": "color",
+        "$value": "{color.borderStrong}"
+      },
+      "borderWidth": {
+        "$type": "dimension",
+        "$value": "{border.hairline}"
+      },
+      "borderFocus": {
+        "$type": "color",
+        "$value": "{color.focusRing}"
+      },
+      "borderInvalid": {
+        "$type": "color",
+        "$value": "{color.danger}"
+      },
+      "focusWidth": {
+        "$type": "dimension",
+        "$value": "{border.focus}"
+      },
+      "background": {
+        "$type": "color",
+        "$value": "{color.surface}"
+      },
+      "text": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "label": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "description": {
+        "$type": "color",
+        "$value": "{color.textMuted}"
+      },
+      "error": {
+        "$type": "color",
+        "$value": "{color.danger}"
+      },
+      "font": {
+        "$type": "fontFamily",
+        "$value": "{font.ui}"
+      },
+      "mono": {
+        "$type": "fontFamily",
+        "$value": "{font.mono}"
+      },
+      "fontSize": {
+        "$type": "dimension",
+        "$value": "{font.uiBody}"
+      },
+      "captionSize": {
+        "$type": "dimension",
+        "$value": "{font.uiSecondary}"
+      },
+      "labelWeight": {
+        "$type": "fontWeight",
+        "$value": "{font.weightSemibold}"
+      }
+    }
+  }
+}

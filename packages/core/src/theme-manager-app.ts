@@ -296,7 +296,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         reading: {
           type: "object",
           properties: {
-            font: STR, fonts: { type: "array", items: OPTION }, sizeText: STR, canSmaller: BOOL, canLarger: BOOL,
+            font: STR, fontText: STR, fontLabel: STR, fontMenu: { type: "array", items: { type: "object", properties: { id: STR, label: STR, items: { type: "array", items: { type: "object", properties: { id: STR, label: STR, checked: BOOL } } } } } }, sizeText: STR, canSmaller: BOOL, canLarger: BOOL,
             lineHeight: NUM, lineHeightText: STR, measure: NUM, measureText: STR, spacing: { type: "string", enum: [...PARAGRAPH_SPACINGS] }, spacings: { type: "array", items: OPTION },
             focusDim: NUM, focusDimText: STR,
           },
@@ -305,13 +305,13 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
           type: "object",
           properties: {
             note: STR, failing: BOOL, summary: STR,
-            rows: { type: "array", items: { type: "object", properties: { id: STR, label: STR, value: STR, swatch: STR, error: STR, status: STR, failing: BOOL, canFix: BOOL, fixLabel: STR } } },
+            rows: { type: "array", items: { type: "object", properties: { id: STR, label: STR, value: STR, swatch: STR, invalid: BOOL, error: STR, status: STR, failing: BOOL, canFix: BOOL, fixLabel: STR } } },
           },
         },
       },
     },
     setters: {
-      tab: "theme.manager.setTab", mode: "appearance.setMode", "reading.font": "reading.setFont", "reading.lineHeight": "reading.setLineHeight",
+      tab: "theme.manager.setTab", mode: "appearance.setMode", "reading.lineHeight": "reading.setLineHeight",
       "reading.measure": "reading.setMeasure", "reading.spacing": "reading.setParagraphSpacing", "reading.focusDim": "reading.setFocusDim",
     },
     reads: ["ui.theme", "appearance"],
@@ -348,19 +348,21 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         const typed = st.typing[k];
         const canFix = Boolean(worst) && fixFor(colors, k, high) !== undefined;
         return {
-          id: k, label: catalog.format(`colors.key.${k}`), value: typed ?? hex, swatch: hex, error: typed !== undefined ? catalog.format("colors.invalid") : "",
+          id: k, label: catalog.format(`colors.key.${k}`), value: typed ?? hex, swatch: hex, invalid: typed !== undefined, error: typed !== undefined ? catalog.format("colors.invalid") : "",
           status, failing: Boolean(worst), canFix, fixLabel: catalog.format("colors.fix", { name: catalog.format(`colors.key.${k}`) }),
         };
       });
       const failing = results.filter((r) => !r.pass).length;
-      const fonts = CONTENT_FONTS.map((id) => ({ id, label: catalog.format(`font.${id}`) }));
+      // The fonts are the ⋯ menu's own commands, each showing whether it's chosen.
+      const fontMenu = [{ id: "fonts", items: CONTENT_FONTS.map((id) => ({ id: `font.content.${id}`, label: catalog.format(`font.${id}`), checked: a.contentFont === id })) }];
+      const fontText = catalog.format(`font.${a.contentFont}`);
       return {
         open: true, tab: st.tab, tabs: THEME_TABS.map((id) => ({ id, label: catalog.format(`theme.tab.${id}`) })),
         mode: a.mode, modes: (["system", "light", "dark"] as const).map((id) => ({ id, label: catalog.format(`command.appearance.${id}`) })),
         tiles, showing, previewing: Boolean(st.preview && st.preview !== chosen), focusRequest: st.focusRequest,
         status: catalog.format("theme.status", { ratio: ratioText(tc.ratio), level: catalog.format(`theme.level.${tc.level}`) }),
         reading: {
-          font: a.contentFont, fonts, sizeText: catalog.format("reading.sizeText", { size: a.fontSize }),
+          font: a.contentFont, fontText, fontLabel: catalog.format("reading.fontLabel", { font: fontText }), fontMenu, sizeText: catalog.format("reading.sizeText", { size: a.fontSize }),
           canSmaller: commands.describe("font.smaller").enabled, canLarger: commands.describe("font.larger").enabled,
           lineHeight: a.lineHeight, lineHeightText: a.lineHeight.toFixed(1), measure: a.measure, measureText: catalog.format("reading.measureText", { count: a.measure }),
           spacing: a.paragraphSpacing, spacings: PARAGRAPH_SPACINGS.map((id) => ({ id, label: catalog.format(`reading.spacing.${id}`) })),

@@ -996,5 +996,8 @@
   "colors.token.color.onSelection": "Selected text",
   "colors.token.color.selection": "Selection",
   "colors.token.color.findMatch": "Find highlight",
-  "colors.token.color.findMatchActive": "Current find highlight"
+  "colors.token.color.findMatchActive": "Current find highlight",
+  "reading.fontLabel": "Font: {font}",
+  "reading.sizeMin": "This is the smallest text size",
+  "reading.sizeMax": "This is the largest text size"
 }

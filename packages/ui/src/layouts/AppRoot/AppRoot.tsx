@@ -24,6 +24,7 @@ import "@fontsource/atkinson-hyperlegible/700.css";
 import "@fontsource/opendyslexic/400.css";
 import "@fontsource/opendyslexic/700.css";
 import { cssVarName } from "@focus-notes/tokens";
+import type { ColorValue } from "../../data.ts";
 import * as s from "./AppRoot.css.ts";
 
 export interface AppRootProps {
@@ -44,18 +45,30 @@ export interface AppRootProps {
    * screen, or opaque). Native: the system's own window (macOS, the browser).
    */
   frame?: "native" | "rounded" | "square";
+  /** Reading settings (Theme manager → Reading): line spacing, reading width in characters, paragraph spacing, and focus dim. */
+  lineHeight?: number;
+  measure?: number;
+  paragraphSpacing?: "compact" | "comfortable" | "airy";
+  focusDim?: number;
+  /** An edited copy of the theme showing: color tokens and their hex values over the theme's own. */
+  themeColors?: ColorValue[];
   lang?: string;
   children?: ReactNode;
 }
 
 const THEME_FOR = { light: "paper", dark: "ink" } as const;
+/** Only color tokens, and only hex values, reach the root's style (a theme can't inject CSS, UNSUP-THEME-01). */
+const COLOR_TOKEN = /^(color|trigger|code)\.[a-zA-Z]+$/;
+const HEX = /^#[0-9a-fA-F]{6}$/;
+const inRange = (v: number | undefined, min: number, max: number) => typeof v === "number" && Number.isFinite(v) && v >= min && v <= max;
 
 /**
  * The root of every app view. Applies the theme and the token modes (DSY-03) to the document:
  * scheme, platform, reduced motion, reduced transparency, and pointer type.
  */
-export function AppRoot({ scheme, theme, contentFont, uiScale, platform, contentSize, focusMode, frame = "native", lang = "en", children }: AppRootProps) {
+export function AppRoot({ scheme, theme, contentFont, uiScale, platform, contentSize, focusMode, frame = "native", lineHeight, measure, paragraphSpacing, focusDim, themeColors, lang = "en", children }: AppRootProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const applied = useRef<string[]>([]);
   useEffect(() => {
     // The page around a drawn window is transparent, and fixed layers are placed inside the window (frame.ts).
     const html = document.documentElement;
@@ -90,6 +103,27 @@ export function AppRoot({ scheme, theme, contentFont, uiScale, platform, content
     if (focusMode) html.dataset.focus = "on";
     else delete html.dataset.focus;
   }, [contentSize, focusMode]);
+
+  // Reading settings override their tokens at run time, as the note text size does.
+  useEffect(() => {
+    const html = document.documentElement;
+    const set = (token: string, v: string | undefined) => (v === undefined ? html.style.removeProperty(cssVarName(token)) : html.style.setProperty(cssVarName(token), v));
+    set("font.lineHeight", inRange(lineHeight, 1.3, 2) ? String(lineHeight) : undefined);
+    set("layout.measure", inRange(measure, 50, 100) ? `${measure}ch` : undefined);
+    set("focus.dimOpacity", inRange(focusDim, 0.15, 0.6) ? String(focusDim) : undefined);
+    if (paragraphSpacing && paragraphSpacing !== "comfortable") html.dataset.paragraphSpacing = paragraphSpacing;
+    else delete html.dataset.paragraphSpacing;
+  }, [lineHeight, measure, focusDim, paragraphSpacing]);
+
+  const colorsKey = (themeColors ?? []).map((c) => `${c.id}=${c.value}`).join(";");
+  useEffect(() => {
+    const html = document.documentElement;
+    for (const name of applied.current) html.style.removeProperty(name);
+    applied.current = (themeColors ?? []).filter((c) => COLOR_TOKEN.test(c.id) && HEX.test(c.value)).map((c) => {
+      html.style.setProperty(cssVarName(c.id), c.value);
+      return cssVarName(c.id);
+    });
+  }, [colorsKey]);
 
   useEffect(() => {
     const html = document.documentElement;
