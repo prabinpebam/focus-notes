@@ -295,16 +295,12 @@
     },
     "scrollBlur": {
       "$value": "{ref.size.40}",
-      "$description": "The note's edge blur at the very top and bottom edge of the window (D-111): the outermost band's radius."
-    },
-    "scrollBlurMin": {
-      "$value": "{ref.size.5}",
-      "$description": "The innermost blur band's radius; the radii step linearly from it to layout.scrollBlur, so the blur ramps from crisp at the band's inner edge to its most at the window's edge (D-111)."
+      "$description": "The note's edge blur at the very top and bottom edge of the window (D-111): the outermost layer's radius; each layer further in has half the radius of the one outside it."
     },
     "scrollBands": {
       "$type": "number",
       "$value": 8,
-      "$description": "How many stacked blur bands make the note's edge ramp (5 to 8: enough that the steps don't show, D-111)."
+      "$description": "How many stacked blur layers make the note's edge ramp (5 to 8: enough that the steps don't show, D-111); the innermost is near 0 px."
     },
     "fieldMin": {
       "$value": "{ref.size.96}",

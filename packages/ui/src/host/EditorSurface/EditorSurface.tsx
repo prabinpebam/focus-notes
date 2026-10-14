@@ -522,19 +522,21 @@ export function EditorSurface({
   }, [editor]);
 
   return (
-    <main className={s.scroller} data-editor-scroller="" data-find-open={findOpen ? "" : undefined} aria-label={label} ref={scrollerRef}>
-      {/* The scroll edges' blur and fade, shown where there's more to scroll to (D-111). */}
+    <div className={s.frame}>
+      <main className={s.scroller} data-editor-scroller="" data-find-open={findOpen ? "" : undefined} aria-label={label} ref={scrollerRef}>
+        <div className={focusMode ? `${s.column} ${s.focusOn}` : s.column} ref={columnRef} data-focus-mode={focusMode ? "on" : undefined}>
+          <EditorContent editor={editor} />
+        </div>
+      </main>
+      {/* The scroll edges' blur and fade, over the scroller's edges where there's more to scroll to (D-111). */}
       <div className={`${s.edge} ${s.edgeSide.top}`} aria-hidden="true" data-scroll-edge="top">
         {s.blurTop.map((c, k) => <div key={k} className={c} />)}
         <div className={s.fade.top} />
-      </div>
-      <div className={focusMode ? `${s.column} ${s.focusOn}` : s.column} ref={columnRef} data-focus-mode={focusMode ? "on" : undefined}>
-        <EditorContent editor={editor} />
       </div>
       <div className={`${s.edge} ${s.edgeSide.bottom}`} aria-hidden="true" data-scroll-edge="bottom">
         {s.blurBottom.map((c, k) => <div key={k} className={c} />)}
         <div className={s.fade.bottom} />
       </div>
-    </main>
+    </div>
   );
 }

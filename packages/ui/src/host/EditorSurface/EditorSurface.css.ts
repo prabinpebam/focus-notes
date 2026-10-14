@@ -23,61 +23,70 @@ export const scroller = style({
 // The minimal scrollbar (D-73, UI-09).
 minimalScrollbar(scroller, t);
 
+/** Holds the scroller and, over its top and bottom edges, the scroll edges (not scrolling with it). */
+export const frame = style({
+  position: "relative",
+  display: "flex",
+  flexDirection: "column",
+  flexGrow: 1,
+  minHeight: 0,
+});
+
 // The note's scroll edges (D-111): where there's more to scroll to, its text blurs and fades out
-// over `scrollFade` (50 px). The blur ramps linearly from none at the band's inner edge to `edgeBlur`
-// (40 px) at the window's edge: `layout.scrollBands` stacked backdrop blurs, their radii stepping
-// evenly from `edgeBlurMin` to `edgeBlur`, each masked to its slice with ramps overlapping its
-// neighbors' so no step shows. Sticky layers over the note, never a mask on it (a mask over a long
-// note repaints all of it on every keystroke, PRF-01). Only the note has them: interface surfaces don't.
-/** How many bands, resolved at build time from `layout.scrollBands` (CSS can't loop over a token). */
+// over `scrollFade` (50 px). A layered progressive blur: `edgeLayers` (8) stacked backdrop blurs,
+// the outermost `edgeBlur` (40 px) and each one in half the one outside it (down to about 0.3 px),
+// each masked to a window of the band that overlaps its neighbors', so the blur rises smoothly from
+// none at the band's inner edge to its most at the window's edge. Then a gradient in the canvas's
+// color fades the text out over the same band. The edges sit in the frame, beside the scroller, so
+// the text scrolls under them; neither they nor anything between them and the text may be a backdrop
+// root (filter, opacity, mask, clip-path, blend mode), or the blurs would see nothing. No mask on
+// the note: over a long note it repaints all of it on every keystroke (PRF-01). Interface surfaces
+// never have them.
+/** How many layers, resolved at build time from `cmp.editorSurface.edgeLayers` (CSS can't loop over a token). */
 export const EDGE_BANDS = scrollEdge.bands;
 export const edge = style({
-  position: "sticky",
+  position: "absolute",
   zIndex: t.edgeLayer,
-  display: "block",
+  insetInlineStart: 0,
+  // Never over the scrollbar, which stays sharp and pressable.
+  insetInlineEnd: t.scrollbarSize,
   height: t.scrollFade,
   pointerEvents: "none",
-  opacity: 0,
-  transitionProperty: "opacity",
-  transitionDuration: t.focusDuration,
+  // Shown with visibility, never opacity: an opacity under 1 would make it a backdrop root.
+  visibility: "hidden",
   "@media": { "(forced-colors: active)": { display: "none" } },
 });
 export const edgeSide = styleVariants({
-  top: { top: 0, marginBlockEnd: `calc(-1 * ${t.scrollFade})`, selectors: { "[data-fade-top] > &": { opacity: t.edgeShown } } },
-  bottom: { bottom: 0, marginBlockStart: `calc(-1 * ${t.scrollFade})`, selectors: { "[data-fade-bottom] > &": { opacity: t.edgeShown } } },
+  top: { top: 0, selectors: { "[data-fade-top] ~ &": { visibility: "visible" } } },
+  bottom: { bottom: 0, selectors: { "[data-fade-bottom] ~ &": { visibility: "visible" } } },
 });
-/** A depth into the band, as a part of its range (0 at the window's edge, 1 at its inner edge). */
-const at = (f: number) => `calc(${t.scrollFade} * ${Math.round(Math.min(1, Math.max(0, f)) * 1000) / 1000})`;
+/** A depth into the band as a length: 0 at the window's edge, 1 at the band's inner edge. */
+const at = (f: number) => `calc(${t.scrollFade} * ${Math.round(f * 10000) / 10000})`;
 /**
- * Band k (0 at the window's edge): fully on from the edge side of its slice, fading out across the
- * next slice in, so each band hands over to the softer one inside it. The outermost holds to the
- * edge; the innermost fades out at the band's inner edge, where the text is crisp.
+ * Layer k (0 at the window's edge): opaque over its slice of the band, from k-1 to k eighths in
+ * (for 8 layers), ramping in and out over one slice on either side, so neighbors overlap and no
+ * step shows. Positions past the band's ends are fine in a gradient.
  */
-const bandMask = (dir: "bottom" | "top", k: number) => {
+const layerMask = (inward: "bottom" | "top", k: number) => {
   const n = EDGE_BANDS;
-  const from = k === 0 ? `black 0` : `transparent ${at((k - 1) / n)}, black ${at(k / n)}`;
-  return `linear-gradient(to ${dir}, ${from}, black ${at((k + 1) / n)}, transparent ${at((k + 2) / n)})`;
+  return `linear-gradient(to ${inward}, transparent ${at((k - 2) / n)}, black ${at((k - 1) / n)}, black ${at(k / n)}, transparent ${at((k + 1) / n)})`;
 };
-const band = (dir: "bottom" | "top", k: number) => {
-  const mask = bandMask(dir, k);
-  // Radii step evenly: edgeBlur at the edge band, edgeBlurMin at the innermost.
-  const share = EDGE_BANDS > 1 ? (EDGE_BANDS - 1 - k) / (EDGE_BANDS - 1) : 1;
-  const blur = `blur(calc(${t.edgeBlurMin} + (${t.edgeBlur} - ${t.edgeBlurMin}) * ${Math.round(share * 1000) / 1000}))`;
-  return style({
+const layer = (inward: "bottom" | "top", k: number) =>
+  style({
     position: "absolute",
     inset: 0,
+    pointerEvents: "none",
     // Unprefixed only: with the -webkit- one as well, the build keeps just that, which Chromium ignores.
-    backdropFilter: blur,
-    maskImage: mask,
+    backdropFilter: `blur(calc(${t.edgeBlur} / ${2 ** k}))`,
+    maskImage: layerMask(inward, k),
     // With reduced transparency, the fade alone (Foundations → Surfaces).
-    selectors: { ":root[data-transparency=\"reduced\"] &": { display: "none" } },
+    selectors: { ':root[data-transparency="reduced"] &': { display: "none" } },
   } as Parameters<typeof style>[0]);
-};
-export const blurTop = Array.from({ length: EDGE_BANDS }, (_, k) => band("bottom", k));
-export const blurBottom = Array.from({ length: EDGE_BANDS }, (_, k) => band("top", k));
+export const blurTop = Array.from({ length: EDGE_BANDS }, (_, k) => layer("bottom", k));
+export const blurBottom = Array.from({ length: EDGE_BANDS }, (_, k) => layer("top", k));
 export const fade = styleVariants({
-  top: { position: "absolute", inset: 0, backgroundImage: `linear-gradient(to bottom, ${t.background}, transparent)` },
-  bottom: { position: "absolute", inset: 0, backgroundImage: `linear-gradient(to top, ${t.background}, transparent)` },
+  top: { position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: `linear-gradient(to bottom, ${t.background}, transparent)` },
+  bottom: { position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: `linear-gradient(to top, ${t.background}, transparent)` },
 });
 
 export const column = style({

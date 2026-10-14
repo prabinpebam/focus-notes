@@ -366,7 +366,8 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       if (o.overflowY !== "auto" && o.overflowY !== "scroll") continue;
       if (!shown(el) || el === document.documentElement || el === document.body) continue;
       const mask = o.maskImage && o.maskImage !== "none" ? o.maskImage : o.webkitMaskImage ?? "none";
-      const edges = [...el.querySelectorAll(":scope > [data-scroll-edge]")];
+      // The note's edges sit beside its scroller (over its edges, not scrolling with it).
+      const edges = [...el.querySelectorAll(":scope > [data-scroll-edge]"), ...(el.parentElement?.querySelectorAll(":scope > [data-scroll-edge]") ?? [])];
       // Interface surfaces never fade or blur their scroll edges: only the note does.
       if (!el.hasAttribute("data-editor-scroller")) {
         if (mask !== "none" || edges.length) out.push(`fading scroll edges: ${nameOf(el)} fades its edges, but only the note may`);
@@ -375,7 +376,7 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       const more = { top: el.scrollTop > 1, bottom: el.scrollTop + el.clientHeight < el.scrollHeight - 1 };
       for (const side of ["top", "bottom"] as const) {
         const edge = edges.find((e) => e.getAttribute("data-scroll-edge") === side);
-        const showing = Boolean(edge && getComputedStyle(edge).opacity === "1" && getComputedStyle(edge).display !== "none");
+        const showing = Boolean(edge && getComputedStyle(edge).opacity === "1" && getComputedStyle(edge).visibility === "visible" && getComputedStyle(edge).display !== "none");
         if (more[side] !== showing) {
           out.push(`fading scroll edges: the note ${more[side] ? "has more to scroll to" : "has nothing more to scroll to"} at the ${side} but ${showing ? "fades it" : "doesn't fade it"}`);
           continue;
@@ -388,6 +389,14 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
         // 5 to 8 bands, the strongest (40 px) at the window's edge, each one in softer than the last.
         if (reduced ? blurs.length > 0 : blurs.length < 5 || blurs.length > 8 || blurs[0] !== v.blur || blurs.some((b, i) => i > 0 && b >= blurs[i - 1]!)) out.push(`fading scroll edges: the note's ${side} edge blurs ${blurs.join(", ") || "nothing"} px (up to ${reduced ? 0 : v.blur} at the edge, less further in)`);
         if (![...edge.children].some((c) => getComputedStyle(c).backgroundImage.startsWith("linear-gradient"))) out.push(`fading scroll edges: the note's ${side} edge doesn't fade`);
+        // Nothing from the edge up may be a backdrop root, or its blurs see nothing behind them.
+        for (let a: Element | null = edge; a && a !== document.documentElement; a = a.parentElement) {
+          const c = getComputedStyle(a);
+          const root = (c.filter !== "none" && "filter") || (Number(c.opacity) < 1 && "opacity") || (c.maskImage && c.maskImage !== "none" && "mask") || (c.clipPath !== "none" && "clip-path") || (c.mixBlendMode !== "normal" && "blend mode") || (a !== edge && c.backdropFilter && c.backdropFilter !== "none" && "backdrop filter") || (/filter|opacity/.test(c.willChange) && "will-change");
+          if (root) out.push(`fading scroll edges: ${nameOf(a)} has a ${root}, so the note's ${side} edge can't blur the text behind it`);
+        }
+        // The note itself carries no mask: the edges draw the fade.
+        if (mask !== "none") out.push(`fading scroll edges: the note's scroller has a mask (the edges draw the fade)`);
       }
     }
   }

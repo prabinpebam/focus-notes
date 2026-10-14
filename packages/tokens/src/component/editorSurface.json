@@ -321,9 +321,9 @@
         "$type": "dimension",
         "$value": "{layout.scrollBlur}"
       },
-      "edgeBlurMin": {
-        "$type": "dimension",
-        "$value": "{layout.scrollBlurMin}"
+      "edgeLayers": {
+        "$type": "number",
+        "$value": "{layout.scrollBands}"
       },
       "edgeLayer": {
         "$type": "number",
