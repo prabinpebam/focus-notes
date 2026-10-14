@@ -3,6 +3,8 @@ import { tokens } from "@focus-notes/tokens";
 
 export const base = style({ position: "fixed", display: "flex", pointerEvents: "none" });
 export const content = style({ pointerEvents: "auto", display: "flex" });
+// The desktop title bar band (DSK-02): the window's top layout.titleBar (44 px), under the layer's content.
+export const band = style({ position: "absolute", top: 0, left: 0, right: 0, height: tokens.layout.titleBar });
 export const layer = styleVariants({
   contextual: { zIndex: tokens.layer.contextual },
   trigger: { zIndex: tokens.layer.trigger },
@@ -12,10 +14,10 @@ export const layer = styleVariants({
   tooltip: { zIndex: tokens.layer.tooltip },
 });
 export const position = styleVariants({
-  // The trigger band: the trigger sits layout.triggerTop below the top edge, and what opens from it grows down.
+  // The trigger's band: the trigger sits layout.triggerTop below the top edge (D-78), and what opens from it grows down.
   topBand: { top: 0, left: 0, right: 0, height: tokens.layout.topBand, alignItems: "flex-start", justifyContent: "center", paddingTop: tokens.layout.triggerTop, boxSizing: "border-box" },
-  // The top right of the band: the app-drawn window controls on Windows and Linux (D-15).
-  topEnd: { top: 0, right: 0, height: tokens.layout.topBand, alignItems: "center", justifyContent: "flex-end" },
+  // The top right of the title bar band: the app-drawn window controls on Windows and Linux (D-15).
+  topEnd: { top: 0, right: 0, height: tokens.layout.titleBar, alignItems: "center", justifyContent: "flex-end" },
   belowTopBand: { top: tokens.layout.topBand, left: tokens.space.s, right: tokens.space.s, alignItems: "flex-start", justifyContent: "center" },
   fill: { inset: 0, alignItems: "stretch", justifyContent: "stretch" },
   center: { inset: 0, alignItems: "center", justifyContent: "center" },

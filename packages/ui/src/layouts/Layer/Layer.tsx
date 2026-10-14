@@ -5,7 +5,7 @@ import * as s from "./Layer.css.ts";
 export interface LayerProps {
   layer?: keyof typeof s.layer;
   position?: keyof typeof s.position;
-  /** Marks the layer as part of the window's drag band (desktop title bar). */
+  /** Puts the window's title bar band (the desktop's drag region, DSK-02) under the layer's content. */
   dragBand?: boolean;
   /** The landmark this layer forms for assistive technology. */
   landmark?: "none" | "banner" | "main" | "complementary" | "region";
@@ -21,7 +21,9 @@ const ROLE = { none: undefined, banner: "banner", main: "main", complementary: "
 export function Layer({ layer = "panel", position = "center", dragBand, landmark = "none", label, id, children }: LayerProps) {
   return (
     <FloatingContext.Provider value={true}>
-      <div id={id} className={`${s.base} ${s.layer[layer]} ${s.position[position]}`} data-drag-band={dragBand ? "" : undefined} role={ROLE[landmark]} aria-label={label}>
+      <div id={id} className={`${s.base} ${s.layer[layer]} ${s.position[position]}`} role={ROLE[landmark]} aria-label={label}>
+        {/* The band is the window's top 44 px, whatever the layer's height; the content above it is never dragged. */}
+        {dragBand ? <div className={s.band} data-drag-band="" /> : null}
         <div className={s.content} data-no-drag="">{children}</div>
       </div>
     </FloatingContext.Provider>

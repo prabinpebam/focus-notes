@@ -4011,7 +4011,8 @@
         },
         "dragBand": {
           "kind": "boolean",
-          "default": false
+          "default": false,
+          "description": "Puts the desktop title bar band under the layer: its top `layout.titleBar` (44 px), the window's drag region (DSK-02). The layer's own content is never part of it."
         },
         "landmark": {
           "kind": "enum",
@@ -5932,7 +5933,7 @@
     {
       "type": "WindowFrame",
       "tier": "host",
-      "description": "The app-built window's behavior on Windows and Linux (D-14): moving by the title bar band (with double-click to maximize and right-click for the system menu), the resize handles on every edge and corner, and the app-drawn system menu. The window's shape and shadow are AppRoot's `frame`.",
+      "description": "The app-built window's behavior on Windows and Linux (D-14): moving by the title bar band (with double-click to maximize and right-click for the system menu), showing the window controls while the pointer is on the band (in full screen, once it reaches the top edge), the resize handles on every edge and corner, and the app-drawn system menu. The window's shape and shadow are AppRoot's `frame`.",
       "props": {
         "frame": {
           "kind": "enum",
@@ -5948,6 +5949,11 @@
           "kind": "boolean",
           "bindable": true,
           "description": "Shows the resize handles: not while maximized or full screen."
+        },
+        "fullScreen": {
+          "kind": "boolean",
+          "bindable": true,
+          "description": "Full screen (DSK-04): the title bar band and its window controls hide until the pointer reaches the top edge. Keyboard focus still shows the controls."
         },
         "menu": {
           "kind": "list",
@@ -6014,6 +6020,8 @@
       "slots": {},
       "states": [
         "rest",
+        "bandHover",
+        "fullScreenHidden",
         "moving",
         "resizing",
         "menuOpen"

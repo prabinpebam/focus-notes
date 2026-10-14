@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>The Electron app is a dedicated desktop experience and the only client that saves notes to GitHub; the web app on each instance's own GitHub Pages is where you start, keeping its own notes in the browser (<a href="../plan/decisions.md">D-80</a>, <a href="../plan/decisions.md">D-90</a>). It's downloaded from GitHub Releases. On every platform the top 44 px is an invisible title bar with the <a href="main-ui.html">trigger</a> centered in it, and the window controls appear only on hover or keyboard focus. <strong>Windows and Linux:</strong> a transparent, frameless window with <strong>20 px rounded corners</strong>. Electron's transparent windows lose native resizing, snapping, maximize, and the shadow, so the app <strong>rebuilds all of window management itself</strong>: moving, resizing, maximize and restore, edge and corner snapping, a Snap Layouts picker, a system menu, the shadow, and multi-monitor handling. <strong>macOS:</strong> a <strong>native window</strong> with the system's own corners, shadow, resizing, full screen, and tiling, and no 20 px requirement (owner decision D-14). Covers DSK-01 to DSK-08 in the <a href="../product/requirements.md">requirements</a>.</p>
+  <p>The Electron app is a dedicated desktop experience and the only client that saves notes to GitHub; the web app on each instance's own GitHub Pages is where you start, keeping its own notes in the browser (<a href="../plan/decisions.md">D-80</a>, <a href="../plan/decisions.md">D-90</a>). It's downloaded from GitHub Releases. On every platform the top 44 px is an invisible title bar with the <a href="main-ui.html">trigger</a> centered across it, just below (40 px from the top edge, D-78), and the window controls appear only on hover or keyboard focus. In full screen the band hides until the pointer reaches the top edge. macOS also has a full native menu bar, built from the app's commands. <strong>Windows and Linux:</strong> a transparent, frameless window with <strong>20 px rounded corners</strong>. Electron's transparent windows lose native resizing, snapping, maximize, and the shadow, so the app <strong>rebuilds all of window management itself</strong>: moving, resizing, maximize and restore, edge and corner snapping, a Snap Layouts picker, a system menu, the shadow, and multi-monitor handling. <strong>macOS:</strong> a <strong>native window</strong> with the system's own corners, shadow, resizing, full screen, and tiling, and no 20 px requirement (owner decision D-14). Covers DSK-01 to DSK-08 in the <a href="../product/requirements.md">requirements</a>.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -66,7 +66,7 @@
       <tr><td>Corner radius</td><td>The system's own</td><td>20 px (0 when maximized, snapped, or full screen)</td></tr>
       <tr><td>Window management</td><td>Native: resizing, full screen, tiling, shadow</td><td>Rebuilt by the app (see below)</td></tr>
       <tr><td>Title bar band</td><td>Top 44 px, drag region</td><td>Top 44 px, drag region</td></tr>
-      <tr><td>Trigger</td><td>Centered in the band</td><td>Centered in the band</td></tr>
+      <tr><td>Trigger</td><td>Centered across the band, 40 px below the top edge</td><td>Centered across the band, 40 px below the top edge</td></tr>
       <tr><td>Window controls</td><td>Native traffic lights, top left, shown on hover</td><td>App-drawn minimize, maximize, close, top right, shown on hover or keyboard focus (<kbd>Tab</kbd> from the open toolbar reaches them; <kbd>Esc</kbd> on them closes the toolbar and goes back to the note)</td></tr>
     </tbody>
   </table>
@@ -101,42 +101,59 @@
     <tr><td><strong>Keyboard snapping</strong></td><td><kbd>Win</kbd>+arrow keys belong to Windows, and the app can't take over the <kbd>Win</kbd> key. The same moves are commands (<code>&gt; Snap window left</code>, <code>&gt; Snap window right</code>, and one for each third and quarter), with Snap left and Snap right in the system menu. Whether Windows applies <kbd>Win</kbd>+arrows to this window is checked by hand (D-104).</td></tr>
     <tr><td><strong>Shadow</strong></td><td>A soft CSS shadow (<code>shadow.1</code>) and a hairline border, drawn in a 16 px transparent margin around the window. The margin passes clicks through to whatever is behind it, so it never blocks other apps: the main process checks the pointer against the margin and the handles and ignores the mouse over the rest of the margin (forwarding pointer moves on Windows). It goes away when maximized, snapped, or full screen.</td></tr>
     <tr><td><strong>Multiple monitors and scaling</strong></td><td>Positions and sizes are calculated for each display's work area and scale factor. Moving to a display with a different scale re-measures the window so it keeps its physical size: a move sets only the window's position, and afterwards its size in device-independent pixels (about the same size on screen at each display's scale) is put back if the system changed it. A window that would open off-screen is moved onto the nearest display.</td></tr>
-    <tr><td><strong>Full screen</strong></td><td><kbd>F11</kbd>: the window covers the whole display, and corners and shadow go away (the app keeps full screen itself, because Electron doesn't for transparent windows). The title bar band hides until the pointer reaches the top edge (WP-2.2). The trigger stays visible.</td></tr>
+    <tr><td><strong>Full screen</strong></td><td><kbd>F11</kbd>: the window covers the whole display, and corners and shadow go away (the app keeps full screen itself, because Electron doesn't for transparent windows). The title bar band hides until the pointer reaches the top edge (<a href="#window-behavior">Window behavior</a>). The trigger stays visible.</td></tr>
   </tbody>
 </table>
 <div class="slate-callout slate-callout--warning" role="note">
   <p class="slate-callout__title">Checked by hand</p>
-  <p>The journeys drive the window through the app's own handling: screen positions given to the window frame, the controls, the picker, and the menu. What only a real desktop shows is in the M2 demo on Windows 11, Windows 10, and Ubuntu: dragging with a real pointer and snapping at every edge and corner, <kbd>Win</kbd>+arrows, <kbd>Alt</kbd>+<kbd>Space</kbd> opening only the app's menu, the click-through margin, and moving between monitors with different scaling (D-104).</p>
+  <p>The journeys drive the window through the app's own handling: screen positions given to the window frame, the controls, the picker, and the menu. What only a real desktop shows is in the M2 demo on Windows 11, Windows 10, and Ubuntu: dragging with a real pointer and snapping at every edge and corner, <kbd>Win</kbd>+arrows, <kbd>Alt</kbd>+<kbd>Space</kbd> opening only the app's menu, the click-through margin, moving between monitors with different scaling (D-104), and the full-screen band coming back with a real pointer at the top of the display. On a Mac: the traffic lights following a real pointer on the band, each menu bar key running its command once on a real keyboard, and Help's search finding commands (D-106).</p>
 </div>
 
 <h2 id="title-bar" data-reader-personas="design product">Title bar</h2>
 <dl class="slate-defs">
   <dt>Band</dt>
-  <dd>The top 44 px of the window. It's invisible: the same color as the canvas, with no line under it. When the note scrolls, its text passes under the band and the frosted trigger.</dd>
+  <dd>The top 44 px of the window (<code>layout.titleBar</code>). It's invisible: the same color as the canvas, with no line under it. When the note scrolls, its text passes under the band and the frosted trigger.</dd>
   <dt>Drag</dt>
   <dd>The whole band moves the window, except the trigger, the window controls, and any open panel. On macOS this is the system's drag region. On Windows and Linux it's the app's own move handling (above).</dd>
   <dt>Trigger</dt>
-  <dd>Centered horizontally and vertically in the band (see <a href="main-ui.html#the-trigger">Main UI</a>). This is its only position, and it doesn't move when the window is resized.</dd>
+  <dd>Centered horizontally across the band, 40 px below the window's top edge (owner decision D-78, see <a href="main-ui.html#the-trigger">Main UI</a>), so it sits just under the band rather than inside it (D-106). It's never part of the drag region. This is its only position, and it doesn't move when the window is resized.</dd>
   <dt>macOS controls</dt>
-  <dd>The native traffic lights, positioned to sit comfortably in the band. They're hidden at rest and appear when the pointer enters the band, when the toolbar is open, or when the window isn't the active one (the native window-button visibility setting does this). Double-clicking the band follows the user's system setting (zoom or minimize).</dd>
+  <dd>The native traffic lights, positioned to sit comfortably in the band. They sit 16 px from the left and 14 px from the top (<code>window.trafficLightX</code>, <code>window.trafficLightY</code>). They're hidden at rest and appear when the pointer enters the band, when the toolbar is open, when the window isn't the active one, and in full screen, where the system shows them with the menu bar. The band is the system's drag region, which gives the page no pointer events, so the main process checks the pointer against it a few times a second (from the moment the caret is ready) and sets the native window-button visibility. They can't take keyboard focus; the Window menu has their commands. Double-clicking the band follows the user's system setting (zoom or minimize).</dd>
   <dt>Windows and Linux controls</dt>
   <dd>Minimize, maximize/restore, and close, drawn by the app at the top right in theme colors, with a red hover state on close following the Windows convention. They follow the same show-on-hover rules as on macOS. They're real buttons that can be focused and have accessible names. Hovering maximize for 400 ms opens the Snap Layouts picker (D-15). They have no tooltips, since hovering maximize opens the picker.</dd>
   <dt>Keyboard</dt>
   <dd>Every window action is also a command: <code>&gt; Minimize window</code>, <code>&gt; Maximize window</code>, <code>&gt; Snap window left</code>, <code>&gt; Close window</code>, <code>&gt; Toggle full screen</code>, with the usual shortcuts (<a href="keyboard-shortcuts.md#app-and-window">App and window</a>).</dd>
 </dl>
 
-<h2 data-reader-personas="design product">Window behavior</h2>
+<h2 id="window-behavior" data-reader-personas="design product">Window behavior</h2>
 <table>
   <thead><tr><th>Behavior</th><th>Specification</th></tr></thead>
   <tbody>
-    <tr><td>Full screen</td><td><kbd>⌃⌘F</kbd> on macOS (native full-screen Space), <kbd>F11</kbd> on Windows and Linux. The title bar band collapses and comes back when the pointer reaches the top edge. The trigger stays visible.</td></tr>
+    <tr><td>Full screen</td><td><kbd>⌃⌘F</kbd> on macOS (native full-screen Space), <kbd>F11</kbd> on Windows and Linux, and Full screen in ⋯ (View) and in the macOS View menu. On Windows and Linux the title bar band hides: its window controls stay hidden, even with the pointer on the band, until the pointer reaches the top edge (within <code>window.revealEdge</code>, 2 px); then they show while the pointer stays on the band. Keyboard focus still shows them. On macOS the system brings back the menu bar and the title bar at the top edge. The trigger stays visible.</td></tr>
     <tr><td>Remembered state</td><td>Size, position, maximized, snapped, and full-screen state are remembered per window and restored at launch, from <code>window.json</code> in the app's data folder, and moved onto a display that's there now.</td></tr>
     <tr><td>Multiple windows (P1)</td><td>One note per window. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> opens a new one. Spotlight's alternative action (<kbd>Mod</kbd>+<kbd>Enter</kbd>) opens a note in a new window.</td></tr>
-    <tr><td>Menus</td><td>macOS: a full native menu bar at the top of the screen lists every command and shortcut. Windows and Linux: no menu bar. Commands are in the toolbar, the ⋯ menu, Spotlight, context menus, and the system menu.</td></tr>
+    <tr><td>Menus</td><td>macOS: a full native menu bar at the top of the screen lists every command and shortcut (<a href="#macos-menu-bar">below</a>). Windows and Linux: no menu bar. Commands are in the toolbar, the ⋯ menu, Spotlight, context menus, and the system menu.</td></tr>
     <tr><td>External links</td><td>Open in the default browser. The app window never navigates away from the app.</td></tr>
     <tr><td>Single instance</td><td>Opening the app again focuses the existing window instead of starting a second copy.</td></tr>
   </tbody>
 </table>
+
+<h2 id="macos-menu-bar" data-reader-personas="design product engineering">macOS menu bar</h2>
+<p>The menu bar is generated from the command registry, so it can't disagree with the keys, the toolbar, or the ⋯ menu (DSK-05, D-106). Each command is in it once, with its name, its macOS key from the keymap, and its state: a checkmark for a command that's on (Focus mode, Sync appearance), a radio mark for the chosen appearance, themes, and font, and dimmed while it can't run. Choosing an item runs the command in the app, like a toolbar button. The system's own items do the system's work.</p>
+<table>
+  <thead><tr><th>Menu</th><th>Items</th></tr></thead>
+  <tbody>
+    <tr><td>Focus Notes</td><td>About Focus Notes, Settings… (<kbd>⌘,</kbd>), Services, Hide Focus Notes, Hide Others, Show All, Quit Focus Notes</td></tr>
+    <tr><td>File</td><td>New note, Open…, Quick open, Save, Sync now, Make public, Make private, Import notes…, Close Window (<kbd>⌘W</kbd>)</td></tr>
+    <tr><td>Edit</td><td>Undo and Redo (the system's items, named and keyed as the commands, so they work in text fields too), Cut, Copy, Paste, Paste and Match Style, Select All, and Find ▸ (Find, Find and replace, Next match, Previous match)</td></tr>
+    <tr><td>Format</td><td>Bold, Italic, Strikethrough, Inline code, Add or edit link, Clear formatting; text and headings 1 to 3; bulleted, numbered, and task lists, and checking a task; quote and code block; moving focus into the formatting toolbar</td></tr>
+    <tr><td>View</td><td>Show the toolbar, Focus mode, Switch light and dark, Appearance ▸, Light theme ▸, Dark theme ▸, Sync appearance, text size larger, smaller, and reset, Font ▸, interface size larger, smaller, and reset, Full screen</td></tr>
+    <tr><td>Go</td><td>Files, Show the current note in Files, Recently deleted, start and end of the note, Resolve the conflict, Go to the message</td></tr>
+    <tr><td>Window</td><td>The system's: Minimize, Zoom, Bring All to Front, and the window list</td></tr>
+    <tr><td>Help</td><td>The system's search, and Keyboard shortcuts</td></tr>
+  </tbody>
+</table>
+<p>Commands that aren't in it are named in the registry's list with the reason: values and events views send, keys of one focused control (the find bar's options, a table's cells, the Files tree), buttons of an open panel, dialog, or context menu, the browser's own commands, the app-built window's commands (Windows and Linux), and Spotlight until it arrives. A test fails when a new command is in neither list. Keys reach the page first: a menu item chosen by its key just after the page saw that key press isn't run again, so each key runs its command once, and a key that belongs to a field with focus stays there.</p>
 
 <h2 data-reader-personas="design">Light, dark, and system</h2>
 <p>The window follows the same three-way theme choice as the rest of the app (<a href="theming.md">Theming</a>): <strong>System</strong> (default, follows the OS live), <strong>Light</strong>, or <strong>Dark</strong>. The native parts (macOS traffic lights and menus, context menus, the Windows taskbar thumbnail) follow it too, because the app sets Electron's native theme to match.</p>

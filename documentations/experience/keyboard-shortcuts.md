@@ -218,7 +218,7 @@ The tree's keys work while focus is in the tree, and New folder and Move to… a
 | Run an action | <kbd>Enter</kbd> or <kbd>Space</kbd> |
 | Close and return to the caret | <kbd>Esc</kbd> |
 
-On macOS the desktop app also has a full native **menu bar** (File, Edit, Format, View, Go, Window, Help) that lists every command with its shortcut. That gives macOS users the standard Help menu search for free. The menu bar sits at the top of the screen, so the window itself stays blank.
+On macOS the desktop app also has a full native **menu bar** (File, Edit, Format, View, Go, Window, Help) that lists every command with its shortcut. That gives macOS users the standard Help menu search for free. The menu bar sits at the top of the screen, so the window itself stays blank. It's generated from the command registry, so its keys are this page's keys ([Desktop app → macOS menu bar](desktop-app.html#macos-menu-bar), [D-106](../plan/decisions.md)). Keys of one focused control (the find bar's options, a table's cells, the Files tree) aren't in it; they're in the cheat sheet. Each key runs its command once, whether the page or the menu gets it first.
 
 ## Conflict register
 

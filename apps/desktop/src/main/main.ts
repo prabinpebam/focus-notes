@@ -4,7 +4,7 @@
  * renderer; Git talks to the workspace's remotes (WP-3.3), and its own only requests are setup's
  * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
-import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
 import { existsSync, readFileSync, realpathSync, watch, type FSWatcher } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -30,6 +30,7 @@ import type { ConflictChoice, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
 import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
+import { AppMenuBar } from "./window/menu-bar.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 /** Windows and Linux: the transparent window with app-built window management; macOS: the system's (D-14). */
@@ -815,6 +816,13 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("history:deleted", async () => (isWorkspace() ? (await gitOpening)?.deleted() ?? [] : []));
   handle("history:restore", (ids, folder) => restoreNotes(ids, folder));
   windowFrame?.registerIpc(fromApp, win);
+  // macOS's menu bar (DSK-05): the renderer builds it from its commands; choosing an item runs the command there.
+  if (platform === "macos") {
+    const menuBar = new AppMenuBar<Electron.Menu>(Menu, (id, byKey) => win()?.webContents.send("menu:run", id, byKey));
+    ipcMain.on("menu:set", (e, model: unknown) => {
+      if (fromApp(e)) menuBar.set(model);
+    });
+  }
   handle("window:fullScreen", async () => {
     if (windowFrame?.toggleFullScreen()) return;
     const w = win();

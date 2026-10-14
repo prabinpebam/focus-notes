@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { windowMetrics } from "@focus-notes/tokens";
 import { Popover } from "react-aria-components";
 import { CommandMenu } from "../../primitives/MenuButton/MenuButton.tsx";
 import * as menuStyles from "../../primitives/MenuButton/MenuButton.css.ts";
@@ -14,6 +15,8 @@ export interface DragPayload { phase: "start" | "move" | "end"; kind: Kind; x: n
 export interface WindowFrameProps {
   frame?: "native" | "rounded" | "square";
   resizable?: boolean;
+  /** Full screen: the band hides until the pointer reaches the window's top edge (DSK-04). */
+  fullScreen?: boolean;
   menu: MenuSection[];
   menuLabel: string;
   menuRequest?: number;
@@ -39,10 +42,12 @@ const band = (t: EventTarget | null) => {
  * edge and corner. Positions are screen coordinates in DIP; the shell does the rest. Draws nothing
  * where the system owns the window.
  */
-export function WindowFrame({ frame = "native", resizable, menu, menuLabel, menuRequest = 0, menuX = -1, menuY = -1, keyboard = "none", onDrag, onToggleMaximize, onMenu, onAction, onKey }: WindowFrameProps) {
+export function WindowFrame({ frame = "native", resizable, fullScreen = false, menu, menuLabel, menuRequest = 0, menuX = -1, menuY = -1, keyboard = "none", onDrag, onToggleMaximize, onMenu, onAction, onKey }: WindowFrameProps) {
   const custom = frame !== "native";
   const events = useRef({ onDrag, onToggleMaximize, onMenu, onKey });
   events.current = { onDrag, onToggleMaximize, onMenu, onKey };
+  const full = useRef(fullScreen);
+  full.current = fullScreen;
 
   // While the system menu's Move or Size runs, the keys move the window, not the note.
   useEffect(() => {
@@ -106,11 +111,14 @@ export function WindowFrame({ frame = "native", resizable, menu, menuLabel, menu
       const o = fixedBox();
       events.current.onMenu?.({ x: Math.round(e.clientX - o.left), y: Math.round(e.clientY - o.top) });
     };
-    // The window controls show while the pointer is over the band (DD-DSK-04).
+    // The window controls show while the pointer is over the band (DD-DSK-04). In full screen the band
+    // hides until the pointer reaches the top edge, and stays while the pointer is on it (DSK-04).
     const over = (e: PointerEvent) => {
       const t = e.target instanceof Element ? e.target : null;
-      if (t?.closest("[data-drag-band], [data-window-controls]")) html.dataset.windowBand = "";
-      else delete html.dataset.windowBand;
+      const onBand = Boolean(t?.closest("[data-drag-band], [data-window-controls]"));
+      const shown = "windowBand" in html.dataset;
+      if (onBand && !shown && (!full.current || e.clientY <= windowMetrics.revealEdge)) html.dataset.windowBand = "";
+      else if (!onBand && shown) delete html.dataset.windowBand;
     };
     const out = (e: PointerEvent) => {
       if (!e.relatedTarget) delete html.dataset.windowBand;
@@ -130,6 +138,7 @@ export function WindowFrame({ frame = "native", resizable, menu, menuLabel, menu
     document.addEventListener("dblclick", dblclick);
     document.addEventListener("contextmenu", contextmenu);
     document.addEventListener("pointerover", over);
+    document.addEventListener("pointermove", over);
     document.addEventListener("pointerout", out);
     return () => {
       cancelAnimationFrame(frameId);
@@ -141,10 +150,16 @@ export function WindowFrame({ frame = "native", resizable, menu, menuLabel, menu
       document.removeEventListener("dblclick", dblclick);
       document.removeEventListener("contextmenu", contextmenu);
       document.removeEventListener("pointerover", over);
+      document.removeEventListener("pointermove", over);
       document.removeEventListener("pointerout", out);
       delete html.dataset.windowBand;
     };
   }, [custom]);
+
+  // Going full screen hides the band, even with the pointer on it: it comes back at the top edge.
+  useEffect(() => {
+    if (fullScreen) delete document.documentElement.dataset.windowBand;
+  }, [fullScreen]);
 
   // The system menu (Alt+Space, or right-clicking the band) opens at the pointer or under the band's start.
   const anchorRef = useRef<HTMLDivElement | null>(null);

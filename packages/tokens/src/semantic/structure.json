@@ -182,6 +182,9 @@
     "topBand": {
       "$value": "{ref.size.110}"
     },
+    "titleBar": {
+      "$value": "{ref.size.44}"
+    },
     "measure": {
       "$value": "{ref.size.70ch}"
     },
@@ -461,6 +464,18 @@
     "snapPreviewOpacity": {
       "$type": "number",
       "$value": 0.3
+    },
+    "revealEdge": {
+      "$type": "dimension",
+      "$value": "{ref.size.2}"
+    },
+    "trafficLightX": {
+      "$type": "dimension",
+      "$value": "{ref.size.16}"
+    },
+    "trafficLightY": {
+      "$type": "dimension",
+      "$value": "{ref.size.14}"
     }
   },
   "wait": {

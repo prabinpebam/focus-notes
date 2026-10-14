@@ -16,6 +16,8 @@ export interface MountOptions {
   overlays?: readonly string[];
 }
 
+const MODIFIERS = new Set(["Meta", "Control", "Alt", "Shift", "AltGraph", "CapsLock", "Fn"]);
+
 export function mountApp(el: Element, { app, views, view = "canvas", overlays = [] }: MountOptions): Root {
   // Before anything renders: HTML reaches the DOM only through the sanitizing policy (SEC-02).
   installTrustedTypes();
@@ -32,6 +34,8 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   // same thing wherever focus is (on a German layout Ctrl+Shift+7 types "/", which is the cheat
   // sheet, not the numbered list). Editor keys aren't app keys, so they reach the editor.
   window.addEventListener("keydown", (e) => {
+    // A key a menu bar item could have (macOS, DSK-05): the page has it first, so the menu leaves it alone.
+    if ((e.metaKey || e.ctrlKey || e.altKey || /^F\d+$/.test(e.key)) && !MODIFIERS.has(e.key)) app.keySeen();
     // keyCode 229 is the IME's own keydown on some platforms, before isComposing is set (KEY-06).
     if (e.defaultPrevented || e.isComposing || e.keyCode === 229) return;
     // Key scopes focus is inside, innermost first (data-key-scope on primitives and layouts).

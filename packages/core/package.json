@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "type": "module",
-  "exports": {".": "./src/index.ts", "./workspace-format": "./src/workspace-format.ts", "./workspace": "./src/workspace.ts", "./setup": "./src/setup.ts", "./first-run": "./src/first-run.ts", "./notes": "./src/notes.ts", "./settings": "./src/settings.ts", "./history": "./src/history.ts", "./inventory": "./src/inventory.ts", "./window-geometry": "./src/window-geometry.ts"},
+  "exports": {".": "./src/index.ts", "./workspace-format": "./src/workspace-format.ts", "./workspace": "./src/workspace.ts", "./setup": "./src/setup.ts", "./first-run": "./src/first-run.ts", "./notes": "./src/notes.ts", "./settings": "./src/settings.ts", "./history": "./src/history.ts", "./inventory": "./src/inventory.ts", "./window-geometry": "./src/window-geometry.ts", "./menu-bar": "./src/menu-bar.ts"},
   "scripts": { "typecheck": "tsc -p tsconfig.json" },
   "dependencies": { "@focus-notes/markdown": "workspace:*", "@focus-notes/tokens": "workspace:*", "intl-messageformat": "12.1.3" }
 }

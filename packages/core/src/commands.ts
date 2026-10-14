@@ -132,6 +132,11 @@ export class CommandRegistry<S> {
     return [...this.#commands.keys()];
   }
 
+  /** A command's keys as registered, for menus that show them for a platform (the macOS menu bar). */
+  shortcut(id: string): Shortcut | undefined {
+    return this.#commands.get(id)?.shortcut;
+  }
+
   describe(id: string): CommandDescription {
     const def = this.#commands.get(id);
     if (!def) throw new CommandError(`Unknown command ${id}`);

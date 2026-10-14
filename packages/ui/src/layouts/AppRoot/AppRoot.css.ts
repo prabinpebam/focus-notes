@@ -8,9 +8,10 @@ globalStyle("html, body", { margin: 0, padding: 0, height: "100%", overflow: "hi
 globalStyle("body", { backgroundColor: t.background, color: t.text, fontFamily: t.font, fontSize: t.fontSize, WebkitFontSmoothing: "antialiased" });
 globalStyle("#root", { height: "100%" });
 globalStyle("::selection", { backgroundColor: t.selection });
-// The desktop title bar band: draggable, except for anything interactive placed on it.
+// The desktop title bar band (DSK-02): the system's drag region on macOS, except for any layer's
+// content that overlaps it (the trigger, the window controls), which is never dragged.
 globalStyle("[data-drag-band]", { WebkitAppRegion: "drag" } as Record<string, string>);
-globalStyle("[data-drag-band] [data-no-drag]", { WebkitAppRegion: "no-drag" } as Record<string, string>);
+globalStyle("[data-no-drag]", { WebkitAppRegion: "no-drag" } as Record<string, string>);
 
 export const root = style({
   position: "relative",

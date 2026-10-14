@@ -7,7 +7,7 @@ export const contract = defineContract({
   props: {
     layer: { kind: "enum", values: ["contextual", "trigger", "panel", "dialog", "toast", "tooltip"], default: "panel" },
     position: { kind: "enum", values: ["topBand", "topEnd", "belowTopBand", "fill", "center", "bottomCenter", "bottomStart"], default: "center" },
-    dragBand: { kind: "boolean", default: false },
+    dragBand: { kind: "boolean", default: false, description: "Puts the desktop title bar band under the layer: its top `layout.titleBar` (44 px), the window's drag region (DSK-02). The layer's own content is never part of it." },
     landmark: { kind: "enum", values: ["none", "banner", "main", "complementary", "region"], default: "none" },
     label: { kind: "message", requiredWhen: "landmark" },
   },
