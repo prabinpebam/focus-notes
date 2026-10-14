@@ -10,5 +10,7 @@
   "shadow": { "$type": "shadow", "$value": "{shadow.1}" },
   "duration": { "$type": "duration", "$value": "{motion.enter}" },
   "layer": { "$type": "number", "$value": "{layer.tooltip}" },
-  "shortcutOpacity": { "$type": "number", "$value": "{opacity.muted}" }
+  "shortcutOpacity": { "$type": "number", "$value": "{opacity.muted}" },
+  "offset": { "$type": "dimension", "$value": "{space.s}", "$description": "Between the control and its tooltip (D-111)." },
+  "edge": { "$type": "dimension", "$value": "{space.s}", "$description": "The least distance from the window's edges." }
 } } }
