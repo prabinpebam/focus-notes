@@ -32,10 +32,13 @@ export function landmarkOf(el: Element | null): HTMLElement | undefined {
   return found;
 }
 
-/** Whether a control can be seen and used: a tooltip never names one that can't (it would float on its own). */
+/**
+ * Whether a control is there to be named: a tooltip never names one that's gone (it would float on
+ * its own, in a corner). Fading in (the toolbar opening, its focus already inside) counts as there.
+ */
 function showing(el: HTMLElement | null): el is HTMLElement {
   if (!el?.isConnected || el.closest("[inert]")) return false;
-  if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false;
+  if (!el.checkVisibility({ visibilityProperty: true })) return false;
   const r = el.getBoundingClientRect();
   return r.width > 0 && r.height > 0;
 }
