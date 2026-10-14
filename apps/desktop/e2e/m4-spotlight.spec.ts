@@ -284,11 +284,20 @@ test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make publi
   await page.keyboard.press(`${mod}+K`);
   await expect(spotlight(page)).toContainText("Actions for “Focus sessions”");
 
-  // Copy link: a Markdown link from the open note.
+  // Copy link: a Markdown link from the open note. The shell's side (`clipboard:write`) is recorded
+  // instead of touching the real clipboard, which other programs on the machine can change meanwhile
+  // (as EDT-13's journey does).
+  type Spy = { copied: string[] };
+  await l.app.evaluate(({ clipboard }) => {
+    const spy = globalThis as unknown as Spy;
+    spy.copied = [];
+    clipboard.writeText = (text: string) => { spy.copied.push(text); };
+  });
+  const copied = () => l.app.evaluate(() => (globalThis as unknown as Spy).copied);
   while (!(await active(page).textContent())?.startsWith("Copy Markdown link")) await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
   await expect(spotlight(page)).toBeHidden();
-  await expect.poll(() => l.app.evaluate(({ clipboard }) => clipboard.readText())).toBe("[Focus sessions](journal/focus-sessions.md)");
+  await expect.poll(copied).toEqual(["[Focus sessions](journal/focus-sessions.md)"]);
 
   // Move to…: through Files' own dialog, as one batch.
   await open(page);
