@@ -146,6 +146,23 @@ Standard easing is `cubic-bezier(0.2, 0, 0, 1)`, decelerate is `cubic-bezier(0, 
 - **Numbers as digits** ("3 notes"), with correct plurals.
 - **Tooltips** appear after 500 ms of hovering, show the name and shortcut ("Bold ⌘B"), and never hold information you can't get another way.
 
+<h2 id="visual-quality" data-reader-personas="design engineering">Visual quality</h2>
+
+Every surface is checked against these rules before it's done (D-111, [Definition of done → Visual quality](../plan/definition-of-done.md#work-package-definition-of-done)). Each rule is measurable, and the journeys check the geometry ones automatically.
+
+| Rule | What it means | How it's checked |
+| --- | --- | --- |
+| **Inside the window** | Nothing the app draws (dialogs, scrims, sheets, menus, popovers, tooltips, toasts) extends past the window. On Windows and Linux that's the drawn window inside its shadow margin, clipped to its 20 px corners; scrims dim only the drawn window. | Every overlay's box is inside the window's box, in journeys |
+| **Never edge to edge** | A dialog keeps at least `space.l` (24 px) from every window edge. When its content grows, the dialog stops at the window height minus that inset and its body scrolls; the header and footer stay put. | Dialog box inset ≥ 24 px, also at the minimum window size (480 × 360) |
+| **Inside its container** | Content never overflows the surface that holds it: segmented controls, tabs, and button rows wrap or scroll inside the dialog or panel, never past its edge. | Every child box is inside its surface's content box |
+| **Uniform padding** | A panel, sheet, or dialog has the same padding on all sides (`space.m`, 16 px, unless its design page says otherwise). A heading row is part of the content, not extra top padding. | Top, side, and bottom padding equal within 1 px |
+| **Floating side sheets** | Side sheets (Files on the left, Theme on the right) float with the same inset from the window's top, side, and bottom edges, so they're vertically centered, with the trigger band kept clear. | Top and bottom insets equal, and the side inset equal to them |
+| **Gaps between items** | Items in a list (Files rows, results, menu items) have a gap of `space.xxs` (2 px) between their highlight shapes, so a selected or hovered row never touches its neighbor. | Adjacent row boxes don't touch |
+| **Fading scroll edges** | A scrolling area fades its content out over 50 px at the top and bottom, only on a side where there's more to scroll to, so text never ends at a hard cut under a header or footer. No fade in forced colors. | The fade is present exactly when there's more content that way |
+| **Aligned rows** | Controls and their labels in a row line up: a checkbox, switch, or radio is centered on the first line of its label, icons sit centered on the text, and fields in a row share a baseline. | Control center within 1 px of the first text line's center |
+| **Grouped and spaced** | Related controls sit together in a group, with the spacing scale between them: `space.xs` (4 px) inside a group, `space.s` (8 px) between controls, `space.m` (16 px) between groups. A label sits closer to what it labels than to anything else. | Design review against the surface's design page |
+| **Anchored tooltips** | A tooltip appears next to the control it names (below it, or above it near the bottom edge), centered on it and kept inside the window, never at a fixed place such as a corner. | Tooltip box adjacent to its control's box, in journeys |
+
 <h2 data-reader-personas="product design">Design decisions</h2>
 
 | ID | Decision | Serves | Rationale | Alternatives rejected |
@@ -155,4 +172,5 @@ Standard easing is `cubic-bezier(0.2, 0, 0, 1)`, decelerate is `cubic-bezier(0, 
 | DD-FND-03 | A single icon family, Fluent UI System Icons. | UC-CANVAS-02 | One consistent stroke and metaphor style reads as calm. MIT fits D-20. Its Office lineage matches the Loop-like editing feel. | Material Symbols (Apache-2.0, fine, but heavier visually). Mixing sets. |
 | DD-FND-04 | Motion of 200 ms or less, opacity-only with reduced motion. | UC-FOCUS-02, UC-KEY-02 | Motion should explain where something came from, never slow down a keyboard user. | Expressive, spring-based motion. |
 | DD-FND-05 | Hit targets of 32 px for pointers and 44 px for touch, regardless of visual size. | UC-CANVAS-02 | Lets visuals stay small and quiet (the 30 px trigger) without making them hard to hit. | Making every visual control 44 px, which clutters the canvas. |
+| DD-FND-07 | A measurable visual quality checklist that every surface passes (D-111). | UC-CANVAS-02 | Calm depends on precision: misaligned rows, uneven padding, and overlays that spill out of the window read as broken, not calm (CP-CALM-01). Rules a journey can check keep them from coming back. | Leaving it to judgment in review, which let these slip. |
 | DD-FND-06 | Bundle a highly legible font (Atkinson Hyperlegible) and a dyslexia-friendly option (OpenDyslexic). | UC-THEME-08 | Comfort-sensitive writers (SC-THEME-06) shouldn't have to install fonts system-wide. | Only offering system fonts. |

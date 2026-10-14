@@ -238,7 +238,7 @@ Owner: *"Powerful search-and-act… Ctrl+K can trigger a macOS Spotlight-like UI
 | SPT-01 | <kbd>Mod</kbd>+<kbd>/</kbd> opens Spotlight from anywhere in the app. <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> also opens it on every keyboard layout (D-16). | P0 |
 | SPT-02 | One ranked list covering notes (title, path, headings, full text), folders, commands, and settings. | P0 |
 | SPT-03 | Quick actions for the selected result (<kbd>→</kbd> or <kbd>Mod</kbd>+<kbd>K</kbd>): open in a new window, copy link, move, rename, make public or private, delete, and more. | P0 |
-| SPT-04 | Commands and settings show their current state. The empty field shows recent notes and suggestions. No match offers create and find-in-all-notes. | P0 |
+| SPT-04 | Commands and settings show their current state. The empty field shows recent notes and suggestions. No match offers create and find-in-all-notes. Spotlight is also the action center: with the field empty, after recent notes, it lists every action the app has, so <kbd>Mod</kbd>+<kbd>/</kbd>, the arrow keys, and <kbd>Enter</kbd> find and run any of them (D-111). | P0 |
 | SPT-05 | Modes and prefixes: quick open (<kbd>Mod</kbd>+<kbd>P</kbd>), commands (<code>&gt;</code>, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>), headings (<code>#</code>, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>), help (<code>?</code>). | P0 |
 | SPT-06 | Filters (`is:`, `in:`, `type:`, exact phrases) and a preview pane on the desktop. | P1 |
 | SPT-07 | Opens in under 50 ms. Title and command results in under 16 ms per keystroke and full text in under 100 ms, on 5,000 notes. | P0 |
