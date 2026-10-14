@@ -97,6 +97,8 @@ export function WindowControls({ label, minimizeLabel, maximizeLabel, restoreLab
         onHoverEnd={leave}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown" && layouts.length) setOpen("keyboard");
+          // Esc before focus has moved into the picker (it moves on the next frame) closes it too.
+          else if (e.key === "Escape" && open) close(true);
           else e.continuePropagation();
         }}
       >

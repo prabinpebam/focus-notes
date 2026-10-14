@@ -2,7 +2,7 @@
 import { createElement, Fragment, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { FLUSH_EDITOR, type App } from "@focus-notes/core";
-import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, slashCatalog, preloadViews } from "@focus-notes/ui";
+import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, keyRanCommand, slashCatalog, preloadViews } from "@focus-notes/ui";
 import { ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
 
 export interface MountOptions {
@@ -56,6 +56,8 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     if (!id) return;
     e.preventDefault();
     e.stopPropagation();
+    // Focus a key moves shows its ring, whatever the pointer did before (UI-05).
+    keyRanCommand();
     void app.commands.run(id);
   }, true);
   // Editor commands run from menus and Spotlight reach the editor surface through a window event.
