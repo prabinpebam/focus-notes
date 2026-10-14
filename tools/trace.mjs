@@ -38,7 +38,7 @@ const walk = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = join(dir, e.name);
     if (e.isDirectory()) return e.name === "node_modules" ? [] : walk(p);
-    return /\.(m?[jt]sx?)$/.test(e.name) ? [p] : [];
+    return /\.(test|spec)\.m?[jt]sx?$/.test(e.name) ? [p] : [];
   });
 
 /** Every requirement ID in a piece of text, with ranges ("TBL-01 to TBL-03", "FOC-01–06") expanded. */
