@@ -43,6 +43,7 @@ async function unlock(page: Page, button: "Unlock" | "Unlock and remember") {
   await expect(dialog).toBeHidden({ timeout: 15_000 });
 }
 
+// PKG-05: the web app runs from the site alone, holds no GitHub credential, and talks only to its own site.
 test("your notes stay in this browser: written with no account, kept across reloads and offline", async ({ page, context }) => {
   const hosts = await watch(page);
   await noInstance(page);

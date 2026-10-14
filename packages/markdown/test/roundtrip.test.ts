@@ -15,6 +15,13 @@ describe("round-trip corpus (EDT-10)", () => {
       expect(serializeMarkdown(parsed.doc, parsed)).toBe(src);
     });
   }
+  it("EXT-02: custom components in the directive syntax survive open and save as readable text", () => {
+    const src = readFileSync(join(corpusDir, "22-directives.md"), "utf8");
+    expect(src).toMatch(/^:::\w+/m);
+    expect(src).toMatch(/^::\w+\[/m);
+    const parsed = parseMarkdown(src);
+    expect(serializeMarkdown(parsed.doc, parsed)).toBe(src);
+  });
 });
 
 describe("editing keeps untouched blocks verbatim", () => {
