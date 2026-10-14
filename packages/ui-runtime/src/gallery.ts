@@ -4,6 +4,7 @@
  */
 import type { App } from "@focus-notes/core";
 import type { Contract } from "@focus-notes/ui/contracts";
+import { VIEW_SCHEMA_URL } from "./migrate.ts";
 
 export interface GalleryFixture { id: string; type: string; label: string }
 
@@ -23,11 +24,11 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
             props: { scheme, platform: { get: "vm.app.platform" } },
             children: [{ type: "Center", props: { maxWidth: "wideContent" }, children: [{ type: "Stack", id: "fixture", props: { padding: "xl", align: "start" }, children: [node] }] }],
           };
-      out[`gallery.${c.type}.${i}`] = { $schema: "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json", id: `gallery.${c.type}.${i}`, viewModels: ["vm.app", "vm.gallery"], focus: "fixture", root: wrapped };
+      out[`gallery.${c.type}.${i}`] = { $schema: VIEW_SCHEMA_URL, id: `gallery.${c.type}.${i}`, viewModels: ["vm.app", "vm.gallery"], focus: "fixture", root: wrapped };
     });
   }
   out["gallery.index"] = {
-    $schema: "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+    $schema: VIEW_SCHEMA_URL,
     id: "gallery.index",
     viewModels: ["vm.app", "vm.gallery"],
     focus: "gallery",

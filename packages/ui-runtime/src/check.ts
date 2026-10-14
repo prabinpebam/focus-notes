@@ -8,6 +8,7 @@ import type { JsonSchema } from "@focus-notes/core";
 import { schemaAt } from "@focus-notes/core";
 import { buildUiSchema, type SchemaInputs } from "./schema.ts";
 import { checkExpression, readsOf } from "./expr.ts";
+import { migrateView } from "./migrate.ts";
 import {
   isBind, isComponent, isEach, isExpr, isFragment, isMessage, isRead, isSlot, isSwitch,
   type Node, type Value, type ViewDocument, type Action,
@@ -41,9 +42,17 @@ export function checkUi(inputs: CheckInputs): Problem[] {
   const ajv = new Ajv2020({ allErrors: true, discriminator: true, strict: false });
   const validate = ajv.compile(buildUiSchema(inputs));
 
-  for (const [name, raw] of Object.entries(inputs.views)) {
-    const doc = raw as ViewDocument;
+  for (const [name, original] of Object.entries(inputs.views)) {
     const add = (stage: Problem["stage"], at: string, message: string) => problems.push({ doc: `view ${name}`, stage, at, message });
+    // Every document is brought to this app's UI schema major first; a newer one is refused (DSY-10).
+    let raw: unknown;
+    try {
+      raw = migrateView(original);
+    } catch (e) {
+      add("schema", "/$schema", (e as Error).message);
+      continue;
+    }
+    const doc = raw as ViewDocument;
     if (!validate(raw)) {
       for (const e of validate.errors ?? []) add("schema", e.instancePath || "/", `${e.message}${e.params && "allowedValues" in e.params ? `: ${(e.params as { allowedValues: unknown[] }).allowedValues.join(", ")}` : ""}`);
       continue;

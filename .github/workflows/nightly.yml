@@ -23,6 +23,10 @@ jobs:
       - run: node packages/tokens/build.mjs
       - name: Build unsigned installers
         run: pnpm --filter @focus-notes/desktop run dist
+      # SEC-01: the Electron fuses, read back from the packaged executable (hardening.test.ts).
+      - name: Check the packaged executable's fuses
+        if: runner.os == 'Windows'
+        run: pnpm exec vitest run apps/desktop/test/hardening.test.ts
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: focus-notes-nightly-${{ matrix.os }}

@@ -1,5 +1,6 @@
 import { _electron as electron, type ElectronApplication, type Page } from "@playwright/test";
-import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdtempSync, statSync, writeFileSync } from "node:fs";
+import { flipFuses, FuseV1Options, FuseVersion } from "@electron/fuses";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -24,6 +25,21 @@ export const caret = {
   lineEnd: mac ? "Meta+ArrowRight" : "End",
   selectToLineStart: mac ? "Meta+Shift+ArrowLeft" : "Shift+Home",
 } as const;
+
+/**
+ * The packaged app turns the Node inspector's arguments off (SEC-01's fuses), and Playwright drives
+ * Electron's main process through that inspector. So journeys run a copy beside the executable, the
+ * same binary and resources with only that fuse turned back on; the shipped executable is untouched
+ * (`packaged.spec.ts` reads its fuses).
+ */
+async function harnessExe(exe: string): Promise<string> {
+  const copy = exe.replace(/(\.exe)?$/i, (ext) => `-e2e${ext}`);
+  if (!existsSync(copy) || statSync(copy).mtimeMs < statSync(exe).mtimeMs) {
+    copyFileSync(exe, copy);
+    await flipFuses(copy, { version: FuseVersion.V1, [FuseV1Options.EnableNodeCliInspectArguments]: true });
+  }
+  return copy;
+}
 
 /** Every app a journey started, by its main process's ID: one a journey leaves running is killed after it (`fixtures.ts`). */
 const running = new Map<ElectronApplication, number>();
@@ -107,7 +123,7 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
     Object.assign(base, { GIT_CONFIG_GLOBAL: gitconfig, GIT_CONFIG_NOSYSTEM: "1" });
   }
   // FOCUS_NOTES_E2E_EXE runs the packaged app (release\win-unpacked\focus-notes.exe) instead of the build.
-  const exe = process.env.FOCUS_NOTES_E2E_EXE;
+  const exe = process.env.FOCUS_NOTES_E2E_EXE ? await harnessExe(process.env.FOCUS_NOTES_E2E_EXE) : undefined;
   const app = await electron.launch({
     ...(exe ? { executablePath: exe, args: [] } : { args: [join(import.meta.dirname, "..", "out", "main", "main.mjs")] }),
     // The warm-up after start is off in journeys, so their timing and focus stay the same (PRF-10).

@@ -3,7 +3,7 @@
 The evidence for each stage gate before 1.0, in the order the stages close (M0, M1, MW, M3, M2, M4, Windows first, [D-112](decisions.md)): each item of the [stage definition of done](definition-of-done.md#stage-definition-of-done) with its status and evidence, each stage's exit criteria, the gaps still open, and the steps only the owner can take.
 
 > [!NOTE]
-> **TL;DR.** 145 of 150 requirements in these six stages are named by at least one automated test (`pnpm trace`). M1, M3 and M2 trace every requirement; M0 misses **DSY-10** and **SEC-01**, MW misses **PKG-07** and **DST-02**, and M4 misses **KEY-03** (WP-4.4 isn't built). Every demo script is automated, as one journey (M0, M1, M2) or as journeys named per demo step (MW, M3, M4). 22 work packages whose every requirement has a passing Windows unit test are now *done*; all of M3 and M2 are. No gate can pass yet: the Windows bench (`pnpm bench --check`) fails on `main`, which also skips the Windows journeys there, and every gate still needs the owner's demo on a clean Windows 11 machine, the screen-reader passes, and acceptance.
+> **TL;DR.** All 150 requirements in these six stages are named by at least one automated test (`pnpm trace` lists none untraced). **SEC-01** (the Electron fuses and the hardening checklist), **DSY-10** (the UI schema's major version), and **PKG-07** (the storage notice) are closed; **DST-02** is traced for the parts that exist, and starting from the template repository stays open until WP-5.6 makes it. Every demo script is automated, as one journey (M0, M1, M2) or as journeys named per demo step (MW, M3, M4). 22 work packages whose every requirement has a passing Windows unit test are now *done*; all of M3 and M2 are. No gate can pass yet: the Windows bench (`pnpm bench --check`) fails on `main`, which also skips the Windows journeys there, and every gate still needs the owner's demo on a clean Windows 11 machine, the screen-reader passes, and acceptance.
 
 ## How this page is kept
 
@@ -20,12 +20,12 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 | Stage | Requirements traced | Untraced | Work packages | Demo automated | Blocking the gate |
 | --- | ---: | ---: | --- | --- | --- |
-| [M0](implementation-plan.md#m0) | 27 of 29 | DSY-10, SEC-01 | 9 of 9 done | `m0-walking-skeleton.spec.ts` | SEC-01, DSY-10; Windows bench |
+| [M0](implementation-plan.md#m0) | 29 of 29 | None | 9 of 9 done | `m0-walking-skeleton.spec.ts` | Windows bench |
 | [M1](implementation-plan.md#m1) | 56 of 56 | None | 4 of 11 done; 7 verifying (journey-only evidence) | `m1-demo.spec.ts` | Windows bench and journeys on CI; owner |
-| [MW](implementation-plan.md#mw) | 20 of 22 | PKG-07, DST-02 | 5 of 7 done; WP-6.1 verifying, WP-6.2 building | `web.spec.ts` steps 2 to 6, `seal.test.ts` step 7 | PKG-07, DST-02; Firefox and WebKit |
+| [MW](implementation-plan.md#mw) | 22 of 22 | None (DST-02 in part) | 5 of 7 done; WP-6.1 verifying, WP-6.2 building | `web.spec.ts` steps 2 to 6, `seal.test.ts` step 7 | DST-02's template repository (WP-5.6); Firefox and WebKit |
 | [M3](implementation-plan.md#m3) | 21 of 21 | None | 6 of 6 done | Named steps in `m3-*.spec.ts` | 1,000-round fault run; owner |
 | [M2](implementation-plan.md#m2) | 9 of 9 | None | 3 of 3 done | `m2-demo.spec.ts` | Windows bench; owner |
-| [M4](implementation-plan.md#m4) | 12 of 13 | KEY-03 | 4 of 5 done; WP-4.4 planned | Named steps in `m4-*.spec.ts` | WP-4.4 (KEY-03) |
+| [M4](implementation-plan.md#m4) | 13 of 13 | None | 4 of 5 done; WP-4.4 planned | Named steps in `m4-*.spec.ts` | WP-4.4 (KEY-03) |
 
 ## Stage definition of done, per stage
 
@@ -64,7 +64,9 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 | The canvas is a view document that passes `ui:check` | `views.test.ts`, `check.test.ts` | Met |
 | `pnpm bench --check` against a committed baseline | `tools/bench/budgets.json`; `repository.test.mjs` (QLT-05) | Open: fails on Windows CI |
 
-**Gaps.** **SEC-01** (WP-0.6, done): context isolation, the sandbox, no Node in the renderer, denied permissions and navigation (`main.ts`), and a strict CSP (`src/renderer/index.html`) are in place, but the Electron fuses (`RunAsNode` off, load only from ASAR, ASAR integrity) aren't set in the packaging config, and no test checks the checklist. Setting the fuses is build work, not a test. **DSY-10** (WP-0.4, done): the component process is followed by review, but there's no UI schema major version and no automatic view-document migration to test. Both work packages need a follow-up package.
+**Closed.** **SEC-01** (WP-0.6): the packaging config sets the Electron fuses (`electronFuses`: `RunAsNode`, `EnableNodeOptionsEnvironmentVariable` and `EnableNodeCliInspectArguments` off; `EnableCookieEncryption`, `EnableEmbeddedAsarIntegrityValidation` and `OnlyLoadAppFromAsar` on). `apps/desktop/test/hardening.test.ts` checks the web preferences, the request allow-list, denied navigation and permissions, the CSP and the fuse config, and reads the fuses from a packaged executable when there is one; `packaged.spec.ts` reads them from `FOCUS_NOTES_E2E_EXE`. The journeys drive a copy beside the packaged executable with only the inspector fuse on, since Playwright needs it. **DSY-10** (WP-0.4): `packages/ui-runtime/src/migrate.ts` holds the UI schema's major (read from each document's `$schema`) and the migrations; `ui:check` migrates before validating and refuses newer majors (`migrate.test.ts`).
+
+**Gaps.** The fuses are read from a packaged build only where one exists: locally after `electron-builder --dir`, and in the nightly Windows packaging run on `main` (`hardening.test.ts` after `dist`). CI's per-branch run doesn't package, and no CI job launches the packaged app (`packaged.spec.ts`).
 
 **Owner.** Install and run the demo on a clean Windows 11 machine from the M0 preview, and browse the gallery in light and dark.
 
@@ -104,7 +106,9 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 | Network capture: only the site's own files; nothing that opens the vault stored unless remembered | `web.spec.ts` (hosts watched; IndexedDB keys checked) | Traced |
 | Sealer test vectors in Node and every browser; other parameters refused | `seal.test.ts` in Node (SEC-08); browsers through the unlock journeys | Traced |
 
-**Gaps.** **PKG-07**: the browser asks to keep its storage (`navigator.storage.persist()` in `apps/web/src/bridge.ts`), but no test checks that request, and nothing tells the person that clearing the site's data deletes their notes; the rest of PKG-07 is in `web.spec.ts`. **DST-02** (WP-6.2, building): the web first run and *Use this app for yourself* aren't finished. **Firefox and WebKit** projects are missing from the web journeys.
+**Closed.** **PKG-07**: the web welcome note says plainly that clearing the site's data deletes the notes, and points to *Export my notes* and the desktop app; `web.spec.ts` checks that `navigator.storage.persist()` is called and the notice shows.
+
+**Gaps.** **DST-02** (WP-6.2, building), traced in part: `workspace-template.test.mjs` checks that the template's *Deploy app* workflow publishes the released app to the copy's own Pages with GitHub Actions and builds nothing, that its README walks through Pages, the site and the desktop app, and that the app's copy link is the template repository; `web.spec.ts` follows *Use this app for yourself* to it. Still open: the template repository `focus-notes-workspace` itself, generated from `templates/workspace/` with a real pinned release (WP-5.6), and a first deploy from a fresh copy, which only the owner's demo can show. **Firefox and WebKit** projects are missing from the web journeys.
 
 **Owner.** Make an instance from the template on real GitHub, deploy it, and run steps 1 to 7 in two browsers; a private window for the visitor view.
 
@@ -178,10 +182,8 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 | Gap | Stage | Size | Next step |
 | --- | --- | --- | --- |
 | Windows `pnpm bench --check` fails on `main`; Windows journeys skipped there | All | Blocks items 4 and 6 | In run 38613845186 the 10,000-note bench (`tools/bench/large.mjs`, line 82) times out after 30 s waiting for Files' type-ahead to focus "Alpha". Find whether type-ahead in a 10,000-row tree is slow (a PRF-09 defect) or the harness waits wrongly |
-| SEC-01: Electron fuses not set; no test of the hardening checklist | M0 | Small, security review | Follow-up to WP-0.6 |
-| DSY-10: no UI schema major version or view migrations | M0 | Work package | Follow-up to WP-0.4 |
-| PKG-07: no "clearing site data deletes your notes" message; the `persist()` request is untested | MW | Small | Add to WP-6.1 |
-| DST-02: web first run, *Use this app for yourself* | MW | WP-6.2 | Finish WP-6.2 |
+| DST-02: the template repository and a first deploy from a fresh copy | MW | WP-5.6, owner | Build WP-5.6; owner's demo |
+| SEC-01: launch the packaged app in CI (`packaged.spec.ts`), not just read its fuses | M0 | Small | CI follow-up |
 | Firefox and WebKit web journeys | MW | Small | Add projects to `apps/web/playwright.config.ts` |
 | KEY-03: the Power layer | M4 | WP-4.4 | Build WP-4.4 |
 | 1,000-round fault run | M3 | A run | Run before the gate, record the seed and result |

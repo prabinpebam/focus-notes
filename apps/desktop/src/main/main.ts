@@ -37,6 +37,7 @@ import type { RestoredNote } from "@focus-notes/core";
 import { RecoveryJournal, restoreJournal } from "./journal.ts";
 import { watchTree, type TreeWatcher } from "./watch-tree.ts";
 import { JOURNEY_WINDOW_OPTIONS, keepOutOfTheWay } from "./window/journey-window.ts";
+import { allowedRequest, HARDENED_WEB_PREFERENCES, isWebLink } from "./hardening.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 /** Windows and Linux: the transparent window with app-built window management; macOS: the system's (D-14). */
@@ -692,16 +693,6 @@ const privateDir = () => join(notesHome(), "private");
 const settingsFile = () => join(privateDir(), ".focus-notes", "settings.json");
 const settingsAvailable = () => isWorkspace() && existsSync(privateDir());
 
-/** Addresses a note's link may open in the browser: http, https, and mailto, well formed (EDT-13). */
-function isWebLink(url: string): boolean {
-  if (!/^(https?:\/\/[^\s/?#]+|mailto:[^\s@]+@)\S*$/i.test(url)) return false;
-  try {
-    return Boolean(new URL(url));
-  } catch {
-    return false;
-  }
-}
-
 /** The renderer page every IPC request must come from (review issue 4). */
 const appPageUrl = () => pathToFileURL(join(import.meta.dirname, "..", "renderer", "index.html")).href;
 function fromApp(e: IpcMainInvokeEvent | IpcMainEvent): boolean {
@@ -958,7 +949,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
 function hardenSession(): void {
   // No network: only the app's own files and DevTools may load (PRV-01, PKG-06).
   session.defaultSession.webRequest.onBeforeRequest((details, cb) => {
-    const ok = details.url.startsWith("file:") || details.url.startsWith("devtools:") || details.url.startsWith("data:");
+    const ok = allowedRequest(details.url);
     if (!ok) process.stdout.write(`[focus-notes] blocked request to ${new URL(details.url).origin}\n`);
     cb({ cancel: !ok });
   });
@@ -981,10 +972,7 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
     ...(journey ? JOURNEY_WINDOW_OPTIONS : {}),
     webPreferences: {
       preload: join(import.meta.dirname, "preload.cjs"),
-      contextIsolation: true,
-      sandbox: true,
-      nodeIntegration: false,
-      webSecurity: true,
+      ...HARDENED_WEB_PREFERENCES,
       spellcheck: true,
       devTools: !app.isPackaged || process.env.FOCUS_NOTES_DEVTOOLS === "1",
     },
