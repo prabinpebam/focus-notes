@@ -226,6 +226,22 @@ describe("sealing share grants (SHR-11)", () => {
     const r = await i.run();
     await expect(readFile(join(i.site, ...vaultPath(r.build).split("/")), "utf8")).rejects.toThrow();
   }, 30_000);
+
+  it("never lets a share grant open every private note: only the owner's grant has scope.all", async () => {
+    const secret = toB64url(randomBytes(32));
+    const i = await instance(notes, [grant({ link: { secret }, scope: { all: true, notes: ["n-plan"] } })]);
+    await i.run();
+    const share = await i.reader().openLink("gshare001", secret);
+    expect(share.notes.map((n) => n.path)).toEqual(["Plan.md"]);
+  }, 30_000);
+
+  it("refuses two grants with the same ID, which would share one keyring's place", async () => {
+    const i = await instance(notes, [
+      grant({ link: { secret: toB64url(randomBytes(32)) }, scope: { notes: ["n-plan"] } }),
+      grant({ name: "Kim", link: { secret: toB64url(randomBytes(32)) }, scope: { notes: ["n-diary"] } }),
+    ]);
+    await expect(i.run()).rejects.toThrow(/same ID/);
+  });
 });
 
 describe("the leak check covers grant secrets (SEC-06)", () => {

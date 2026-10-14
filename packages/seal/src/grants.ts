@@ -34,6 +34,9 @@ export const isActive = (g: Grant, now = Date.now()) => !g.revokedAt && (!g.expi
 export const activeShareGrants = (access: AccessFile, now = Date.now()) =>
   access.grants.filter((g) => !g.owner && isActive(g, now) && (g.link || g.passcode));
 
+/** What a grant opens: `all` only on the owner's grant (the vault), so no share audience can be given every private note. */
+export const grantScope = (g: Grant): GrantScope => (g.owner ? g.scope : { ...g.scope, all: false });
+
 /** A note's `id` from its front matter, the only key the app writes there. */
 export function noteId(text: string): string | undefined {
   const fm = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text);

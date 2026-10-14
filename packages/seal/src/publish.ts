@@ -12,7 +12,7 @@ import {
   derivePasscodeBits, type Manifest, type ManifestEntry, type PublicIndex, type SiteManifest,
 } from "./format.ts";
 import {
-  activeShareGrants, deriveLinkBits, inScope, isActive, LINK_KDF, LINK_SECRET_BYTES, linkKeyringPath, nameLookup, noteId, passcodeKeyringPath, scopedPaths,
+  activeShareGrants, deriveLinkBits, grantScope, inScope, isActive, LINK_KDF, LINK_SECRET_BYTES, linkKeyringPath, nameLookup, noteId, passcodeKeyringPath, scopedPaths,
   type AccessFile, type Grant,
 } from "./grants.ts";
 
@@ -88,6 +88,7 @@ export function validateAccess(a: unknown): AccessFile {
     if (!ok) throw new Error("private/access.json: nameSalt needs 16 bytes or more.");
   }
   if (f.grants.filter((g) => g.owner && !g.revokedAt).length > 1) throw new Error("private/access.json: more than one owner grant");
+  if (new Set(f.grants.map((g) => g.id)).size !== f.grants.length) throw new Error("private/access.json: two grants have the same ID.");
   return f;
 }
 
@@ -169,8 +170,9 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     };
     /** Seals one grant's manifest of what it opens, and returns the keyring payload that opens it. */
     const sealManifest = async (g: Grant) => {
-      const opens = notes.filter((n) => inScope(g.scope, n));
-      const shown = scopedPaths(g.scope, opens.map((n) => n.path));
+      const scope = grantScope(g);
+      const opens = notes.filter((n) => inScope(scope, n));
+      const shown = scopedPaths(scope, opens.map((n) => n.path));
       const manifest: Manifest = { owner: o.owner, notes: [] };
       for (const n of opens) manifest.notes.push({ ...(await sealNote(n)), path: shown.get(n.path)! });
       const kid = randomId(), key = randomBytes(KEY_BYTES);
