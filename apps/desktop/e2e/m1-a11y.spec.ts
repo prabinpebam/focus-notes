@@ -301,11 +301,14 @@ async function walkFirstRun(page: Page, check: (step: string) => Promise<void>) 
   const card = page.getByRole("main", { name: "Set up Focus Notes" });
   await settled(page);
   await check("first run: Welcome");
+  // The checks Tab away and back: the step's button has focus again before Enter.
+  await expect(card.getByRole("button", { name: "Get started" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(card.getByRole("heading", { name: "Git" })).toBeVisible();
   await expect(card.getByRole("button", { name: "Continue" })).toBeFocused();
   await settled(page);
   await check("first run: Git");
+  await expect(card.getByRole("button", { name: "Continue" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(card.getByRole("heading", { name: "Sign in to GitHub" })).toBeVisible();
   await expect(card.getByRole("button", { name: "Sign in with GitHub" })).toBeFocused();
