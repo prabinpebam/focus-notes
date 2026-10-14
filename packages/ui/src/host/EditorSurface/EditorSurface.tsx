@@ -380,7 +380,10 @@ export function EditorSurface({
     };
     window.addEventListener(FLUSH_EVENT, flush);
     // After a panel's own focus restoration, put the caret back in the note.
-    const refocus = () => requestAnimationFrame(() => {
+    // Whoever asked may say, by then, that it no longer wants it: something else took focus on
+    // purpose meanwhile (a match opened from Find in all notes focuses the find bar, FND-04).
+    const refocus = (e: Event) => requestAnimationFrame(() => {
+      if ((e as CustomEvent<{ still?: () => boolean } | null>).detail?.still?.() === false) return;
       if (editor) focusNote(editor);
     });
     window.addEventListener(REFOCUS_EVENT, refocus);

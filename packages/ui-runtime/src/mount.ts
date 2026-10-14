@@ -92,8 +92,11 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     spotlightWasOpen = spotlight.open;
     // Find in all notes closing: back to the note, unless a match it opened has the find bar's focus.
     if (findAllWasOpen && !findAll.open) {
+      // Checked again when the note would take focus: a busy runner can open the match and focus
+      // the find bar between this timer and the editor's next frame (run 38626199316).
       const asked = find.focusFind;
-      setTimeout(() => { if (app.store.state.ui.find.focusFind === asked) window.dispatchEvent(new Event(REFOCUS_EVENT)); }, 0);
+      const still = () => app.store.state.ui.find.focusFind === asked;
+      setTimeout(() => { if (still()) window.dispatchEvent(new CustomEvent(REFOCUS_EVENT, { detail: { still } })); }, 0);
     }
     findAllWasOpen = findAll.open;
     // Not when the toolbar closed because the find bar, the cheat sheet, the Files panel, or the theme manager took focus.
