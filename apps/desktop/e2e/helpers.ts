@@ -7,6 +7,8 @@ export interface Launched {
   app: ElectronApplication;
   page: Page;
   log: string[];
+  /** The main process's ID, asked once at launch: a crash journey kills it without a call into the app first. */
+  pid: number;
   readyMs: () => Promise<number>;
 }
 
@@ -111,7 +113,8 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
     env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_WARMUP: "0", FOCUS_NOTES_E2E: "1", ...extraEnv },
   });
   app.process().stdout?.on("data", (d: Buffer) => log.push(...d.toString().split("\n").filter(Boolean)));
-  running.set(app, await app.evaluate(() => process.pid));
+  const pid = await app.evaluate(() => process.pid);
+  running.set(app, pid);
   // Every window the journey uses; one that closes at once (a page that went away) needs none.
   app.on("window", (p) => void emulateFocus(p).catch(() => {}));
   const page = await app.firstWindow();
@@ -133,7 +136,7 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
     }
     throw new Error("The app never reported ready");
   };
-  return { app, page, log, readyMs };
+  return { app, page, log, pid, readyMs };
 }
 
 interface Rect { x: number; y: number; width: number; height: number }

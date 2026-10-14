@@ -76,7 +76,9 @@ export function journalAhead(userData: string, note: string): boolean {
  * main process's own ID is asked for and killed; its renderer and GPU processes then exit on their own.
  */
 export async function crash(l: Launched, userData: string): Promise<number> {
-  const pid = await l.app.evaluate(() => process.pid);
+  // Asked at launch: a call into the app now would wait on its inspector, and the crash would come
+  // later than the moment typing stopped, counted as text lost.
+  const pid = l.pid;
   const launcher = l.app.process();
   const closed = new Promise((r) => (launcher.exitCode !== null ? r(null) : launcher.once("exit", r)));
   const at = Date.now();
