@@ -23,8 +23,10 @@ The ⋯ menu has **Export my notes…** and **Import notes…** at any time, so 
 - **One decision per screen.** Every screen has one primary button and works entirely from the keyboard (<kbd>Enter</kbd> continues, <kbd>Esc</kbd> goes back).
 - **Detect before asking.** Existing Git, credentials, identity, and clones are found and offered first. Nothing the computer already knows is asked again.
 - **Explain once, in one line.** Each screen has a single sentence of why. Details sit behind a "Learn more" link to these docs.
-- **Resumable.** Quitting halfway resumes at the same step next time. Finished steps are skipped.
-- **Same look as the app.** The blank canvas with the trigger at the top. Steps appear as a centered card with progress dots.
+- **Resumable.** Quitting halfway resumes at the same step next time, which checks again what it needs (Git, the sign-in, the identity). Steps before it aren't shown again unless the person goes back.
+- **Same look as the app.** The blank canvas with the trigger at the top. Steps appear as a centered card that says where you are ("Step 3 of 7"). Each step's primary button has focus when it appears, so <kbd>Enter</kbd> continues from anywhere in the card that isn't another control.
+
+The first run shows on a new install of the desktop app: when the app's state has no finished first run and no note opened before, so people who wrote with an earlier version keep writing (D-101). Nothing opens behind it; the first note opens with *Start writing*.
 - **Yours, end to end.** Everything created lives in the user's own GitHub account and on their computer. The first run talks only to GitHub.
 
 ## The flow
@@ -44,7 +46,7 @@ The ⋯ menu has **Export my notes…** and **Import notes…** at any time, so 
 </li>
 <li class="slate-step">
 <p class="slate-step__title">4. Identity</p>
-<p>Shows the name and email that will be on commits. If Git has none, it fills them in from GitHub, using the private <code>ID+login@users.noreply.github.com</code> address. The choice is to apply them to all repositories or only to the notes workspace.</p>
+<p>Shows the name and email that will be on commits. If Git has none, it fills them in from GitHub, using the private <code>ID+login@users.noreply.github.com</code> address. The choice is to apply them to all repositories (Git's global settings) or only to the notes workspace (its own settings and <code>private/</code>'s, once it's on this computer; setup's commits use them before that).</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">5. Workspace</p>
@@ -52,11 +54,11 @@ The ⋯ menu has **Export my notes…** and **Import notes…** at any time, so 
 </li>
 <li class="slate-step">
 <p class="slate-step__title">6. Make it yours</p>
-<p>Theme (System, Light, Dark), content font and size, and focus mode on or off, all previewed live on a sample paragraph. Every choice can be skipped and changed later.</p>
+<p>Theme (System, Light, Dark), the note font (Mono, Sans, Serif, Hyperlegible; the rest are in the ⋯ menu), text size (Smaller, Larger), and focus mode on or off. Each applies to the app at once, so the canvas around the card is the preview. Every choice can be skipped and changed later.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">7. Ready</p>
-<p>Two hints, nothing more: "Click the red dot for everything" and "Press <kbd>⌘/</kbd> or <kbd>Ctrl+/</kbd> to search or act". A quiet <em>Bring notes from a browser…</em> imports an exported bundle (FRE-10). [Start writing] opens a new private note (<a href="../plan/decisions.md">D-05</a>).</p>
+<p>Two hints, nothing more: "Click the red dot for everything" and "Press <kbd>⌘/</kbd> or <kbd>Ctrl+/</kbd> to search or act". A quiet <em>Bring notes from a browser…</em> imports an exported bundle (FRE-10); it shows once the desktop can import (WP-3.4). [Start writing] opens a new private note (<a href="../plan/decisions.md">D-05</a>), or a public one in a workspace whose private notes this account can't reach.</p>
 </li>
 </ol>
 
@@ -77,10 +79,11 @@ The app never sets up the plaintext `store` helper.
 | Situation | What the screen offers |
 | --- | --- |
 | Git already has a working GitHub credential | "You're signed in to GitHub as **@login** on this computer." [Continue as @login] · *Use a different account* |
+| The GitHub CLI is signed in, but Git doesn't use it yet | "The GitHub CLI is signed in as **@login**. Git can use the same sign-in." [Continue as @login] runs `gh auth setup-git` |
 | Git Credential Manager is the helper | [Sign in with GitHub]: GCM's own sign-in window opens (browser sign-in). *Use a code instead* asks GCM for a device code. |
 | GitHub CLI is installed | [Sign in with GitHub]: the app shows the CLI's **one-time code** in large type with [Copy code and open GitHub], then waits for the CLI to finish. |
 | No sign-in helper | "Focus Notes signs in through Git's own sign-in tools." Copyable install commands for GCM or the GitHub CLI, with [Check again]. Or *Use a token instead*. |
-| Always | *Use a token instead*: [Create a token on GitHub] opens GitHub's token page with the name, repositories, expiry, and permissions pre-filled. The user creates it, pastes it, and [Continue]. |
+| Always | *Use a token instead*: [Create a token on GitHub] opens GitHub's token page with the name, expiry, and permissions pre-filled (repositories can't be pre-filled: the page asks). The user creates it, pastes it, and [Continue]. The app checks it with GitHub and hands it to Git's credential helper; with no helper to keep it, the screen says to install one. |
 
 ### Device code moments (GitHub CLI or GCM)
 
@@ -91,7 +94,7 @@ The app never sets up the plaintext `store` helper.
 | Approved | Avatar, name, and @login. [Continue]. |
 | Declined or expired | "Sign-in didn't finish." [Try again]. |
 | Offline | "Can't reach GitHub." [Retry], plus a link to the proxy settings. |
-| Organization with single sign-on | A note explains how to authorize the credential for that organization, with a link. |
+| Organization with single sign-on | *About single sign-on* links to GitHub's page on authorizing a credential for an organization. |
 
 ### Where the sign-in lives
 
@@ -103,15 +106,17 @@ People who started in the browser already have their instance (copied from the t
 
 | Option | What happens |
 | --- | --- |
-| **Create my workspace** (default for new users) | Asks for two names: the instance repository (default `notes`, public, because GitHub Pages on free accounts needs it) and the private repository (default `notes-private`). Two toggles, both on: *Publish on GitHub Pages* (the web app, public notes, and the vault) and *Enable private share links*. Then the **vault passphrase** (below). [Create] then shows a checklist that ticks off as it goes: Copy the template · Create private repository · Link them · Set up the deploy key · Save the vault's key · Turn on GitHub Pages · Download to this computer (default folder `Documents/Focus Notes`). Each item can be retried on its own. When it finishes, it shows the site address, where the same instance can be read in any browser. |
+| **Create my workspace** (default for new users) | Asks for two names: the instance repository (default `notes`, public, because GitHub Pages on free accounts needs it) and the private repository (default `notes-private`). Two toggles, both on: *Publish on GitHub Pages* (the web app, public notes, and the vault) and *Enable private share links*. Then the **vault passphrase** (below). [Create] then shows a checklist that ticks off as it goes, in this order: Sign in to GitHub · Copy the template · Create private repository · Set up the deploy key · Download to this computer (default folder `Documents/Focus Notes`, which must be empty or new) · Link them · Save the vault's key · Turn on GitHub Pages · Save to GitHub. Each item says why if it fails and can be retried on its own, and quitting resumes at the same item ([Desktop and Git → Creating a workspace](../architecture/desktop-and-git.md#creating-a-workspace), D-98). When it finishes, it shows the site address, where the same instance can be read in any browser. |
 | **Open my workspace from GitHub** | Search the user's repositories. Repositories copied from the Focus Notes template are listed first. Choose a local folder and clone with submodules. If the private repository isn't accessible to this account: "Private notes aren't available to this account. You can still work with public notes." If the instance has no private repository, deploy key, or vault yet, the missing steps run as above. |
 | **Open a folder on this computer** | Pick an existing clone. The app checks that it's a Git repository with the expected layout ([Content model](../architecture/content-model.md#workspace-layout)) and fetches any missing submodule. |
 
-**The vault passphrase** (SEC-08, FRE-08) opens the private notes in a browser, read-only. "Choose a passphrase to read your private notes in a browser. If you forget it, it can't be recovered. Your notes stay in your private repository." A field with a strength meter and a plain reason when it's too weak (at least 12 characters, rated strong), and a second field to confirm it. Only its derived key is saved, in `private/access.json` ([The vault](../architecture/repository-and-publishing.html#the-vault)). *Skip for now* leaves the site without a vault until it's set in **Settings → Workspace**. Before the desktop setup exists (M3), the owner runs `node packages/seal/src/cli.ts vault-init --private private` in a clone instead: it reads the passphrase from standard input, refuses weak ones, and writes only the derived key.
+**The vault passphrase** (SEC-08, FRE-08) opens the private notes in a browser, read-only. "Choose a passphrase to read your private notes in a browser. If you forget it, it can't be recovered. Your notes stay in your private repository." A field with a strength meter and a plain reason when it's too weak (at least 12 characters, rated strong), and a second field to confirm it. Only its derived key is saved, in `private/access.json` ([The vault](../architecture/repository-and-publishing.html#the-vault)). *Skip for now* leaves the site without a vault until it's set in **Settings → Workspace** (the *Save the vault's key* item shows as skipped, and the deploy publishes public notes only). The strength check is `passphraseStrength` from `packages/seal`. People who set up in a terminal can run `node packages/seal/src/cli.ts vault-init --private private` in a clone instead: it reads the passphrase from standard input, refuses weak ones, and writes only the derived key, through the same code as the app.
 
 After cloning, the app checks out the private submodule on `main` instead of a detached HEAD and sets `push.recurseSubmodules=check`. It leaves `submodule.recurse` off and syncs `private/` as its own repository, so a recursive pull can't reset it to the older publishing pointer (D-47, [Repository and publishing](../architecture/repository-and-publishing.html#working-with-the-submodule)).
 
-**Writing starts before setup finishes.** As soon as the workspace is on this computer, [Start writing] is available. Turning on GitHub Pages, the first deploy (which can take a few minutes), and the deploy key carry on in the background, with progress in **Settings → Workspace**. A failure there never blocks writing.
+**Writing starts before setup finishes.** As soon as the workspace is on this computer and linked (*Download to this computer* and *Link them* are done), [Continue] opens it, even if a later step failed: a failed *Turn on GitHub Pages* or *Save to GitHub* can be retried from the checklist, and saving pushes anyway. The first deploy (which can take a few minutes) carries on on GitHub. A failure there never blocks writing. The workspace opens only once linking is done, so setup's own commits never meet the app's (D-101). **Settings → Workspace**, to follow and retry these later, comes with the settings.
+
+Opening a workspace (made, cloned, or chosen) keeps its folder in the app's data folder, moves the file watcher and Git to it, and starts the window again in it at *Make it yours* ([Desktop and Git → The workspace folder](../architecture/desktop-and-git.md#the-workspace-folder)).
 
 ## Bringing notes from a browser
 
@@ -119,7 +124,7 @@ Notes written in a browser stay there until they're moved (FRE-10). In the brows
 
 ## Account settings later
 
-**Settings → Account** (desktop) shows the signed-in account, which helper holds the credential, and the workspace, with:
+Until the settings exist, the account pill's menu has *Sync now* and *Sign out of GitHub* ([Main UI](main-ui.html), D-101). Later, **Settings → Account** (desktop) shows the signed-in account, which helper holds the credential, and the workspace, with:
 
 - **Switch account:** signs in again through the same helper.
 - **Sign out:** removes the GitHub credential from Git's helper (`git credential reject`, or `gh auth logout`), which signs out the terminal too. The screen says so, and links to GitHub's settings to fully revoke a token or authorization.

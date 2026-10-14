@@ -15,6 +15,8 @@ import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
 import { joinPath } from "./workspace.ts";
 import { registerSync, NO_SYNC, SyncFailed, type SyncState } from "./sync-app.ts";
+import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
+import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -66,6 +68,12 @@ export interface AppState {
   workspace: WorkspaceState;
   /** Save and sync with Git: whether there's a repository, and the problem to show if any (EDT-11). */
   sync: SyncState;
+  /** Set up my instance: the latest report from the shell's setup (FRE-08). */
+  setup: SetupState;
+  /** The desktop's first run (FRE-01): the step it's at and what it found. */
+  firstRun: FirstRunState;
+  /** The GitHub account Git is signed in to on the desktop, for the account pill (UI-12). */
+  account: AccountState;
   /** Waits a person started (PRF-08). */
   tasks: TaskView[];
   /** The latest polite announcement for screen readers; `n` makes repeats announce again. */
@@ -172,6 +180,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
     sync: NO_SYNC,
+    setup: NO_SETUP,
+    firstRun: FIRST_RUN_INACTIVE,
+    account: NO_ACCOUNT,
     tasks: [],
     announcement: { text: "", n: 0 },
   });
@@ -216,6 +227,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const setNote = (patch: Partial<AppState["note"]>) =>
     store.update((s) => ({ ...s, note: { ...s.note, ...patch } }));
   const sync = registerSync({ store, bridge, catalog, toast });
+  const setup = registerSetup({ store, bridge, catalog, commands, viewModels });
+  const firstRun = registerFirstRun({ store, bridge, catalog, commands, viewModels, toast, persistAppState });
   const workspace = registerWorkspaceFeatures({ store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}) });
 
   async function writeNow(): Promise<void> {
@@ -884,11 +897,15 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       }));
       bridge.onSystemSchemeChange((system) => store.update((s) => ({ ...s, appearance: { ...s.appearance, system } })));
       await formatRead;
-      const path = appState.lastNotePath ?? (await bridge.defaultNotePath());
-      await load(path);
-      if (store.state.note.status === "error" && appState.lastNotePath) await load(await bridge.defaultNotePath());
+      // The desktop's first run shows over the blank canvas; the first note opens when it's done (FRE-01).
+      if (!(await firstRun.begin(appState))) {
+        const path = appState.lastNotePath ?? (await bridge.defaultNotePath());
+        await load(path);
+        if (store.state.note.status === "error" && appState.lastNotePath) await load(await bridge.defaultNotePath());
+      }
       workspace.start();
       sync.start();
+      setup.start();
       await browser.start();
     },
   };

@@ -1,5 +1,5 @@
 import { _electron as electron, type ElectronApplication, type Page } from "@playwright/test";
-import { mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -15,11 +15,27 @@ export const tempDirs = () => ({
   docs: mkdtempSync(join(tmpdir(), "fn-docs-")),
 });
 
-export async function launch(dirs: { userData: string; docs: string }, extraEnv: Record<string, string> = {}): Promise<Launched> {
+/**
+ * Starts the app. Journeys about other things start past the desktop's first run (it's done once
+ * per install, FRE-01), as someone who already set up; `firstRun` starts a new install instead.
+ * Git's settings are isolated (no system or personal config, so no real credential helper is
+ * asked), and GitHub's API points at a closed local port unless a journey gives its fake: no
+ * journey ever reaches the network.
+ */
+export async function launch(dirs: { userData: string; docs: string }, extraEnv: Record<string, string> = {}, opts: { firstRun?: boolean } = {}): Promise<Launched> {
   const log: string[] = [];
+  const stateFile = join(dirs.userData, "state.json");
+  if (!opts.firstRun && !existsSync(stateFile)) writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done" }));
+  const base: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env)) if (v !== undefined && !(extraEnv.PATH && k.toUpperCase() === "PATH")) base[k] = v;
+  if (!extraEnv.GIT_CONFIG_GLOBAL) {
+    const gitconfig = join(dirs.userData, "..", `${dirs.userData.split(/[\\/]/).pop()}.gitconfig`);
+    if (!existsSync(gitconfig)) writeFileSync(gitconfig, "[protocol \"file\"]\n\tallow = always\n[commit]\n\tgpgsign = false\n[core]\n\tautocrlf = false\n");
+    Object.assign(base, { GIT_CONFIG_GLOBAL: gitconfig, GIT_CONFIG_NOSYSTEM: "1" });
+  }
   const app = await electron.launch({
     args: [join(import.meta.dirname, "..", "out", "main", "main.mjs")],
-    env: { ...process.env, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, ...extraEnv } as Record<string, string>,
+    env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", ...extraEnv },
   });
   app.process().stdout?.on("data", (d: Buffer) => log.push(...d.toString().split("\n").filter(Boolean)));
   const page = await app.firstWindow();

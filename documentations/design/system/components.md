@@ -50,7 +50,7 @@ Each component declares a contract in `packages/ui`. The build turns contracts i
 | **Heading** | `level` 1 to 3 (interface headings, not note headings), `value` | Heading | Sheets, dialogs, settings |
 | **Icon** | `name` (Fluent registry), `size` s/m/l, `filled` | Image, or hidden when decorative | Everywhere |
 | **Shortcut** | `keys` (key caps in the platform's symbols, from a view model, which takes them from the command registry) and `label` (the chord in words). Caps are hidden from screen readers, which read the words instead | Text, with an accessible name that says the keys in words | Menus, tooltips, Spotlight, cheat sheet |
-| **Button** | `variant` primary, secondary, subtle, danger. `size`, `icon`, `busy`, `disabledReason`, `toggle` with `pressed` | Button, or toggle button | Dialogs, forms, banners, the formatting toolbar's Link |
+| **Button** | `variant` primary, secondary, subtle, danger. `size`, `icon`, `busy`, `disabledReason`, `toggle` with `pressed`, `autoFocus` (takes focus when it first appears: a first-run step's primary action, D-101) | Button, or toggle button | Dialogs, forms, banners, the formatting toolbar's Link, the first run |
 | **IconButton** | `icon`, `label` (required), `variant` subtle or frost, `toggle` with `pressed`, and `mixed` for a toggle that applies to only part of what it acts on (`aria-pressed="mixed"`, a lighter fill) | Button, or toggle button | Toolbar, window controls, find bar, formatting toolbar |
 | **Link** | `label`, `command` (internal) or `url` (opened through the `link.open` command) | Link | Help text, About |
 | **Checkbox** | `label`, `checked` (bindable), `indeterminate` | Checkbox | Lists, settings |
@@ -58,7 +58,7 @@ Each component declares a contract in `packages/ui`. The build turns contracts i
 | **Switch** | `label`, `description`, `checked` (bindable) | Switch | Settings |
 | **TextField** | `label`, `description`, `error`, `value` (bindable), `placeholder`, `icon`, `type` text, email, or url. `labelHidden` keeps the label for screen readers only, for one-line editors | Text box | Forms, rename, link editor |
 | **TextArea** | As TextField, plus `rows` | Text box, multi-line | Invite message |
-| **SearchField** | `label`, `value` (bindable), `placeholder`, `clearLabel`, `autoFocus`. <kbd>Esc</kbd> clears it, or passes on to close the dialog when it's already empty | Search box | Spotlight, Files, Settings |
+| **SearchField** | `label`, `value` (bindable), `placeholder`, `clearLabel`, `autoFocus`, `keyScope` (the first run's repository search is `repoField`). <kbd>Esc</kbd> clears it, or passes on to close the dialog when it's already empty | Search box | Spotlight, Files, Settings |
 | **SecretField** | `label`, `value`, `reveal` toggle, `strength` (bound) | Text box, with a reveal button | Passcodes, tokens |
 | **NumberStepper** | `label`, `value`, `min`, `max`, `step`, `format` | Spin button | Font size row |
 | **Select** | `label`, `options`, `value` (bindable) | Select (list box popup) | Settings |
@@ -108,7 +108,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | **Spacer** | Takes the remaining space in a Stack or Inline | None |
 | **Surface** | The only way to get a background, border, radius, or shadow | `variant` canvas, frost, raised, sunken, inverted. `shape` window, sheet, popover, control. `padding` |
 | **ScrollArea** | Scrolling with consistent scrollbars and edge fades | `axis`, `fade` |
-| **Layer** | Puts its content on a layer (contextual, trigger, panel, dialog, toast, tooltip) at a fixed position, with the right order. Its content may use frost. It can form a landmark and mark the desktop drag band | `layer`, `position` (topBand, belowTopBand, fill, center, bottomCenter, bottomStart), `landmark` (none, banner, complementary, region) with `label`, `dragBand`; later `scrim`, `trapFocus`, `restoreFocus` |
+| **Layer** | Puts its content on a layer (contextual, trigger, panel, dialog, toast, tooltip) at a fixed position, with the right order. Its content may use frost. It can form a landmark and mark the desktop drag band | `layer`, `position` (topBand, belowTopBand, fill, center, bottomCenter, bottomStart), `landmark` (none, banner, main, complementary, region) with `label` (main: the first run's card, while no note shows, D-101), `dragBand`; later `scrim`, `trapFocus`, `restoreFocus` |
 | **Positioner** | Anchors floating content to a range in the note (the selection, a link, or the `/` the slash menu opened at) that the editor surface publishes: centered on it or lined up with its start, never covering it, flipping below near the top band (always below on touch screens), kept 12 px inside the window, following it as it scrolls, and hidden while it's out of view. Its content may use frost. Tokens `cmp.positioner.*` | `anchor` selection, link, or caret, `placement` above or below, `align` center or start, `offset` (space token), `landmark` none or region, `label` |
 | **Show** | Shows children only in some size classes, platforms, or pointer types | `sizeClass`, `platform`, `pointer` |
 | **AppRoot** | The root of every view. Applies the theme (`data-theme`) and the token modes (platform, reduced motion, reduced transparency, coarse pointer) to the document, and holds the global token stylesheet | `scheme`, `platform` |

@@ -1,5 +1,7 @@
 import type { Platform } from "./commands.ts";
 import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
+import type { SetupBridge } from "./setup.ts";
+import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
 
 /**
  * Services a shell provides. The Electron preload implements this as `window.focusNotes`;
@@ -46,6 +48,10 @@ export interface PlatformBridge {
   workspace?: WorkspaceBridge;
   /** Commits and pushes with the user's own Git (the desktop, WP-3.3). Absent in the browser. */
   sync?: SyncBridge;
+  /** Sets up the user's instance on GitHub and this computer (the desktop, FRE-08). Absent in the browser. */
+  setup?: SetupBridge;
+  /** The desktop's first run: Git, signing in, the identity, and the workspace (FRE-01). Absent in the browser. */
+  firstRun?: FirstRunBridge;
 }
 
 /** Why saving to Git or syncing failed (Feedback → Save and sync status). */
@@ -172,4 +178,6 @@ export interface AppStateFile {
   uiScale?: number;
   /** The web first run has been seen (FRE-09). */
   webWelcomed?: boolean;
+  /** The desktop first run's step, kept so quitting resumes there, or done (FRE-01). */
+  firstRun?: FirstRunStep | "done";
 }

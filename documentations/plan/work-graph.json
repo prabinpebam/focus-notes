@@ -871,7 +871,7 @@
         "architecture/repository-and-publishing.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-3.2",
@@ -906,7 +906,7 @@
         "experience/first-run.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-3.3",

@@ -1,24 +1,59 @@
 /**
  * The Electron main process (PKG-03, SEC-01, PKG-06, PRV-01): a hardened shell that owns the
- * window, the file system, and the user's own `git`. It makes no network requests of its own and
- * allows none from the renderer; Git talks to the workspace's remotes (WP-3.3).
+ * window, the file system, and the user's own `git`. It allows no network requests from the
+ * renderer; Git talks to the workspace's remotes (WP-3.3), and its own only requests are setup's
+ * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
-import { existsSync, realpathSync, watch, type FSWatcher } from "node:fs";
+import { existsSync, readFileSync, realpathSync, watch, type FSWatcher } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { readWorkspaceFormat } from "@focus-notes/core/workspace-format";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
 import { GitSync, NO_GIT } from "./git/sync.ts";
+import { createRunner, type GitRunner } from "./git/run.ts";
+import { passphraseStrength } from "@focus-notes/seal";
+import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
+import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
+import { checkOptions, SetupEngine } from "./setup/engine.ts";
+import { githubFetch } from "./setup/credential.ts";
 import type { BatchOp } from "./git/message.ts";
+import { Account } from "./first-run/account.ts";
+import { createToolRunner } from "./first-run/tools.ts";
+import { applyLocalIdentity, checkWorkspace, cloneWorkspace } from "./first-run/workspace.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 const customWindow = process.argv.includes("--custom-window") && platform !== "macos";
 
 if (process.env.FOCUS_NOTES_USER_DATA) app.setPath("userData", resolve(process.env.FOCUS_NOTES_USER_DATA));
-const notesHome = () => resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPath("documents"), "Focus Notes"));
+/** Where a new workspace goes unless another folder is chosen: Documents/Focus Notes. */
+const defaultHome = () => resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPath("documents"), "Focus Notes"));
+/** The workspace the first run opened (D-98), kept by the main process only: the renderer can't name a folder. */
+const workspaceFile = () => join(app.getPath("userData"), "workspace.json");
+let chosenHome: string | undefined;
+function readChosenHome(): string | undefined {
+  try {
+    const w = JSON.parse(readFileSync(workspaceFile(), "utf8")) as { version?: number; folder?: unknown };
+    return w.version === 1 && typeof w.folder === "string" && isAbsolute(w.folder) ? resolve(w.folder) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+const notesHome = () => chosenHome ?? defaultHome();
 const stateFile = () => join(app.getPath("userData"), "state.json");
+
+// Test seams, never in a packaged app: a local fake of GitHub's API and local bare remotes, so the
+// journeys make no network request; and a log of every program started, to check no token is in one.
+const devEnv = (name: string) => (app.isPackaged ? undefined : process.env[name]);
+const fakeApi = devEnv("FOCUS_NOTES_GITHUB_API");
+const localRemotes = devEnv("FOCUS_NOTES_GIT_REMOTES");
+const logSpawns = devEnv("FOCUS_NOTES_LOG_SPAWNS") === "1";
+const onSpawn = logSpawns ? (program: string, args: string[]) => process.stdout.write(`[focus-notes] spawn ${JSON.stringify([program, ...args])}\n`) : undefined;
+const apiFetch = githubFetch(fakeApi && /^http:\/\/127\.0\.0\.1:\d+$/.test(fakeApi)
+  ? (i, init) => fetch(fakeApi + i.slice("https://api.github.com".length), init)
+  : undefined);
+const remoteUrl = (owner: string, repo: string) => (localRemotes ? `${localRemotes.replace(/\\/g, "/")}/${owner}/${repo}.git` : `https://github.com/${owner}/${repo}.git`);
 
 const WELCOME = `# Welcome to Focus Notes
 
@@ -36,21 +71,23 @@ const envMs = (name: string) => {
 };
 let gitSync: GitSync | undefined;
 let gitOpened = false;
-const gitWaiting: ((g: GitSync) => void)[] = [];
+let gitWaiting: ((g: GitSync) => void)[] = [];
 /** Runs now if Git is open, or once it opens (a note written before then is still committed). */
 const withGit = (fn: (g: GitSync) => void) => {
   if (gitSync) fn(gitSync);
   else if (!gitOpened) gitWaiting.push(fn);
 };
 let startGit: () => void = () => {};
-/** Opened once the caret is ready, so Git never competes with the first frame (PRF-02, PRF-07). */
-const gitOpening = new Promise<GitSync | undefined>((resolve) => {
+let gitOpening: Promise<GitSync | undefined>;
+/** Opened once the caret is ready, so Git never competes with the first frame (PRF-02, PRF-07). Again after the workspace changes. */
+const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], gitOpening = new Promise<GitSync | undefined>((resolve) => {
   startGit = () => {
     startGit = () => {};
     const idleMs = envMs("FOCUS_NOTES_IDLE_COMMIT_MS");
     const pointerGapMs = envMs("FOCUS_NOTES_POINTER_GAP_MS");
     resolve(GitSync.open({
       folder: notesHome(),
+      ...(onSpawn ? { run: createRunner({ onSpawn: (args) => onSpawn("git", args) }) } : {}),
       ...(idleMs !== undefined ? { idleMs } : {}),
       ...(pointerGapMs !== undefined ? { pointerGapMs } : {}),
       // After the window closes, the final sync on quit still runs; there's just no one to tell.
@@ -70,7 +107,103 @@ const gitOpening = new Promise<GitSync | undefined>((resolve) => {
       return undefined;
     }));
   };
+}));
+armGit();
+
+// ---- set up my instance (WP-3.1, FRE-08) ----
+// Opened when first asked. The token is read from Git's credential helper when a step needs it and
+// kept only in the engine; progress (names and step states, nothing secret) is in setup.json.
+let setupEngine: Promise<SetupEngine> | undefined;
+const setupRunner = createRunner(onSpawn ? { onSpawn: (args) => onSpawn("git", args) } : {});
+/** Setup's commits carry the identity chosen for only this workspace (FRE-05) until it's in the workspace's own settings. */
+const setupGit: GitRunner = (call) => {
+  const id = workspaceIdentity;
+  return setupRunner(id ? { ...call, args: ["-c", `user.name=${id.name}`, "-c", `user.email=${id.email}`, ...call.args] } : call);
+};
+const setup = () => (setupEngine ??= SetupEngine.open({
+  git: setupGit,
+  progressFile: join(app.getPath("userData"), "setup.json"),
+  token: () => account.token(),
+  fetch: apiFetch,
+  remoteUrl,
+  onReport: (r) => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("setup:report", r);
+  },
+  // Step names, states, and problem codes only.
+  log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
+}));
+/** A vault passphrase from the renderer: text, or none (Skip for now). Never logged or stored. */
+const passphraseArg = (p: unknown) => (typeof p === "string" && p.length > 0 && p.length <= 1024 ? p : undefined);
+
+// ---- the first run (WP-3.2, FRE-01 to FRE-06) ----
+// Signing in goes through Git's own helpers; the token is read from them when needed and kept only
+// in memory (SEC-03). The folder a workspace goes in is chosen here, with the system's dialog (D-98).
+const account = new Account({
+  git: createRunner(onSpawn ? { onSpawn: (args) => onSpawn("git", args) } : {}),
+  tools: createToolRunner(onSpawn ? { onSpawn } : {}),
+  fetch: apiFetch,
+  home: app.getPath("home"),
+  env: process.env,
+  onProgress: (p) => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("firstRun:signIn", p);
+  },
+  log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
 });
+const firstRunFile = () => join(app.getPath("userData"), "first-run.json");
+/** A name and email for only the notes workspace, kept until the workspace has them (not secret). */
+let workspaceIdentity: { name: string; email: string } | undefined;
+/** Where a new or cloned workspace goes: Documents/Focus Notes unless another folder was chosen. */
+let targetFolder: string | undefined;
+/** A workspace cloned or chosen, waiting to be opened. */
+let pendingWorkspace: string | undefined;
+const saveFirstRun = () => atomicWrite(firstRunFile(), JSON.stringify({ version: 1, ...(workspaceIdentity ? { identity: workspaceIdentity } : {}) }, null, 2));
+function readFirstRun(): void {
+  try {
+    const f = JSON.parse(readFileSync(firstRunFile(), "utf8")) as { version?: number; identity?: { name?: unknown; email?: unknown } };
+    const i = f.identity;
+    if (f.version === 1 && i && typeof i.name === "string" && typeof i.email === "string" && !identityProblem({ name: i.name, email: i.email })) workspaceIdentity = { name: i.name, email: i.email };
+  } catch {
+    // Nothing chosen yet.
+  }
+}
+/** The folder setup makes the workspace in: the one it started with, or the chosen one. */
+const setupFolder = async () => (await setup()).report().options?.folder ?? targetFolder ?? defaultHome();
+async function chooseFolder(title: string): Promise<string | undefined> {
+  const w = mainWindow;
+  const opts = { title, defaultPath: dirname(defaultHome()), properties: ["openDirectory" as const, "createDirectory" as const, "promptToCreate" as const] };
+  const r = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
+  return r.canceled || !r.filePaths[0] ? undefined : resolve(r.filePaths[0]);
+}
+/** Repositories in the signed-in account, Focus Notes workspaces first (checked for the ten most recent). */
+async function repositories(): Promise<RepoChoice[]> {
+  const s = await account.api();
+  if (!s) throw new Error("Signed out");
+  const repos = await s.api.ownRepos();
+  const checked = await Promise.all(repos.map((r, i) => (i < 10 ? s.api.hasFile(r.owner, r.name, ".focus-notes/workspace.json").catch(() => false) : Promise.resolve(false))));
+  const list = repos.map((r, i) => ({ owner: r.owner, name: r.name, private: r.private, instance: checked[i]! }));
+  return [...list.filter((r) => r.instance), ...list.filter((r) => !r.instance)];
+}
+/**
+ * Opens a workspace in this window (D-98): the main process keeps the folder, the watcher and Git
+ * move to it, and the renderer starts again in it.
+ */
+async function switchWorkspace(folder: string): Promise<void> {
+  if (workspaceIdentity) {
+    await applyLocalIdentity(setupRunner, folder, workspaceIdentity);
+    workspaceIdentity = undefined;
+    await saveFirstRun();
+  }
+  await atomicWrite(workspaceFile(), JSON.stringify({ version: 1, folder }, null, 2));
+  chosenHome = folder;
+  pendingWorkspace = undefined;
+  watcher?.close();
+  const old = gitSync;
+  armGit();
+  await old?.dispose();
+  watcher = watchWorkspace(() => mainWindow);
+  setTimeout(() => startGit(), 3000);
+  setTimeout(() => mainWindow?.webContents.reload(), 0);
+}
 
 // ---- the workspace (WP-2.3) ----
 // The notes folder is the workspace. With .focus-notes/workspace.json it has the repository's
@@ -78,8 +211,10 @@ const gitOpening = new Promise<GitSync | undefined>((resolve) => {
 // root of its own (D-92), as it was through M2.
 const formatFile = () => join(notesHome(), ".focus-notes", "workspace.json");
 const isWorkspace = () => existsSync(formatFile());
+// A clone whose account can't reach the private repository has no private root (FRE-06).
+const hasPrivate = () => existsSync(join(notesHome(), "private", "notes")) || existsSync(join(notesHome(), "private", ".git"));
 const roots = () => isWorkspace()
-  ? [{ id: "private", path: join(notesHome(), "private", "notes"), readOnly: false }, { id: "public", path: join(notesHome(), "notes"), readOnly: false }]
+  ? [...(hasPrivate() ? [{ id: "private", path: join(notesHome(), "private", "notes"), readOnly: false }] : []), { id: "public", path: join(notesHome(), "notes"), readOnly: false }]
   : [{ id: "local", path: notesHome(), readOnly: false }];
 /** Where new notes go when there's no note to put them next to. */
 const notesRoot = () => roots()[0]!.path;
@@ -376,6 +511,68 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const g = await gitOpening;
     return g ? g.status() : NO_GIT;
   });
+  handle("setup:status", async () => (await setup()).report());
+  // The folder is the main process's own: the one setup started with, or the one chosen with the dialog (D-98).
+  handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), folder: await setupFolder() }), passphraseArg(passphrase)));
+  handle("setup:retry", async (id, passphrase) => {
+    if (!(SETUP_STEPS as readonly unknown[]).includes(id)) throw new Error("Unknown setup step");
+    return (await setup()).retry(id as SetupStepId, passphraseArg(passphrase));
+  });
+  handle("setup:reset", async () => (await setup()).reset());
+  handle("setup:strength", async (p) => passphraseStrength(passphraseArg(p) ?? ""));
+  handle("firstRun:git", () => account.gitCheck());
+  handle("firstRun:account", () => account.status());
+  handle("firstRun:useExisting", () => account.useExisting());
+  handle("firstRun:signIn", (device) => account.signIn(device === true));
+  handle("firstRun:cancelSignIn", async () => account.cancel());
+  handle("firstRun:useToken", async (token) => {
+    if (typeof token !== "string" || token.length > 255) throw new Error("Not a token");
+    return account.useToken(token);
+  });
+  handle("firstRun:signOut", () => account.signOut());
+  handle("firstRun:identity", () => account.identity());
+  handle("firstRun:setIdentity", async (i, scope) => {
+    const id = { name: String(i?.name ?? "").trim(), email: String(i?.email ?? "").trim() };
+    if (identityProblem(id)) return false;
+    if (scope === "global") return account.setGlobalIdentity(id);
+    if (scope !== "workspace") return false;
+    workspaceIdentity = id;
+    await saveFirstRun();
+    return true;
+  });
+  handle("firstRun:repositories", () => repositories());
+  handle("firstRun:folder", () => setupFolder());
+  handle("firstRun:chooseFolder", async () => {
+    const folder = await chooseFolder("Choose a folder for your workspace");
+    if (folder) targetFolder = folder;
+    return folder;
+  });
+  handle("firstRun:clone", async (owner, name): Promise<WorkspaceResult> => {
+    if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
+    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? defaultHome());
+    if (r.ok) pendingWorkspace = r.folder;
+    return r;
+  });
+  handle("firstRun:openFolder", async (): Promise<WorkspaceResult | undefined> => {
+    const folder = await chooseFolder("Open a workspace folder");
+    if (!folder) return undefined;
+    const r = await checkWorkspace(setupRunner, folder);
+    if (r.ok) pendingWorkspace = folder;
+    return r;
+  });
+  handle("firstRun:openWorkspace", async (): Promise<WorkspaceResult> => {
+    const report = (await setup()).report();
+    const made = ["clone", "link"].every((id) => report.steps.find((x) => x.id === id)?.state === "done");
+    const folder = pendingWorkspace ?? (made ? report.options?.folder : undefined);
+    if (!folder) return { ok: false, problem: "failed" };
+    const r = await checkWorkspace(setupRunner, folder);
+    if (r.ok) await switchWorkspace(folder);
+    return r;
+  });
+  ipcMain.on("firstRun:openPage", (e, page: unknown) => {
+    if (!fromApp(e) || typeof page !== "string" || !Object.hasOwn(FIRST_RUN_PAGES, page)) return;
+    void shell.openExternal(FIRST_RUN_PAGES[page as FirstRunPage]);
+  });
   handle("window:fullScreen", async () => {
     const w = win();
     if (w) w.setFullScreen(!w.isFullScreen());
@@ -582,6 +779,8 @@ function watchWorkspace(win: () => BrowserWindow | undefined): FSWatcher | undef
 let mainWindow: BrowserWindow | undefined;
 let watcher: FSWatcher | undefined;
 app.whenReady().then(async () => {
+  chosenHome = readChosenHome();
+  readFirstRun();
   hardenSession();
   registerIpc(() => mainWindow);
   await stat(notesHome()).catch(() => mkdir(notesHome(), { recursive: true }));

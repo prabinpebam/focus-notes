@@ -8,7 +8,7 @@ export const contract = defineContract({
     layer: { kind: "enum", values: ["contextual", "trigger", "panel", "dialog", "toast", "tooltip"], default: "panel" },
     position: { kind: "enum", values: ["topBand", "belowTopBand", "fill", "center", "bottomCenter", "bottomStart"], default: "center" },
     dragBand: { kind: "boolean", default: false },
-    landmark: { kind: "enum", values: ["none", "banner", "complementary", "region"], default: "none" },
+    landmark: { kind: "enum", values: ["none", "banner", "main", "complementary", "region"], default: "none" },
     label: { kind: "message", requiredWhen: "landmark" },
   },
   events: {},
@@ -23,7 +23,7 @@ export const contract = defineContract({
     ...["topBand", "belowTopBand", "fill", "center", "bottomCenter", "bottomStart"].map((position) => ({
       name: `position ${position}`, props: { position }, children: [{ type: "Surface", props: { variant: "frost", padding: "m", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] }],
     })),
-    ...["none", "banner", "complementary", "region"].map((landmark) => ({
+    ...["none", "banner", "main", "complementary", "region"].map((landmark) => ({
       name: `landmark ${landmark}`, props: { landmark, label: { t: "gallery.sample" } }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }],
     })),
   ],

@@ -1,0 +1,233 @@
+/**
+ * Signing in on the desktop (FRE-02 to FRE-05, D-21, SEC-03): Git, Git's sign-in helpers, and the
+ * identity, for the first run's Git, Sign in, and Identity steps and the account pill.
+ *
+ * The credential lives only in Git's credential helper (Git Credential Manager, the GitHub CLI, or
+ * the OS keychain helper), so commits and pushes work in the app and from the terminal with one
+ * sign-in. A token is read from the helper (`git credential fill`) when the API is needed and kept
+ * only in this object's memory. A pasted token is checked with the API and handed to the helper on
+ * standard input (`git credential approve`). No token is ever written by the app, logged, put in a
+ * URL, or given as a process argument.
+ */
+import { GitHubApi, GitHubError, type Fetch } from "@focus-notes/github";
+import {
+  deviceCode, gitIsNewEnough, parseGitVersion, signInProblem, suggestIdentity,
+  type AccountStatus, type GitCheck, type GitHubAccount, type Identity, type SignInProblem, type SignInProgress,
+} from "@focus-notes/core/first-run";
+import type { GitRunner } from "../git/run.ts";
+import { CREDENTIAL_QUERY, githubToken } from "../setup/credential.ts";
+import { findProgram, gitProgramDirs, isGcmHelper, isGhHelper, type ToolProcess, type ToolRunner } from "./tools.ts";
+
+export interface AccountDeps {
+  git: GitRunner;
+  tools: ToolRunner;
+  /** Requests to api.github.com (the shell's allowlisted fetch, or a fake). */
+  fetch: Fetch;
+  /** Where Git runs for global settings and credentials: the home folder. */
+  home: string;
+  /** The environment programs are found in (PATH). */
+  env: NodeJS.ProcessEnv;
+  onProgress?: (p: SignInProgress) => void;
+  /** Problems and steps only, never a token. */
+  log?: (line: string) => void;
+}
+
+/** A device code lasts 15 minutes; a sign-in that takes longer has expired. */
+const SIGN_IN_MS = 16 * 60_000;
+
+const toAccount = (u: { login: string; id: number; name: string | null }): GitHubAccount => ({ login: u.login, id: u.id, name: u.name ?? "" });
+
+export class Account {
+  readonly #d: AccountDeps;
+  /** The checked token and its account, in memory only, for this session. */
+  #session: { token: string; account: GitHubAccount } | undefined;
+  #signIn: ToolProcess | undefined;
+
+  constructor(deps: AccountDeps) {
+    this.#d = deps;
+  }
+
+  #git(args: string[], input?: string) {
+    return this.#d.git({ cwd: this.#d.home, args, ...(input !== undefined ? { input } : {}), timeoutMs: 30_000 });
+  }
+
+  async #helpers(): Promise<string[]> {
+    const r = await this.#git(["config", "--get-all", "credential.helper"]);
+    const gh = await this.#git(["config", "--get-all", "credential.https://github.com.helper"]);
+    return `${r.stdout}\n${gh.stdout}`.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  }
+  async #gcmProgram(): Promise<string | undefined> {
+    const exec = await this.#git(["--exec-path"]);
+    return findProgram("git-credential-manager", this.#d.env, exec.code === 0 ? gitProgramDirs(exec.stdout) : []);
+  }
+  #ghProgram(): string | undefined {
+    return findProgram("gh", this.#d.env);
+  }
+
+  /** The Git step: Git's version, and which sign-in helpers are here. */
+  async gitCheck(): Promise<GitCheck> {
+    const r = await this.#git(["--version"]);
+    const v = r.code === 0 ? parseGitVersion(r.stdout) : undefined;
+    if (!v) return { installed: false, ok: false, gcm: false, gh: false };
+    const helpers = await this.#helpers();
+    return { installed: true, version: v.join("."), ok: gitIsNewEnough(v), gcm: helpers.some(isGcmHelper), gh: Boolean(this.#ghProgram()) };
+  }
+
+  /** Checks a token with the API: its account, or why not. The token stays in memory. */
+  async #verify(token: string): Promise<GitHubAccount | SignInProblem> {
+    try {
+      return toAccount(await new GitHubApi(token, this.#d.fetch).user());
+    } catch (e) {
+      if (e instanceof GitHubError && e.status === 0) return "offline";
+      if (e instanceof GitHubError && (e.unauthorized || e.status === 403)) return "invalid";
+      return "failed";
+    }
+  }
+
+  /** Where signing in stands: Git's credential first (FRE-04), then a GitHub CLI session Git doesn't use yet. */
+  async status(): Promise<AccountStatus> {
+    const helpers = await this.#helpers();
+    const ghProgram = this.#ghProgram();
+    const base = { gcm: helpers.some(isGcmHelper) && Boolean(await this.#gcmProgram()), gh: Boolean(ghProgram) };
+    let problem: SignInProblem | undefined;
+    const token = await githubToken(this.#d.git, this.#d.home);
+    if (token) {
+      const a = await this.#verify(token);
+      if (typeof a !== "string") {
+        this.#session = { token, account: a };
+        return { ...base, account: a };
+      }
+      // A credential that doesn't work is no sign-in; offline says so.
+      problem = a === "offline" ? "offline" : undefined;
+      if (a === "offline") return { ...base, problem };
+    }
+    this.#session = undefined;
+    if (ghProgram) {
+      const r = await this.#d.tools(ghProgram, { args: ["auth", "token", "--hostname", "github.com"], cwd: this.#d.home, env: this.#d.env, timeoutMs: 30_000 }).done;
+      const cli = r.code === 0 ? r.stdout.trim() : "";
+      if (cli) {
+        const a = await this.#verify(cli);
+        if (typeof a !== "string") return { ...base, cliAccount: a };
+        if (a === "offline") return { ...base, problem: "offline" };
+      }
+    }
+    return { ...base, ...(problem ? { problem } : {}) };
+  }
+
+  /** The API with the signed-in account's token, or undefined when signed out. */
+  async api(): Promise<{ api: GitHubApi; account: GitHubAccount } | undefined> {
+    if (!this.#session) await this.status();
+    const s = this.#session;
+    return s ? { api: new GitHubApi(s.token, this.#d.fetch), account: s.account } : undefined;
+  }
+  /** The token for the setup engine, read from Git's helper again each time it asks (after GitHub refused one, too). */
+  async token(): Promise<string | undefined> {
+    await this.status();
+    return this.#session?.token;
+  }
+  get account(): GitHubAccount | undefined {
+    return this.#session?.account;
+  }
+
+  /** Continue as @login with the GitHub CLI's session: Git starts using it (`gh auth setup-git`). */
+  async useExisting(): Promise<AccountStatus> {
+    const gh = this.#ghProgram();
+    if (gh) await this.#d.tools(gh, { args: ["auth", "setup-git", "--hostname", "github.com"], cwd: this.#d.home, env: this.#d.env, timeoutMs: 30_000 }).done;
+    return this.status();
+  }
+
+  /**
+   * Signs in through Git Credential Manager (its browser sign-in, or a device code) or the GitHub
+   * CLI (a device code the app shows). The helper keeps the credential; the app keeps nothing.
+   */
+  async signIn(device: boolean): Promise<AccountStatus> {
+    this.cancel();
+    const helpers = await this.#helpers();
+    const gcm = helpers.some(isGcmHelper) ? await this.#gcmProgram() : undefined;
+    const gh = gcm ? undefined : this.#ghProgram();
+    if (!gcm && !gh) return { gcm: false, gh: false, problem: "noHelper" };
+    const helper = gcm ? "gcm" : "gh";
+    const program = (gcm ?? gh)!;
+    const args = gcm ? ["github", "login", device ? "--device" : "--browser"] : ["auth", "login", "--web", "--hostname", "github.com", "--git-protocol", "https", "--scopes", "workflow"];
+    let sentCode = false;
+    this.#d.onProgress?.({ phase: helper === "gcm" && device ? "window" : "waiting", helper });
+    const p = this.#d.tools(program, {
+      args, cwd: this.#d.home, env: this.#d.env, timeoutMs: SIGN_IN_MS,
+      onOutput: (text) => {
+        const code = sentCode ? undefined : deviceCode(text);
+        if (code) {
+          sentCode = true;
+          this.#d.onProgress?.({ phase: "code", code, helper });
+        }
+      },
+    });
+    this.#signIn = p;
+    const r = await p.done;
+    if (this.#signIn !== p) return { gcm: Boolean(gcm), gh: Boolean(this.#ghProgram()) };
+    this.#signIn = undefined;
+    if (r.code !== 0) {
+      const problem = r.killed ? "expired" : signInProblem(`${r.stdout}\n${r.stderr}`);
+      this.#d.log?.(`sign-in helper=${helper} problem=${problem}`);
+      return { gcm: Boolean(gcm), gh: Boolean(this.#ghProgram()), problem };
+    }
+    if (gh) await this.#d.tools(gh, { args: ["auth", "setup-git", "--hostname", "github.com"], cwd: this.#d.home, env: this.#d.env, timeoutMs: 30_000 }).done;
+    const s = await this.status();
+    return s.account ? s : { ...s, problem: s.problem ?? "failed" };
+  }
+
+  /** Stops a sign-in that's waiting. */
+  cancel(): void {
+    const p = this.#signIn;
+    this.#signIn = undefined;
+    p?.kill();
+  }
+
+  /**
+   * A fine-grained token the person created and pasted: checked with the API, then stored only in
+   * Git's helper, through standard input. Without a helper that keeps it, nothing is stored.
+   */
+  async useToken(token: string): Promise<AccountStatus> {
+    const t = token.trim();
+    const helpers = await this.#helpers();
+    const base = { gcm: helpers.some(isGcmHelper), gh: Boolean(this.#ghProgram()) };
+    if (!/^[A-Za-z0-9_]{20,255}$/.test(t)) return { ...base, problem: "invalid" };
+    const a = await this.#verify(t);
+    if (typeof a === "string") return { ...base, problem: a };
+    if (!helpers.length) return { ...base, problem: "noHelper" };
+    const credential = `protocol=https\nhost=github.com\nusername=${a.login}\npassword=${t}\n\n`;
+    await this.#git(["credential", "approve"], credential);
+    // The helper has it only if Git now answers with it.
+    if ((await githubToken(this.#d.git, this.#d.home)) !== t) return { ...base, problem: "noHelper" };
+    this.#session = { token: t, account: a };
+    return { ...base, account: a };
+  }
+
+  /** Removes the GitHub credential from Git's helper, which signs the terminal out too (FRE-07). */
+  async signOut(): Promise<AccountStatus> {
+    this.cancel();
+    const helpers = await this.#helpers();
+    const login = this.#session?.account.login;
+    await this.#git(["credential", "reject"], login ? CREDENTIAL_QUERY.replace("\n\n", `\nusername=${login}\n\n`) : CREDENTIAL_QUERY);
+    const gh = this.#ghProgram();
+    if (gh && helpers.some(isGhHelper)) await this.#d.tools(gh, { args: ["auth", "logout", "--hostname", "github.com"], cwd: this.#d.home, env: this.#d.env, timeoutMs: 30_000 }).done;
+    this.#session = undefined;
+    const s = await this.status();
+    // The GitHub CLI's own session isn't Git's: it isn't offered again right after signing out.
+    const { cliAccount: _cli, ...rest } = s;
+    return rest;
+  }
+
+  /** The identity on commits: Git's own, or suggested from GitHub with the private noreply address (FRE-05). */
+  async identity(): Promise<Identity> {
+    const [name, email] = await Promise.all([this.#git(["config", "--get", "user.name"]), this.#git(["config", "--get", "user.email"])]);
+    if (!this.#session) await this.status().catch(() => undefined);
+    return suggestIdentity({ name: name.code === 0 ? name.stdout : "", email: email.code === 0 ? email.stdout : "" }, this.#session?.account);
+  }
+
+  /** Writes the identity to Git's global settings. */
+  async setGlobalIdentity(i: { name: string; email: string }): Promise<boolean> {
+    const a = await this.#git(["config", "--global", "user.name", i.name]);
+    const b = await this.#git(["config", "--global", "user.email", i.email]);
+    return a.code === 0 && b.code === 0;
+  }
+}

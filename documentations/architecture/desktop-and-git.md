@@ -3,14 +3,14 @@
 How the Electron app is put together: processes, security, signing in through Git's own sign-in tools, creating a user's workspace, and saving notes as commits and pushes with the user's own `git`. It's the only client that writes to GitHub (D-90).
 
 > [!NOTE]
-> **TL;DR.** The desktop app is **the only GitHub editor** (PKG-03, D-90): the web app keeps its own notes in the browser and only reads the deployed site. The **main process** owns windows, the file system, Git, and setup. The **renderer** runs the same web app core as the browser build, and it reaches the main process only through a small, typed **preload bridge** that offers intent-level operations (such as `workspace.save`), never raw shell or Git. **Focus Notes has no OAuth app, no client ID, and no server** (D-21). Sign-in is done by tools the user already owns: **Git Credential Manager** or the **GitHub CLI**, both with a device-code option, or a **fine-grained token** the user creates on GitHub. Whatever signs Git in also gives the app its GitHub API access, so the app stores no credential of its own. A new user's whole instance (instance repository from the template, private repository, GitHub Pages, the read-only deploy key, and the **vault passphrase**, stored only as its derived key) is created **in their own GitHub account** by the app on their computer, or found and cloned if they made it from the template first; notes **exported from a browser** can be imported, private by default. Edits are written to disk within 1 s, and a **commit and push** happens on <kbd>Mod</kbd>+<kbd>S</kbd>, on switching or closing a note, on quit, or after 60 s of no typing (D-23). Git runs as separate processes, which are slow on Windows, so the app asks each repository what changed with **one cached `git status`**, never makes a view wait for it, and shows structural changes on screen **before** they're committed (PRF-07, PRF-09, D-66, D-68). Saving with Git is built (WP-3.3, D-97): only problems are shown, as the trigger's dot and one toast.
+> **TL;DR.** The desktop app is **the only GitHub editor** (PKG-03, D-90): the web app keeps its own notes in the browser and only reads the deployed site. The **main process** owns windows, the file system, Git, and setup. The **renderer** runs the same web app core as the browser build, and it reaches the main process only through a small, typed **preload bridge** that offers intent-level operations (such as `workspace.save`), never raw shell or Git. **Focus Notes has no OAuth app, no client ID, and no server** (D-21). Sign-in is done by tools the user already owns: **Git Credential Manager** or the **GitHub CLI**, both with a device-code option, or a **fine-grained token** the user creates on GitHub. Whatever signs Git in also gives the app its GitHub API access, so the app stores no credential of its own. A new user's whole instance (instance repository from the template, private repository, GitHub Pages, the read-only deploy key, and the **vault passphrase**, stored only as its derived key) is created **in their own GitHub account** by the app on their computer, or found and cloned if they made it from the template first; notes **exported from a browser** can be imported, private by default. Edits are written to disk within 1 s, and a **commit and push** happens on <kbd>Mod</kbd>+<kbd>S</kbd>, on switching or closing a note, on quit, or after 60 s of no typing (D-23). Git runs as separate processes, which are slow on Windows, so the app asks each repository what changed with **one cached `git status`**, never makes a view wait for it, and shows structural changes on screen **before** they're committed (PRF-07, PRF-09, D-66, D-68). Saving with Git is built (WP-3.3, D-97): only problems are shown, as the trigger's dot and one toast. The setup engine that creates the instance is built too (WP-3.1, D-98): nine steps, each idempotent and retryable on its own, with progress that survives quitting.
 
 ## Processes and security
 
 | Part | Responsibilities | Not allowed |
 | --- | --- | --- |
-| **Main process** | Windows (shape, resize handles, snapping, state), app menu, running sign-in helpers, file reads and writes, file watching, running `git`, workspace creation | Rendering note content |
-| **Preload bridge** | A typed API: `workspace.*` (built: `info`, `scan`, `renameNote`, `writeFormat`, `apply`, `onChange`), `sync.*` (built: `now`, `status`, `onStatus`), `auth.*` (detect, sign in, status, sign out), `window.*` (minimize, maximize, snap, close, full screen), `app.*` (open a note's web link (http, https, and mailto only), copy text, show in Finder or Explorer) | Exposing `ipcRenderer`, Node, or any generic exec |
+| **Main process** | Windows (shape, resize handles, snapping, state), app menu, running sign-in helpers, file reads and writes, file watching, running `git`, workspace creation (the setup engine, the only code that calls `api.github.com`) | Rendering note content |
+| **Preload bridge** | A typed API: `workspace.*` (built: `info`, `scan`, `renameNote`, `writeFormat`, `apply`, `onChange`), `sync.*` (built: `now`, `status`, `onStatus`), `setup.*` (built: `status`, `start`, `retry`, `reset`, `passphraseStrength`, `onReport`), `auth.*` (detect, sign in, status, sign out), `window.*` (minimize, maximize, snap, close, full screen), `app.*` (open a note's web link (http, https, and mailto only), copy text, show in Finder or Explorer) | Exposing `ipcRenderer`, Node, or any generic exec |
 | **Renderer** | The app core: editor, focus mode, Spotlight, theming, UI | Node access, network access except to `api.github.com` |
 
 Security settings: `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, a strict Content Security Policy, navigation and new windows denied (external links open in the default browser), and only the app's own local files served. Every bridge call is checked for a valid workspace-relative path, so nothing outside the workspace can be read or written.
@@ -36,16 +36,18 @@ The app never runs an OAuth flow of its own. It asks **Git** for a GitHub creden
 
 | Path | When it's offered | How it works |
 | --- | --- | --- |
-| **Existing sign-in** | Always checked first | `git credential fill` for `github.com` with prompts turned off. If it returns a credential that GitHub accepts, setup offers *Continue as @login*. |
-| **Git Credential Manager** (default on Windows, where it comes with Git for Windows) | GCM is the configured helper | The app runs `git credential fill` with prompts allowed. GCM shows its own GitHub sign-in: a browser sign-in, or a **device code** (the app passes the device-code mode for that one call when the user picks *Use a code instead*). GCM keeps the credential in the OS's secure storage. |
-| **GitHub CLI** | `gh` is installed | The app runs `gh auth login --web --git-protocol https --scopes workflow` and reads the **one-time code** it prints, shows it in the app's own screen, and opens `github.com/login/device`. When `gh` finishes, the app runs `gh auth setup-git` so Git uses it as its credential helper. |
-| **Fine-grained token** | Always available as an alternative | A button opens GitHub's token page with the fields **pre-filled** (GitHub's template links for fine-grained tokens): name "Focus Notes", the user's workspace and private repositories, and the permissions in the table below. The user creates it and pastes it. The app stores it with `git credential approve` in the user's secure helper. |
+| **Existing sign-in** | Always checked first | `git credential fill` for `github.com` with prompts turned off. If it returns a credential that `GET /user` accepts, the first run offers *Continue as @login* and no device code. Otherwise, if the GitHub CLI is signed in (`gh auth token`), that account is offered the same way, and *Continue* runs `gh auth setup-git` so Git uses it too (FRE-04). |
+| **Git Credential Manager** (default on Windows, where it comes with Git for Windows) | GCM is the configured helper (`manager`, `manager-core`, or its path) | The app runs GCM's own `git-credential-manager github login --browser`, or `--device` for *Use a code instead*. The program is found on `PATH` or in Git's own folders (`git --exec-path`, where Git for Windows keeps it). GCM signs in with its own window; when it prints a code, the app shows it, otherwise it says "Enter the code shown by Git Credential Manager". GCM keeps the credential in the OS's secure storage. |
+| **GitHub CLI** | `gh` is installed and GCM isn't the helper | The app runs `gh auth login --web --hostname github.com --git-protocol https --scopes workflow` with its prompts off, reads the **one-time code** it prints, and shows it in large type with *Copy code and open GitHub* (`github.com/login/device`). When `gh` finishes, the app runs `gh auth setup-git` so Git uses it as its credential helper. |
+| **Fine-grained token** | Always available as an alternative | *Create a token on GitHub* opens GitHub's token page with its fields **pre-filled** by URL: name "Focus Notes", a description, 90 days, and Contents, Administration, Pages, Secrets, and Workflows set to read and write. The user chooses the repositories (a link can't), creates it, and pastes it. The main process checks it with `GET /user`, then gives it to the user's helper with `git credential approve` on standard input. If Git doesn't answer with it afterwards (no helper keeps it), it's refused: the app never sets up the plaintext `store` helper. |
+
+Sign-in programs are started with an argument list of fixed words (never a token, name, or path) and never through a shell; on Windows a `.cmd` shim from a package manager runs through `cmd.exe` with only those words. Their prompts are off (`GIT_TERMINAL_PROMPT=0`, `GH_PROMPT_DISABLED=1`). A sign-in that ends without an account says why: **declined** on GitHub, the code **expired** (also after 16 minutes), GitHub **offline**, the token **invalid**, **no helper** to keep a token, or **failed**. Each offers *Try again* without restarting, and *Cancel* or <kbd>Esc</kbd> stops a sign-in that's waiting (D-101).
 
 If no helper is installed (common on macOS and Linux), setup shows one-line install commands: for example `brew install --cask git-credential-manager` or `brew install gh` on macOS, and the distribution's `gh` package on Linux. The token path is offered alongside so nothing has to be installed.
 
 ### Getting API access
 
-The app needs the GitHub REST API for a few things: listing and creating repositories, GitHub Pages status, deploy keys, and repository secrets. It takes the token from Git each time it needs one: `git credential fill`, or `gh auth token` when the GitHub CLI is the helper. It keeps it **in memory only**, never on disk, and asks again after a restart. There's one place the credential lives, and it belongs to the user.
+The app needs the GitHub REST API for a few things: listing and creating repositories, GitHub Pages status, deploy keys, and repository secrets. It takes the token from Git when it first needs one in a session: `git credential fill` (which asks the GitHub CLI too when it's Git's helper). It keeps it **in the main process's memory only**, never on disk or in the renderer, and asks again after a restart or after GitHub refuses it. There's one place the credential lives, and it belongs to the user.
 
 ### Permissions
 
@@ -57,7 +59,11 @@ The app needs the GitHub REST API for a few things: listing and creating reposit
 
 ### Signing out
 
-**Settings → Account → Sign out** runs `git credential reject` for `github.com` (which removes GCM's or a token's stored credential), or `gh auth logout` when the GitHub CLI is the helper. The screen says that this signs out Git in the terminal too, and links to GitHub's settings to revoke a token or authorization completely.
+*Sign out of GitHub*, in the account pill's menu, runs `git credential reject` for `github.com` and the login (which removes GCM's or a token's stored credential), and `gh auth logout` too when the GitHub CLI is the helper. The toast says this signs Git out in the terminal too. **Settings → Account**, with a link to GitHub's settings to revoke a token or authorization completely, and *Switch account*, come later (D-101).
+
+### The workspace folder
+
+The first run's workspace is the main process's to choose, never the renderer's (D-98): a new or cloned workspace goes in `Documents/Focus Notes`, or in a folder picked with the system's dialog, which must be empty or new; *Open a folder* picks an existing clone the same way, and it must be a clone's top folder with `.focus-notes/workspace.json`. Cloning fetches `private/` (on `main`, with `push.recurseSubmodules=check`) when the account can reach it; otherwise the workspace has public notes only, and no *Private* root. Once chosen, the folder is kept in `workspace.json` in the app's data folder, the file watcher and Git move to it, and the window starts again in it.
 
 ## Creating a workspace
 
@@ -65,32 +71,44 @@ A new user gets an isolated, self-owned instance in their own account (FRE-08). 
 
 <ol class="slate-steps">
 <li class="slate-step">
-<p class="slate-step__title">Instance repository</p>
-<p>Copied from the public <strong>template repository</strong> with GitHub's "generate from template" API, named by the user (default <code>notes</code>). It's public, because GitHub Pages on free accounts needs a public repository. It contains <code>notes/</code>, <code>.focus-notes/workspace.json</code>, and the <em>Deploy app</em> workflow, which deploys the released web app at a pinned version (D-87).</p>
+<p class="slate-step__title">1. Sign in</p>
+<p>The token comes from Git's credential helper (<code>git credential fill</code> for <code>github.com</code>, prompts off) and stays in memory; <code>GET /user</code> gives the account. Without a credential the step fails as <em>signed out</em>, and the first run's sign-in screen takes over (WP-3.2).</p>
 </li>
 <li class="slate-step">
-<p class="slate-step__title">Private repository</p>
-<p>Created empty and private (default <code>notes-private</code>), with a starter <code>README.md</code>, <code>notes/</code>, <code>.focus-notes/</code>, and <code>access.json</code>.</p>
+<p class="slate-step__title">2. Copy the template</p>
+<p>The instance repository, made from the public <strong>template repository</strong> <code>focus-notes-workspace</code> with GitHub's "generate from template" API, named by the user (default <code>notes</code>), public because GitHub Pages on free accounts needs it. It holds <code>notes/</code>, <code>.focus-notes/workspace.json</code>, <code>AGENTS.md</code>, a README, and the <em>Deploy app</em> workflow (D-87). If the account already has a repository by that name with <code>.focus-notes/workspace.json</code> (made in the browser first), it's used as it is; any other repository by that name is refused.</p>
 </li>
 <li class="slate-step">
-<p class="slate-step__title">Link them</p>
-<p>The app clones the workspace, adds the private repository as the <code>private/</code> submodule, commits, and pushes, with the submodule settings described in <a href="repository-and-publishing.html#working-with-the-submodule">Repository and publishing</a>.</p>
+<p class="slate-step__title">3. Create private repository</p>
+<p>Private, with a README so it has a <code>main</code> branch (default <code>notes-private</code>). An existing private repository by that name is used; a <strong>public</strong> one is refused, never used for private notes.</p>
 </li>
 <li class="slate-step">
-<p class="slate-step__title">Share-link key</p>
-<p>The app generates an SSH key pair locally, adds the public key to the private repository as a <strong>read-only deploy key</strong>, and stores the private key as the instance repository's <code>PRIVATE_CONTENT_KEY</code> Actions secret. The secret is encrypted with the repository's public key (libsodium sealed box, as GitHub requires), then the local copy is deleted. The <em>Deploy app</em> workflow uses it to seal the vault and shared notes.</p>
+<p class="slate-step__title">4. Set up the deploy key</p>
+<p>The app makes an Ed25519 key pair in memory, adds the public half to the private repository as a <strong>read-only deploy key</strong> titled "Focus Notes publishing", and stores the private half, in OpenSSH's format, as the instance repository's <code>PRIVATE_CONTENT_KEY</code> Actions secret, sealed to the repository's public key (libsodium's sealed box, as GitHub requires; tweetnacl and BLAKE2b). It's one step so the private half is never kept between steps; retrying it deletes the key an interrupted run left and makes a new pair. The <em>Deploy app</em> workflow uses it to check out <code>private/</code> and seal the vault and shared notes.</p>
 </li>
 <li class="slate-step">
-<p class="slate-step__title">Vault passphrase</p>
-<p>Asks for the passphrase that opens the private notes in a browser (SEC-08). A strength meter must reach "strong" (at least 12 characters, rated by zxcvbn-ts), and one line says: "If you forget it, it can't be recovered. Your notes stay in your private repository." The app derives its key (PBKDF2-SHA256, 600,000 iterations, a fresh 16-byte salt) and commits only the owner's grant, with that key, to <code>private/access.json</code>, never the passphrase (<a href="repository-and-publishing.html#the-vault">The vault</a>). Until this setup exists, the same grant is made by <code>node packages/seal/src/cli.ts vault-init --private private</code>, which reads the passphrase from standard input (never from arguments), refuses weak ones, and writes only the derived key.</p>
+<p class="slate-step__title">5. Download to this computer</p>
+<p>Clones the instance into the chosen folder, which must be missing, empty, or already that clone.</p>
 </li>
 <li class="slate-step">
-<p class="slate-step__title">Publishing</p>
-<p>Turns on GitHub Pages for the instance repository with GitHub Actions as the source, and runs the <em>Deploy app</em> workflow. The instance's site, <code>https://&lt;user&gt;.github.io/&lt;repository&gt;/</code>, then serves the web app, the public notes, and the vault, so the user can read every note in a browser and write there too (notes written in a browser stay in it).</p>
+<p class="slate-step__title">6. Link them</p>
+<p>Adds the private repository as the <code>private/</code> submodule tracking <code>main</code>, checks it out on <code>main</code>, sets <code>push.recurseSubmodules=check</code>, adds a starter <code>notes/</code> folder to it, and commits both (<em>Start private notes</em>, <em>Link private notes</em>), as described in <a href="repository-and-publishing.html#working-with-the-submodule">Repository and publishing</a>.</p>
+</li>
+<li class="slate-step">
+<p class="slate-step__title">7. Save the vault's key</p>
+<p>Uses the vault passphrase the person typed (SEC-08), which must be strong (<code>passphraseStrength</code> in <code>packages/seal</code>: at least 12 characters, rated strong), with one line: "If you forget it, it can't be recovered. Your notes stay in your private repository." The app derives its key (PBKDF2-SHA256, 600,000 iterations, a fresh 16-byte salt) and commits only the owner's grant, with that key, to <code>private/access.json</code> (<em>Add the vault's key</em>), never the passphrase (<a href="repository-and-publishing.html#the-vault">The vault</a>). Without a passphrase the step is <em>skipped</em> and can be run later; a private repository that already has a vault keeps it. <code>node packages/seal/src/cli.ts vault-init --private private</code> makes the same grant from a terminal, through the same code.</p>
+</li>
+<li class="slate-step">
+<p class="slate-step__title">8. Turn on GitHub Pages</p>
+<p>Turns on Pages for the instance repository with GitHub Actions as the source (or switches an existing site to it) and records the site's address, <code>https://&lt;user&gt;.github.io/&lt;repository&gt;/</code>. Skipped when the person turns publishing off.</p>
+</li>
+<li class="slate-step">
+<p class="slate-step__title">9. Save to GitHub</p>
+<p>Pushes the private repository, moves the instance's pointer to that commit (<em>Update private notes to …</em>), and pushes the instance, private first. Because Pages is already on, this push runs the <em>Deploy app</em> workflow, so the site then serves the web app, the public notes, and the vault.</p>
 </li>
 </ol>
 
-Every step can be retried on its own, and a failed step leaves a clear message ("Couldn't add the deploy key: the token needs Administration permission"). Publishing, share links, and the vault can be skipped and turned on later in **Settings → Workspace**, where the vault passphrase can also be changed.
+Each step reports **pending**, **running**, **done**, **failed** with a problem code (for example *permission*: "Your sign-in doesn't allow this…"), or **skipped**, and can be retried on its own once the steps before it are done; retrying a done step changes nothing. Every step is idempotent: it looks first, then does only what's missing, so a setup that stopped anywhere runs again safely. Progress is kept in `setup.json` in the app's data folder (names, the folder, the login, the site's address, and step states, never the token, passphrase, or key), so quitting halfway resumes at the same step, and a step that was running when the app quit runs again. The engine is in the desktop's main process (`apps/desktop/src/main/setup/`), its types in `packages/core` (`setup.ts`), and the app shows it as `vm.setup` (D-98). Publishing, share links, and the vault can be skipped and turned on later in **Settings → Workspace**, where the vault passphrase can also be changed.
 
 ## Importing notes from a browser
 

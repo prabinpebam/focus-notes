@@ -169,7 +169,7 @@ test("200% zoom at a 640 px window reflows to 320 CSS px without sideways scroll
 
 test("UI scale enlarges the interface but not the note text", async () => {
   const dirs = tempDirs();
-  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, uiScale: 1.5 }));
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, uiScale: 1.5, firstRun: "done" }));
   const l = await launch(dirs);
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });

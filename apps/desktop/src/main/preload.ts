@@ -51,6 +51,43 @@ contextBridge.exposeInMainWorld("focusNotes", {
       return () => ipcRenderer.removeListener("sync:status", handler);
     },
   },
+  // Set up my instance (WP-3.1, FRE-08): intent-level steps; the passphrase is passed only to run the vault step.
+  setup: {
+    status: () => ipcRenderer.invoke("setup:status"),
+    start: (options: unknown, passphrase?: string) => ipcRenderer.invoke("setup:start", options, passphrase),
+    retry: (step: string, passphrase?: string) => ipcRenderer.invoke("setup:retry", step, passphrase),
+    reset: () => ipcRenderer.invoke("setup:reset"),
+    passphraseStrength: (passphrase: string) => ipcRenderer.invoke("setup:strength", passphrase),
+    onReport: (listener: (report: unknown) => void) => {
+      const handler = (_e: unknown, report: unknown) => listener(report);
+      ipcRenderer.on("setup:report", handler);
+      return () => ipcRenderer.removeListener("setup:report", handler);
+    },
+  },
+  // The first run (WP-3.2): intent-level only. A pasted token goes to the main process once, which gives it to Git's helper.
+  firstRun: {
+    git: () => ipcRenderer.invoke("firstRun:git"),
+    account: () => ipcRenderer.invoke("firstRun:account"),
+    useExisting: () => ipcRenderer.invoke("firstRun:useExisting"),
+    signIn: (device: boolean) => ipcRenderer.invoke("firstRun:signIn", device),
+    cancelSignIn: () => ipcRenderer.invoke("firstRun:cancelSignIn"),
+    onSignIn: (listener: (p: unknown) => void) => {
+      const handler = (_e: unknown, p: unknown) => listener(p);
+      ipcRenderer.on("firstRun:signIn", handler);
+      return () => ipcRenderer.removeListener("firstRun:signIn", handler);
+    },
+    useToken: (token: string) => ipcRenderer.invoke("firstRun:useToken", token),
+    signOut: () => ipcRenderer.invoke("firstRun:signOut"),
+    identity: () => ipcRenderer.invoke("firstRun:identity"),
+    setIdentity: (identity: unknown, scope: string) => ipcRenderer.invoke("firstRun:setIdentity", identity, scope),
+    repositories: () => ipcRenderer.invoke("firstRun:repositories"),
+    folder: () => ipcRenderer.invoke("firstRun:folder"),
+    chooseFolder: () => ipcRenderer.invoke("firstRun:chooseFolder"),
+    clone: (owner: string, name: string) => ipcRenderer.invoke("firstRun:clone", owner, name),
+    openFolder: () => ipcRenderer.invoke("firstRun:openFolder"),
+    openWorkspace: () => ipcRenderer.invoke("firstRun:openWorkspace"),
+    openPage: (page: string) => ipcRenderer.send("firstRun:openPage", page),
+  },
   setWindowScheme: (s: "light" | "dark", canvas?: string) => ipcRenderer.send("window:scheme", s, canvas),
   onFlushRequest: (listener: () => Promise<boolean>) => {
     ipcRenderer.on("app:flush", () => {
