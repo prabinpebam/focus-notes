@@ -25,8 +25,10 @@ test("SPT-08: the index is built on this computer, in its own worker, and indexi
 
   // Full text, a private note's included, is indexed in the background.
   await expect.poll(async () => (await ask(worker, { text: "zanzibar", scope: "text" })).hits.map((h) => [h.rel, h.root]), { timeout: 20_000 }).toEqual([["budget.md", "private"]]);
-  const titles = await ask(worker, { text: "focus", scope: "titles" });
+  // Notes only: Spotlight (WP-4.2) has given the index its commands and settings too ("Focus mode").
+  const titles = await ask(worker, { text: "focus", scope: "titles", kinds: ["note"] });
   expect(titles.hits[0]).toMatchObject({ kind: "note", label: "On focus", rel: "essays/on-focus.md", root: "public", tier: "word" });
+  expect((await ask(worker, { text: "focus", scope: "titles", kinds: ["command"] })).hits.map((h) => h.key)).toContain("command:focus.toggle");
   expect((await ask(worker, { text: "deep work", scope: "titles" })).hits[0]).toMatchObject({ kind: "heading", rel: "essays/on-focus.md", heading: { level: 2, note: "On focus" } });
   expect((await ask(worker, { text: "zanzibar", scope: "titles", roots: ["public"] })).hits).toEqual([]);
 
