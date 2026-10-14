@@ -163,6 +163,8 @@
   "task.failed": "Didn't finish",
   "task.elapsed": "{words} {seconds} s",
   "toast.saveFailed": "Couldn't save your latest changes. Your text is still here.",
+  "toast.restored": "{count, plural, one {Restored what you were writing in “{note}” before Focus Notes closed.} other {Restored what you were writing in # notes before Focus Notes closed.}}",
+  "toast.restoredCopy": "“{note}” changed while Focus Notes was closed, so what you were writing is kept beside it, in “{copy}”.",
   "toast.retry": "Retry",
   "sync.problem.offline": "Couldn't sync: you're offline. Your changes are safe on this computer and will sync later.",
   "sync.problem.auth": "Couldn't sync: GitHub didn't accept your sign-in.",
