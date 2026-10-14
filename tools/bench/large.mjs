@@ -67,17 +67,26 @@ export async function largeWorkspace({ root, mainEntry, notes = 10_000, reopenRu
   try {
     const page = await app.firstWindow();
     // The window never takes the computer's focus (D-104 (7)); the page is told it has it.
-    await (await page.context().newCDPSession(page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true });
+    // FOCUS_NOTES_E2E_CPU_THROTTLE=4 slows the renderer down like a busy CI runner, to reproduce races.
+    const throttle = Number(process.env.FOCUS_NOTES_E2E_CPU_THROTTLE ?? 0);
+    if (throttle > 1) await cdp.send("Emulation.setCPUThrottlingRate", { rate: throttle });
     const mod = process.platform === "darwin" ? "Meta" : "Control";
     const openKey = process.platform === "darwin" ? "Meta+ArrowDown" : "Enter";
     const editorFocused = () => page.waitForFunction(() => Boolean(document.activeElement?.closest("[data-editor]")), null, { timeout: 30_000 });
     await editorFocused();
-    const tree = page.getByRole("tree", { name: "Notes and folders" });
+    // Ready means the whole workspace is open: listed, and every note read into the search index,
+    // which starts after the first caret and reads all 10,000 notes. Measuring before then measures
+    // loading, and its long tasks split the Files panel's type-ahead (DEF-4).
+    await page.waitForFunction((n) => performance.getEntriesByName("fn:search.indexed", "mark").some((m) => m.detail?.notes >= n), notes, { timeout: 300_000 });
 
     /** Opens a top-level note from the Files panel; resolves to ms from the key to its text with the caret in it. */
     const open = async (name) => {
       await page.keyboard.press(`${mod}+O`);
-      await tree.getByRole("treeitem").first().waitFor({ timeout: 60_000 });
+      // The panel is ready when focus is on its row, not when a row is drawn: keys typed before
+      // then would go to the note.
+      await page.waitForFunction(() => document.activeElement?.getAttribute("role") === "treeitem", null, { timeout: 30_000 });
       await page.keyboard.type(name);
       await page.waitForFunction((n) => document.activeElement?.getAttribute("role") === "treeitem" && document.activeElement.textContent?.includes(n), name, { timeout: 30_000 });
       await page.evaluate((n) => {

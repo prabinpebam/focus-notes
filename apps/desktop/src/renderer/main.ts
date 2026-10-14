@@ -5,6 +5,9 @@ import { views, messages } from "@focus-notes/views";
 import { createSearchWorker, startSearch } from "@focus-notes/core/search";
 import searchWorkerUrl from "@focus-notes/core/search-worker?worker&url";
 
+/** Marked when every note in the workspace is indexed (read by tools/bench/large.mjs). */
+const INDEXED_MARK = "fn:search.indexed";
+
 interface DesktopBridge extends PlatformBridge {
   setWindowScheme(s: "light" | "dark", canvas?: string, accent?: string): void;
   onFlushRequest(listener: () => Promise<boolean>): void;
@@ -39,5 +42,15 @@ app.store.subscribe(() => {
 });
 bridge.onFlushRequest(() => flushApp(app));
 // The search index (WP-4.1) builds in its worker once the first note is open, never before; Spotlight
-// (WP-4.2) and Find in all notes (WP-4.3) ask it.
-void app.start().then(() => app.useSearch(startSearch(app, createSearchWorker(searchWorkerUrl))));
+// (WP-4.2) and Find in all notes (WP-4.3) ask it. Each time every note is indexed, a performance mark
+// says so: the large-workspace bench waits for it, so it measures a workspace that is open, not one still loading.
+void app.start().then(() => {
+  const search = startSearch(app, createSearchWorker(searchWorkerUrl));
+  app.useSearch(search);
+  let indexed = false;
+  search.onStatus((s) => {
+    const now = s.notes > 0 && s.indexed >= s.notes && s.pending === 0;
+    if (now && !indexed) performance.mark(INDEXED_MARK, { detail: { notes: s.notes } });
+    indexed = now;
+  });
+});
