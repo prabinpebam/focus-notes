@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p><kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> opens a centered, frosted panel modeled on macOS Spotlight and Raycast. It searches <strong>notes</strong> (titles, paths, headings, full text), <strong>folders</strong>, <strong>commands</strong>, and <strong>settings</strong> in one ranked list. <kbd>Enter</kbd> runs the default action; <kbd>→</kbd> or <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> opens <strong>quick actions</strong> for the selected result (open in a new window, copy link, move, rename, make public, delete…). Prefixes (<code>&gt;</code> commands, <code>#</code> headings) and filters (<code>is:private</code>, <code>in:essays/</code>) narrow the search. Quick open, the command palette, go-to-heading, and find-in-notes are all this same panel, opened in a different mode. Covers SPT-01 to SPT-08 in the <a href="../product/requirements.md">requirements</a>.</p>
+  <p><kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> opens a centered, frosted panel modeled on macOS Spotlight and Raycast. It searches <strong>notes</strong> (titles, paths, headings, full text), <strong>folders</strong>, <strong>commands</strong>, and <strong>settings</strong> in one ranked list. <kbd>Enter</kbd> runs the default action; <kbd>→</kbd> or <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> opens <strong>quick actions</strong> for the selected result (open in a new window, copy link, move, rename, make public, delete…). Prefixes (<code>&gt;</code> commands, <code>#</code> headings) and filters (<code>is:private</code>, <code>in:essays/</code>) narrow the search. Quick open, the command palette, and go-to-heading are all this same panel, opened in a different mode; <em>Find in all notes</em> is a side sheet of its own that Spotlight can open with its query (D-110). Covers SPT-01 to SPT-08 in the <a href="../product/requirements.md">requirements</a>.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -79,7 +79,7 @@
     <tr><td><kbd>Mod</kbd>+<kbd>P</kbd></td><td>Notes (quick open)</td><td>VS Code</td></tr>
     <tr><td><kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, or typing <code>&gt;</code></td><td>Commands</td><td>VS Code</td></tr>
     <tr><td><kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>, or typing <code>#</code></td><td>Headings in this note</td><td>VS Code (go to symbol)</td></tr>
-    <tr><td><kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td>Find in notes (see <a href="find-and-replace.md#find-in-all-notes">Find and replace</a>)</td><td>VS Code</td></tr>
+    <tr><td><kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td>Not Spotlight: <em>Find in all notes</em> is a side sheet of its own, and Spotlight's <em>Find "…" in all notes</em> opens it with the query (command <code>find.allNotes</code>; see <a href="find-and-replace.md#find-in-all-notes">Find and replace</a>, D-110)</td><td>VS Code</td></tr>
     <tr><td><strong>Search</strong> in the <a href="main-ui.html#the-minimal-toolbar">trigger toolbar</a></td><td>All</td><td>Pointer and touch users</td></tr>
   </tbody>
 </table>
@@ -90,7 +90,7 @@
   <dt>Panel</dt>
   <dd>Centered horizontally, about 20% from the top, 640 px wide (full width minus margins on small screens). Uses the frosted surface from the theme, and the canvas behind it dims slightly. The panel is built once and kept hidden, so it opens instantly.</dd>
   <dt>Field</dt>
-  <dd>Has a mode chip on the left (All, Notes, Commands, Headings, Find in notes). <kbd>Backspace</kbd> in an empty field returns to All. A clear button appears when there's text.</dd>
+  <dd>Has a mode chip on the left (All, Notes, Commands, Headings). <kbd>Backspace</kbd> in an empty field returns to All. A clear button appears when there's text.</dd>
   <dt>Results</dt>
   <dd>Grouped and labeled (Top hit, Notes, In notes, Folders, Commands, Settings, Actions). Each row shows an icon, a title with the matching characters in bold, details (path, visibility, snippet), and on the right either the shortcut or the current state.</dd>
   <dt>Action panel</dt>

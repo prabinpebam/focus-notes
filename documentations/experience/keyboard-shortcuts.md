@@ -170,6 +170,8 @@ Details are on [Find and replace](find-and-replace.md).
 | Next / previous result across notes | <kbd>F4</kbd> / <kbd>⇧F4</kbd> | <kbd>F4</kbd> / <kbd>Shift+F4</kbd> | Pro | VS Code |
 | Close the find bar | <kbd>Esc</kbd> | <kbd>Esc</kbd> | Basic | Universal |
 
+In *Find in all notes*, focus stays in its field: <kbd>↓</kbd> and <kbd>↑</kbd> move through the matching lines, <kbd>Enter</kbd> opens the highlighted one at its match with the find bar on it, the match case, whole word, and regex keys work anywhere in the sheet, and <kbd>Esc</kbd> clears the field, then closes the sheet ([D-110](../plan/decisions.md)).
+
 ## Spotlight
 
 These apply while [Spotlight](spotlight.html) is open.
