@@ -18,6 +18,8 @@ Find and replace text in the open note, or across every note in the workspace. I
 | **Navigate** | <kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Enter</kbd>, <kbd>⌘G</kbd> / <kbd>⇧⌘G</kbd> (Apple), <kbd>F3</kbd> / <kbd>Shift+F3</kbd> (Windows). Searching wraps around the end of the note, with a short "Wrapped to top" notice. |
 | **Close** | <kbd>Esc</kbd>. The caret goes to the current match with it selected, so typing replaces it (VS Code behavior). |
 
+**Layout (D-111).** The bar is one frosted surface with uniform 8 px padding. On the start edge, the chevron that shows and hides replace spans both rows. The find row has three groups, 16 px apart: the **search group** (the find field, the count, and previous and next, 8 px apart, with previous and next 4 px apart as a pair), the **options** (match case, whole word, regular expression, 4 px apart), and **close** at the end. The replace row lines up under the find row: the replace field, 8 px from **Replace** and **Replace all**. Every control in the bar is 32 px tall, so the fields, buttons, and text share a center line. The fields have no clear button of their own (<kbd>Esc</kbd> clears them, and the bar has its close): the bar has one ×. The fields start at 200 px and give up the room first as the window narrows, down to 96 px, so the bar fits at the smallest window (480 px).
+
 ### What counts as a match
 
 - Matching runs on the **visible text** of the note: what you see, not the Markdown source. Searching for `bold` finds **bold**, and `**` matches nothing unless the note really contains asterisks.

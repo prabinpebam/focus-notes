@@ -32,9 +32,9 @@ Text is read and written in the band between **25% and 65% of the window height*
 
 <h2 data-reader-personas="design">Spacing and shape</h2>
 
-| Spacing token | `space.xs` | `space.s` | `space.m` | `space.l` | `space.xl` | `space.xxl` | `space.xxxl` |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Value | 4 px | 8 px | 12 px | 16 px | 24 px | 32 px | 48 px |
+| Spacing token | `space.xxs` | `space.xs` | `space.s` | `space.m` | `space.l` | `space.xl` | `space.xxl` | `space.xxxl` |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Value | 2 px | 4 px | 8 px | 12 px | 16 px | 24 px | 32 px | 48 px |
 
 | Radius token | Value | Used by |
 | --- | --- | --- |
@@ -153,15 +153,25 @@ Every surface is checked against these rules before it's done (D-111, [Definitio
 | Rule | What it means | How it's checked |
 | --- | --- | --- |
 | **Inside the window** | Nothing the app draws (dialogs, scrims, sheets, menus, popovers, tooltips, toasts) extends past the window. On Windows and Linux that's the drawn window inside its shadow margin, clipped to its 20 px corners; scrims dim only the drawn window. | Every overlay's box is inside the window's box, in journeys |
-| **Never edge to edge** | A dialog keeps at least `space.l` (24 px) from every window edge. When its content grows, the dialog stops at the window height minus that inset and its body scrolls; the header and footer stay put. | Dialog box inset ≥ 24 px, also at the minimum window size (480 × 360) |
+| **Never edge to edge** | A dialog keeps at least `space.xl` (24 px) from every window edge. When its content grows, the dialog stops at the window height minus that inset and its body scrolls; the header and footer stay put. | Dialog box inset ≥ 24 px, also at the minimum window size (480 × 360) |
 | **Inside its container** | Content never overflows the surface that holds it: segmented controls, tabs, and button rows wrap or scroll inside the dialog or panel, never past its edge. | Every child box is inside its surface's content box |
-| **Uniform padding** | A panel, sheet, or dialog has the same padding on all sides (`space.m`, 16 px, unless its design page says otherwise). A heading row is part of the content, not extra top padding. | Top, side, and bottom padding equal within 1 px |
+| **Uniform padding** | A panel, sheet, or dialog has the same padding on all sides (`space.l`, 16 px, for sheets; `space.xl`, 24 px, for dialogs; `space.s` or `space.xs` for bars and menus; unless its design page says otherwise). A heading row is part of the content, not extra top padding. | Top, side, and bottom padding equal within 1 px |
 | **Floating side sheets** | Side sheets (Files on the left, Theme on the right) float with the same inset from the window's top, side, and bottom edges, so they're vertically centered, with the trigger band kept clear. | Top and bottom insets equal, and the side inset equal to them |
 | **Gaps between items** | Items in a list (Files rows, results, menu items) have a gap of `space.xxs` (2 px) between their highlight shapes, so a selected or hovered row never touches its neighbor. | Adjacent row boxes don't touch |
 | **Fading scroll edges** | A scrolling area fades its content out over 50 px at the top and bottom, only on a side where there's more to scroll to, so text never ends at a hard cut under a header or footer. No fade in forced colors. | The fade is present exactly when there's more content that way |
 | **Aligned rows** | Controls and their labels in a row line up: a checkbox, switch, or radio is centered on the first line of its label, icons sit centered on the text, and fields in a row share a baseline. | Control center within 1 px of the first text line's center |
-| **Grouped and spaced** | Related controls sit together in a group, with the spacing scale between them: `space.xs` (4 px) inside a group, `space.s` (8 px) between controls, `space.m` (16 px) between groups. A label sits closer to what it labels than to anything else. | Design review against the surface's design page |
+| **Grouped and spaced** | Related controls sit together in a group, with the spacing scale between them: `space.xs` (4 px) inside a group, `space.s` (8 px) between controls, `space.l` (16 px) between groups. A label sits closer to what it labels than to anything else. | Design review against the surface's design page |
 | **Anchored tooltips** | A tooltip appears next to the control it names (below it, or above it near the bottom edge), centered on it and kept inside the window, never at a fixed place such as a corner. | Tooltip box adjacent to its control's box, in journeys |
+
+**As built (D-111).** The rules are kept in `packages/ui`, so views get them without doing anything:
+
+- **The window as drawn is every overlay's container.** On Windows and Linux the app root is the window, inset in the page by its shadow margin. Views hosted beside the canvas (Settings, the theme manager) render inside it (`InWindow`), so their scrims and sheets are measured and clipped there; React Aria's popovers keep their edge padding from it (`useWindowBoundary`); and tooltips, the editor's companions, and sheets place themselves in its box (`fixedBox`).
+- **Tooltips** place themselves next to their control, every frame while open, and close when the control is hidden (a toolbar closing) rather than being left in a corner. A tooltip in a panel above what it points at (the formatting toolbar) shows above its control, so it never covers the selection.
+- **Side sheets** compute one inset for their top, side, and bottom: `space.l`, or more to clear the window's controls; in a narrow window they first get narrower to clear the trigger (`layout.sheetMin`, 200 px; 280 px for the theme manager and find in all notes).
+- **Fading scroll edges** come from `useFadingEdges` and `fadingEdges`: the scroller is marked `data-fade-top` and `data-fade-bottom` while there's more that way, and masked over `layout.scrollFade` (50 px). The note, dialog bodies, sheet bodies, result lists, and menus have them. Menus and the slash menu scroll without a scrollbar, as system menus do.
+- **Gaps between items** are `space.xxs` (2 px) in the file tree, menus, and result lists.
+- **Uniform padding**: interface headings trim their box to their letters (`text-box-trim`), so the padding above a title is the surface's padding alone; a close button or a text menu button at the content's edge bleeds (`bleed`), so its icon or text lines up with the edge while its hit area reaches into the padding.
+- **The journeys** (`apps/desktop/e2e/visual-quality.ts`, used by `vq-surfaces.spec.ts`, `vq-flows.spec.ts`, and the web's `visual-quality.spec.ts`) check every geometry rule on every surface, light and dark, at the default size and at 480 × 360. Surfaces mark themselves with `data-surface` and scrims with `data-scrim`.
 
 <h2 data-reader-personas="product design">Design decisions</h2>
 
