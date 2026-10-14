@@ -60,6 +60,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
+      # A third-party step, so it runs before private/ is checked out.
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Download the web app bundle
         run: |
           curl -fsSL --retry 3 -o "$RUNNER_TEMP/bundle.tgz" \
@@ -103,7 +105,6 @@ jobs:
           if [ -d private ]; then args="$args --private private"; fi
           node "$RUNNER_TEMP/bundle/publish/cli.mjs" publish $args
           rm -rf private
-      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site

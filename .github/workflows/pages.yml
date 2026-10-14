@@ -1,6 +1,7 @@
 # Deploy app (D-80, D-90): builds the web app and publishes it to this repository's own GitHub Pages,
 # with the public notes in notes/ and, when the instance has a private repository at private/ and the
-# read-only deploy key PRIVATE_CONTENT_KEY, the owner's private notes sealed as the vault. The leak
+# read-only deploy key PRIVATE_CONTENT_KEY, the owner's private notes sealed as the vault and shared
+# notes sealed for their audiences (WP-5.2). The leak
 # check fails the deploy if any private text or file name would reach the site (SEC-06).
 # Every copy of the repository (Use this template, or a fork) gets its own instance this way:
 # Settings -> Pages -> Source: GitHub Actions, then run this workflow.
@@ -9,6 +10,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Nightly, so share links that expire stop opening without a push (SHR-11).
+  schedule:
+    - cron: "17 3 * * *"
 permissions:
   contents: read
 concurrency:
@@ -27,6 +31,15 @@ jobs:
           # Full history, so each public note's date is its last commit.
           fetch-depth: 0
           persist-credentials: false
+      - name: Check the repository is still active
+        if: github.event_name == 'schedule'
+        run: |
+          # GitHub turns off scheduled workflows after 60 days without activity; say so at 50.
+          age=$(( ( $(date +%s) - $(git log -1 --format=%ct) ) / 86400 ))
+          if [ "$age" -ge 50 ]; then
+            echo "::error::No commit for $age days. GitHub stops nightly deploys at 60, so share links would stop expiring. Any commit resets this."
+            exit 1
+          fi
       - name: Check out the public submodules
         run: |
           if git config -f .gitmodules --get submodule.slate.path >/dev/null; then git submodule update --init --depth 1 slate; fi
@@ -46,6 +59,10 @@ jobs:
           cp -r documentations _site/documentations
           if [ -d slate ]; then cp -r slate _site/slate; fi
           touch _site/.nojekyll
+      # The site's address, for public pages' canonical links (WP-5.1). A third-party step, so it
+      # runs before private/ is checked out.
+      - id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       # Only now, after every third-party build step, is private plaintext on the runner.
       - name: Check out the private repository with the read-only deploy key
         if: env.HAS_PRIVATE_KEY == 'true'
@@ -64,9 +81,6 @@ jobs:
           GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts" \
             git submodule update --init --depth 1 private
           test -f private/access.json || { echo "private/access.json is missing: refusing to deploy a half-configured site." >&2; exit 1; }
-      # The site's address, for public pages' canonical links (WP-5.1).
-      - id: pages
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Publish the notes and their pages, seal the vault, and run the leak check
         env:
           OWNER: ${{ github.repository_owner }}
@@ -81,6 +95,7 @@ jobs:
           path: _site
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       pages: write
