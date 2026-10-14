@@ -159,11 +159,13 @@ const afterPaint = (fn: () => void) => {
   else fn();
 };
 /**
- * Unsaved text is kept at least this often while typing goes on (QLT-03): in the recovery journal
- * where there is one (the desktop), or by saving the note itself (the browser). With the editor's
- * handover at the same pace, a crash loses at most about a second of typing.
+ * The longest the text the editor hands over waits to be kept (QLT-03): in the recovery journal
+ * where there is one (the desktop), or by saving the note itself (the browser). The editor hands
+ * text over at most 0.5 s after it changed, so a key typed is kept within 0.75 s and a crash loses at
+ * most about a second of typing. The wait is from the text's arrival, never from the last write, so
+ * a handover just after one isn't held back a whole interval.
  */
-export const JOURNAL_INTERVAL_MS = 750;
+export const JOURNAL_INTERVAL_MS = 250;
 /** The editor action that asks the editor to hand over text it hasn't sent yet (the runtime's flush). */
 export const FLUSH_EDITOR = "note.flush";
 /** Note text sizes in px (THM-06). */
@@ -382,19 +384,24 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     }, wait);
   };
   /**
-   * The recovery journal (QLT-03): unsaved text goes to it at once, then at most once a second while
-   * typing goes on, so a crash loses at most about a second. Off the typing path: the shell writes it.
+   * The recovery journal (QLT-03): unsaved text goes to it at once, or, when it was just written,
+   * JOURNAL_INTERVAL_MS after that write with the latest text, so a crash loses at most about a
+   * second. At once means now, not on a timer a busy computer runs late. Off the typing path: the
+   * shell writes it.
    */
   const journalSoon = () => {
     const journal = bridge.journal;
     if (!journal || journalTimer) return;
-    journalTimer = setTimeout(() => {
+    const write = () => {
       journalTimer = undefined;
       const { path, markdown, saveState } = store.state.note;
       if (!path || saveState === "saved") return;
       journalAt = Date.now();
       void journal.write(path, markdown).catch(() => {});
-    }, Math.max(0, journalAt + JOURNAL_INTERVAL_MS - Date.now()));
+    };
+    const wait = journalAt + JOURNAL_INTERVAL_MS - Date.now();
+    if (wait <= 0) write();
+    else journalTimer = setTimeout(write, wait);
   };
 
   let opening: number | undefined;

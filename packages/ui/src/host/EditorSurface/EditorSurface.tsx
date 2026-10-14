@@ -76,10 +76,12 @@ const FIND_DEBOUNCE_MS = 60;
 /** Serializing is kept off the typing path: it runs after a short pause (PRF-01). */
 const SERIALIZE_DELAY_MS = 150;
 /**
- * While typing goes on, text is still handed over this often, so the recovery journal keeps up
- * (QLT-03). The same pace as the journal (JOURNAL_INTERVAL_MS in core): each handover is kept at once.
+ * While typing goes on, text is still handed over at most this long after it first changed, so the
+ * recovery journal keeps up (QLT-03): the app keeps each handover within JOURNAL_INTERVAL_MS (core),
+ * so a key typed is kept within 0.75 s. A keystroke that finds the handover overdue (a busy computer
+ * runs keys before timers) hands over itself, so typing that never pauses can't hold the text back.
  */
-const SERIALIZE_MAX_WAIT_MS = 750;
+const SERIALIZE_MAX_WAIT_MS = 500;
 /** Dispatched on window by the runtime before a flush; surfaces hand over pending text synchronously. */
 export const FLUSH_EVENT = "focus-notes:flush";
 
@@ -215,16 +217,21 @@ export function EditorSurface({
       },
       onUpdate: ({ editor: ed }) => {
         clearTimeout(timer.current);
-        pendingSince.current ??= Date.now();
-        const wait = Math.max(0, Math.min(SERIALIZE_DELAY_MS, pendingSince.current + SERIALIZE_MAX_WAIT_MS - Date.now()));
-        timer.current = setTimeout(() => {
+        timer.current = undefined;
+        const handOver = () => {
+          timer.current = undefined;
           pendingSince.current = undefined;
           const value = session.serialize(ed.getJSON() as PMNode);
           if (value !== last.current) {
             last.current = value;
             onChangeRef.current?.({ value });
           }
-        }, wait);
+        };
+        const now = Date.now();
+        pendingSince.current ??= now;
+        const due = pendingSince.current + SERIALIZE_MAX_WAIT_MS - now;
+        if (due <= 0) handOver();
+        else timer.current = setTimeout(handOver, Math.min(SERIALIZE_DELAY_MS, due));
       },
       onBlur: ({ editor: ed }) => {
         clearTimeout(timer.current);

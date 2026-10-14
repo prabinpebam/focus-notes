@@ -1,7 +1,7 @@
 /**
- * QLT-03 and PRF-10 in the app core: unsaved text goes to the recovery journal at once and then at
- * most once a second while typing goes on; without a journal (the browser) the note itself is saved
- * at least every second; what a crash left is announced calmly at the next launch; and the warm-up
+ * QLT-03 and PRF-10 in the app core: unsaved text goes to the recovery journal at once, and at most
+ * JOURNAL_INTERVAL_MS (0.25 s) after it arrives while typing goes on; without a journal (the browser)
+ * the note itself is saved as soon; what a crash left is announced calmly at the next launch; and the warm-up
  * after start waits for the caret, pauses while someone types, and is off when the shell says so.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -46,16 +46,35 @@ describe("QLT-03: the recovery journal, from the app", () => {
       await vi.advanceTimersByTimeAsync(100);
     }
     expect(f.writes).toEqual([]);
-    expect(journaled.map(([, , at]) => at - t0)).toEqual([0, JOURNAL_INTERVAL_MS, 2 * JOURNAL_INTERVAL_MS, 3 * JOURNAL_INTERVAL_MS]);
+    const times = Array.from({ length: Math.floor(2500 / JOURNAL_INTERVAL_MS) + 1 }, (_, k) => k * JOURNAL_INTERVAL_MS);
+    expect(journaled.map(([, , at]) => at - t0)).toEqual(times);
     expect(journaled.every(([p]) => p === "/n/Welcome.md")).toBe(true);
-    // Each is the text as it was then: never more than JOURNAL_INTERVAL_MS behind what was typed.
-    expect(journaled.map(([, t]) => t.length)).toEqual([1, 8, 15, 23]);
+    // Each is the text as it was then: never more than JOURNAL_INTERVAL_MS behind what was handed over.
+    expect(journaled.map(([, t]) => t.length)).toEqual(times.map((at) => Math.max(1, Math.ceil(at / 100))));
     await vi.advanceTimersByTimeAsync(SAVE_DELAY_MS + 10);
     expect(f.writes).toEqual([["/n/Welcome.md", "x".repeat(25)]]);
     // The last text was written while saving; once saved, nothing more goes to the journal.
     const n = journaled.length;
     await vi.advanceTimersByTimeAsync(5 * JOURNAL_INTERVAL_MS);
     expect(journaled.length).toBe(n);
+  });
+
+  it("keeps a handover at once, not on a timer, when the journal wasn't just written; one just after a write waits only the rest of JOURNAL_INTERVAL_MS", async () => {
+    vi.useFakeTimers();
+    const journaled: [string, number][] = [];
+    const f = fakeBridge({ journal: { write: async (_p, t) => void journaled.push([t, Date.now()]), restored: async () => [] } });
+    const app = createApp(f.bridge, messages);
+    await app.start();
+    const t0 = Date.now();
+    await app.commands.run("note.setContent", { value: "a" });
+    // Kept within the same handover: no timer has run yet.
+    expect(journaled).toEqual([["a", t0]]);
+    await vi.advanceTimersByTimeAsync(50);
+    await app.commands.run("note.setContent", { value: "ab" });
+    expect(journaled.length).toBe(1);
+    // The handover that arrived 50 ms after the write is kept when the interval since that write ends.
+    await vi.advanceTimersByTimeAsync(JOURNAL_INTERVAL_MS - 50);
+    expect(journaled).toEqual([["a", t0], ["ab", t0 + JOURNAL_INTERVAL_MS]]);
   });
 
   it("without a journal (the browser), typing that never pauses is saved at least every JOURNAL_INTERVAL_MS", async () => {
@@ -67,8 +86,9 @@ describe("QLT-03: the recovery journal, from the app", () => {
       await app.commands.run("note.setContent", { value: "y".repeat(i) });
       await vi.advanceTimersByTimeAsync(100);
     }
-    // 3 s of typing: saved at 0.75 s, 1.55 s, and 2.35 s (each a JOURNAL_INTERVAL_MS after the first unsaved change).
-    expect(f.writes.map(([, t]) => t.length)).toEqual([8, 16, 24]);
+    // 3 s of typing: saved a JOURNAL_INTERVAL_MS (0.25 s) after each first unsaved change: at 0.25 s, 0.55 s, … 2.95 s.
+    expect(JOURNAL_INTERVAL_MS).toBe(250);
+    expect(f.writes.map(([, t]) => t.length)).toEqual([3, 6, 9, 12, 15, 18, 21, 24, 27, 30]);
     // A pause still saves after the usual short delay.
     await vi.advanceTimersByTimeAsync(SAVE_DELAY_MS + 10);
     expect(f.writes.at(-1)).toEqual(["/n/Welcome.md", "y".repeat(30)]);
