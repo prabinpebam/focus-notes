@@ -72,6 +72,10 @@ export const body = style({
   flexGrow: 1,
   minHeight: 0,
   overflowY: "auto",
+  // Room inside its clip for the focus ring and letters of what's at its very top or bottom (a
+  // heading trimmed to its capitals), without moving anything (D-111).
+  paddingBlock: t.bodySlack,
+  marginBlock: `calc(-1 * ${t.bodySlack})`,
   paddingInlineStart: t.padding,
   // The reserved gutter takes the place of the end padding, so text lines up either way (UI-09).
   paddingInlineEnd: `calc(${t.padding} - ${t.scrollbarSize})`,

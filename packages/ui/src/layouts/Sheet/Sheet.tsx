@@ -4,6 +4,7 @@ import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import type { KeyScope } from "../../data.ts";
 import { fixedBox } from "../../behaviors/frame.ts";
+import { placeSheet } from "./place.ts";
 import * as s from "./Sheet.css.ts";
 
 export interface SheetProps {
@@ -27,25 +28,11 @@ const px = (el: Element, v: string) => parseFloat(getComputedStyle(el).getProper
 /** What a sheet never covers: the trigger at rest and the window's own controls. */
 const BANDS = "[data-trigger-band]";
 
-/**
- * The sheet's inset from the window's top, side, and bottom (D-111): the token's, the same on all
- * three, unless the sheet would then cover the trigger or the window's controls; then it's as much
- * more as keeps them clear, still the same on all three, so the sheet stays vertically centered.
- * Measured where the sheet would be at the token's inset, so the answer never depends on itself.
- */
-export function sheetInset(el: HTMLElement, side: "start" | "end"): number {
-  const base = px(el, s.baseVar);
-  const clearance = px(el, s.clearanceVar);
+/** Where the sheet floats in the window as drawn, clear of the trigger and the window's controls (place.ts). */
+function placed(el: HTMLElement, side: "start" | "end") {
   const win = fixedBox(el);
-  const width = Math.min(px(el, s.widthVar), win.width - 2 * base);
-  const left = side === "start" ? win.left + base : win.left + win.width - base - width;
-  let inset = base;
-  for (const band of document.querySelectorAll(BANDS)) {
-    const r = band.getBoundingClientRect();
-    if (r.width < 1 || r.height < 1) continue;
-    if (r.right > left && r.left < left + width) inset = Math.max(inset, Math.ceil(r.bottom - win.top + clearance));
-  }
-  return inset;
+  const bands = [...document.querySelectorAll(BANDS)].map((b) => b.getBoundingClientRect()).filter((r) => r.width >= 1 && r.height >= 1);
+  return placeSheet({ left: win.left, top: win.top, right: win.left + win.width, bottom: win.top + win.height }, bands, side, { base: px(el, s.baseVar), clearance: px(el, s.clearanceVar), width: px(el, s.widthVar), minWidth: px(el, s.minWidthVar) });
 }
 
 /**
@@ -75,7 +62,9 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
     let frame = 0;
     const measure = () => {
       frame = 0;
-      el.style.setProperty(name(s.insetVar), `${sheetInset(el, side)}px`);
+      const p = placed(el, side);
+      el.style.setProperty(name(s.insetVar), `${p.inset}px`);
+      el.style.setProperty(name(s.limitVar), `${p.width}px`);
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(measure);
