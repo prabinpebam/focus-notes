@@ -1,5 +1,5 @@
 import { test, expect, type ElectronApplication, type Page } from "./fixtures.ts";
-import { launch, quit, setWindowActive, tempDirs, type Launched } from "./helpers.ts";
+import { launch, placed, quit, setWindowActive, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 // M2 window journeys (WP-2.1): the Windows and Linux window the app draws and manages itself
@@ -57,7 +57,7 @@ test.describe("Windows and Linux: the app-built window", () => {
 
     await page.getByRole("button", { name: "Maximize" }).click();
     await expect.poll(() => frame(page)).toMatchObject({ radius: "0px", left: 0, top: 0, right: 0 });
-    await expect.poll(() => bounds(app)).toEqual(await workArea(app));
+    await expect.poll(() => bounds(app)).toEqual(await placed(app, await workArea(app)));
     await page.waitForTimeout(200);
     await page.screenshot({ path: `${shots}/window-maximized.png` });
     await page.getByRole("button", { name: "Restore" }).click();
@@ -65,7 +65,7 @@ test.describe("Windows and Linux: the app-built window", () => {
 
     const rest = await bounds(app);
     await page.keyboard.press("F11");
-    await expect.poll(() => bounds(app)).toEqual(await displayBounds(app));
+    await expect.poll(() => bounds(app)).toEqual(await placed(app, await displayBounds(app)));
     await expect.poll(() => frame(page)).toMatchObject({ radius: "0px", left: 0 });
     await page.keyboard.press("F11");
     await expect.poll(() => frame(page)).toMatchObject({ radius: "20px", left: 16 });
@@ -121,7 +121,7 @@ test.describe("Windows and Linux: the app-built window", () => {
     const resized = await bounds(app);
     const spot = await band(page);
     await page.mouse.dblclick(spot.x, spot.y);
-    await expect.poll(() => bounds(app)).toEqual(await workArea(app));
+    await expect.poll(() => bounds(app)).toEqual(await placed(app, await workArea(app)));
     await expect.poll(() => frame(page)).toMatchObject({ radius: "0px" });
     const again = await band(page);
     await page.mouse.dblclick(again.x, again.y);
@@ -156,7 +156,7 @@ test.describe("Windows and Linux: the app-built window", () => {
     await bandPointer(page, "pointermove", wa.x + Math.round(wa.width / 2), wa.y + 1);
     await nextFrame(page);
     await bandPointer(page, "pointerup", wa.x + Math.round(wa.width / 2), wa.y + 1);
-    await expect.poll(() => bounds(app)).toEqual(wa);
+    await expect.poll(() => bounds(app)).toEqual(await placed(app, wa));
 
     // Dragging the maximized window's band restores its size under the pointer.
     const px = wa.x + Math.round(wa.width * 0.75);
@@ -238,7 +238,7 @@ test.describe("Windows and Linux: the app-built window", () => {
     await expect(menu).toBeVisible();
     await menu.getByRole("menuitem", { name: "Maximize" }).focus();
     await page.keyboard.press("Enter");
-    await expect.poll(() => bounds(app)).toEqual(await workArea(app));
+    await expect.poll(() => bounds(app)).toEqual(await placed(app, await workArea(app)));
     await page.keyboard.press("Alt+Space");
     await expect(menu.getByRole("menuitem", { name: "Restore" })).toBeFocused();
     await page.keyboard.press("Enter");
@@ -295,20 +295,20 @@ test.describe("Windows and Linux: the app-built window", () => {
     await first.page.mouse.move(h.x + h.width / 2 - 100, h.y + h.height / 2 - 60);
     await first.page.mouse.up();
     await first.page.waitForTimeout(100);
-    const placed = await bounds(first.app);
+    const kept = await bounds(first.app);
     await quit(first);
 
     const second = await start(first.dirs);
-    expect(await bounds(second.app)).toEqual(placed);
+    expect(await bounds(second.app)).toEqual(kept);
     await second.page.getByRole("button", { name: "Maximize" }).click();
-    await expect.poll(() => bounds(second.app)).toEqual(await workArea(second.app));
+    await expect.poll(() => bounds(second.app)).toEqual(await placed(second.app, await workArea(second.app)));
     await quit(second);
 
     const third = await start(first.dirs);
     await expect.poll(() => frame(third.page)).toMatchObject({ radius: "0px" });
-    expect(await bounds(third.app)).toEqual(await workArea(third.app));
+    expect(await bounds(third.app)).toEqual(await placed(third.app, await workArea(third.app)));
     await third.page.getByRole("button", { name: "Restore" }).click();
-    await expect.poll(() => bounds(third.app)).toEqual(placed);
+    await expect.poll(() => bounds(third.app)).toEqual(kept);
     await quit(third);
   });
 });

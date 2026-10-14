@@ -1,7 +1,9 @@
 /**
  * Journeys and the bench never take the computer's focus (D-104 (7)). With `FOCUS_NOTES_E2E=1` (a
  * test seam, never read in a packaged app) every window opens without being activated, stays off
- * the taskbar, and never comes forward: someone can keep working while the suite runs.
+ * the taskbar, never comes forward, and ignores the computer's own pointer: someone can keep
+ * working while the suite runs, and their pointer (or a CI runner's, resting mid-screen) changes
+ * nothing a journey checks.
  *
  * Such a window is never the system's active one, so the app's idea of "active" is its own there:
  * the window's `focus` and `blur` events, which it raises itself where the system would (shown or
@@ -39,4 +41,10 @@ export function keepOutOfTheWay(win: BrowserWindow): void {
   win.restore = () => win.showInactive();
   win.focus = () => {};
   win.moveTop = () => {};
+  // The computer's own pointer never reaches the page: resting over the window (a CI runner's sits
+  // in the middle of its screen) or moved by someone working meanwhile, it would hover and change
+  // what journeys check. Journeys' pointer goes to the page directly, through the DevTools protocol.
+  const ignore = win.setIgnoreMouseEvents.bind(win);
+  win.setIgnoreMouseEvents = () => ignore(true);
+  ignore(true);
 }

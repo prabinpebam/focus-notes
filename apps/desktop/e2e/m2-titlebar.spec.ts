@@ -1,5 +1,5 @@
 import { test, expect, type ElectronApplication, type Page } from "./fixtures.ts";
-import { launch, quit, setWindowActive, tempDirs, windowBox, type Launched } from "./helpers.ts";
+import { launch, placed, quit, setWindowActive, tempDirs, windowBox, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 // M2 title bar journeys (WP-2.2): the 44 px title bar band with the trigger centered (DSK-02), full
@@ -93,7 +93,7 @@ test.describe("Windows and Linux: the app-drawn window controls", () => {
     const controls = page.getByRole("group", { name: "Window controls" });
     const rest = await bounds(app);
     await page.keyboard.press("F11");
-    await expect.poll(() => bounds(app)).toEqual(await displayBounds(app));
+    await expect.poll(() => bounds(app)).toEqual(await placed(app, await displayBounds(app)));
     const win = await windowBox(page);
     expect(win.top).toBe(0);
     // On the band, but not at the top edge: still hidden.
@@ -133,7 +133,7 @@ test.describe("Windows and Linux: the app-drawn window controls", () => {
     await page.keyboard.press("Control+.");
     await page.getByRole("button", { name: "More" }).click();
     await page.getByRole("menuitem", { name: /Full screen/ }).click();
-    await expect.poll(() => bounds(app)).toEqual(await displayBounds(app));
+    await expect.poll(() => bounds(app)).toEqual(await placed(app, await displayBounds(app)));
     await page.keyboard.press("F11");
     await expect.poll(() => bounds(app)).toEqual(rest);
     await quit(l);

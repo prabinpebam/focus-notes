@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { caret, launch, quit, tempDirs, windowBox, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { focusProblem, smallTargets } from "./a11y-checks.ts";
+import { makeFakes } from "../test/fakes/fakes.ts";
 
 const mac = process.platform === "darwin";
 const mod = mac ? "Meta" : "Control";
@@ -282,11 +283,14 @@ for (const [mode, theme] of [["light", "Paper"], ["dark", "Ink"], ["light", "Hig
   });
 }
 
-/** A new install (WP-3.2, D-101), in a theme chosen before it starts. */
+/**
+ * A new install (WP-3.2, D-101), in a theme chosen before it starts. Git Credential Manager is a
+ * fake one, so the Sign in step is the same whatever this computer has installed (FRE-02).
+ */
 async function startFirstRun(mode: "light" | "dark", theme: string): Promise<Launched> {
   const dirs = tempDirs();
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, appearance: mode, ...(mode === "light" ? { lightTheme: theme } : { darkTheme: theme }) }));
-  const l = await launch(dirs, {}, { firstRun: true });
+  const l = await launch(dirs, makeFakes({ token: "ghp_unused", gcm: true }).env, { firstRun: true });
   await expect(l.page.getByRole("button", { name: "Get started" })).toBeFocused();
   await expect.poll(() => l.page.evaluate(() => document.documentElement.dataset.theme)).toBe(theme);
   return l;

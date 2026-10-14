@@ -118,6 +118,19 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
   return { app, page, log, readyMs };
 }
 
+interface Rect { x: number; y: number; width: number; height: number }
+/**
+ * The bounds a window asked for `r` ends up with. Chromium on Linux (X11) keeps a window asked to
+ * cover a whole screen exactly 1 px narrower and shorter (bigger or smaller ones are as asked), and
+ * a CI display has no panels, so a maximized window's work area is its whole screen there too
+ * (D-104 (9)). Elsewhere it's exactly what was asked.
+ */
+export async function placed(app: ElectronApplication, r: Rect): Promise<Rect> {
+  if (process.platform !== "linux") return r;
+  const whole = await app.evaluate(({ screen }, a) => screen.getAllDisplays().some(({ bounds: b }) => b.x === a.x && b.y === a.y && b.width === a.width && b.height === a.height), r);
+  return whole ? { ...r, width: r.width - 1, height: r.height - 1 } : r;
+}
+
 /**
  * The drawn window's box in the page (D-14): on Windows and Linux the window sits in a transparent
  * shadow margin, so positions "from the window's edge" are measured from it. The viewport elsewhere.
