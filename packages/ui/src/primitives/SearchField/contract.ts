@@ -16,6 +16,8 @@ export const contract = defineContract({
     chip: { kind: "message", description: "A mode shown before the text (Spotlight's All, Notes, Commands); the label says it in words." },
     controls: { kind: "ref", description: "The ResultList this field drives." },
     activeId: { kind: "text", description: "The active item in that list." },
+    icon: { kind: "icon", default: "search", description: "The icon before the text: another for a field that isn't a search (Replace with)." },
+    size: { kind: "enum", values: ["m", "l"], default: "l", description: "32 px tall in a bar of 32 px controls (the find bar), starting from the find field's width, without a clear button (Esc clears it, and the bar has its own ×); or 40 px, as wide as its container." },
   },
   events: { change: { payload: { value: "text" }, binds: "value" } },
   slots: {},
@@ -27,6 +29,8 @@ export const contract = defineContract({
     { name: "filled", props: { label: { t: "shortcuts.search" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" } } },
     { name: "with a mode chip", props: { label: { t: "spotlight.field" }, chip: { t: "spotlight.mode.commands" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" }, keyScope: "spotlightField" } },
     { name: "invalid", props: { label: { t: "shortcuts.search" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" }, invalid: true } },
+    { name: "size m", props: { label: { t: "find.field" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" }, size: "m" } },
+    { name: "another icon", props: { label: { t: "find.replaceField" }, clearLabel: { t: "field.clear" }, size: "m", icon: "rename" } },
     ...["none", "findBar", "findField", "replaceField", "pickerField", "moveField", "repoField", "spotlightField", "findAllField"].map((keyScope) => ({ name: `keyScope ${keyScope}`, props: { label: { t: "shortcuts.search" }, clearLabel: { t: "field.clear" }, keyScope } })),
   ],
 });

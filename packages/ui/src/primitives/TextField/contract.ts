@@ -14,6 +14,7 @@ export const contract = defineContract({
     labelHidden: { kind: "boolean", default: false, description: "The label is read by screen readers but not shown, for one-line editors whose placeholder and context say what goes in." },
     autoFocus: { kind: "boolean", default: false },
     focusRequest: { kind: "number", min: 0 },
+    size: { kind: "enum", values: ["m", "l"], default: "l", description: "32 px tall beside 32 px buttons in a bar (the link editor), or 40 px." },
   },
   events: { change: { payload: { value: "text" }, binds: "value" }, submit: {} },
   slots: {},
@@ -25,6 +26,7 @@ export const contract = defineContract({
     { name: "type password", props: { label: { t: "unlock.passphrase" }, type: "password" } },
     { name: "type url", props: { label: { t: "unlock.passphrase" }, type: "url" } },
     { name: "invalid", props: { label: { t: "unlock.passphrase" }, invalid: true } },
+    { name: "size m", props: { label: { t: "unlock.passphrase" }, labelHidden: true, size: "m" } },
     { name: "label hidden", props: { label: { t: "unlock.passphrase" }, labelHidden: true, placeholder: { t: "unlock.passphrase" } } },
   ],
 });

@@ -1,4 +1,4 @@
-import { globalStyle, style } from "@vanilla-extract/css";
+import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.searchField;
@@ -8,6 +8,9 @@ export const root = style({
   alignItems: "center",
   gap: t.gap,
   height: t.height,
+  // In a row of controls it takes the room left (the find bar), never narrower than a usable field.
+  flexGrow: 1,
+  minWidth: t.minWidth,
   paddingInline: t.paddingInline,
   borderRadius: t.radius,
   borderStyle: "solid",
@@ -23,6 +26,10 @@ export const root = style({
     "&[data-invalid]": { borderColor: t.borderInvalid },
   },
 });
+
+/** As tall as the 32 px controls beside it in a bar (the find bar), or the 40 px field of a dialog or panel. */
+// In a bar it starts from the find field's width and gives or takes the room the row has.
+export const size = styleVariants({ m: { height: t.heightCompact, flexBasis: t.basisCompact }, l: {} });
 
 export const icon = style({ display: "inline-flex", color: t.icon, flexShrink: 0 });
 

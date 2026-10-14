@@ -1,4 +1,4 @@
-import { style } from "@vanilla-extract/css";
+import { style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.textField;
@@ -24,6 +24,8 @@ export const input = style({
     "&[data-invalid]": { borderColor: t.borderInvalid },
   },
 });
+/** As tall as the 32 px buttons beside it in a bar (the link editor), or the 40 px field of a dialog or panel (D-111). */
+export const size = styleVariants({ m: { height: t.heightCompact }, l: {} });
 export const description = style({ color: t.description, fontSize: t.captionSize });
 /** A label for screen readers only. */
 export const hidden = style({ position: "absolute", width: t.srOnlySize, height: t.srOnlySize, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" });

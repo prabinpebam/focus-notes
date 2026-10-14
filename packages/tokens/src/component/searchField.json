@@ -23,5 +23,8 @@
   "fontSize": { "$type": "dimension", "$value": "{font.uiBody}" },
   "clearSize": { "$type": "dimension", "$value": "{size.controlS}" },
   "clearRadius": { "$type": "dimension", "$value": "{radius.small}" },
-  "hover": { "$type": "color", "$value": "{color.hover}" }
+  "hover": { "$type": "color", "$value": "{color.hover}" },
+  "heightCompact": { "$type": "dimension", "$value": "{size.controlM}", "$description": "In a bar of 32 px controls (the find bar), so every control in a row is as tall (D-111)." },
+  "minWidth": { "$type": "dimension", "$value": "{layout.fieldMin}" },
+  "basisCompact": { "$type": "dimension", "$value": "{layout.findField}", "$description": "Where a compact field's width starts in its bar: the find bar comes to about 480 px." }
 } } }

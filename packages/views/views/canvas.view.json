@@ -318,324 +318,367 @@
             },
             "children": [
               {
-                "type": "Stack",
+                "type": "Inline",
                 "props": {
                   "gap": "s"
                 },
                 "children": [
                   {
-                    "type": "Inline",
-                    "props": {
-                      "gap": "xs"
+                    "switch": {
+                      "get": "vm.find.replaceOpen"
                     },
-                    "children": [
-                      {
-                        "switch": {
-                          "get": "vm.find.replaceOpen"
-                        },
-                        "cases": {
-                          "true": {
-                            "type": "IconButton",
-                            "props": {
-                              "icon": "chevronDown",
-                              "label": {
-                                "get": "vm.find.actions.toggleReplace.label"
-                              },
-                              "shortcut": {
-                                "get": "vm.find.actions.toggleReplace.shortcut"
-                              },
-                              "tone": "muted",
-                              "toggle": true,
-                              "pressed": true
-                            },
-                            "on": {
-                              "press": {
-                                "run": "find.toggleReplace"
-                              }
-                            }
+                    "cases": {
+                      "true": {
+                        "type": "IconButton",
+                        "props": {
+                          "icon": "chevronDown",
+                          "label": {
+                            "get": "vm.find.actions.toggleReplace.label"
                           },
-                          "false": {
-                            "type": "IconButton",
-                            "props": {
-                              "icon": "chevronRight",
-                              "label": {
-                                "get": "vm.find.actions.toggleReplace.label"
-                              },
-                              "shortcut": {
-                                "get": "vm.find.actions.toggleReplace.shortcut"
-                              },
-                              "tone": "muted",
-                              "toggle": true,
-                              "pressed": false
-                            },
-                            "on": {
-                              "press": {
-                                "run": "find.toggleReplace"
-                              }
-                            }
+                          "shortcut": {
+                            "get": "vm.find.actions.toggleReplace.shortcut"
+                          },
+                          "tone": "muted",
+                          "toggle": true,
+                          "pressed": true
+                        },
+                        "on": {
+                          "press": {
+                            "run": "find.toggleReplace"
                           }
                         }
                       },
-                      {
-                        "type": "SearchField",
+                      "false": {
+                        "type": "IconButton",
                         "props": {
+                          "icon": "chevronRight",
                           "label": {
-                            "t": "find.field"
+                            "get": "vm.find.actions.toggleReplace.label"
                           },
-                          "placeholder": {
-                            "t": "find.field"
+                          "shortcut": {
+                            "get": "vm.find.actions.toggleReplace.shortcut"
                           },
-                          "clearLabel": {
-                            "t": "field.clear"
-                          },
-                          "value": {
-                            "bind": "vm.find.query"
-                          },
-                          "focusRequest": {
-                            "get": "vm.find.focusFind"
-                          },
-                          "invalid": {
-                            "get": "vm.find.invalid"
-                          },
-                          "keyScope": "findField"
+                          "tone": "muted",
+                          "toggle": true,
+                          "pressed": false
+                        },
+                        "on": {
+                          "press": {
+                            "run": "find.toggleReplace"
+                          }
                         }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "s",
+                      "grow": true
+                    },
+                    "children": [
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "gap": "l"
+                        },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s",
+                              "grow": true
+                            },
+                            "children": [
+                              {
+                                "type": "SearchField",
+                                "props": {
+                                  "label": {
+                                    "t": "find.field"
+                                  },
+                                  "placeholder": {
+                                    "t": "find.field"
+                                  },
+                                  "clearLabel": {
+                                    "t": "field.clear"
+                                  },
+                                  "value": {
+                                    "bind": "vm.find.query"
+                                  },
+                                  "focusRequest": {
+                                    "get": "vm.find.focusFind"
+                                  },
+                                  "invalid": {
+                                    "get": "vm.find.invalid"
+                                  },
+                                  "keyScope": "findField",
+                                  "size": "m"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.find.status"
+                                  },
+                                  "role": "caption",
+                                  "tone": {
+                                    "get": "vm.find.statusTone"
+                                  },
+                                  "announce": true,
+                                  "lines": "one"
+                                }
+                              },
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "xs"
+                                },
+                                "children": [
+                                  {
+                                    "type": "IconButton",
+                                    "props": {
+                                      "icon": "arrowUp",
+                                      "label": {
+                                        "get": "vm.find.actions.prev.label"
+                                      },
+                                      "shortcut": {
+                                        "get": "vm.find.actions.prev.shortcut"
+                                      },
+                                      "tone": "muted"
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "find.prev"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "IconButton",
+                                    "props": {
+                                      "icon": "arrowDown",
+                                      "label": {
+                                        "get": "vm.find.actions.next.label"
+                                      },
+                                      "shortcut": {
+                                        "get": "vm.find.actions.next.shortcut"
+                                      },
+                                      "tone": "muted"
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "find.next"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "xs"
+                            },
+                            "children": [
+                              {
+                                "type": "IconButton",
+                                "props": {
+                                  "icon": "matchCase",
+                                  "label": {
+                                    "get": "vm.find.actions.case.label"
+                                  },
+                                  "shortcut": {
+                                    "get": "vm.find.actions.case.shortcut"
+                                  },
+                                  "tone": "muted",
+                                  "toggle": true,
+                                  "pressed": {
+                                    "get": "vm.find.caseSensitive"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "find.toggle.caseSensitive"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "IconButton",
+                                "props": {
+                                  "icon": "wholeWord",
+                                  "label": {
+                                    "get": "vm.find.actions.word.label"
+                                  },
+                                  "shortcut": {
+                                    "get": "vm.find.actions.word.shortcut"
+                                  },
+                                  "tone": "muted",
+                                  "toggle": true,
+                                  "pressed": {
+                                    "get": "vm.find.wholeWord"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "find.toggle.wholeWord"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "IconButton",
+                                "props": {
+                                  "icon": "regex",
+                                  "label": {
+                                    "get": "vm.find.actions.regex.label"
+                                  },
+                                  "shortcut": {
+                                    "get": "vm.find.actions.regex.shortcut"
+                                  },
+                                  "tone": "muted",
+                                  "toggle": true,
+                                  "pressed": {
+                                    "get": "vm.find.regex"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "find.toggle.regex"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "IconButton",
+                            "props": {
+                              "icon": "dismiss",
+                              "label": {
+                                "get": "vm.find.actions.close.label"
+                              },
+                              "shortcut": {
+                                "get": "vm.find.actions.close.shortcut"
+                              },
+                              "tone": "muted"
+                            },
+                            "on": {
+                              "press": {
+                                "run": "find.close"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Inline",
+                        "when": {
+                          "get": "vm.find.replaceOpen"
+                        },
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "SearchField",
+                            "props": {
+                              "label": {
+                                "t": "find.replaceField"
+                              },
+                              "placeholder": {
+                                "t": "find.replaceField"
+                              },
+                              "clearLabel": {
+                                "t": "field.clear"
+                              },
+                              "value": {
+                                "bind": "vm.find.replace"
+                              },
+                              "focusRequest": {
+                                "get": "vm.find.focusReplace"
+                              },
+                              "keyScope": "replaceField",
+                              "size": "m",
+                              "icon": "rename"
+                            }
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s"
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "get": "vm.find.actions.replaceNext.label"
+                                  },
+                                  "disabled": {
+                                    "expr": {
+                                      "!": {
+                                        "get": "vm.find.canReplace"
+                                      }
+                                    }
+                                  },
+                                  "disabledReason": {
+                                    "t": "find.noReplace"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "find.replaceNext"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "get": "vm.find.actions.replaceAll.label"
+                                  },
+                                  "disabled": {
+                                    "expr": {
+                                      "!": {
+                                        "get": "vm.find.canReplace"
+                                      }
+                                    }
+                                  },
+                                  "disabledReason": {
+                                    "t": "find.noReplace"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "find.replaceAll"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
                       },
                       {
                         "type": "Text",
+                        "when": {
+                          "expr": {
+                            "!=": [
+                              {
+                                "get": "vm.find.notice"
+                              },
+                              ""
+                            ]
+                          }
+                        },
                         "props": {
                           "value": {
-                            "get": "vm.find.status"
-                          },
-                          "role": "caption",
-                          "tone": {
-                            "get": "vm.find.statusTone"
-                          },
-                          "announce": true,
-                          "lines": "one"
-                        }
-                      },
-                      {
-                        "type": "IconButton",
-                        "props": {
-                          "icon": "matchCase",
-                          "label": {
-                            "get": "vm.find.actions.case.label"
-                          },
-                          "shortcut": {
-                            "get": "vm.find.actions.case.shortcut"
-                          },
-                          "tone": "muted",
-                          "toggle": true,
-                          "pressed": {
-                            "get": "vm.find.caseSensitive"
-                          }
-                        },
-                        "on": {
-                          "press": {
-                            "run": "find.toggle.caseSensitive"
-                          }
-                        }
-                      },
-                      {
-                        "type": "IconButton",
-                        "props": {
-                          "icon": "wholeWord",
-                          "label": {
-                            "get": "vm.find.actions.word.label"
-                          },
-                          "shortcut": {
-                            "get": "vm.find.actions.word.shortcut"
-                          },
-                          "tone": "muted",
-                          "toggle": true,
-                          "pressed": {
-                            "get": "vm.find.wholeWord"
-                          }
-                        },
-                        "on": {
-                          "press": {
-                            "run": "find.toggle.wholeWord"
-                          }
-                        }
-                      },
-                      {
-                        "type": "IconButton",
-                        "props": {
-                          "icon": "regex",
-                          "label": {
-                            "get": "vm.find.actions.regex.label"
-                          },
-                          "shortcut": {
-                            "get": "vm.find.actions.regex.shortcut"
-                          },
-                          "tone": "muted",
-                          "toggle": true,
-                          "pressed": {
-                            "get": "vm.find.regex"
-                          }
-                        },
-                        "on": {
-                          "press": {
-                            "run": "find.toggle.regex"
-                          }
-                        }
-                      },
-                      {
-                        "type": "IconButton",
-                        "props": {
-                          "icon": "arrowUp",
-                          "label": {
-                            "get": "vm.find.actions.prev.label"
-                          },
-                          "shortcut": {
-                            "get": "vm.find.actions.prev.shortcut"
-                          },
-                          "tone": "muted"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "find.prev"
-                          }
-                        }
-                      },
-                      {
-                        "type": "IconButton",
-                        "props": {
-                          "icon": "arrowDown",
-                          "label": {
-                            "get": "vm.find.actions.next.label"
-                          },
-                          "shortcut": {
-                            "get": "vm.find.actions.next.shortcut"
-                          },
-                          "tone": "muted"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "find.next"
-                          }
-                        }
-                      },
-                      {
-                        "type": "IconButton",
-                        "props": {
-                          "icon": "dismiss",
-                          "label": {
-                            "get": "vm.find.actions.close.label"
-                          },
-                          "shortcut": {
-                            "get": "vm.find.actions.close.shortcut"
-                          },
-                          "tone": "muted"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "find.close"
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Inline",
-                    "when": {
-                      "get": "vm.find.replaceOpen"
-                    },
-                    "props": {
-                      "gap": "xs"
-                    },
-                    "children": [
-                      {
-                        "type": "SearchField",
-                        "props": {
-                          "label": {
-                            "t": "find.replaceField"
-                          },
-                          "placeholder": {
-                            "t": "find.replaceField"
-                          },
-                          "clearLabel": {
-                            "t": "field.clear"
-                          },
-                          "value": {
-                            "bind": "vm.find.replace"
-                          },
-                          "focusRequest": {
-                            "get": "vm.find.focusReplace"
-                          },
-                          "keyScope": "replaceField"
-                        }
-                      },
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "get": "vm.find.actions.replaceNext.label"
-                          },
-                          "size": "s",
-                          "disabled": {
-                            "expr": {
-                              "!": {
-                                "get": "vm.find.canReplace"
-                              }
-                            }
-                          },
-                          "disabledReason": {
-                            "t": "find.noReplace"
-                          }
-                        },
-                        "on": {
-                          "press": {
-                            "run": "find.replaceNext"
-                          }
-                        }
-                      },
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "get": "vm.find.actions.replaceAll.label"
-                          },
-                          "size": "s",
-                          "disabled": {
-                            "expr": {
-                              "!": {
-                                "get": "vm.find.canReplace"
-                              }
-                            }
-                          },
-                          "disabledReason": {
-                            "t": "find.noReplace"
-                          }
-                        },
-                        "on": {
-                          "press": {
-                            "run": "find.replaceAll"
-                          }
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "type": "Text",
-                    "when": {
-                      "expr": {
-                        "!=": [
-                          {
                             "get": "vm.find.notice"
                           },
-                          ""
-                        ]
+                          "role": "caption",
+                          "tone": "muted",
+                          "announce": true
+                        }
                       }
-                    },
-                    "props": {
-                      "value": {
-                        "get": "vm.find.notice"
-                      },
-                      "role": "caption",
-                      "tone": "muted",
-                      "announce": true
-                    }
+                    ]
                   }
                 ]
               }
@@ -1386,7 +1429,8 @@
                           },
                           "focusRequest": {
                             "get": "vm.format.focusUrl"
-                          }
+                          },
+                          "size": "m"
                         },
                         "on": {
                           "submit": {
@@ -1409,7 +1453,8 @@
                           },
                           "value": {
                             "bind": "vm.format.text"
-                          }
+                          },
+                          "size": "m"
                         },
                         "on": {
                           "submit": {
@@ -1437,7 +1482,7 @@
                           "label": {
                             "t": "format.link.cancel"
                           },
-                          "variant": "subtle"
+                          "variant": "secondary"
                         },
                         "on": {
                           "press": {
@@ -3112,7 +3157,8 @@
                         "placement": "bottom end",
                         "sections": {
                           "get": "vm.files.newMenu"
-                        }
+                        },
+                        "bleed": true
                       },
                       "on": {
                         "action": {
@@ -3128,7 +3174,7 @@
                     "true": {
                       "type": "Inline",
                       "props": {
-                        "gap": "xs"
+                        "gap": "m"
                       },
                       "children": [
                         {
@@ -3138,7 +3184,8 @@
                             "label": {
                               "t": "command.files.moveTo"
                             },
-                            "tone": "muted"
+                            "tone": "muted",
+                            "bleed": true
                           },
                           "on": {
                             "press": {
@@ -3156,7 +3203,8 @@
                             "label": {
                               "t": "command.files.makePublic"
                             },
-                            "tone": "muted"
+                            "tone": "muted",
+                            "bleed": true
                           },
                           "on": {
                             "press": {
@@ -3174,7 +3222,8 @@
                             "label": {
                               "t": "command.files.makePrivate"
                             },
-                            "tone": "muted"
+                            "tone": "muted",
+                            "bleed": true
                           },
                           "on": {
                             "press": {
@@ -3189,7 +3238,8 @@
                             "label": {
                               "t": "command.files.delete"
                             },
-                            "tone": "muted"
+                            "tone": "muted",
+                            "bleed": true
                           },
                           "on": {
                             "press": {
@@ -3204,7 +3254,8 @@
                             "label": {
                               "t": "command.files.clearSelection"
                             },
-                            "tone": "muted"
+                            "tone": "muted",
+                            "bleed": true
                           },
                           "on": {
                             "press": {
@@ -3593,7 +3644,8 @@
                     "label": {
                       "get": "vm.findAll.actions.close.label"
                     },
-                    "tone": "muted"
+                    "tone": "muted",
+                    "bleed": true
                   },
                   "on": {
                     "press": {
@@ -3654,7 +3706,7 @@
                 {
                   "type": "Inline",
                   "props": {
-                    "gap": "xs"
+                    "gap": "m"
                   },
                   "children": [
                     {
@@ -3671,7 +3723,8 @@
                         "toggle": true,
                         "pressed": {
                           "get": "vm.findAll.caseSensitive"
-                        }
+                        },
+                        "bleed": true
                       },
                       "on": {
                         "press": {
@@ -3693,7 +3746,8 @@
                         "toggle": true,
                         "pressed": {
                           "get": "vm.findAll.wholeWord"
-                        }
+                        },
+                        "bleed": true
                       },
                       "on": {
                         "press": {
@@ -3715,7 +3769,8 @@
                         "toggle": true,
                         "pressed": {
                           "get": "vm.findAll.regex"
-                        }
+                        },
+                        "bleed": true
                       },
                       "on": {
                         "press": {
