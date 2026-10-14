@@ -105,7 +105,31 @@ export async function dialogNeverShrinks(page: Page, name: string, steps: (() =>
   return out;
 }
 
-/** Runs in the page. Everything it needs is inside it. */
+const RINGS_ONLY: VisualOptions = { skip: Object.fromEntries((["window", "dialogInset", "dialogHeight", "container", "padding", "sheet", "gaps", "fade", "selection", "slider", "rows", "tooltips"] as const).map((r) => [r, "checks the rings alone"])) };
+
+/**
+ * Focus rings on every list-like surface (D-111): where focus is in a list, tree, menu, tab list,
+ * radio group or grid (or a combobox's list), moves it by keyboard to the last item and the first,
+ * where a clipping container is most likely to cut a ring, and checks the ring at each.
+ */
+export async function listRings(page: Page, where: string): Promise<string[]> {
+  const kind = () => page.evaluate(() => {
+    const a = document.activeElement;
+    if (!a || a.closest("[data-editor]")) return null;
+    if (a.getAttribute("role") === "combobox" && a.getAttribute("aria-controls")) return "combobox";
+    return a.closest('[role="tree"], [role="listbox"], [role="menu"], [role="tablist"], [role="radiogroup"], [role="grid"]') ? "list" : null;
+  });
+  const k = await kind();
+  if (!k) return [];
+  const out: string[] = [];
+  const keys = k === "combobox" ? ["ArrowUp", "ArrowDown"] : ["End", "Home"];
+  for (const key of keys) {
+    await page.keyboard.press(key);
+    await settled(page);
+    for (const p of await visualProblems(page, RINGS_ONLY)) out.push(`${where}, after ${key}: ${p}`);
+  }
+  return out;
+}
 function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
   const out: string[] = [];
   const on = (rule: string) => !skip.includes(rule);
@@ -182,21 +206,37 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
   }
 
   if (on("dialogHeight")) {
-    // At least 400 px, less only where the window with its inset has no room (a confirmation fits its content).
+    // At least 400 px, less only where the window with its inset has no room; at most that room, and
+    // all of it before its body scrolls (no other cap comes first). The room is what the scrim leaves
+    // inside its padding: the window less 24 px on each side (Spotlight's starts 20% down).
+    // Confirmations (`data-height="content"`: Delete, Sign out, Remove workspace, Import) are short
+    // alerts, exempt from the least height; they keep the inset and the rest (D-111).
     for (const m of [...document.querySelectorAll('[data-dialog-modal][data-height="stable"]')].filter(shown)) {
       const h = rect(m).bottom - rect(m).top;
-      const least = Math.min(v.dialogMinHeight, win.height - 2 * v.dialogInset);
-      if (h < least - tol) out.push(`dialog height: ${nameOf(m.querySelector("[data-surface=dialog]") ?? m)} is ${px(h)} px tall (at least ${px(least)})`);
+      const overlay = m.closest("[data-scrim]") ?? m.parentElement!;
+      const oc = getComputedStyle(overlay);
+      const room = Math.min(overlay.clientHeight - parseFloat(oc.paddingTop) - parseFloat(oc.paddingBottom), win.height - 2 * v.dialogInset);
+      const least = Math.min(v.dialogMinHeight, room);
+      const name = nameOf(m.querySelector("[data-surface=dialog]") ?? m);
+      if (h < least - tol) out.push(`dialog height: ${name} is ${px(h)} px tall (at least ${px(least)})`);
+      const body = m.querySelector("[data-dialog-body]");
+      if (body && body.scrollHeight > body.clientHeight + 1 && h < room - tol) out.push(`dialog height: ${name} scrolls at ${px(h)} px with ${px(room)} px of room`);
     }
   }
 
   if (on("rings")) {
-    // A focus ring is never cut by a scrolling or clipping container around it (D-111).
-    const f = document.activeElement;
+    // A focus ring is never cut by a scrolling or clipping container around it, and an item in a list
+    // (a list, tree, menu, tab list, gallery) draws its ring inside its own shape (D-111). The ring is
+    // the focused element's, or its active descendant's (a combobox's highlighted option).
+    const active = document.activeElement;
+    const descendant = active?.getAttribute("aria-activedescendant");
+    const f = (descendant ? document.getElementById(descendant) : null) ?? active;
     if (f && f !== document.body && !f.closest("[data-editor]") && shown(f)) {
       const cs = getComputedStyle(f);
       if (cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0) {
         const reach = parseFloat(cs.outlineWidth) + parseFloat(cs.outlineOffset || "0");
+        const ITEMS = '[role="option"], [role="treeitem"], [role="tab"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="radio"], [role="row"], [role="gridcell"]';
+        if (f.matches(ITEMS) && reach > tol / 2) out.push(`focus rings: ${nameOf(f)} draws its ring ${px(reach)} px outside itself (inside, in a list)`);
         const r = rect(f);
         const ring = { left: r.left - reach, top: r.top - reach, right: r.right + reach, bottom: r.bottom + reach };
         for (let a = f.parentElement; a && a !== root; a = a.parentElement) {

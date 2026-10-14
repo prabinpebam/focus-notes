@@ -2,7 +2,8 @@ name: ci
 on:
   pull_request:
   push:
-    branches: [main]
+    # Work branches run the full suite on CI before they merge, so local machines stay free (D-113).
+    branches: [main, "wp-*", "fix-*", "vq-*"]
 permissions:
   contents: read
 concurrency:

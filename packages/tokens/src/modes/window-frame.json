@@ -3,6 +3,5 @@
   "readingTop": { "$value": "{ref.size.25cqh}" },
   "editorEndPadding": { "$value": "{ref.size.35cqh}" },
   "editorMinHeight": { "$value": "{ref.size.60cqh}" },
-  "dialogMaxHeight": { "$value": "{ref.size.85cqh}" },
   "dialogTop": { "$value": "{ref.size.20cqh}" }
 } }

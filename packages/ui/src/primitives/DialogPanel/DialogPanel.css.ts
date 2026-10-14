@@ -28,8 +28,9 @@ export const grownVar = createVar();
 export const modal = style({
   display: "flex",
   width: "100%",
-  // Never past the overlay's padding, whatever the design's height: never edge to edge (D-111).
-  maxHeight: `min(${t.maxHeight}, 100%)`,
+  // The room the overlay leaves inside its 24 px inset, the window less twice the inset: never edge
+  // to edge, and no other cap, so the least height and the never-shrink height always fit (D-111).
+  maxHeight: "100%",
   outline: "none",
   transitionProperty: "transform",
   transitionDuration: t.duration,
@@ -47,10 +48,11 @@ export const size = {
 /**
  * Its height (D-111): at least `minHeight` (400 px), and never less than it has been since it opened,
  * so it doesn't jump as its content changes (a tab, a filter); the extra room stays empty at the
- * bottom of its body. Both are held to the window less its inset. A confirmation fits its content.
+ * bottom of its body. Both are held to the window less its inset (its maximum), so least, most and
+ * never-shrink agree at every window size. A confirmation (`content`) fits its content.
  */
 export const height = {
-  stable: style({ minHeight: `min(max(${t.minHeight}, ${fallbackVar(grownVar, "0px")}), ${t.maxHeight}, 100%)` }),
+  stable: style({ minHeight: `min(max(${t.minHeight}, ${fallbackVar(grownVar, "0px")}), 100%)` }),
   content: style({}),
 };
 

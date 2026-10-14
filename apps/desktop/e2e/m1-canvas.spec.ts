@@ -119,6 +119,30 @@ test("UI-11: the note starts 25% down, the edited line stays between 25% and 65%
     return { top: box.top, h: box.height, caretTop: caret ? caret.top - box.top : NaN, caretBottom: caret ? caret.bottom - box.top : NaN, h1Top: h1.top - box.top, scrollTop: scroller.scrollTop };
   });
 
+  /**
+   * Waits until the caret and the scroll have held still for three frames: key presses land before
+   * their selection change is read, and the zone scrolls on the frame after it, so under load a
+   * fixed wait can measure before the zone acted (the real state, not a looser bound).
+   */
+  const still = () => page.evaluate(() => new Promise<void>((done) => {
+    const scroller = document.querySelector("[data-editor-scroller]") as HTMLElement;
+    const sample = () => {
+      const sel = window.getSelection()!;
+      const r = sel.rangeCount ? sel.getRangeAt(0).getBoundingClientRect() : null;
+      return `${scroller.scrollTop}:${sel.anchorOffset}:${r?.top ?? ""}`;
+    };
+    let last = sample(), same = 0;
+    const until = performance.now() + 3000;
+    const tick = () => {
+      const now = sample();
+      same = now === last ? same + 1 : 0;
+      last = now;
+      if (same >= 3 || performance.now() > until) done();
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }));
+
   // The title starts at 25% of the window height, in Roboto Mono at 2.5 × 16 px.
   await withMod(page, process.platform === "darwin" ? "ArrowUp" : "Home");
   await expect.poll(async () => (await zone()).scrollTop).toBe(0);
@@ -131,7 +155,7 @@ test("UI-11: the note starts 25% down, the edited line stays between 25% and 65%
 
   // Moving down line by line, the caret never leaves the band.
   for (let i = 0; i < 40; i++) await page.keyboard.press("ArrowDown");
-  await page.waitForTimeout(100);
+  await still();
   let z = await zone();
   expect(z.caretTop).toBeGreaterThanOrEqual(z.h * 0.25 - 2);
   expect(z.caretBottom).toBeLessThanOrEqual(z.h * 0.65 + 2);
@@ -143,7 +167,7 @@ test("UI-11: the note starts 25% down, the edited line stays between 25% and 65%
     await page.keyboard.press("Enter");
     await page.keyboard.type(`New ${i}`);
   }
-  await page.waitForTimeout(100);
+  await still();
   z = await zone();
   expect(z.caretBottom).toBeLessThanOrEqual(z.h * 0.65 + 2);
   expect(z.caretBottom).toBeGreaterThan(z.h * 0.65 - 40);
@@ -164,7 +188,7 @@ test("UI-11: the note starts 25% down, the edited line stays between 25% and 65%
   const lb = (await low.boundingBox())!;
   expect(lb.y).toBeGreaterThan(z.top + z.h * 0.65);
   await low.click();
-  await page.waitForTimeout(150);
+  await still();
   z = await zone();
   expect(z.caretBottom).toBeLessThanOrEqual(z.h * 0.65 + 2);
   await page.screenshot({ path: "../../test-results/screens/reading-zone.png" });
