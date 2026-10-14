@@ -290,6 +290,14 @@
       "$value": "{ref.size.50}",
       "$description": "How far the note fades and blurs its content at an edge with more to scroll to (D-111). Interface surfaces never fade."
     },
+    "triggerClear": {
+      "$value": "{ref.size.80}",
+      "$description": "How far down the note's top scroll edge hides scrolled text entirely, before its fade begins: the trigger's place (layout.triggerTop) and its circle (size.triggerRing), with room to spare, so scrolled text never meets the trigger (D-111)."
+    },
+    "scrollbarEnds": {
+      "$value": "{ref.size.20}",
+      "$description": "How far the note's scrollbar track stays from the window's top and bottom: the window's corner radius (radius.window), so the corner's curve never cuts the thumb (D-111)."
+    },
     "scrollBlur": {
       "$value": "{ref.size.40}",
       "$description": "The note's edge blur at the very top and bottom edge of the window (D-111): the outermost layer's radius; each layer further in has half the radius of the one outside it."
