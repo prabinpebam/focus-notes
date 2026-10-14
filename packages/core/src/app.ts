@@ -20,6 +20,7 @@ import { registerSync, NO_SYNC, SyncFailed, type SyncState } from "./sync-app.ts
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
+import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -83,6 +84,8 @@ export interface AppState {
   firstRun: FirstRunState;
   /** The GitHub account Git is signed in to on the desktop, for the account pill (UI-12). */
   account: AccountState;
+  /** The app-built window on Windows and Linux, as the shell reports it (DSK-03, D-14). Native elsewhere. */
+  window: WindowState;
   /** Waits a person started (PRF-08). */
   tasks: TaskView[];
   /** The latest polite announcement for screen readers; `n` makes repeats announce again. */
@@ -193,6 +196,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     setup: NO_SETUP,
     firstRun: FIRST_RUN_INACTIVE,
     account: NO_ACCOUNT,
+    window: initialWindow(bridge),
     tasks: [],
     announcement: { text: "", n: 0 },
   });
@@ -718,6 +722,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     loaded: (path, md) => workspace.loaded(path, md),
     ...(options.clock ? { now: options.clock.now } : {}),
   });
+  const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
   // keeps them on this device as they are now, and deletes the file.
   commands.register({
@@ -950,6 +955,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       return () => editorListeners.delete(listener);
     },
     async start() {
+      windowApp.start();
       // The workspace format is read alongside the app state, before the first note opens (DST-05).
       const formatRead = workspace.prepare();
       const [loaded, synced] = await Promise.all([

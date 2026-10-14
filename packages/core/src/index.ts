@@ -27,3 +27,5 @@ export * from "./settings.ts";
 export * from "./import-app.ts";
 export * from "./history.ts";
 export * from "./conflict-app.ts";
+export * from "./window-app.ts";
+export * from "./window-geometry.ts";
