@@ -218,6 +218,15 @@ describe("D-92 and FIL-12: a file changed outside while this window had unsaved 
     expect(f.files[welcome]).toBe("# Welcome\n\nWritten elsewhere.\n");
   });
 
+  it("one change the watcher reports twice is offered once", async () => {
+    const { f, app } = await typedThenChangedOutside();
+    f.outside(welcome, "# Welcome\n\nWritten elsewhere.\n");
+    await wait(10);
+    await done(app);
+    const asked = app.store.state.ui.toasts.filter((t) => t.message.startsWith("“Welcome” changed outside Focus Notes."));
+    expect(asked).toHaveLength(1);
+  });
+
   it("the app's own write reported by the watcher (a new note's empty file) is no change from outside", async () => {
     const f = setup();
     const app = await started(f);

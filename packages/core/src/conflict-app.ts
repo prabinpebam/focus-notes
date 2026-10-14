@@ -105,6 +105,9 @@ export function registerConflicts(ctx: Ctx) {
   // ---- a file changed outside while this window had unsaved edits (D-92) ----
   /** Keeps the text that was here: the other version is never overwritten until a choice is made. */
   function outside(path: string, mine: string, theirs: string): void {
+    // The watcher can report one change more than once: it's offered once.
+    const held = conflict();
+    if (held.held === path && held.kind === "outside" && held.notes[0]?.theirs === theirs) return;
     const n: NoteConflict = { path, mine, theirs, theirsAt: now() };
     set({ kind: "outside", notes: [n], index: 0, choices: [], held: path, busy: false });
     toast(catalog.format("toast.changedOutside", { note: titleOf(n) }), { action: resolveAction() });
