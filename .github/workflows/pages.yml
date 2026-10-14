@@ -64,15 +64,18 @@ jobs:
           GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts" \
             git submodule update --init --depth 1 private
           test -f private/access.json || { echo "private/access.json is missing: refusing to deploy a half-configured site." >&2; exit 1; }
-      - name: Publish the notes, seal the vault, and run the leak check
+      # The site's address, for public pages' canonical links (WP-5.1).
+      - id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Publish the notes and their pages, seal the vault, and run the leak check
         env:
           OWNER: ${{ github.repository_owner }}
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: |
-          args="--site _site --notes notes --owner $OWNER --git"
+          args="--site _site --notes notes --owner $OWNER --git --reader apps/web/dist-reader --site-url $SITE_URL/"
           if [ -f private/access.json ]; then args="$args --private private"; fi
           node packages/seal/src/cli.ts publish $args
           rm -rf private
-      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site

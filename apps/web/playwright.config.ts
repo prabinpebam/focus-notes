@@ -18,7 +18,7 @@ export default defineConfig({
     viewport: { width: 1100, height: 780 },
   },
   webServer: {
-    command: "node ../../packages/seal/src/cli.ts publish --site dist --notes e2e/fixture/notes --private e2e/fixture/private --owner octo && pnpm exec vite preview --config vite.config.ts --port 4317 --strictPort --host 127.0.0.1",
+    command: "node ../../packages/seal/src/cli.ts publish --site dist --notes e2e/fixture/notes --private e2e/fixture/private --reader dist-reader --owner octo && pnpm exec vite preview --config vite.config.ts --port 4317 --strictPort --host 127.0.0.1",
     url: "http://127.0.0.1:4317/",
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

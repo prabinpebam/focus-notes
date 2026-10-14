@@ -12,3 +12,4 @@ Thumbs.db
 apps/desktop/src/renderer/index.html
 apps/desktop/src/gallery/index.html
 
+dist-reader/
