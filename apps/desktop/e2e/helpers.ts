@@ -77,7 +77,8 @@ export async function emulateFocus(page: Page): Promise<void> {
  */
 export async function setWindowActive(app: ElectronApplication, active: boolean): Promise<void> {
   await app.evaluate(({ BrowserWindow }, on) => {
-    BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))?.emit(on ? "focus" : "blur");
+    // "journey": the app counts only these, never the system's own (journey-window.ts).
+    BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))?.emit(on ? "focus" : "blur", "journey");
   }, active);
 }
 
