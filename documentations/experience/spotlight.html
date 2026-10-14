@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p><kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> opens a centered, frosted panel modeled on macOS Spotlight and Raycast. It searches <strong>notes</strong> (titles, paths, headings, full text), <strong>folders</strong>, <strong>commands</strong>, and <strong>settings</strong> in one ranked list. <kbd>Enter</kbd> runs the default action; <kbd>→</kbd> or <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> opens <strong>quick actions</strong> for the selected result (open in a new window, copy link, move, rename, make public, delete…). Prefixes (<code>&gt;</code> commands, <code>#</code> headings) and filters (<code>is:private</code>, <code>in:essays/</code>) narrow the search. Quick open, the command palette, go-to-heading, and find-in-notes are all this same panel, opened in a different mode. Covers SPT-01 to SPT-08 in the <a href="../product/requirements.md">requirements</a>.</p>
+  <p><kbd>Ctrl/⌘</kbd>+<kbd>/</kbd> opens a centered, frosted panel modeled on macOS Spotlight and Raycast. It searches <strong>notes</strong> (titles, paths, headings, full text), <strong>folders</strong>, <strong>commands</strong>, and <strong>settings</strong> in one ranked list. <kbd>Enter</kbd> runs the default action; <kbd>→</kbd> or <kbd>Ctrl/⌘</kbd>+<kbd>K</kbd> opens <strong>quick actions</strong> for the selected result (open in a new window, copy link, move, rename, make public, delete…). Prefixes (<code>&gt;</code> commands, <code>#</code> headings) and filters (<code>is:private</code>, <code>in:essays/</code>) narrow the search. Quick open, the command palette, go-to-heading, and find-in-notes are all this same panel, opened in a different mode. Covers SPT-01 to SPT-08 in the <a href="../product/requirements.md">requirements</a>. <a href="#whats-built">What's built</a> says how far WP-4.2 goes today (D-109).</p>
 </aside>
 
 <figure class="slate-figure">
@@ -155,7 +155,7 @@
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Frecency</p>
-    <p>How recently and how often each note was opened and each command was run, decaying with a half-life of one week. It is stored per device and never synced.</p>
+    <p>How recently and how often each note was opened and each command was run, decaying with a half-life of one week. It is kept per device and never synced; for now it lives in memory and starts again with the app (D-109).</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Context</p>
@@ -201,14 +201,30 @@
     <p class="slate-metric__label">Full-text results (5,000 notes)</p>
   </div>
 </div>
-<p>The benchmark (<code>pnpm bench</code>) checks the index's part of these on a generated, seeded workspace of 5,000 notes (about 40 folders, 150 to 450 words each, with headings, lists, links, and code), through the worker's own messages, round trips included:</p>
+<p>The benchmark (<code>pnpm bench</code>) checks these on a generated, seeded workspace of 5,000 notes (about 40 folders, 150 to 450 words each, with headings, lists, links, and code), the panel in the app itself, and the index through the worker's own messages, round trips included:</p>
 <table>
   <thead><tr><th>Measure</th><th>What it times</th><th>Budget</th></tr></thead>
   <tbody>
-    <tr><td><code>SPT-07.openMs</code></td><td>The index's share of opening: the first answer from an index that has just finished building. The panel itself is built once and kept hidden (Spotlight, WP-4.2, adds the keypress to the visible panel)</td><td>50 ms</td></tr>
+    <tr><td><code>SPT-07.panelOpenMs</code></td><td>The whole of opening, in the app on the same 5,000 notes: from the key's own time to the first frame that shows the panel with its results (the app's <code>fn:spotlight.open</code> measure), the median of several opens after the first</td><td>50 ms</td></tr>
+    <tr><td><code>SPT-07.openMs</code></td><td>The index's share of opening: the first answer from an index that has just finished building</td><td>50 ms</td></tr>
     <tr><td><code>SPT-07.titleQueryP95Ms</code></td><td>Titles, headings, folders, and 150 commands, typed a letter at a time, with typos (95th percentile)</td><td>16 ms</td></tr>
     <tr><td><code>SPT-07.fullTextP95Ms</code></td><td>Full text with snippets, typed a word at a time, with typos (95th percentile)</td><td>100 ms</td></tr>
     <tr><td><code>SPT-07.indexBuildMs</code></td><td>From the first change to every note's text indexed. Reported, with no budget of its own</td><td>&mdash;</td></tr>
+  </tbody>
+</table>
+
+<h2 id="whats-built" data-reader-personas="product design engineering">What's built</h2>
+<p>WP-4.2 built Spotlight in both apps on the search index (D-107). The rest of this page is the full design; this is how far it goes today, and where the remainder is planned (D-109).</p>
+<table>
+  <thead><tr><th>Part</th><th>Today</th><th>Still to come</th></tr></thead>
+  <tbody>
+    <tr><td>Opening</td><td><kbd>Mod</kbd>+<kbd>/</kbd> (All), <kbd>Mod</kbd>+<kbd>P</kbd> (Notes: quick open, FIL-04), <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> (Commands), <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> (Headings in this note), and <strong>Search</strong> in the trigger toolbar, from anywhere: the note, the Files panel, Settings, and the cheat sheet. The same keys work in the browser, where quick open replaces the old <em>Open a note</em> list. A mode's key switches mode and keeps the query; the same mode's key again closes it. Opening it closes Settings, the cheat sheet, and any other dialog that's safe to dismiss (as <kbd>Esc</kbd> would), so Spotlight is the one dialog; closing it gives focus back where it was (the Files panel keeps its own), or to the note.</td><td>Find in notes (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>) is WP-4.3; Spotlight offers <em>Find "…" in all notes</em> as soon as its <code>find.allNotes</code> command exists, and says it's coming until then.</td></tr>
+    <tr><td>Anatomy</td><td>A frosted <code>DialogPanel</code> (size <code>m</code>, 640 px, placed about 20% from the top) composed in the canvas view with a <code>SearchField</code> whose mode chip (All, Notes, Commands, Headings, All headings, Help) sits inside the field before the text, and a <code>ResultList</code> with labeled groups, the matched characters in bold, and each row's shortcut or current state. The footer has the result count (announced), "Indexing n / m" or "Type ? for help", and the key hints. The panel is built when it opens; it still opens well inside 50 ms.</td><td>The preview pane (P1).</td></tr>
+    <tr><td>What it searches</td><td>Notes, headings in every note, full text with snippets, folders, every command (KEY-01: all but setters, components' events, steps inside a dialog, and keys that belong to a field), and settings: Appearance, Light theme, Dark theme, Note font, Text size, Interface size, Focus mode, and Sync appearance where it's offered. Theme and font commands say what they choose ("Dark theme: Dusk"). <kbd>Enter</kbd> opens a note, goes to a heading, opens a match with the find bar filled, shows a folder in Files, runs a command, or steps a setting; toggles and settings leave Spotlight open and update their row. <kbd>Mod</kbd>+<kbd>Enter</kbd> on a folder makes a new note there, on a command shows it in the cheat sheet, and on a setting resets it.</td><td>Opening in a new window (WP-8.5). Opening a setting in Settings, which has no appearance section yet. Creating a note in a chosen folder.</td></tr>
+    <tr><td>Quick actions</td><td><kbd>Mod</kbd>+<kbd>K</kbd>, or <kbd>→</kbd> with the caret at the end of the field (elsewhere <kbd>→</kbd> still moves the caret), shows them; <kbd>←</kbd> or <kbd>Esc</kbd> goes back. A note has Open, Open in new window (unavailable, saying why), Copy Markdown link (relative to the open note; refused from a public note to a private one), Copy public link (public notes; unavailable until publishing), Copy to my notes (the instance's notes in a browser), Rename, Move to…, Make public or Make private, Show in Files, and Delete; Rename, Move, visibility, and Delete reveal the note in Files and use Files' own commands, confirmations, and batches (D-94, D-99). The instance's read-only notes have those four unavailable, saying "Read-only here". A heading has Go to heading, a new window, and a link to it; a folder has Show in Files, New note here, Rename, Move to…, and Delete; a command has Run and Copy command ID; a setting has Run and Reset to default.</td><td>Copy as Markdown, Duplicate (FIL-11), Share with people… (M5), Show in Finder or Explorer, New folder here, Show the note's outline, Change shortcut… (P1), and each action's own shortcut.</td></tr>
+    <tr><td>Prefixes and filters</td><td>All of them: <code>&gt;</code>, <code>#</code>, <code>##</code>, and <code>?</code> switch mode as they're typed at the start; <code>is:</code>, <code>in:</code>, <code>type:</code>, and a quoted phrase narrow the index's query. <kbd>Backspace</kbd> in an empty field goes back to All. Help lists the prefixes and filters; choosing one puts it into the field.</td><td>Keys in help.</td></tr>
+    <tr><td>Ranking</td><td>The index's tiers, scores, and highlights (D-107), the top hit first and selected, then each kind's group in the order its best result ranked, then text matches in notes not listed already, then Create and Find. Frecency (a week's half-life) and the current note's folder are boosts.</td><td>Frecency stored on the device. Context boosts for commands that apply to the selection.</td></tr>
+    <tr><td>Keys</td><td><kbd>↑</kbd> <kbd>↓</kbd>, <kbd>Enter</kbd>, <kbd>Mod</kbd>+<kbd>Enter</kbd>, <kbd>Mod</kbd>+<kbd>K</kbd> or <kbd>→</kbd>, <kbd>←</kbd>, <kbd>Backspace</kbd>, and <kbd>Esc</kbd>, all in the cheat sheet's Spotlight group.</td><td><kbd>⌃P</kbd> / <kbd>⌃N</kbd> on macOS, <kbd>Mod</kbd>+<kbd>1</kbd> to <kbd>9</kbd>, <kbd>Shift</kbd>+<kbd>Mod</kbd>+<kbd>C</kbd>, and <kbd>Alt</kbd>+<kbd>↓</kbd> / <kbd>↑</kbd> (the Pro layer, WP-4.4).</td></tr>
   </tbody>
 </table>
 
@@ -216,7 +232,7 @@
 <ul>
   <li>Uses the ARIA combobox and listbox pattern: focus stays in the field, and the selected result is set with <code>aria-activedescendant</code>.</li>
   <li>Groups are labeled. The number of results is announced politely after typing pauses.</li>
-  <li>The panel traps focus while open and returns focus, caret, and selection exactly to where they were when it closes.</li>
+  <li>The panel traps focus while open and returns focus, caret, and selection exactly to where they were when it closes; when what had focus is gone (a dialog Spotlight replaced), focus goes to the note.</li>
   <li>Every action in Spotlight is also reachable with a pointer, through the toolbar, the ⋯ menu, or context menus.</li>
 </ul>
 
