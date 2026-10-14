@@ -151,7 +151,7 @@
 <ol class="slate-steps">
   <li class="slate-step">
     <p class="slate-step__title">Match quality</p>
-    <p>Exact title, then title prefix, then the start of a word, then a fuzzy title match, then headings, then full text. Typos are tolerated (one edit for 4 to 7 characters, two for longer queries).</p>
+    <p>Exact title, then title prefix, then the start of a word, then a fuzzy title match, then headings, then full text. Typos are tolerated (one edit for 4 to 7 characters, two for longer queries), and two neighbouring letters swapped count as one ("lenght"). Case and accents don't matter: "cafe" finds "Café". Every word must match; as you type, the last one may be the start of a word.</p>
   </li>
   <li class="slate-step">
     <p class="slate-step__title">Frecency</p>
@@ -176,10 +176,14 @@
 
 <h2>Index and privacy</h2>
 <ul>
-  <li>The index is <a href="https://github.com/lucaong/minisearch">MiniSearch</a> (MIT), built in a Web Worker so typing never stutters. Titles, paths, and headings are indexed eagerly and full text incrementally.</li>
-  <li><strong>Desktop:</strong> built from the files on disk at startup and kept current by a file watcher, so changes made outside the app (another editor, <code>git pull</code>) are picked up.</li>
-  <li><strong>Web (MW):</strong> the file tree comes from the GitHub API. Note text is indexed as notes are opened or prefetched in the background, and cached in IndexedDB.</li>
-  <li><strong>Private notes are indexed only on the device.</strong> The index is never uploaded, logged, or sent anywhere. Signing out deletes it.</li>
+  <li>The index is <a href="https://github.com/lucaong/minisearch">MiniSearch</a> (MIT), built in a Web Worker so typing never stutters. It has two parts: <strong>titles</strong> (each note's title, file name, folder, and front-matter <code>id</code>; every heading; folders; commands and settings with their synonyms), answered on every keystroke, and <strong>full text</strong>, with a snippet around the first match. Paths are searched relative to their root (<code>essays/on-focus.md</code>), never the folders above it.</li>
+  <li><strong>Titles first.</strong> Every note's title, path, and folder are in the index as soon as the workspace is listed. Each note's text is then read a few at a time and indexed in short slices between questions, so a search never waits behind indexing, and "Indexing 1,240 / 5,000" can say how far it's got.</li>
+  <li><strong>Kept current by the workspace model.</strong> Creating, deleting, moving, and renaming notes and folders reach the index as they happen; a moved or renamed note keeps its indexed text, so it isn't read again. The app's own saves are indexed from the text it already has, and changes made outside the app (another editor, <code>git pull</code>) are read again when the desktop's file watcher reports them.</li>
+  <li><strong>When it starts.</strong> After the first note is open, never before, so it never delays the caret. The start-up warm-up (<a href="../architecture/performance-and-quality.md">Performance and quality</a>) is where it belongs once that exists.</li>
+  <li><strong>Desktop:</strong> built from the workspace's roots on disk: <code>private/notes/</code> and <code>notes/</code>, or the one folder before setup.</li>
+  <li><strong>Web:</strong> this browser's own notes, the instance's public notes (read from its site), and its private notes only while they're unlocked. Locking drops them from the index before it answers anything else, and a private note whose reading finishes after the lock is thrown away.</li>
+  <li><strong>Only on the device, and only in memory.</strong> The index is never uploaded, logged, or sent anywhere, and it isn't stored: it's rebuilt each time the app starts or the page loads, and goes when it closes (<a href="../plan/decisions.md">D-107</a>). The worker has no network code; with network monitoring on, indexing and searching make no request beyond reading the notes themselves (on the web, files of the site itself).</li>
+  <li><strong>Trusted Types.</strong> The worker is a file of the app itself, loaded through a <code>search-worker</code> policy that lets exactly that one address through; scripts still have no policy at all (<a href="../architecture/security-and-privacy.md">Security and privacy</a>).</li>
 </ul>
 
 <h2>Performance budgets</h2>
@@ -197,7 +201,16 @@
     <p class="slate-metric__label">Full-text results (5,000 notes)</p>
   </div>
 </div>
-<p>These are targets set by this spec, not measurements. M4 checks them on a mid-range laptop with a generated 5,000-note workspace.</p>
+<p>The benchmark (<code>pnpm bench</code>) checks the index's part of these on a generated, seeded workspace of 5,000 notes (about 40 folders, 150 to 450 words each, with headings, lists, links, and code), through the worker's own messages, round trips included:</p>
+<table>
+  <thead><tr><th>Measure</th><th>What it times</th><th>Budget</th></tr></thead>
+  <tbody>
+    <tr><td><code>SPT-07.openMs</code></td><td>The index's share of opening: the first answer from an index that has just finished building. The panel itself is built once and kept hidden (Spotlight, WP-4.2, adds the keypress to the visible panel)</td><td>50 ms</td></tr>
+    <tr><td><code>SPT-07.titleQueryP95Ms</code></td><td>Titles, headings, folders, and 150 commands, typed a letter at a time, with typos (95th percentile)</td><td>16 ms</td></tr>
+    <tr><td><code>SPT-07.fullTextP95Ms</code></td><td>Full text with snippets, typed a word at a time, with typos (95th percentile)</td><td>100 ms</td></tr>
+    <tr><td><code>SPT-07.indexBuildMs</code></td><td>From the first change to every note's text indexed. Reported, with no budget of its own</td><td>&mdash;</td></tr>
+  </tbody>
+</table>
 
 <h2>Accessibility</h2>
 <ul>
