@@ -29,6 +29,9 @@ export function ToolbarRow({ label, focusRequest, children }: ToolbarRowProps) {
       const target = e.key === "Home" ? items[0] : items.at(-1);
       if (target) {
         e.preventDefault();
+        // The key is the toolbar's alone: handled again by the item it left (React Aria's tooltip
+        // trigger), the tooltip of that item stayed on screen, its closing never finished (DEF-1).
+        e.stopPropagation();
         target.focus();
       }
     };

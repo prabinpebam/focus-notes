@@ -167,6 +167,9 @@ test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable, later one
   await page.keyboard.press("End");
   const more = page.getByRole("button", { name: "More" });
   await expect(more).toBeFocused();
+  // Only the focused item's tooltip shows: the one it left closes (DEF-1).
+  await expect(page.getByRole("tooltip")).toHaveCount(1);
+  await expect(page.getByRole("tooltip")).toHaveText("More");
   await expect(more).toHaveAttribute("aria-haspopup", "true");
   await page.keyboard.press("ArrowDown");
   const menu = page.getByRole("menu", { name: "More" });
@@ -214,6 +217,8 @@ test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable, later one
   await expect(page.getByRole("searchbox", { name: "Search shortcuts" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(editor).toBeFocused();
+  // No tooltip outlives the toolbar (DEF-1).
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
   await quit(l);
 });
 
