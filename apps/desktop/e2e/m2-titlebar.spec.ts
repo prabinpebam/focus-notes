@@ -1,5 +1,5 @@
 import { test, expect, type ElectronApplication, type Page } from "@playwright/test";
-import { launch, quit, tempDirs, windowBox, type Launched } from "./helpers.ts";
+import { launch, quit, setWindowActive, tempDirs, windowBox, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 // M2 title bar journeys (WP-2.2): the 44 px title bar band with the trigger centered (DSK-02), full
@@ -14,8 +14,6 @@ const bounds = (app: ElectronApplication) =>
   app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.getBounds());
 const displayBounds = (app: ElectronApplication) =>
   app.evaluate(({ BrowserWindow, screen }) => screen.getDisplayMatching(BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.getBounds()).bounds);
-const isFocused = (app: ElectronApplication) =>
-  app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.isFocused());
 const box = async (page: Page, selector: string) => (await page.locator(selector).first().boundingBox())!;
 /** The band is showing its controls (the window frame marks the page while the pointer is on it). */
 const bandShown = (page: Page) => page.evaluate(() => "windowBand" in document.documentElement.dataset);
@@ -61,8 +59,12 @@ test.describe("Windows and Linux: the app-drawn window controls", () => {
     const win = await windowBox(page);
     await page.mouse.move(win.left + win.width / 2, win.top + 300);
     expect(await bandShown(page)).toBe(false);
-    // Hidden at rest while the window is the active one (an inactive window shows them, and a CI display may never make it active).
-    if (await isFocused(app)) await expect(controls).toHaveCSS("opacity", "0");
+    // Hidden at rest while the window is the active one; shown while another app is (DD-DSK-04).
+    await expect(controls).toHaveCSS("opacity", "0");
+    await setWindowActive(app, false);
+    await expect(controls).toHaveCSS("opacity", "1");
+    await setWindowActive(app, true);
+    await expect(controls).toHaveCSS("opacity", "0");
     // The controls sit in the band, at its end.
     const c = (await controls.boundingBox())!;
     expect(c.y - win.top).toBeGreaterThanOrEqual(0);
@@ -74,7 +76,7 @@ test.describe("Windows and Linux: the app-drawn window controls", () => {
     await expect(controls).toHaveCSS("opacity", "1");
     await page.mouse.move(win.left + win.width / 2, win.top + 300);
     expect(await bandShown(page)).toBe(false);
-    if (await isFocused(app)) await expect(controls).toHaveCSS("opacity", "0");
+    await expect(controls).toHaveCSS("opacity", "0");
     // Keyboard focus shows them too, with a visible focus ring.
     await page.getByRole("button", { name: "Minimize" }).focus();
     await expect(controls).toHaveCSS("opacity", "1");
@@ -98,7 +100,7 @@ test.describe("Windows and Linux: the app-drawn window controls", () => {
     await page.mouse.move(win.width / 2 - 120, 20);
     await page.mouse.move(win.width / 2 - 100, 24);
     expect(await bandShown(page)).toBe(false);
-    if (await isFocused(app)) await expect(controls).toHaveCSS("opacity", "0");
+    await expect(controls).toHaveCSS("opacity", "0");
     // At the top edge it comes back, and stays while the pointer is on it.
     await page.mouse.move(win.width / 2 - 100, 0);
     expect(await bandShown(page)).toBe(true);
@@ -111,7 +113,7 @@ test.describe("Windows and Linux: the app-drawn window controls", () => {
     // Leaving the band hides it again; the trigger stays visible throughout.
     await page.mouse.move(win.width / 2, 300);
     expect(await bandShown(page)).toBe(false);
-    if (await isFocused(app)) await expect(controls).toHaveCSS("opacity", "0");
+    await expect(controls).toHaveCSS("opacity", "0");
     await expect(page.getByRole("button", { name: "Focus Notes menu" })).toBeVisible();
     // Back on the band below the edge: still hidden until the edge again.
     await page.mouse.move(win.width / 2 - 100, 30);
@@ -213,14 +215,19 @@ test.describe("macOS: the native window and its menu bar", () => {
     await expect(page.getByRole("toolbar")).toBeVisible();
     await expect.poll(last).toBe(true);
     await page.keyboard.press("Escape");
-    // Hidden again, unless the real pointer happens to be on the band or the window isn't active (CI).
+    // Hidden again, unless the real pointer happens to be on the band (journeys don't move it).
     const atRest = await app.evaluate(({ BrowserWindow, screen }, id) => {
       const w = BrowserWindow.fromId(id)!;
       const c = w.getContentBounds();
       const p = screen.getCursorScreenPoint();
       const onBand = p.x >= c.x && p.x < c.x + c.width && p.y >= c.y && p.y < c.y + 44;
-      return w.isFocused() && !onBand && !w.isFullScreen();
+      return !onBand && !w.isFullScreen();
     }, await mainWindow(app));
+    if (atRest) await expect.poll(last).toBe(false);
+    // Another app in front: the window isn't the active one, and its traffic lights show, as macOS's do.
+    await setWindowActive(app, false);
+    await expect.poll(last).toBe(true);
+    await setWindowActive(app, true);
     if (atRest) await expect.poll(last).toBe(false);
     await quit(l);
   });

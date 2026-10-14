@@ -13,6 +13,8 @@ export default defineConfig({
     browserName: "chromium",
     // Locally the installed Edge; in CI the Chromium that Playwright installs.
     ...(process.env.CI ? {} : { channel: "msedge" }),
+    // Never a window on the person's screen, nor their focus (D-104 (7)).
+    headless: true,
     viewport: { width: 1100, height: 780 },
   },
   webServer: {

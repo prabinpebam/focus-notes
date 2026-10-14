@@ -1,5 +1,5 @@
 import { test, expect, type ElectronApplication, type Page } from "@playwright/test";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { launch, quit, setWindowActive, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 // M2 window journeys (WP-2.1): the Windows and Linux window the app draws and manages itself
@@ -16,8 +16,6 @@ const displayBounds = (app: ElectronApplication): Promise<Box> =>
   app.evaluate(({ BrowserWindow, screen }) => screen.getDisplayMatching(BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.getBounds()).bounds);
 const isMinimized = (app: ElectronApplication): Promise<boolean> =>
   app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.isMinimized());
-const isFocused = (app: ElectronApplication): Promise<boolean> =>
-  app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.isFocused());
 const workArea = (app: ElectronApplication): Promise<Box> =>
   app.evaluate(({ BrowserWindow, screen }) => screen.getDisplayMatching(BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.getBounds()).workArea);
 /** The drawn window inside the page: its corners, and where it sits in the transparent margin. */
@@ -248,8 +246,12 @@ test.describe("Windows and Linux: the app-built window", () => {
     const controls = page.getByRole("group", { name: "Window controls" });
     const close = page.getByRole("button", { name: "Close" });
     await page.mouse.move(400, 400);
-    // Hidden at rest while the window is the active one (a CI display without a window manager may never make it so).
-    if (await isFocused(app)) await expect(controls).toHaveCSS("opacity", "0");
+    // Hidden at rest while the window is the active one, and shown while another app is.
+    await expect(controls).toHaveCSS("opacity", "0");
+    await setWindowActive(app, false);
+    await expect(controls).toHaveCSS("opacity", "1");
+    await setWindowActive(app, true);
+    await expect(controls).toHaveCSS("opacity", "0");
     await close.hover();
     await expect(controls).toHaveCSS("opacity", "1");
     const red = await close.evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -261,6 +263,7 @@ test.describe("Windows and Linux: the app-built window", () => {
     await page.getByRole("button", { name: "Minimize" }).click();
     // A desktop without a window manager (a CI display) can't minimize; Windows always can.
     if (process.platform === "win32") await expect.poll(() => isMinimized(app)).toBe(true);
+    // Back without taking the computer's focus (journeys restore inactive, D-104 (7)).
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.restore());
     await quit(l);
   });

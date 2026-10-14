@@ -29,7 +29,7 @@ const mainEntry = join(root, "apps", "desktop", "out", "main", "main.mjs");
 function launchReadyMs(userData, docs) {
   return new Promise((resolve, reject) => {
     // GitHub's API points at a closed local port: the bench never reaches the network.
-    const child = spawn(electronPath, [mainEntry], { env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9" } });
+    const child = spawn(electronPath, [mainEntry], { env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_E2E: "1" } });
     let ready;
     const timer = setTimeout(() => { child.kill(); reject(new Error("The app never reported ready")); }, 30_000);
     child.stdout.on("data", (d) => {
@@ -112,9 +112,11 @@ async function noteTimes() {
   const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
   // Set up already (FRE-01), and never reaching the network, as in the start times.
   writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
-  const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9" } });
+  const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_E2E: "1" } });
   try {
     const page = await app.firstWindow();
+    // The window never takes the computer's focus (D-104 (7)); the page is told it has it.
+    await (await page.context().newCDPSession(page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
     const mod = process.platform === "darwin" ? "Meta" : "Control";
     const editor = page.getByRole("textbox", { name: "Note" });
     await editor.waitFor();

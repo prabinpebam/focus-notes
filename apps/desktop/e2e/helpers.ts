@@ -29,6 +29,26 @@ export const tempDirs = () => ({
 });
 
 /**
+ * Tells a page it has focus, though its window never takes the computer's (D-104 (7)): keys,
+ * focus, and `:focus-visible` then behave as in the active window. Playwright's keys and pointer
+ * reach the page without the system's focus.
+ */
+export async function emulateFocus(page: Page): Promise<void> {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true });
+}
+
+/**
+ * Makes the app's window inactive or active again, as switching to another app and back would:
+ * journeys never take the computer's focus, so they drive the window's own state (D-104 (7)).
+ */
+export async function setWindowActive(app: ElectronApplication, active: boolean): Promise<void> {
+  await app.evaluate(({ BrowserWindow }, on) => {
+    BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))?.emit(on ? "focus" : "blur");
+  }, active);
+}
+
+/**
  * Starts the app. Journeys about other things start past the desktop's first run (it's done once
  * per install, FRE-01), as someone who already set up; `firstRun` starts a new install instead.
  * Git's settings are isolated (no system or personal config, so no real credential helper is
@@ -49,10 +69,14 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
   const app = await electron.launch({
     args: [join(import.meta.dirname, "..", "out", "main", "main.mjs")],
     // The warm-up after start is off in journeys, so their timing and focus stay the same (PRF-10).
-    env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_WARMUP: "0", ...extraEnv },
+    // Never the computer's focus (D-104 (7)): the windows open inactive, and the app keeps its own "active".
+    env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_WARMUP: "0", FOCUS_NOTES_E2E: "1", ...extraEnv },
   });
   app.process().stdout?.on("data", (d: Buffer) => log.push(...d.toString().split("\n").filter(Boolean)));
+  // Every window the journey uses; one that closes at once (a page that went away) needs none.
+  app.on("window", (p) => void emulateFocus(p).catch(() => {}));
   const page = await app.firstWindow();
+  await emulateFocus(page);
   // FOCUS_NOTES_E2E_CPU_THROTTLE=4 slows the renderer down like a busy CI runner, to reproduce races.
   const throttle = Number(process.env.FOCUS_NOTES_E2E_CPU_THROTTLE ?? 0);
   if (throttle > 1) await (await page.context().newCDPSession(page)).send("Emulation.setCPUThrottlingRate", { rate: throttle });

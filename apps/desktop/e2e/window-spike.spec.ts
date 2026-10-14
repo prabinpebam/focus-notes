@@ -13,7 +13,7 @@ test("window spike: the custom window opens transparent and frameless", async ()
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
   const app = await electron.launch({
     args: [join(import.meta.dirname, "..", "out", "main", "main.mjs")],
-    env: { ...process.env, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs } as Record<string, string>,
+    env: { ...process.env, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_E2E: "1" } as Record<string, string>,
   });
   const page = await app.firstWindow();
   await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();

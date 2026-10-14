@@ -63,9 +63,11 @@ export async function largeWorkspace({ root, mainEntry, notes = 10_000, reopenRu
   const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
   writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: join(docs, "Welcome.md") }));
   // The warm-up after start is on, as people have it (PRF-10). GitHub's API points at a closed port.
-  const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9" } });
+  const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_E2E: "1" } });
   try {
     const page = await app.firstWindow();
+    // The window never takes the computer's focus (D-104 (7)); the page is told it has it.
+    await (await page.context().newCDPSession(page)).send("Emulation.setFocusEmulationEnabled", { enabled: true });
     const mod = process.platform === "darwin" ? "Meta" : "Control";
     const openKey = process.platform === "darwin" ? "Meta+ArrowDown" : "Enter";
     const editorFocused = () => page.waitForFunction(() => Boolean(document.activeElement?.closest("[data-editor]")), null, { timeout: 30_000 });

@@ -35,6 +35,7 @@ import { SnapshotCache } from "@focus-notes/core/snapshot";
 import { textHash } from "@focus-notes/core/journal";
 import type { RestoredNote } from "@focus-notes/core";
 import { RecoveryJournal, restoreJournal } from "./journal.ts";
+import { JOURNEY_WINDOW_OPTIONS, keepOutOfTheWay } from "./window/journey-window.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 /** Windows and Linux: the transparent window with app-built window management; macOS: the system's (D-14). */
@@ -68,6 +69,8 @@ const devEnv = (name: string) => (app.isPackaged ? undefined : process.env[name]
 const fakeApi = devEnv("FOCUS_NOTES_GITHUB_API");
 const localRemotes = devEnv("FOCUS_NOTES_GIT_REMOTES");
 const logSpawns = devEnv("FOCUS_NOTES_LOG_SPAWNS") === "1";
+/** Journeys and the bench: windows never take the computer's focus (D-104 (7)). */
+const journey = devEnv("FOCUS_NOTES_E2E") === "1";
 const onSpawn = logSpawns ? (program: string, args: string[]) => process.stdout.write(`[focus-notes] spawn ${JSON.stringify([program, ...args])}\n`) : undefined;
 const apiFetch = githubFetch(fakeApi && /^http:\/\/127\.0\.0\.1:\d+$/.test(fakeApi)
   ? (i, init) => fetch(fakeApi + i.slice("https://api.github.com".length), init)
@@ -953,6 +956,7 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
     backgroundColor: dark ? "#1a1a1c" : "#fbfaf7",
     // Where it was last time, and how it's drawn on this platform.
     ...frame.options(),
+    ...(journey ? JOURNEY_WINDOW_OPTIONS : {}),
     webPreferences: {
       preload: join(import.meta.dirname, "preload.cjs"),
       contextIsolation: true,
@@ -963,7 +967,8 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
       devTools: !app.isPackaged || process.env.FOCUS_NOTES_DEVTOOLS === "1",
     },
   });
-  win.once("ready-to-show", () => win.show());
+  if (journey) keepOutOfTheWay(win);
+  win.once("ready-to-show", () => (journey ? win.showInactive() : win.show()));
   frame.attach(win);
   // ⇧⌘V pastes plain text on macOS too (Keyboard shortcuts → Everyday editing), where Chromium binds
   // only ⌥⇧⌘V. The renderer still sees Shift held, so the editor pastes the text as it is (EDT-09).

@@ -1,0 +1,42 @@
+/**
+ * Journeys and the bench never take the computer's focus (D-104 (7)). With `FOCUS_NOTES_E2E=1` (a
+ * test seam, never read in a packaged app) every window opens without being activated, stays off
+ * the taskbar, and never comes forward: someone can keep working while the suite runs.
+ *
+ * Such a window is never the system's active one, so the app's idea of "active" is its own there:
+ * the window's `focus` and `blur` events, which it raises itself where the system would (shown or
+ * restored: active; hidden or minimized: not), and which journeys raise to drive what the app does
+ * for an inactive window (window controls shown, the keyboard move ended, the traffic lights). The
+ * page is told it has focus through Chromium's focus emulation, so keys, focus rings, and
+ * `:focus-visible` behave as in a focused window.
+ */
+import type { BrowserWindow, BrowserWindowConstructorOptions } from "electron";
+
+/** Options every journey window is created with. */
+export const JOURNEY_WINDOW_OPTIONS: BrowserWindowConstructorOptions = { skipTaskbar: true };
+
+/**
+ * Keeps a window out of the person's way: shown and restored without activating, never focused or
+ * raised, and active as the app sees it per its `focus` and `blur` events (see above). Call it
+ * before anything else listens to the window, so every listener sees the new state.
+ */
+export function keepOutOfTheWay(win: BrowserWindow): void {
+  let active = false;
+  win.on("focus", () => (active = true));
+  win.on("blur", () => (active = false));
+  const activate = () => {
+    if (!active) win.emit("focus");
+  };
+  const deactivate = () => {
+    if (active) win.emit("blur");
+  };
+  win.on("show", activate);
+  win.on("restore", activate);
+  win.on("hide", deactivate);
+  win.on("minimize", deactivate);
+  win.isFocused = () => active && !win.isDestroyed() && win.isVisible() && !win.isMinimized();
+  win.show = () => win.showInactive();
+  win.restore = () => win.showInactive();
+  win.focus = () => {};
+  win.moveTop = () => {};
+}
