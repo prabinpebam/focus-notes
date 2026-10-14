@@ -116,12 +116,14 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
 
   async function reconcile(path: string): Promise<void> {
     const text = await bridge.readNote(path).catch(() => undefined);
+    if (text === undefined) return;
     // Typing the editor hasn't handed over yet is unsaved too: it must never be replaced (D-92).
     ctx.handOver?.();
     const n = store.state.note;
-    if (text === undefined || n.path !== path || text === n.markdown) return;
-    // The watcher reports the app's own saves too.
-    if (lastWritten?.path === path && lastWritten.text === text) return;
+    if (n.path !== path || text === n.markdown) return;
+    // What the app knows is on disk: its last save of the note, or the text it opened. The watcher
+    // reports the app's own writes too (a save, or a new note's empty file): those changed nothing.
+    if (text === (lastWritten?.path === path ? lastWritten.text : n.initialMarkdown)) return;
     if (n.saveState === "saved") {
       setNote({ key: `${path}#outside-${++outside}`, initialMarkdown: text, markdown: text });
       loaded(path, text);

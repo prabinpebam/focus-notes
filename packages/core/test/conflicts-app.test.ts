@@ -218,6 +218,21 @@ describe("D-92 and FIL-12: a file changed outside while this window had unsaved 
     expect(f.files[welcome]).toBe("# Welcome\n\nWritten elsewhere.\n");
   });
 
+  it("the app's own write reported by the watcher (a new note's empty file) is no change from outside", async () => {
+    const f = setup();
+    const app = await started(f);
+    app.onEditorAction((id) => {
+      if (id === FLUSH_EDITOR) void app.commands.run("note.setContent", { value: "# Welcome\n\nTyped here.\n" });
+    });
+    // The file is reported, but it holds what the app opened: nothing changed outside.
+    f.outside(welcome, app.store.state.note.initialMarkdown);
+    await wait(10);
+    await done(app);
+    expect(app.store.state.ui.toasts.map((t) => t.message)).not.toContain("“Welcome” changed outside Focus Notes. Your edits are kept here, and aren't saved over it until you choose.");
+    expect(app.store.state.note.markdown).toBe("# Welcome\n\nTyped here.\n");
+    expect(app.store.state.ui.conflict.held).toBeUndefined();
+  });
+
   it("Keep this computer's version: saves it, and keeps the other as a copy that's deleted at once (recoverable)", async () => {
     const { f, app } = await typedThenChangedOutside();
     await app.commands.run("conflict.open");
