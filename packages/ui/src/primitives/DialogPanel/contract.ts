@@ -9,6 +9,7 @@ export const contract = defineContract({
     open: { kind: "boolean", default: false },
     size: { kind: "enum", values: ["s", "m", "l", "xl"], default: "l", description: "m is Spotlight's 640 px." },
     placement: { kind: "enum", values: ["center", "top"], default: "center", description: "top: about 20% down, as Spotlight opens." },
+    height: { kind: "enum", values: ["stable", "content"], default: "stable", description: "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)." },
     material: { kind: "enum", values: ["raised", "frosted"], default: "raised", description: "frosted: the theme's frosted surface (Spotlight)." },
   },
   events: { openChange: { payload: { open: "boolean" } } },
@@ -18,6 +19,7 @@ export const contract = defineContract({
   a11y: { pattern: "modal dialog", name: "label" },
   fixtures: [
     { name: "size s", props: { label: { t: "shortcuts.title" }, open: true, size: "s" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "height content", props: { label: { t: "shortcuts.title" }, open: true, size: "s", height: "content" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     { name: "size l", props: { label: { t: "shortcuts.title" }, open: true, size: "l" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     { name: "size xl", props: { label: { t: "shortcuts.title" }, open: true, size: "xl" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     {

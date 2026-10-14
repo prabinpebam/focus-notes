@@ -11,7 +11,9 @@
  * - Floating side sheets: the same inset from the window's top, side, and bottom, clear of the
  *   trigger and the window's controls.
  * - Gaps between items: the highlight shapes of neighboring list items never touch (2 px apart).
- * - Fading scroll edges: a scroller fades a 50 px edge exactly where there's more to scroll to.
+ * - Fading scroll edges: only the note fades and blurs (up to 40 px) a 50 px edge, exactly where
+ *   there's more to scroll to; interface surfaces never do.
+ * - Selection by background: selected and active items show a background, never a side bar.
  * - Aligned rows: a checkbox, switch, or radio is centered on the first line of its label.
  * - Anchored tooltips: next to the control they name, centered on it, inside the window.
  *
@@ -20,7 +22,7 @@
  */
 import { expect, type Locator, type Page } from "@playwright/test";
 
-export type VisualRule = "window" | "dialogInset" | "container" | "padding" | "sheet" | "gaps" | "fade" | "rows" | "tooltips";
+export type VisualRule = "window" | "dialogInset" | "dialogHeight" | "container" | "padding" | "sheet" | "gaps" | "fade" | "selection" | "rings" | "slider" | "rows" | "tooltips";
 
 export interface VisualOptions {
   /** Rules that don't apply to what's open, each with the reason (shown if it's ever questioned). */
@@ -28,7 +30,7 @@ export interface VisualOptions {
 }
 
 /** The distances, in CSS px, the rules use (Foundations → Visual quality). */
-export const VISUAL = { dialogInset: 24, itemGap: 2, fade: 50, tolerance: 1, tooltipGap: 16 } as const;
+export const VISUAL = { dialogInset: 24, dialogMinHeight: 400, itemGap: 2, fade: 50, blur: 40, tolerance: 1, tooltipGap: 16 } as const;
 
 /** Everything on the open surfaces that breaks a rule, one line each; empty when it all holds. */
 export function visualProblems(page: Page, opts: VisualOptions = {}): Promise<string[]> {
@@ -49,7 +51,7 @@ export async function pointerModality(page: Page) {
   await page.mouse.move(at.x + 1, at.y);
 }
 
-const TOOLTIP_RULES: VisualOptions = { skip: { dialogInset: "checked without the tooltip", container: "checked without the tooltip", padding: "checked without the tooltip", sheet: "checked without the tooltip", gaps: "checked without the tooltip", fade: "checked without the tooltip", rows: "checked without the tooltip" } };
+const TOOLTIP_RULES: VisualOptions = { skip: { dialogHeight: "checked without the tooltip", rings: "checked without the tooltip", slider: "checked without the tooltip", selection: "checked without the tooltip", dialogInset: "checked without the tooltip", container: "checked without the tooltip", padding: "checked without the tooltip", sheet: "checked without the tooltip", gaps: "checked without the tooltip", fade: "checked without the tooltip", rows: "checked without the tooltip" } };
 
 /** Hovers each control with a tooltip and checks the tooltip it shows; at least one must show. */
 export async function hoverTooltips(page: Page, controls: Locator, where: string, problems: string[], shot?: string) {
@@ -64,7 +66,10 @@ export async function hoverTooltips(page: Page, controls: Locator, where: string
     // if the control moved away from under it.
     let id: string | null = null;
     for (let attempt = 0; attempt < 2 && !id; attempt++) {
-      // Where it is now: a dialog can move as its content loads (Settings' account check).
+      // In view (a short sheet scrolls its header away), and where it is now: a dialog can move as
+      // its content loads (Settings' account check).
+      await c.evaluate((el) => el.scrollIntoView({ block: "center", inline: "nearest" }));
+      await settled(page);
       const b = await c.boundingBox();
       if (!b) break;
       if (attempt) await pointerModality(page);
@@ -80,6 +85,24 @@ export async function hoverTooltips(page: Page, controls: Locator, where: string
   }
   if (!seen) problems.push(`${where}: no tooltip showed on hover`);
   await pointerModality(page);
+}
+
+/**
+ * Dialogs never shrink while open (D-111): runs each step (a tab, a filter) and checks the open
+ * dialog's height never goes down; returns the problems.
+ */
+export async function dialogNeverShrinks(page: Page, name: string, steps: (() => Promise<void>)[]): Promise<string[]> {
+  const height = () => page.evaluate(() => document.querySelector('[data-dialog-modal][data-height="stable"]')?.getBoundingClientRect().height ?? 0);
+  const out: string[] = [];
+  let tallest = await height();
+  for (const [i, step] of steps.entries()) {
+    await step();
+    await settled(page);
+    const h = await height();
+    if (h < tallest - 0.5) out.push(`${name}: the dialog shrank from ${Math.round(tallest)} to ${Math.round(h)} px at step ${i + 1}`);
+    tallest = Math.max(tallest, h);
+  }
+  return out;
 }
 
 /** Runs in the page. Everything it needs is inside it. */
@@ -155,6 +178,53 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       const r = rect(d);
       const gaps = { left: r.left - win.left, top: r.top - win.top, right: win.right - r.right, bottom: win.bottom - r.bottom };
       for (const [side, g] of Object.entries(gaps)) if (g < v.dialogInset - tol / 2) out.push(`never edge to edge: ${nameOf(d)} is ${px(g)} px from the window's ${side} edge (at least ${v.dialogInset})`);
+    }
+  }
+
+  if (on("dialogHeight")) {
+    // At least 400 px, less only where the window with its inset has no room (a confirmation fits its content).
+    for (const m of [...document.querySelectorAll('[data-dialog-modal][data-height="stable"]')].filter(shown)) {
+      const h = rect(m).bottom - rect(m).top;
+      const least = Math.min(v.dialogMinHeight, win.height - 2 * v.dialogInset);
+      if (h < least - tol) out.push(`dialog height: ${nameOf(m.querySelector("[data-surface=dialog]") ?? m)} is ${px(h)} px tall (at least ${px(least)})`);
+    }
+  }
+
+  if (on("rings")) {
+    // A focus ring is never cut by a scrolling or clipping container around it (D-111).
+    const f = document.activeElement;
+    if (f && f !== document.body && !f.closest("[data-editor]") && shown(f)) {
+      const cs = getComputedStyle(f);
+      if (cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0) {
+        const reach = parseFloat(cs.outlineWidth) + parseFloat(cs.outlineOffset || "0");
+        const r = rect(f);
+        const ring = { left: r.left - reach, top: r.top - reach, right: r.right + reach, bottom: r.bottom + reach };
+        for (let a = f.parentElement; a && a !== root; a = a.parentElement) {
+          if (!clips(a)) continue;
+          const o = rect(a);
+          const clip = { left: o.left + a.clientLeft, top: o.top + a.clientTop, right: o.left + a.clientLeft + a.clientWidth, bottom: o.top + a.clientTop + a.clientHeight };
+          // Only where the item itself shows: one scrolled partly out of view is cut by design.
+          if (r.top < clip.top - tol || r.bottom > clip.bottom + tol) break;
+          if (ring.left < clip.left - tol / 2 || ring.right > clip.right + tol / 2 || ring.top < clip.top - tol / 2 || ring.bottom > clip.bottom + tol / 2) {
+            out.push(`focus rings: the ring of ${nameOf(f)} at ${box(ring)} is cut by ${nameOf(a)} ${box(clip)}`);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (on("slider")) {
+    for (const thumb of [...document.querySelectorAll("[data-slider-thumb]")].filter(shown)) {
+      const track = thumb.parentElement!;
+      const rail = track.querySelector("[data-slider-rail]");
+      const fill = track.querySelector("[data-slider-fill]");
+      if (!rail || !fill) continue;
+      const t = rect(thumb), l = rect(rail), fl = rect(fill);
+      const dy = (t.top + t.bottom) / 2 - (l.top + l.bottom) / 2;
+      if (Math.abs(dy) > 0.5) out.push(`slider: the thumb of ${nameOf(track.closest('[role="group"]') ?? track)} is ${px(dy)} px off the track's center line`);
+      const dx = fl.right - (t.left + t.right) / 2;
+      if (Math.abs(dx) > 0.5) out.push(`slider: the fill of ${nameOf(track.closest('[role="group"]') ?? track)} ends ${px(dx)} px from the thumb's center`);
     }
   }
 
@@ -240,7 +310,7 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       for (const el of [s, ...s.querySelectorAll("*")]) {
         if (el !== s && el.closest("[data-surface]") !== s) continue;
         const o = getComputedStyle(el);
-        if ((o.overflowY === "auto" || o.overflowY === "scroll") && el.scrollWidth > el.clientWidth + 1 && el.getAttribute("data-scroll-x") === null) {
+        if ((o.overflowX === "auto" || o.overflowX === "scroll") && el.scrollWidth > el.clientWidth + 1 && el.getAttribute("data-scroll-x") === null) {
           out.push(`inside its container: ${nameOf(el)} in ${nameOf(s)} scrolls sideways (${el.scrollWidth} px of ${el.clientWidth})`);
         }
       }
@@ -290,25 +360,49 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
   }
 
   if (on("fade")) {
+    const reduced = document.documentElement.dataset.transparency === "reduced" || matchMedia("(forced-colors: active)").matches;
     for (const el of document.querySelectorAll("*")) {
       const o = getComputedStyle(el);
       if (o.overflowY !== "auto" && o.overflowY !== "scroll") continue;
       if (!shown(el) || el === document.documentElement || el === document.body) continue;
-      const more = { top: el.scrollTop > 1, bottom: el.scrollTop + el.clientHeight < el.scrollHeight - 1 };
       const mask = o.maskImage && o.maskImage !== "none" ? o.maskImage : o.webkitMaskImage ?? "none";
-      const f = String(v.fade);
-      // A mask, or (over an opaque background, the note) a sticky gradient in the background's color.
-      const overlay = (pseudo: "::before" | "::after") => {
-        const p = getComputedStyle(el, pseudo);
-        return p.position === "sticky" && p.backgroundImage.startsWith("linear-gradient") && p.height === `${f}px` && p.opacity === "1" && p.display !== "none";
-      };
-      const has = {
-        top: mask.startsWith(`linear-gradient(rgba(0, 0, 0, 0) 0px, rgb(0, 0, 0) ${f}px`) || overlay("::before"),
-        bottom: mask.includes(`rgb(0, 0, 0) calc(100% - ${f}px), rgba(0, 0, 0, 0) 100%)`) || overlay("::after"),
-      };
-      for (const side of ["top", "bottom"] as const) {
-        if (more[side] !== has[side]) out.push(`fading scroll edges: ${nameOf(el)} ${more[side] ? "has more to scroll to" : "has nothing more to scroll to"} at the ${side} but ${has[side] ? "fades it" : "doesn't fade it"} (mask: ${mask.slice(0, 120)})`);
+      const edges = [...el.querySelectorAll(":scope > [data-scroll-edge]")];
+      // Interface surfaces never fade or blur their scroll edges: only the note does.
+      if (!el.hasAttribute("data-editor-scroller")) {
+        if (mask !== "none" || edges.length) out.push(`fading scroll edges: ${nameOf(el)} fades its edges, but only the note may`);
+        continue;
       }
+      const more = { top: el.scrollTop > 1, bottom: el.scrollTop + el.clientHeight < el.scrollHeight - 1 };
+      for (const side of ["top", "bottom"] as const) {
+        const edge = edges.find((e) => e.getAttribute("data-scroll-edge") === side);
+        const showing = Boolean(edge && getComputedStyle(edge).opacity === "1" && getComputedStyle(edge).display !== "none");
+        if (more[side] !== showing) {
+          out.push(`fading scroll edges: the note ${more[side] ? "has more to scroll to" : "has nothing more to scroll to"} at the ${side} but ${showing ? "fades it" : "doesn't fade it"}`);
+          continue;
+        }
+        if (!edge || !showing) continue;
+        const r = edge.getBoundingClientRect();
+        if (Math.abs(r.height - v.fade) > tol) out.push(`fading scroll edges: the note's ${side} edge is ${px(r.height)} px, not ${v.fade}`);
+        // The blur grows toward the edge, up to 40 px at it; none with reduced transparency.
+        const blurs = [...edge.children].map((c) => /blur\(([\d.]+)px\)/.exec(getComputedStyle(c).backdropFilter)?.[1]).filter((b): b is string => b !== undefined && getComputedStyle(edge.children[0]!).display !== "none").map(Number);
+        // 5 to 8 bands, the strongest (40 px) at the window's edge, each one in softer than the last.
+        if (reduced ? blurs.length > 0 : blurs.length < 5 || blurs.length > 8 || blurs[0] !== v.blur || blurs.some((b, i) => i > 0 && b >= blurs[i - 1]!)) out.push(`fading scroll edges: the note's ${side} edge blurs ${blurs.join(", ") || "nothing"} px (up to ${reduced ? 0 : v.blur} at the edge, less further in)`);
+        if (![...edge.children].some((c) => getComputedStyle(c).backgroundImage.startsWith("linear-gradient"))) out.push(`fading scroll edges: the note's ${side} edge doesn't fade`);
+      }
+    }
+  }
+
+  if (on("selection")) {
+    // Selected and active items show a background, never a side bar or a border (D-111).
+    const SELECTED = '[aria-selected="true"], [data-selected], [data-current], [aria-current]:not([aria-current="false"])';
+    for (const el of [...document.querySelectorAll(SELECTED)].filter((e) => shown(e) && !e.closest("[data-editor]"))) {
+      const cs = getComputedStyle(el);
+      const seen = (c: string) => c !== "transparent" && !/rgba\([^)]*,\s*0\)$/.test(c);
+      const sides = (["Top", "Right", "Bottom", "Left"] as const).map((k) => parseFloat(cs[`border${k}Width`]) > 0 && cs[`border${k}Style`] !== "none" && seen(cs[`border${k}Color`]));
+      // An inset shadow draws a bar or a ring inside the item: either is a border by another name.
+      const bar = /\binset\b/.test(cs.boxShadow);
+      if (sides.some(Boolean) || bar) out.push(`selection by background: ${nameOf(el)} shows ${bar ? "a side bar" : "a border"} (${bar ? cs.boxShadow : cs.borderLeftColor})`);
+      if (el.matches('[role="option"], [role="treeitem"], [role="tab"]') && el.getAttribute("aria-selected") === "true" && !seen(cs.backgroundColor)) out.push(`selection by background: ${nameOf(el)} is selected with no background`);
     }
   }
 

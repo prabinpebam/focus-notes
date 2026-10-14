@@ -19,5 +19,7 @@
   "fontSize": { "$type": "dimension", "$value": "{font.uiSecondary}" },
   "fontWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
   "duration": { "$type": "duration", "$value": "{motion.micro}" },
-  "easing": { "$type": "cubicBezier", "$value": "{easing.standard}" }
+  "easing": { "$type": "cubicBezier", "$value": "{easing.standard}" },
+  "labelSize": { "$type": "dimension", "$value": "{font.uiBody}" },
+  "labelWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" }
 } } }

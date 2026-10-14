@@ -8,7 +8,8 @@ const t = tokens.cmp.segmentedControl;
 // labels end in an ellipsis rather than reach past a dialog's or a sheet's edge.
 export const root = style({ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: t.gap, maxWidth: "100%", minWidth: 0, fontFamily: t.font, fontSize: t.fontSize });
 
-export const label = style({ color: t.text, whiteSpace: "nowrap" });
+// Like every form label: body size, semibold (D-111).
+export const label = style({ color: t.text, whiteSpace: "nowrap", fontSize: t.labelSize, fontWeight: t.labelWeight });
 
 export const track = style({
   display: "inline-flex",
@@ -47,6 +48,7 @@ export const segment = style({
   selectors: {
     "&[data-hovered]": { backgroundColor: t.hover },
     "&[data-selected]": { backgroundColor: t.selected, color: t.selectedText, boxShadow: t.shadow },
-    "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing },
+// Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
+    "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
   },
 });

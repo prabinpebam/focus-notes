@@ -201,13 +201,17 @@
         "$type": "dimension",
         "$value": "{radius.control}"
       },
+      "selectBackground": {
+        "$type": "color",
+        "$value": "{color.surface}"
+      },
+      "selectBorder": {
+        "$type": "color",
+        "$value": "{color.borderStrong}"
+      },
       "textTransparent": {
         "$type": "color",
         "$value": "{color.none}"
-      },
-      "scrollFade": {
-        "$type": "dimension",
-        "$value": "{layout.scrollFade}"
       }
     }
   }

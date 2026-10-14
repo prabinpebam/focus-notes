@@ -19,21 +19,23 @@ export const tile = style({
   padding: t.padding,
   borderRadius: t.radius,
   borderStyle: "solid",
-  borderWidth: t.selectedWidth,
+  borderWidth: 0,
   borderColor: "transparent",
   color: t.text,
   cursor: "default",
   outline: "none",
-  // In forced colors the samples stay samples, and only the tile showing gets a border (its accent is
-  // Highlight there); the rest of the tile's colors are system colors through the tokens' own mode.
+  // In forced colors the samples stay samples, and only the tile showing gets a background (Highlight
+  // there); the rest of the tile's colors are system colors through the tokens' own mode.
   forcedColorAdjust: "none",
   transitionProperty: "background-color, border-color",
   transitionDuration: t.duration,
   transitionTimingFunction: t.easing,
   selectors: {
     "&:hover": { backgroundColor: t.hover },
-    '&[aria-selected="true"]': { borderColor: t.selectedBorder },
-    "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: t.focusOffset },
+    // The theme showing: its tile's background, never a border or a side bar (D-111).
+    '&[aria-selected="true"]': { backgroundColor: t.selected, color: t.selectedText },
+// Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
+    "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
   },
 });
 

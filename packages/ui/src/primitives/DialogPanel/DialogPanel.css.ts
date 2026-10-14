@@ -1,6 +1,6 @@
-import { style } from "@vanilla-extract/css";
+import { createVar, fallbackVar, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
-import { fadingEdges, minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
+import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.dialogPanel;
 
@@ -22,6 +22,9 @@ export const overlay = style({
   },
 });
 
+/** The tallest the dialog has been since it opened (DialogPanel.tsx): it never shrinks while open. */
+export const grownVar = createVar();
+
 export const modal = style({
   display: "flex",
   width: "100%",
@@ -39,6 +42,16 @@ export const size = {
   m: style({ maxWidth: t.width.m }),
   l: style({ maxWidth: t.width.l }),
   xl: style({ maxWidth: t.width.xl }),
+};
+
+/**
+ * Its height (D-111): at least `minHeight` (400 px), and never less than it has been since it opened,
+ * so it doesn't jump as its content changes (a tab, a filter); the extra room stays empty at the
+ * bottom of its body. Both are held to the window less its inset. A confirmation fits its content.
+ */
+export const height = {
+  stable: style({ minHeight: `min(max(${t.minHeight}, ${fallbackVar(grownVar, "0px")}), ${t.maxHeight}, 100%)` }),
+  content: style({}),
 };
 
 /** Centered, or near the top like Spotlight, where results grow downward without the field moving. */
@@ -84,7 +97,6 @@ export const body = style({
   selectors: { "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` } },
 });
 minimalScrollbar(body, t);
-fadingEdges(body, t);
 
 /** The raised surface, or the theme's frosted one (Foundations → Surfaces). */
 export const material = {

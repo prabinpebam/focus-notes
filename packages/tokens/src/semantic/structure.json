@@ -218,6 +218,10 @@
       "$value": "{ref.size.280}",
       "$description": "The narrowest the theme manager and find in all notes get to keep the trigger clear: room for their segmented control and tabs (D-111)."
     },
+    "sheetShort": {
+      "$value": "{ref.size.320}",
+      "$description": "A side sheet shorter than this (in the smallest window) scrolls its header with its content, so the content keeps room to show (D-111)."
+    },
     "popover": {
       "$value": "{ref.size.360}"
     },
@@ -251,6 +255,10 @@
     "dialogMaxHeight": {
       "$value": "{ref.size.85vh}"
     },
+    "dialogMinHeight": {
+      "$value": "{ref.size.400}",
+      "$description": "A dialog's least height, less where the window is too short for it with its 24 px inset (D-111)."
+    },
     "dialogTop": {
       "$value": "{ref.size.20vh}"
     },
@@ -283,7 +291,20 @@
     },
     "scrollFade": {
       "$value": "{ref.size.50}",
-      "$description": "How far a scrolling area fades its content out at an edge with more to scroll to (D-111)."
+      "$description": "How far the note fades and blurs its content at an edge with more to scroll to (D-111). Interface surfaces never fade."
+    },
+    "scrollBlur": {
+      "$value": "{ref.size.40}",
+      "$description": "The note's edge blur at the very top and bottom edge of the window (D-111): the outermost band's radius."
+    },
+    "scrollBlurMin": {
+      "$value": "{ref.size.5}",
+      "$description": "The innermost blur band's radius; the radii step linearly from it to layout.scrollBlur, so the blur ramps from crisp at the band's inner edge to its most at the window's edge (D-111)."
+    },
+    "scrollBands": {
+      "$type": "number",
+      "$value": 8,
+      "$description": "How many stacked blur bands make the note's edge ramp (5 to 8: enough that the steps don't show, D-111)."
     },
     "fieldMin": {
       "$value": "{ref.size.96}",

@@ -509,7 +509,8 @@
           "open": {
             "get": "vm.signOut.open"
           },
-          "size": "s"
+          "size": "s",
+          "height": "content"
         },
         "on": {
           "openChange": {
@@ -623,7 +624,8 @@
           "open": {
             "get": "vm.removeWorkspace.open"
           },
-          "size": "s"
+          "size": "s",
+          "height": "content"
         },
         "on": {
           "openChange": {

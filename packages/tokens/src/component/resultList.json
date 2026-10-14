@@ -35,15 +35,15 @@
       },
       "active": {
         "$type": "color",
-        "$value": "{color.hover}"
+        "$value": "{color.selection}"
       },
-      "activeBar": {
+      "activeText": {
         "$type": "color",
-        "$value": "{color.accent}"
+        "$value": "{color.onSelection}"
       },
-      "barWidth": {
-        "$type": "dimension",
-        "$value": "{border.selectedBar}"
+      "activeTextMuted": {
+        "$type": "color",
+        "$value": "{color.onSelectionMuted}"
       },
       "font": {
         "$type": "fontFamily",
@@ -132,10 +132,6 @@
       "state": {
         "$type": "color",
         "$value": "{color.textMuted}"
-      },
-      "scrollFade": {
-        "$type": "dimension",
-        "$value": "{layout.scrollFade}"
       }
     }
   }

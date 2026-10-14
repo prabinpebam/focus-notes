@@ -1,7 +1,6 @@
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Dialog, Modal, ModalOverlay } from "react-aria-components";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
-import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import * as s from "./DialogPanel.css.ts";
 
 export interface DialogPanelProps {
@@ -19,6 +18,8 @@ export interface DialogPanelProps {
   placement?: "center" | "top";
   /** The raised surface, or the theme's frosted one (Spotlight). */
   material?: "raised" | "frosted";
+  /** stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations). */
+  height?: keyof typeof s.height;
   id?: string;
   children?: ReactNode;
   onOpenChange?: (payload: { open: boolean }) => void;
@@ -28,13 +29,31 @@ export interface DialogPanelProps {
  * A modal dialog over a dimmed canvas (Foundations → Surfaces, layer 5). Focus stays inside while
  * it's open and returns where it was when it closes. Esc and clicking the scrim close it.
  */
-export function DialogPanel({ label, open, size = "l", header, fixed, footer, placement = "center", material = "raised", id, children, onOpenChange }: DialogPanelProps) {
+export function DialogPanel({ label, open, size = "l", header, fixed, footer, placement = "center", material = "raised", height = "stable", id, children, onOpenChange }: DialogPanelProps) {
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useAutoHideScrollbar(bodyRef, Boolean(open));
-  useFadingEdges(bodyRef, Boolean(open));
+  // The tallest it has been since it opened, kept as its least height (D-111). Reset when it closes.
+  useEffect(() => {
+    const modal = bodyRef.current?.closest<HTMLElement>("[data-dialog-modal]");
+    if (!open || !modal || height !== "stable") return;
+    let tallest = 0;
+    const name = s.grownVar.replace(/^var\(|\)$/g, "");
+    const watch = new ResizeObserver(() => {
+      // Its layout height: the box as drawn is scaled while it opens.
+      const h = modal.offsetHeight;
+      if (h <= tallest + 0.5) return;
+      tallest = h;
+      modal.style.setProperty(name, `${Math.ceil(h)}px`);
+    });
+    watch.observe(modal);
+    return () => {
+      watch.disconnect();
+      modal.style.removeProperty(name);
+    };
+  }, [open, height]);
   return (
     <ModalOverlay data-scrim="" className={`${s.overlay} ${s.placement[placement]}`} isOpen={Boolean(open)} isDismissable onOpenChange={(o) => onOpenChange?.({ open: o })}>
-      <Modal className={`${s.modal} ${s.size[size]}`}>
+      <Modal className={`${s.modal} ${s.size[size]} ${s.height[height]}`} data-dialog-modal="" data-height={height}>
         <Dialog data-surface="dialog" className={`${s.dialog} ${s.material[material]}`} aria-label={label} {...(id ? { id } : {})}>
           {header ? <div className={s.region}>{header}</div> : null}
           {fixed ? <div className={s.region}>{fixed}</div> : null}

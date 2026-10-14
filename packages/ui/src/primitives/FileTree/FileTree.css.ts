@@ -35,9 +35,11 @@ export const row = style({
   selectors: {
     "&:hover": { backgroundColor: t.hover },
     // Text on the selection's color: the same as elsewhere, except in forced colors (HighlightText).
-    '&[aria-selected="true"]': { backgroundColor: t.selection, color: t.selectionText },
+    '&[aria-selected="true"]': { backgroundColor: t.selection, color: t.selectionText, forcedColorAdjust: "none" },
     // The current note: an accent outline and semibold (Files → Row states).
-    "&[data-current]": { boxShadow: `inset 0 0 0 ${t.outlineWidth} ${t.accent}`, fontWeight: t.strongWeight },
+    // The open note: a quiet fill and semibold, never an outline or a side bar (D-111). Selected wins.
+    '&[data-current]:not([aria-selected="true"])': { backgroundColor: t.current },
+    "&[data-current]": { fontWeight: t.strongWeight },
     "&[data-drop-target]": { boxShadow: `inset 0 0 0 ${t.focusWidth} ${t.accent}` },
     "&:focus-visible": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: `calc(-1 * ${t.focusWidth})` },
   },

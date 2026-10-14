@@ -29,6 +29,10 @@
         "$type": "dimension",
         "$value": "{layout.sheetMinWide}"
       },
+      "short": {
+        "$type": "dimension",
+        "$value": "{layout.sheetShort}"
+      },
       "radius": {
         "$type": "dimension",
         "$value": "{radius.sheet}"
@@ -93,10 +97,6 @@
         "$type": "dimension",
         "$value": "{border.hairline}"
       },
-      "scrollFade": {
-        "$type": "dimension",
-        "$value": "{layout.scrollFade}"
-      },
       "scrollbarSize": {
         "$type": "dimension",
         "$value": "{size.scrollbar}"
@@ -118,6 +118,10 @@
         "$value": "{color.none}"
       },
       "bodySlack": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
+      },
+      "ringRoom": {
         "$type": "dimension",
         "$value": "{space.xs}"
       }

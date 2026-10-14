@@ -1846,7 +1846,8 @@
                   "enum": [
                     "icon",
                     "pill",
-                    "text"
+                    "text",
+                    "select"
                   ]
                 },
                 {
@@ -2405,6 +2406,22 @@
                   "enum": [
                     "center",
                     "top"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "stable",
+                    "content"
                   ]
                 },
                 {
@@ -6268,6 +6285,22 @@
               "anyOf": [
                 {
                   "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "stable",
+                    "content"
+                  ]
                 },
                 {
                   "$ref": "#/$defs/read"

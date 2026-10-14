@@ -10,7 +10,7 @@ import { test, expect, type Locator, type Page } from "./fixtures.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { caret, launch, quit, tempDirs, type Launched } from "./helpers.ts";
-import { hoverTooltips, settled, visualProblems, type VisualOptions } from "./visual-quality.ts";
+import { dialogNeverShrinks, hoverTooltips, settled, visualProblems, type VisualOptions } from "./visual-quality.ts";
 
 const mac = process.platform === "darwin";
 const mod = mac ? "Meta" : "Control";
@@ -199,6 +199,20 @@ const SURFACES: Surface[] = [
     await page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: /^Theme…/ }).click();
     await expect(page.getByRole("complementary", { name: "Theme" })).toBeVisible();
   }, tooltips: (page) => page.getByRole("complementary", { name: "Theme" }).getByRole("button") },
+  { name: "theme manager reading", open: async (page) => {
+    await moreMenu(page);
+    await page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: /^Theme…/ }).click();
+    const sheet = page.getByRole("complementary", { name: "Theme" });
+    await sheet.getByRole("tab", { name: "Reading" }).click();
+    await expect(sheet.getByRole("slider").first()).toBeVisible();
+  } },
+  { name: "theme manager colors", open: async (page) => {
+    await moreMenu(page);
+    await page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: /^Theme…/ }).click();
+    const sheet = page.getByRole("complementary", { name: "Theme" });
+    await sheet.getByRole("tab", { name: "Edit colors" }).click();
+    await expect(sheet.getByRole("tab", { name: "Edit colors" })).toHaveAttribute("aria-selected", "true");
+  } },
   { name: "settings account", open: (page) => settings(page, "Account"), tooltips: (page) => page.getByRole("dialog", { name: "Settings" }).getByRole("button", { name: "Close" }) },
   { name: "settings workspace", open: (page) => settings(page, "Workspace") },
   { name: "settings appearance", open: (page) => settings(page, "Appearance") },
@@ -297,6 +311,18 @@ for (const { name: sizeName, size } of SIZES) {
         if (s.tooltips) await hoverTooltips(page, s.tooltips(page), s.name, problems, `../../test-results/screens/vq-${sizeName}-${want}-${s.name.replace(/\s+/g, "-")}-tooltip.png`);
         await reset(page).catch((e: Error) => { throw new Error(`Closing ${s.name}: ${e.message}`); });
       }
+      // Dialogs never shrink while open (D-111): tabs that hold less, and filters that leave less.
+      await settings(page, "Workspace");
+      const dialog = page.getByRole("dialog", { name: "Settings" });
+      problems.push(...await dialogNeverShrinks(page, "settings", ["Appearance", "Account", "Workspace"].map((c) => () => dialog.getByRole("tab", { name: c }).click())));
+      await reset(page);
+      await page.keyboard.press(`${mod}+Shift+Slash`);
+      await expect(page.getByRole("searchbox", { name: "Search shortcuts" })).toBeFocused();
+      problems.push(...await dialogNeverShrinks(page, "cheat sheet", [() => page.keyboard.type("bold"), () => page.keyboard.type("zzz")]));
+      await reset(page);
+      await spotlight(page, `${mod}+Slash`);
+      problems.push(...await dialogNeverShrinks(page, "spotlight", [() => page.keyboard.type("idea 2"), () => page.keyboard.type("zzz")]));
+      await reset(page);
       expect(problems).toEqual([]);
       await quit(l);
     });

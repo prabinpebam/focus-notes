@@ -2,7 +2,6 @@ import { Fragment, useRef, useState } from "react";
 import { Button, Header, Keyboard, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator, SubmenuTrigger, Text } from "react-aria-components";
 import { IconButton } from "../IconButton/IconButton.tsx";
 import { Icon } from "../Icon/Icon.tsx";
-import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import type { IconName } from "../../icon-names.ts";
 import type { CommandItem, MenuSection as Section } from "../../data.ts";
@@ -13,8 +12,8 @@ export interface MenuButtonProps {
   icon?: IconName;
   /** The accessible name (and the tooltip of the icon variant). */
   label: string;
-  /** "icon" (default), "pill": a quiet text pill showing `text` (UI-12), or "text": `text` and a chevron (Turn into). */
-  variant?: "icon" | "pill" | "text";
+  /** "icon" (default), "pill": a quiet text pill showing `text` (UI-12), "text": `text` and a chevron (Turn into), or "select": the same in a bordered box, as a form's field. */
+  variant?: "icon" | "pill" | "text" | "select";
   text?: string;
   /** Where the menu opens from the trigger. */
   placement?: "bottom end" | "bottom start" | "top start";
@@ -54,7 +53,6 @@ function Submenu({ item, checkable, onAction }: { item: CommandItem; checkable: 
 /** A submenu's choices, one of them checked (Light theme → Paper). Mounted as it opens, so it can watch its own scrolling. */
 function ChoiceMenu({ label, items, onAction }: { label: string; items: CommandItem[]; onAction?: ((payload: { id: string }) => void) | undefined }) {
   const ref = useRef<HTMLDivElement | null>(null);
-  useFadingEdges(ref);
   return (
     <Menu
       ref={ref}
@@ -123,7 +121,6 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
   // after the menu), and the menu's own focus handling follows it.
   const started = useRef(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  useFadingEdges(menuRef);
   const startHere = (id: string) => (el: HTMLDivElement | null) => {
     if (!el || !later || id !== start || started.current) return;
     started.current = true;
@@ -187,7 +184,9 @@ export function MenuButton({ icon = "more", label, variant = "icon", text, place
     <MenuTrigger>
       {variant === "pill"
         ? <Button className={s.pill} aria-label={label}>{text ?? label}</Button>
-        : variant === "text"
+        : variant === "select"
+          ? <Button className={s.select} aria-label={label}>{text ?? label}<Icon name="chevronDown" size="s" /></Button>
+          : variant === "text"
           ? <Button className={`${s.text}${bleed ? ` ${s.textBleed}` : ""}`} aria-label={label} data-bleed={bleed ? "" : undefined}>{text ?? label}<Icon name="chevronDown" size="s" /></Button>
           : <IconButton icon={icon} label={label} {...(shortcut ? { shortcut } : {})} />}
       <Popover className={s.popover} placement={placement} offset={8} {...boundary} data-floating-child="" data-surface="popover">

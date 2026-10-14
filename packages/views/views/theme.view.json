@@ -205,7 +205,7 @@
                           {
                             "type": "MenuButton",
                             "props": {
-                              "variant": "text",
+                              "variant": "select",
                               "label": {
                                 "t": "reading.fontLabel",
                                 "args": {
@@ -398,7 +398,7 @@
                               "label": {
                                 "t": "reading.reset"
                               },
-                              "variant": "subtle"
+                              "variant": "secondary"
                             },
                             "on": {
                               "press": {

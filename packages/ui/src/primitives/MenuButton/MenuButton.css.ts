@@ -1,6 +1,5 @@
 import { style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
-import { fadingEdges } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.menuButton;
 
@@ -26,7 +25,6 @@ export const popover = style({
 // it scrolls with the wheel and the arrow keys, as a system menu does: its fading edges show
 // there's more, and no scrollbar takes room from its items (the same inset on every side).
 export const menu = style({ outline: "none", display: "flex", flexDirection: "column", gap: t.itemGap, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", fontFamily: t.font, fontSize: t.fontSize, color: t.text });
-fadingEdges(menu, t);
 export const section = style({ display: "flex", flexDirection: "column", gap: t.itemGap });
 
 export const header = style({ paddingInline: t.itemPaddingInline, fontSize: t.captionSize, fontWeight: t.headerWeight, color: t.textMuted });
@@ -43,7 +41,8 @@ export const item = style({
   selectors: {
     "&[data-focused]": { backgroundColor: t.hover },
     "&[data-pressed]": { backgroundColor: t.pressed },
-    "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth },
+// Inset: drawn inside the item's rounded shape, so no scrolling or clipping container ever cuts it (D-111).
+    "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: `calc(-1 * ${t.focusWidth})` },
     "&[data-disabled]": { opacity: t.disabledOpacity },
   },
 });
@@ -81,6 +80,20 @@ export const text = style({
     "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.pillFocusWidth, outlineColor: t.focusRing },
   },
 });
+
+/**
+ * The select variant: the current value and a chevron in a bordered box, as a form's field (the
+ * theme manager's Font). Its box lines up with the labels and controls above and below it (D-111).
+ */
+export const select = style([text, {
+  justifyContent: "space-between",
+  minWidth: t.minWidth,
+  maxWidth: "100%",
+  borderStyle: "solid",
+  borderWidth: t.borderWidth,
+  borderColor: t.selectBorder,
+  backgroundColor: t.selectBackground,
+}]);
 
 /** The text variant at the edge of a panel's content (the Files sheet's New): its text and chevron line up with the edge (D-111). */
 export const textBleed = style({ marginInline: `calc(-1 * ${t.textPaddingInline})`, marginBlock: `calc((${t.fontSize} * ${t.lineHeight} - ${t.textHeight}) / 2)` });

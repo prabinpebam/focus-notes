@@ -1173,9 +1173,11 @@
           "values": [
             "icon",
             "pill",
-            "text"
+            "text",
+            "select"
           ],
-          "default": "icon"
+          "default": "icon",
+          "description": "select: the current value and a chevron in a bordered box, as a form's field, lined up with the rows around it (D-111)."
         },
         "text": {
           "kind": "text",
@@ -1270,6 +1272,22 @@
           "name": "variant text, placement bottom start",
           "props": {
             "variant": "text",
+            "text": {
+              "get": "vm.gallery.query"
+            },
+            "label": {
+              "t": "gallery.action"
+            },
+            "placement": "bottom start",
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        },
+        {
+          "name": "variant select",
+          "props": {
+            "variant": "select",
             "text": {
               "get": "vm.gallery.query"
             },
@@ -1751,6 +1769,15 @@
           "default": "center",
           "description": "top: about 20% down, as Spotlight opens."
         },
+        "height": {
+          "kind": "enum",
+          "values": [
+            "stable",
+            "content"
+          ],
+          "default": "stable",
+          "description": "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)."
+        },
         "material": {
           "kind": "enum",
           "values": [
@@ -1804,6 +1831,27 @@
             },
             "open": true,
             "size": "s"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "height content",
+          "props": {
+            "label": {
+              "t": "shortcuts.title"
+            },
+            "open": true,
+            "size": "s",
+            "height": "content"
           },
           "children": [
             {
@@ -6925,6 +6973,15 @@
           "kind": "boolean",
           "default": false
         },
+        "height": {
+          "kind": "enum",
+          "values": [
+            "stable",
+            "content"
+          ],
+          "default": "stable",
+          "description": "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)."
+        },
         "size": {
           "kind": "enum",
           "values": [
@@ -6973,6 +7030,30 @@
             },
             "open": true,
             "size": "s"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "height content",
+          "props": {
+            "title": {
+              "t": "shortcuts.title"
+            },
+            "closeLabel": {
+              "t": "dialog.close"
+            },
+            "open": true,
+            "size": "s",
+            "height": "content"
           },
           "children": [
             {

@@ -8,6 +8,7 @@ export const contract = defineContract({
     title: { kind: "message", required: true },
     closeLabel: { kind: "message", required: true },
     open: { kind: "boolean", default: false },
+    height: { kind: "enum", values: ["stable", "content"], default: "stable", description: "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)." },
     size: { kind: "enum", values: ["s", "l", "xl"], default: "l", description: "xl is the conflict resolver's: most of the window, up to layout.dialogXL." },
   },
   events: { openChange: { payload: { open: "boolean" } } },
@@ -17,6 +18,7 @@ export const contract = defineContract({
   a11y: { pattern: "modal dialog", name: "title" },
   fixtures: [
     { name: "size s", props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "s" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "height content", props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "s", height: "content" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     {
       name: "size l with toolbar",
       props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "l" },
