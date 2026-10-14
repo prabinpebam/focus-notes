@@ -37,8 +37,9 @@ export type DataFile = (typeof DATA_FILES)[keyof typeof DATA_FILES];
 
 /**
  * Chromium's working files: compiled copies of the app's own code, GPU shader caches, and web
- * storage the app never uses. `session` is Electron's `sessionData`, moved under the data folder so
- * they're in one place; Electron keeps the preload script's code cache in `codeCache`.
+ * storage the app never uses, and its crash database (`Crashpad`, never sent). `session` is
+ * Electron's `sessionData`, moved under the data folder so they're in one place, with the crash
+ * database inside it; Electron keeps the preload script's code cache in `codeCache`.
  */
 export const CHROMIUM_FOLDERS = { session: "Chromium", codeCache: "Code Cache" } as const;
 

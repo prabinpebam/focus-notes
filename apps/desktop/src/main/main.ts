@@ -6,7 +6,7 @@
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
-import { existsSync, readFileSync, realpathSync, watch, type FSWatcher } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
@@ -35,6 +35,7 @@ import { SnapshotCache } from "@focus-notes/core/snapshot";
 import { textHash } from "@focus-notes/core/journal";
 import type { RestoredNote } from "@focus-notes/core";
 import { RecoveryJournal, restoreJournal } from "./journal.ts";
+import { watchTree, type TreeWatcher } from "./watch-tree.ts";
 import { JOURNEY_WINDOW_OPTIONS, keepOutOfTheWay } from "./window/journey-window.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
@@ -47,6 +48,8 @@ if (process.env.FOCUS_NOTES_USER_DATA) app.setPath("userData", resolve(process.e
 const dataFile = (f: DataFile) => join(app.getPath("userData"), f);
 // Chromium's working files go in one folder of the data folder, which the inventory lists as one item.
 app.setPath("sessionData", join(app.getPath("userData"), CHROMIUM_FOLDERS.session));
+// Chromium's crash database too (`Crashpad`, made on macOS and Linux): nothing in it is ever sent.
+app.setPath("crashDumps", join(app.getPath("sessionData"), "Crashpad"));
 /** Where a new workspace goes unless another folder is chosen: Documents/Focus Notes. */
 const defaultHome = () => resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPath("documents"), "Focus Notes"));
 /** The workspace the first run opened (D-98), kept by the main process only: the renderer can't name a folder. */
@@ -1054,7 +1057,7 @@ app.on("web-contents-created", (_e, contents) => {
  * Events are batched for 30 ms, checked against the disk, and sent as one report (PRF-11).
  * Git's own files, dot folders, and the app's temporary files aren't reported.
  */
-function watchWorkspace(win: () => BrowserWindow | undefined): FSWatcher | undefined {
+function watchWorkspace(win: () => BrowserWindow | undefined): TreeWatcher | undefined {
   const home = notesHome();
   const formatRel = join(".focus-notes", "workspace.json");
   const pending = new Set<string>();
@@ -1093,24 +1096,20 @@ function watchWorkspace(win: () => BrowserWindow | undefined): FSWatcher | undef
   };
   try {
     // The real path: on Windows, a short (8.3) folder name makes the watcher report wrong names.
-    const w = watch(realpathSync.native(home), { recursive: true }, (_event, name) => {
-      if (!name) return;
-      const rel = name.toString();
+    return watchTree(realpathSync.native(home), (rel) => {
       const hidden = rel.split(sep).some((part) => part.startsWith(".") || part === "node_modules");
       if ((hidden && rel !== formatRel) || rel.endsWith(".tmp")) return;
       pending.add(rel);
       clearTimeout(timer);
       timer = setTimeout(() => void report(), 30);
-    });
-    w.on("error", () => w.close());
-    return w;
+    }, { hidden: [".focus-notes"] });
   } catch {
     return undefined; // No watcher (an unsupported file system): the app still works, without live updates.
   }
 }
 
 let mainWindow: BrowserWindow | undefined;
-let watcher: FSWatcher | undefined;
+let watcher: TreeWatcher | undefined;
 app.whenReady().then(async () => {
   chosenHome = readChosenHome();
   readFirstRun();

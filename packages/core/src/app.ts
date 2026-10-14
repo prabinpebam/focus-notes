@@ -344,6 +344,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
     // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).
     outside: (path, mine, theirs) => conflicts.outside(path, mine, theirs),
+    handOver: () => editorAction(FLUSH_EDITOR),
   });
 
   async function writeNow(): Promise<void> {

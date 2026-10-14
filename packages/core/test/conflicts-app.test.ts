@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createApp, titleOfMarkdown, type ConflictChoice, type DeletedNote, type NoteConflict, type PlatformBridge, type SyncReport, type WorkspaceChange, type WorkspaceOp } from "../src/index.ts";
+import { createApp, FLUSH_EDITOR, titleOfMarkdown, type ConflictChoice, type DeletedNote, type NoteConflict, type PlatformBridge, type SyncReport, type WorkspaceChange, type WorkspaceOp } from "../src/index.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 const PRIV = "/w/private/notes";
@@ -200,6 +200,21 @@ describe("D-92 and FIL-12: a file changed outside while this window had unsaved 
     // Saving (or leaving the note, or closing) asks for the choice instead of overwriting.
     expect(await app.flush()).toBe(false);
     expect(vm(app)).toMatchObject({ open: true, title: "“Welcome” changed outside Focus Notes", takeTheirs: "Take the version on disk" });
+    expect(f.files[welcome]).toBe("# Welcome\n\nWritten elsewhere.\n");
+  });
+
+  it("text the editor hasn't handed over yet is unsaved too: it's asked for first, and never replaced", async () => {
+    const f = setup();
+    const app = await started(f);
+    // The editor holds typing it hands over only when asked (or after a pause, which hasn't come).
+    app.onEditorAction((id) => {
+      if (id === FLUSH_EDITOR) void app.commands.run("note.setContent", { value: "# Welcome\n\nTyped here.\n" });
+    });
+    f.outside(welcome, "# Welcome\n\nWritten elsewhere.\n");
+    await wait(10);
+    await done(app);
+    expect(app.store.state.note.markdown).toBe("# Welcome\n\nTyped here.\n");
+    expect(lastToast(app)?.message).toBe("“Welcome” changed outside Focus Notes. Your edits are kept here, and aren't saved over it until you choose.");
     expect(f.files[welcome]).toBe("# Welcome\n\nWritten elsewhere.\n");
   });
 

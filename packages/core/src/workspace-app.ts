@@ -51,6 +51,8 @@ interface Ctx {
   format?: WorkspaceFormatOptions;
   /** The open note changed outside while it has unsaved edits: both versions go to the resolver (FIL-12). */
   outside?: (path: string, mine: string, theirs: string) => void;
+  /** Asks the editor for text it hasn't handed over yet, at once (QLT-03). */
+  handOver?: () => void;
 }
 
 export function registerWorkspaceFeatures(ctx: Ctx) {
@@ -114,6 +116,8 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
 
   async function reconcile(path: string): Promise<void> {
     const text = await bridge.readNote(path).catch(() => undefined);
+    // Typing the editor hasn't handed over yet is unsaved too: it must never be replaced (D-92).
+    ctx.handOver?.();
     const n = store.state.note;
     if (text === undefined || n.path !== path || text === n.markdown) return;
     // The watcher reports the app's own saves too.
