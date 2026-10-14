@@ -79,7 +79,16 @@ async function paste(page: Page, data: { text?: string; html?: string }) {
  */
 async function chooseByKeyboard(page: Page, name: string, menu?: string) {
   const focused = (menu ? page.getByRole("menu", { name: menu }) : page.getByRole("menu")).locator('[role^="menuitem"]:focus');
-  await expect(focused).toHaveCount(1);
+  await expect(focused).toHaveCount(1).catch(async (e: Error) => {
+    // Run 38620563582 failed here once on Windows CI only: say where focus and the menus were.
+    const where = await page.evaluate(() => {
+      const a = document.activeElement;
+      const menus = [...document.querySelectorAll('[role="menu"]')].map((m) => `${m.getAttribute("aria-label")} ${JSON.stringify(m.getBoundingClientRect())}`);
+      const hovered = [...document.querySelectorAll("[data-hovered]")].map((h) => h.textContent);
+      return `focus on ${a?.getAttribute("role")} "${a?.textContent?.slice(0, 40)}"; menus: ${menus.join(" | ")}; hovered: ${hovered.join(", ")}`;
+    });
+    throw new Error(`${e.message}\n${where}`);
+  });
   const seen = new Set<string>();
   for (let i = 0; i < 40; i++) {
     const { id, text } = await focused.evaluate((el) => ({ id: el.id, text: el.textContent ?? "" }));
