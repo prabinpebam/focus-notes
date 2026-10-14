@@ -239,6 +239,12 @@ export const LEAK_MIN_PATH = 12;
 
 /** Audience names this long or longer must never appear in the site; shorter ones ("Sam") are too common to test. */
 export const LEAK_MIN_NAME = 6;
+/**
+ * Where an audience name counts as a leak: only what the publisher generates for sealing, the keyrings
+ * (`_access/`), sealed files (`_sealed/`), and the site manifest. Public notes, their index, and their
+ * pages may mention the person by name ("Lunch with Alexander"), so they're never searched for names.
+ */
+const NAME_SCOPE = (file: string) => file.startsWith("_access/") || file.startsWith("_sealed/") || file === "focus-notes.json";
 
 /** A secret as it might be written: as stored, in Unicode NFC and NFD, and base64url as standard base64. */
 export function secretForms(secret: string): string[] {
@@ -252,7 +258,7 @@ export function secretForms(secret: string): string[] {
 
 /**
  * Every text file in the site is searched for each private note's path, each long line of its text,
- * every grant secret in each of its forms, and every audience name of LEAK_MIN_NAME characters or more (SEC-06).
+ * every grant secret in each of its forms, and (in NAME_SCOPE only) every audience name of LEAK_MIN_NAME characters or more (SEC-06).
  */
 export async function leakCheck(
   site: string, notes: { path: string; text: string }[], secrets: readonly string[] = [], names: readonly string[] = [],
@@ -272,7 +278,7 @@ export async function leakCheck(
       const body = await readFile(p, "utf8");
       const file = relative(site, p).split(sep).join("/");
       if (keys.some((x) => body.includes(x))) found.push({ file, kind: "secret" });
-      else if (audiences.some((x) => body.includes(x))) found.push({ file, kind: "name" });
+      else if (NAME_SCOPE(file) && audiences.some((x) => body.includes(x))) found.push({ file, kind: "name" });
       else if (paths.some((x) => body.includes(x))) found.push({ file, kind: "path" });
       else if (lines.some((x) => body.includes(x))) found.push({ file, kind: "text" });
     }

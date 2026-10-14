@@ -332,7 +332,7 @@ describe("security review fixes (WP-5.2)", () => {
     expect(() => validateAccess({ version: 1, grants: [{ ...g, name: " \u3000 " }] })).toThrow(/name/);
   });
 
-  it("L7: the leak check also finds secrets in standard base64 and NFC forms, and audience names of 6 characters or more", async () => {
+  it("L7: the leak check also finds secrets in standard base64 and NFC forms, and audience names of 6 characters or more in what the publisher generates", async () => {
     const secretBytes = new Uint8Array(32).fill(0xfb); // base64url "-_-_…", standard base64 "+/+/…"
     const secret = toB64url(secretBytes);
     const i = await instance(notes, [grant({ name: "Margarethe", link: { secret }, passcode: { value: "cafe\u0301 au lait sur la table" }, scope: { notes: ["n-a"] } })], { vault: true });
@@ -340,10 +340,33 @@ describe("security review fixes (WP-5.2)", () => {
     expect(std).not.toBe(secret);
     await writeFile(join(i.site, "one.js"), `x="${std}"`);
     await writeFile(join(i.site, "two.txt"), "caf\u00e9 au lait sur la table");
-    await writeFile(join(i.site, "three.html"), "<p>For Margarethe</p>");
+    await mkdir(join(i.site, "_sealed"), { recursive: true });
+    await writeFile(join(i.site, "_sealed", "stray.json"), JSON.stringify({ audience: "Margarethe" }));
     const err = await i.run().catch((e) => e);
     expect(err).toBeInstanceOf(LeakError);
-    expect(err.findings).toEqual(expect.arrayContaining([{ file: "one.js", kind: "secret" }, { file: "two.txt", kind: "secret" }, { file: "three.html", kind: "name" }]));
+    expect(err.findings).toEqual(expect.arrayContaining([{ file: "one.js", kind: "secret" }, { file: "two.txt", kind: "secret" }, { file: "_sealed/stray.json", kind: "name" }]));
     expect(err.message).not.toContain("Margarethe");
+  }, 30_000);
+
+  it("L7: an audience name in a keyring, a sealed file, or the site manifest is a leak", async () => {
+    const root = await mkdtemp(join(tmpdir(), "fn-names-"));
+    dirs.push(root);
+    for (const [file, body] of [["_access/b/l/gx.json", '{"name":"Alexander"}'], ["_sealed/b/k.json", '{"title":"For Alexander"}'], ["focus-notes.json", '{"who":"Alexander"}']] as const) {
+      await mkdir(join(root, ...file.split("/").slice(0, -1)), { recursive: true });
+      await writeFile(join(root, ...file.split("/")), body);
+    }
+    const found = await leakCheck(root, [], [], ["Alexander"]);
+    expect(found.sort((a, b) => a.file.localeCompare(b.file))).toEqual([
+      { file: "_access/b/l/gx.json", kind: "name" }, { file: "_sealed/b/k.json", kind: "name" }, { file: "focus-notes.json", kind: "name" },
+    ]);
+  });
+
+  it("L7: a public note that mentions an audience by name still deploys", async () => {
+    const i = await instance(notes, [grant({ name: "Alexander", link: { secret: toB64url(randomBytes(32)) }, scope: { notes: ["n-a"] } })], { vault: true });
+    await mkdir(join(i.root, "notes"), { recursive: true });
+    await writeFile(join(i.root, "notes", "Lunch with Alexander.md"), "# Lunch with Alexander\n\nLunch with Alexander on Friday.\n");
+    await writeFile(join(i.site, "page.html"), "<h1>Lunch with Alexander</h1>");
+    const r = await publish({ site: i.site, notes: join(i.root, "notes"), private: join(i.root, "private"), owner: "octo" });
+    expect(r).toMatchObject({ publicNotes: 1, shares: 1 });
   }, 30_000);
 });
