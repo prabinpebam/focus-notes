@@ -109,7 +109,9 @@ async function noteTimes() {
   const docs = throwawayWorkspace();
   writeFileSync(join(docs, "long.md"), tenThousandWords());
   const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
-  const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs } });
+  // Past the first run, as for the start times: it's once per install (FRE-01) and shows no note.
+  writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
+  const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9" } });
   try {
     const page = await app.firstWindow();
     const mod = process.platform === "darwin" ? "Meta" : "Control";
