@@ -3,10 +3,11 @@
  * owner's passphrase (or a key this browser remembered) opens it. Read-only by construction.
  */
 import {
-  decodeText, derivePasscodeKey, LIMITS, fromB64url, isSafePath, keyringSalt, openFile, openKeyring, parseKeyring, parseManifest,
+  decodeText, derivePasscodeKey, KDF, LIMITS, fromB64url, isSafePath, keyringSalt, openFile, openKeyring, parseKeyring, parseManifest,
   parsePublicIndex, parseSiteManifest, sealedPath, SealError, vaultPath,
-  type ManifestEntry, type PublicNote, type SiteManifest,
+  type KeyringEnvelope, type ManifestEntry, type PublicNote, type SiteManifest,
 } from "./format.ts";
+import { deriveLinkKey, GRANT_ID, LINK_KDF, linkKeyringPath, nameLookup, passcodeKeyringPath } from "./grants.ts";
 
 /** Fetches a file of the site by its path from the site's root. Resolves to undefined if it isn't there. */
 export type SiteFetch = (path: string) => Promise<string | undefined>;
@@ -62,25 +63,59 @@ export class SiteReader {
     if (text === undefined) throw new SealError("format", "no keyring");
     return { m, envelope: parseKeyring(text) };
   }
-  async #open(m: SiteManifest, envelope: ReturnType<typeof parseKeyring>, key: CryptoKey): Promise<OpenVault> {
+
+  /**
+   * Opens what a magic link shares (SHR-10). Every failure, from a missing or withdrawn grant to a
+   * wrong secret or a damaged file, is the same generic error, so it never says whether a note exists.
+   */
+  async openLink(id: string, secret: string): Promise<OpenVault> {
+    return generic(async () => {
+      const m = await this.manifest();
+      if (!m || !GRANT_ID.test(id)) throw new SealError("key");
+      const text = await this.get(linkKeyringPath(m.build, id));
+      if (text === undefined) throw new SealError("key");
+      const envelope = parseKeyring(text, LINK_KDF);
+      return this.#open(m, envelope, await deriveLinkKey(fromB64url(secret), keyringSalt(envelope)), false);
+    });
+  }
+  /** Opens what a name and passcode share (SHR-10), with the same generic error. Returns the key too, so the caller may remember it. */
+  async openPasscode(name: string, passcode: string): Promise<{ share: OpenVault; key: CryptoKey; salt: string }> {
+    return generic(async () => {
+      const m = await this.manifest();
+      if (!m?.nameSalt) throw new SealError("key");
+      const text = await this.get(passcodeKeyringPath(m.build, await nameLookup(m.nameSalt, name)));
+      if (text === undefined) throw new SealError("key");
+      const envelope = parseKeyring(text, KDF);
+      const key = await derivePasscodeKey(passcode, keyringSalt(envelope));
+      return { share: await this.#open(m, envelope, key, false), key, salt: envelope.salt };
+    });
+  }
+
+  async #open(m: SiteManifest, envelope: KeyringEnvelope, key: CryptoKey, isVault = true): Promise<OpenVault> {
     const ring = await openKeyring(envelope, key, m.build);
     const sealed = await this.get(sealedPath(m.build, ring.manifest.kid));
     if (sealed === undefined) throw new SealError("format", "no manifest");
     const manifest = parseManifest(await openFile("manifest", fromB64url(ring.manifest.key), m.build, ring.manifest.kid, sealed));
     const notes = manifest.notes.filter((n) => isSafePath(n.path));
     const byPath = new Map(notes.map((n) => [n.path, n]));
+    const missing = (path: string) => (isVault ? new Error(`No private note at ${path}`) : new SealError("key"));
     return {
       owner: manifest.owner,
       notes: notes.map(({ path, title, updated }) => ({ path, title, updated })),
       read: async (path) => {
         const entry: ManifestEntry | undefined = byPath.get(path);
-        if (!entry) throw new Error(`No private note at ${path}`);
+        if (!entry) throw missing(path);
         const text = await this.get(sealedPath(m.build, entry.kid));
-        if (text === undefined) throw new SealError("format", "missing note");
+        if (text === undefined) throw isVault ? new SealError("format", "missing note") : new SealError("key");
         return decodeText(await openFile("note", fromB64url(entry.key), m.build, entry.kid, text));
       },
     };
   }
+}
+
+/** Runs a share's opening, turning every failure into the one generic error (SHR-06). */
+async function generic<T>(open: () => Promise<T>): Promise<T> {
+  try { return await open(); } catch { throw new SealError("key"); }
 }
 
 export interface OpenVault {

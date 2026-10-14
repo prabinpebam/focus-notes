@@ -21,7 +21,7 @@ export class SealError extends Error {
   }
 }
 
-type Bytes = Uint8Array<ArrayBuffer>;
+export type Bytes = Uint8Array<ArrayBuffer>;
 const subtle = () => globalThis.crypto.subtle;
 const enc = new TextEncoder();
 const dec = new TextDecoder("utf-8", { fatal: true });
@@ -96,36 +96,46 @@ async function decrypt(key: CryptoKey, iv: string, data: string, aad: string): P
   }
 }
 
-// ---- keyrings: what a passphrase opens ----
+// ---- keyrings: what a passphrase, a passcode, or a magic link opens ----
 
-export interface KeyringEnvelope { v: 1; kdf: typeof KDF; iterations: typeof ITERATIONS; salt: string; iv: string; data: string }
+/** The two derivations a keyring may name: PBKDF2 for passphrases and passcodes, HKDF for links' random secrets. */
+export type KeyringKdf = typeof KDF | "hkdf-sha256";
+export type KeyringEnvelope =
+  | { v: 1; kdf: typeof KDF; iterations: typeof ITERATIONS; salt: string; iv: string; data: string }
+  | { v: 1; kdf: "hkdf-sha256"; salt: string; iv: string; data: string };
 export interface KeyringPayload { grant: string; expiresAt: string | null; manifest: { kid: string; key: string } }
 
-const keyringAad = (build: string, salt: string) => `focus-notes/keyring/v1|${build}|${KDF}|${ITERATIONS}|${salt}`;
+const keyringAad = (build: string, kdf: KeyringKdf, salt: string) =>
+  kdf === KDF ? `focus-notes/keyring/v1|${build}|${KDF}|${ITERATIONS}|${salt}` : `focus-notes/keyring/v1|${build}|${kdf}|${salt}`;
 
-export async function sealKeyring(passcodeKey: Bytes, salt: Bytes, build: string, payload: KeyringPayload): Promise<string> {
-  const key = await importKey(passcodeKey, "encrypt");
+/** Seals a grant's keyring with its derived key (PBKDF2 bits for passcodes, HKDF bits for links). */
+export async function sealKeyring(derivedKey: Bytes, salt: Bytes, build: string, payload: KeyringPayload, kdf: KeyringKdf = KDF): Promise<string> {
+  const key = await importKey(derivedKey, "encrypt");
   const s = toB64url(salt);
-  const body = await encrypt(key, utf8(JSON.stringify(payload)), keyringAad(build, s));
-  const envelope: KeyringEnvelope = { v: 1, kdf: KDF, iterations: ITERATIONS, salt: s, ...body };
+  const body = await encrypt(key, utf8(JSON.stringify(payload)), keyringAad(build, kdf, s));
+  const envelope: KeyringEnvelope = kdf === KDF ? { v: 1, kdf, iterations: ITERATIONS, salt: s, ...body } : { v: 1, kdf, salt: s, ...body };
   return JSON.stringify(envelope);
 }
 
-/** Checks a keyring strictly before any slow work: only our exact parameters are accepted. */
-export function parseKeyring(text: string): KeyringEnvelope {
+/**
+ * Checks a keyring strictly before any slow work: only our exact parameters for the derivation the
+ * caller expects are accepted (the vault and passcodes PBKDF2, links HKDF), so it can't be downgraded.
+ */
+export function parseKeyring(text: string, kdf: KeyringKdf = KDF): KeyringEnvelope {
   if (text.length > LIMITS.keyring) throw new SealError("format", "keyring too large");
-  let e: Partial<KeyringEnvelope>;
+  let e: Partial<Record<string, unknown>>;
   try { e = JSON.parse(text); } catch { throw new SealError("format", "not JSON"); }
   const keys = Object.keys(e ?? {}).sort().join(",");
-  if (keys !== "data,iterations,iv,kdf,salt,v" || e.v !== 1 || e.kdf !== KDF || e.iterations !== ITERATIONS) throw new SealError("format", "keyring parameters");
-  if (fromB64url(e.salt!).length !== SALT_BYTES || fromB64url(e.iv!).length !== IV_BYTES) throw new SealError("format", "keyring sizes");
-  fromB64url(e.data!);
-  return e as KeyringEnvelope;
+  const exact = kdf === KDF ? keys === "data,iterations,iv,kdf,salt,v" && e.iterations === ITERATIONS : keys === "data,iv,kdf,salt,v";
+  if (!exact || e.v !== 1 || e.kdf !== kdf) throw new SealError("format", "keyring parameters");
+  if (fromB64url(e.salt as string).length !== SALT_BYTES || fromB64url(e.iv as string).length !== IV_BYTES) throw new SealError("format", "keyring sizes");
+  fromB64url(e.data as string);
+  return e as unknown as KeyringEnvelope;
 }
 export const keyringSalt = (e: KeyringEnvelope) => fromB64url(e.salt);
 
 export async function openKeyring(e: KeyringEnvelope, key: CryptoKey, build: string): Promise<KeyringPayload> {
-  const plain = await decrypt(key, e.iv, e.data, keyringAad(build, e.salt));
+  const plain = await decrypt(key, e.iv, e.data, keyringAad(build, e.kdf, e.salt));
   let p: KeyringPayload;
   try { p = JSON.parse(dec.decode(plain)) as KeyringPayload; } catch { throw new SealError("format", "keyring payload"); }
   if (typeof p?.grant !== "string" || typeof p.manifest?.kid !== "string" || !KID.test(p.manifest.kid) || typeof p.manifest.key !== "string") throw new SealError("format", "keyring payload");
@@ -172,7 +182,8 @@ export const encodeText = utf8;
 
 // ---- the public side ----
 
-export interface SiteManifest { format: 1; build: string; notes: string; vault: boolean }
+/** `nameSalt`: the workspace's public salt for passcode keyrings' names, present when there are any (WP-5.2). */
+export interface SiteManifest { format: 1; build: string; notes: string; vault: boolean; nameSalt?: string }
 export interface PublicNote { path: string; title: string; updated: string }
 export interface PublicIndex { format: 1; notes: PublicNote[] }
 
@@ -183,7 +194,8 @@ export function parseSiteManifest(text: string): SiteManifest {
   if (text.length > LIMITS.site) throw new SealError("format", "site manifest too large");
   let m: SiteManifest;
   try { m = JSON.parse(text) as SiteManifest; } catch { throw new SealError("format", "site manifest"); }
-  if (m?.format !== 1 || typeof m.build !== "string" || !BUILD.test(m.build) || m.notes !== PUBLIC_INDEX || typeof m.vault !== "boolean") {
+  if (m?.format !== 1 || typeof m.build !== "string" || !BUILD.test(m.build) || m.notes !== PUBLIC_INDEX || typeof m.vault !== "boolean"
+    || (m.nameSalt !== undefined && (typeof m.nameSalt !== "string" || !/^[A-Za-z0-9_-]{22,86}$/.test(m.nameSalt)))) {
     throw new SealError("format", "site manifest");
   }
   return m;
