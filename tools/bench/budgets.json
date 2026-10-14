@@ -34,6 +34,18 @@
     "PRF-03.saveAfterTypingMs": {
       "budget": 1000,
       "unit": "ms"
+    },
+    "SPT-07.openMs": {
+      "budget": 50,
+      "unit": "ms"
+    },
+    "SPT-07.titleQueryP95Ms": {
+      "budget": 16,
+      "unit": "ms"
+    },
+    "SPT-07.fullTextP95Ms": {
+      "budget": 100,
+      "unit": "ms"
     }
   },
   "baselinePlatform": "win32",

@@ -144,7 +144,13 @@ async function noteTimes() {
   }
 }
 
-const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()), ...(await noteTimes()) } };
+// SPT-07: the search index on the 5,000-note fixture, through its worker's messages (search.ts).
+async function searchTimes() {
+  const { measureSearch } = await import(pathToFileURL(join(import.meta.dirname, "search.ts")).href);
+  return measureSearch(runs);
+}
+
+const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()), ...(await noteTimes()), ...(await searchTimes()) } };
 mkdirSync(join(root, "test-results"), { recursive: true });
 writeFileSync(join(root, "test-results", "bench.json"), JSON.stringify(report, null, 2));
 
@@ -161,7 +167,8 @@ for (const [name, value] of Object.entries(report.measures)) {
   const over = b && value > b.budget * margin;
   const regressed = b && base != null && !arg("--write-baseline") && (b.noiseAbsolute != null ? value - base > b.noiseAbsolute : value > base * (1 + b.noise));
   if (over || regressed) failed = true;
-  console.log(`${over || regressed ? "✗" : "✓"} ${name}: ${value}${b?.unit ?? ""} (budget ${b?.budget * margin}${b?.unit ?? ""}${margin !== 1 ? ", CI margin" : ""})${change}`);
+  const limit = b ? `budget ${b.budget * margin}${b.unit ?? ""}${margin !== 1 ? ", CI margin" : ""}` : "reported only";
+  console.log(`${over || regressed ? "✗" : "✓"} ${name}: ${value}${b?.unit ?? ""} (${limit})${change}`);
 }
 if (arg("--write-baseline")) {
   for (const [name, value] of Object.entries(report.measures)) if (budgets.measures[name]) budgets.measures[name].baseline = value;
