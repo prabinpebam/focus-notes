@@ -181,6 +181,35 @@
   <li><strong>The loop ends</strong> when the <a href="definition-of-done.md#project-definition-of-done">project definition of done</a> is met, and not before.</li>
 </ul>
 
+<h2 id="throughput" data-reader-personas="engineering product">Throughput</h2>
+<p>The loop optimizes <strong>validated progress toward the definition of done per hour</strong>, not completeness per task (D-113). Four rules decide what runs and when.</p>
+<h3>1. Serve the constraint</h3>
+<p>At any moment one thing limits progress, and everything else waits behind it.</p>
+<table>
+  <thead><tr><th>Stage of development</th><th>The constraint</th><th>Optimize</th><th>Defer</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Owner trying the app</strong> (now, Windows first, D-112)</td><td>The owner's feedback: only what they can run can be judged</td><td>Time from a report to a fix the owner can see (target 15 minutes); fixes the owner can see per hour</td><td>Full guard suites, benchmarks, other platforms, completeness of later work packages</td></tr>
+    <tr><td>Building features</td><td>Correct behavior of new capability</td><td>Work packages accepted per day</td><td>Polishing UI nobody has seen yet</td></tr>
+    <tr><td>Stage gate</td><td>Evidence that the definition of done is met</td><td>Gate pass rate</td><td>New features</td></tr>
+    <tr><td>Release</td><td>Every platform and the release bar</td><td>Defects closed</td><td>Scope</td></tr>
+  </tbody>
+</table>
+<h3>2. Run each check at the right time</h3>
+<p>The definition of done never weakens; its checks are scheduled by cost and risk (<a href="definition-of-done.md#when-checks-run">Definition of done → When checks run</a>). A change is checked in minutes by what it touches; the full Windows suite runs on every merge in the background and on CI, without blocking the owner; everything runs at the stage gate and the release. Data safety and security changes are the exception: their full checks run before they merge.</p>
+<h3>3. Small batches, short time-boxes, nothing long-lived</h3>
+<ul>
+  <li>A builder task is one deliverable, time-boxed at <strong>45 minutes</strong>. At the time-box it merges what works and reports, even if partial.</li>
+  <li>Branches live at most about an hour and merge to <code>main</code> at once. Merge debt is waste.</li>
+  <li>At most two builders at a time, on areas that don't overlap; one while the owner is testing, so the machine stays quiet and measurements stay clean.</li>
+  <li>Owner feedback goes into a queue, ordered by impact, and becomes the next small task. It never widens a task that's running.</li>
+</ul>
+<h3>4. Measure, show, and challenge</h3>
+<ul>
+  <li><strong>Measures:</strong> time from report to visible fix; merges per hour; share of builder time spent verifying versus building; minutes CI is red; requirements moved to verifying per day.</li>
+  <li><strong>Visible:</strong> builders log a timestamped line for every step to one progress log the owner can watch live.</li>
+  <li><strong>Challenged:</strong> every 30 minutes while work is running, an independent <strong>throughput reviewer</strong> agent attacks the current approach: is the work on the constraint, is anything over its time-box, are checks running that this stage doesn't need, is merge debt building, is feedback waiting, and what's the fastest path to the next thing the owner can see. The orchestrator acts on each finding or records why not, and each review adds a line to the progress log.</li>
+</ul>
+
 <h2 data-reader-personas="product engineering">Plan decisions</h2>
 
 <table>
