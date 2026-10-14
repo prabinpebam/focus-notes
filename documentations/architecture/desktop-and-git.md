@@ -36,16 +36,18 @@ The app never runs an OAuth flow of its own. It asks **Git** for a GitHub creden
 
 | Path | When it's offered | How it works |
 | --- | --- | --- |
-| **Existing sign-in** | Always checked first | `git credential fill` for `github.com` with prompts turned off. If it returns a credential that GitHub accepts, setup offers *Continue as @login*. |
-| **Git Credential Manager** (default on Windows, where it comes with Git for Windows) | GCM is the configured helper | The app runs `git credential fill` with prompts allowed. GCM shows its own GitHub sign-in: a browser sign-in, or a **device code** (the app passes the device-code mode for that one call when the user picks *Use a code instead*). GCM keeps the credential in the OS's secure storage. |
-| **GitHub CLI** | `gh` is installed | The app runs `gh auth login --web --git-protocol https --scopes workflow` and reads the **one-time code** it prints, shows it in the app's own screen, and opens `github.com/login/device`. When `gh` finishes, the app runs `gh auth setup-git` so Git uses it as its credential helper. |
-| **Fine-grained token** | Always available as an alternative | A button opens GitHub's token page with the fields **pre-filled** (GitHub's template links for fine-grained tokens): name "Focus Notes", the user's workspace and private repositories, and the permissions in the table below. The user creates it and pastes it. The app stores it with `git credential approve` in the user's secure helper. |
+| **Existing sign-in** | Always checked first | `git credential fill` for `github.com` with prompts turned off. If it returns a credential that `GET /user` accepts, the first run offers *Continue as @login* and no device code. Otherwise, if the GitHub CLI is signed in (`gh auth token`), that account is offered the same way, and *Continue* runs `gh auth setup-git` so Git uses it too (FRE-04). |
+| **Git Credential Manager** (default on Windows, where it comes with Git for Windows) | GCM is the configured helper (`manager`, `manager-core`, or its path) | The app runs GCM's own `git-credential-manager github login --browser`, or `--device` for *Use a code instead*. The program is found on `PATH` or in Git's own folders (`git --exec-path`, where Git for Windows keeps it). GCM signs in with its own window; when it prints a code, the app shows it, otherwise it says "Enter the code shown by Git Credential Manager". GCM keeps the credential in the OS's secure storage. |
+| **GitHub CLI** | `gh` is installed and GCM isn't the helper | The app runs `gh auth login --web --hostname github.com --git-protocol https --scopes workflow` with its prompts off, reads the **one-time code** it prints, and shows it in large type with *Copy code and open GitHub* (`github.com/login/device`). When `gh` finishes, the app runs `gh auth setup-git` so Git uses it as its credential helper. |
+| **Fine-grained token** | Always available as an alternative | *Create a token on GitHub* opens GitHub's token page with its fields **pre-filled** by URL: name "Focus Notes", a description, 90 days, and Contents, Administration, Pages, Secrets, and Workflows set to read and write. The user chooses the repositories (a link can't), creates it, and pastes it. The main process checks it with `GET /user`, then gives it to the user's helper with `git credential approve` on standard input. If Git doesn't answer with it afterwards (no helper keeps it), it's refused: the app never sets up the plaintext `store` helper. |
+
+Sign-in programs are started with an argument list of fixed words (never a token, name, or path) and never through a shell; on Windows a `.cmd` shim from a package manager runs through `cmd.exe` with only those words. Their prompts are off (`GIT_TERMINAL_PROMPT=0`, `GH_PROMPT_DISABLED=1`). A sign-in that ends without an account says why: **declined** on GitHub, the code **expired** (also after 16 minutes), GitHub **offline**, the token **invalid**, **no helper** to keep a token, or **failed**. Each offers *Try again* without restarting, and *Cancel* or <kbd>Esc</kbd> stops a sign-in that's waiting (D-101).
 
 If no helper is installed (common on macOS and Linux), setup shows one-line install commands: for example `brew install --cask git-credential-manager` or `brew install gh` on macOS, and the distribution's `gh` package on Linux. The token path is offered alongside so nothing has to be installed.
 
 ### Getting API access
 
-The app needs the GitHub REST API for a few things: listing and creating repositories, GitHub Pages status, deploy keys, and repository secrets. It takes the token from Git each time it needs one: `git credential fill`, or `gh auth token` when the GitHub CLI is the helper. It keeps it **in memory only**, never on disk, and asks again after a restart. There's one place the credential lives, and it belongs to the user.
+The app needs the GitHub REST API for a few things: listing and creating repositories, GitHub Pages status, deploy keys, and repository secrets. It takes the token from Git when it first needs one in a session: `git credential fill` (which asks the GitHub CLI too when it's Git's helper). It keeps it **in the main process's memory only**, never on disk or in the renderer, and asks again after a restart or after GitHub refuses it. There's one place the credential lives, and it belongs to the user.
 
 ### Permissions
 
@@ -57,7 +59,11 @@ The app needs the GitHub REST API for a few things: listing and creating reposit
 
 ### Signing out
 
-**Settings → Account → Sign out** runs `git credential reject` for `github.com` (which removes GCM's or a token's stored credential), or `gh auth logout` when the GitHub CLI is the helper. The screen says that this signs out Git in the terminal too, and links to GitHub's settings to revoke a token or authorization completely.
+*Sign out of GitHub*, in the account pill's menu, runs `git credential reject` for `github.com` and the login (which removes GCM's or a token's stored credential), and `gh auth logout` too when the GitHub CLI is the helper. The toast says this signs Git out in the terminal too. **Settings → Account**, with a link to GitHub's settings to revoke a token or authorization completely, and *Switch account*, come later (D-101).
+
+### The workspace folder
+
+The first run's workspace is the main process's to choose, never the renderer's (D-98): a new or cloned workspace goes in `Documents/Focus Notes`, or in a folder picked with the system's dialog, which must be empty or new; *Open a folder* picks an existing clone the same way, and it must be a clone's top folder with `.focus-notes/workspace.json`. Cloning fetches `private/` (on `main`, with `push.recurseSubmodules=check`) when the account can reach it; otherwise the workspace has public notes only, and no *Private* root. Once chosen, the folder is kept in `workspace.json` in the app's data folder, the file watcher and Git move to it, and the window starts again in it.
 
 ## Creating a workspace
 

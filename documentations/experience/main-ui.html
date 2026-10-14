@@ -95,7 +95,7 @@
   <li><strong>Empty note.</strong> A new note shows one placeholder line in the subdued text color: "Start writing, type / for blocks, or press ⌘/ or Ctrl+/". Nothing else appears.</li>
   <li><strong>Account pill</strong> (UI-12, D-89, D-90). In the bottom-left corner, a small pill in muted caption text with no fill, barely there until pointed at.
     <ul>
-      <li><strong>Desktop:</strong> the signed-in GitHub login. Pressing it opens a small menu: the sync status, <em>Sync now</em>, and <em>Sign out</em>.</li>
+      <li><strong>Desktop:</strong> the GitHub login Git is signed in as, <em>@login</em>, with <em>· Not synced</em> after it while saving to GitHub has a problem. Pressing it opens a small menu: the sync status (<em>Saved to GitHub</em> or <em>Not synced yet</em>), <em>Sync now</em> (the same as Save), and <em>Sign out of GitHub</em>, which signs Git out on this computer, the terminal included. It's checked once the workspace is a Git repository, never before the first frame, and is hidden when Git isn't signed in (D-101).</li>
       <li><strong>Browser, site with private notes:</strong> a quiet <em>Unlock</em> link that opens the passphrase dialog (<a href="../architecture/web-app.md#unlocking-private-notes">Web app → Unlocking private notes</a>). Once unlocked it shows the owner's name, and its menu offers <em>Lock</em> and <em>Forget this browser</em>.</li>
       <li>Hidden where neither applies (a browser on a site without private notes).</li>
     </ul>
