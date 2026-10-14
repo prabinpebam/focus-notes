@@ -549,10 +549,14 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
     // The Snap Layouts picker, opened by keyboard from the toolbar's Tab order, never covers the
     // open trigger toolbar: one floating thing at a time in the title bar (D-119).
     const picker = surfaces.find((e) => e.querySelector("[data-zone]"));
-    for (const panel of surfaces.filter((x) => x.getAttribute("data-surface") === "panel" && x.hasAttribute("data-morph-panel"))) {
+    // The open toolbar's shape and anything in it that shows (its content can show without it).
+    for (const panel of [...document.querySelectorAll("[data-morph-panel][data-open]")]) {
       if (!picker) break;
-      const a = rect(picker), b = rect(panel);
-      if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) out.push(`one floating thing at a time: ${nameOf(picker)} at ${box(a)} covers ${nameOf(panel)} at ${box(b)}`);
+      const a = rect(picker);
+      for (const part of [panel, ...panel.querySelectorAll("button")].filter(shown)) {
+        const b = rect(part);
+        if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) { out.push(`one floating thing at a time: ${nameOf(picker)} at ${box(a)} covers ${nameOf(part)} of the open toolbar at ${box(b)}`); break; }
+      }
     }
     // Scrolled text never meets the trigger: where a line passes the trigger, it's under the solid
     // part of the note's top edge (all of it but the fade), so the dot never sits on readable text.
