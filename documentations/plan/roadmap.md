@@ -32,6 +32,8 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 
 **M4 is built and verifying** (D-107 to D-111): a search index in a worker reads every note, its headings, the commands, and the settings, and keeps up as notes change (WP-4.1). **Spotlight** (<kbd>Mod</kbd>+<kbd>/</kbd>) is one ranked list of notes, headings, text, folders, commands, and settings, with live states, quick actions, modes and prefixes, and quick open (<kbd>Mod</kbd>+<kbd>P</kbd>); with the field empty it is the action center, listing every action after recent notes, so the arrow keys and <kbd>Enter</kbd> run any of them (WP-4.2, D-109, D-111). **Find in all notes** (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>) lists every match with its note and opens each in place (WP-4.3, D-110), in the same ResultList as Spotlight. The **theme manager** previews and chooses themes, edits a theme's colors behind a contrast guard with a one-click fix, and sets reading preferences, from Settings → Appearance (WP-4.5, D-108). On the macOS menu bar Spotlight is in Go and File, Find in all notes in Edit → Find, and Theme… in View. WP-4.1, WP-4.2, WP-4.3, and WP-4.5 await verification; the power shortcut layer (WP-4.4) is next.
 
+**Windows first** (D-112): until the owner has used and accepted the Windows app, only Windows must pass; macOS and Linux run in CI without blocking, and a platform parity pass comes before any macOS or Linux release.
+
 ## Staging principles
 
 1. **Usable, not just visible.** Each stage ends with an installable build that does a real job end to end, not a set of component demos.

@@ -33,7 +33,7 @@ A work package can start only when all of these are true:
 | Area | Done means | Evidence |
 | --- | --- | --- |
 | **Behavior** | Every acceptance check for its requirements is automated and passes. Manual checks are allowed only where automation is impossible (for example a screen reader pass), and are scripted and recorded. | Test names and results, mapped to requirement IDs |
-| **No regressions** | All earlier tests and journey tests pass on Windows, macOS, and Linux. | CI run |
+| **No regressions** | All earlier tests and journey tests pass on Windows (required). macOS and Linux run, but don't block, until the platform parity pass ([D-112](decisions.md)). | CI run |
 | **Design system** | `ui:check` passes. No raw values, markup, or styles outside the allowed places. Any new component or token went through the [component process](../design/system/overview.html#adding-or-changing-a-component). Every new variant and state has a fixture and an approved visual baseline. | CI run, gallery link, baseline approvals |
 | **Visual quality** | Every new or changed surface passes the [visual quality checklist](../design/foundations.md#visual-quality): inside the window, never edge to edge, inside its container, uniform padding, gaps between items, fading scroll edges, aligned rows, grouped spacing, and anchored tooltips. Its geometry rules are checked in journeys at the default window size and at the minimum (480 × 360), and it's reviewed critically in screenshots in a light and a dark theme. | Journey results, screenshots |
 | **Accessibility** | Zero axe violations. Keyboard path tested for each new interaction. Accessible names present. Focus order and focus return checked. | Test results, keyboard journey test |
@@ -43,14 +43,14 @@ A work package can start only when all of these are true:
 | **Licensing** | The license check passes and new notices are in `THIRD_PARTY_NOTICES`. | CI run |
 | **Docs and traceability** | The spec pages describe exactly what was built. Any deviation is recorded as a decision. The work graph status is updated. | Docs diff, decision IDs |
 | **Reviews** | The reviews the work package lists (code, design system, accessibility, security) approve, and the owner approves anything the [escalation rules](agentic-loop.html#escalation) name. | Approvals |
-| **Integrated** | Merged to `main`, and the nightly build from that commit installs and starts on all three platforms. | Nightly build link |
+| **Integrated** | Merged to `main`, and the nightly build from that commit installs and starts on Windows; macOS and Linux report without blocking until the platform parity pass ([D-112](decisions.md)). | Nightly build link |
 
 <h2 id="stage-definition-of-done" data-reader-personas="product engineering">Stage definition of done</h2>
 
 Every stage, in addition to its own exit criteria in the [implementation plan](implementation-plan.md):
 
 1. **All work packages Done**, and every requirement in the stage passes its acceptance checks.
-2. **The demo script passes** on clean Windows 11, macOS (current release), and Ubuntu LTS machines, installed from the stage's preview build, run by the owner.
+2. **The demo script passes** on a clean Windows 11 machine, installed from the stage's preview build, run by the owner. macOS (current release) and Ubuntu LTS are covered at the platform parity pass ([D-112](decisions.md)).
 3. **The demo is automated.** The demo script is an end-to-end journey test, and it joins the regression suite for every later build.
 4. **All earlier journeys pass.** Nothing a previous stage delivered has regressed.
 5. **No S1 or S2 defects open** in anything shipped so far. S3 defects have an owner and a planned stage.
@@ -83,7 +83,7 @@ The product-wide quality bar. It applies to every public release, for everything
 | **Private** | A network capture across every journey shows only the allowed destinations. No telemetry. Signing out or removing a workspace deletes exactly what the data inventory lists. | Capture report, inventory test |
 | **Accessible** | WCAG 2.2 AA across the app (including the visitor view, *Unlock*, and *Use this app for yourself*), public and shared pages, and these docs. Every scenario can be completed with the keyboard alone, and with NVDA, Narrator, VoiceOver (macOS and iPadOS), and Orca. Windows contrast themes, 200% zoom, and 320 px reflow work. | Audit record, screen-reader journey scripts |
 | **International** | IME, dead-key, AltGr, and non-Latin layout suites pass. Right-to-left notes render and edit correctly. Pseudo-localized builds (40% longer, accented strings) show no clipping or truncation. | Input suites, pseudo-localization screenshots |
-| **Installable and updatable** | Clean installs pass on the whole support matrix. Updating from the previous release keeps every note and setting. Uninstalling leaves only what the docs say. Release assets have checksums, an SBOM, and attestations that verify. | Install matrix report, update test, `gh attestation verify` |
+| **Installable and updatable** | Clean installs pass on the whole support matrix: Windows until the platform parity pass, and macOS and Linux only after it, before any release for them ([D-112](decisions.md)). Updating from the previous release keeps every note and setting. Uninstalling leaves only what the docs say. Release assets have checksums, an SBOM, and attestations that verify. | Install matrix report, update test, `gh attestation verify` |
 | **Usable** | Five people new to Focus Notes, in a moderated test: at least four write their first note in the browser, and finish the desktop setup and save a note to GitHub, each in five minutes or less without help, and the average System Usability Scale score is 80 or higher. | Usability test notes |
 | **Documented** | Docs describe the release exactly. Release notes, the privacy statement, and `SECURITY.md` are current. | Docs review |
 | **Licensed** | The license check passes and `THIRD_PARTY_NOTICES` is complete. | CI run |
