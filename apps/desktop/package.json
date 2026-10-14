@@ -19,6 +19,7 @@
     "icon": "node scripts/icon.mjs"
   },
   "devDependencies": {
+    "@electron/fuses": "1.8.0",
     "@playwright/test": "1.63.0",
     "axe-core": "4.14.0",
     "@vanilla-extract/vite-plugin": "5.2.6",
@@ -46,6 +47,14 @@
       "package.json"
     ],
     "asar": true,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableCookieEncryption": true,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    },
     "extraResources": [
       { "from": "../../THIRD_PARTY_NOTICES.md", "to": "THIRD_PARTY_NOTICES.md" },
       { "from": "../../LICENSE", "to": "LICENSE.txt" }

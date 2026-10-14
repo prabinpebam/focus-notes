@@ -10,6 +10,7 @@ import { views, pages, fragments, messages } from "@focus-notes/views";
 import { tokenGroups } from "@focus-notes/tokens";
 import { checkUi, checkFixtureCoverage } from "../check.ts";
 import { buildUiSchema } from "../schema.ts";
+import { missingMigrations, UI_SCHEMA_MAJOR } from "../migrate.ts";
 import { galleryViews, registerGallery } from "../gallery.ts";
 
 const inertBridge: PlatformBridge = {
@@ -39,13 +40,15 @@ const inputs = {
 
 const problems = checkUi(inputs);
 const coverage = checkFixtureCoverage(contracts);
+// A major bump ships with the migration from the major before it (DSY-10).
+for (const m of missingMigrations()) problems.push({ doc: `UI schema v${m}`, stage: "schema", at: "/", message: `no migration to v${m + 1}` });
 for (const p of problems) console.error(`✗ ${p.doc} [${p.stage}] ${p.at}: ${p.message}`);
 for (const c of coverage) console.error(`✗ fixtures: ${c}`);
 
 if (process.argv.includes("--write")) {
   const out = join(import.meta.dirname, "..", "..", "..", "..", "schemas", "ui");
   mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, "view.v1.json"), JSON.stringify(buildUiSchema(inputs), null, 2) + "\n");
+  writeFileSync(join(out, `view.v${UI_SCHEMA_MAJOR}.json`), JSON.stringify(buildUiSchema(inputs), null, 2) + "\n");
   writeFileSync(join(out, "contracts.v1.json"), JSON.stringify({ version: 1, contracts }, null, 2) + "\n");
   console.log(`Wrote ${out}`);
 }

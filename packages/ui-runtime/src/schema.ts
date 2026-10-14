@@ -3,6 +3,7 @@
  * Views and fragments are validated against it by ui:check, and it's published for agents.
  */
 import type { Contract, PropSpec } from "@focus-notes/ui/contracts";
+import { UI_SCHEMA_MAJOR, VIEW_SCHEMA_URL } from "./migrate.ts";
 
 export interface SchemaInputs {
   contracts: readonly Contract[];
@@ -88,13 +89,14 @@ export function buildUiSchema({ contracts, icons, tokenGroups }: SchemaInputs): 
   };
   return {
     $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+    $id: VIEW_SCHEMA_URL,
     title: "Focus Notes view document",
     type: "object",
     required: ["$schema", "id", "viewModels", "root"],
     additionalProperties: false,
     properties: {
-      $schema: { type: "string" },
+      // The UI schema's version, checked and migrated before validation (DSY-10).
+      $schema: { const: VIEW_SCHEMA_URL, description: `UI schema v${UI_SCHEMA_MAJOR}: views written for an older major are migrated, newer ones refused.` },
       id: { type: "string", pattern: "^[a-z][A-Za-z0-9.]*$" },
       ia: { type: "string", pattern: "^IA-(VIEW|CMP)-[A-Z]+$" },
       viewModels: { type: "array", items: { type: "string", pattern: "^vm\\.[a-z][A-Za-z0-9]*$" } },

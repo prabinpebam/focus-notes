@@ -12,7 +12,8 @@
   "additionalProperties": false,
   "properties": {
     "$schema": {
-      "type": "string"
+      "const": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+      "description": "UI schema v1: views written for an older major are migrated, newer ones refused."
     },
     "id": {
       "type": "string",

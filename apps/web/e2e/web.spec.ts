@@ -43,6 +43,20 @@ async function unlock(page: Page, button: "Unlock" | "Unlock and remember") {
   await expect(dialog).toBeHidden({ timeout: 15_000 });
 }
 
+test("PKG-07: the app asks the browser to keep its storage and says plainly that clearing the site's data deletes the notes", async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = window as unknown as { persistCalls: number };
+    w.persistCalls = 0;
+    if (navigator.storage) navigator.storage.persist = async () => { w.persistCalls++; return true; };
+  });
+  await noInstance(page);
+  await page.goto("./");
+  await expect(editor(page)).toContainText("Welcome to Focus Notes");
+  expect(await page.evaluate(() => (window as unknown as { persistCalls: number }).persistCalls)).toBeGreaterThanOrEqual(1);
+  await expect(editor(page)).toContainText("Clearing this site's data in your browser deletes these notes.");
+  await expect(editor(page)).toContainText("export them, or write in the desktop app");
+});
+
 // PKG-05: the web app runs from the site alone, holds no GitHub credential, and talks only to its own site.
 // MW demo, step 2: write with no account, reload, go offline.
 test("your notes stay in this browser: written with no account, kept across reloads and offline", async ({ page, context }) => {
@@ -120,7 +134,8 @@ test("a visitor sees the public notes read-only and how to use the app for thems
   await open.getByRole("option", { name: /Reading list/ }).click();
   await expect(editor(page)).toContainText("Books I want to read");
 
-  // Use this app for yourself explains the model and goes only to GitHub's own pages (DST-01).
+  // Use this app for yourself explains the model and goes only to GitHub's own pages (DST-01), and
+  // its copy button opens the template repository, not the source (DST-02).
   await c.getByRole("button", { name: "Use this app for yourself" }).click();
   const about = page.getByRole("dialog", { name: "Use this app for yourself" });
   await expect(about).toContainText("Nothing here is shared with you");

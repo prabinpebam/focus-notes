@@ -17,6 +17,8 @@ const WELCOME = `# Welcome to Focus Notes
 
 This note lives in this browser, and so does everything you write here. It's saved as you type and works offline. Nothing is sent anywhere.
 
+**Clearing this site's data in your browser deletes these notes.** The app has asked the browser to keep them, but only you can keep them safe: export them, or write in the desktop app.
+
 - Press **Ctrl+.** (or click the red dot) for the toolbar.
 - Press **Ctrl+Shift+/** for every keyboard shortcut.
 - To keep your notes in your own GitHub repository, use the desktop app: it saves there, and this site shows them. Bring notes from here with **Export my notes** in the toolbar's ⋯ menu.
