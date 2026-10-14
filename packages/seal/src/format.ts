@@ -204,6 +204,28 @@ export const vaultPath = (build: string) => `_access/${build}/vault.json`;
 export const sealedPath = (build: string, kid: string) => `_sealed/${build}/${kid}.json`;
 /** A note's title: its first heading, else its file name. */
 export function titleOf(path: string, text = ""): string {
-  const h = /^#{1,6}[ \t]+(.+?)[ \t#]*$/m.exec(text);
-  return (h?.[1] ?? path.split("/").at(-1)!.replace(/\.(md|markdown)$/i, "")).trim();
+  return (headingText(text) ?? path.split("/").at(-1)!.replace(/\.(md|markdown)$/i, "")).trim();
+}
+/**
+ * The first heading's text, scanned line by line in linear time: what
+ * `/^#{1,6}[ \t]+(.+?)[ \t#]*$/m.exec(text)?.[1]` found, without its backtracking.
+ */
+function headingText(text: string): string | undefined {
+  for (const line of text.split(/[\n\r\u2028\u2029]/)) {
+    let hashes = 0;
+    while (line[hashes] === "#") hashes++;
+    if (hashes < 1 || hashes > 6) continue;
+    let start = hashes;
+    while (line[start] === " " || line[start] === "\t") start++;
+    if (start === hashes) continue;
+    if (start === line.length) {
+      // Only spaces: the lazy group takes the last of them, when there are two or more.
+      if (start - hashes >= 2) return line[start - 1];
+      continue;
+    }
+    let end = line.length;
+    while (end > start && (line[end - 1] === " " || line[end - 1] === "\t" || line[end - 1] === "#")) end--;
+    return line.slice(start, Math.max(end, start + 1));
+  }
+  return undefined;
 }

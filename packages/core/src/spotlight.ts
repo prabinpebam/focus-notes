@@ -6,6 +6,7 @@
  */
 import type { MatchTier, Range, SearchHit, SearchKind } from "./search/types.ts";
 import type { RootId, Visibility } from "./workspace.ts";
+import { trimWhere } from "./scan.ts";
 
 /** What Spotlight searches, shown as the chip at the start of the field (Spotlight → Anatomy). */
 export type SpotlightMode = "all" | "notes" | "commands" | "headings" | "help";
@@ -47,7 +48,7 @@ export function parseFilters(query: string): { text: string; filters: Filters } 
     const kind = m?.[1]!.toLowerCase();
     const value = m?.[2] ?? "";
     if (kind === "is" && (value === "public" || value === "private")) (filters.roots ??= []).push(value);
-    else if (kind === "in" && value) filters.within = value.replace(/^\/+|\/+$/g, "");
+    else if (kind === "in" && value) filters.within = trimWhere(value, (c) => c === "/");
     else if (kind === "type" && TYPES[value.toLowerCase()]) (filters.kinds ??= []).push(TYPES[value.toLowerCase()]!);
     else words.push(w);
   }

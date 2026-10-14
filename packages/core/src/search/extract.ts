@@ -4,6 +4,7 @@
  * for full-text matches and their snippets. Line based and forgiving: it never throws.
  */
 import { titleOfMarkdown } from "../workspace.ts";
+import { isTableRule, parseAtx, stripAngles, stripLinks, stripUnderscores } from "../scan.ts";
 
 export interface NoteFields {
   title?: string;
@@ -16,17 +17,11 @@ export interface NoteFields {
 }
 
 const FENCE = /^ {0,3}(`{3,}|~{3,})/;
-const ATX = /^ {0,3}(#{1,6})(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/;
 const SETEXT = /^ {0,3}(=+|-+)[ \t]*$/;
 
 /** A line's inline Markdown as plain words: links and images keep their text, marks go. */
 export function plainInline(s: string): string {
-  return s
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/<(https?:\/\/[^>\s]+|mailto:[^>\s]+)>/g, "$1")
-    .replace(/<\/?[A-Za-z][^>]*>/g, " ")
-    .replace(/[*`]|~~|==/g, "")
-    .replace(/(^|\s)_+|_+(?=\s|$)/g, "$1")
+  return stripUnderscores(stripAngles(stripLinks(s)).replace(/[*`]|~~|==/g, ""))
     // A backslash ending a line is a line break, not text.
     .replace(/\\$/, "")
     .replace(/\\([\\`*_{}[\]()#+\-.!|~])/g, "$1")
@@ -63,11 +58,11 @@ export function extractNote(markdown: string): NoteFields {
       fence = f;
       continue;
     }
-    const atx = ATX.exec(line);
+    const atx = parseAtx(line);
     if (atx) {
-      const text = plainInline(atx[2] ?? "");
+      const text = plainInline(atx.text ?? "");
       if (text) {
-        headings.push({ text, level: atx[1]!.length });
+        headings.push({ text, level: atx.level });
         out.push(text);
       }
       continue;
@@ -83,7 +78,7 @@ export function extractNote(markdown: string): NoteFields {
       }
     }
     // Block marks: quotes, list markers, tasks, and table pipes and rules.
-    if (/^ {0,3}([-*_])( *\1){2,} *$/.test(line) || /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line)) continue;
+    if (/^ {0,3}([-*_])( *\1){2,} *$/.test(line) || isTableRule(line)) continue;
     const body = line
       .replace(/^\s*(>\s?)+/, "")
       .replace(/^\s*([-*+]|\d+[.)])\s+(\[[ xX]\]\s+)?/, "")

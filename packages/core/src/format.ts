@@ -11,6 +11,7 @@ import type { PlatformBridge } from "./bridge.ts";
 import type { AppState } from "./app.ts";
 import type { Store } from "./store.ts";
 import { isReadOnlyPath } from "./notes.ts";
+import { isWebAddress } from "./scan.ts";
 import { registerSlash, SLASH_CLOSED, type SlashMenuState } from "./slash.ts";
 import { registerTables, TABLE_CLOSED, type TableUiState } from "./table.ts";
 
@@ -65,7 +66,7 @@ export const FORMAT_CLOSED: FormatState = {
 
 /** A web address the shell may open in the browser: http, https, or mailto (EDT-13). */
 export const isWebLink = (href: string): boolean => {
-  if (!/^(https?:\/\/[^\s/?#]+|mailto:[^\s@]+@)\S*$/i.test(href)) return false;
+  if (!isWebAddress(href)) return false;
   try {
     return Boolean(new URL(href));
   } catch {
