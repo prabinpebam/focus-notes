@@ -345,13 +345,19 @@ test("TBL-08, TBL-11 by keyboard: Esc selects cells, Shift+arrows extend, Shift+
   await chooseByKeyboard(page, "Move row down");
   await expect.poll(() => column(page, 0)).toEqual(["Task", "Draft", "Ship", "Edit"]);
   // The moved row stays selected, so its last cell is the active one: its column can only move left.
+  // Each time, the caret is back in the note before the next key: the menu hands it back a frame
+  // after the action shows, and on a busy runner a key pressed in that frame met no editor (CI
+  // runs 38620563582, 38631550463: focus on the note, no menu).
+  await expect(editorOf(page)).toBeFocused();
   await page.keyboard.press("Shift+F10");
   await chooseByKeyboard(page, "Move column left");
   await expect(tableOf(page).locator("th")).toHaveText(["Task", "Owner", "Status", "Column 4"]);
+  await expect(editorOf(page)).toBeFocused();
   await page.keyboard.press("Shift+F10");
   await chooseByKeyboard(page, "Align");
   await chooseByKeyboard(page, "Center", "Align");
   await expect(cell(page, 0, 2)).toHaveAttribute("data-align", "center");
+  await expect(editorOf(page)).toBeFocused();
   await page.keyboard.press("Shift+F10");
   await chooseByKeyboard(page, "Delete row");
   await expect(tableOf(page).locator("tr")).toHaveCount(3);
