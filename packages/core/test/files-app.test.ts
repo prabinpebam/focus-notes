@@ -175,7 +175,7 @@ describe("creating, renaming, and deleting (FIL-01, FIL-02)", () => {
     await app.commands.run("files.delete");
     expect(app.viewModels.select("vm.confirm", app.store.state)).toMatchObject({ open: true, message: "Delete “f”? This deletes 1 note.", confirmLabel: "Delete 1 note" });
     expect(f.batches).toHaveLength(1);
-    await app.commands.run("files.confirmDelete");
+    await app.commands.run("files.confirm");
     await settle();
     expect(f.notes.get("f/y.md")?.deleted).toBe(true);
   });

@@ -99,6 +99,7 @@ export function buildUiSchema({ contracts, icons, tokenGroups }: SchemaInputs): 
       ia: { type: "string", pattern: "^IA-(VIEW|CMP)-[A-Z]+$" },
       viewModels: { type: "array", items: { type: "string", pattern: "^vm\\.[a-z][A-Za-z0-9]*$" } },
       focus: { type: "string" },
+      overlay: { type: "boolean", description: "Hosted beside the app's main view: its root is a Stack of dialogs that show only when their view models open them (Settings)." },
       local: { type: "object", additionalProperties: { type: ["string", "number", "boolean", "null"] } },
       root: ref("node"),
     },

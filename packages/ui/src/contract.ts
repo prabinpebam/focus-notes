@@ -18,7 +18,7 @@ export type PropSpec =
   /** An element ID in the same view, for anchors and tooltips. */
   | { kind: "ref"; description?: string }
   /** Structured data from a view model (menu sections, command items). Only ever a read. */
-  | { kind: "list"; of: "commandItems" | "menuSections" | "options" | "keyCaps" | "keyBindings" | "resultItems" | "treeItems"; required?: boolean; description?: string };
+  | { kind: "list"; of: "commandItems" | "menuSections" | "options" | "keyCaps" | "keyBindings" | "resultItems" | "treeItems" | "versionBlocks"; required?: boolean; description?: string };
 
 export type PropKind = PropSpec["kind"];
 

@@ -32,6 +32,11 @@ export interface ViewDocument {
   viewModels: string[];
   /** The element ID that receives focus when the view opens. */
   focus?: string;
+  /**
+   * Hosted beside the main view (mountApp's `overlays`): its root is a Stack of dialogs, each shown
+   * only when its view model opens it, and the main view's AppRoot sets the theme for both.
+   */
+  overlay?: boolean;
   local?: Record<string, Literal>;
   root: Node;
 }

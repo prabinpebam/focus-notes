@@ -1,5 +1,5 @@
 /** Mounting the app and the global keyboard handler. The only entry point shells call. */
-import { createElement, StrictMode } from "react";
+import { createElement, Fragment, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { FLUSH_EDITOR, type App } from "@focus-notes/core";
 import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, slashCatalog } from "@focus-notes/ui";
@@ -9,9 +9,14 @@ export interface MountOptions {
   app: App;
   views: Record<string, unknown>;
   view?: string;
+  /**
+   * Views hosted beside the main one, each showing only what its view models open: dialogs with a
+   * view document of their own, such as Settings (IA-VIEW-SETTINGS). Each fails on its own.
+   */
+  overlays?: readonly string[];
 }
 
-export function mountApp(el: Element, { app, views, view = "canvas" }: MountOptions): Root {
+export function mountApp(el: Element, { app, views, view = "canvas", overlays = [] }: MountOptions): Root {
   // Before anything renders: HTML reaches the DOM only through the sanitizing policy (SEC-02).
   installTrustedTypes();
   // The slash menu offers the editor's registered blocks (EDT-06, EXT-01).
@@ -20,10 +25,8 @@ export function mountApp(el: Element, { app, views, view = "canvas" }: MountOpti
   const root = createRoot(el);
   const Text = registry.Text!;
   const fallback = createElement(Text, { value: app.messages.has("app.viewFailed") ? app.messages.format("app.viewFailed") : "This panel couldn't load." });
-  root.render(
-    createElement(StrictMode, null,
-      createElement(ViewBoundary, { fallback, onError: (e: unknown) => console.error(e), children: createElement(ViewHost, { viewId: view, deps }) })),
-  );
+  const host = (viewId: string) => createElement(ViewBoundary, { key: viewId, fallback, onError: (e: unknown) => console.error(e), children: createElement(ViewHost, { viewId, deps }) });
+  root.render(createElement(StrictMode, null, createElement(Fragment, null, host(view), ...overlays.map(host))));
 
   // Keys run commands (KEY-01). App keys are resolved first, in the capture phase, so a key does the
   // same thing wherever focus is (on a German layout Ctrl+Shift+7 types "/", which is the cheat

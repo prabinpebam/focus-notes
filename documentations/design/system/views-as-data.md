@@ -71,6 +71,8 @@ Files live next to their owners: `packages/views/` for the app (shared by deskto
 
 Any node may have `"when": <expression>` to render only when the expression is true, and an `"id"` so other nodes can refer to it (a Tooltip's target, a Positioner's anchor, the focus target when the view opens).
 
+**Overlay views.** A view document with `"overlay": true` is hosted beside the main view (`mountApp`'s `overlays`) and adds only dialogs: its root is a Stack of Dialogs, each open only when its view model says, and the main view's AppRoot sets the theme for both. Settings is one (`settings.view.json`, D-103), so later categories add to its document, not the canvas's.
+
 <h2 data-reader-personas="engineering">Values</h2>
 
 | Form | Example | Allowed for |
@@ -179,7 +181,7 @@ Fragments are expanded at build time, so they cost nothing at run time.
 | **2. References** | Every component, fragment, view, command, icon, message key, token name, and view-model path exists. Every `when` and `switch` refers to a declared field. |
 | **3. Types** | Reads and bindings match the prop's type, message arguments match the message, and repeats bind to lists. Bindings only target fields with setters. |
 | **4. Accessibility rules** | Accessible names are present, dialogs and sheets have titles, interface heading levels don't skip, every view declares where focus goes when it opens, and every repeat and switch has its empty, error, and loading cases. |
-| **5. Design rules** | At most one primary button per surface, toolbars and menus list commands only, no Layer inside a Layer except menus and tooltips, frost only in floating layers, and view depth under a limit. |
+| **5. Design rules** | A view's root is AppRoot, or, for an overlay view, a Stack of Dialogs. At most one primary button per surface, toolbars and menus list commands only, no Layer inside a Layer except menus and tooltips, frost only in floating layers, and view depth under a limit. |
 | **6. Rendering** | Every view renders with each of its view-model fixtures, in light, dark, high contrast, compact, and reduced transparency, then goes through visual regression and axe (DSY-09). |
 
 <h2 data-reader-personas="engineering">Rendering</h2>

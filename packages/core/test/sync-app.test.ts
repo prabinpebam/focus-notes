@@ -10,6 +10,7 @@ const messages = {
   "task.saving": "Saving…", "task.saved": "Saved", "task.synced": "Saved and synced",
   "toast.retry": "Retry", "toast.saveFailed": "Couldn't save.", "trigger.saveProblem": "Couldn't save", "trigger.syncProblem": "Couldn't sync",
   "sync.problem.offline": "Couldn't sync: you're offline.", "sync.problem.conflict": "Couldn't sync: changes don't fit.", "sync.problem.failed": "Couldn't sync.",
+  "conflict.resolve": "Resolve",
 };
 
 function setup(withSync = true) {
@@ -90,6 +91,8 @@ describe("EDT-11: save and sync", () => {
     t.report({ git: true, state: "syncing", waiting: 1 });
     t.report({ git: true, state: "problem", problem: "conflict", waiting: 1 });
     expect(t.toasts()).toEqual(["Couldn't sync: changes don't fit."]);
+    // A conflict's toast offers the resolver (FIL-12) rather than Retry.
+    expect(t.app.store.state.ui.toasts[0]!.action).toEqual({ command: "conflict.open", label: "Resolve" });
     expect(t.canvas().problem).toBe(true);
     t.report({ git: true, state: "idle", waiting: 0 });
     expect(t.canvas().problem).toBe(false);

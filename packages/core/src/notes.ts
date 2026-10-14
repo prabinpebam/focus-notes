@@ -5,6 +5,8 @@
  * are addressed as `public:<path>` and `private:<path>`, so nothing can write to them by mistake.
  */
 
+import { RESERVED_WINDOWS } from "./text.ts";
+
 export type NoteSource = "local" | "public" | "private";
 const PREFIX = /^(public|private):/;
 
@@ -18,7 +20,7 @@ export const innerPath = (path: string) => path.replace(PREFIX, "");
 export const titleOfPath = (path: string) => innerPath(path).split("/").at(-1)!.replace(/\.(md|markdown)$/i, "");
 
 /** A free path for `wanted` among `taken`: the same name, else "Name 2.md", "Name 3.md", and so on. */
-export function freePath(wanted: string, taken: ReadonlySet<string>, next?: Map<string, number>): string {
+export function freePath(wanted: string, taken: { has(path: string): boolean }, next?: Map<string, number>): string {
   if (!taken.has(wanted)) return wanted;
   const m = /^(.*?)(\.(?:md|markdown))?$/i.exec(wanted)!;
   // `next` remembers where each name's numbering got to, so many copies of one name stay fast.
@@ -39,6 +41,21 @@ export function safeLocalPath(path: string): string {
   let p = parts.join("/") || "Untitled.md";
   if (!/\.(md|markdown)$/i.test(p)) p += ".md";
   return p;
+}
+
+/**
+ * A path from a bundle made safe for a workspace folder on the desktop (FRE-10): as for the
+ * browser, and no hidden (dot) segments, no names Windows reserves or trims, so every imported
+ * note shows in Files and nothing lands outside the root.
+ */
+export function safeWorkspacePath(path: string): string {
+  const parts = safeLocalPath(path).split("/").map((s) => s.replace(/^[.\s]+|[.\s]+$/g, "")).filter(Boolean);
+  if (!parts.length || !/\.(md|markdown)$/i.test(parts.at(-1)!)) parts.push("Untitled.md");
+  return parts.map((s) => {
+    const dot = s.indexOf(".");
+    const first = dot < 0 ? s : s.slice(0, dot);
+    return RESERVED_WINDOWS.test(first) ? `${first}-note${s.slice(first.length)}` : s;
+  }).join("/");
 }
 
 // ---- the export bundle (schemas/export-bundle.schema.json) ----
@@ -77,17 +94,24 @@ export function parseBundle(text: string): Bundle {
 
 /**
  * Where each imported note goes: its own path if that's free, else a numbered copy. Nothing that's
- * already here is ever replaced (PKG-11). A note identical to the one at its path is skipped.
+ * already here is ever replaced (PKG-11, FRE-10). A note identical to the one at its path is
+ * skipped; a path whose text wasn't read (`undefined`) is only taken. On the desktop (`foldCase`)
+ * names that differ only in case or Unicode form are the same file, and paths are made safe for a
+ * workspace folder.
  */
-export function planImport(bundle: Bundle, existing: ReadonlyMap<string, string>): { path: string; text: string; updated: number; renamed: boolean }[] {
-  const taken = new Set(existing.keys());
+export function planImport(bundle: Bundle, existing: ReadonlyMap<string, string | undefined>, opts: { foldCase?: boolean } = {}): { path: string; text: string; updated: number; renamed: boolean }[] {
+  const key = (p: string) => (opts.foldCase ? p.normalize("NFC").toLowerCase() : p);
+  const keys = new Set([...existing.keys()].map(key));
+  const texts = new Map([...existing].map(([p, t]) => [key(p), t]));
+  const taken = { has: (p: string) => keys.has(key(p)) };
   const next = new Map<string, number>();
   const out: { path: string; text: string; updated: number; renamed: boolean }[] = [];
   for (const n of bundle.notes) {
-    const wanted = safeLocalPath(n.path);
-    if (existing.get(wanted) === n.text) continue;
+    const wanted = opts.foldCase ? safeWorkspacePath(n.path) : safeLocalPath(n.path);
+    const same = texts.get(key(wanted));
+    if (same !== undefined && same === n.text) continue;
     const path = freePath(wanted, taken, next);
-    taken.add(path);
+    keys.add(key(path));
     out.push({ path, text: n.text, updated: Date.parse(n.updated), renamed: path !== wanted });
   }
   return out;

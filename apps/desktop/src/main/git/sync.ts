@@ -6,14 +6,16 @@
  * D-90), and pulls rebase only when they can apply cleanly; otherwise nothing is touched and the
  * problem is reported (conflicts are WP-3.5).
  */
-import { realpathSync } from "node:fs";
-import { rm, writeFile } from "node:fs/promises";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { existsSync, realpathSync } from "node:fs";
+import { readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { conflictCopy, deletedId, DELETED_LOG_ARGS, parseDeletedId, parseDeletedLog, recentDeletions, RECENTLY_DELETED_DAYS, titleOrName, type DeletedNote } from "@focus-notes/core/history";
 import { StatusCache, filesKey, gitFiles } from "./cache.ts";
 import { Cadence, FETCH_EVERY_MS, POINTER_GAP_MS, pointerDelay, retryDelay, systemClock, type Clock, type SyncReason } from "./cadence.ts";
 import { releaseLock, takeLock } from "./lock.ts";
-import { batchMessage, changesOf, pointerMessage, saveMessage, type BatchOp, type Change } from "./message.ts";
-import type { SyncProblem, SyncReport } from "@focus-notes/core";
+import { batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, type BatchOp, type Change } from "./message.ts";
+import type { ConflictChoice, NoteConflict, SyncProblem, SyncReport } from "@focus-notes/core";
+import { bothChanged, changedAt, divergence, GitFailed, readBlobs, settle, treeNames, type Exec, type Settle } from "./resolve.ts";
 import { Queue, commitProblem, createRunner, networkProblem, type GitRunner } from "./run.ts";
 import { STATUS_ARGS, covers, parseStatus, pointerMoved, trackedChanges, type RepoStatus } from "./status.ts";
 
@@ -147,11 +149,21 @@ export class GitSync {
     return this.#report;
   }
 
-  /** Where a path belongs: the private repository, or the notes repository. */
+  /**
+   * Where a path belongs: the private repository, or the notes repository. Nothing under `private/`
+   * ever belongs to the notes repository: without a private repository, private notes stay
+   * uncommitted rather than public (SHR-02).
+   */
   #locate(abs: string): { repo: Repo; rel: string } | undefined {
     if (this.privateRepo && inside(this.privateRepo.dir, abs)) return { repo: this.privateRepo, rel: posix(relative(this.privateRepo.dir, abs)) };
-    if (inside(this.notes.dir, abs) && !(this.privateRepo && posix(relative(this.notes.dir, abs)) === PRIVATE)) return { repo: this.notes, rel: posix(relative(this.notes.dir, abs)) };
-    return undefined;
+    if (!inside(this.notes.dir, abs)) return undefined;
+    const rel = posix(relative(this.notes.dir, abs));
+    return rel === PRIVATE || rel.startsWith(`${PRIVATE}/`) ? undefined : { repo: this.notes, rel };
+  }
+  /** Whether a path is private: under `private/`, whether or not that's a repository. */
+  #isPrivate(abs: string): boolean {
+    const r = relative(this.notes.dir, abs);
+    return inside(join(this.notes.dir, PRIVATE), abs) || posix(r) === PRIVATE;
   }
 
   /** Any change to the workspace's files: the status cache's key changes at once. */
@@ -222,7 +234,11 @@ export class GitSync {
     return done;
   }
 
-  /** One Files batch, one commit in each repository it touches (FIL-05, D-94). Resolves after the commit; pushing follows in the background. */
+  /**
+   * One Files batch, one commit in each repository it touches (FIL-05, D-94), the private one first.
+   * A move between the roots is the delete in one repository and the add in the other (FIL-06).
+   * Resolves after the commits; pushing, and then the pointer, follow in the background (D-97).
+   */
   commitBatch(ops: AbsoluteOp[]): Promise<SyncProblem | undefined> {
     for (const op of ops) for (const p of op.op === "move" ? [op.from, op.to] : [op.path]) this.#touch(p);
     const done = this.#ops.run(async () => {
@@ -236,6 +252,10 @@ export class GitSync {
             const a = this.#locate(op.from);
             const b = this.#locate(op.to);
             if (a?.repo === repo && b?.repo === repo) rel.push({ op: "move", from: a.rel, to: b.rel });
+            else if (a?.repo === repo || b?.repo === repo) {
+              // Across repositories: what left this one, or what arrived in it.
+              rel.push({ op: "visibility", path: (a?.repo === repo ? a : b)!.rel, to: this.#isPrivate(op.to) ? "private" : "public" });
+            }
           } else {
             const a = this.#locate(op.path);
             if (a?.repo === repo) rel.push({ ...op, path: a.rel });
@@ -257,6 +277,161 @@ export class GitSync {
     // Pushing (and the pointer) follows, without making the Files panel wait for the network.
     void done.then(() => this.sync("batch"));
     return done;
+  }
+
+  // ---- conflicts (FIL-12) ----
+
+  #exec(repo: Repo): Exec {
+    return (args, o = {}) => repo.queue.run(() => this.#run({ cwd: repo.dir, args, ...(o.input !== undefined ? { input: o.input } : {}), ...(o.env ? { env: o.env } : {}), ...(o.read ? { read: true } : {}) }));
+  }
+
+  /**
+   * One repository's notes in conflict: changed on both sides since they parted, to different
+   * text. This computer's side is the file as it is now, committed or not.
+   */
+  async #conflictsIn(repo: Repo, st: RepoStatus): Promise<{ rel: string; mine?: string; theirs?: string; theirsAt?: number; dirty: boolean }[]> {
+    if (!st.upstream || st.behind === 0) return [];
+    const exec = this.#exec(repo);
+    const d = await divergence(exec);
+    if (!d) return [];
+    const dirty = new Set(st.entries.filter((e) => e.kind !== "ignored" && !e.sub.startsWith("S")).flatMap((e) => (e.from !== undefined ? [e.path, e.from] : [e.path])));
+    const paths = new Set([...bothChanged(d), ...[...dirty].filter((p) => d.theirs.has(p))]);
+    if (!paths.size) return [];
+    const list = [...paths].sort();
+    const [theirs, at] = await Promise.all([readBlobs(exec, list.map((p) => `${d.upstream}:${p}`)), changedAt(exec, d.base, d.upstream)]);
+    const out: { rel: string; mine?: string; theirs?: string; theirsAt?: number; dirty: boolean }[] = [];
+    for (const [i, rel] of list.entries()) {
+      const mine = await readFile(join(repo.dir, ...rel.split("/")), "utf8").catch(() => undefined);
+      if (mine === theirs[i]) continue;
+      out.push({ rel, dirty: dirty.has(rel), ...(mine !== undefined ? { mine } : {}), ...(theirs[i] !== undefined ? { theirs: theirs[i] } : {}), ...(at.has(rel) ? { theirsAt: at.get(rel)! } : {}) });
+    }
+    return out;
+  }
+
+  /** Notes changed both here and elsewhere, private first, with both versions (FIL-12). */
+  conflicts(): Promise<NoteConflict[]> {
+    return this.#ops.run(async () => {
+      const out: NoteConflict[] = [];
+      for (const repo of [this.privateRepo, this.notes]) {
+        if (!repo) continue;
+        const st = await repo.cache.fresh().catch(() => undefined);
+        if (!st) continue;
+        for (const c of await this.#conflictsIn(repo, st).catch(() => [])) {
+          out.push({ path: join(repo.dir, ...c.rel.split("/")), ...(c.mine !== undefined ? { mine: c.mine } : {}), ...(c.theirs !== undefined ? { theirs: c.theirs } : {}), ...(c.theirsAt !== undefined ? { theirsAt: c.theirsAt } : {}) });
+        }
+      }
+      return out;
+    });
+  }
+
+  /**
+   * Settles conflicts as chosen (DD-FB-04), then syncs. In each repository the app's own unsaved
+   * paths and the conflicting files are committed first, so this computer's version is a commit;
+   * then the result is built on top of the other version and the branch moves there in one step.
+   * A repository with a conflict that has no choice is left as it is ("Decide later").
+   */
+  async resolve(choices: ConflictChoice[]): Promise<SyncReport> {
+    const problem = await this.#ops.run(async (): Promise<SyncProblem | undefined> => {
+      if (!(await this.#lock())) return this.#fail("locked");
+      let done!: () => void;
+      this.#rebasing = new Promise((r) => (done = r));
+      try {
+        for (const repo of [this.privateRepo, this.notes]) {
+          if (!repo) continue;
+          let st = await repo.cache.fresh();
+          const found = await this.#conflictsIn(repo, st);
+          const chosen = new Map(choices.flatMap((c) => {
+            const at = this.#locate(c.path);
+            return at?.repo === repo ? [[at.rel, c] as const] : [];
+          }));
+          if (!found.length && !(st.ahead > 0 && st.behind > 0)) continue;
+          if (found.some((f) => !chosen.has(f.rel))) continue;
+          const commitFirst = [...repo.pending.keys(), ...found.filter((f) => f.dirty).map((f) => f.rel)];
+          if (commitFirst.length) {
+            for (const f of found) if (f.dirty) repo.pending.set(f.rel, ++this.#generation);
+            const p = await this.#commit(repo, st, commitFirst, saveMessage, repo.moves);
+            if (p) return this.#fail(p);
+            st = await repo.cache.fresh();
+          }
+          const exec = this.#exec(repo);
+          const d = await divergence(exec);
+          if (!d) continue;
+          const taken = new Set([...(await treeNames(exec, d.upstream)), ...(await treeNames(exec, d.head))]);
+          const settles = new Map<string, Settle>();
+          const lines: Parameters<typeof resolveMessage>[0] = [];
+          const deleted: string[] = [];
+          for (const f of found) {
+            const c = chosen.get(f.rel)!;
+            let copy: Settle["copy"];
+            // A copy keeps this computer's version whenever it isn't the one kept at the path.
+            if (c.choice !== "mine" && f.mine !== undefined) {
+              const dir = dirname(f.rel) === "." ? "" : posix(dirname(f.rel));
+              const names = [...taken].filter((p) => (p.includes("/") ? p.slice(0, p.lastIndexOf("/")) : "") === dir).map((p) => p.split("/").at(-1)!);
+              const here = await readdir(join(repo.dir, ...dir.split("/").filter(Boolean))).catch(() => [] as string[]);
+              copy = conflictCopy({ path: f.rel, text: f.mine, title: c.copyTitle ?? `${titleOrName(f.mine, f.rel)} (conflict copy)`, taken: [...names, ...here] });
+              taken.add(copy.path);
+              if (c.choice === "theirs") deleted.push(copy.path);
+            }
+            settles.set(f.rel, { choice: c.choice, ...(copy ? { copy } : {}) });
+            lines.push({ path: f.rel, choice: c.choice, ...(copy ? { copy: copy.path } : {}) });
+          }
+          await settle(exec, {
+            gitDir: repo.gitDir, d, choices: settles,
+            message: lines.length ? resolveMessage(lines) : "Combine changes from elsewhere",
+            deleteMessage: batchMessage(deleted.map((path) => ({ op: "delete", path }))),
+          });
+          repo.cache.clear();
+          this.#generation++;
+          this.#o.log?.(`git-resolve repo=${repo.name} notes=${lines.length}`);
+        }
+      } catch (e) {
+        return this.#fail(e instanceof GitFailed && e.message === "undecided" ? "conflict" : "failed");
+      } finally {
+        this.#rebasing = undefined;
+        done();
+      }
+      return undefined;
+    });
+    if (problem) {
+      this.#emit({ state: "problem", problem });
+      return this.#report;
+    }
+    return this.sync("save");
+  }
+
+  // ---- Recently deleted (FIL-10) ----
+
+  #repoOf(root: DeletedNote["root"]): Repo | undefined {
+    return root === "private" ? this.privateRepo : this.notes;
+  }
+
+  /** Notes deleted in the last 30 days in either repository, newest first, with their titles. */
+  deleted(now = Date.now()): Promise<DeletedNote[]> {
+    return this.#ops.run(async () => {
+      const out: DeletedNote[] = [];
+      for (const [root, repo] of [["private", this.privateRepo], ["public", this.notes]] as const) {
+        if (!repo) continue;
+        const exec = this.#exec(repo);
+        const log = await exec([...DELETED_LOG_ARGS(Math.floor(now / 1000) - RECENTLY_DELETED_DAYS * 86_400)], { read: true });
+        if (log.code !== 0) continue;
+        const entries = recentDeletions(parseDeletedLog(log.stdout), { now, exists: (rel) => existsSync(join(repo.dir, ...rel.split("/"))) });
+        const texts = await readBlobs(exec, entries.map((e) => `${e.commit}^:${e.path}`)).catch(() => entries.map(() => undefined));
+        for (const [i, e] of entries.entries()) {
+          const folder = e.path.split("/").slice(1, -1).join("/");
+          out.push({ id: deletedId(root, e), root, path: join(repo.dir, ...e.path.split("/")), title: titleOrName(texts[i], e.path), folder, deletedAt: e.at });
+        }
+      }
+      return out.sort((a, b) => b.deletedAt - a.deletedAt);
+    });
+  }
+
+  /** A deleted note's text and where it was, from the commit before its deletion. */
+  async readDeleted(id: string): Promise<{ root: DeletedNote["root"]; path: string; text: string } | undefined> {
+    const at = parseDeletedId(id);
+    const repo = at && this.#repoOf(at.root);
+    if (!at || !repo) return undefined;
+    const [text] = await readBlobs(this.#exec(repo), [`${at.commit}^:${at.path}`]).catch(() => [undefined]);
+    return text === undefined ? undefined : { root: at.root, path: join(repo.dir, ...at.path.split("/")), text };
   }
 
   /** The final sync when the app quits: commit, push, and move the pointer whatever the gap. Then the lock is released. */

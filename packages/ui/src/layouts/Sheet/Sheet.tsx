@@ -12,6 +12,8 @@ export interface SheetProps {
   keyScope?: KeyScope;
   /** What stays above the scrolling body: the title, actions, a filter. */
   header?: ReactNode;
+  /** What stays below it: Recently deleted in Files. */
+  footer?: ReactNode;
   id?: string;
   children?: ReactNode;
   onClose?: () => void;
@@ -21,7 +23,7 @@ export interface SheetProps {
  * A side sheet (IA → Surface types): floats over the canvas without moving the reading column,
  * and closes on Esc or a click on the canvas. It isn't modal: the note stays readable beside it.
  */
-export function Sheet({ label, side = "start", width = "files", keyScope = "none", header, id, children, onClose }: SheetProps) {
+export function Sheet({ label, side = "start", width = "files", keyScope = "none", header, footer, id, children, onClose }: SheetProps) {
   const ref = useRef<HTMLElement | null>(null);
   const close = useRef(onClose);
   close.current = onClose;
@@ -52,6 +54,7 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
       >
         {header ? <div className={s.header}>{header}</div> : null}
         <div className={s.body}>{children}</div>
+        {footer ? <div className={s.footer}>{footer}</div> : null}
       </aside>
     </FloatingContext.Provider>
   );

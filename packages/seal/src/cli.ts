@@ -6,14 +6,14 @@
  *   node packages/seal/src/cli.ts vault-init --private private      (reads the passphrase from stdin)
  *
  * The Deploy app workflow runs `publish`. `vault-init` writes the owner's grant to private/access.json
- * (only the passphrase's derived key, never the passphrase) until the desktop setup does it (FRE-08).
+ * (only the passphrase's derived key, never the passphrase), as the desktop setup does (FRE-08).
  */
 import { execFile } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { promisify } from "node:util";
-import { derivePasscodeBits, passphraseStrength, randomBytes, randomId, SALT_BYTES, toB64url } from "./format.ts";
 import { LeakError, publish, validateAccess, type AccessFile } from "./publish.ts";
+import { withVaultGrant } from "./vault.ts";
 
 const run = promisify(execFile);
 const [command, ...rest] = process.argv.slice(2);
@@ -76,17 +76,10 @@ async function main() {
     const dir = args.get("private");
     if (!dir) throw new Error("vault-init needs --private");
     const passphrase = await readStdin();
-    const strength = passphraseStrength(passphrase);
-    if (!strength.ok) throw new Error(`That passphrase is too easy to guess offline (about ${strength.bits} bits). Use at least 12 characters, for example four or more random words.`);
     const file = join(dir, "access.json");
     let access: AccessFile = { version: 1, grants: [] };
     try { access = validateAccess(JSON.parse(await readFile(file, "utf8"))); } catch (e) { if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e; }
-    const salt = randomBytes(SALT_BYTES);
-    const passcodeKey = toB64url(await derivePasscodeBits(passphrase, salt));
-    const now = new Date().toISOString();
-    const grants = access.grants.map((g) => (g.owner && !g.revokedAt ? { ...g, revokedAt: now } : g));
-    grants.push({ id: randomId("g", 8), name: "You", owner: true, salt: toB64url(salt), passcodeKey, scope: { all: true }, createdAt: now });
-    await writeFile(file, JSON.stringify({ ...access, grants }, null, 2) + "\n");
+    await writeFile(file, JSON.stringify(await withVaultGrant(access, passphrase), null, 2) + "\n");
     console.log(`Wrote the vault grant to ${file}. Commit it in the private repository; the next deploy seals your private notes.`);
     return;
   }

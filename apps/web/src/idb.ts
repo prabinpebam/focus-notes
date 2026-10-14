@@ -1,4 +1,5 @@
 /** A small promise wrapper over IndexedDB for the web app's stores (Web app → Storage). */
+import { WEB_DATABASE } from "@focus-notes/core/inventory";
 
 /** A note written in this browser. Older versions also stored sync fields; they're ignored. */
 export interface NoteRecord {
@@ -12,7 +13,7 @@ export interface NoteRecord {
   deleted?: boolean;
 }
 
-export const DB_NAME = "focus-notes";
+export const DB_NAME = WEB_DATABASE;
 const VERSION = 1;
 
 const req = <T>(r: IDBRequest<T>) => new Promise<T>((resolve, reject) => {

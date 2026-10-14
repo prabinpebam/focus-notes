@@ -6,7 +6,7 @@
  * shell in the same all-or-nothing batch as the PathMove (D-94, D-95).
  */
 import { linkDestinations } from "@focus-notes/markdown";
-import { walk, type WorkspaceTree } from "./workspace.ts";
+import { rootOf, walk, type WorkspaceTree } from "./workspace.ts";
 
 export interface PathMove { from: string; to: string }
 
@@ -78,9 +78,10 @@ function relative(dir: readonly string[], target: readonly string[]): string[] |
 /**
  * A note's text with its relative links rewritten for moves. `from` and `to` are the note's own
  * path before and after (the same when it doesn't PathMove). Absolute URLs, links within the note
- * (`#…`), site-root links (`/…`), and links in code are left alone.
+ * (`#…`), site-root links (`/…`), and links in code are left alone, and so is a link whose target
+ * would be in another root than the note (`sameRoot`, from {@link sameRootOf}).
  */
-export function rewriteLinks(text: string, from: string, to: string, moves: readonly PathMove[]): { text: string; links: number } {
+export function rewriteLinks(text: string, from: string, to: string, moves: readonly PathMove[], sameRoot?: (a: string, b: string) => boolean): { text: string; links: number } {
   const sep = sepOf(from);
   const fromDir = partsOf(from).slice(0, -1);
   const toDir = partsOf(to).slice(0, -1);
@@ -101,6 +102,8 @@ export function rewriteLinks(text: string, from: string, to: string, moves: read
     const targetPath = target.join(sep);
     const next = moved(targetPath, moves);
     if (next === targetPath && from === to) continue;
+    // Never into another root: a public note never names a private one (WP-3.4).
+    if (sameRoot && !sameRoot(to, next)) continue;
     const segs = relative(toDir, partsOf(next));
     if (!segs || !segs.length) continue;
     const same = vsegs.filter((s) => s !== "" && s !== ".");
@@ -116,6 +119,16 @@ export function rewriteLinks(text: string, from: string, to: string, moves: read
   }
   return links ? { text: out + text.slice(at), links } : { text, links: 0 };
 }
+
+/**
+ * Whether two paths are in the same root of a workspace. Links are rewritten only within a root:
+ * one that would reach into the other repository is left as written, so moving a note between
+ * Public and Private never writes a private note's name into a public one (FIL-06, D-99).
+ */
+export const sameRootOf = (tree: WorkspaceTree) => (a: string, b: string): boolean => {
+  const r = rootOf(tree, a);
+  return r !== undefined && r === rootOf(tree, b);
+};
 
 /** Whether a note could link to anything moving: its text names one of them, however it's spelled. */
 function mentions(text: string, names: readonly string[]): boolean {
@@ -134,12 +147,13 @@ export async function planLinkWrites(tree: WorkspaceTree, moves: readonly PathMo
   const names = moves.map((m) => fold(partsOf(m.from).at(-1) ?? ""));
   const notes = [...walk(tree)].filter((e) => !e.root.readOnly && e.node.kind === "note").map((e) => e.path);
   const out: LinkWrite[] = [];
+  const same = sameRootOf(tree);
   const one = async (path: string) => {
     const before = await read(path).catch(() => undefined);
     if (before === undefined) return;
     const to = moved(path, moves);
     if (to === path && !mentions(before, names)) return;
-    const r = rewriteLinks(before, path, to, moves);
+    const r = rewriteLinks(before, path, to, moves, same);
     if (r.links) out.push({ from: path, path: to, before, text: r.text, links: r.links });
   };
   // A few reads at a time: the desktop reads each over IPC.

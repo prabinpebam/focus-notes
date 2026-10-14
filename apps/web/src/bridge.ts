@@ -11,6 +11,7 @@ import {
 import { SealError, SiteReader, type OpenVault, type SiteFetch } from "@focus-notes/seal";
 import { openTextFile, saveTextFile } from "@focus-notes/ui/files";
 import { WebDb } from "./idb.ts";
+import { WEB_META } from "@focus-notes/core/inventory";
 
 const WELCOME = `# Welcome to Focus Notes
 
@@ -23,11 +24,11 @@ This note lives in this browser, and so does everything you write here. It's sav
 
 /** A key this browser remembers for the vault (PKG-10): non-extractable, with the salt it was made for. */
 interface RememberedKey { key: CryptoKey; salt: string }
-const REMEMBERED = "vaultUnlockKey";
+const REMEMBERED = WEB_META.vaultKey;
 /** The format of the notes in this browser (DST-05), as the text of a workspace.json. */
-const FORMAT = "workspaceFormat";
+const FORMAT = WEB_META.workspaceFormat;
 /** Folders made in the Files panel, which may be empty (D-94). Written only once there is one. */
-const FOLDERS = "folders";
+const FOLDERS = WEB_META.folders;
 /** What earlier versions stored for browser sync (D-81, D-82), removed on open (D-90). */
 const RETIRED_META = ["token", "vaultKey", "connection", "login"];
 
@@ -218,8 +219,8 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
       await db.putNote({ path: "Welcome.md", text: WELCOME, updated: Date.now() });
       return "Welcome.md";
     },
-    loadAppState: async () => (await db.getMeta<AppStateFile>("appState")) ?? { version: 1 },
-    saveAppState: (s) => db.setMeta("appState", s),
+    loadAppState: async () => (await db.getMeta<AppStateFile>(WEB_META.appState)) ?? { version: 1 },
+    saveAppState: (s) => db.setMeta(WEB_META.appState, s),
     systemScheme: () => (dark.matches ? "dark" : "light"),
     onSystemSchemeChange(listener) {
       const h = () => listener(dark.matches ? "dark" : "light");

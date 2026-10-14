@@ -8,7 +8,7 @@ export interface DialogProps {
   title: string;
   closeLabel: string;
   open?: boolean;
-  size?: "s" | "l";
+  size?: "s" | "l" | "xl";
   /** Controls that stay above the scrolling body. */
   toolbar?: ReactNode;
   id?: string;

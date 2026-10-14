@@ -8,7 +8,7 @@ export const contract = defineContract({
     title: { kind: "message", required: true },
     closeLabel: { kind: "message", required: true },
     open: { kind: "boolean", default: false },
-    size: { kind: "enum", values: ["s", "l"], default: "l" },
+    size: { kind: "enum", values: ["s", "l", "xl"], default: "l", description: "xl is the conflict resolver's: most of the window, up to layout.dialogXL." },
   },
   events: { openChange: { payload: { open: "boolean" } } },
   slots: { toolbar: { accepts: "any" }, default: { accepts: "any" } },
@@ -23,5 +23,6 @@ export const contract = defineContract({
       slots: { toolbar: [{ type: "SearchField", props: { label: { t: "shortcuts.search" }, clearLabel: { t: "field.clear" } } }] },
       children: [{ type: "Text", props: { value: { t: "gallery.long" } } }],
     },
+    { name: "size xl", props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "xl" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
   ],
 });

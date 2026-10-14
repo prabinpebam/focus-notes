@@ -5,7 +5,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs } from "./helpers.ts";
+import { launch, quit, tempDirs, windowBox } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const withMod = async (page: Page, key: string) => {
@@ -26,7 +26,9 @@ test("UI-10: the trigger sits 40 px down, its dot grows on hover, and it morphs 
   await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
   const trigger = page.getByRole("button", { name: "Focus Notes menu" });
   const ring = (await trigger.boundingBox())!;
-  expect(Math.round(ring.y)).toBe(40);
+  // Measured from the window's top edge: on Windows and Linux it's drawn inside a shadow margin (D-14).
+  const win = await windowBox(page);
+  expect(Math.round(ring.y - win.top)).toBe(40);
   const dot = () => trigger.locator("span").first().evaluate((el) => el.getBoundingClientRect().width);
   expect(Math.round(await dot())).toBe(10);
   // Hovering can race the window becoming hoverable after launch, so it retries until the pointer lands.
@@ -41,7 +43,7 @@ test("UI-10: the trigger sits 40 px down, its dot grows on hover, and it morphs 
   await expect.poll(async () => Math.round(await dot())).toBe(10);
 
   // Opening: the circle grows into the toolbar's shape, centered where it was, then the buttons appear.
-  const width = await page.evaluate(() => window.innerWidth);
+  const width = win.width;
   // The width transition is caught as it starts and measured halfway through, so the check doesn't
   // depend on sampling frames in time on a slow or throttled machine.
   await page.evaluate(() => {
@@ -63,8 +65,8 @@ test("UI-10: the trigger sits 40 px down, its dot grows on hover, and it morphs 
   const midway = await page.waitForFunction(() => (window as unknown as { __midway?: { w: number; duration: number } }).__midway).then((h) => h.jsonValue() as Promise<{ w: number; duration: number }>);
   await expect.poll(async () => (await panel(page)).contentOpacity).toBe(1);
   const open = await panel(page);
-  expect(Math.abs(open.cx - width / 2)).toBeLessThan(1.5);
-  expect(Math.round(open.y)).toBe(40);
+  expect(Math.abs(open.cx - win.left - width / 2)).toBeLessThan(1.5);
+  expect(Math.round(open.y - win.top)).toBe(40);
   expect(open.w).toBeGreaterThan(200);
   // It grew through sizes in between rather than jumping.
   expect(midway.duration).toBeGreaterThan(0);

@@ -19,7 +19,7 @@ export interface ButtonProps {
   disabled?: boolean;
   /** Required with `disabled`: a disabled button stays focusable and says why (Foundations → States). */
   disabledReason?: string;
-  /** Takes focus when it appears: in a confirmation, the choice that changes nothing (APG alert dialog). */
+  /** Takes focus when it appears: a confirmation's choice that changes nothing (APG alert dialog), or a first-run step's primary action. */
   autoFocus?: boolean;
   id?: string;
   onPress?: () => void;

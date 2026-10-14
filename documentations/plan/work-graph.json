@@ -704,7 +704,7 @@
         "experience/desktop-app.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-2.2",
@@ -871,7 +871,7 @@
         "architecture/repository-and-publishing.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-3.2",
@@ -906,7 +906,7 @@
         "experience/first-run.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-3.3",
@@ -965,7 +965,7 @@
         "architecture/desktop-and-git.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-3.5",
@@ -994,7 +994,7 @@
         "design/views/files.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-3.6",
@@ -1021,7 +1021,7 @@
         "design/views/secondary-views.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-4.1",

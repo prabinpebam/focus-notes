@@ -1,24 +1,73 @@
 /**
  * The Electron main process (PKG-03, SEC-01, PKG-06, PRV-01): a hardened shell that owns the
- * window, the file system, and the user's own `git`. It makes no network requests of its own and
- * allows none from the renderer; Git talks to the workspace's remotes (WP-3.3).
+ * window, the file system, and the user's own `git`. It allows no network requests from the
+ * renderer; Git talks to the workspace's remotes (WP-3.3), and its own only requests are setup's
+ * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
-import { existsSync, realpathSync, watch, type FSWatcher } from "node:fs";
+import { existsSync, readFileSync, realpathSync, watch, type FSWatcher } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
+import { randomUUID } from "node:crypto";
 import { readWorkspaceFormat } from "@focus-notes/core/workspace-format";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
+import { BUNDLE_MAX_BYTES, parseBundle, planImport, safeWorkspacePath, type Bundle } from "@focus-notes/core/notes";
+import { parseSettings } from "@focus-notes/core/settings";
+import { restorePlace, titleOrName } from "@focus-notes/core/history";
 import { GitSync, NO_GIT } from "./git/sync.ts";
+import { createRunner, type GitRunner } from "./git/run.ts";
+import { passphraseStrength } from "@focus-notes/seal";
+import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
+import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
+import { checkOptions, SetupEngine } from "./setup/engine.ts";
+import { githubFetch } from "./setup/credential.ts";
 import type { BatchOp } from "./git/message.ts";
+import { Account } from "./first-run/account.ts";
+import { createToolRunner } from "./first-run/tools.ts";
+import { applyLocalIdentity, checkWorkspace, cloneWorkspace } from "./first-run/workspace.ts";
+import type { ConflictChoice, RemovalCheck } from "@focus-notes/core";
+import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
+import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
+import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
-const customWindow = process.argv.includes("--custom-window") && platform !== "macos";
+/** Windows and Linux: the transparent window with app-built window management; macOS: the system's (D-14). */
+const frameKind = frameKindFor(platform, process.argv, process.env);
+let windowFrame: AppWindowFrame | undefined;
 
 if (process.env.FOCUS_NOTES_USER_DATA) app.setPath("userData", resolve(process.env.FOCUS_NOTES_USER_DATA));
-const notesHome = () => resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPath("documents"), "Focus Notes"));
-const stateFile = () => join(app.getPath("userData"), "state.json");
+/** A file in the app's data folder: only those the data inventory names (PRV-02). */
+const dataFile = (f: DataFile) => join(app.getPath("userData"), f);
+// Chromium's working files go in one folder of the data folder, which the inventory lists as one item.
+app.setPath("sessionData", join(app.getPath("userData"), CHROMIUM_FOLDERS.session));
+/** Where a new workspace goes unless another folder is chosen: Documents/Focus Notes. */
+const defaultHome = () => resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPath("documents"), "Focus Notes"));
+/** The workspace the first run opened (D-98), kept by the main process only: the renderer can't name a folder. */
+const workspaceFile = () => dataFile(DATA_FILES.workspace);
+let chosenHome: string | undefined;
+function readChosenHome(): string | undefined {
+  try {
+    const w = JSON.parse(readFileSync(workspaceFile(), "utf8")) as { version?: number; folder?: unknown };
+    return w.version === 1 && typeof w.folder === "string" && isAbsolute(w.folder) ? resolve(w.folder) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+const notesHome = () => chosenHome ?? defaultHome();
+const stateFile = () => dataFile(DATA_FILES.state);
+
+// Test seams, never in a packaged app: a local fake of GitHub's API and local bare remotes, so the
+// journeys make no network request; and a log of every program started, to check no token is in one.
+const devEnv = (name: string) => (app.isPackaged ? undefined : process.env[name]);
+const fakeApi = devEnv("FOCUS_NOTES_GITHUB_API");
+const localRemotes = devEnv("FOCUS_NOTES_GIT_REMOTES");
+const logSpawns = devEnv("FOCUS_NOTES_LOG_SPAWNS") === "1";
+const onSpawn = logSpawns ? (program: string, args: string[]) => process.stdout.write(`[focus-notes] spawn ${JSON.stringify([program, ...args])}\n`) : undefined;
+const apiFetch = githubFetch(fakeApi && /^http:\/\/127\.0\.0\.1:\d+$/.test(fakeApi)
+  ? (i, init) => fetch(fakeApi + i.slice("https://api.github.com".length), init)
+  : undefined);
+const remoteUrl = (owner: string, repo: string) => (localRemotes ? `${localRemotes.replace(/\\/g, "/")}/${owner}/${repo}.git` : `https://github.com/${owner}/${repo}.git`);
 
 const WELCOME = `# Welcome to Focus Notes
 
@@ -36,21 +85,23 @@ const envMs = (name: string) => {
 };
 let gitSync: GitSync | undefined;
 let gitOpened = false;
-const gitWaiting: ((g: GitSync) => void)[] = [];
+let gitWaiting: ((g: GitSync) => void)[] = [];
 /** Runs now if Git is open, or once it opens (a note written before then is still committed). */
 const withGit = (fn: (g: GitSync) => void) => {
   if (gitSync) fn(gitSync);
   else if (!gitOpened) gitWaiting.push(fn);
 };
 let startGit: () => void = () => {};
-/** Opened once the caret is ready, so Git never competes with the first frame (PRF-02, PRF-07). */
-const gitOpening = new Promise<GitSync | undefined>((resolve) => {
+let gitOpening: Promise<GitSync | undefined>;
+/** Opened once the caret is ready, so Git never competes with the first frame (PRF-02, PRF-07). Again after the workspace changes. */
+const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], gitOpening = new Promise<GitSync | undefined>((resolve) => {
   startGit = () => {
     startGit = () => {};
     const idleMs = envMs("FOCUS_NOTES_IDLE_COMMIT_MS");
     const pointerGapMs = envMs("FOCUS_NOTES_POINTER_GAP_MS");
     resolve(GitSync.open({
       folder: notesHome(),
+      ...(onSpawn ? { run: createRunner({ onSpawn: (args) => onSpawn("git", args) }) } : {}),
       ...(idleMs !== undefined ? { idleMs } : {}),
       ...(pointerGapMs !== undefined ? { pointerGapMs } : {}),
       // After the window closes, the final sync on quit still runs; there's just no one to tell.
@@ -70,7 +121,148 @@ const gitOpening = new Promise<GitSync | undefined>((resolve) => {
       return undefined;
     }));
   };
+}));
+armGit();
+
+// ---- set up my instance (WP-3.1, FRE-08) ----
+// Opened when first asked. The token is read from Git's credential helper when a step needs it and
+// kept only in the engine; progress (names and step states, nothing secret) is in setup.json.
+let setupEngine: Promise<SetupEngine> | undefined;
+const setupRunner = createRunner(onSpawn ? { onSpawn: (args) => onSpawn("git", args) } : {});
+/** Setup's commits carry the identity chosen for only this workspace (FRE-05) until it's in the workspace's own settings. */
+const setupGit: GitRunner = (call) => {
+  const id = workspaceIdentity;
+  return setupRunner(id ? { ...call, args: ["-c", `user.name=${id.name}`, "-c", `user.email=${id.email}`, ...call.args] } : call);
+};
+const setup = () => (setupEngine ??= SetupEngine.open({
+  git: setupGit,
+  progressFile: dataFile(DATA_FILES.setup),
+  token: () => account.token(),
+  fetch: apiFetch,
+  remoteUrl,
+  onReport: (r) => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("setup:report", r);
+  },
+  // Step names, states, and problem codes only.
+  log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
+}));
+/** A vault passphrase from the renderer: text, or none (Skip for now). Never logged or stored. */
+const passphraseArg = (p: unknown) => (typeof p === "string" && p.length > 0 && p.length <= 1024 ? p : undefined);
+
+// ---- the first run (WP-3.2, FRE-01 to FRE-06) ----
+// Signing in goes through Git's own helpers; the token is read from them when needed and kept only
+// in memory (SEC-03). The folder a workspace goes in is chosen here, with the system's dialog (D-98).
+const account = new Account({
+  git: createRunner(onSpawn ? { onSpawn: (args) => onSpawn("git", args) } : {}),
+  tools: createToolRunner(onSpawn ? { onSpawn } : {}),
+  fetch: apiFetch,
+  home: app.getPath("home"),
+  env: process.env,
+  onProgress: (p) => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("firstRun:signIn", p);
+  },
+  log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
+  signedOutFile: dataFile(DATA_FILES.account),
 });
+const firstRunFile = () => dataFile(DATA_FILES.firstRun);
+/** A name and email for only the notes workspace, kept until the workspace has them (not secret). */
+let workspaceIdentity: { name: string; email: string } | undefined;
+/** Where a new or cloned workspace goes: Documents/Focus Notes unless another folder was chosen. */
+let targetFolder: string | undefined;
+/** A workspace cloned or chosen, waiting to be opened. */
+let pendingWorkspace: string | undefined;
+const saveFirstRun = () => atomicWrite(firstRunFile(), JSON.stringify({ version: 1, ...(workspaceIdentity ? { identity: workspaceIdentity } : {}) }, null, 2));
+function readFirstRun(): void {
+  try {
+    const f = JSON.parse(readFileSync(firstRunFile(), "utf8")) as { version?: number; identity?: { name?: unknown; email?: unknown } };
+    const i = f.identity;
+    if (f.version === 1 && i && typeof i.name === "string" && typeof i.email === "string" && !identityProblem({ name: i.name, email: i.email })) workspaceIdentity = { name: i.name, email: i.email };
+  } catch {
+    // Nothing chosen yet.
+  }
+}
+/** The folder setup makes the workspace in: the one it started with, the chosen one, or the open workspace (Run setup again). */
+const setupFolder = async () => (await setup()).report().options?.folder ?? targetFolder ?? (isWorkspace() ? notesHome() : defaultHome());
+/**
+ * Deletes what the data inventory lists for signing out or removing the workspace (PRV-02): setup's
+ * progress (through the engine, so it forgets too), the first run's workspace identity, and, for
+ * removing, the workspace folder's name; Chromium's caches and web storage are emptied too. The
+ * renderer forgets the recent note in state.json itself, since it owns that file.
+ */
+async function forgetLocal(event: "signOut" | "removeWorkspace"): Promise<void> {
+  if (setupEngine) await (await setupEngine).reset().catch(() => {});
+  workspaceIdentity = undefined;
+  targetFolder = undefined;
+  pendingWorkspace = undefined;
+  await forgetLocalData(app.getPath("userData"), event);
+  await session.defaultSession.clearCache().catch(() => {});
+  await session.defaultSession.clearStorageData().catch(() => {});
+}
+/**
+ * Removes the workspace's local clone (FRE-07): checked again here, with the watcher and Git
+ * stopped first so nothing writes into it, and only when everything is on the remote. Afterwards
+ * the window starts again with no workspace, at the first run's Your workspace step.
+ */
+/** Only a Focus Notes workspace (its format file is there) is ever removed: never just any repository. */
+const removal = async (): Promise<RemovalCheck> => (isWorkspace() ? removalCheck(setupRunner, notesHome()) : { state: "notWorkspace", waiting: 0, folder: notesHome(), repositories: [] });
+async function removeLocalWorkspace(): Promise<RemovalCheck> {
+  const folder = notesHome();
+  const first = await removal();
+  if (first.state !== "ready") return first;
+  await Promise.allSettled([...writeQueues.values()]);
+  watcher?.close();
+  watcher = undefined;
+  const old = gitSync;
+  armGit();
+  await old?.dispose();
+  const r = await removeWorkspace(setupRunner, folder);
+  if (r.state !== "removed") {
+    watcher = watchWorkspace(() => mainWindow);
+    startGit();
+    return r;
+  }
+  chosenHome = undefined;
+  await forgetLocal("removeWorkspace");
+  process.stdout.write("[focus-notes] workspace-removed\n");
+  setTimeout(() => mainWindow?.webContents.reload(), 0);
+  return r;
+}
+async function chooseFolder(title: string): Promise<string | undefined> {
+  const w = mainWindow;
+  const opts = { title, defaultPath: dirname(defaultHome()), properties: ["openDirectory" as const, "createDirectory" as const, "promptToCreate" as const] };
+  const r = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
+  return r.canceled || !r.filePaths[0] ? undefined : resolve(r.filePaths[0]);
+}
+/** Repositories in the signed-in account, Focus Notes workspaces first (checked for the ten most recent). */
+async function repositories(): Promise<RepoChoice[]> {
+  const s = await account.api();
+  if (!s) throw new Error("Signed out");
+  const repos = await s.api.ownRepos();
+  const checked = await Promise.all(repos.map((r, i) => (i < 10 ? s.api.hasFile(r.owner, r.name, ".focus-notes/workspace.json").catch(() => false) : Promise.resolve(false))));
+  const list = repos.map((r, i) => ({ owner: r.owner, name: r.name, private: r.private, instance: checked[i]! }));
+  return [...list.filter((r) => r.instance), ...list.filter((r) => !r.instance)];
+}
+/**
+ * Opens a workspace in this window (D-98): the main process keeps the folder, the watcher and Git
+ * move to it, and the renderer starts again in it.
+ */
+async function switchWorkspace(folder: string): Promise<void> {
+  if (workspaceIdentity) {
+    await applyLocalIdentity(setupRunner, folder, workspaceIdentity);
+    workspaceIdentity = undefined;
+    await saveFirstRun();
+  }
+  await atomicWrite(workspaceFile(), JSON.stringify({ version: 1, folder }, null, 2));
+  chosenHome = folder;
+  pendingWorkspace = undefined;
+  watcher?.close();
+  const old = gitSync;
+  armGit();
+  await old?.dispose();
+  watcher = watchWorkspace(() => mainWindow);
+  setTimeout(() => startGit(), 3000);
+  setTimeout(() => mainWindow?.webContents.reload(), 0);
+}
 
 // ---- the workspace (WP-2.3) ----
 // The notes folder is the workspace. With .focus-notes/workspace.json it has the repository's
@@ -78,8 +270,10 @@ const gitOpening = new Promise<GitSync | undefined>((resolve) => {
 // root of its own (D-92), as it was through M2.
 const formatFile = () => join(notesHome(), ".focus-notes", "workspace.json");
 const isWorkspace = () => existsSync(formatFile());
+// A clone whose account can't reach the private repository has no private root (FRE-06).
+const hasPrivate = () => existsSync(join(notesHome(), "private", "notes")) || existsSync(join(notesHome(), "private", ".git"));
 const roots = () => isWorkspace()
-  ? [{ id: "private", path: join(notesHome(), "private", "notes"), readOnly: false }, { id: "public", path: join(notesHome(), "notes"), readOnly: false }]
+  ? [...(hasPrivate() ? [{ id: "private", path: join(notesHome(), "private", "notes"), readOnly: false }] : []), { id: "public", path: join(notesHome(), "notes"), readOnly: false }]
   : [{ id: "local", path: notesHome(), readOnly: false }];
 /** Where new notes go when there's no note to put them next to. */
 const notesRoot = () => roots()[0]!.path;
@@ -207,25 +401,27 @@ const writesDone = (p: string) => Promise.allSettled([...writeQueues].filter(([k
  * fails the earlier ones are undone. A write replaces a moved or linking note's text (links that
  * follow the move, FIL-09), and is undone by writing the old text back. Deletes go last, to the
  * system trash, until Git keeps them (FIL-10).
- * A move between roots changes visibility, which arrives with Git (WP-3.4), so it's refused here.
+ * A move between the Private and Public roots changes who can see it (FIL-06): the folders it needs
+ * in the other root are made, and taken away again if the batch is undone.
  */
 async function applyOps(raw: unknown): Promise<BatchOp[]> {
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > 5000) throw refuse("invalid");
   type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string }
-    | { op: "write"; path: string; text: string; root: string };
+    | { op: "write" | "create"; path: string; text: string; root: string };
   const ops = raw.map((op: unknown): Op => {
     const o = op as Record<string, unknown>;
     if (o?.op === "createFolder" || o?.op === "delete") return { op: o.op, ...opPath(o.path) };
     if (o?.op === "move") {
       const from = opPath(o.from);
       const to = opPath(o.to);
-      if (from.root !== to.root) throw refuse("invalid");
+      // Only a workspace's two roots can be crossed (D-84); anything else stays in its root.
+      if (from.root !== to.root && !isWorkspace()) throw refuse("invalid");
       return { op: "move" as const, path: from.path, to: to.path, root: from.root };
     }
-    if (o?.op === "write") {
+    if (o?.op === "write" || o?.op === "create") {
       const at = opPath(o.path);
       if (typeof o.text !== "string" || !isMarkdown(at.path)) throw refuse("invalid");
-      return { op: "write" as const, ...at, text: o.text };
+      return { op: o.op, ...at, text: o.text };
     }
     throw refuse("invalid");
   });
@@ -250,6 +446,11 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         if (st.isDirectory() && inside(from, to)) throw refuse("intoItself");
         const caseOnly = from.toLowerCase() === to.toLowerCase();
         if (!caseOnly && existsSync(to)) throw refuse("taken");
+        if (!inside(op.root, to)) {
+          // Into the other root: the same folder path there is made if it's missing (Files and sharing → Changing visibility).
+          const made = await mkdir(dirname(to), { recursive: true });
+          if (made) undo.push(() => rm(made, { recursive: true, force: true }));
+        }
         if (!(await isDir(dirname(to)))) throw refuse("notFound");
         await writesDone(from);
         if (caseOnly && from !== to) {
@@ -264,6 +465,12 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         if (old === undefined) throw refuse("notFound");
         await atomicWrite(op.path, op.text);
         undo.push(() => atomicWrite(op.path, old));
+      } else if (op.op === "create") {
+        // A new note, never over another (the conflict resolver's copies, FIL-12).
+        if (existsSync(op.path)) throw refuse("taken");
+        if (!(await isDir(dirname(op.path)))) throw refuse("notFound");
+        await writeFile(op.path, op.text, { encoding: "utf8", flag: "wx" });
+        undo.push(() => rm(op.path, { force: true }));
       }
     }
     for (const op of ops) {
@@ -278,6 +485,139 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
   // What was done, for the batch's one commit.
   return ops.map((op): BatchOp => (op.op === "move" ? { op: "move", from: op.path, to: op.to } : { op: op.op, path: op.path }));
 }
+
+// ---- Recently deleted and conflicts (FIL-10, FIL-12) ----
+
+/** A folder deleted notes may be restored into: a root, or a folder in one, that's there. */
+async function restoreFolder(p: unknown): Promise<string> {
+  if (typeof p !== "string" || !p || !isAbsolute(p) || resolve(p) !== p) throw refuse("invalid");
+  const root = roots().find((r) => inside(r.path, p));
+  if (!root || relative(root.path, p).split(sep).some((part) => part.startsWith(".")) || !(await isDir(p))) throw refuse("notFound");
+  return p;
+}
+/**
+ * Puts deleted notes back from Git history (FIL-10), all or nothing and never over a file (`wx`):
+ * where each was, in its root when its folder is gone, or in the chosen folder of the same root
+ * (Restore to… doesn't change who can see a note). One commit, like any batch.
+ */
+async function restoreNotes(rawIds: unknown, rawFolder: unknown): Promise<{ path: string; title: string }[]> {
+  const g = await gitOpening;
+  if (!g || !isWorkspace()) throw refuse("notFound");
+  if (!Array.isArray(rawIds) || !rawIds.length || rawIds.length > 1000 || rawIds.some((i) => typeof i !== "string")) throw refuse("invalid");
+  const folder = rawFolder === undefined || rawFolder === null ? undefined : await restoreFolder(rawFolder);
+  const planned: { path: string; text: string; title: string }[] = [];
+  const names = new Map<string, string[]>();
+  for (const id of rawIds as string[]) {
+    const d = await g.readDeleted(id);
+    if (!d) throw refuse("notFound");
+    const root = roots().find((r) => r.id === d.root);
+    if (!root || !inside(root.path, d.path) || d.path === root.path || (folder && !inside(root.path, folder))) throw refuse("invalid");
+    await assertWritable(d.path).catch(() => { throw refuse("readOnly"); });
+    const dir = folder ?? ((await isDir(dirname(d.path))) ? dirname(d.path) : root.path);
+    const taken = names.get(dir) ?? (await readdir(dir).catch(() => [] as string[]));
+    names.set(dir, taken);
+    const path = restorePlace({ original: d.path, root: root.path, folder: dir, folderExists: true, taken });
+    taken.push(basename(path));
+    planned.push({ path, text: d.text, title: titleOrName(d.text, path) });
+  }
+  const written: string[] = [];
+  try {
+    for (const p of planned) {
+      await writeFile(p.path, p.text, { encoding: "utf8", flag: "wx" });
+      written.push(p.path);
+    }
+  } catch (error) {
+    for (const w of written.reverse()) await rm(w, { force: true }).catch(() => {});
+    throw refuse((error as NodeJS.ErrnoException).code === "EEXIST" ? "taken" : "failed");
+  }
+  await g.commitBatch(planned.map((p) => ({ op: "restore", path: p.path })));
+  return planned.map(({ path, title }) => ({ path, title }));
+}
+/** The resolver's choices, checked: notes in the workspace, one of three outcomes, a short copy title. */
+function conflictChoices(raw: unknown): ConflictChoice[] {
+  if (!Array.isArray(raw) || raw.length > 1000) throw new Error("invalid");
+  return raw.map((c: unknown) => {
+    const o = c as Record<string, unknown>;
+    if (typeof o?.path !== "string" || !isAbsolute(o.path) || !inside(notesHome(), o.path) || !["mine", "theirs", "both"].includes(String(o.choice))) throw new Error("invalid");
+    if (o.copyTitle !== undefined && (typeof o.copyTitle !== "string" || o.copyTitle.length > 300)) throw new Error("invalid");
+    return { path: resolve(o.path), choice: o.choice as ConflictChoice["choice"], ...(typeof o.copyTitle === "string" ? { copyTitle: o.copyTitle } : {}) };
+  });
+}
+
+// ---- importing browser notes (FRE-10, D-90) ----
+// Only this process reads the bundle: the renderer gets a handle and a count, never the file.
+let chosenBundle: { id: string; bundle: Bundle } | undefined;
+const fold = (p: string) => p.normalize("NFC").toLowerCase();
+/** Every note's path in a root, relative with forward slashes; dot folders skipped as in the scan. */
+async function notesIn(dir: string, base = dir, out: string[] = []): Promise<string[]> {
+  for (const d of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+    if (d.name.startsWith(".")) continue;
+    const p = join(dir, d.name);
+    if (d.isDirectory()) await notesIn(p, base, out);
+    else if (d.isFile() && isMarkdown(d.name)) out.push(relative(base, p).split(sep).join("/"));
+  }
+  return out;
+}
+async function chooseBundle(w: BrowserWindow | undefined): Promise<{ id: string; name: string; notes: number } | undefined> {
+  const opts = { properties: ["openFile" as const], filters: [{ name: "Focus Notes export", extensions: ["json"] }] };
+  const res = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
+  const file = res.canceled ? undefined : res.filePaths[0];
+  if (!file) return undefined;
+  // A file that's too large is refused unread (web-app.md → Moving notes).
+  const st = await stat(file).catch(() => undefined);
+  if (!st?.isFile()) throw new Error("invalid");
+  if (st.size > BUNDLE_MAX_BYTES) throw new Error("tooLarge");
+  let bundle: Bundle;
+  try {
+    bundle = parseBundle(await readFile(file, "utf8"));
+  } catch {
+    throw new Error("invalid");
+  }
+  chosenBundle = { id: randomUUID(), bundle };
+  return { id: chosenBundle.id, name: basename(file), notes: bundle.notes.length };
+}
+/**
+ * Adds the chosen bundle's notes to a root, all or nothing, never replacing a file (`wx`), then
+ * commits them as one batch in that root's repository.
+ */
+async function importBundle(id: unknown, to: unknown): Promise<{ added: number; renamed: number }> {
+  if (!chosenBundle || chosenBundle.id !== id) throw refuse("notFound");
+  const root = isWorkspace() ? roots().find((r) => r.id === to) : undefined;
+  if (!root) throw refuse("invalid");
+  await assertWritable(root.path).catch(() => { throw refuse("readOnly"); });
+  const { bundle } = chosenBundle;
+  const existing = new Map<string, string | undefined>((await notesIn(root.path)).map((p) => [p, undefined]));
+  // Only the notes a bundle note could be the same as are read, to skip identical copies.
+  const named = new Set(bundle.notes.map((n) => fold(safeWorkspacePath(n.path))));
+  for (const p of existing.keys()) if (named.has(fold(p))) existing.set(p, await readFile(join(root.path, ...p.split("/")), "utf8").catch(() => undefined));
+  const plan = planImport(bundle, existing, { foldCase: true });
+  const written: string[] = [];
+  const made: string[] = [];
+  try {
+    for (const n of plan) {
+      const abs = resolve(root.path, ...n.path.split("/"));
+      if (!inside(root.path, abs) || abs === root.path) throw refuse("invalid");
+      const dir = await mkdir(dirname(abs), { recursive: true });
+      if (dir) made.push(dir);
+      await writeFile(abs, n.text, { encoding: "utf8", flag: "wx" });
+      written.push(abs);
+    }
+  } catch (error) {
+    for (const p of written.reverse()) await rm(p, { force: true }).catch(() => {});
+    for (const d of made.reverse()) await rm(d, { recursive: true, force: true }).catch(() => {});
+    throw error instanceof Refused ? error : refuse("failed");
+  }
+  chosenBundle = undefined;
+  // Ordinary commits: one for the import, in the chosen root's repository (FRE-10, D-97).
+  if (written.length) await (await gitOpening)?.commitBatch(written.map((path) => ({ op: "import", path })));
+  return { added: plan.length, renamed: plan.filter((n) => n.renamed).length };
+}
+
+// ---- synced settings (PRV-03, D-46) ----
+// Only where there's a private repository to sync through; while the file exists, syncing is on.
+const privateDir = () => join(notesHome(), "private");
+const settingsFile = () => join(privateDir(), ".focus-notes", "settings.json");
+const settingsAvailable = () => isWorkspace() && existsSync(privateDir());
 
 /** Addresses a note's link may open in the browser: http, https, and mailto, well formed (EDT-13). */
 function isWebLink(url: string): boolean {
@@ -368,6 +708,26 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const done = await applyOps(ops);
     await (await gitOpening)?.commitBatch(done);
   });
+  handle("bundle:choose", () => chooseBundle(win()));
+  handle("bundle:import", (id, to) => importBundle(id, to));
+  handle("settings:load", async () => {
+    if (!settingsAvailable()) return { available: false };
+    const text = await readFile(settingsFile(), "utf8").catch(() => undefined);
+    return { available: true, ...(text !== undefined && text.length <= 64 * 1024 ? { text } : {}) };
+  });
+  handle("settings:save", async (text) => {
+    // Only a settings file, and only what's valid in it, is ever written (schemas/settings.schema.json).
+    const parsed = typeof text === "string" && text.length <= 64 * 1024 ? parseSettings(text) : undefined;
+    if (!settingsAvailable() || !parsed) throw new Error("Not a settings file");
+    await atomicWrite(settingsFile(), `${JSON.stringify(parsed, null, 2)}\n`);
+    withGit((g) => g.written(settingsFile()));
+  });
+  handle("settings:remove", async () => {
+    if (!settingsAvailable()) return;
+    await assertWritable(settingsFile());
+    await rm(settingsFile(), { force: true });
+    withGit((g) => g.written(settingsFile()));
+  });
   handle("sync:now", async (reason) => {
     const g = await gitOpening;
     return g ? g.request(reason === "switch" ? "switch" : "save") : NO_GIT;
@@ -376,7 +736,87 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const g = await gitOpening;
     return g ? g.status() : NO_GIT;
   });
+  handle("setup:status", async () => (await setup()).report());
+  // The folder is the main process's own: the one setup started with, or the one chosen with the dialog (D-98).
+  handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), folder: await setupFolder() }), passphraseArg(passphrase)));
+  handle("setup:retry", async (id, passphrase) => {
+    if (!(SETUP_STEPS as readonly unknown[]).includes(id)) throw new Error("Unknown setup step");
+    return (await setup()).retry(id as SetupStepId, passphraseArg(passphrase));
+  });
+  handle("setup:reset", async () => (await setup()).reset());
+  handle("setup:strength", async (p) => passphraseStrength(passphraseArg(p) ?? ""));
+  handle("firstRun:git", () => account.gitCheck());
+  handle("firstRun:account", () => account.status());
+  handle("firstRun:useExisting", () => account.useExisting());
+  handle("firstRun:signIn", (device) => account.signIn(device === true));
+  handle("firstRun:cancelSignIn", async () => account.cancel());
+  handle("firstRun:useToken", async (token) => {
+    if (typeof token !== "string" || token.length > 255) throw new Error("Not a token");
+    return account.useToken(token);
+  });
+  handle("firstRun:signOut", async (options) => {
+    const s = await account.signOut({ git: (options as { git?: unknown } | undefined)?.git !== false });
+    if (!s.account || s.signedOut) await forgetLocal("signOut");
+    return s;
+  });
+  handle("firstRun:beginSwitch", () => account.beginSwitch());
+  handle("firstRun:endSwitch", () => account.endSwitch());
+  handle("workspace:removal", () => removal());
+  handle("workspace:remove", () => removeLocalWorkspace());
+  handle("firstRun:identity", () => account.identity());
+  handle("firstRun:setIdentity", async (i, scope) => {
+    const id = { name: String(i?.name ?? "").trim(), email: String(i?.email ?? "").trim() };
+    if (identityProblem(id)) return false;
+    if (scope === "global") return account.setGlobalIdentity(id);
+    if (scope !== "workspace") return false;
+    workspaceIdentity = id;
+    await saveFirstRun();
+    return true;
+  });
+  handle("firstRun:repositories", () => repositories());
+  handle("firstRun:folder", () => setupFolder());
+  handle("firstRun:chooseFolder", async () => {
+    const folder = await chooseFolder("Choose a folder for your workspace");
+    if (folder) targetFolder = folder;
+    return folder;
+  });
+  handle("firstRun:clone", async (owner, name): Promise<WorkspaceResult> => {
+    if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
+    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? defaultHome());
+    if (r.ok) pendingWorkspace = r.folder;
+    return r;
+  });
+  handle("firstRun:openFolder", async (): Promise<WorkspaceResult | undefined> => {
+    const folder = await chooseFolder("Open a workspace folder");
+    if (!folder) return undefined;
+    const r = await checkWorkspace(setupRunner, folder);
+    if (r.ok) pendingWorkspace = folder;
+    return r;
+  });
+  handle("firstRun:openWorkspace", async (): Promise<WorkspaceResult> => {
+    const report = (await setup()).report();
+    const made = ["clone", "link"].every((id) => report.steps.find((x) => x.id === id)?.state === "done");
+    const folder = pendingWorkspace ?? (made ? report.options?.folder : undefined);
+    if (!folder) return { ok: false, problem: "failed" };
+    const r = await checkWorkspace(setupRunner, folder);
+    if (r.ok) await switchWorkspace(folder);
+    return r;
+  });
+  ipcMain.on("firstRun:openPage", (e, page: unknown) => {
+    if (!fromApp(e) || typeof page !== "string" || !Object.hasOwn(FIRST_RUN_PAGES, page)) return;
+    void shell.openExternal(FIRST_RUN_PAGES[page as FirstRunPage]);
+  });
+  handle("sync:conflicts", async () => (await gitOpening)?.conflicts() ?? []);
+  handle("sync:resolve", async (choices) => {
+    const checked = conflictChoices(choices);
+    const g = await gitOpening;
+    return g ? g.resolve(checked) : NO_GIT;
+  });
+  handle("history:deleted", async () => (isWorkspace() ? (await gitOpening)?.deleted() ?? [] : []));
+  handle("history:restore", (ids, folder) => restoreNotes(ids, folder));
+  windowFrame?.registerIpc(fromApp, win);
   handle("window:fullScreen", async () => {
+    if (windowFrame?.toggleFullScreen()) return;
     const w = win();
     if (w) w.setFullScreen(!w.isFullScreen());
   });
@@ -408,6 +848,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const ms = Math.round(process.uptime() * 1000);
     process.stdout.write(`[focus-notes] ready-ms=${ms}\n`);
     startGit();
+    windowFrame?.ready();
   });
 }
 
@@ -422,21 +863,16 @@ function hardenSession(): void {
   session.defaultSession.setPermissionCheckHandler(() => false);
 }
 
-function createWindow(): BrowserWindow {
+function createWindow(frame: AppWindowFrame): BrowserWindow {
   const dark = nativeTheme.shouldUseDarkColors;
   const win = new BrowserWindow({
-    width: 1100,
-    height: 780,
     minWidth: 360,
     minHeight: 320,
     show: false,
     title: "Focus Notes",
-    backgroundColor: customWindow ? "#00000000" : dark ? "#1a1a1c" : "#fbfaf7",
-    ...(platform === "macos"
-      ? { titleBarStyle: "hiddenInset" as const }
-      : customWindow
-        ? { frame: false, transparent: true, roundedCorners: true }
-        : { titleBarStyle: "hidden" as const, titleBarOverlay: { color: "#00000000", symbolColor: dark ? "#eceae6" : "#1f1d1a", height: 44 } }),
+    backgroundColor: dark ? "#1a1a1c" : "#fbfaf7",
+    // Where it was last time, and how it's drawn on this platform.
+    ...frame.options(),
     webPreferences: {
       preload: join(import.meta.dirname, "preload.cjs"),
       contextIsolation: true,
@@ -448,6 +884,7 @@ function createWindow(): BrowserWindow {
     },
   });
   win.once("ready-to-show", () => win.show());
+  frame.attach(win);
   // ⇧⌘V pastes plain text on macOS too (Keyboard shortcuts → Everyday editing), where Chromium binds
   // only ⌥⇧⌘V. The renderer still sees Shift held, so the editor pastes the text as it is (EDT-09).
   if (platform === "macos") {
@@ -455,7 +892,7 @@ function createWindow(): BrowserWindow {
       if (input.type === "keyDown" && input.meta && input.shift && !input.alt && !input.control && input.key.toLowerCase() === "v") win.webContents.pasteAndMatchStyle();
     });
   }
-  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform } });
+  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, ...frame.query() } });
 
   // Ask the renderer to save pending changes before the window closes (QLT-03). If saving fails,
   // the person decides; text is never discarded silently.
@@ -502,11 +939,12 @@ function createWindow(): BrowserWindow {
     const d = nativeTheme.shouldUseDarkColors;
     win.webContents.send("scheme:changed", d ? "dark" : "light");
   });
-  ipcMain.on("window:scheme", (e, scheme: unknown, canvas: unknown) => {
+  ipcMain.on("window:scheme", (e, scheme: unknown, canvas: unknown, accent: unknown) => {
     if (!fromApp(e) || (scheme !== "light" && scheme !== "dark")) return;
-    if (platform !== "macos" && !customWindow) win.setTitleBarOverlay?.({ color: "#00000000", symbolColor: scheme === "dark" ? "#eceae6" : "#1f1d1a", height: 44 });
     const color = typeof canvas === "string" && /^#[0-9a-f]{6}$/i.test(canvas) ? canvas : scheme === "dark" ? "#1a1a1c" : "#fbfaf7";
-    win.setBackgroundColor(customWindow ? "#00000000" : color);
+    // The transparent window stays transparent: the page draws the window's canvas inside its shadow margin.
+    win.setBackgroundColor(frame.kind === "custom" ? "#00000000" : color);
+    frame.setAccent(accent);
   });
   return win;
 }
@@ -535,6 +973,10 @@ function watchWorkspace(win: () => BrowserWindow | undefined): FSWatcher | undef
   let timer: ReturnType<typeof setTimeout> | undefined;
   const report = async () => {
     timer = undefined;
+    // A pull or a conflict being settled rewrites files: they're read once it's over, so the app
+    // never sees a half-applied state (a rebase's conflict markers) as a change made outside.
+    await gitSync?.writable().catch(() => {});
+    if (timer) return; // More changes came meanwhile: they're reported together.
     const rels = [...pending];
     pending.clear();
     const changes: { path: string; kind: "note" | "folder" | "format"; exists: boolean; title?: string }[] = [];
@@ -582,14 +1024,17 @@ function watchWorkspace(win: () => BrowserWindow | undefined): FSWatcher | undef
 let mainWindow: BrowserWindow | undefined;
 let watcher: FSWatcher | undefined;
 app.whenReady().then(async () => {
+  chosenHome = readChosenHome();
+  readFirstRun();
   hardenSession();
+  windowFrame = new AppWindowFrame(frameKind, join(app.getPath("userData"), DATA_FILES.window));
   registerIpc(() => mainWindow);
   await stat(notesHome()).catch(() => mkdir(notesHome(), { recursive: true }));
-  mainWindow = createWindow();
+  mainWindow = createWindow(windowFrame);
   watcher = watchWorkspace(() => mainWindow);
   // Never on the path of the first frame: Git answers when it answers (PRF-07).
   // Git opens once the caret is ready, or after 3 s if the note never becomes ready.
-  setTimeout(() => startGit(), 3000);
+  setTimeout(() => (startGit(), windowFrame?.ready()), 3000);
   // Fetching when the window becomes active (Desktop and Git → Save and sync, step 5).
   mainWindow.on("focus", () => gitSync?.focused());
   app.on("second-instance", () => {
@@ -604,6 +1049,7 @@ app.on("window-all-closed", () => {
 // Quitting waits for writes already under way, so a preference saved just before closing is kept,
 // then commits and pushes (D-23) and releases the workspace's lock.
 let gitQuit = false;
+const QUIT_GIT_LIMIT_MS = 8_000;
 app.on("will-quit", (e) => {
   if (writeQueues.size === 0 && (gitQuit || !gitSync)) return;
   e.preventDefault();
@@ -611,7 +1057,9 @@ app.on("will-quit", (e) => {
     .then(async () => {
       if (gitQuit) return;
       gitQuit = true;
-      await gitSync?.quit().catch(() => {});
+      // Quitting never hangs on the network: the commit is local, and a push that doesn't finish
+      // in time is retried at the next start.
+      await Promise.race([gitSync?.quit().catch(() => {}), new Promise((r) => setTimeout(r, QUIT_GIT_LIMIT_MS))]);
     })
     .then(() => app.quit());
 });

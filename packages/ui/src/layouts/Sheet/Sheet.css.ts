@@ -37,4 +37,12 @@ export const side = styleVariants({
 });
 export const width = styleVariants({ files: { width: t.widthFiles }, theme: { width: t.widthTheme } });
 export const header = style({ display: "flex", flexDirection: "column", gap: t.gap, flexShrink: 0 });
-export const body = style({ display: "flex", flexDirection: "column", flexGrow: 1, minHeight: 0 });
+export const body = style({ display: "flex", flexDirection: "column", flexGrow: 1, minHeight: 0, overflowY: "auto" });
+export const footer = style({
+  display: "flex",
+  flexShrink: 0,
+  paddingBlockStart: t.gap,
+  borderBlockStartStyle: "solid",
+  borderBlockStartWidth: t.footerBorderWidth,
+  borderBlockStartColor: t.footerBorder,
+});

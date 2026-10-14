@@ -1,15 +1,18 @@
 import { test, expect } from "@playwright/test";
 import { _electron as electron } from "@playwright/test";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tempDirs } from "./helpers.ts";
 
 // The M0 window spike (WP-0.6, D-14): a transparent, frameless window can be created and drawn
-// on Windows and Linux. Full window management is built in M2 (WP-2.1).
+// on Windows and Linux. Since M2 (WP-2.1) it's the window there, with app-built window management (m2-window.spec.ts).
 test("window spike: the custom window opens transparent and frameless", async () => {
   test.skip(process.platform === "darwin", "macOS uses the native window (D-14)");
   const dirs = tempDirs();
+  // Past the first run, as someone who already set up (FRE-01).
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
   const app = await electron.launch({
-    args: [join(import.meta.dirname, "..", "out", "main", "main.mjs"), "--custom-window"],
+    args: [join(import.meta.dirname, "..", "out", "main", "main.mjs")],
     env: { ...process.env, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs } as Record<string, string>,
   });
   const page = await app.firstWindow();

@@ -1,5 +1,9 @@
 import type { Platform } from "./commands.ts";
 import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
+import type { SetupBridge } from "./setup.ts";
+import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
+import type { ConflictChoiceKind, DeletedNote } from "./history.ts";
+import type { WindowBridge } from "./window-app.ts";
 
 /**
  * Services a shell provides. The Electron preload implements this as `window.focusNotes`;
@@ -46,6 +50,27 @@ export interface PlatformBridge {
   workspace?: WorkspaceBridge;
   /** Commits and pushes with the user's own Git (the desktop, WP-3.3). Absent in the browser. */
   sync?: SyncBridge;
+  /** Sets up the user's instance on GitHub and this computer (the desktop, FRE-08). Absent in the browser. */
+  setup?: SetupBridge;
+  /** The desktop's first run: Git, signing in, the identity, and the workspace (FRE-01). Absent in the browser. */
+  firstRun?: FirstRunBridge;
+  /** Synced settings in the private repository (PRV-03, D-46). Absent where there can't be one (the browser). */
+  settings?: SettingsBridge;
+  /** The window the app draws and manages itself on Windows and Linux (DSK-03, D-14). Absent on macOS and in the browser. */
+  window?: WindowBridge;
+}
+
+/**
+ * `private/.focus-notes/settings.json` (D-46). Syncing is opted into: while the file exists, the
+ * synced settings are read from it and written to it, and it's committed like a note.
+ */
+export interface SettingsBridge {
+  /** Whether the workspace has a private repository to sync through, and the file's text while syncing is on. */
+  load(): Promise<{ available: boolean; text?: string }>;
+  /** Writes the file (syncing on). The shell checks it against the schema first. */
+  save(text: string): Promise<void>;
+  /** Deletes the file (syncing off). */
+  remove(): Promise<void>;
 }
 
 /** Why saving to Git or syncing failed (Feedback → Save and sync status). */
@@ -70,6 +95,31 @@ export interface SyncBridge {
   /** The latest report, from the cached Git status (PRF-07): never waits for a commit. */
   status(): Promise<SyncReport>;
   onStatus(listener: (report: SyncReport) => void): () => void;
+  /** Notes changed both here and elsewhere, with both versions (FIL-12). Empty when nothing conflicts. */
+  conflicts?(): Promise<NoteConflict[]>;
+  /**
+   * Settles conflicts as chosen, then syncs (FIL-12, DD-FB-04). A note without a choice stays in
+   * conflict, and so does its repository: its commits wait until it's settled.
+   */
+  resolve?(choices: ConflictChoice[]): Promise<SyncReport>;
+}
+
+/** A note changed both on this computer and elsewhere since they last synced (FIL-12). */
+export interface NoteConflict {
+  /** The note's path, in the shell's own spelling. */
+  path: string;
+  /** This computer's version, or undefined where it was deleted here. */
+  mine?: string;
+  /** The other version, or undefined where it was deleted there. */
+  theirs?: string;
+  /** When the other version was made, in ms. */
+  theirsAt?: number;
+}
+/** How to settle one conflicting note. `copyTitle` names the copy of this computer's version, when one is kept. */
+export interface ConflictChoice {
+  path: string;
+  choice: ConflictChoiceKind;
+  copyTitle?: string;
 }
 
 /**
@@ -90,12 +140,51 @@ export interface WorkspaceBridge {
    * refused nothing changes (WP-2.4). In a Git workspace the desktop makes each batch one commit
    * per repository before resolving (FIL-05); a commit that fails is reported through `sync`, and
    * the files stay as the batch left them. A move between the Public and Private roots changes
-   * visibility (WP-3.4). Rejects with an Error
-   * whose message ends in an {@link OpErrorCode}.
+   * who can see a note: one commit in each repository, private first (FIL-06, D-97). Rejects with
+   * an Error whose message ends in an {@link OpErrorCode}.
    */
   apply?(ops: WorkspaceOp[]): Promise<void>;
+  /**
+   * Asks for an export bundle with the system's open dialog (FRE-10). Only the shell reads the file,
+   * refusing one that's too large (the message ends in `tooLarge`) or isn't a bundle. Undefined if cancelled.
+   */
+  chooseBundle?(): Promise<{ id: string; name: string; notes: number } | undefined>;
+  /** Adds the chosen bundle's notes to a root as one batch and one commit, replacing nothing (FRE-10). */
+  importBundle?(id: string, to: "private" | "public"): Promise<{ added: number; renamed: number }>;
+  /** Notes deleted in the last 30 days, found from Git history (FIL-10). Absent without Git. */
+  deleted?(): Promise<DeletedNote[]>;
+  /**
+   * Puts deleted notes back as one batch and one commit (FIL-10): where they were (or in their
+   * root if that folder is gone), or in `folder` of the same root; a taken name is numbered.
+   * Resolves to where each went. Rejects like `apply`.
+   */
+  restore?(ids: string[], folder?: string): Promise<{ path: string; title: string }[]>;
   /** Changes made outside the app, in batches (the desktop's file watcher). */
   onChange?(listener: (changes: WorkspaceChange[]) => void): () => void;
+  /**
+   * Whether the workspace can be removed from this computer (FRE-07): only a Git workspace whose
+   * two repositories have nothing that isn't on their remote. Never removes anything.
+   */
+  removal?(): Promise<RemovalCheck>;
+  /**
+   * Removes the workspace's local clone and what the data inventory lists for it (PRV-02), after
+   * checking again; nothing on GitHub is touched. Resolves `removed` (the window then starts again)
+   * or why not.
+   */
+  remove?(): Promise<RemovalCheck>;
+}
+
+/**
+ * Removing the workspace from this computer: ready, changes not on GitHub yet, not a Git
+ * repository, a folder that isn't a Focus Notes workspace, done, or failed.
+ */
+export interface RemovalCheck {
+  state: "ready" | "unpushed" | "notGit" | "notWorkspace" | "removed" | "failed";
+  /** Changes not on the remote: uncommitted files, commits not pushed, and stashes, in both repositories. */
+  waiting: number;
+  folder: string;
+  /** The repositories the notes stay in, as owner/name: the notes repository first. */
+  repositories: string[];
 }
 
 /** One file operation in a batch (Files panel, D-94). Paths are the shell's own. */
@@ -105,7 +194,9 @@ export type WorkspaceOp =
   /** Desktop: to the system trash until Git keeps deletions (FIL-10). Browser: kept, marked deleted. */
   | { op: "delete"; path: string }
   /** A note's new text, at its path after the batch's moves: links that follow a rename or move (FIL-09, D-95). */
-  | { op: "write"; path: string; text: string };
+  | { op: "write"; path: string; text: string }
+  /** A new note, never over another: a copy the conflict resolver keeps (FIL-12). */
+  | { op: "create"; path: string; text: string };
 
 /** Why a batch was refused. The shell's error message ends with one of these. */
 export const OP_ERROR_CODES = ["notFound", "taken", "readOnly", "invalid", "intoItself", "trash", "failed"] as const;
@@ -172,4 +263,6 @@ export interface AppStateFile {
   uiScale?: number;
   /** The web first run has been seen (FRE-09). */
   webWelcomed?: boolean;
+  /** The desktop first run's step, kept so quitting resumes there, or done (FRE-01). */
+  firstRun?: FirstRunStep | "done";
 }

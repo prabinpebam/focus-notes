@@ -21,8 +21,11 @@ export interface ToastProps {
 /** A short confirmation at the bottom (IA-CMP-TOAST). Errors are alerts; everything else is polite. */
 export function Toast({ message, tone = "info", actionLabel, dismissLabel, focusRequest, id, onAction, onDismiss, onPausedChange }: ToastProps) {
   const ref = useRef<HTMLDivElement | null>(null);
+  // Only a request made while it shows moves focus: a toast that appears later never takes it.
+  const asked = useRef(focusRequest);
   useEffect(() => {
-    if (!focusRequest) return;
+    if (!focusRequest || focusRequest === asked.current) return;
+    asked.current = focusRequest;
     ref.current?.querySelector<HTMLElement>("button")?.focus();
   }, [focusRequest]);
   const pause = (paused: boolean) => onPausedChange?.({ paused });

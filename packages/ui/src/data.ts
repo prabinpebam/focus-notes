@@ -25,6 +25,13 @@ export interface ResultItem {
   disabled?: boolean;
 }
 
+/** One block of a note's version in the conflict resolver (VersionPane), and whether the other version differs there. */
+export interface VersionBlock {
+  id: string;
+  text: string;
+  changed: boolean;
+}
+
 /** A row of the Files tree (FileTree): a root's section label, a folder, or a note. */
 export interface TreeItem {
   id: string;
@@ -58,7 +65,7 @@ export interface TreeItem {
  * `files` is the Files sheet, `filesTree` its tree, and `filesEdit` the tree's name field, which
  * stops the outer scopes so Delete and F2 edit the text there.
  */
-export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "moveField"] as const;
+export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "moveField", "firstRun", "repoField"] as const;
 export type KeyScope = (typeof KEY_SCOPES)[number];
 
 /** One choice in a segmented control or filter. */

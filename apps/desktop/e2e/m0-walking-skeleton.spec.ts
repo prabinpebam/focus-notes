@@ -6,7 +6,7 @@ import { test, expect } from "@playwright/test";
 import { axeViolations } from "./axe.ts";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs } from "./helpers.ts";
+import { launch, quit, tempDirs, windowBox } from "./helpers.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -23,17 +23,24 @@ test("M0: launch to the blank canvas, type, save as Markdown, and reopen", async
   // PRF-02 is defined on reference hardware; CI runners are checked by pnpm bench with a margin.
   const ready = await first.readyMs();
   if (!process.env.CI) expect(ready).toBeLessThan(2500);
-  expect(await page.getByRole("button").count()).toBe(1);
+  // The only thing showing is the trigger. On Windows and Linux the window buttons are there too,
+  // hidden until the pointer reaches the band or they have focus (DD-DSK-04).
+  const windowButtons = await page.getByRole("group", { name: "Window controls" }).getByRole("button").count();
+  expect(await page.getByRole("button").count() - windowButtons).toBe(1);
+  // (They also show while the window isn't the active one, which a CI display without a window manager may never make it.)
+  const active = await first.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.isFocused());
+  if (process.platform !== "darwin" && active) await expect(page.getByRole("group", { name: "Window controls" })).toHaveCSS("opacity", "0");
 
-  // The trigger: a 10 px dot in a 30 px circle, at the top center.
+  // The trigger: a 10 px dot in a 30 px circle, at the top center of the window (drawn inside a
+  // shadow margin on Windows and Linux, D-14).
   const ring = await trigger.boundingBox();
   const dot = await trigger.locator("span").boundingBox();
-  const width = await page.evaluate(() => window.innerWidth);
+  const win = await windowBox(page);
   expect(Math.round(ring!.width)).toBe(30);
   expect(Math.round(dot!.width)).toBe(10);
-  expect(Math.abs(ring!.x + ring!.width / 2 - width / 2)).toBeLessThan(1.5);
+  expect(Math.abs(ring!.x + ring!.width / 2 - (win.left + win.width / 2))).toBeLessThan(1.5);
   // 40 px below the window's top edge (UI-10, D-78).
-  expect(Math.abs(ring!.y - 40)).toBeLessThan(1.5);
+  expect(Math.abs(ring!.y - win.top - 40)).toBeLessThan(1.5);
 
   // Type a heading and two paragraphs into the welcome note.
   await page.keyboard.press(`${mod}+A`);
@@ -80,7 +87,8 @@ test("M0: light and dark follow the shortcut and persist (THM-06)", async () => 
   const before = await theme();
   await l.page.keyboard.press(`${mod}+Shift+L`);
   await expect.poll(theme).not.toBe(before);
-  const bg = await l.page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  // The window's canvas: the page itself on macOS, the window drawn inside it on Windows and Linux.
+  const bg = await l.page.evaluate(() => getComputedStyle(document.querySelector("[data-app-root]")!).backgroundColor);
   expect(bg).toBe((await theme()) === "ink" ? "rgb(26, 26, 28)" : "rgb(251, 250, 247)");
   const after = await theme();
   await quit(l);

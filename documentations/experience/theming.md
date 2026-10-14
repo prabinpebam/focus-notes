@@ -20,7 +20,7 @@ Every color and font the writer sees comes from a theme. A theme is a small JSON
 | **Code** | `code.background`, `code.text`, `code.syntax.*` | Code blocks and inline code |
 | **Typography** | `font.content`, `font.ui`, `font.mono`, `font.size`, `font.lineHeight` | Note text, UI text, code |
 | **Layout** | `layout.measure` (default 70ch), `layout.blockGap` | Reading column width, spacing between blocks |
-| **Window** (desktop) | `window.radius` (default 20 px, Windows and Linux), `window.titleBarHeight` (44 px), `window.shadow` | [Desktop app](desktop-app.html) |
+| **Window** (desktop) | `window.radius` (default 20 px, Windows and Linux), `window.titleBarHeight` (44 px), and the window's shadow (`shadow.1`, D-104) | [Desktop app](desktop-app.html) |
 
 Component code never uses raw color or font values, only token names (THM-01). Themes set these semantic tokens, and components read their own component tokens, which alias them ([Tokens](../design/system/tokens.md), DSY-01). The app turns tokens into CSS custom properties (for example `color.textMuted` → `--fn-color-text-muted`) on the root element, so switching themes is just swapping a set of variables. No reload is needed.
 
@@ -82,7 +82,7 @@ A custom theme is a JSON file of one kind (light or dark) that names a base them
 - Token values are validated (colors, numbers in range, no `url()` and no raw CSS), so a shared theme file can't inject CSS (UNSUP-THEME-01). Fonts and reading settings aren't part of a theme (see above).
 - Custom themes are created in the [theme manager](../design/views/theme-manager.html): duplicate and edit, generate from a color (THM-11), shuffle (THM-12), or import a VS Code theme, a base16 scheme, or a theme file (THM-10).
 - Custom themes are stored in the private repository at `private/.focus-notes/themes/*.json`, which makes them version-controlled and lets them sync across devices without being published (THM-04, D-46). Without a private repository they fall back to `.focus-notes/themes/` in the notes repository, which is public.
-- The chosen appearance, the light and dark slots, and reading settings are per device by default. Opting in to *Sync appearance* stores them in `private/.focus-notes/settings.json` instead (THM-05, D-46).
+- The chosen appearance, the light and dark slots, and reading settings are per device by default. Opting in to *Sync appearance* stores them in `private/.focus-notes/settings.json` instead (THM-05, D-46). On the desktop it's in the ⋯ menu's Theme group wherever the workspace has a private repository; the interface scale and focus mode stay per device ([Desktop and Git → Synced settings](../architecture/desktop-and-git.md#synced-settings), D-99).
 ## Where themes apply
 
 | Surface | Uses the theme? |

@@ -63,7 +63,7 @@ describe("the toolbar (UI-04, UI-07)", () => {
     const app = appFor("macos");
     const byId = new Map(flat(vmOf(app)).map((i) => [i.id, i]));
     expect(byId.get("note.share")).toMatchObject({ label: "Share and visibility…", disabled: true, reason: "Sharing and visibility arrive in a later preview" });
-    expect(byId.get("settings.open")).toMatchObject({ label: "Settings", disabled: true, reason: "Settings arrive in a later preview", shortcut: "⌘," });
+    expect(byId.get("settings.open")).toMatchObject({ label: "Settings…", disabled: true, reason: "Settings manage your GitHub account, so they're in the desktop app", shortcut: "⌘," });
     expect(byId.get("help.open")).toMatchObject({ label: "Help and docs", disabled: true, reason: "Help and docs arrive in a later preview" });
     // Running one does nothing (and never throws), so the menu can stay open on it.
     const before = app.store.state;

@@ -101,6 +101,19 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     ],
     treeEditLabel: "Folder name",
     treeEditError: "That name is taken here.",
+    versionBlocks: [
+      { id: "m0", text: "# On focus", changed: false },
+      { id: "m1", text: "Attention is a garden.", changed: false },
+      { id: "m2", text: "Written on this computer, on the train.", changed: true },
+      { id: "m3", text: "- one\n- two", changed: false },
+    ],
+    versionEmpty: [],
+    snapLayouts: [
+      { id: "halves", label: "Halves", items: [{ id: "g.left", label: "Left half" }, { id: "g.right", label: "Right half" }] },
+      { id: "thirds", label: "Thirds", items: [{ id: "g.leftThird", label: "Left third" }, { id: "g.centerThird", label: "Center third" }, { id: "g.rightThird", label: "Right third" }] },
+      { id: "quarters", label: "Quarters", items: [{ id: "g.tl", label: "Top left quarter" }, { id: "g.tr", label: "Top right quarter" }, { id: "g.bl", label: "Bottom left quarter" }, { id: "g.br", label: "Bottom right quarter" }] },
+      { id: "maximize", label: "Full", items: [{ id: "g.max", label: "Maximize" }] },
+    ],
   };
   const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, icon: { type: "string" as const }, shortcut: { type: "string" as const }, checked: { type: "boolean" as const }, disabled: { type: "boolean" as const }, reason: { type: "string" as const } } };
   app.viewModels.register({
@@ -125,6 +138,9 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         treeEditing: { type: "array", items: { type: "object" } },
         treeEditLabel: { type: "string" },
         treeEditError: { type: "string" },
+        versionBlocks: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
+        versionEmpty: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
+        snapLayouts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
       },
     },
     select: () => ({ fixtures, toolbar, menu, ...extras }),
