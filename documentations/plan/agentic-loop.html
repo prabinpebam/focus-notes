@@ -182,7 +182,7 @@
 </ul>
 
 <h2 id="throughput" data-reader-personas="engineering product">Throughput</h2>
-<p>The loop optimizes <strong>validated progress toward the definition of done per hour</strong>, not completeness per task (D-113). Four rules decide what runs and when.</p>
+<p>The loop optimizes <strong>validated progress toward the definition of done per hour</strong>, not completeness per task (D-113). Four rules decide what runs and when, and two working modes, attended and unattended, shape them to whether the owner is there.</p>
 <h3>1. Serve the constraint</h3>
 <p>At any moment one thing limits progress, and everything else waits behind it.</p>
 <table>
@@ -203,11 +203,26 @@
   <li>At most two builders at a time, on areas that don't overlap; one while the owner is testing, so the machine stays quiet and measurements stay clean.</li>
   <li>Owner feedback goes into a queue, ordered by impact, and becomes the next small task. It never widens a task that's running.</li>
 </ul>
+<h3>Two working modes</h3>
+<p>How work is shaped depends on whether the owner is there to try it (D-113). The owner says which mode applies ("I'm here", "I'm stepping away until the morning"); when they haven't said, the loop is <strong>attended</strong> while the owner has written in the last 30 minutes and <strong>unattended</strong> otherwise.</p>
+<table>
+  <thead><tr><th></th><th><strong>Attended</strong>: the owner is monitoring, testing, and giving input</th><th><strong>Unattended</strong>: the owner is away for hours or the night</th></tr></thead>
+  <tbody>
+    <tr><td>Goal</td><td>Rapid iteration on what the owner sees and feels: visual and functional feedback turned into fixes they can try within minutes</td><td>Deep, systematic progress toward the definition of done: work packages, foundations, hardening, and evidence</td></tr>
+    <tr><td>Work</td><td>The owner's feedback queue first, one item or a small group at a time; anything else only in the gaps</td><td>The next work packages on the critical path, refactors and fundamental fixes, guard journeys, accessibility and visual audits, stage-gate preparation, and the queue's larger items</td></tr>
+    <tr><td>Batch size and time-box</td><td>One fix, about 15 minutes from report to visible fix</td><td>One work package or a coherent part of one, 45-minute time-boxes that each merge what works</td></tr>
+    <tr><td>Checks before merging</td><td>The fast checks for what changed (5 minutes or less); the full Windows suite runs on CI after the merge</td><td>The fast checks, then the full Windows suite locally before the merge, plus the bench on the quiet machine</td></tr>
+    <tr><td>Builders</td><td>One, so the machine stays responsive and nothing steals focus; the orchestrator may make small fixes directly</td><td>Up to two in parallel, on areas that don't overlap</td></tr>
+    <tr><td>The app</td><td>Rebuilt and restarted for the owner after every merge, with a one-line note of what to look at</td><td>Not restarted; a Windows build and a short summary are ready when the owner returns</td></tr>
+    <tr><td>Reporting</td><td>A line in the progress log per step, and a short message per fix</td><td>The progress log, and a <strong>handoff summary</strong> for the owner's return: what's done with evidence, what's in progress, decisions waiting for the owner, and what to try first</td></tr>
+  </tbody>
+</table>
+<p>Switching from unattended to attended: within 15 minutes the running work merges what's done, the app is rebuilt and opened, and the handoff summary is shown. Switching to unattended: the feedback queue is triaged, quick items finish, and deeper work starts.</p>
 <h3>4. Measure, show, and challenge</h3>
 <ul>
   <li><strong>Measures:</strong> time from report to visible fix; merges per hour; share of builder time spent verifying versus building; minutes CI is red; requirements moved to verifying per day.</li>
   <li><strong>Visible:</strong> builders log a timestamped line for every step to one progress log the owner can watch live.</li>
-  <li><strong>Challenged:</strong> every 30 minutes while work is running, an independent <strong>throughput reviewer</strong> agent attacks the current approach: is the work on the constraint, is anything over its time-box, are checks running that this stage doesn't need, is merge debt building, is feedback waiting, and what's the fastest path to the next thing the owner can see. The orchestrator acts on each finding or records why not, and each review adds a line to the progress log.</li>
+  <li><strong>Challenged:</strong> every 30 minutes while work is running, an independent <strong>throughput reviewer</strong> agent attacks the current approach: is the work on the constraint, is the work right for the current working mode, is anything over its time-box, are checks running that this stage doesn't need, is merge debt building, is feedback waiting, and what's the fastest path to the next thing the owner can see. The orchestrator acts on each finding or records why not, and each review adds a line to the progress log.</li>
 </ul>
 
 <h2 data-reader-personas="product engineering">Plan decisions</h2>

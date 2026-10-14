@@ -111,7 +111,7 @@ The bar above never weakens, but each check runs at the moment that matches its 
 | Moment | Checks | Time budget |
 | --- | --- | --- |
 | **Each change, before the owner sees it** | Typecheck of the packages touched, `ui:check`, the boundary check, and the unit tests and journeys for what changed | 5 minutes or less |
-| **Each merge to `main`** | The full Windows suite (unit, desktop and web journeys) in the background and on CI, never blocking the owner. Data safety and security changes run their full checks before merging | While the owner tests |
+| **Each merge to `main`** | Attended: the full Windows suite (unit, desktop and web journeys) runs on CI after the merge, never blocking the owner. Unattended: it runs locally before the merge, with the bench on the quiet machine. Data safety and security changes always run their full checks before merging | While the owner tests, or before the merge when they're away |
 | **Before a stage gate** | Everything in the work package and stage definitions of done: guard journeys, the accessibility audit, the visual quality checklist on every surface, the bench on a quiet machine | Once per stage |
 | **Before a release** | Everything, on every platform (D-112) | Once per release |
 
