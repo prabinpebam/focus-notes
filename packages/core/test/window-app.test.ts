@@ -58,6 +58,15 @@ describe("DSK-03, DSK-08: window commands on Windows and Linux", () => {
     emit({ frame: "opaque" });
     expect(vm(app).frame).toBe("square");
   });
+  it("DSK-04: tells the frame when the window is full screen, so the band hides until the pointer reaches the top edge", async () => {
+    const { app, emit } = setup();
+    await app.start();
+    expect(vm(app).fullScreen).toBe(false);
+    emit({ fullScreen: true });
+    expect(vm(app)).toMatchObject({ fullScreen: true, frame: "square", resizable: false });
+    emit({ fullScreen: false });
+    expect(vm(app).fullScreen).toBe(false);
+  });
   it("minimizes, maximizes, restores, closes, and snaps through the shell", async () => {
     const { app, calls, emit } = setup();
     await app.start();

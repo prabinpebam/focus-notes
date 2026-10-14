@@ -68,6 +68,9 @@
           "resizable": {
             "get": "vm.window.resizable"
           },
+          "fullScreen": {
+            "get": "vm.window.fullScreen"
+          },
           "menu": {
             "get": "vm.window.menu"
           },
