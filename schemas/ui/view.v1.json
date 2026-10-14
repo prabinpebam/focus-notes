@@ -991,6 +991,19 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "autoFocus": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -2025,7 +2038,8 @@
                     "findField",
                     "replaceField",
                     "pickerField",
-                    "moveField"
+                    "moveField",
+                    "repoField"
                   ]
                 },
                 {
@@ -3504,7 +3518,8 @@
                     "replaceField",
                     "pickerField",
                     "formatToolbar",
-                    "linkEditor"
+                    "linkEditor",
+                    "firstRun"
                   ]
                 },
                 {
@@ -3622,6 +3637,7 @@
                   "enum": [
                     "none",
                     "banner",
+                    "main",
                     "complementary",
                     "region"
                   ]

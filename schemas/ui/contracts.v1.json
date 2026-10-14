@@ -387,6 +387,11 @@
         "disabledReason": {
           "kind": "message",
           "requiredWhen": "disabled"
+        },
+        "autoFocus": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Takes focus when it first appears: one step's primary action, so Enter continues (the first run)."
         }
       },
       "events": {
@@ -1351,7 +1356,8 @@
             "findField",
             "replaceField",
             "pickerField",
-            "moveField"
+            "moveField",
+            "repoField"
           ],
           "default": "none"
         },
@@ -1498,6 +1504,18 @@
               "t": "field.clear"
             },
             "keyScope": "moveField"
+          }
+        },
+        {
+          "name": "keyScope repoField",
+          "props": {
+            "label": {
+              "t": "shortcuts.search"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "keyScope": "repoField"
           }
         }
       ]
@@ -3205,7 +3223,8 @@
             "replaceField",
             "pickerField",
             "formatToolbar",
-            "linkEditor"
+            "linkEditor",
+            "firstRun"
           ],
           "default": "none",
           "description": "Keys registered for this scope work while focus is inside."
@@ -3544,6 +3563,24 @@
           ]
         },
         {
+          "name": "keyScope firstRun",
+          "props": {
+            "keyScope": "firstRun",
+            "padding": "l",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
           "name": "elevation 0",
           "props": {
             "elevation": "0",
@@ -3655,6 +3692,7 @@
           "values": [
             "none",
             "banner",
+            "main",
             "complementary",
             "region"
           ],
@@ -4020,6 +4058,25 @@
           "name": "landmark banner",
           "props": {
             "landmark": "banner",
+            "label": {
+              "t": "gallery.sample"
+            }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "landmark main",
+          "props": {
+            "landmark": "main",
             "label": {
               "t": "gallery.sample"
             }

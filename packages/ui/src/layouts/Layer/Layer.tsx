@@ -8,14 +8,14 @@ export interface LayerProps {
   /** Marks the layer as part of the window's drag band (desktop title bar). */
   dragBand?: boolean;
   /** The landmark this layer forms for assistive technology. */
-  landmark?: "none" | "banner" | "complementary" | "region";
+  landmark?: "none" | "banner" | "main" | "complementary" | "region";
   /** Accessible name, needed for the region landmark. */
   label?: string;
   id?: string;
   children?: ReactNode;
 }
 
-const ROLE = { none: undefined, banner: "banner", complementary: "complementary", region: "region" } as const;
+const ROLE = { none: undefined, banner: "banner", main: "main", complementary: "complementary", region: "region" } as const;
 
 /** Puts content on a layer with the right order. Content in a layer may use frost. */
 export function Layer({ layer = "panel", position = "center", dragBand, landmark = "none", label, id, children }: LayerProps) {
