@@ -3,6 +3,7 @@ import { Icon } from "../Icon/Icon.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
 import type { TreeItem } from "../../data.ts";
 import * as s from "./FileTree.css.ts";
+import { typeAhead, type TypeAheadState } from "./typeAhead.ts";
 
 export interface FileTreeProps {
   label: string;
@@ -28,7 +29,6 @@ export interface FileTreeProps {
 export const treeRowId = (treeId: string, itemId: string) => `${treeId}-r-${itemId.replace(/[^\w-]/g, (c) => `_${c.codePointAt(0)!.toString(16)}`)}`;
 /** How long a collapsed folder is hovered while dragging before it opens (Files → Moving). */
 const EXPAND_AFTER_MS = 600;
-const TYPE_AHEAD_MS = 700;
 
 /**
  * The Files tree (IA-VIEW-FILES): the ARIA tree pattern on a flat list of rows with aria-level,
@@ -42,7 +42,7 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
   const [dropId, setDropId] = useState("");
   const drag = useRef<{ source: string; ids: string[] } | null>(null);
   const hover = useRef<{ id: string; timer: ReturnType<typeof setTimeout> } | null>(null);
-  const typed = useRef({ text: "", at: 0 });
+  const typed = useRef<TypeAheadState>({ text: "", at: -Infinity });
   const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
   const focused = byId.has(focusId ?? "") ? focusId! : items[0]?.id ?? "";
   const editing = items.find((i) => i.editing);
@@ -118,15 +118,9 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
       default: {
         // Type-ahead: letters jump to the next row whose name starts with them (Files → Accessibility).
         if (mod || e.key.length !== 1 || !/\S/.test(e.key)) return;
-        const now = Date.now();
-        const t = typed.current;
-        t.text = now - t.at > TYPE_AHEAD_MS ? e.key : t.text + e.key;
-        t.at = now;
-        const q = t.text.toLocaleLowerCase();
-        const start = t.text.length === 1 ? i + 1 : i;
-        const order = [...items.slice(start), ...items.slice(0, start)];
-        const hit = order.find((x) => !x.editing && x.label.toLocaleLowerCase().startsWith(q));
-        if (hit) select(hit.id, "replace");
+        // The key's own time, when it was pressed (DEF-4); a synthetic event without one uses now.
+        const hit = typeAhead(typed.current, e.key, e.timeStamp || performance.now(), items, i);
+        if (hit) select(hit, "replace");
         break;
       }
     }

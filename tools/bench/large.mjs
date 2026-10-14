@@ -49,6 +49,7 @@ function residentMB(metrics) {
   const out = execFileSync("powershell", ["-NoProfile", "-Command", `Get-CimInstance Win32_PerfFormattedData_PerfProc_Process | Where-Object { @(${pids}) -contains $_.IDProcess } | ForEach-Object { '{0} {1}' -f $_.WorkingSetPrivate, $_.WorkingSet }`], { encoding: "utf8" });
   const rows = out.trim().split(/\r?\n/).map((l) => l.trim().split(" ").map(Number)).filter((r) => r.length === 2 && r.every(Number.isFinite));
   if (rows.length !== metrics.length) throw new Error(`Found memory for ${rows.length} of ${metrics.length} processes`);
+  if (process.env.FOCUS_NOTES_BENCH_DETAIL) console.error("DETAIL", execFileSync("powershell", ["-NoProfile", "-Command", `Get-CimInstance Win32_PerfFormattedData_PerfProc_Process | Where-Object { @(${pids}) -contains $_.IDProcess } | ForEach-Object { '{0}:{1}:{2}' -f $_.IDProcess, [int]($_.WorkingSetPrivate/1MB), [int]($_.WorkingSet/1MB) }`], { encoding: "utf8" }).trim().split(/\r?\n/).join(" "), metrics.map((m) => `${m.pid}=${m.type}`).join(" "));
   const priv = rows.reduce((n, [p]) => n + p, 0);
   const shared = Math.max(...rows.map(([p, ws]) => ws - p));
   return (priv + shared) / (1024 * 1024);
@@ -121,6 +122,11 @@ export async function largeWorkspace({ root, mainEntry, notes = 10_000, reopenRu
     await page.keyboard.type("A paragraph typed during the benchmark, then saved.", { delay: 10 });
     await page.waitForTimeout(3000);
     const memory = residentMB(await app.evaluate(({ app: a }) => a.getAppMetrics()));
+    if (process.env.FOCUS_NOTES_BENCH_DETAIL) {
+      const h = await cdp.send("Runtime.getHeapUsage");
+      const m = await app.evaluate(() => process.memoryUsage());
+      console.error("HEAP renderer used/total MB", Math.round(h.usedSize / 1048576), Math.round(h.totalSize / 1048576), "main rss/heap MB", Math.round(m.rss / 1048576), Math.round(m.heapUsed / 1048576), "rows", await page.evaluate(() => document.querySelectorAll("*").length));
+    }
 
     // Idle: nothing typed or synced. Each process's CPU since the previous call, over the window.
     await page.waitForTimeout(5000);
