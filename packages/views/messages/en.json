@@ -556,5 +556,10 @@
   "account.synced": "Saved to GitHub",
   "account.syncProblem": "Not synced yet",
   "toast.signedOut": "Signed out of GitHub on this computer, in the app and in the terminal.",
-  "toast.signOutFailed": "Couldn't sign out of GitHub. Try again."
+  "toast.signOutFailed": "Couldn't sign out of GitHub. Try again.",
+  "firstRun.workspace.state.done": "Done",
+  "firstRun.workspace.state.skipped": "Skipped",
+  "firstRun.workspace.state.running": "Working on it",
+  "firstRun.workspace.state.failed": "Didn't finish",
+  "firstRun.workspace.state.pending": "Not started yet"
 }

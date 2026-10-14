@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { _electron as electron } from "@playwright/test";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tempDirs } from "./helpers.ts";
 
@@ -8,6 +9,8 @@ import { tempDirs } from "./helpers.ts";
 test("window spike: the custom window opens transparent and frameless", async () => {
   test.skip(process.platform === "darwin", "macOS uses the native window (D-14)");
   const dirs = tempDirs();
+  // Past the first run, as someone who already set up (FRE-01).
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
   const app = await electron.launch({
     args: [join(import.meta.dirname, "..", "out", "main", "main.mjs"), "--custom-window"],
     env: { ...process.env, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs } as Record<string, string>,

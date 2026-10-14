@@ -27,7 +27,8 @@ const mainEntry = join(root, "apps", "desktop", "out", "main", "main.mjs");
 
 function launchReadyMs(userData, docs) {
   return new Promise((resolve, reject) => {
-    const child = spawn(electronPath, [mainEntry], { env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs } });
+    // GitHub's API points at a closed local port: the bench never reaches the network.
+    const child = spawn(electronPath, [mainEntry], { env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9" } });
     let ready;
     const timer = setTimeout(() => { child.kill(); reject(new Error("The app never reported ready")); }, 30_000);
     child.stdout.on("data", (d) => {
@@ -44,6 +45,8 @@ async function startTimes() {
   for (let i = 0; i < runs; i++) {
     const docs = throwawayWorkspace();
     const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
+    // An installed app that's been set up: the desktop's first run is once per install (FRE-01) and ends before writing starts.
+    writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
     cold.push(await launchReadyMs(userData, docs));
     warm.push(await launchReadyMs(userData, docs));
   }
