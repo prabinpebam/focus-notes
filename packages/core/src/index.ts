@@ -30,5 +30,6 @@ export * from "./history.ts";
 export * from "./conflict-app.ts";
 export * from "./inventory.ts";
 export * from "./settings-app.ts";
+export * from "./theme-manager-app.ts";
 export * from "./window-app.ts";
 export * from "./window-geometry.ts";

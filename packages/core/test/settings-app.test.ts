@@ -107,7 +107,7 @@ describe("IA-VIEW-SETTINGS: opening Settings", () => {
     await t.run("settings.open");
     await settle();
     expect(t.vm()).toMatchObject({ open: true, section: "account", title: "Settings" });
-    expect(t.vm().sections.map((s: { id: string }) => s.id)).toEqual(["account", "workspace"]);
+    expect(t.vm().sections.map((s: { id: string }) => s.id)).toEqual(["account", "workspace", "appearance"]);
     await t.run("settings.setSection", { value: "workspace" });
     expect(t.vm().section).toBe("workspace");
     await t.run("settings.setOpen", { open: false });

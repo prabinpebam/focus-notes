@@ -57,6 +57,13 @@
           "type": "number",
           "minimum": 0.1,
           "maximum": 0.6
+        },
+        "paragraphSpacing": {
+          "enum": [
+            "compact",
+            "comfortable",
+            "airy"
+          ]
         }
       },
       "type": "object",

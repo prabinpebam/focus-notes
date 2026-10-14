@@ -74,6 +74,31 @@
         1.5
       ]
     },
+    "lineHeight": {
+      "description": "Line spacing (Theme manager → Reading)",
+      "type": "number",
+      "minimum": 1.3,
+      "maximum": 2
+    },
+    "measure": {
+      "description": "Reading width in characters",
+      "type": "integer",
+      "minimum": 50,
+      "maximum": 100
+    },
+    "paragraphSpacing": {
+      "enum": [
+        "compact",
+        "comfortable",
+        "airy"
+      ]
+    },
+    "focusDim": {
+      "description": "Focus mode's dim strength; absent: the theme's own",
+      "type": "number",
+      "minimum": 0.15,
+      "maximum": 0.6
+    },
     "webWelcomed": {
       "type": "boolean"
     }

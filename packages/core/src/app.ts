@@ -1,6 +1,6 @@
 import { Store } from "./store.ts";
 import { CommandRegistry, chordsFor, formatChord, KEY_LAYERS, type Binding } from "./commands.ts";
-import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, UI_SCALES, themeById, type ContentFont } from "./themes.ts";
+import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, FOCUS_DIM, LINE_HEIGHT, MEASURE, PARAGRAPH_SPACINGS, UI_SCALES, onSteps, themeById, type ContentFont, type ParagraphSpacing } from "./themes.ts";
 import { cheatSheet, displayPlatform, EDITOR_COMMANDS, NATIVE_KEYS, type CheatSheetLayer, type CheatSheetPlatform } from "./keymap.ts";
 import { ViewModelRegistry } from "./view-models.ts";
 import { MessageCatalog, type Messages } from "./messages.ts";
@@ -22,6 +22,7 @@ import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, t
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
+import { registerThemeManager, THEME_MANAGER_CLOSED, draftTokens, shownTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -36,15 +37,8 @@ export interface AppState {
     status: "loading" | "ready" | "error";
     saveState: SaveState;
   };
-  appearance: {
-    mode: "system" | "light" | "dark";
-    system: Scheme;
-    fontSize: number;
-    lightTheme: string;
-    darkTheme: string;
-    contentFont: ContentFont;
-    uiScale: number;
-  };
+  /** Appearance and the reading settings (THM-08, THM-03, Theme manager → Reading). */
+  appearance: Appearance;
   focusMode: boolean;
   ui: {
     toolbarOpen: boolean;
@@ -72,6 +66,8 @@ export interface AppState {
     conflict: ConflictState;
     /** Settings (IA-VIEW-SETTINGS): Account and Workspace, with signing out and removing the workspace (FRE-07). */
     settings: SettingsState;
+    /** The theme manager (IA-VIEW-THEME, THM-07). */
+    theme: ThemeManagerState;
   };
   /** Synced settings (PRV-03): no private repository to sync through, or syncing off or on. */
   settingsSync: "unavailable" | "off" | "on";
@@ -175,6 +171,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
   {
     id: "theme", label: "menu.theme",
     items: [
+      "theme.manager.open",
       "appearance.system", "appearance.light", "appearance.dark",
       { submenu: "theme.light", label: "menu.lightTheme", items: BUILT_IN_THEMES.filter((t) => t.kind === "light").map((t) => `theme.light.${t.id}`) },
       { submenu: "theme.dark", label: "menu.darkTheme", items: BUILT_IN_THEMES.filter((t) => t.kind === "dark").map((t) => `theme.dark.${t.id}`) },
@@ -230,9 +227,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     appearance: {
       mode: "system", system: bridge.systemScheme(), fontSize: DEFAULT_FONT_SIZE,
       lightTheme: DEFAULT_THEMES.light, darkTheme: DEFAULT_THEMES.dark, contentFont: "mono", uiScale: 1,
+      lineHeight: LINE_HEIGHT.default, measure: MEASURE.default, paragraphSpacing: "comfortable",
     },
     focusMode: false,
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, settings: SETTINGS_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, settings: SETTINGS_CLOSED, theme: THEME_MANAGER_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -807,6 +805,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     ...(options.clock ? { now: options.clock.now } : {}),
   });
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
+  registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
   // keeps them on this device as they are now, and deletes the file.
   commands.register({
@@ -935,15 +934,30 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         focusMode: { type: "boolean" },
         theme: { type: "string", enum: BUILT_IN_THEMES.map((t) => t.id) },
         contentFont: { type: "string", enum: [...CONTENT_FONTS] },
+        // Reading settings (Theme manager → Reading): unset where they're the token's own value.
+        lineHeight: { type: "number" },
+        measure: { type: "number" },
+        paragraphSpacing: { type: "string", enum: [...PARAGRAPH_SPACINGS] },
+        focusDim: { type: "number" },
+        /** An edited copy of the theme showing (Edit colors): its colors over the theme's tokens. */
+        themeColors: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } },
         uiScale: { type: "number" },
         editorKeymap: { type: "array", items: { type: "object", properties: { id: { type: "string" }, chord: { type: "string" } } } },
       },
     },
-    reads: ["appearance", "focusMode"],
-    select: (s) => ({
-      scheme: resolvedScheme(s), theme: resolvedTheme(s), platform: bridge.platform, fontSize: s.appearance.fontSize, focusMode: s.focusMode,
-      contentFont: s.appearance.contentFont, uiScale: s.appearance.uiScale, editorKeymap,
-    }),
+    reads: ["appearance", "focusMode", "ui.theme.preview", "ui.theme.draft"],
+    select: (s) => {
+      // The theme manager's keyboard preview shows on the real note (THM-07), and so does an edited copy.
+      const theme = shownTheme(s);
+      const a = s.appearance;
+      return {
+        scheme: themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode,
+        contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap,
+        lineHeight: a.lineHeight === LINE_HEIGHT.default ? undefined : a.lineHeight,
+        measure: a.measure === MEASURE.default ? undefined : a.measure,
+        paragraphSpacing: a.paragraphSpacing, focusDim: a.focusDim, themeColors: draftTokens(s),
+      };
+    },
   });
 
   const allBindings = (platform: Platform): Binding[] => {
@@ -1062,6 +1076,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           ...(themeById(appState.darkTheme)?.kind === "dark" ? { darkTheme: appState.darkTheme! } : {}),
           ...((CONTENT_FONTS as readonly string[]).includes(appState.contentFont ?? "") ? { contentFont: appState.contentFont as ContentFont } : {}),
           ...((UI_SCALES as readonly number[]).includes(appState.uiScale ?? 0) ? { uiScale: appState.uiScale! } : {}),
+          ...(onSteps(appState.lineHeight, LINE_HEIGHT) !== undefined ? { lineHeight: onSteps(appState.lineHeight, LINE_HEIGHT)! } : {}),
+          ...(onSteps(appState.measure, MEASURE) !== undefined ? { measure: onSteps(appState.measure, MEASURE)! } : {}),
+          ...((PARAGRAPH_SPACINGS as readonly string[]).includes(appState.paragraphSpacing ?? "") ? { paragraphSpacing: appState.paragraphSpacing as ParagraphSpacing } : {}),
+          ...(onSteps(appState.focusDim, FOCUS_DIM) !== undefined ? { focusDim: onSteps(appState.focusDim, FOCUS_DIM)! } : {}),
         },
         // Focus mode is on for new installs: it's a signature feature (D-04).
         focusMode: appState.focusMode ?? true,

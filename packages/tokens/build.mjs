@@ -19,6 +19,8 @@ const THEMES = Object.fromEntries(list("themes").filter((f) => !f.endsWith("pape
 const MODES = {
   '[data-contrast="more"]': join(src, "modes", "contrast-more.json"),
   ...Object.fromEntries(["sans", "serif", "hyperlegible", "dyslexic", "system"].map((f) => [`[data-content-font="${f}"]`, join(src, "modes", `content-font-${f}.json`)])),
+  // Paragraph spacing (Theme manager → Reading): Comfortable is the base.
+  ...Object.fromEntries(["compact", "airy"].map((p) => [`[data-paragraph-spacing="${p}"]`, join(src, "modes", `paragraph-${p}.json`)])),
   '[data-motion="reduced"]': join(src, "modes", "reduced-motion.json"),
   '[data-transparency="reduced"]': join(src, "modes", "reduced-transparency.json"),
   '[data-pointer="coarse"]': join(src, "modes", "coarse-pointer.json"),
