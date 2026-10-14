@@ -88,7 +88,16 @@ export async function largeWorkspace({ root, mainEntry, notes = 10_000, reopenRu
       await page.keyboard.press(`${mod}+O`);
       // The panel is ready when focus is on its row, not when a row is drawn: keys typed before
       // then would go to the note.
-      await page.waitForFunction(() => document.activeElement?.getAttribute("role") === "treeitem", null, { timeout: 30_000 });
+      await page.waitForFunction(() => document.activeElement?.getAttribute("role") === "treeitem", null, { timeout: 30_000 }).catch(async (e) => {
+        // Where focus went instead, and what was showing: a dialog, a toast, the panel or not.
+        console.error(`Opening ${name}: ${mod}+O didn't focus a Files row`, JSON.stringify(await page.evaluate(() => ({
+          active: [document.activeElement?.getAttribute("role") ?? document.activeElement?.tagName, document.activeElement?.getAttribute("aria-label"), document.activeElement?.textContent?.slice(0, 40)],
+          surfaces: [...document.querySelectorAll("[data-surface], [role=dialog], [role=alertdialog], [role=status]")].map((s) => `${s.getAttribute("data-surface") ?? s.getAttribute("role")}:${s.getAttribute("aria-label") ?? ""}:${s.textContent?.slice(0, 60)}`),
+          tree: Boolean(document.querySelector("[role=tree]")),
+          rows: document.querySelectorAll("[role=treeitem]").length,
+        }))));
+        throw e;
+      });
       // Each typed key's time, handling time, and the row it was typed on: printed if the row never comes.
       await page.evaluate(() => {
         window.__typed = [];
