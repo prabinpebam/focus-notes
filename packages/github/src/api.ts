@@ -107,7 +107,13 @@ export class GitHubApi {
   }
 
   user() {
-    return this.request<{ login: string; name: string | null }>("GET", "/user");
+    return this.request<{ login: string; id: number; name: string | null }>("GET", "/user");
+  }
+
+  /** The signed-in account's own repositories, most recently pushed first (the first run's Open from GitHub). */
+  async ownRepos(): Promise<Repo[]> {
+    const r = await this.request<{ name: string; owner: { login: string }; default_branch: string; private: boolean; permissions?: { push?: boolean } }[]>("GET", "/user/repos?affiliation=owner&sort=pushed&per_page=100");
+    return r.map((x) => ({ owner: x.owner.login, name: x.name, defaultBranch: x.default_branch, private: x.private, canPush: Boolean(x.permissions?.push) }));
   }
 
   async repo(owner: string, name: string): Promise<Repo> {

@@ -34,6 +34,7 @@ let nextId = 1;
 export class FakeGitHub {
   readonly token: string;
   login = "ada";
+  id = 583231;
   readonly repos = new Map<string, FakeRepo>();
   readonly calls: Call[] = [];
   /** Every request as sent, headers included, for checking where the token went. */
@@ -96,7 +97,8 @@ export class FakeGitHub {
   };
 
   private route(method: string, path: string, body: Record<string, unknown> | undefined): Response {
-    if (method === "GET" && path === "/user") return json(200, { login: this.login, name: "Ada" });
+    if (method === "GET" && path === "/user") return json(200, { login: this.login, id: this.id, name: "Ada" });
+    if (method === "GET" && path === "/user/repos") return json(200, [...this.repos.values()].filter((r) => r.owner === this.login).map(toRepo));
     if (method === "POST" && path === "/user/repos") {
       const name = String(body?.name);
       if (this.repo(name)) return json(422, { message: "Repository creation failed: name already exists on this account" });
