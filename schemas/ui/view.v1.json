@@ -313,6 +313,9 @@
           "$ref": "#/$defs/c_Sheet"
         },
         {
+          "$ref": "#/$defs/c_ReaderPage"
+        },
+        {
           "$ref": "#/$defs/c_EditorSurface"
         },
         {
@@ -329,6 +332,9 @@
         },
         {
           "$ref": "#/$defs/c_Dialog"
+        },
+        {
+          "$ref": "#/$defs/c_NoteContent"
         }
       ]
     },
@@ -5366,6 +5372,82 @@
         }
       }
     },
+    "c_ReaderPage": {
+      "type": "object",
+      "description": "A published page (IA-VIEW-PUBLIC): a skip link, the reading column as the page's main landmark, and a quiet footer. It follows the reader's light or dark preference and reads from 320 px wide.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ReaderPage"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "skipLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "skipLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "footer": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        }
+      }
+    },
     "c_EditorSurface": {
       "type": "object",
       "description": "The writing surface (Tiptap and ProseMirror). It owns the note's DOM; views place it once.",
@@ -6359,6 +6441,54 @@
               }
             }
           }
+        }
+      }
+    },
+    "c_NoteContent": {
+      "type": "object",
+      "description": "A note's content through the block components (paragraphs, headings, lists, task lists, quotes, code, tables, rules, inline marks, and unknown syntax), read-only: the published reader page's note (IA-VIEW-PUBLIC).",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "NoteContent"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "blocks": {
+              "$ref": "#/$defs/read"
+            }
+          },
+          "required": [
+            "blocks"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
         }
       }
     }
