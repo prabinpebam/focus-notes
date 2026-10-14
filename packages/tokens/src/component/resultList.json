@@ -96,6 +96,38 @@
       "disabledOpacity": {
         "$type": "number",
         "$value": "{opacity.disabled}"
+      },
+      "groupGap": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "groupLabelPaddingInline": {
+        "$type": "dimension",
+        "$value": "{space.m}"
+      },
+      "groupLabelPaddingBlock": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
+      },
+      "groupLabel": {
+        "$type": "color",
+        "$value": "{color.textMuted}"
+      },
+      "groupLabelWeight": {
+        "$type": "fontWeight",
+        "$value": "{font.weightSemibold}"
+      },
+      "matchWeight": {
+        "$type": "fontWeight",
+        "$value": "{font.weightBold}"
+      },
+      "match": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "state": {
+        "$type": "color",
+        "$value": "{color.textMuted}"
       }
     }
   }

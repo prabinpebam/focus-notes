@@ -383,6 +383,20 @@ export function EditorSurface({
         editor.view.focus();
         return;
       }
+      if (id === "editor.goToHeading") {
+        // Spotlight's heading results: the note's nth heading as the index counts them (top-level
+        // blocks), or the first with that text if the note has changed since it was indexed.
+        const heads: { pos: number; text: string }[] = [];
+        editor.state.doc.forEach((node, offset) => { if (node.type.name === "heading") heads.push({ pos: offset, text: node.textContent }); });
+        const text = String(args.text ?? "");
+        const nth = heads[Number(args.index)];
+        const head = nth && (!text || nth.text === text) ? nth : (heads.find((h) => h.text === text) ?? nth);
+        if (!head) return;
+        editor.commands.setTextSelection(head.pos + 1);
+        editor.view.focus();
+        editor.commands.scrollIntoView();
+        return;
+      }
       if (runLinkAction(id, args)) return;
       const action = EDITOR_ACTIONS[id];
       // From the table controls: they hand focus back to the note themselves once their menu closes.

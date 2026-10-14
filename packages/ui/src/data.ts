@@ -23,6 +23,14 @@ export interface ResultItem {
   icon?: string;
   shortcut?: string;
   disabled?: boolean;
+  /** The labeled group it's in (Spotlight's Top hit, Notes, Commands…); consecutive items share one. */
+  group?: string;
+  /** Where the label matched the query: [start, end) ranges, shown bold. */
+  highlights?: number[][];
+  /** The same for the description (a full-text snippet). */
+  descriptionHighlights?: number[][];
+  /** A current state or value at the end of the row ("On", "16 px"), read with it. */
+  state?: string;
 }
 
 /** One block of a note's version in the conflict resolver (VersionPane), and whether the other version differs there. */
@@ -65,7 +73,7 @@ export interface TreeItem {
  * `files` is the Files sheet, `filesTree` its tree, and `filesEdit` the tree's name field, which
  * stops the outer scopes so Delete and F2 edit the text there.
  */
-export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "moveField", "firstRun", "repoField"] as const;
+export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "moveField", "firstRun", "repoField", "spotlightField"] as const;
 export type KeyScope = (typeof KEY_SCOPES)[number];
 
 /** One choice in a segmented control or filter. */

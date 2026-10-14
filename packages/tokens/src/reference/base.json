@@ -686,6 +686,12 @@
       },
       "85cqh": {
         "$value": "85cqh"
+      },
+      "640": {
+        "$value": "640px"
+      },
+      "20vh": {
+        "$value": "20vh"
       }
     },
     "duration": {

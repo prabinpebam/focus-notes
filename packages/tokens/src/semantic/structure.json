@@ -212,6 +212,9 @@
     "dialogS": {
       "$value": "{ref.size.480}"
     },
+    "dialogM": {
+      "$value": "{ref.size.640}"
+    },
     "dialogL": {
       "$value": "{ref.size.760}"
     },
@@ -229,6 +232,9 @@
     },
     "dialogMaxHeight": {
       "$value": "{ref.size.85vh}"
+    },
+    "dialogTop": {
+      "$value": "{ref.size.20vh}"
     },
     "findBarClearance": {
       "$value": "{ref.size.64}"

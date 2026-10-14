@@ -2071,8 +2071,22 @@
                     "replaceField",
                     "pickerField",
                     "moveField",
-                    "repoField"
+                    "repoField",
+                    "spotlightField"
                   ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "chip": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
                 },
                 {
                   "$ref": "#/$defs/read"
@@ -2188,7 +2202,7 @@
     },
     "c_DialogPanel": {
       "type": "object",
-      "description": "The modal surface behind every dialog: scrim, raised panel, a title row, fixed controls, and a scrolling body.",
+      "description": "The modal surface behind every dialog: scrim, raised or frosted panel, a title row, fixed controls, a scrolling body, and a footer.",
       "required": [
         "type",
         "props"
@@ -2250,8 +2264,41 @@
                 {
                   "enum": [
                     "s",
+                    "m",
                     "l",
                     "xl"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "placement": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "center",
+                    "top"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "material": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "raised",
+                    "frosted"
                   ]
                 },
                 {
@@ -2293,6 +2340,12 @@
               }
             },
             "fixed": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "footer": {
               "type": "array",
               "items": {
                 "$ref": "#/$defs/node"
@@ -2548,7 +2601,7 @@
     },
     "c_ResultList": {
       "type": "object",
-      "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant).",
+      "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant), in labeled groups, with matches in bold and each row's state.",
       "required": [
         "type",
         "props"
