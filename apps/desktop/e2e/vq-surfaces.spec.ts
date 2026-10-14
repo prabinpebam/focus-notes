@@ -8,7 +8,7 @@
  */
 import { test, expect } from "./fixtures.ts";
 import { quit } from "./helpers.ts";
-import { dialogNeverShrinks, hoverTooltips, listRings, settled, visualProblems } from "./visual-quality.ts";
+import { dialogNeverShrinks, hoverTooltips, listRings, scrollbarClearOfCorners, settled, visualProblems } from "./visual-quality.ts";
 import { SIZES, SURFACES, mod, reset, scheme, settings, spotlight, start } from "./surfaces.ts";
 
 for (const { name: sizeName, size } of SIZES) {
@@ -37,6 +37,8 @@ for (const { name: sizeName, size } of SIZES) {
         problems.push(...await listRings(page, s.name));
         await reset(page).catch((e: Error) => { throw new Error(`Closing ${s.name}: ${e.message}`); });
       }
+      // The note's scrollbar thumb never runs into the window's rounded corners (D-111).
+      problems.push(...await scrollbarClearOfCorners(page));
       // Dialogs never shrink while open (D-111): tabs that hold less, and filters that leave less.
       await settings(page, "Workspace");
       const dialog = page.getByRole("dialog", { name: "Settings" });

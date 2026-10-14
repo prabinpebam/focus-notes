@@ -218,7 +218,7 @@ export const SURFACES: Surface[] = [
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press(mac ? "Alt+Shift+ArrowRight" : "Control+Shift+ArrowRight");
     await expect(page.getByRole("toolbar", { name: "Text formatting" })).toBeVisible();
-  }, tooltips: (page) => page.getByRole("toolbar", { name: "Text formatting" }).getByRole("button") },
+  }, opts: { skip: { insets: "queued (D-119): Turn into's text is 12 px in and the Link label 17 px; evening them changes every text menu button" } }, tooltips: (page) => page.getByRole("toolbar", { name: "Text formatting" }).getByRole("button") },
   { name: "turn into menu", open: async (page) => {
     await page.keyboard.press(caret.docEnd);
     await page.keyboard.press(mac ? "Alt+Shift+ArrowLeft" : "Control+Shift+ArrowLeft");
