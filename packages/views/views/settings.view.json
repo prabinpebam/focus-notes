@@ -1,0 +1,617 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "settings",
+  "ia": "IA-VIEW-SETTINGS",
+  "viewModels": [
+    "vm.settings",
+    "vm.signOut",
+    "vm.removeWorkspace"
+  ],
+  "focus": "settingsCategories",
+  "overlay": true,
+  "root": {
+    "type": "Stack",
+    "children": [
+      {
+        "type": "Dialog",
+        "id": "settings",
+        "when": {
+          "get": "vm.settings.open"
+        },
+        "props": {
+          "title": {
+            "get": "vm.settings.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.settings.open"
+          },
+          "size": "l"
+        },
+        "on": {
+          "openChange": {
+            "run": "settings.setOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Tabs",
+            "id": "settingsCategories",
+            "props": {
+              "label": {
+                "t": "settings.categories"
+              },
+              "items": {
+                "get": "vm.settings.sections"
+              },
+              "value": {
+                "bind": "vm.settings.section"
+              },
+              "orientation": "vertical"
+            },
+            "children": [
+              {
+                "switch": {
+                  "get": "vm.settings.section"
+                },
+                "cases": {
+                  "account": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "settings.account.github"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "settings.account.checking"
+                          },
+                          "announce": true
+                        },
+                        "when": {
+                          "get": "vm.settings.account.checking"
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "when": {
+                          "get": "vm.settings.account.signedIn"
+                        },
+                        "props": {
+                          "gap": "xs"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.settings.account.name"
+                              },
+                              "role": "emphasis"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.settings.account.login"
+                              },
+                              "tone": "muted"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "get": "vm.settings.account.via"
+                          }
+                        },
+                        "when": {
+                          "get": "vm.settings.account.signedIn"
+                        }
+                      },
+                      {
+                        "type": "Inline",
+                        "when": {
+                          "get": "vm.settings.account.signedIn"
+                        },
+                        "props": {
+                          "gap": "s",
+                          "wrap": true
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.account.switch"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "account.switch"
+                              }
+                            },
+                            "when": {
+                              "get": "vm.settings.account.canSwitch"
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "settings.account.signOut"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "account.signOut"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "when": {
+                          "get": "vm.settings.account.signedIn"
+                        },
+                        "props": {
+                          "gap": "s",
+                          "align": "start"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "settings.account.revokeNote"
+                              },
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.account.openGitHub"
+                              },
+                              "variant": "subtle"
+                            },
+                            "on": {
+                              "press": {
+                                "run": "account.openGitHub"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "settings.account.signedOut"
+                          }
+                        },
+                        "when": {
+                          "get": "vm.settings.account.signedOut"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "settings.account.gitStill",
+                            "args": {
+                              "login": {
+                                "get": "vm.settings.account.gitLogin"
+                              }
+                            }
+                          }
+                        },
+                        "when": {
+                          "get": "vm.settings.account.hasGitLogin"
+                        }
+                      },
+                      {
+                        "type": "Inline",
+                        "when": {
+                          "get": "vm.settings.account.signedOut"
+                        },
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.account.signIn"
+                              },
+                              "variant": "primary"
+                            },
+                            "on": {
+                              "press": {
+                                "run": "account.signIn"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "workspace": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "settings.workspace.heading"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.settings.workspace.folderText"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.settings.workspace.gitNote"
+                              },
+                              "tone": "muted"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "gap": "s",
+                          "wrap": true
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.sync.now"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "sync.now"
+                              }
+                            },
+                            "when": {
+                              "get": "vm.settings.workspace.git"
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.setup.runAgain"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "setup.runAgain"
+                              }
+                            },
+                            "when": {
+                              "get": "vm.settings.workspace.canRunSetup"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "settings.workspace.setupNote"
+                          },
+                          "tone": "muted"
+                        },
+                        "when": {
+                          "get": "vm.settings.workspace.canRunSetup"
+                        }
+                      },
+                      {
+                        "type": "Inline",
+                        "when": {
+                          "get": "vm.settings.workspace.canRemove"
+                        },
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.workspace.remove"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "workspace.remove"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "signOut",
+        "when": {
+          "get": "vm.signOut.open"
+        },
+        "props": {
+          "title": {
+            "t": "signOut.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.signOut.open"
+          },
+          "size": "s"
+        },
+        "on": {
+          "openChange": {
+            "run": "account.setSignOutOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "signOut.message"
+                  }
+                }
+              },
+              {
+                "type": "SegmentedControl",
+                "props": {
+                  "label": {
+                    "t": "signOut.git.label"
+                  },
+                  "options": {
+                    "get": "vm.signOut.gitOptions"
+                  },
+                  "value": {
+                    "bind": "vm.signOut.git"
+                  }
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.signOut.gitNote"
+                  },
+                  "tone": "muted",
+                  "announce": true
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "end",
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "signOut.cancel"
+                      },
+                      "variant": "secondary"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "account.setSignOutOpen",
+                        "args": {
+                          "open": false
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "command.account.signOutNow"
+                      },
+                      "variant": "danger",
+                      "busy": {
+                        "get": "vm.signOut.busy"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "account.signOutNow"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "removeWorkspace",
+        "when": {
+          "get": "vm.removeWorkspace.open"
+        },
+        "props": {
+          "title": {
+            "t": "remove.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.removeWorkspace.open"
+          },
+          "size": "s"
+        },
+        "on": {
+          "openChange": {
+            "run": "workspace.setRemoveOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.removeWorkspace.message"
+                  },
+                  "announce": true
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "end",
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "remove.cancel"
+                      },
+                      "variant": "secondary"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "workspace.setRemoveOpen",
+                        "args": {
+                          "open": false
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "command.workspace.removeSync"
+                      },
+                      "variant": "primary",
+                      "busy": {
+                        "get": "vm.removeWorkspace.busy"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "workspace.removeSync"
+                      }
+                    },
+                    "when": {
+                      "get": "vm.removeWorkspace.canSync"
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "command.workspace.removeConfirm"
+                      },
+                      "variant": "danger",
+                      "busy": {
+                        "get": "vm.removeWorkspace.busy"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "workspace.removeConfirm"
+                      }
+                    },
+                    "when": {
+                      "get": "vm.removeWorkspace.canRemove"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

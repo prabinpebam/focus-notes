@@ -32,6 +32,10 @@
     "focus": {
       "type": "string"
     },
+    "overlay": {
+      "type": "boolean",
+      "description": "Hosted beside the app's main view: its root is a Stack of dialogs that show only when their view models open them (Settings)."
+    },
     "local": {
       "type": "object",
       "additionalProperties": {
@@ -2684,6 +2688,22 @@
                 },
                 {
                   "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "orientation": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "horizontal",
+                    "vertical"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
                 }
               ]
             }

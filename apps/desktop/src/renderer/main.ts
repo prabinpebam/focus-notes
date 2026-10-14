@@ -17,7 +17,8 @@ const bridge = window.focusNotes;
 const app = createApp(bridge, messages.en!);
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root in the entry document");
-mountApp(root, { app, views });
+// Settings is a view document of its own, hosted beside the canvas (IA-VIEW-SETTINGS).
+mountApp(root, { app, views, overlays: ["settings"] });
 
 // The native parts follow the theme: title bar symbols and the window's own background (THM-02).
 let lastTheme = "";

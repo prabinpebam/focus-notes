@@ -221,6 +221,12 @@
     "versionPaneMin": {
       "$value": "{ref.size.320}"
     },
+    "categoryList": {
+      "$value": "{ref.size.200}"
+    },
+    "categoryPanelMin": {
+      "$value": "{ref.size.240}"
+    },
     "dialogMaxHeight": {
       "$value": "{ref.size.85vh}"
     },

@@ -1981,6 +1981,15 @@
         "value": {
           "kind": "text",
           "bindable": true
+        },
+        "orientation": {
+          "kind": "enum",
+          "values": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal",
+          "description": "vertical puts the list on the inline start, as Settings' categories."
         }
       },
       "events": {
@@ -2020,6 +2029,31 @@
             "value": {
               "get": "vm.gallery.optionFirst"
             }
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "orientation vertical",
+          "props": {
+            "label": {
+              "t": "settings.categories"
+            },
+            "items": {
+              "get": "vm.gallery.options"
+            },
+            "value": {
+              "get": "vm.gallery.optionLast"
+            },
+            "orientation": "vertical"
           },
           "children": [
             {

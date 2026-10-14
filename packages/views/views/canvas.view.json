@@ -3230,6 +3230,9 @@
                     "children": [
                       {
                         "type": "Text",
+                        "when": {
+                          "get": "vm.firstRun.showProgress"
+                        },
                         "props": {
                           "value": {
                             "get": "vm.firstRun.progress"

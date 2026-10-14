@@ -68,6 +68,14 @@
       "panelGap": {
         "$type": "dimension",
         "$value": "{space.l}"
+      },
+      "listWidth": {
+        "$type": "dimension",
+        "$value": "{layout.categoryList}"
+      },
+      "panelMinWidth": {
+        "$type": "dimension",
+        "$value": "{layout.categoryPanelMin}"
       }
     }
   }

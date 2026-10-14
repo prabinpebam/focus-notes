@@ -7,6 +7,8 @@ export interface TabsProps {
   label: string;
   items: Option[];
   value?: string;
+  /** Vertical: the tab list on the inline start, as Settings' categories (IA-VIEW-SETTINGS); arrow keys go up and down. */
+  orientation?: "horizontal" | "vertical";
   id?: string;
   /** The selected tab's panel content; the view switches it on `value`. */
   children?: ReactNode;
@@ -14,14 +16,15 @@ export interface TabsProps {
 }
 
 /** Tabs (ARIA tabs pattern): arrow keys move between tabs, and the panel follows the selection. */
-export function Tabs({ label, items, value, id, children, onChange }: TabsProps) {
+export function Tabs({ label, items, value, orientation = "horizontal", id, children, onChange }: TabsProps) {
   const selected = value ?? items[0]?.id ?? "";
   return (
-    <AriaTabs className={s.root} selectedKey={selected} onSelectionChange={(k) => onChange?.({ value: String(k) })} {...(id ? { id } : {})}>
-      <TabList className={s.list} aria-label={label}>
-        {items.map((o) => <Tab key={o.id} id={o.id} className={s.tab}>{o.label}</Tab>)}
+    <AriaTabs className={s.root[orientation]} orientation={orientation} selectedKey={selected} onSelectionChange={(k) => onChange?.({ value: String(k) })} {...(id ? { id } : {})}>
+      <TabList className={s.list[orientation]} aria-label={label}>
+        {items.map((o) => <Tab key={o.id} id={o.id} className={s.tab[orientation]}>{o.label}</Tab>)}
       </TabList>
-      <TabPanel id={selected} className={s.panel}>{children}</TabPanel>
+      {/* Keyed by the selection, so the panel and its id change together with the selected tab's aria-controls. */}
+      <TabPanel key={selected} id={selected} className={s.panel[orientation]}>{children}</TabPanel>
     </AriaTabs>
   );
 }

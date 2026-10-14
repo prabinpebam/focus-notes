@@ -187,7 +187,10 @@ export function checkUi(inputs: CheckInputs): Problem[] {
     };
 
     walk(doc.root, "/root", {});
-    if (!isComponent(doc.root) || doc.root.type !== "AppRoot") add("design", "/root", "a view's root is AppRoot");
+    if (doc.overlay) {
+      // A view hosted beside the main one adds only dialogs: no second app root, nothing on the canvas.
+      if (!isComponent(doc.root) || doc.root.type !== "Stack" || (doc.root.children ?? []).some((c) => !isComponent(c) || c.type !== "Dialog")) add("design", "/root", "an overlay view's root is a Stack of Dialogs");
+    } else if (!isComponent(doc.root) || doc.root.type !== "AppRoot") add("design", "/root", "a view's root is AppRoot");
     if (!doc.focus) add("accessibility", "/focus", "every view says where focus goes when it opens");
     else if (!ids.has(doc.focus)) add("references", "/focus", `focus target "${doc.focus}" isn't an id in this view`);
     for (const [where, n] of primaries) if (n > 1) add("design", where, "at most one primary button per view surface");
