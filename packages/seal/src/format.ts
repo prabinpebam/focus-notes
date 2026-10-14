@@ -105,14 +105,18 @@ export type KeyringEnvelope =
   | { v: 1; kdf: "hkdf-sha256"; salt: string; iv: string; data: string };
 export interface KeyringPayload { grant: string; expiresAt: string | null; manifest: { kid: string; key: string } }
 
-const keyringAad = (build: string, kdf: KeyringKdf, salt: string) =>
-  kdf === KDF ? `focus-notes/keyring/v1|${build}|${KDF}|${ITERATIONS}|${salt}` : `focus-notes/keyring/v1|${build}|${kdf}|${salt}`;
+/**
+ * The keyring's header, its role (`vault`, `link|<grant id>`, `passcode|<lookup>`), and the build,
+ * authenticated as additional data: a keyring moved to another's place, or to another build, opens nothing.
+ */
+const keyringAad = (build: string, kdf: KeyringKdf, salt: string, role: string) =>
+  kdf === KDF ? `focus-notes/keyring/v1|${build}|${KDF}|${ITERATIONS}|${salt}|${role}` : `focus-notes/keyring/v1|${build}|${kdf}|${salt}|${role}`;
 
 /** Seals a grant's keyring with its derived key (PBKDF2 bits for passcodes, HKDF bits for links). */
-export async function sealKeyring(derivedKey: Bytes, salt: Bytes, build: string, payload: KeyringPayload, kdf: KeyringKdf = KDF): Promise<string> {
+export async function sealKeyring(derivedKey: Bytes, salt: Bytes, build: string, payload: KeyringPayload, kdf: KeyringKdf, role: string): Promise<string> {
   const key = await importKey(derivedKey, "encrypt");
   const s = toB64url(salt);
-  const body = await encrypt(key, utf8(JSON.stringify(payload)), keyringAad(build, kdf, s));
+  const body = await encrypt(key, utf8(JSON.stringify(payload)), keyringAad(build, kdf, s, role));
   const envelope: KeyringEnvelope = kdf === KDF ? { v: 1, kdf, iterations: ITERATIONS, salt: s, ...body } : { v: 1, kdf, salt: s, ...body };
   return JSON.stringify(envelope);
 }
@@ -134,8 +138,8 @@ export function parseKeyring(text: string, kdf: KeyringKdf = KDF): KeyringEnvelo
 }
 export const keyringSalt = (e: KeyringEnvelope) => fromB64url(e.salt);
 
-export async function openKeyring(e: KeyringEnvelope, key: CryptoKey, build: string): Promise<KeyringPayload> {
-  const plain = await decrypt(key, e.iv, e.data, keyringAad(build, e.kdf, e.salt));
+export async function openKeyring(e: KeyringEnvelope, key: CryptoKey, build: string, role: string): Promise<KeyringPayload> {
+  const plain = await decrypt(key, e.iv, e.data, keyringAad(build, e.kdf, e.salt, role));
   let p: KeyringPayload;
   try { p = JSON.parse(dec.decode(plain)) as KeyringPayload; } catch { throw new SealError("format", "keyring payload"); }
   if (typeof p?.grant !== "string" || typeof p.manifest?.kid !== "string" || !KID.test(p.manifest.kid) || typeof p.manifest.key !== "string") throw new SealError("format", "keyring payload");

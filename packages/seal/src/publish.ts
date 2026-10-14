@@ -9,10 +9,10 @@ import { join, relative, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   encodeText, fromB64url, isSafePath, KDF, PUBLIC_INDEX, KEY_BYTES, randomBytes, randomId, sealedPath, sealFile, sealKeyring, SALT_BYTES, titleOf, toB64url, vaultPath,
-  derivePasscodeBits, type Manifest, type ManifestEntry, type PublicIndex, type SiteManifest,
+  derivePasscodeBits, passphraseStrength, type Manifest, type ManifestEntry, type PublicIndex, type SiteManifest,
 } from "./format.ts";
 import {
-  activeShareGrants, deriveLinkBits, grantScope, inScope, isActive, LINK_KDF, LINK_SECRET_BYTES, linkKeyringPath, nameLookup, noteId, passcodeKeyringPath, scopedPaths,
+  activeShareGrants, deriveLinkBits, GRANT_ID, grantScope, inScope, isActive, keyringRole, keyringSaltFor, LINK_KDF, normalizeName, LINK_SECRET_BYTES, linkKeyringPath, nameLookup, noteId, passcodeKeyringPath, scopedPaths,
   type AccessFile, type Grant,
 } from "./grants.ts";
 
@@ -72,7 +72,7 @@ export function validateAccess(a: unknown): AccessFile {
   const f = a as AccessFile;
   if (f?.version !== 1 || !Array.isArray(f.grants)) throw new Error("private/access.json: expected { version: 1, grants: [] } (schemas/access.schema.json)");
   for (const g of f.grants) {
-    if (typeof g?.id !== "string" || !/^[A-Za-z0-9_-]{8,}$/.test(g.id) || typeof g.name !== "string" || typeof g.salt !== "string" || typeof g.createdAt !== "string") {
+    if (typeof g?.id !== "string" || !GRANT_ID.test(g.id) || typeof g.name !== "string" || typeof g.salt !== "string" || typeof g.createdAt !== "string") {
       throw new Error("private/access.json: a grant is malformed.");
     }
     const bad = (what: string) => { throw new Error(`private/access.json: a grant ${what}.`); };
@@ -81,11 +81,14 @@ export function validateAccess(a: unknown): AccessFile {
     try { if (g.link !== undefined && fromB64url(g.link.secret).length !== LINK_SECRET_BYTES) bad("has a malformed link"); } catch { bad("has a malformed link"); }
     if (g.passcode !== undefined && (typeof g.passcode.value !== "string" || g.passcode.value.trim().length < 12)) bad("has a passcode shorter than 12 characters");
     if (typeof g.scope !== "object" || g.scope === null) bad("has no scope");
+    if (!normalizeName(g.name)) bad("has an empty name");
+    // A custom passcode must resist offline guessing; generated ones (four EFF words) do by construction (SHR-07).
+    if (g.passcode && !g.owner && !g.revokedAt && !g.passcode.generated && !passphraseStrength(g.passcode.value).ok) bad("has a custom passcode that's too easy to guess (use 12 or more characters, or generate one)");
   }
   if (f.nameSalt !== undefined) {
     let ok = false;
-    try { ok = fromB64url(f.nameSalt).length >= SALT_BYTES; } catch { /* reported below */ }
-    if (!ok) throw new Error("private/access.json: nameSalt needs 16 bytes or more.");
+    try { const n = fromB64url(f.nameSalt).length; ok = n >= SALT_BYTES && n <= 64; } catch { /* reported below */ }
+    if (!ok) throw new Error("private/access.json: nameSalt needs 16 to 64 bytes.");
   }
   if (f.grants.filter((g) => g.owner && !g.revokedAt).length > 1) throw new Error("private/access.json: more than one owner grant");
   if (new Set(f.grants.map((g) => g.id)).size !== f.grants.length) throw new Error("private/access.json: two grants have the same ID.");
@@ -133,6 +136,7 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
   let sealedNotes = 0;
   let nameSalt: string | undefined;
   const secrets: string[] = [];
+  const names: string[] = [];
   const accessFile = o.private ? join(o.private, "access.json") : "";
   if (o.private && (await exists(accessFile))) {
     // Errors from the private tree never quote it: the Actions log is public.
@@ -140,7 +144,10 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     try { raw = JSON.parse(await readFile(accessFile, "utf8")); } catch { throw new Error("private/access.json couldn't be read as JSON."); }
     const access = validateAccess(raw);
     // Every grant's secrets, in force or not, are checked for leaks along with the private text.
-    for (const g of access.grants) secrets.push(...[g.link?.secret, g.passcode?.value, g.passcodeKey].filter((s): s is string => !!s));
+    for (const g of access.grants) {
+      secrets.push(...[g.link?.secret, g.passcode?.value, g.passcodeKey].filter((s): s is string => !!s));
+      if (!g.owner) names.push(g.name);
+    }
     const root = join(o.private, "notes");
     const files = await markdownFiles(root);
     privateTexts = await Promise.all(files.map(async (path) => {
@@ -152,9 +159,11 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     const shared = activeShareGrants(access, now);
 
     // Names must stay apart once normalized, or one audience's keyring would replace another's.
-    nameSalt = shared.some((g) => g.passcode) ? (access.nameSalt ?? toB64url(randomBytes(SALT_BYTES))) : undefined;
+    // Published whenever there's an access.json, so its presence says nothing about passcode audiences.
+    const salt = access.nameSalt ?? toB64url(randomBytes(SALT_BYTES));
+    nameSalt = salt;
     const lookups = new Map<Grant, string>();
-    for (const g of shared) if (g.passcode) lookups.set(g, await nameLookup(nameSalt!, g.name));
+    for (const g of shared) if (g.passcode) lookups.set(g, await nameLookup(salt, g.name));
     if (new Set(lookups.values()).size !== lookups.size) throw new Error("private/access.json: two active audiences have the same name.");
 
     // Each note is sealed once this build, with its own fresh key, and listed by every manifest that opens it.
@@ -183,14 +192,21 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
 
     if (owner) {
       const payload = await sealManifest(owner);
-      await put(at(vaultPath(build)), await sealKeyring(fromB64url(owner.passcodeKey!), fromB64url(owner.salt), build, payload));
+      await put(at(vaultPath(build)), await sealKeyring(fromB64url(owner.passcodeKey!), fromB64url(owner.salt), build, payload, KDF, keyringRole.vault));
       vault = true;
     }
     for (const g of shared) {
       const payload = await sealManifest(g);
-      const salt = fromB64url(g.salt);
-      if (g.link) await put(at(linkKeyringPath(build, g.id)), await sealKeyring(await deriveLinkBits(fromB64url(g.link.secret), salt), salt, build, payload, LINK_KDF));
-      if (g.passcode) await put(at(passcodeKeyringPath(build, lookups.get(g)!)), await sealKeyring(await derivePasscodeBits(g.passcode.value, salt), salt, build, payload, KDF));
+      // Each keyring has its own salt from the grant's, and names its role and grant in its additional data.
+      const grantSalt = fromB64url(g.salt);
+      if (g.link) {
+        const s = await keyringSaltFor(grantSalt, "link");
+        await put(at(linkKeyringPath(build, g.id)), await sealKeyring(await deriveLinkBits(fromB64url(g.link.secret), s, g.id), s, build, payload, LINK_KDF, keyringRole.link(g.id)));
+      }
+      if (g.passcode) {
+        const s = await keyringSaltFor(grantSalt, "passcode"), lookup = lookups.get(g)!;
+        await put(at(passcodeKeyringPath(build, lookup)), await sealKeyring(await derivePasscodeBits(g.passcode.value, s), s, build, payload, KDF, keyringRole.passcode(lookup)));
+      }
       shares++;
     }
     sealedNotes = sealedByPath.size;
@@ -199,7 +215,7 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
   const site: SiteManifest = { format: 1, build, notes: PUBLIC_INDEX, vault, ...(nameSalt ? { nameSalt } : {}) };
   await put(join(o.site, "focus-notes.json"), JSON.stringify(site));
 
-  const leaks = await leakCheck(o.site, privateTexts, secrets);
+  const leaks = await leakCheck(o.site, privateTexts, secrets, names);
   if (leaks.length) throw new LeakError(leaks);
   const count = (n: number, what: string) => `${n} ${what}${n === 1 ? "" : "s"}`;
   log(`Published ${count(index.notes.length, "public note")}${o.reader ? ` (${count(publicPages, "page")})` : ""}${sealedNotes ? ` and sealed ${count(sealedNotes, "private note")}` : ""}${vault ? " in the vault" : ""}${shares ? ` for ${count(shares, "share audience")}` : ""}. Leak check passed.`);
@@ -221,13 +237,32 @@ export const LEAK_MIN_LINE = 24;
 /** Shorter paths ("Todo.md") are too common to mean anything, and would fail on the app's own files. */
 export const LEAK_MIN_PATH = 12;
 
-/** Every text file in the site is searched for each private note's path, each long line of its text, and every grant secret (SEC-06). */
-export async function leakCheck(site: string, notes: { path: string; text: string }[], secrets: readonly string[] = []): Promise<{ file: string; kind: LeakKind }[]> {
-  if (!notes.length && !secrets.length) return [];
+/** Audience names this long or longer must never appear in the site; shorter ones ("Sam") are too common to test. */
+export const LEAK_MIN_NAME = 6;
+
+/** A secret as it might be written: as stored, in Unicode NFC and NFD, and base64url as standard base64. */
+export function secretForms(secret: string): string[] {
+  const s = secret.trim();
+  if (!s) return [];
+  const forms = [s, s.normalize("NFC"), s.normalize("NFD")];
+  // Unpadded standard base64 is a prefix of the padded form, so it finds both.
+  if (/^[A-Za-z0-9_-]+$/.test(s)) forms.push(s.replace(/-/g, "+").replace(/_/g, "/"));
+  return [...new Set(forms)];
+}
+
+/**
+ * Every text file in the site is searched for each private note's path, each long line of its text,
+ * every grant secret in each of its forms, and every audience name of LEAK_MIN_NAME characters or more (SEC-06).
+ */
+export async function leakCheck(
+  site: string, notes: { path: string; text: string }[], secrets: readonly string[] = [], names: readonly string[] = [],
+): Promise<{ file: string; kind: LeakKind }[]> {
+  if (!notes.length && !secrets.length && !names.length) return [];
   const paths = notes.map((n) => n.path).filter((p) => p.length >= LEAK_MIN_PATH);
   const lines = [...new Set(notes.flatMap((n) => n.text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length >= LEAK_MIN_LINE)))];
   // Secrets of any length: a passcode is at least 12 characters, links and keys 43.
-  const keys = [...new Set(secrets.map((s) => s.trim()).filter(Boolean))];
+  const keys = [...new Set(secrets.flatMap(secretForms))];
+  const audiences = [...new Set(names.map((n) => n.trim()).filter((n) => n.length >= LEAK_MIN_NAME).flatMap((n) => [n, n.normalize("NFC")]))];
   const found: { file: string; kind: LeakKind }[] = [];
   const walk = async (d: string) => {
     for (const e of await readdir(d, { withFileTypes: true })) {
@@ -237,6 +272,7 @@ export async function leakCheck(site: string, notes: { path: string; text: strin
       const body = await readFile(p, "utf8");
       const file = relative(site, p).split(sep).join("/");
       if (keys.some((x) => body.includes(x))) found.push({ file, kind: "secret" });
+      else if (audiences.some((x) => body.includes(x))) found.push({ file, kind: "name" });
       else if (paths.some((x) => body.includes(x))) found.push({ file, kind: "path" });
       else if (lines.some((x) => body.includes(x))) found.push({ file, kind: "text" });
     }
@@ -244,4 +280,4 @@ export async function leakCheck(site: string, notes: { path: string; text: strin
   await walk(site);
   return found;
 }
-export type LeakKind = "path" | "text" | "secret";
+export type LeakKind = "path" | "text" | "secret" | "name";

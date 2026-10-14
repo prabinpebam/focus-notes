@@ -7,7 +7,7 @@ import {
   parsePublicIndex, parseSiteManifest, sealedPath, SealError, vaultPath,
   type KeyringEnvelope, type ManifestEntry, type PublicNote, type SiteManifest,
 } from "./format.ts";
-import { deriveLinkKey, GRANT_ID, LINK_KDF, linkKeyringPath, nameLookup, passcodeKeyringPath } from "./grants.ts";
+import { deriveLinkKey, GRANT_ID, keyringRole, LINK_KDF, linkKeyringPath, nameLookup, passcodeKeyringPath } from "./grants.ts";
 
 /** Fetches a file of the site by its path from the site's root. Resolves to undefined if it isn't there. */
 export type SiteFetch = (path: string) => Promise<string | undefined>;
@@ -47,13 +47,13 @@ export class SiteReader {
   async unlock(passphrase: string): Promise<{ vault: OpenVault; key: CryptoKey; salt: string }> {
     const { m, envelope } = await this.#keyring();
     const key = await derivePasscodeKey(passphrase, keyringSalt(envelope));
-    return { vault: await this.#open(m, envelope, key), key, salt: envelope.salt };
+    return { vault: await this.#open(m, envelope, key, keyringRole.vault), key, salt: envelope.salt };
   }
   /** Opens the vault with a remembered key. Fails with code "key" if the passphrase has changed since. */
   async unlockWithKey(key: CryptoKey, salt: string): Promise<OpenVault> {
     const { m, envelope } = await this.#keyring();
     if (envelope.salt !== salt) throw new SealError("key", "passphrase changed");
-    return this.#open(m, envelope, key);
+    return this.#open(m, envelope, key, keyringRole.vault);
   }
 
   async #keyring() {
@@ -75,7 +75,8 @@ export class SiteReader {
       const text = await this.get(linkKeyringPath(m.build, id));
       if (text === undefined) throw new SealError("key");
       const envelope = parseKeyring(text, LINK_KDF);
-      return this.#open(m, envelope, await deriveLinkKey(fromB64url(secret), keyringSalt(envelope)), false);
+      // The keyring names its grant, so it must be the one the link asked for (D-117).
+      return this.#open(m, envelope, await deriveLinkKey(fromB64url(secret), keyringSalt(envelope), id), keyringRole.link(id), id);
     });
   }
   /** Opens what a name and passcode share (SHR-10), with the same generic error. Returns the key too, so the caller may remember it. */
@@ -83,16 +84,19 @@ export class SiteReader {
     return generic(async () => {
       const m = await this.manifest();
       if (!m?.nameSalt) throw new SealError("key");
-      const text = await this.get(passcodeKeyringPath(m.build, await nameLookup(m.nameSalt, name)));
+      const lookup = await nameLookup(m.nameSalt, name);
+      const text = await this.get(passcodeKeyringPath(m.build, lookup));
       if (text === undefined) throw new SealError("key");
       const envelope = parseKeyring(text, KDF);
       const key = await derivePasscodeKey(passcode, keyringSalt(envelope));
-      return { share: await this.#open(m, envelope, key, false), key, salt: envelope.salt };
+      return { share: await this.#open(m, envelope, key, keyringRole.passcode(lookup)), key, salt: envelope.salt };
     });
   }
 
-  async #open(m: SiteManifest, envelope: KeyringEnvelope, key: CryptoKey, isVault = true): Promise<OpenVault> {
-    const ring = await openKeyring(envelope, key, m.build);
+  async #open(m: SiteManifest, envelope: KeyringEnvelope, key: CryptoKey, role: string, grant?: string): Promise<OpenVault> {
+    const isVault = role === keyringRole.vault;
+    const ring = await openKeyring(envelope, key, m.build, role);
+    if (grant !== undefined && ring.grant !== grant) throw new SealError("key");
     const sealed = await this.get(sealedPath(m.build, ring.manifest.kid));
     if (sealed === undefined) throw new SealError("format", "no manifest");
     const manifest = parseManifest(await openFile("manifest", fromB64url(ring.manifest.key), m.build, ring.manifest.kid, sealed));

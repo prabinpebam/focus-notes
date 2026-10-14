@@ -4,7 +4,7 @@
  * Web Crypto only: the publisher seals with it and the browser's share reader opens with it.
  * See documentations/architecture/repository-and-publishing.html#sealing-and-share-links.
  */
-import { SealError, type Bytes } from "./format.ts";
+import { fromB64url, SealError, type Bytes } from "./format.ts";
 
 export interface Grant {
   id: string;
@@ -83,15 +83,39 @@ export const normalizeName = (name: string) => name.normalize("NFKC").trim().toU
 
 const hex = (bytes: Uint8Array) => [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
 
+/** PBKDF2 iterations for the name lookup: slow enough that guessing names against a site costs real time per guess (D-117). */
+export const NAME_ITERATIONS = 50_000;
+
 /**
- * Where a name's passcode keyring is: the first 16 bytes of SHA-256 over
- * `focus-notes/name/v1|<nameSalt>|<normalized name>`, as 32 hex characters. The salt is the workspace's
- * public `nameSalt`, so the file names say nothing about who has access without guessing names first.
+ * Where a name's passcode keyring is: PBKDF2-HMAC-SHA256 over the normalized name with the workspace's
+ * public `nameSalt` (its bytes) and NAME_ITERATIONS, 16 bytes as 32 hex characters. The lookup hides
+ * names from anyone who doesn't guess them, and makes each guess slow; it can't hide whether a guessed
+ * name has a share, because the keyring's file is there or isn't (D-117).
  */
 export async function nameLookup(nameSalt: string, name: string): Promise<string> {
-  const data = new TextEncoder().encode(`focus-notes/name/v1|${nameSalt}|${normalizeName(name)}`);
-  return hex(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", data)).slice(0, 16));
+  const subtle = globalThis.crypto.subtle;
+  const base = await subtle.importKey("raw", new TextEncoder().encode(normalizeName(name)), "PBKDF2", false, ["deriveBits"]);
+  return hex(new Uint8Array(await subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: fromB64url(nameSalt), iterations: NAME_ITERATIONS }, base, 128)));
 }
+
+/**
+ * A keyring's own salt, from the grant's: HKDF-SHA256 with info `focus-notes/salt/v1|link` or `|passcode`,
+ * 16 bytes. A grant's link and passcode keyrings never share a salt, so the published headers can't be
+ * matched up to show they're the same audience.
+ */
+export async function keyringSaltFor(grantSalt: Bytes, kind: "link" | "passcode"): Promise<Bytes> {
+  const subtle = globalThis.crypto.subtle;
+  const base = await subtle.importKey("raw", grantSalt, "HKDF", false, ["deriveBits"]);
+  const info = new TextEncoder().encode(`focus-notes/salt/v1|${kind}`);
+  return new Uint8Array(await subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info }, base, 128));
+}
+
+/** What a keyring is for, bound into its additional data so a keyring moved to another's place opens nothing. */
+export const keyringRole = {
+  vault: "vault",
+  link: (id: string) => `link|${id}`,
+  passcode: (lookup: string) => `passcode|${lookup}`,
+} as const;
 
 // ---- link keys ----
 
@@ -105,15 +129,18 @@ async function hkdfBase(secret: Bytes) {
   if (secret.length !== LINK_SECRET_BYTES) throw new SealError("key");
   return globalThis.crypto.subtle.importKey("raw", secret, "HKDF", false, ["deriveBits", "deriveKey"]);
 }
-const hkdfParams = (salt: Bytes) => ({ name: "HKDF", hash: "SHA-256", salt, info: new TextEncoder().encode(LINK_INFO) });
+const hkdfParams = (salt: Bytes, id: string) => ({ name: "HKDF", hash: "SHA-256", salt, info: new TextEncoder().encode(`${LINK_INFO}|${id}`) });
 
-/** HKDF-SHA256 over the link's 32 random bytes with the grant's salt: no slow derivation, the input is already random. */
-export async function deriveLinkBits(secret: Bytes, salt: Bytes): Promise<Bytes> {
-  return new Uint8Array(await globalThis.crypto.subtle.deriveBits(hkdfParams(salt), await hkdfBase(secret), 256));
+/**
+ * HKDF-SHA256 over the link's 32 random bytes with the link keyring's salt and info
+ * `focus-notes/grant/v1|<grant id>`: no slow derivation, the input is already random.
+ */
+export async function deriveLinkBits(secret: Bytes, salt: Bytes, id: string): Promise<Bytes> {
+  return new Uint8Array(await globalThis.crypto.subtle.deriveBits(hkdfParams(salt, id), await hkdfBase(secret), 256));
 }
 /** The same derivation straight to a non-extractable key, as the browser does it. */
-export async function deriveLinkKey(secret: Bytes, salt: Bytes): Promise<CryptoKey> {
-  return globalThis.crypto.subtle.deriveKey(hkdfParams(salt), await hkdfBase(secret), { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+export async function deriveLinkKey(secret: Bytes, salt: Bytes, id: string): Promise<CryptoKey> {
+  return globalThis.crypto.subtle.deriveKey(hkdfParams(salt, id), await hkdfBase(secret), { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
 }
 
 export const linkKeyringPath = (build: string, id: string) => `_access/${build}/l/${id}.json`;

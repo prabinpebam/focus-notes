@@ -3,19 +3,19 @@
  * build, keyrings only for active grants, passcode keyrings found by a salted name lookup, and the
  * leak check covering grant secrets.
  */
-import { createHash, hkdfSync, pbkdf2Sync } from "node:crypto";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { hkdfSync, pbkdf2Sync } from "node:crypto";
+import { copyFile, mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  derivePasscodeBits, ITERATIONS, parseKeyring, parseSiteManifest, randomBytes, SealError, SiteReader, toB64url, vaultPath,
+  derivePasscodeBits, fromB64url, ITERATIONS, parseKeyring, parseSiteManifest, randomBytes, SealError, SiteReader, toB64url, vaultPath,
 } from "../src/index.ts";
 import {
-  activeShareGrants, deriveLinkBits, inScope, isActive, LINK_INFO, linkKeyringPath, nameLookup, normalizeName, noteId, passcodeKeyringPath, scopedPaths,
+  activeShareGrants, deriveLinkBits, inScope, isActive, keyringSaltFor, LINK_INFO, linkKeyringPath, NAME_ITERATIONS, nameLookup, normalizeName, noteId, passcodeKeyringPath, scopedPaths,
   type Grant,
 } from "../src/grants.ts";
-import { leakCheck, LeakError, publish } from "../src/publish.ts";
+import { leakCheck, LeakError, publish, validateAccess } from "../src/publish.ts";
 
 const PASS = "correct horse battery staple";
 const NOW = Date.parse("2026-10-15T00:00:00Z");
@@ -92,23 +92,33 @@ describe("grants: which are active and what they open", () => {
 });
 
 describe("test vectors, cross-checked with node:crypto", () => {
-  it("SHR-11: the name lookup is the first 16 bytes of SHA-256 over the salted, normalized name, as 32 hex characters", async () => {
+  it("SHR-11: the name lookup is PBKDF2-SHA256 over the normalized name with nameSalt, 50,000 iterations, as 32 hex characters", async () => {
     const nameSalt = "c2FsdHNhbHRzYWx0c2FsdA";
+    expect(NAME_ITERATIONS).toBe(50_000);
     expect(normalizeName("  ＳＡＭ Smith ")).toBe("sam smith");
     expect(normalizeName("Straße")).toBe(normalizeName("STRASSE"));
-    const expected = createHash("sha256").update(`focus-notes/name/v1|${nameSalt}|sam smith`, "utf8").digest("hex").slice(0, 32);
+    const expected = pbkdf2Sync("sam smith", fromB64url(nameSalt), 50_000, 16, "sha256").toString("hex");
     expect(await nameLookup(nameSalt, "Sam Smith")).toBe(expected);
     expect(await nameLookup(nameSalt, " sam SMITH ")).toBe(expected);
     expect(expected).toMatch(/^[0-9a-f]{32}$/);
     expect(await nameLookup("b3RoZXJzYWx0b3RoZXJzYQ", "Sam Smith")).not.toBe(expected);
   });
 
-  it("derives link keys with HKDF-SHA256 over the secret, the grant's salt, and focus-notes/grant/v1", async () => {
+  it("derives link keys with HKDF-SHA256 over the secret, the link keyring's salt, and focus-notes/grant/v1|<grant id>", async () => {
     const secret = randomBytes(32), s = randomBytes(16);
-    const ours = await deriveLinkBits(secret, s);
-    const node = new Uint8Array(hkdfSync("sha256", secret, s, LINK_INFO, 32));
+    const ours = await deriveLinkBits(secret, s, "gshare001");
+    const node = new Uint8Array(hkdfSync("sha256", secret, s, `${LINK_INFO}|gshare001`, 32));
     expect(LINK_INFO).toBe("focus-notes/grant/v1");
     expect(toB64url(ours)).toBe(toB64url(node));
+    expect(toB64url(await deriveLinkBits(secret, s, "gshare002"))).not.toBe(toB64url(ours));
+  });
+
+  it("gives a grant's link and passcode keyrings their own salts, HKDF-SHA256 of the grant's salt", async () => {
+    const g = randomBytes(16);
+    const link = await keyringSaltFor(g, "link"), passcode = await keyringSaltFor(g, "passcode");
+    expect(toB64url(link)).toBe(toB64url(new Uint8Array(hkdfSync("sha256", g, new Uint8Array(0), "focus-notes/salt/v1|link", 16))));
+    expect(toB64url(passcode)).toBe(toB64url(new Uint8Array(hkdfSync("sha256", g, new Uint8Array(0), "focus-notes/salt/v1|passcode", 16))));
+    expect(new Set([toB64url(g), toB64url(link), toB64url(passcode)]).size).toBe(3);
   });
 
   it("derives passcode keys with PBKDF2-SHA256 at 600,000 iterations", async () => {
@@ -159,15 +169,22 @@ describe("sealing share grants (SHR-11)", () => {
 
   it("SHR-10, SHR-11: a name and passcode open a passcode keyring found by the salted name lookup", async () => {
     const nameSalt = salt();
-    const i = await instance(notes, [grant({ name: "Sam Smith", passcode: { value: "orbit maple quiet river", generated: true }, scope: { notes: ["n-diary"] } })], { nameSalt });
+    const g = grant({ name: "Sam Smith", link: { secret: toB64url(randomBytes(32)) }, passcode: { value: "orbit maple quiet river", generated: true }, scope: { notes: ["n-diary"] } });
+    const i = await instance(notes, [g], { nameSalt });
     const r = await i.run();
     const site = parseSiteManifest(await readFile(join(i.site, "focus-notes.json"), "utf8"));
     expect(site.nameSalt).toBe(nameSalt);
     const lookup = await nameLookup(nameSalt, "Sam Smith");
-    expect(parseKeyring(await readFile(join(i.site, ...passcodeKeyringPath(r.build, lookup).split("/")), "utf8")).kdf).toBe("pbkdf2-sha256");
+    const ring = parseKeyring(await readFile(join(i.site, ...passcodeKeyringPath(r.build, lookup).split("/")), "utf8"));
+    expect(ring.kdf).toBe("pbkdf2-sha256");
+    // Each keyring has its own salt, so a grant's link and passcode keyrings can't be matched up by it.
+    const link = parseKeyring(await readFile(join(i.site, ...linkKeyringPath(r.build, g.id).split("/")), "utf8"), "hkdf-sha256");
+    expect(ring.salt).toBe(toB64url(await keyringSaltFor(fromB64url(g.salt), "passcode")));
+    expect(link.salt).toBe(toB64url(await keyringSaltFor(fromB64url(g.salt), "link")));
+    expect(new Set([ring.salt, link.salt, g.salt]).size).toBe(3);
     const { share, salt: s } = await i.reader().openPasscode("  sam smith", "orbit maple quiet river");
     expect(share.notes.map((n) => n.path)).toEqual(["Diary.md"]);
-    expect(s).toMatch(/^[A-Za-z0-9_-]{22}$/);
+    expect(s).toBe(ring.salt);
   }, 30_000);
 
   it("SHR-06, SHR-10: wrong names, passcodes, links, and withdrawn or expired grants fail with one generic error", async () => {
@@ -257,5 +274,76 @@ describe("the leak check covers grant secrets (SEC-06)", () => {
     expect(await leakCheck(i.site, [], ["orbit maple quiet river"])).toEqual([]);
     await writeFile(join(i.site, "invite.txt"), "Your passcode: orbit maple quiet river");
     expect(await leakCheck(i.site, [], ["orbit maple quiet river"])).toEqual([{ file: "invite.txt", kind: "secret" }]);
+  }, 30_000);
+});
+
+describe("security review fixes (WP-5.2)", () => {
+  const notes = { "A.md": "---\nid: n-a\n---\n# A\n\nThe first private note, which only one audience may read.\n", "B.md": "---\nid: n-b\n---\n# B\n" };
+
+  it("L2: binds each keyring to its role and grant, so one moved to another's place opens nothing", async () => {
+    const secret = toB64url(randomBytes(32));
+    const nameSalt = salt();
+    const i = await instance(notes, [
+      grant({ link: { secret }, passcode: { value: "orbit maple quiet river" }, name: "Sam Smith", scope: { notes: ["n-a"] } }),
+      grant({ id: "gshare002", name: "Kim Lee", link: { secret: toB64url(randomBytes(32)) }, passcode: { value: "another set of words" }, scope: { notes: ["n-b"] } }),
+    ], { nameSalt, vault: true });
+    const r = await i.run();
+    const at = (p: string) => join(i.site, ...p.split("/"));
+    // The same link keyring under another grant ID: its additional data names gshare001.
+    await copyFile(at(linkKeyringPath(r.build, "gshare001")), at(linkKeyringPath(r.build, "gshare003")));
+    await expect(i.reader().openLink("gshare003", secret)).rejects.toMatchObject({ code: "key" });
+    // Sam's passcode keyring put where Kim's name leads: it names Sam's lookup, so Sam's passcode can't open it there.
+    const sam = await nameLookup(nameSalt, "Sam Smith"), kim = await nameLookup(nameSalt, "Kim Lee");
+    await copyFile(at(passcodeKeyringPath(r.build, sam)), at(passcodeKeyringPath(r.build, kim)));
+    await expect(i.reader().openPasscode("Kim Lee", "orbit maple quiet river")).rejects.toMatchObject({ code: "key" });
+    // A share keyring isn't a vault keyring.
+    await copyFile(at(passcodeKeyringPath(r.build, sam)), at(vaultPath(r.build)));
+    await expect(i.reader().unlock("orbit maple quiet river")).rejects.toMatchObject({ code: "key" });
+  }, 60_000);
+
+  it("L4: publishes nameSalt whenever access.json is there, the same every build when access.json has one", async () => {
+    const nameSalt = salt();
+    const i = await instance(notes, [], { vault: true, nameSalt });
+    await i.run();
+    expect(parseSiteManifest(await readFile(join(i.site, "focus-notes.json"), "utf8")).nameSalt).toBe(nameSalt);
+    const j = await instance(notes, [grant({ link: { secret: toB64url(randomBytes(32)) }, scope: { notes: ["n-a"] } })]);
+    await j.run();
+    expect(parseSiteManifest(await readFile(join(j.site, "focus-notes.json"), "utf8")).nameSalt).toMatch(/^[A-Za-z0-9_-]{22}$/);
+  }, 30_000);
+
+  it("M4: refuses a custom passcode that's easy to guess, without quoting it; generated ones and withdrawn grants pass", () => {
+    const base = { version: 1 as const, grants: [] as Grant[] };
+    const weak = grant({ passcode: { value: "aaaaaaaaaaaaaaa" }, scope: { notes: ["n-a"] } });
+    const err = (() => { try { validateAccess({ ...base, grants: [weak] }); } catch (e) { return e as Error; } })();
+    expect(err?.message).toMatch(/too easy to guess/);
+    expect(err?.message).not.toContain("aaaa");
+    expect(() => validateAccess({ ...base, grants: [{ ...weak, passcode: { value: "abcabcabcabc" } }] })).toThrow(/too easy to guess/);
+    expect(() => validateAccess({ ...base, grants: [{ ...weak, passcode: { value: "aaaaaaaaaaaaaaa", generated: true } }] })).not.toThrow();
+    expect(() => validateAccess({ ...base, grants: [{ ...weak, revokedAt: "2026-10-02T00:00:00Z" }] })).not.toThrow();
+    expect(() => validateAccess({ ...base, grants: [{ ...weak, passcode: { value: "orbit maple quiet river" } }] })).not.toThrow();
+  });
+
+  it("L3: checks nameSalt's size, grant IDs, and that a name isn't empty once normalized", () => {
+    const g = grant({ link: { secret: toB64url(randomBytes(32)) } });
+    expect(() => validateAccess({ version: 1, nameSalt: salt(), grants: [g] })).not.toThrow();
+    expect(() => validateAccess({ version: 1, nameSalt: toB64url(randomBytes(8)), grants: [g] })).toThrow(/nameSalt/);
+    expect(() => validateAccess({ version: 1, nameSalt: toB64url(randomBytes(65)), grants: [g] })).toThrow(/nameSalt/);
+    expect(() => validateAccess({ version: 1, grants: [{ ...g, id: "g".repeat(65) }] })).toThrow(/malformed/);
+    expect(() => validateAccess({ version: 1, grants: [{ ...g, name: " \u3000 " }] })).toThrow(/name/);
+  });
+
+  it("L7: the leak check also finds secrets in standard base64 and NFC forms, and audience names of 6 characters or more", async () => {
+    const secretBytes = new Uint8Array(32).fill(0xfb); // base64url "-_-_…", standard base64 "+/+/…"
+    const secret = toB64url(secretBytes);
+    const i = await instance(notes, [grant({ name: "Margarethe", link: { secret }, passcode: { value: "cafe\u0301 au lait sur la table" }, scope: { notes: ["n-a"] } })], { vault: true });
+    const std = Buffer.from(secretBytes).toString("base64");
+    expect(std).not.toBe(secret);
+    await writeFile(join(i.site, "one.js"), `x="${std}"`);
+    await writeFile(join(i.site, "two.txt"), "caf\u00e9 au lait sur la table");
+    await writeFile(join(i.site, "three.html"), "<p>For Margarethe</p>");
+    const err = await i.run().catch((e) => e);
+    expect(err).toBeInstanceOf(LeakError);
+    expect(err.findings).toEqual(expect.arrayContaining([{ file: "one.js", kind: "secret" }, { file: "two.txt", kind: "secret" }, { file: "three.html", kind: "name" }]));
+    expect(err.message).not.toContain("Margarethe");
   }, 30_000);
 });
