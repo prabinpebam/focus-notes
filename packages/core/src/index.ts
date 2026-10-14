@@ -8,6 +8,7 @@ export * from "./text.ts";
 export * from "./keymap.ts";
 export * from "./themes.ts";
 export * from "./contrast.ts";
+export { parseColor, toHex, toOklch, fromOklch, ratioOf, type Rgb, type Rgba, type Oklch } from "./color.ts";
 export * from "./tasks.ts";
 export * from "./browser.ts";
 export * from "./notes.ts";

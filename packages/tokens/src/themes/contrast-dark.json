@@ -1,6 +1,8 @@
 {
   "color": {
     "$type": "color",
+    "findMatch": { "$value": "{ref.color.amber.a20}" },
+    "findMatchActive": { "$value": "{ref.color.amber.a35}" },
     "canvas": {
       "$value": "{ref.color.hcDark.0}"
     },
