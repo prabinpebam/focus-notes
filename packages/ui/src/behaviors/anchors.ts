@@ -82,3 +82,17 @@ export function place(a: AnchorRect, size: { width: number; height: number }, vi
   else if (prefer === "below" && belowY + size.height > view.height - m.edge && aboveY >= m.topBand) side = "above";
   return { x, y: side === "above" ? aboveY : belowY, side, offscreen: a.bottom < m.topBand || a.top > view.height };
 }
+
+/**
+ * Content too tall for the side it was placed on (a long slash menu in a small window, D-111): it
+ * goes to the side with more room and is held to that room, so it never leaves the window; what it
+ * holds scrolls. Content that fits keeps its place.
+ */
+export function fit(a: AnchorRect, p: Placed, height: number, view: { width: number; height: number }, m: Metrics): { y: number; side: "above" | "below"; maxHeight: number | undefined } {
+  const below = view.height - m.edge - (a.bottom + m.gap);
+  const above = a.top - m.gap - m.topBand;
+  if (height <= (p.side === "below" ? below : above)) return { y: p.y, side: p.side, maxHeight: undefined };
+  const side = below >= above ? "below" : "above";
+  const room = Math.max(0, side === "below" ? below : above);
+  return { y: side === "below" ? a.bottom + m.gap : a.top - m.gap - room, side, maxHeight: room };
+}

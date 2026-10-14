@@ -45,6 +45,10 @@
         "$type": "dimension",
         "$value": "{size.controlM}"
       },
+      "itemGap": {
+        "$type": "dimension",
+        "$value": "{space.xxs}"
+      },
       "gap": {
         "$type": "dimension",
         "$value": "{space.m}"
@@ -88,6 +92,10 @@
       "fontSize": {
         "$type": "dimension",
         "$value": "{font.uiBody}"
+      },
+      "lineHeight": {
+        "$type": "number",
+        "$value": "{font.uiLineHeight}"
       },
       "captionSize": {
         "$type": "dimension",
@@ -196,6 +204,10 @@
       "textTransparent": {
         "$type": "color",
         "$value": "{color.none}"
+      },
+      "scrollFade": {
+        "$type": "dimension",
+        "$value": "{layout.scrollFade}"
       }
     }
   }

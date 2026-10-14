@@ -122,6 +122,10 @@
     "none": {
       "$value": "{ref.size.0}"
     },
+    "xxs": {
+      "$value": "{ref.size.2}",
+      "$description": "Between neighboring items' highlight shapes in a list (D-111)."
+    },
     "xs": {
       "$value": "{ref.size.4}"
     },
@@ -206,6 +210,14 @@
     "sheetFind": {
       "$value": "{ref.size.380}"
     },
+    "sheetMin": {
+      "$value": "{ref.size.200}",
+      "$description": "The narrowest a side sheet gets to keep the trigger clear in a narrow window (D-111)."
+    },
+    "sheetMinWide": {
+      "$value": "{ref.size.280}",
+      "$description": "The narrowest the theme manager and find in all notes get to keep the trigger clear: room for their segmented control and tabs (D-111)."
+    },
     "popover": {
       "$value": "{ref.size.360}"
     },
@@ -268,6 +280,18 @@
     },
     "listItemGap": {
       "$value": "{ref.size.em60}"
+    },
+    "scrollFade": {
+      "$value": "{ref.size.50}",
+      "$description": "How far a scrolling area fades its content out at an edge with more to scroll to (D-111)."
+    },
+    "fieldMin": {
+      "$value": "{ref.size.96}",
+      "$description": "The narrowest a field that grows to fill its row gets (the find bar's fields at the smallest window, D-111)."
+    },
+    "findField": {
+      "$value": "{ref.size.200}",
+      "$description": "The find bar's fields' starting width; the bar comes to about 480 px (Find and replace)."
     }
   },
   "radius": {

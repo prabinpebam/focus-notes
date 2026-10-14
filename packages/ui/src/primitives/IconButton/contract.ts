@@ -16,6 +16,7 @@ export const contract = defineContract({
     disabledReason: { kind: "message", requiredWhen: "disabled" },
     busy: { kind: "boolean", default: false },
     busyLabel: { kind: "text" },
+    bleed: { kind: "boolean", default: false, description: "At the edge of a panel's content (a dialog's close button): its icon lines up with the edge, and its hit area reaches into the padding (D-111)." },
   },
   events: { press: {} },
   slots: {},
@@ -29,6 +30,7 @@ export const contract = defineContract({
     { name: "toggle on", props: { icon: "focus", label: { t: "gallery.action" }, toggle: true, pressed: true } },
     { name: "toggle mixed", props: { icon: "bold", label: { t: "gallery.action" }, toggle: true, mixed: true } },
     { name: "busy", props: { icon: "save", label: { t: "gallery.action" }, busy: true, busyLabel: { get: "vm.gallery.query" } } },
+    { name: "bleed", props: { icon: "dismiss", label: { t: "gallery.action" }, tone: "muted", bleed: true } },
     { name: "disabled with reason", props: { icon: "save", label: { t: "gallery.action" }, disabled: true, disabledReason: { t: "gallery.reason" } } },
   ],
 });

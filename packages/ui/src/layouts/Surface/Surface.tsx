@@ -21,7 +21,7 @@ export function Surface({ variant = "raised", shape = "none", elevation = "0", p
   // Frost is only for things that float over text (Foundations → Surfaces); elsewhere it is solid.
   const v = variant === "frost" && !floating ? "raised" : variant;
   return (
-    <div id={id} className={[s.base, s.variant[v], s.shape[shape], s.elevation[elevation], s.padding[padding]].join(" ")} data-variant={v} data-key-scope={keyScope === "none" ? undefined : keyScope}>
+    <div id={id} className={[s.base, s.variant[v], s.shape[shape], s.elevation[elevation], s.padding[padding]].join(" ")} data-variant={v} data-surface={(v === "frost" || v === "raised") && shape !== "none" ? "panel" : undefined} data-key-scope={keyScope === "none" ? undefined : keyScope}>
       {children}
     </div>
   );

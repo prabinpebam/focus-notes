@@ -1,6 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
-import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
+import { fadingEdges, minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.dialogPanel;
 
@@ -25,7 +25,8 @@ export const overlay = style({
 export const modal = style({
   display: "flex",
   width: "100%",
-  maxHeight: t.maxHeight,
+  // Never past the overlay's padding, whatever the design's height: never edge to edge (D-111).
+  maxHeight: `min(${t.maxHeight}, 100%)`,
   outline: "none",
   transitionProperty: "transform",
   transitionDuration: t.duration,
@@ -71,6 +72,10 @@ export const body = style({
   flexGrow: 1,
   minHeight: 0,
   overflowY: "auto",
+  // Room inside its clip for the focus ring and letters of what's at its very top or bottom (a
+  // heading trimmed to its capitals), without moving anything (D-111).
+  paddingBlock: t.bodySlack,
+  marginBlock: `calc(-1 * ${t.bodySlack})`,
   paddingInlineStart: t.padding,
   // The reserved gutter takes the place of the end padding, so text lines up either way (UI-09).
   paddingInlineEnd: `calc(${t.padding} - ${t.scrollbarSize})`,
@@ -79,6 +84,7 @@ export const body = style({
   selectors: { "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` } },
 });
 minimalScrollbar(body, t);
+fadingEdges(body, t);
 
 /** The raised surface, or the theme's frosted one (Foundations → Surfaces). */
 export const material = {

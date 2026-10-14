@@ -53,7 +53,17 @@ export const focusProblem = (page: Page) => page.evaluate(() => {
   const shadow = cs.boxShadow !== "none" && /\d+px/.test(cs.boxShadow);
   const tinted = el.matches('[role^="menuitem"], [role="option"], [role="treeitem"]') && cs.backgroundColor !== "rgba(0, 0, 0, 0)";
   if (!textEntry && !ring && !shadow && !tinted) return `${el.getAttribute("aria-label") ?? el.tagName} has no focus indicator`;
-  const r = el.getBoundingClientRect();
+  // The note's focus shows as its caret: that's what must be visible and uncovered, wherever the
+  // note's own box starts (its top can scroll under the trigger, which floats over the canvas).
+  const sel = getSelection();
+  const caretRect = el.hasAttribute("data-editor") && sel?.rangeCount && el.contains(sel.focusNode) ? (() => {
+    const range = document.createRange();
+    range.setStart(sel.focusNode!, sel.focusOffset);
+    range.collapse(true);
+    const c = range.getClientRects()[0] ?? (sel.focusNode instanceof Element ? sel.focusNode : sel.focusNode!.parentElement)?.getBoundingClientRect();
+    return c && c.height > 0 ? new DOMRect(c.left, c.top, Math.max(c.width, 1), c.height) : undefined;
+  })() : undefined;
+  const r = caretRect ?? el.getBoundingClientRect();
   const x = Math.min(Math.max(r.left + r.width / 2, 0), innerWidth - 1), y = Math.min(Math.max(r.top + Math.min(r.height / 2, 10), 0), innerHeight - 1);
   if (r.bottom < 0 || r.top > innerHeight) return `${el.getAttribute("aria-label") ?? el.tagName} is off screen`;
   const hit = document.elementFromPoint(x, y);

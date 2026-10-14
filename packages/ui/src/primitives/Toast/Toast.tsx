@@ -44,6 +44,7 @@ export function Toast({ message, tone = "info", actionLabel, dismissLabel, focus
       role={tone === "error" ? "alert" : "status"}
       data-tone={tone}
       className={s.root}
+      data-surface="toast"
       onMouseEnter={() => pause(true)}
       onMouseLeave={() => pause(false)}
       onFocus={() => pause(true)}

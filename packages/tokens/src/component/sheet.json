@@ -3,11 +3,11 @@
     "sheet": {
       "inset": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.l}"
       },
-      "top": {
+      "clearance": {
         "$type": "dimension",
-        "$value": "{layout.topBand}"
+        "$value": "{space.s}"
       },
       "widthFiles": {
         "$type": "dimension",
@@ -21,13 +21,21 @@
         "$type": "dimension",
         "$value": "{layout.sheetFind}"
       },
+      "minWidth": {
+        "$type": "dimension",
+        "$value": "{layout.sheetMin}"
+      },
+      "minWidthWide": {
+        "$type": "dimension",
+        "$value": "{layout.sheetMinWide}"
+      },
       "radius": {
         "$type": "dimension",
         "$value": "{radius.sheet}"
       },
       "padding": {
         "$type": "dimension",
-        "$value": "{space.m}"
+        "$value": "{space.l}"
       },
       "gap": {
         "$type": "dimension",
@@ -84,6 +92,34 @@
       "footerBorderWidth": {
         "$type": "dimension",
         "$value": "{border.hairline}"
+      },
+      "scrollFade": {
+        "$type": "dimension",
+        "$value": "{layout.scrollFade}"
+      },
+      "scrollbarSize": {
+        "$type": "dimension",
+        "$value": "{size.scrollbar}"
+      },
+      "scrollbarInset": {
+        "$type": "dimension",
+        "$value": "{border.scrollbarInset}"
+      },
+      "scrollbarThumb": {
+        "$type": "color",
+        "$value": "{color.scrollbar}"
+      },
+      "scrollbarThumbHover": {
+        "$type": "color",
+        "$value": "{color.scrollbarHover}"
+      },
+      "scrollbarTrack": {
+        "$type": "color",
+        "$value": "{color.none}"
+      },
+      "bodySlack": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
       }
     }
   }

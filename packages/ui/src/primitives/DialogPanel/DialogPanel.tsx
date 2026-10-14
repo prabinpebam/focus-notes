@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { Dialog, Modal, ModalOverlay } from "react-aria-components";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
+import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import * as s from "./DialogPanel.css.ts";
 
 export interface DialogPanelProps {
@@ -30,10 +31,11 @@ export interface DialogPanelProps {
 export function DialogPanel({ label, open, size = "l", header, fixed, footer, placement = "center", material = "raised", id, children, onOpenChange }: DialogPanelProps) {
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useAutoHideScrollbar(bodyRef, Boolean(open));
+  useFadingEdges(bodyRef, Boolean(open));
   return (
-    <ModalOverlay className={`${s.overlay} ${s.placement[placement]}`} isOpen={Boolean(open)} isDismissable onOpenChange={(o) => onOpenChange?.({ open: o })}>
+    <ModalOverlay data-scrim="" className={`${s.overlay} ${s.placement[placement]}`} isOpen={Boolean(open)} isDismissable onOpenChange={(o) => onOpenChange?.({ open: o })}>
       <Modal className={`${s.modal} ${s.size[size]}`}>
-        <Dialog className={`${s.dialog} ${s.material[material]}`} aria-label={label} {...(id ? { id } : {})}>
+        <Dialog data-surface="dialog" className={`${s.dialog} ${s.material[material]}`} aria-label={label} {...(id ? { id } : {})}>
           {header ? <div className={s.region}>{header}</div> : null}
           {fixed ? <div className={s.region}>{fixed}</div> : null}
           {/* The body can take focus so its content can be scrolled from the keyboard, even when nothing in it is actionable. */}

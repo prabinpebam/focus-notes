@@ -12,6 +12,7 @@ export const contract = defineContract({
     placement: { kind: "enum", values: ["bottom end", "bottom start", "top start"], default: "bottom end" },
     sections: { kind: "list", of: "menuSections", required: true },
     shortcut: { kind: "text" },
+    bleed: { kind: "boolean", default: false, description: "The text variant at the edge of a panel's content (the Files sheet's New): its text and chevron line up with the edge (D-111)." },
   },
   events: { action: { payload: { id: "text" } } },
   slots: {},
@@ -23,5 +24,6 @@ export const contract = defineContract({
     { name: "variant pill", props: { variant: "pill", text: { get: "vm.gallery.query" }, label: { t: "gallery.action" }, placement: "top start", sections: { get: "vm.gallery.menu" } } },
     { name: "placement top start", props: { icon: "more", label: { t: "gallery.action" }, placement: "top start", sections: { get: "vm.gallery.menu" } } },
     { name: "variant text, placement bottom start", props: { variant: "text", text: { get: "vm.gallery.query" }, label: { t: "gallery.action" }, placement: "bottom start", sections: { get: "vm.gallery.menu" } } },
+    { name: "variant text, bleed", props: { variant: "text", text: { get: "vm.gallery.query" }, label: { t: "gallery.action" }, bleed: true, sections: { get: "vm.gallery.menu" } } },
   ],
 });

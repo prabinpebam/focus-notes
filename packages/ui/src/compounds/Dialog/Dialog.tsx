@@ -28,7 +28,7 @@ export function Dialog({ title, closeLabel, open, size = "l", toolbar, id, child
       header={
         <Inline justify="between" gap="m">
           <Heading level="2" value={title} />
-          <IconButton icon="dismiss" label={closeLabel} tone="muted" onPress={() => onOpenChange?.({ open: false })} />
+          <IconButton icon="dismiss" label={closeLabel} tone="muted" bleed onPress={() => onOpenChange?.({ open: false })} />
         </Inline>
       }
       {...(toolbar ? { fixed: toolbar } : {})}

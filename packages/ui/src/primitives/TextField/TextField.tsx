@@ -14,6 +14,8 @@ export interface TextFieldProps {
   autoFocus?: boolean;
   /** Each new value moves focus into the field. */
   focusRequest?: number;
+  /** 32 px tall beside 32 px buttons in a bar (the link editor); 40 px otherwise. */
+  size?: keyof typeof s.size;
   id?: string;
   onChange?: (payload: { value: string }) => void;
   /** Enter in the field, outside an IME composition. */
@@ -21,7 +23,7 @@ export interface TextFieldProps {
 }
 
 /** A labelled single-line field. Secrets use type "password" and are never spell-checked or autofilled. */
-export function TextField({ label, value, placeholder, description, type = "text", invalid, labelHidden, autoFocus, focusRequest, id, onChange, onSubmit }: TextFieldProps) {
+export function TextField({ label, value, placeholder, description, type = "text", invalid, labelHidden, autoFocus, focusRequest, size = "l", id, onChange, onSubmit }: TextFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     if (focusRequest) input.current?.focus();
@@ -39,7 +41,7 @@ export function TextField({ label, value, placeholder, description, type = "text
       <Label className={labelHidden ? s.hidden : s.label}>{label}</Label>
       <Input
         ref={input}
-        className={s.input}
+        className={`${s.input} ${s.size[size]}`}
         spellCheck={false}
         autoCapitalize="off"
         autoCorrect="off"

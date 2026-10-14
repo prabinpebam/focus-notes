@@ -9,7 +9,7 @@ export const contract = defineContract({
     items: { kind: "list", of: "resultItems", required: true },
     activeId: { kind: "text" },
     width: { kind: "enum", values: ["fill", "menu"], default: "fill", description: "Fills its container, or the slash menu's fixed width." },
-    height: { kind: "enum", values: ["content", "fill"], default: "content", description: "As tall as its items up to a popover's height, or the height its container gives it (a side sheet)." },
+    height: { kind: "enum", values: ["content", "fill"], default: "content", description: "As tall as its items up to a popover's height, or as tall as all of them in a side sheet, whose body scrolls it." },
   },
   events: { action: { payload: { id: "text" } }, activeChange: { payload: { id: "text" } } },
   slots: {},

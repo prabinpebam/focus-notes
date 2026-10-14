@@ -123,6 +123,14 @@
       "focusWidth": {
         "$type": "dimension",
         "$value": "{border.focus}"
+      },
+      "scrollFade": {
+        "$type": "dimension",
+        "$value": "{layout.scrollFade}"
+      },
+      "bodySlack": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
       }
     }
   }

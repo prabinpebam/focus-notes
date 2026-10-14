@@ -9,6 +9,10 @@
         "$type": "dimension",
         "$value": "{size.controlL}"
       },
+      "heightCompact": {
+        "$type": "dimension",
+        "$value": "{size.controlM}"
+      },
       "paddingInline": {
         "$type": "dimension",
         "$value": "{space.m}"

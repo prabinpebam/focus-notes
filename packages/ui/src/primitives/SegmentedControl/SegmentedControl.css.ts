@@ -4,7 +4,9 @@ import { tokens } from "@focus-notes/tokens";
 const t = tokens.cmp.segmentedControl;
 
 // Wraps the segments under the label where they don't fit beside it (the theme manager's 380 px sheet).
-export const root = style({ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: t.gap, fontFamily: t.font, fontSize: t.fontSize });
+// Never wider than its container (D-111): in the narrowest, its segments share the room and their
+// labels end in an ellipsis rather than reach past a dialog's or a sheet's edge.
+export const root = style({ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: t.gap, maxWidth: "100%", minWidth: 0, fontFamily: t.font, fontSize: t.fontSize });
 
 export const label = style({ color: t.text, whiteSpace: "nowrap" });
 
@@ -20,6 +22,8 @@ export const track = style({
   borderColor: t.border,
   backgroundColor: t.background,
   boxSizing: "border-box",
+  maxWidth: "100%",
+  minWidth: 0,
 });
 
 export const segment = style({
@@ -32,6 +36,11 @@ export const segment = style({
   cursor: "default",
   outline: "none",
   whiteSpace: "nowrap",
+  flex: "1 1 auto",
+  justifyContent: "center",
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
   transitionProperty: "background-color, color",
   transitionDuration: t.duration,
   transitionTimingFunction: t.easing,

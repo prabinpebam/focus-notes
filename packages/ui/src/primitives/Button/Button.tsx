@@ -39,7 +39,7 @@ export function Button({ label, variant = "secondary", size = "m", icon, iconPos
   const content = (
     <>
       {icon && iconPosition === "start" ? <Icon name={icon} size="s" /> : null}
-      {label}
+      <span className={s.label}>{label}</span>
       {icon && iconPosition === "end" ? <Icon name={icon} size="s" /> : null}
     </>
   );

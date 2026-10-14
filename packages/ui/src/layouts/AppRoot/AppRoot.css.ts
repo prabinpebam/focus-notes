@@ -1,4 +1,4 @@
-import { globalStyle, style, styleVariants } from "@vanilla-extract/css";
+import { createVar, globalStyle, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.appRoot;
@@ -13,7 +13,11 @@ globalStyle("::selection", { backgroundColor: t.selection });
 globalStyle("[data-drag-band]", { WebkitAppRegion: "drag" } as Record<string, string>);
 globalStyle("[data-no-drag]", { WebkitAppRegion: "no-drag" } as Record<string, string>);
 
+/** How far popovers keep from the window's edges, in pixels for React Aria (in-window.tsx). */
+export const popoverEdgeVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+
 export const root = style({
+  vars: { [popoverEdgeVar]: tokens.space.m },
   position: "relative",
   display: "flex",
   flexDirection: "column",

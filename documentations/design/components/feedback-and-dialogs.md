@@ -74,6 +74,7 @@ A task has a target (the node it affects, by ID), a message key that says what's
 - **Anatomy:** a solid dialog, 480 px wide. The title is a question naming the object ("Make “On focus” public?"). The body has one to three short sentences of consequence. Buttons are [Cancel] and a primary button named for the action ("Make public", "Delete 12 notes"). Destructive primaries use `color.danger`.
 - **Focus:** opens on [Cancel] for deletes and audience changes, so a reflexive <kbd>Enter</kbd> doesn't publish or delete. <kbd>Esc</kbd> cancels.
 - **No "Don't ask again"** on audience changes.
+- **In the window, never edge to edge (D-111).** Every dialog's scrim dims exactly the window as drawn (on Windows and Linux, inside its shadow margin and clipped to its 20 px corners, never the margin). The dialog keeps at least 24 px from every window edge: as its content grows, it stops at the window's height less that inset (and at 85% of it), and only its body scrolls, with fading edges, while its title and its fixed controls stay put. Its padding is the same 24 px on every side; the title's box is trimmed to its letters, and the close button's icon lines up with the content's edge, its hit area reaching into the padding. Segmented controls, tabs, and button rows wrap or shrink inside it, never past its edge.
 
 | Confirmation | Body |
 | --- | --- |

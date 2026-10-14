@@ -1,5 +1,6 @@
 import { style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
+import { fadingEdges } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.menuButton;
 
@@ -15,9 +16,18 @@ export const popover = style({
   zIndex: t.layer,
   minWidth: t.minWidth,
   outline: "none",
+  // Never taller than the window (React Aria sets its maximum height): the menu inside scrolls.
+  display: "flex",
+  flexDirection: "column",
+  overflow: "hidden",
 });
 
-export const menu = style({ outline: "none", display: "flex", flexDirection: "column", fontFamily: t.font, fontSize: t.fontSize, color: t.text });
+// Its items have a gap between their highlight shapes (D-111). When the window is too short for it,
+// it scrolls with the wheel and the arrow keys, as a system menu does: its fading edges show
+// there's more, and no scrollbar takes room from its items (the same inset on every side).
+export const menu = style({ outline: "none", display: "flex", flexDirection: "column", gap: t.itemGap, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", fontFamily: t.font, fontSize: t.fontSize, color: t.text });
+fadingEdges(menu, t);
+export const section = style({ display: "flex", flexDirection: "column", gap: t.itemGap });
 
 export const header = style({ paddingInline: t.itemPaddingInline, fontSize: t.captionSize, fontWeight: t.headerWeight, color: t.textMuted });
 
@@ -45,7 +55,8 @@ export const labelRow = style({ display: "flex", alignItems: "center", gap: t.ga
 export const labelText = style({ flexGrow: 1, selectors: { [`${item}[aria-disabled="true"] &`]: { opacity: t.disabledOpacity } } });
 export const reason = style({ color: t.textMuted, fontSize: t.captionSize });
 export const check = style({ width: t.captionSize, display: "inline-flex", justifyContent: "center", color: t.text });
-export const shortcut = style({ color: t.textMuted, fontSize: t.captionSize });
+// In the interface font, as everywhere else shortcuts show (a <kbd> would be monospace).
+export const shortcut = style({ color: t.textMuted, fontSize: t.captionSize, fontFamily: t.font });
 export const separator = style({ height: t.separatorWidth, backgroundColor: t.separator, marginBlock: t.padding });
 
 // The text variant: the current value and a chevron, as in Turn into (Text formatting → Anatomy).
@@ -70,6 +81,9 @@ export const text = style({
     "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.pillFocusWidth, outlineColor: t.focusRing },
   },
 });
+
+/** The text variant at the edge of a panel's content (the Files sheet's New): its text and chevron line up with the edge (D-111). */
+export const textBleed = style({ marginInline: `calc(-1 * ${t.textPaddingInline})`, marginBlock: `calc((${t.fontSize} * ${t.lineHeight} - ${t.textHeight}) / 2)` });
 
 // The pill variant: the trigger is a quiet text pill (UI-12).
 

@@ -15,7 +15,7 @@
       },
       "rowGap": {
         "$type": "dimension",
-        "$value": "{space.none}"
+        "$value": "{space.xxs}"
       },
       "paddingInline": {
         "$type": "dimension",
@@ -144,6 +144,10 @@
       "scrollbarTrack": {
         "$type": "color",
         "$value": "{color.none}"
+      },
+      "scrollFade": {
+        "$type": "dimension",
+        "$value": "{layout.scrollFade}"
       }
     }
   }

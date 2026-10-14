@@ -22,15 +22,17 @@ export interface IconButtonProps {
   /** A wait it started is showing (PRF-08): a spinner replaces the icon, and the label says what it's doing. */
   busy?: boolean;
   busyLabel?: string;
+  /** At the edge of a panel's content (a dialog's close button): its icon lines up with the edge, and its hit area reaches into the padding. */
+  bleed?: boolean;
   id?: string;
   onPress?: () => void;
 }
 
-export function IconButton({ icon, label, shortcut, tone = "default", toggle, pressed, mixed, disabled, disabledReason, busy, busyLabel, id, onPress }: IconButtonProps) {
-  const className = `${s.base} ${s.tone[tone]}`;
+export function IconButton({ icon, label, shortcut, tone = "default", toggle, pressed, mixed, disabled, disabledReason, busy, busyLabel, bleed, id, onPress }: IconButtonProps) {
+  const className = `${s.base} ${s.tone[tone]}${bleed ? ` ${s.bleed}` : ""}`;
   const keepNoteFocus = useContext(CompanionContext);
   const name = busyLabel || label;
-  const common = { id, className, "aria-label": name, "aria-disabled": disabled ? ("true" as const) : undefined, "aria-busy": busy ? ("true" as const) : undefined, preventFocusOnPress: keepNoteFocus };
+  const common = { id, className, "aria-label": name, "aria-disabled": disabled ? ("true" as const) : undefined, "aria-busy": busy ? ("true" as const) : undefined, "data-bleed": bleed ? "" : undefined, preventFocusOnPress: keepNoteFocus };
   const glyph = busy ? <Spinner size="s" /> : <Icon name={icon} />;
   const button = toggle && mixed ? (
     <AriaButton {...common} aria-pressed="mixed" onPress={disabled || busy ? undefined : onPress}>

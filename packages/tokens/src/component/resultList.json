@@ -132,6 +132,10 @@
       "state": {
         "$type": "color",
         "$value": "{color.textMuted}"
+      },
+      "scrollFade": {
+        "$type": "dimension",
+        "$value": "{layout.scrollFade}"
       }
     }
   }

@@ -576,6 +576,11 @@
         },
         "busyLabel": {
           "kind": "text"
+        },
+        "bleed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "At the edge of a panel's content (a dialog's close button): its icon lines up with the edge, and its hit area reaches into the padding (D-111)."
         }
       },
       "events": {
@@ -661,6 +666,17 @@
             "busyLabel": {
               "get": "vm.gallery.query"
             }
+          }
+        },
+        {
+          "name": "bleed",
+          "props": {
+            "icon": "dismiss",
+            "label": {
+              "t": "gallery.action"
+            },
+            "tone": "muted",
+            "bleed": true
           }
         },
         {
@@ -1181,6 +1197,11 @@
         },
         "shortcut": {
           "kind": "text"
+        },
+        "bleed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The text variant at the edge of a panel's content (the Files sheet's New): its text and chevron line up with the edge (D-111)."
         }
       },
       "events": {
@@ -1256,6 +1277,22 @@
               "t": "gallery.action"
             },
             "placement": "bottom start",
+            "sections": {
+              "get": "vm.gallery.menu"
+            }
+          }
+        },
+        {
+          "name": "variant text, bleed",
+          "props": {
+            "variant": "text",
+            "text": {
+              "get": "vm.gallery.query"
+            },
+            "label": {
+              "t": "gallery.action"
+            },
+            "bleed": true,
             "sections": {
               "get": "vm.gallery.menu"
             }
@@ -1374,6 +1411,20 @@
         "activeId": {
           "kind": "text",
           "description": "The active item in that list."
+        },
+        "icon": {
+          "kind": "icon",
+          "default": "search",
+          "description": "The icon before the text: another for a field that isn't a search (Replace with)."
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "l"
+          ],
+          "default": "l",
+          "description": "32 px tall in a bar of 32 px controls (the find bar), starting from the find field's width, without a clear button (Esc clears it, and the bar has its own ×); or 40 px, as wide as its container."
         }
       },
       "events": {
@@ -1456,6 +1507,34 @@
               "t": "field.clear"
             },
             "invalid": true
+          }
+        },
+        {
+          "name": "size m",
+          "props": {
+            "label": {
+              "t": "find.field"
+            },
+            "value": {
+              "get": "vm.gallery.query"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "size": "m"
+          }
+        },
+        {
+          "name": "another icon",
+          "props": {
+            "label": {
+              "t": "find.replaceField"
+            },
+            "clearLabel": {
+              "t": "field.clear"
+            },
+            "size": "m",
+            "icon": "rename"
           }
         },
         {
@@ -2011,7 +2090,7 @@
             "fill"
           ],
           "default": "content",
-          "description": "As tall as its items up to a popover's height, or the height its container gives it (a side sheet)."
+          "description": "As tall as its items up to a popover's height, or as tall as all of them in a side sheet, whose body scrolls it."
         }
       },
       "events": {
@@ -2384,6 +2463,15 @@
         "focusRequest": {
           "kind": "number",
           "min": 0
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "l"
+          ],
+          "default": "l",
+          "description": "32 px tall beside 32 px buttons in a bar (the link editor), or 40 px."
         }
       },
       "events": {
@@ -2444,6 +2532,16 @@
               "t": "unlock.passphrase"
             },
             "invalid": true
+          }
+        },
+        {
+          "name": "size m",
+          "props": {
+            "label": {
+              "t": "unlock.passphrase"
+            },
+            "labelHidden": true,
+            "size": "m"
           }
         },
         {

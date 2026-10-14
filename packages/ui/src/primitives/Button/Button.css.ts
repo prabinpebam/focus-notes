@@ -7,6 +7,10 @@ export const base = style({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  // Never squeezed in a row: the field beside it gives up the room (or the row wraps). Never wider
+  // than its container either: a label too long for it ends in an ellipsis (D-111).
+  flexShrink: 0,
+  maxWidth: "100%",
   gap: t.gap,
   borderRadius: t.radius,
   borderStyle: "solid",
@@ -48,3 +52,5 @@ export const variant = styleVariants({
   subtle: variantStyle(t.subtle),
   danger: variantStyle(t.danger),
 });
+
+export const label = style({ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" });

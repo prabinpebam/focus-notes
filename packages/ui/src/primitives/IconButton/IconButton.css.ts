@@ -7,6 +7,8 @@ export const base = style({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
+  // Never squeezed in a row: the field beside it gives up the room.
+  flexShrink: 0,
   width: t.size,
   height: t.size,
   padding: 0,
@@ -26,4 +28,6 @@ export const base = style({
     '&[aria-disabled="true"]': { opacity: t.disabledOpacity },
   },
 });
+/** Its hit area reaches past its box, so its icon lines up with the content's edge (a dialog's close button, D-111). */
+export const bleed = style({ margin: `calc((${t.iconSize} - ${t.size}) / 2)` });
 export const tone = styleVariants({ default: { color: t.color.icon }, muted: { color: t.color.iconMuted } });

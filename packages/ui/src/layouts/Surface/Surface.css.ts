@@ -3,7 +3,8 @@ import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.surface;
 
-export const base = style({ display: "flex", flexDirection: "column", minWidth: 0, color: t.text.default });
+// It can be held shorter than its content (a panel the window has no room for): a list in it scrolls.
+export const base = style({ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0, color: t.text.default });
 export const variant = styleVariants({
   canvas: { backgroundColor: t.background.canvas },
   frost: {

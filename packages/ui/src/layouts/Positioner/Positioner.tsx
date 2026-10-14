@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { FloatingContext } from "../Layer/floating.ts";
-import { anchors, place, companion, CompanionContext, COMPANION_ATTR, COMPANION_LEAVE_EVENT, inCompanion, type AnchorName } from "../../behaviors/anchors.ts";
+import { anchors, fit, place, companion, CompanionContext, COMPANION_ATTR, COMPANION_LEAVE_EVENT, inCompanion, type AnchorName } from "../../behaviors/anchors.ts";
 import type { Space } from "../Stack/Stack.tsx";
 import { fixedBox } from "../../behaviors/frame.ts";
 import * as s from "./Positioner.css.ts";
@@ -42,15 +42,22 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       }
       const cs = getComputedStyle(el);
       const px = (v: string) => parseFloat(cs.getPropertyValue(name(v))) || 0;
+      // Its natural size, before any limit from an earlier place.
+      el.style.removeProperty(name(s.maxHeightVar));
       const box = el.getBoundingClientRect();
       const touch = globalThis.matchMedia?.("(pointer: coarse)").matches ?? false;
       // Inside the drawn window (D-14), the anchor's viewport coordinates move into the window's.
       const o = fixedBox(el);
       const at = { top: a.top - o.top, bottom: a.bottom - o.top, left: a.left - o.left, right: a.right - o.left };
-      const p = place(at, box, { width: o.width, height: o.height }, { gap: px(s.gapVar), edge: px(s.edgeVar), topBand: px(s.bandVar) }, touch ? "below" : placement, align);
+      const view = { width: o.width, height: o.height };
+      const metrics = { gap: px(s.gapVar), edge: px(s.edgeVar), topBand: px(s.bandVar) };
+      const p = place(at, box, view, metrics, touch ? "below" : placement, align);
+      // Too tall for the window there: the side with more room, held to it (D-111).
+      const f = fit(at, p, box.height, view, metrics);
       el.style.setProperty(name(s.xVar), `${Math.round(p.x)}px`);
-      el.style.setProperty(name(s.yVar), `${Math.round(p.y)}px`);
-      el.dataset.placed = p.side;
+      el.style.setProperty(name(s.yVar), `${Math.round(f.y)}px`);
+      if (f.maxHeight !== undefined) el.style.setProperty(name(s.maxHeightVar), `${Math.floor(f.maxHeight)}px`);
+      el.dataset.placed = f.side;
       if (p.offscreen) el.dataset.offscreen = "";
       else delete el.dataset.offscreen;
     };
