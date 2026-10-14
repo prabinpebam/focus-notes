@@ -42,6 +42,7 @@ async function tabTo(page: Page, target: import("@playwright/test").Locator) {
 /** Git commits the main process logged since a point, by repository: `notes` or `private`. */
 const commitsSince = (l: Launched, from: number) => l.log.slice(from).filter((x) => x.includes("git-commit")).map((x) => /repo=(\w+)/.exec(x)![1]);
 
+// M3 demo, step 5: public, then private again.
 test("FIL-06, SHR-02: Make public asks first, then commits in both repositories, private first; Make private keeps private text out of the public history", async () => {
   const { dirs, notesRemote, privateRemote } = instance();
   // The pointer follows every private commit here, so each step can be checked (D-97 lets it wait 5 minutes).
@@ -114,6 +115,7 @@ test("SHR-01: a new note is private by default, even from a public note", async 
   await quit(l);
 });
 
+// M3 demo, step 6: import a browser's bundle as private notes.
 test("FRE-10: Import notes adds a browser's bundle as private notes, in one commit; a file too large is refused unread", async () => {
   const { dirs, privateRemote, notesRemote } = instance();
   const bundleDir = mkdtempSync(join(tmpdir(), "fn-bundle-"));

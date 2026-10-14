@@ -68,6 +68,7 @@ async function start(extraState: Record<string, unknown> = {}): Promise<Launched
   return { ...l, dirs };
 }
 
+// M4 demo, step 5: browse the theme gallery with live preview; Esc reverts.
 test("THM-07, keyboard only: the gallery previews each theme on the note, Esc goes back, and Enter chooses and is remembered", async () => {
   const l = await start();
   const { page, dirs } = l;
@@ -129,6 +130,7 @@ test("THM-07, keyboard only: the gallery previews each theme on the note, Esc go
   await quit(again);
 });
 
+// M4 demo, step 6: the contrast guard and its one-click fix.
 test("THM-13, keyboard only: a color edited until the contrast guard flags it, then the one-click fix", async () => {
   const l = await start();
   const { page } = l;

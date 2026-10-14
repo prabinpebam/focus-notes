@@ -44,6 +44,7 @@ async function unlock(page: Page, button: "Unlock" | "Unlock and remember") {
 }
 
 // PKG-05: the web app runs from the site alone, holds no GitHub credential, and talks only to its own site.
+// MW demo, step 2: write with no account, reload, go offline.
 test("your notes stay in this browser: written with no account, kept across reloads and offline", async ({ page, context }) => {
   const hosts = await watch(page);
   await noInstance(page);
@@ -96,6 +97,7 @@ test("your notes stay in this browser: written with no account, kept across relo
   expect(stored).toEqual(["appState", "workspaceFormat"]);
 });
 
+// MW demo, steps 3 and 4: public notes read-only, Copy to my notes, and the visitor view.
 test("a visitor sees the public notes read-only and how to use the app for themselves", async ({ page, context }) => {
   const hosts = await watch(page);
   await page.goto("./");
@@ -151,6 +153,7 @@ test("a visitor sees the public notes read-only and how to use the app for thems
   expect([...hosts].filter((h) => h !== SITE && h !== "github.com")).toEqual([]);
 });
 
+// MW demo, step 5: Unlock, Remember on this browser, and Forget.
 test("the owner unlocks private notes read-only; the page forgets them unless asked to remember", async ({ page }) => {
   await watch(page);
   await page.goto("./");
@@ -208,6 +211,7 @@ test("the owner unlocks private notes read-only; the page forgets them unless as
   await expect(corner(page).getByRole("button", { name: "Unlock" })).toBeVisible();
 });
 
+// MW demo, step 6: export, then import into a second browser.
 test("export your notes, and import them into another browser without losing anything (PKG-11)", async ({ page, browser }) => {
   await watch(page);
   await noInstance(page);

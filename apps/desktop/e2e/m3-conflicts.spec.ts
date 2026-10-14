@@ -50,6 +50,7 @@ async function tabTo(page: Page, target: Locator, max = 16) {
 }
 const THEIRS = "# Welcome\n\nFirst line.\n\nWritten on the other computer.\n";
 
+// M3 demo, step 4: the conflict resolver, with nothing lost.
 test("FIL-12: a sync conflict offers Resolve; Take the other version by keyboard keeps mine in Recently deleted, which restores it (FIL-10)", async () => {
   const { dirs, privateRemote } = instance();
   elsewhere(join(dirs.docs, ".."), privateRemote, THEIRS);
@@ -187,6 +188,7 @@ test("D-92, FIL-12: a file changed outside while this window has unsaved edits i
   await quit(l);
 });
 
+// M3 demo, step 7: delete a note and restore it.
 test("FIL-10, DD-FB-01: a delete's toast offers Undo, which restores the note from history", async () => {
   const { dirs, notesRemote } = instance();
   const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });

@@ -165,6 +165,7 @@ describe("hardening against a forged or careless site", () => {
 });
 
 describe("the leak check (SEC-06)", () => {
+  // MW demo, step 7: a private sentence in a public build fails the deploy.
   it("fails the deploy when private text or a private path reaches the site, without printing it", async () => {
     const secret = "This sentence must never be published anywhere.";
     const i = await instance({ privateNotes: { "Private/Secret plan.md": secret } });
