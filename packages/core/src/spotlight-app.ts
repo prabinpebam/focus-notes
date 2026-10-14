@@ -7,7 +7,7 @@ import type { AppState } from "./app.ts";
 import type { PlatformBridge } from "./bridge.ts";
 import { formatChord, type CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
-import { isReadOnlyPath } from "./notes.ts";
+import { innerPath, isReadOnlyPath, sourceOf, titleOfPath } from "./notes.ts";
 import type { Store } from "./store.ts";
 import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, UI_SCALES } from "./themes.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
@@ -229,6 +229,21 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     return [];
   };
 
+  /**
+   * Quick open's empty list in a shell that keeps notes itself (the browser): every note it has,
+   * newest first, the instance's private ones while unlocked (D-90), as the old Open a note list did.
+   */
+  const shellNotes = async (): Promise<SpotlightRow[]> => {
+    const notes = ((await bridge.listNotes?.().catch(() => [])) ?? []).sort((a, b) => b.updated - a.updated);
+    const recent = recentNotes().filter((p) => notes.some((n) => n.path === p)).slice(0, 10);
+    const row = (path: string, title: string, group: GroupId): SpotlightRow => {
+      const source = sourceOf(path);
+      return { id: rowId(group, path), group, kind: "note", key: path, label: title || titleOfPath(path), highlights: [], path, rel: innerPath(path), root: source };
+    };
+    const byPath = new Map(notes.map((n) => [n.path, n.title]));
+    return [...recent.map((p) => row(p, byPath.get(p) ?? "", "recent")), ...notes.filter((n) => !recent.includes(n.path)).slice(0, 200).map((n) => row(n.path, n.title ?? "", "notes"))];
+  };
+
   /** Before the index has started (or where there's none): commands and settings matched here. */
   const localCommandHits = (text: string, kinds?: readonly string[]): SearchHit[] => {
     const items = [
@@ -256,7 +271,14 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     if (s.mode === "help") return setRows(helpRows(s.query), false, false);
     if (s.mode === "headings" && !s.everywhere) return setRows(localHeadings(s.query), false, false);
     const { text, filters } = parseFilters(s.query);
-    if (!text.trim()) return setRows(s.mode === "headings" ? [] : emptyRows(s.mode), false, false);
+    if (!text.trim()) {
+      if (s.mode === "notes" && bridge.listNotes) {
+        const listed = await shellNotes();
+        if (my === seq) setRows(listed, false, false);
+        return;
+      }
+      return setRows(s.mode === "headings" ? [] : emptyRows(s.mode), false, false);
+    }
     const kinds: readonly SearchKind[] | undefined = s.mode === "notes" ? ["note"] : s.mode === "commands" ? ["command", "setting"] : s.mode === "headings" ? ["heading"] : filters.kinds;
     const top = s.mode === "all";
     const actions = s.mode === "all" || s.mode === "notes";
@@ -291,10 +313,26 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     const s = sp();
     // Pressing a mode's key again switches mode and keeps the query; the same mode's key closes it.
     if (s.open && s.mode === mode && !s.everywhere) return close();
-    if (!s.open) opening = now();
+    if (!s.open) {
+      opening = now();
+      dismissDialogs();
+    }
     store.update((st) => ({ ...st, ui: { ...st.ui, toolbarOpen: false } }));
     set({ open: true, mode, everywhere: false, query: s.open ? s.query : "", actions: undefined, focus: s.focus + 1, indexing: indexingOf() });
     void refresh().then(() => measureOpen());
+  };
+  /**
+   * Spotlight opens from anywhere, Settings and the cheat sheet included: a dialog that's open and
+   * safe to dismiss closes first (as Esc would), so Spotlight is the one modal and owns focus (D-109).
+   */
+  const dismissDialogs = () => {
+    const ui = store.state.ui;
+    const open: [boolean, string][] = [
+      [ui.settings.open, "settings.setOpen"], [ui.shortcuts.open, "shortcuts.setOpen"], [ui.picker.open, "picker.setOpen"],
+      [ui.aboutOpen, "about.setOpen"], [ui.unlock.open && !ui.unlock.busy, "unlock.setOpen"],
+      [ui.files.move.open, "move.setOpen"], [Boolean(ui.files.confirm), "files.setConfirmOpen"],
+    ];
+    for (const [shown, id] of open) if (shown && commands.has(id)) void run(id, { open: false });
   };
   const close = () => {
     seq++;
@@ -330,7 +368,15 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   modeCommand("spotlight.quickOpen", "notes", "command.spotlight.quickOpen");
   modeCommand("spotlight.commands", "commands", "command.spotlight.commands");
   modeCommand("spotlight.headings", "headings", "command.spotlight.headings");
-  commands.register<{ open: boolean }>({ id: "spotlight.setOpen", title: "command.spotlight.open", run: ({ open }) => { if (!open) close(); } });
+  commands.register<{ open: boolean }>({
+    id: "spotlight.setOpen", title: "command.spotlight.open",
+    run: ({ open }) => {
+      if (open) return;
+      close();
+      // Closed without acting: focus goes back where it was, and the Files panel keeps its own (D-94).
+      if (store.state.ui.files.open) store.update((st) => ({ ...st, ui: { ...st.ui, files: { ...st.ui.files, focusRequest: st.ui.files.focusRequest + 1 } } }));
+    },
+  });
   commands.register<{ value: string }>({
     id: "spotlight.setQuery", title: "command.spotlight.setQuery",
     run: ({ value }) => {
@@ -581,7 +627,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     switch (r.kind) {
       case "note":
       case "text": {
-        const vis = r.path ? visibilityOf(s.workspace.tree, r.path) : undefined;
+        const vis = (r.path ? visibilityOf(s.workspace.tree, r.path) : undefined) ?? (r.root === "public" || r.root === "private" ? r.root : undefined);
         const where = [r.rel, vis ? msg(`spotlight.visibility.${vis}`) : ""].filter(Boolean).join(" · ");
         if (r.kind === "text" && r.snippet) {
           return { ...base, icon: "text", description: r.snippet.text, descriptionHighlights: r.snippet.highlights.map((x) => [x[0], x[1]]), state: where };
@@ -651,7 +697,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
         const row = p.rows.find((r) => r.id === p.actions!.row);
         const list = row ? actionList(row) : [];
         return {
-          open: true, mode, query: p.query, placeholder: msg(`spotlight.placeholder.${p.mode}`), fieldLabel: msg("spotlight.field"),
+          open: true, mode, query: p.query, placeholder: msg(`spotlight.placeholder.${p.mode}`), fieldLabel: msg(`spotlight.placeholder.${p.mode}`),
           activeId: p.actions.activeId, focus: p.focus, status,
           items: list.map((a) => ({
             id: a.id, label: msg(a.title), icon: ACTION_ICONS[a.id], highlights: [],
@@ -668,7 +714,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       const count = p.rows.filter((r) => r.kind !== "create" && r.kind !== "find").length;
       const summary = p.busy ? "" : count ? msg("spotlight.count", { count }) : p.query ? msg("spotlight.none", { query: p.query }) : "";
       return {
-        open: true, mode, query: p.query, placeholder: msg(`spotlight.placeholder.${p.mode}`), fieldLabel: msg("spotlight.field"),
+        open: true, mode, query: p.query, placeholder: msg(`spotlight.placeholder.${p.mode}`), fieldLabel: msg(`spotlight.placeholder.${p.mode}`),
         activeId: p.activeId, focus: p.focus, items, summary, status,
         hints: msg("spotlight.hints", { alt: key("Mod+Enter"), actions: key("Mod+K") }),
         actionsTitle: "", listLabel: msg("spotlight.list"),

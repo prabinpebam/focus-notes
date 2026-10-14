@@ -74,12 +74,12 @@ test("your notes stay in this browser: written with no account, kept across relo
   await context.setOffline(false);
   await page.reload();
   await expect(editor(page)).toContainText("Offline thoughts");
-  // Quick open (Mod+P) finds this browser's notes by name; Open… (Mod+O) is the Files panel.
+  // Quick open (Mod+P, Spotlight's notes) finds this browser's notes by name; Open… (Mod+O) is the Files panel.
   await page.keyboard.press(`${mod}+p`);
-  const open = page.getByRole("dialog", { name: "Open a note" });
+  const open = page.getByRole("dialog", { name: "Spotlight" });
   await expect(open.getByRole("option")).toHaveCount(2);
-  await open.getByRole("combobox", { name: "Find a note" }).fill("welc");
-  await expect(open.getByRole("option")).toHaveCount(1);
+  await open.getByRole("combobox", { name: "Find a note by title or path" }).fill("welc");
+  await expect(open.getByRole("group", { name: "Notes" }).getByRole("option")).toHaveCount(1);
   expect(await settledAxe(page)).toEqual([]);
   await page.keyboard.press("Enter");
   await expect(editor(page)).toContainText("Written in the browser.");
@@ -111,9 +111,9 @@ test("a visitor sees the public notes read-only and how to use the app for thems
 
   // Quick open lists the public notes, marked as such; private ones stay hidden until unlocked.
   await page.keyboard.press(`${mod}+p`);
-  const open = page.getByRole("dialog", { name: "Open a note" });
+  const open = page.getByRole("dialog", { name: "Spotlight" });
   await expect(open.getByRole("option")).toHaveCount(2);
-  await expect(open.getByRole("option", { name: /Garden log/ })).toContainText("Public · Guides");
+  await expect(open.getByRole("option", { name: /Garden log/ })).toContainText("Guides/Garden.md · Public");
   await open.getByRole("option", { name: /Reading list/ }).click();
   await expect(editor(page)).toContainText("Books I want to read");
 
@@ -176,7 +176,7 @@ test("the owner unlocks private notes read-only; the page forgets them unless as
   await expect(corner(page).getByRole("button", { name: "Use this app for yourself" })).toHaveCount(0);
 
   await page.keyboard.press(`${mod}+p`);
-  const open = page.getByRole("dialog", { name: "Open a note" });
+  const open = page.getByRole("dialog", { name: "Spotlight" });
   await expect(open.getByRole("option")).toHaveCount(3);
   await open.getByRole("option", { name: /Launch/ }).click();
   await expect(editor(page)).toContainText("second week of November");
@@ -239,7 +239,7 @@ test("export your notes, and import them into another browser without losing any
   await chooser.setFiles(file);
   await expect(p2.getByText("Imported 1 note; 1 kept with a new name, because its name was taken.")).toBeVisible();
   await p2.keyboard.press(`${mod}+p`);
-  const open = p2.getByRole("dialog", { name: "Open a note" });
+  const open = p2.getByRole("dialog", { name: "Spotlight" });
   await expect(open.getByRole("option")).toHaveCount(2);
   await open.getByRole("option", { name: /Welcome 2/ }).click();
   await expect(editor(p2)).toContainText("Exported text.");

@@ -35,6 +35,10 @@
       "budget": 1000,
       "unit": "ms"
     },
+    "SPT-07.panelOpenMs": {
+      "budget": 50,
+      "unit": "ms"
+    },
     "SPT-07.openMs": {
       "budget": 50,
       "unit": "ms"

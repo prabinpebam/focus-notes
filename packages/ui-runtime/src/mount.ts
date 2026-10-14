@@ -67,8 +67,16 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   let toolbarWasOpen = app.store.state.ui.toolbarOpen;
   let sheetWasOpen = app.store.state.ui.shortcuts.open;
   let filesWereOpen = app.store.state.ui.files.open;
+  let spotlightWasOpen = app.store.state.ui.spotlight.open;
   app.store.subscribe(() => {
-    const { toolbarOpen, shortcuts, find, files } = app.store.state.ui;
+    const { toolbarOpen, shortcuts, find, files, spotlight } = app.store.state.ui;
+    // Spotlight hands focus back where it was; if that's gone (a dialog it replaced), to the note.
+    if (spotlightWasOpen && !spotlight.open) {
+      setTimeout(() => {
+        if (!document.activeElement || document.activeElement === document.body) window.dispatchEvent(new Event(REFOCUS_EVENT));
+      }, 300);
+    }
+    spotlightWasOpen = spotlight.open;
     // Not when the toolbar closed because the find bar, the cheat sheet, or the Files panel took focus.
     if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open && !files.open) || (sheetWasOpen && !shortcuts.open) || (filesWereOpen && !files.open)) {
       setTimeout(() => window.dispatchEvent(new Event(REFOCUS_EVENT)), 0);

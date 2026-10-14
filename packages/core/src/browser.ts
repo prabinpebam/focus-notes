@@ -14,6 +14,7 @@ import type { Store } from "./store.ts";
 import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { noteReadOnly } from "./workspace-app.ts";
+import { buildTree } from "./workspace.ts";
 
 export interface PickerState {
   open: boolean;
@@ -183,6 +184,9 @@ export function registerBrowserFeatures(ctx: BrowserContext): { start(): Promise
       try {
         const r = await bridge.importNotes!();
         if (!r) return;
+        // The new notes join the workspace's tree, so Files, Spotlight, and the search index have them.
+        const scan = await bridge.workspace?.scan().catch(() => undefined);
+        if (scan) store.update((s) => ({ ...s, workspace: { ...s.workspace, tree: buildTree(scan) } }));
         ctx.toast(catalog.format("toast.imported", { count: r.added, renamed: r.renamed }));
       } catch {
         ctx.toast(catalog.format("toast.importFailed"), { tone: "error" });

@@ -146,13 +146,55 @@ async function noteTimes() {
   }
 }
 
+// SPT-07: Spotlight from the keypress to the visible panel with its results, in the app, on the
+// 5,000-note fixture: the key's time to the end of the app's own measure ("fn:spotlight.open"),
+// which ends at the first frame that shows the results (WP-4.2).
+async function spotlightTimes() {
+  const { _electron } = createRequire(join(root, "apps", "desktop", "package.json"))("@playwright/test");
+  const { fixtureNotes } = await import(pathToFileURL(join(import.meta.dirname, "fixtures.ts")).href);
+  const docs = throwawayWorkspace();
+  for (const n of fixtureNotes()) {
+    const p = join(docs, ...n.path.split("/"));
+    mkdirSync(join(p, ".."), { recursive: true });
+    writeFileSync(p, n.markdown);
+  }
+  const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
+  writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
+  const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9" } });
+  try {
+    const page = await app.firstWindow();
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+    await page.getByRole("textbox", { name: "Note" }).waitFor();
+    await page.waitForFunction(() => document.activeElement?.hasAttribute("data-editor"));
+    await page.evaluate(() => { window.__keys = []; window.addEventListener("keydown", (e) => { if (e.key === "/") window.__keys.push(e.timeStamp); }, true); });
+    const field = page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox");
+    const times = [];
+    for (let i = 0; i < 2 * Math.max(runs, 3) + 1; i++) {
+      await page.keyboard.press(`${mod}+/`);
+      await field.waitFor();
+      await page.waitForFunction((n) => performance.getEntriesByName("fn:spotlight.open", "measure").length > n, i);
+      times.push(await page.evaluate(() => {
+        const m = performance.getEntriesByName("fn:spotlight.open", "measure").at(-1);
+        return m.startTime + m.duration - window.__keys.at(-1);
+      }));
+      await page.keyboard.press("Escape");
+      await field.waitFor({ state: "detached" });
+      await page.waitForFunction(() => document.activeElement?.hasAttribute("data-editor"));
+    }
+    // The first open warms the code paths; the rest are what a person feels.
+    return { "SPT-07.panelOpenMs": Math.round(median(times.slice(1)) * 10) / 10 };
+  } finally {
+    await app.close();
+  }
+}
+
 // SPT-07: the search index on the 5,000-note fixture, through its worker's messages (search.ts).
 async function searchTimes() {
   const { measureSearch } = await import(pathToFileURL(join(import.meta.dirname, "search.ts")).href);
   return measureSearch(runs);
 }
 
-const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()), ...(await noteTimes()), ...(await searchTimes()) } };
+const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()), ...(await noteTimes()), ...(await spotlightTimes()), ...(await searchTimes()) } };
 mkdirSync(join(root, "test-results"), { recursive: true });
 writeFileSync(join(root, "test-results", "bench.json"), JSON.stringify(report, null, 2));
 

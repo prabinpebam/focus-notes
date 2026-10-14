@@ -38,5 +38,5 @@ app.store.subscribe(() => {
   });
 });
 bridge.onFlushRequest(() => flushApp(app));
-// The search index (WP-4.1) builds in its worker once the first note is open, never before.
-void app.start().then(() => startSearch(app, createSearchWorker(searchWorkerUrl)));
+// The search index (WP-4.1) builds in its worker once the first note is open, never before; Spotlight asks it (WP-4.2).
+void app.start().then(() => app.useSearch(startSearch(app, createSearchWorker(searchWorkerUrl))));

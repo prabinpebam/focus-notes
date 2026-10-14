@@ -24,7 +24,8 @@
     "vm.import",
     "vm.conflict",
     "vm.deleted",
-    "vm.window"
+    "vm.window",
+    "vm.spotlight"
   ],
   "focus": "editor",
   "root": {
@@ -1905,6 +1906,180 @@
               },
               "activeChange": {
                 "run": "picker.setActive",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "DialogPanel",
+        "id": "spotlight",
+        "when": {
+          "get": "vm.spotlight.open"
+        },
+        "props": {
+          "label": {
+            "t": "spotlight.dialog"
+          },
+          "open": {
+            "get": "vm.spotlight.open"
+          },
+          "size": "m",
+          "placement": "top",
+          "material": "frosted"
+        },
+        "on": {
+          "openChange": {
+            "run": "spotlight.setOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "slots": {
+          "fixed": [
+            {
+              "type": "Stack",
+              "props": {
+                "gap": "s"
+              },
+              "children": [
+                {
+                  "type": "SearchField",
+                  "props": {
+                    "label": {
+                      "get": "vm.spotlight.fieldLabel"
+                    },
+                    "placeholder": {
+                      "get": "vm.spotlight.placeholder"
+                    },
+                    "chip": {
+                      "get": "vm.spotlight.mode"
+                    },
+                    "clearLabel": {
+                      "t": "field.clear"
+                    },
+                    "autoFocus": true,
+                    "value": {
+                      "bind": "vm.spotlight.query"
+                    },
+                    "focusRequest": {
+                      "get": "vm.spotlight.focus"
+                    },
+                    "keyScope": "spotlightField",
+                    "controls": "spotlightList",
+                    "activeId": {
+                      "get": "vm.spotlight.activeId"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "when": {
+                    "expr": {
+                      "!=": [
+                        {
+                          "get": "vm.spotlight.actionsTitle"
+                        },
+                        ""
+                      ]
+                    }
+                  },
+                  "props": {
+                    "value": {
+                      "get": "vm.spotlight.actionsTitle"
+                    },
+                    "role": "label"
+                  }
+                }
+              ]
+            }
+          ],
+          "footer": [
+            {
+              "type": "Stack",
+              "props": {
+                "gap": "xs"
+              },
+              "children": [
+                {
+                  "type": "Inline",
+                  "props": {
+                    "gap": "m",
+                    "justify": "between",
+                    "wrap": true
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "get": "vm.spotlight.summary"
+                        },
+                        "role": "caption",
+                        "tone": "muted",
+                        "announce": true
+                      }
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "get": "vm.spotlight.status"
+                        },
+                        "role": "caption",
+                        "tone": "muted"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "get": "vm.spotlight.hints"
+                    },
+                    "role": "caption",
+                    "tone": "muted"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "ResultList",
+            "id": "spotlightList",
+            "props": {
+              "label": {
+                "get": "vm.spotlight.listLabel"
+              },
+              "items": {
+                "get": "vm.spotlight.items"
+              },
+              "activeId": {
+                "get": "vm.spotlight.activeId"
+              }
+            },
+            "on": {
+              "action": {
+                "run": "spotlight.choose",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              },
+              "activeChange": {
+                "run": "spotlight.setActive",
                 "args": {
                   "id": {
                     "get": "event.id"
