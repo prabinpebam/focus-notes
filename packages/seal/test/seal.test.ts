@@ -48,6 +48,7 @@ describe("the publisher and the reader", () => {
     await expect(reader.readPublic("../focus-notes.json")).rejects.toThrow();
   });
 
+  // SHR-04: private notes are never published in plaintext, text or names.
   it("seals private notes so only the passphrase opens them, read-only, with readable paths inside", async () => {
     const secret = "The launch date is the fourteenth of November, and nobody knows yet.";
     const i = await instance({ privateNotes: { "Plans/Launch plan.md": `# Launch\n\n${secret}\n`, "Diary.md": "Short.\n" } });
@@ -108,7 +109,9 @@ describe("the publisher and the reader", () => {
     expect(JSON.parse(ka).data).not.toBe(JSON.parse(kb).data);
   }, 30_000);
 
+  // SEC-08: PBKDF2-SHA256 at exactly ITERATIONS (600,000); the reader accepts no other parameters.
   it("accepts keyrings only with the exact parameters, so the format can't be downgraded", () => {
+    expect(ITERATIONS).toBe(600_000);
     const good = { v: 1, kdf: "pbkdf2-sha256", iterations: ITERATIONS, salt: toB64url(randomBytes(16)), iv: toB64url(randomBytes(12)), data: "AAAA" };
     expect(() => parseKeyring(JSON.stringify(good))).not.toThrow();
     for (const bad of [
@@ -162,6 +165,7 @@ describe("hardening against a forged or careless site", () => {
 });
 
 describe("the leak check (SEC-06)", () => {
+  // MW demo, step 7: a private sentence in a public build fails the deploy.
   it("fails the deploy when private text or a private path reaches the site, without printing it", async () => {
     const secret = "This sentence must never be published anywhere.";
     const i = await instance({ privateNotes: { "Private/Secret plan.md": secret } });

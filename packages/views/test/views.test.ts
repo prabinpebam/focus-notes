@@ -58,6 +58,7 @@ describe("all app UI is view documents (DSY-06)", () => {
     expect(files.map((f) => f.replace(".view.json", "")).sort()).toEqual(Object.keys({ ...views, ...pages }).sort());
   });
 
+  // DSY-04: only packages/ui renders elements or declares styles (the boundary check).
   it("no markup or styles outside packages/ui, and every view passes ui:check", () => {
     // Both exit non-zero, naming the offending files, on any violation.
     expect(() => execFileSync(process.execPath, [join(root, "tools", "check-boundaries.mjs")], { cwd: root, stdio: "pipe" })).not.toThrow();

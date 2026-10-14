@@ -415,6 +415,15 @@
       "group": "Plan"
     },
     {
+      "path": "plan/gate-evidence.md",
+      "title": "Stage gate evidence",
+      "order": 504,
+      "icon": "verified",
+      "status": "draft",
+      "updated": "2026-10-15",
+      "group": "Plan"
+    },
+    {
       "path": "plan/decisions.md",
       "title": "Decisions",
       "order": 510,

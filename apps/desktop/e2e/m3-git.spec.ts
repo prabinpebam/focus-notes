@@ -29,6 +29,7 @@ async function typeAtEnd(page: import("@playwright/test").Page, text: string) {
   await page.keyboard.type(text);
 }
 
+// M3 demo, step 2: a note is committed and pushed.
 test("EDT-11: Mod+S commits and pushes at once, private first, then the pointer moves (D-07); nothing is shown", async () => {
   const { dirs, notesRemote, privateRemote } = instance();
   const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });

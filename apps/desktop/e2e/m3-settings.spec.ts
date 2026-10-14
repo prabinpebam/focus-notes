@@ -146,6 +146,7 @@ test("IA-VIEW-SETTINGS, FRE-07: Settings opens with Mod+, and from ⋯; signing 
   }
 });
 
+// M3 demo, step 8: the terminal's Git follows the app's sign-in.
 test("FRE-07: Switch account signs in again through the same helper; the terminal follows", async () => {
   test.setTimeout(120_000);
   const { w, l } = await setUp();
@@ -178,6 +179,7 @@ test("FRE-07: Switch account signs in again through the same helper; the termina
   }
 });
 
+// M3 demo, step 9: sign out removes everything in the data inventory.
 test("PRV-02, FRE-07: signing out with Git's credential deletes exactly what the data inventory lists, and the terminal must sign in again", async () => {
   test.setTimeout(90_000);
   const { w, l, note } = await setUp();
