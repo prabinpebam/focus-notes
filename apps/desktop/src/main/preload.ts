@@ -62,6 +62,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
   // Off only when the main process says so: end-to-end tests (PRF-10).
   warmUp: params.get("warmup") !== "0",
   readNote: (path: string) => ipcRenderer.invoke("note:read", path),
+  readNotes: (paths: readonly string[]) => ipcRenderer.invoke("notes:read", paths),
   writeNote: (path: string, content: string) => ipcRenderer.invoke("note:write", path, content),
   chooseNote: () => ipcRenderer.invoke("note:choose"),
   newNotePath: (near?: string) => ipcRenderer.invoke("note:newPath", near),

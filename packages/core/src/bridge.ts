@@ -12,6 +12,12 @@ import type { NativeWindowBridge, WindowBridge } from "./window-app.ts";
 export interface PlatformBridge {
   platform: Platform;
   readNote(path: string): Promise<string>;
+  /**
+   * Several notes' text at once, for the search index (D-107): `null` for one that can't be read.
+   * Reads past the note snapshot, which is for notes people open (PRF-10). Optional: without it the
+   * index reads with `readNote`.
+   */
+  readNotes?(paths: readonly string[]): Promise<(string | null)[]>;
   /** Atomic write: temporary file, then rename. */
   writeNote(path: string, content: string): Promise<void>;
   /** Shows the open dialog. Resolves to undefined if cancelled. */

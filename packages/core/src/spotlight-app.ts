@@ -58,6 +58,8 @@ export const FIND_ALL_NOTES = "find.allNotes";
 export const GROUP_HEADER = "group/";
 /** The empty field's suggestions (Spotlight → Empty and no-result states). */
 export const SUGGESTIONS = ["note.new", "focus.toggle", "appearance.toggle"] as const;
+/** While the index reads, an open Spotlight with a query asks again at most this often. */
+const REFRESH_MS = 250;
 
 interface Ctx {
   store: Store<AppState>;
@@ -272,8 +274,13 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     return path && root ? dirOf(path).slice(root.path.length).replace(/\\/g, "/").replace(/^\/+/, "") : undefined;
   };
 
-  async function refresh(): Promise<void> {
+  /**
+   * Asks again for what the field shows. `follow`: the index has read more since; a row the person
+   * moved to stays active while it's still listed, otherwise the best row is.
+   */
+  async function refresh(follow = false): Promise<void> {
     const s = sp();
+    const keep = follow && s.activeId !== firstActive(s.rows);
     if (!s.open) return;
     const my = ++seq;
     if (s.mode === "help") return setRows(helpRows(s.query), false, false);
@@ -305,7 +312,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     try {
       if (!filters.phrase) titles = (await search.query({ ...base, scope: "titles" })).hits;
       if (my !== seq) return;
-      setRows(mergeResults(titles, [], { query: text, top, actions }), wantsText, false);
+      setRows(mergeResults(titles, [], { query: text, top, actions }), wantsText, keep);
       if (!wantsText) return;
       const found = (await search.query({ ...base, scope: "text", limit: 10, ...(filters.phrase ? { phrase: true } : {}) })).hits;
       if (my !== seq) return;
@@ -744,11 +751,22 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       search = s;
       s.setItems("command", commandItems());
       s.setItems("setting", settingItems());
-      // "Indexing 1,240 / 5,000" while it reads, in the footer of an open Spotlight.
+      // "Indexing 1,240 / 5,000" while it reads, in the footer of an open Spotlight. What it shows
+      // follows the index too: a note listed or read since the query was answered appears, without
+      // moving the active row while it's still there.
+      let seen = { notes: s.status().notes, indexed: s.status().indexed };
+      let again: ReturnType<typeof setTimeout> | undefined;
       s.onStatus((st) => {
         if (!sp().open) return;
         const indexing = st.indexed < st.notes ? { indexed: st.indexed, notes: st.notes } : undefined;
         if (indexing?.indexed !== sp().indexing?.indexed || indexing?.notes !== sp().indexing?.notes) set({ indexing });
+        const changed = st.notes !== seen.notes || st.indexed !== seen.indexed;
+        seen = { notes: st.notes, indexed: st.indexed };
+        if (!changed || !sp().query.trim() || again) return;
+        again = setTimeout(() => {
+          again = undefined;
+          if (sp().open) void refresh(true);
+        }, REFRESH_MS);
       });
       if (sp().open) void refresh();
     },

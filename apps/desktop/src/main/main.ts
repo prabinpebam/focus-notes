@@ -371,6 +371,9 @@ let journal: RecoveryJournal | undefined;
 /** What this launch restored from the journal, told to the renderer once. */
 let restored: RestoredNote[] = [];
 
+/** The most notes the search index reads in one call (`notes:read`). */
+const NOTES_PER_READ = 64;
+
 /** Only Markdown files, given as absolute paths, may be read or written. */
 function notePath(p: unknown): string {
   if (typeof p !== "string" || !p) throw new Error("A note path is required");
@@ -712,6 +715,11 @@ function handle(channel: string, fn: (...args: any[]) => unknown): void {
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("note:read", async (p) => (await readParsed(notePath(p))).text);
+  // The search index's reads (D-107): a batch per call, past the snapshot, which is for opened notes.
+  handle("notes:read", async (ps) => {
+    if (!Array.isArray(ps) || ps.length > NOTES_PER_READ) throw new Error(`Up to ${NOTES_PER_READ} note paths are required`);
+    return Promise.all(ps.map(async (p) => readFile(notePath(p), "utf8").catch(() => null)));
+  });
   handle("note:write", async (p, content) => {
     if (typeof content !== "string") throw new Error("Content must be text");
     const path = notePath(p);

@@ -17,6 +17,23 @@ export interface TabsProps {
   onChange?: (payload: { value: string }) => void;
 }
 
+/**
+ * A panel with nothing to focus is a tab stop itself, and stops being one once a control appears in
+ * it (Settings' Account panel while it checks the account, then its buttons). Focus resting on the
+ * panel then moves to that control instead of being lost (WCAG 2.4.3).
+ */
+const TABBABLE = "a[href], button, input, select, textarea, [tabindex], [contenteditable='true']";
+const keepFocus = (panel: HTMLDivElement | null) => {
+  if (!panel) return;
+  const observer = new MutationObserver(() => {
+    if (panel.ownerDocument.activeElement !== panel) return;
+    const first = [...panel.querySelectorAll<HTMLElement>(TABBABLE)].find((el) => el.tabIndex >= 0 && !el.matches(":disabled") && el.getClientRects().length > 0);
+    first?.focus();
+  });
+  observer.observe(panel, { childList: true, subtree: true, attributes: true });
+  return () => observer.disconnect();
+};
+
 /** Tabs (ARIA tabs pattern): arrow keys move between tabs, and the panel follows the selection. */
 export function Tabs({ label, items, value, orientation = "horizontal", autoFocus, id, children, onChange }: TabsProps) {
   const selected = value ?? items[0]?.id ?? "";
@@ -33,7 +50,7 @@ export function Tabs({ label, items, value, orientation = "horizontal", autoFocu
         {items.map((o) => <Tab key={o.id} id={o.id} className={s.tab[orientation]} {...(o.id === selected ? { ref: focusFirst } : {})}>{o.label}</Tab>)}
       </TabList>
       {/* Keyed by the selection, so the panel and its id change together with the selected tab's aria-controls. */}
-      <TabPanel key={selected} id={selected} className={s.panel[orientation]}>{children}</TabPanel>
+      <TabPanel key={selected} id={selected} ref={keepFocus} className={s.panel[orientation]}>{children}</TabPanel>
     </AriaTabs>
   );
 }

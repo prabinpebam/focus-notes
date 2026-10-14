@@ -325,12 +325,16 @@ export class SearchEngine {
     if (h !== undefined && h === rec.hash) return;
     rec.hash = h;
     const f: NoteFields = markdown === null ? { headings: [], text: "" } : extractNote(markdown);
+    const label = this.#labelOf(rec);
+    const fmid = rec.fmid;
     rec.title = f.title;
     rec.fmid = f.id;
     rec.headings = f.headings;
     rec.text = f.text;
     rec.norm = undefined;
-    this.#putNoteDoc(rec);
+    // Its row is put again only if the text changed what it shows (the tree's title is usually the
+    // text's): every row put again is one more the index must clean out later.
+    if (this.#labelOf(rec) !== label || rec.fmid !== fmid) this.#putNoteDoc(rec);
     this.#putHeadings(rec);
     this.#putText(rec);
   }

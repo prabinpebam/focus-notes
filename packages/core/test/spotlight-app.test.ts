@@ -12,6 +12,7 @@ import {
 } from "../src/index.ts";
 import { startSearch, type SearchService } from "../src/search/feed.ts";
 import { localSearch } from "../src/search/serve.ts";
+import type { IndexStatus, SearchHit, SearchQuery } from "../src/search/types.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 const PRIV = "/w/private/notes";
@@ -219,6 +220,45 @@ describe("SPT-04: states, the empty field, and no match", () => {
 
     await type(app, ">");
     expect(labels(app)).toEqual(actions);
+  });
+
+  it("an open Spotlight's answer follows the index as it reads: a note listed after the query was answered appears", async () => {
+    const { app } = await started(desktop(), { search: false });
+    let hits: SearchHit[] = [];
+    let status: IndexStatus = { notes: 0, indexed: 0, pending: 0, seq: 0 };
+    const listeners = new Set<(s: IndexStatus) => void>();
+    const service = {
+      query: async (q: SearchQuery) => ({ query: q, hits: q.scope === "titles" ? hits : [], ms: 0 }),
+      find: async () => { throw new Error("not asked"); },
+      status: () => status,
+      onStatus: (l: (s: IndexStatus) => void) => { listeners.add(l); return () => listeners.delete(l); },
+      setItems: () => {},
+      whenIndexed: async () => status,
+      stop: () => {},
+    } as unknown as SearchService;
+    app.useSearch(service);
+    await app.commands.run("spotlight.quickOpen");
+    await type(app, "reading");
+    expect(labels(app)).toEqual(["Actions: Create note “reading”", "Actions: Find “reading” in all notes"]);
+    // The note arrives in the index (the browser lists its notes after start).
+    hits = [{ kind: "note", key: `${PUB}/reading.md`, label: "Reading list", highlights: [[0, 7]], tier: "prefix", score: 1, path: `${PUB}/reading.md`, rel: "reading.md", root: "public" }];
+    status = { notes: 1, indexed: 1, pending: 0, seq: 1 };
+    for (const l of listeners) l(status);
+    await vi.waitFor(() => expect(labels(app)[0]).toBe("Notes: Reading list"));
+    expect(vm(app).items.find((i) => i.id === sp(app).activeId)?.label).toBe("Reading list");
+    // A row the person moved to stays active as more arrives.
+    await app.commands.run("spotlight.next");
+    const moved = sp(app).activeId;
+    hits = [...hits, { ...hits[0]!, key: `${PUB}/reading-2.md`, label: "Reading log", path: `${PUB}/reading-2.md`, rel: "reading-2.md" }];
+    status = { notes: 2, indexed: 2, pending: 0, seq: 2 };
+    for (const l of listeners) l(status);
+    await vi.waitFor(() => expect(labels(app)).toContain("Notes: Reading log"));
+    expect(sp(app).activeId).toBe(moved);
+    // Nothing new in the index: it isn't asked again.
+    const asked = vi.spyOn(service, "query");
+    for (const l of listeners) l(status);
+    await new Promise((r) => setTimeout(r, 400));
+    expect(asked).not.toHaveBeenCalled();
   });
 
   it("no match offers Create note, which makes a note named after the query, and Find in all notes, which searches for it", async () => {

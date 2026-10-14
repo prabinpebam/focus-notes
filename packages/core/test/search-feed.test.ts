@@ -122,6 +122,37 @@ describe("indexing the workspace", () => {
     await vi.waitFor(async () => expect(await ask(search, "bravo")).toEqual([]));
   });
 
+  it("reads several notes per call where the shell can, one call at a time, past what it reads for the editor (PRF-04)", async () => {
+    const files: Record<string, string> = {};
+    for (let i = 0; i < 70; i++) files[`${PRIV}/n${i}.md`] = `# Note ${i}\n\nword${i} shared\n`;
+    files[`${PRIV}/gone.md`] = "# Gone\n";
+    const d = desktop(files);
+    const calls: string[][] = [];
+    let inFlight = 0;
+    let most = 0;
+    const searchBridge: PlatformBridge = {
+      ...d.bridge,
+      readNotes: async (paths) => {
+        calls.push([...paths]);
+        most = Math.max(most, ++inFlight);
+        await new Promise((r) => setTimeout(r, 1));
+        inFlight--;
+        return paths.map((p) => (p.endsWith("gone.md") ? null : d.files[p]!));
+      },
+    };
+    const { app, search } = await started(d.bridge, searchBridge);
+    expect(search.status()).toMatchObject({ notes: 71, indexed: 71, pending: 0 });
+    // Every note read once, 32 at most per call, one call at a time; readNote read only the editor's note.
+    expect(calls.flat().sort()).toEqual(Object.keys(files).sort());
+    expect(Math.max(...calls.map((c) => c.length))).toBe(32);
+    expect(calls.length).toBe(3);
+    expect(most).toBe(1);
+    expect(new Set(d.reads)).toEqual(new Set([app.store.state.note.path]));
+    expect(keys(await askText(search, "word69"))[0]).toBe(`${PRIV}/n69.md`);
+    // A note that can't be read is indexed by its title alone.
+    expect(keys(await ask(search, "gone"))).toEqual([`${PRIV}/gone.md`]);
+  });
+
   it("indexes the app's own saves from the text it already has, without reading the note", async () => {
     const d = desktop({ [`${PRIV}/a.md`]: "# A\n\nfirst\n" });
     const { app, search } = await started(d.bridge);

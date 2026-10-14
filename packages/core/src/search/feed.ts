@@ -38,9 +38,12 @@ export interface SearchService {
 }
 
 export interface SearchFeedOptions {
-  /** Notes read at once (4). */
+  /** Notes read at once where the shell reads one per call (4). */
   concurrency?: number;
+  /** Notes per call where it reads several (`readNotes`, 32), one call at a time. */
+  batch?: number;
 }
+const READ_BATCH = 32;
 
 interface Entry {
   kind: "note" | "folder";
@@ -109,6 +112,9 @@ export function diffEntries(before: ReadonlyMap<string, Entry>, after: ReadonlyM
 export function startSearch(host: SearchHost, index: SearchIndexClient, options: SearchFeedOptions = {}): SearchService {
   const { store, bridge } = host;
   const concurrency = Math.max(1, options.concurrency ?? 4);
+  // Reading several notes per call (`readNotes`) keeps the calls, and what each leaves behind, few.
+  const perCall = bridge.readNotes ? Math.max(1, options.batch ?? READ_BATCH) : 1;
+  const calls = bridge.readNotes ? 1 : concurrency;
   const unlocked = () => store.state.instance.vault === "unlocked";
   /** The browser's private notes only while the vault is open (D-90). The desktop's are files of its own. */
   const allowed = (path: string) => sourceOf(path) !== "private" || unlocked();
@@ -149,17 +155,31 @@ export function startSearch(host: SearchHost, index: SearchIndexClient, options:
     idle = [];
     for (const r of done) r();
   };
+  /**
+   * Several notes per call where the shell reads several at once. One note (a change the watcher
+   * saw, often the app's own save) goes through `readNote`, which the save has already answered.
+   */
+  const read = (paths: string[]): Promise<(string | null)[]> =>
+    bridge.readNotes && paths.length > 1
+      ? bridge.readNotes(paths).then((t) => t, () => paths.map(() => null))
+      : bridge.readNote(paths[0]!).then((t) => [t], () => [null]);
   function pump(): void {
-    while (!stopped && active < concurrency && queue.size) {
-      const path = queue.values().next().value!;
-      queue.delete(path);
-      if (!known.has(path)) continue;
+    while (!stopped && active < calls && queue.size) {
+      const paths: string[] = [];
+      for (const p of queue) {
+        queue.delete(p);
+        if (known.has(p)) paths.push(p);
+        if (paths.length >= perCall) break;
+      }
+      if (!paths.length) continue;
       const gen = lockGen;
       active++;
-      bridge.readNote(path).then((t) => t, () => null).then((markdown) => {
+      void read(paths).then((texts) => {
         active--;
-        const current = known.has(path) && (sourceOf(path) !== "private" || (gen === lockGen && unlocked()));
-        if (!stopped && current) push({ op: "text", path, markdown });
+        paths.forEach((path, i) => {
+          const current = known.has(path) && (sourceOf(path) !== "private" || (gen === lockGen && unlocked()));
+          if (!stopped && current) push({ op: "text", path, markdown: texts[i] ?? null });
+        });
         pump();
       });
     }
