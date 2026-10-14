@@ -3,7 +3,7 @@
 The evidence for each stage gate before 1.0, in the order the stages close (M0, M1, MW, M3, M2, M4, Windows first, [D-112](decisions.md)): each item of the [stage definition of done](definition-of-done.md#stage-definition-of-done) with its status and evidence, each stage's exit criteria, the gaps still open, and the steps only the owner can take.
 
 > [!NOTE]
-> **TL;DR.** 145 of 150 requirements in these six stages are named by at least one automated test (`pnpm trace`). M1, M3 and M2 trace every requirement; M0 misses **DSY-10** and **SEC-01**, MW misses **PKG-07** and **DST-02**, and M4 misses **KEY-03** (WP-4.4 isn't built). Every demo script is automated, as one journey (M0, M1, M2) or as journeys named per demo step (MW, M3, M4). No gate can pass yet: the Windows bench (`pnpm bench --check`) fails on `main`, which also skips the Windows journeys there, and every gate still needs the owner's demo on a clean Windows 11 machine, the screen-reader passes, and acceptance.
+> **TL;DR.** 145 of 150 requirements in these six stages are named by at least one automated test (`pnpm trace`). M1, M3 and M2 trace every requirement; M0 misses **DSY-10** and **SEC-01**, MW misses **PKG-07** and **DST-02**, and M4 misses **KEY-03** (WP-4.4 isn't built). Every demo script is automated, as one journey (M0, M1, M2) or as journeys named per demo step (MW, M3, M4). 22 work packages whose every requirement has a passing Windows unit test are now *done*; all of M3 and M2 are. No gate can pass yet: the Windows bench (`pnpm bench --check`) fails on `main`, which also skips the Windows journeys there, and every gate still needs the owner's demo on a clean Windows 11 machine, the screen-reader passes, and acceptance.
 
 ## How this page is kept
 
@@ -21,17 +21,17 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 | Stage | Requirements traced | Untraced | Work packages | Demo automated | Blocking the gate |
 | --- | ---: | ---: | --- | --- | --- |
 | [M0](implementation-plan.md#m0) | 27 of 29 | DSY-10, SEC-01 | 9 of 9 done | `m0-walking-skeleton.spec.ts` | SEC-01, DSY-10; Windows bench |
-| [M1](implementation-plan.md#m1) | 56 of 56 | None | 11, all requirements traced | `m1-demo.spec.ts` | Windows bench and journeys on CI; owner |
-| [MW](implementation-plan.md#mw) | 20 of 22 | PKG-07, DST-02 | WP-6.2 still building | `web.spec.ts` steps 2 to 6, `seal.test.ts` step 7 | PKG-07, DST-02; Firefox and WebKit |
-| [M3](implementation-plan.md#m3) | 21 of 21 | None | 6, all requirements traced | Named steps in `m3-*.spec.ts` | 1,000-round fault run; owner |
-| [M2](implementation-plan.md#m2) | 9 of 9 | None | 3, all requirements traced | `m2-demo.spec.ts` | Windows bench; owner |
-| [M4](implementation-plan.md#m4) | 12 of 13 | KEY-03 | WP-4.4 planned | Named steps in `m4-*.spec.ts` | WP-4.4 (KEY-03) |
+| [M1](implementation-plan.md#m1) | 56 of 56 | None | 4 of 11 done; 7 verifying (journey-only evidence) | `m1-demo.spec.ts` | Windows bench and journeys on CI; owner |
+| [MW](implementation-plan.md#mw) | 20 of 22 | PKG-07, DST-02 | 5 of 7 done; WP-6.1 verifying, WP-6.2 building | `web.spec.ts` steps 2 to 6, `seal.test.ts` step 7 | PKG-07, DST-02; Firefox and WebKit |
+| [M3](implementation-plan.md#m3) | 21 of 21 | None | 6 of 6 done | Named steps in `m3-*.spec.ts` | 1,000-round fault run; owner |
+| [M2](implementation-plan.md#m2) | 9 of 9 | None | 3 of 3 done | `m2-demo.spec.ts` | Windows bench; owner |
+| [M4](implementation-plan.md#m4) | 12 of 13 | KEY-03 | 4 of 5 done; WP-4.4 planned | Named steps in `m4-*.spec.ts` | WP-4.4 (KEY-03) |
 
 ## Stage definition of done, per stage
 
 | # | Item | M0 | M1 | MW | M3 | M2 | M4 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | All work packages done, every requirement passes | Open | Traced | Open | Traced | Traced | Open |
+| 1 | All work packages done, every requirement passes | Open | Open | Open | Traced | Traced | Open |
 | 2 | Demo passes on a clean Windows 11 machine, run by the owner | Owner | Owner | Owner | Owner | Owner | Owner |
 | 3 | The demo is an automated journey | Met | Met | Traced | Traced | Traced | Traced |
 | 4 | All earlier journeys pass | Open | Open | Open | Open | Open | Open |
@@ -42,6 +42,7 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 | 9 | Retrospective on the agentic loop | Owner | Owner | Owner | Owner | Owner | Owner |
 | 10 | The owner accepts it | Owner | Owner | Owner | Owner | Owner | Owner |
 
+- **Item 1.** A work package moved from *verifying* to *done* on 2026-10-15 when every one of its requirements is traced and at least one unit test naming it passed on Windows in CI run 38615626147: 22 packages (WP-1.2, 1.3, 1.8, 1.10, 2.1 to 2.6, 3.1 to 3.6, 4.1, 4.2, 4.3, 4.5, 6.3, 6.4). Packages with requirements proven only by journeys (WP-1.1, 1.4 to 1.7, 1.9, 1.11, 6.1) stay *verifying* until the Windows journeys pass on CI. The last full Windows pass of the journeys is run 38589761831 on `5c8e1b9`.
 - **Items 4 and 6.** On `main` (`ce4f332`, CI run 38613845186) the Windows job fails at *Budgets (QLT-05)*, so its desktop and web journeys don't run. Until a Windows run passes the bench and the journeys, no stage has item 4, and item 6 is open for performance. The work branch run is listed in [Open gaps](#open-gaps-across-stages).
 - **Item 5.** No issue is open on GitHub (checked 2026-10-15).
 - **Item 6, accessibility.** Automated: zero axe violations in every journey that checks it (`m1-a11y.spec.ts`, `a11y.spec.ts`, and the stage journeys). The NVDA pass is the owner's.
@@ -176,7 +177,7 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 | Gap | Stage | Size | Next step |
 | --- | --- | --- | --- |
-| Windows `pnpm bench --check` fails on `main`; Windows journeys skipped there | All | Blocks items 4 and 6 | Read the failing measure in run 38613845186, fix or rebaseline in a reviewed commit |
+| Windows `pnpm bench --check` fails on `main`; Windows journeys skipped there | All | Blocks items 4 and 6 | In run 38613845186 the 10,000-note bench (`tools/bench/large.mjs`, line 82) times out after 30 s waiting for Files' type-ahead to focus "Alpha". Find whether type-ahead in a 10,000-row tree is slow (a PRF-09 defect) or the harness waits wrongly |
 | SEC-01: Electron fuses not set; no test of the hardening checklist | M0 | Small, security review | Follow-up to WP-0.6 |
 | DSY-10: no UI schema major version or view migrations | M0 | Work package | Follow-up to WP-0.4 |
 | PKG-07: no "clearing site data deletes your notes" message; the `persist()` request is untested | MW | Small | Add to WP-6.1 |
