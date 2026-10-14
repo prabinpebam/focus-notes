@@ -9,7 +9,8 @@ The shared building blocks every view and component uses: layout, spacing, shape
 
 | Token | Value | Notes |
 | --- | --- | --- |
-| `layout.topBand` | 110 px | The trigger's band: 40 px above the trigger (`layout.triggerTop`), the 30 px circle, and 40 px below. It's the window's drag area on the desktop. Nothing else lives there at rest. |
+| `layout.topBand` | 110 px | The trigger's band: 40 px above the trigger (`layout.triggerTop`), the 30 px circle, and 40 px below. The note starts below it. Nothing else lives there at rest. |
+| `layout.titleBar` | 44 px | The desktop's title bar band: the window's top 44 px, its drag region, with the window controls at its end and the trigger centered across it, just below (D-106). |
 | `layout.measure` | 70 ch (themeable, 50–100) | Width of the reading column. |
 | `layout.gutter` | 48 px wide, 24 px compact | Minimum space beside the reading column. |
 | `layout.wideContent` | Up to 1040 px, never wider than the canvas minus 2 gutters | Tables and future galleries may grow wider than the reading column, centered on it. |

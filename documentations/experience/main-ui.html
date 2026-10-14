@@ -80,7 +80,7 @@
       <tr><td>Red dot</td><td>Circle, 10 px diameter, solid red (token <code>trigger.dot</code>)</td></tr>
       <tr><td>Frosted circle</td><td>Circle, 30 px diameter (15 px radius), translucent fill with backdrop blur (token <code>trigger.ring</code>)</td></tr>
       <tr><td>Hit area</td><td>44 &times; 44 px, invisible, centered on the trigger</td></tr>
-      <tr><td>Position</td><td>Horizontally centered, in the middle of the top 44 px band</td></tr>
+      <tr><td>Position</td><td>Horizontally centered, 40 px below the window's top edge (D-78), in the middle of the trigger's 110 px band (<code>layout.topBand</code>); on the desktop, just under the 44 px title bar band (D-106)</td></tr>
       <tr><td>Toolbar</td><td>Six actions (New, Open, Search, Save, Focus, Theme), plus ⋯ in the seventh slot</td></tr>
     </tbody>
   </table>
@@ -91,7 +91,7 @@
 <ul>
   <li><strong>No persistent chrome.</strong> No sidebar, tab strip, visible title bar, status bar, or word count. On the desktop, the top 44 px are an invisible title bar for dragging the window, and the window controls appear only on hover (see <a href="desktop-app.html#title-bar">Desktop app</a>).</li>
   <li><strong>Reading column.</strong> Text sits in a centered column. Its width is a theme token (<code>layout.measure</code>, default 70 characters) so line length stays comfortable on wide screens.</li>
-  <li><strong>Top clearance.</strong> The column starts below the 44 px top band, so the trigger never covers text at scroll position zero. Scrolled text passes under the trigger and is blurred by it, which is why it's frosted rather than opaque.</li>
+  <li><strong>Top clearance.</strong> The column starts below the trigger's 110 px band, so the trigger never covers text at scroll position zero. Scrolled text passes under the trigger and is blurred by it, which is why it's frosted rather than opaque.</li>
   <li><strong>Empty note.</strong> A new note shows one placeholder line in the subdued text color: "Start writing, type / for blocks, or press ⌘/ or Ctrl+/". Nothing else appears.</li>
   <li><strong>Account pill</strong> (UI-12, D-89, D-90). In the bottom-left corner, a small pill in muted caption text with no fill, barely there until pointed at.
     <ul>
@@ -114,7 +114,7 @@
   <dt>Frosted circle</dt>
   <dd>30 px diameter (15 px radius), centered on the dot. Translucent surface with <code>backdrop-filter: blur()</code> (the "frost"). It has a hairline edge so it stays visible on blank backgrounds in both light and dark themes.</dd>
   <dt>Position</dt>
-  <dd>Fixed, horizontally centered, and vertically centered in the top 44 px band (in the title bar on the desktop). It stays in place while the note scrolls.</dd>
+  <dd>Fixed, horizontally centered, 40 px below the window's top edge, in the middle of its 110 px band (on the desktop, centered across the 44 px title bar band, just under it). It stays in place while the note scrolls.</dd>
   <dt>Hit area</dt>
   <dd>The visible circle is smaller than the 44 px minimum for touch targets, so an invisible 44 &times; 44 px area around it takes the clicks and taps. The focus outline is drawn around the visible circle.</dd>
   <dt>Semantics</dt>
