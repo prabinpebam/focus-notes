@@ -3,7 +3,7 @@
  * is serve.ts. Anything with `postMessage` and a `message` event works: a Worker, the worker's own
  * global scope, a MessagePort, or Node's worker threads in the benchmark.
  */
-import type { IndexOp, IndexStatus, SearchIndexClient, SearchQuery, SearchResults } from "./types.ts";
+import type { FindQuery, FindResults, IndexOp, IndexStatus, SearchIndexClient, SearchQuery, SearchResults } from "./types.ts";
 
 export interface PortLike {
   postMessage(message: unknown): void;
@@ -13,10 +13,12 @@ export interface PortLike {
 
 export type ToWorker =
   | { type: "apply"; seq: number; ops: readonly IndexOp[] }
-  | { type: "query"; id: number; query: SearchQuery };
+  | { type: "query"; id: number; query: SearchQuery }
+  | { type: "find"; id: number; query: FindQuery };
 export type FromWorker =
   | { type: "status"; status: IndexStatus }
   | { type: "result"; id: number; results: SearchResults }
+  | { type: "found"; id: number; results: FindResults }
   | { type: "error"; id: number; message: string };
 
 export const NO_STATUS: IndexStatus = { notes: 0, indexed: 0, pending: 0, seq: 0 };
@@ -26,7 +28,7 @@ export function connectSearch(port: PortLike, dispose: () => void = () => {}): S
   let seq = 0;
   let nextId = 0;
   let current = NO_STATUS;
-  const queries = new Map<number, { resolve: (r: SearchResults) => void; reject: (e: Error) => void }>();
+  const queries = new Map<number, { resolve: (r: never) => void; reject: (e: Error) => void }>();
   const listeners = new Set<(s: IndexStatus) => void>();
   let idle: ((s: IndexStatus) => void)[] = [];
   const settled = () => current.seq >= seq && current.pending === 0;
@@ -45,7 +47,7 @@ export function connectSearch(port: PortLike, dispose: () => void = () => {}): S
     } else {
       const q = queries.get(m.id);
       queries.delete(m.id);
-      if (m.type === "result") q?.resolve(m.results);
+      if (m.type === "result" || m.type === "found") q?.resolve(m.results as never);
       else q?.reject(new Error(m.message));
     }
   });
@@ -60,6 +62,13 @@ export function connectSearch(port: PortLike, dispose: () => void = () => {}): S
       return new Promise<SearchResults>((resolve, reject) => {
         queries.set(id, { resolve, reject });
         send({ type: "query", id, query });
+      });
+    },
+    find(query) {
+      const id = ++nextId;
+      return new Promise<FindResults>((resolve, reject) => {
+        queries.set(id, { resolve, reject });
+        send({ type: "find", id, query });
       });
     },
     status: () => current,

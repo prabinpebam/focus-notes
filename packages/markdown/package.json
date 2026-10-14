@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": { ".": "./src/index.ts", "./match": "./src/match.ts" },
   "scripts": { "typecheck": "tsc -p tsconfig.json" },
   "dependencies": {
     "unified": "11.0.5",

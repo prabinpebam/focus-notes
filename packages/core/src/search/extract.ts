@@ -27,6 +27,8 @@ export function plainInline(s: string): string {
     .replace(/<\/?[A-Za-z][^>]*>/g, " ")
     .replace(/[*`]|~~|==/g, "")
     .replace(/(^|\s)_+|_+(?=\s|$)/g, "$1")
+    // A backslash ending a line is a line break, not text.
+    .replace(/\\$/, "")
     .replace(/\\([\\`*_{}[\]()#+\-.!|~])/g, "$1")
     .replace(/\s+/g, " ")
     .trim();

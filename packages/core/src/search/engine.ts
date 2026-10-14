@@ -12,8 +12,9 @@
 import MiniSearch, { type Query, type SearchResult } from "minisearch";
 import { isWithin, stemOf } from "../workspace.ts";
 import type { RootId } from "../workspace.ts";
+import { lineKey, matcherOf, matchesIn } from "@focus-notes/markdown/match";
 import { extractNote, type NoteFields } from "./extract.ts";
-import type { IndexOp, IndexStatus, MatchTier, Range, SearchHit, SearchItem, SearchKind, SearchQuery, SearchResults } from "./types.ts";
+import type { FindMatch, FindNote, FindQuery, FindResults, IndexOp, IndexStatus, MatchTier, Range, SearchHit, SearchItem, SearchKind, SearchQuery, SearchResults } from "./types.ts";
 import { MATCH_TIERS } from "./types.ts";
 
 /** Case, accents, and other marks don't matter: "Café" finds "cafe". */
@@ -48,6 +49,11 @@ const DEFAULT_LIMIT = 20;
 const VACUUM_MIN_DIRT = 1000;
 const VACUUM_MIN_FACTOR = 0.2;
 const MAX_LIMIT = 200;
+/** Find in all notes lists this many matches unless asked (FND-04), and never more than the most. */
+const FIND_LIMIT = 1000;
+const FIND_MAX = 5000;
+/** Notes are listed private first, then public, then this browser's own, each by path. */
+const ROOT_ORDER: Readonly<Record<RootId, number>> = { private: 0, public: 1, local: 2 };
 /** The current note's folder gets a small boost (Spotlight → Ranking → Context). */
 const FOLDER_BOOST = 1.25;
 const TITLE_FIELDS = ["label", "name", "fmid", "keywords", "dir"];
@@ -166,6 +172,59 @@ export class SearchEngine {
     const limit = Math.min(Math.max(1, q.limit ?? DEFAULT_LIMIT), MAX_LIMIT);
     const hits = !words(q.text).length ? [] : q.scope === "text" ? this.#queryText(q, limit) : this.#queryTitles(q, limit);
     return { query: q, hits, ms: now() - t0 };
+  }
+
+  /**
+   * Find in all notes (FND-04): every match of the query in every indexed note's visible text, one
+   * line per block, matched exactly as the find bar matches (the shared matcher), so a match's
+   * `index` is its place in the find bar's count when the note opens. Every match is counted; the
+   * first `limit` are listed with their lines.
+   */
+  find(q: FindQuery): FindResults {
+    const t0 = now();
+    const limit = Math.min(Math.max(1, q.limit ?? FIND_LIMIT), FIND_MAX);
+    const re = matcherOf(q.text, q);
+    const notes: FindNote[] = [];
+    let total = 0;
+    let listed = 0;
+    let unread = 0;
+    if (re) {
+      const scoped = [...this.#notes.values()]
+        .filter((r) => (!q.roots || q.roots.includes(r.root)) && (q.within === undefined || relWithin(r.rel, q.within)))
+        .sort((a, b) => ROOT_ORDER[a.root] - ROOT_ORDER[b.root] || compareRel(a.rel, b.rel));
+      for (const rec of scoped) {
+        if (!rec.indexed) unread++;
+        const text = rec.text;
+        if (!text) continue;
+        // A plain query can't span lines, so a note without it anywhere is passed over at once.
+        if (!q.regex) {
+          re.lastIndex = 0;
+          if (!re.test(text)) continue;
+        }
+        let count = 0;
+        const matches: FindMatch[] = [];
+        // Lines that read the same have the same matches, so only lines with one need counting.
+        const seen = new Map<number, number>();
+        text.split("\n").forEach((line, n) => {
+          const ranges = matchesIn(line, re, q.wholeWord);
+          if (!ranges.length) return;
+          const key = lineKey(line);
+          const nth = seen.get(key) ?? 0;
+          seen.set(key, nth + 1);
+          ranges.forEach((range, occurrence) => {
+            if (listed < limit) {
+              matches.push({ index: count, line: n, lineKey: key, lineNth: nth, occurrence, snippet: lineSnippet(line, range) });
+              listed++;
+            }
+            count++;
+          });
+        });
+        if (!count) continue;
+        total += count;
+        notes.push({ path: rec.path, rel: rec.rel, root: rec.root, title: this.#labelOf(rec), count, matches });
+      }
+    }
+    return { query: q, notes, total, truncated: listed < total, invalid: re === null, unread, ms: now() - t0 };
   }
 
   // ---- changes ----
@@ -408,6 +467,30 @@ function highlight(text: string, qTerms: readonly string[], matched: readonly st
     else if (exact.has(w)) out.push([start, start + m[0].length]);
   }
   return out;
+}
+
+const compareRel = (a: string, b: string) => {
+  const x = a.toLowerCase();
+  const y = b.toLowerCase();
+  return x < y ? -1 : x > y ? 1 : a < b ? -1 : a > b ? 1 : 0;
+};
+
+const LINE_LEAD = 32;
+const LINE_LENGTH = 120;
+/** A line around one match (Find in all notes): a little before it from a word's start, cut at a word's end. */
+export function lineSnippet(line: string, [from, to]: Range): { text: string; highlights: Range[] } {
+  let start = Math.max(0, from - LINE_LEAD);
+  if (start > 0) {
+    const space = line.indexOf(" ", start);
+    start = space >= 0 && space < from ? space + 1 : start;
+  }
+  let end = Math.min(line.length, Math.max(to, start + LINE_LENGTH));
+  if (end < line.length) {
+    const space = line.lastIndexOf(" ", end);
+    end = space >= to ? space : end;
+  }
+  const lead = start > 0 ? "…" : "";
+  return { text: `${lead}${line.slice(start, end)}${end < line.length ? "…" : ""}`, highlights: [[lead.length + from - start, lead.length + to - start]] };
 }
 
 const SNIPPET_BEFORE = 40;
