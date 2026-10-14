@@ -109,6 +109,8 @@ async function noteTimes() {
   const docs = throwawayWorkspace();
   writeFileSync(join(docs, "long.md"), tenThousandWords());
   const userData = mkdtempSync(join(tmpdir(), "fn-bench-ud-"));
+  // Past the desktop's first run, as in startTimes (FRE-01): it shows over the canvas until it's done.
+  writeFileSync(join(userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
   const app = await _electron.launch({ args: [mainEntry], env: { ...process.env, FOCUS_NOTES_USER_DATA: userData, FOCUS_NOTES_DOCS: docs } });
   try {
     const page = await app.firstWindow();
