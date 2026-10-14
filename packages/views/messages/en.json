@@ -1,4 +1,7 @@
 {
+  "reader.skip": "Skip to the note",
+  "reader.updated": "Updated {date, date, long}",
+  "reader.footer": "Published with Focus Notes",
   "trigger.label": "Focus Notes menu",
   "trigger.saveProblem": "Couldn't save",
   "trigger.syncProblem": "Couldn't sync",

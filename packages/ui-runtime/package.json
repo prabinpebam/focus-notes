@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./schema": "./src/schema.ts", "./gallery": "./src/gallery.ts" },
+  "exports": { ".": "./src/index.ts", "./schema": "./src/schema.ts", "./gallery": "./src/gallery.ts", "./static": "./src/static.ts" },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "ui:check": "node src/cli/ui-check.ts"

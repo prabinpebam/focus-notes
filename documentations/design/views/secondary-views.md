@@ -85,6 +85,7 @@ The views people open now and then: Settings, Share and visibility, the keyboard
 - **Sizes:** readable from 320 px wide up. Tables scroll sideways inside their frame. Print styles drop the toggle and footer.
 - **Private share reader states:** *Unlocking…* (a short indicator while the browser decrypts), then the note. *Link expired:* "This link has expired. Ask the person who shared it for a new one." *Link not valid:* "This link doesn't work. It may have been withdrawn or copied incompletely." No technical detail and no hints about the note's existence.
 - **Accessibility:** one H1, landmarks, a skip link, and the same contrast guarantees as the built-in themes.
+- **As built (WP-5.1, D-114):** the view document `reader.view.json` (ReaderPage, NoteContent), rendered once by the publisher to static HTML with no script: Paper or Ink by `prefers-color-scheme`, the title, "Updated ⟨date⟩", the note, and the footer. The light/dark toggle isn't built yet, because the page has no script.
 
 **Design decisions**
 

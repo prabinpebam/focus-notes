@@ -12,8 +12,17 @@ import {
   type Action, type Node, type Value, type ViewDocument,
 } from "./types.ts";
 
+/** What the renderer uses of the app: a running app, or a static page's fixed data (WP-5.1). */
+export interface RuntimeApp {
+  store: Pick<App["store"], "state" | "subscribe">;
+  viewModels: Pick<App["viewModels"], "select" | "get">;
+  messages: Pick<App["messages"], "format" | "has">;
+  commands: Pick<App["commands"], "run" | "has" | "describe">;
+  bridge: Pick<App["bridge"], "platform">;
+}
+
 export interface RuntimeDeps {
-  app: App;
+  app: RuntimeApp;
   registry: Readonly<Record<string, ComponentType<any>>>;
   contracts: ReadonlyMap<string, Contract>;
   views: Record<string, unknown>;

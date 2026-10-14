@@ -4,8 +4,9 @@
  * share grant with an audience of one, D-41, D-90), writes the site manifest, and runs the leak check
  * (SEC-06) so no private text or file name ever reaches the site. Node only.
  */
-import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
+import { pathToFileURL } from "node:url";
 import {
   encodeText, fromB64url, isSafePath, PUBLIC_INDEX, KEY_BYTES, randomBytes, randomId, sealedPath, sealFile, sealKeyring, SALT_BYTES, titleOf, toB64url, vaultPath,
   type Manifest, type PublicIndex, type SiteManifest,
@@ -35,11 +36,23 @@ export interface PublishOptions {
   owner: string;
   /** When each note last changed (from Git in the workflow); file times otherwise. */
   updated?: (file: string) => Promise<string>;
+  /**
+   * The page renderer's folder (`apps/web/dist-reader`, or the release bundle's): `render.mjs` and its
+   * `assets/`. With it, each public note is also a static page at `/n/<path>/` (WP-5.1, SHR-03).
+   */
+  reader?: string;
+  /** The site's address (configure-pages' base_url), for canonical links. */
+  siteUrl?: string;
   /** Fixed build ID, for tests. */
   build?: string;
   log?: (line: string) => void;
 }
-export interface PublishResult { build: string; publicNotes: number; privateNotes: number; vault: boolean }
+export interface PublishResult { build: string; publicNotes: number; publicPages: number; privateNotes: number; vault: boolean }
+
+/** The page renderer's interface (apps/web/reader/render.ts), loaded from its built module. */
+interface PageRenderer {
+  renderNotePage(input: { markdown: string; path: string; updated: string; publicPaths: ReadonlySet<string>; siteUrl?: string; assets: { css: readonly string[]; fonts: readonly string[] } }): { file: string; html: string };
+}
 
 async function markdownFiles(dir: string): Promise<string[]> {
   const out: string[] = [];
@@ -86,13 +99,31 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
   // Public notes: copied as they are, with an index the app reads without GitHub's API.
   const publicFiles = o.notes ? await markdownFiles(o.notes) : [];
   const index: PublicIndex = { format: 1, notes: [] };
+  const texts = new Map<string, string>();
   for (const path of publicFiles) {
     if (!isSafePath(path)) { log(`Skipped a public note with an unusable name.`); continue; }
     const text = await readFile(join(o.notes!, path), "utf8");
+    texts.set(path, text);
     await put(join(o.site, "notes", ...path.split("/")), text);
     index.notes.push({ path, title: titleOf(path, text), updated: await updated(join(o.notes!, path)) });
   }
   await put(join(o.site, "notes", "index.json"), JSON.stringify(index));
+
+  // Public pages (WP-5.1): each public note rendered once, read-only, at /n/<path>/, with the pages'
+  // stylesheet and fonts beside the app's in assets/ (their names are content hashes).
+  let publicPages = 0;
+  if (o.reader) {
+    const renderer = (await import(pathToFileURL(join(o.reader, "render.mjs")).href)) as PageRenderer;
+    const assetFiles = await readdir(join(o.reader, "assets"));
+    await cp(join(o.reader, "assets"), join(o.site, "assets"), { recursive: true });
+    const assets = { css: assetFiles.filter((f) => f.endsWith(".css")), fonts: assetFiles.filter((f) => /\.woff2?$/.test(f)) };
+    const publicPaths = new Set(index.notes.map((n) => n.path));
+    for (const n of index.notes) {
+      const { file, html } = renderer.renderNotePage({ markdown: texts.get(n.path)!, path: n.path, updated: n.updated, publicPaths, ...(o.siteUrl ? { siteUrl: o.siteUrl } : {}), assets });
+      await put(join(o.site, ...file.split("/").map(decodeURIComponent)), html);
+      publicPages++;
+    }
+  }
 
   // The vault: the owner's grant opens every private note.
   let privateTexts: { path: string; text: string }[] = [];
@@ -133,8 +164,8 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
   const leaks = await leakCheck(o.site, privateTexts);
   if (leaks.length) throw new LeakError(leaks);
   const count = (n: number, what: string) => `${n} ${what}${n === 1 ? "" : "s"}`;
-  log(`Published ${count(index.notes.length, "public note")}${vault ? ` and sealed ${count(privateTexts.length, "private note")}` : ""}. Leak check passed.`);
-  return { build, publicNotes: index.notes.length, privateNotes: vault ? privateTexts.length : 0, vault };
+  log(`Published ${count(index.notes.length, "public note")}${o.reader ? ` (${count(publicPages, "page")})` : ""}${vault ? ` and sealed ${count(privateTexts.length, "private note")}` : ""}. Leak check passed.`);
+  return { build, publicNotes: index.notes.length, publicPages, privateNotes: vault ? privateTexts.length : 0, vault };
 }
 
 export class LeakError extends Error {

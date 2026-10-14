@@ -1,0 +1,28 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "reader",
+  "ia": "IA-VIEW-PUBLIC",
+  "viewModels": [
+    "vm.reader"
+  ],
+  "focus": "page",
+  "root": {
+    "type": "ReaderPage",
+    "id": "page",
+    "props": {
+      "skipLabel": { "t": "reader.skip" }
+    },
+    "slots": {
+      "footer": [
+        { "type": "Text", "props": { "value": { "t": "reader.footer" }, "role": "caption", "tone": "muted" } }
+      ]
+    },
+    "children": [
+      { "type": "Stack", "props": { "gap": "s" }, "children": [
+        { "type": "NoteContent", "props": { "blocks": { "get": "vm.reader.title" } } },
+        { "type": "Text", "props": { "value": { "t": "reader.updated", "args": { "date": { "get": "vm.reader.updated" } } }, "role": "secondary", "tone": "muted" } }
+      ] },
+      { "type": "NoteContent", "props": { "blocks": { "get": "vm.reader.body" } } }
+    ]
+  }
+}

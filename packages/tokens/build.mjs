@@ -132,6 +132,9 @@ const SAMPLED = [...all.keys()].filter((k) => /^cmp\.[a-zA-Z]+\.sample[A-Z]/.tes
 const blocks = [];
 blocks.push(await css(BASE, ":root"));
 for (const [name, file] of Object.entries(THEMES)) blocks.push(await css([...BASE, file], `:root[data-theme="${name}"]`, file));
+// Published pages follow the reader's own preference (SHR-06, DD-PUB-01): with data-theme="auto",
+// Paper in light and Ink in dark, without a script. The app sets a theme itself, so it's unaffected.
+blocks.push(`@media (prefers-color-scheme: dark) {\n${await css([...BASE, THEMES.ink], ':root[data-theme="auto"]', THEMES.ink)}}\n`);
 if (SAMPLED.length) {
   for (const id of THEME_IDS) {
     const o = overridesOf(id);

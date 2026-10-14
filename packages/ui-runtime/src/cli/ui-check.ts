@@ -5,8 +5,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { contracts, ICON_NAMES } from "@focus-notes/ui/contracts";
-import { createApp, type PlatformBridge } from "@focus-notes/core";
-import { views, fragments, messages } from "@focus-notes/views";
+import { createApp, READER_VIEW_MODEL, type PlatformBridge } from "@focus-notes/core";
+import { views, pages, fragments, messages } from "@focus-notes/views";
 import { tokenGroups } from "@focus-notes/tokens";
 import { checkUi, checkFixtureCoverage } from "../check.ts";
 import { buildUiSchema } from "../schema.ts";
@@ -29,10 +29,11 @@ const inputs = {
   contracts,
   icons: ICON_NAMES,
   tokenGroups: tokenGroups as unknown as Record<string, readonly string[]>,
-  views: { ...views, ...galleryViews(contracts) },
+  views: { ...views, ...pages, ...galleryViews(contracts) },
   fragments,
   commands: new Set(app.commands.ids()),
-  viewModels: new Map(app.viewModels.list().map((v) => [v.id, { schema: v.schema, ...(v.setters ? { setters: v.setters } : {}) }])),
+  // Published pages' view model is filled by the publisher, not the app (WP-5.1).
+  viewModels: new Map([...app.viewModels.list().map((v) => [v.id, { schema: v.schema, ...(v.setters ? { setters: v.setters } : {}) }] as const), [READER_VIEW_MODEL.id, { schema: READER_VIEW_MODEL.schema }] as const]),
   messages: app.messages,
 };
 

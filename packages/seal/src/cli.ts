@@ -3,6 +3,7 @@
  * focus-notes-seal: the publisher's command line (WP-6.3, WP-6.4).
  *
  *   node packages/seal/src/cli.ts publish --site _site --notes notes --private private --owner <name> [--git]
+ *     [--reader apps/web/dist-reader] [--site-url https://<owner>.github.io/<repository>/]
  *   node packages/seal/src/cli.ts vault-init --private private      (reads the passphrase from stdin)
  *
  * The Deploy app workflow runs `publish`. `vault-init` writes the owner's grant to private/access.json
@@ -67,6 +68,8 @@ async function main() {
       site, owner,
       ...(args.get("notes") ? { notes: args.get("notes")! } : {}),
       ...(args.get("private") ? { private: args.get("private")! } : {}),
+      ...(args.get("reader") ? { reader: args.get("reader")! } : {}),
+      ...(args.get("site-url") ? { siteUrl: args.get("site-url")! } : {}),
       ...(args.has("git") ? { updated: gitDate } : {}),
       log: (l) => console.log(l),
     });
@@ -83,7 +86,7 @@ async function main() {
     console.log(`Wrote the vault grant to ${file}. Commit it in the private repository; the next deploy seals your private notes.`);
     return;
   }
-  throw new Error("Usage: cli.ts publish --site <dir> --owner <name> [--notes <dir>] [--private <dir>] [--git] | vault-init --private <dir>");
+  throw new Error("Usage: cli.ts publish --site <dir> --owner <name> [--notes <dir>] [--private <dir>] [--reader <dir>] [--site-url <url>] [--git] | vault-init --private <dir>");
 }
 
 main().catch((e) => {
