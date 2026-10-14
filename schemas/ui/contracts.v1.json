@@ -2845,6 +2845,283 @@
       ]
     },
     {
+      "type": "ThemeGallery",
+      "tier": "primitive",
+      "description": "The theme manager's gallery (IA-VIEW-THEME): a tile per theme with a sample of its colors. Arrow keys move in two dimensions and preview, Enter or a click chooses, and Esc stops a preview.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "themeTiles",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "description": "The theme showing on the note: the selected tile."
+        },
+        "previewing": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The tile showing is a preview, so Esc goes back to the chosen theme (and doesn't close the sheet)."
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus to the selected tile."
+        }
+      },
+      "events": {
+        "preview": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "choose": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "revert": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "selected",
+        "focusVisible",
+        "previewing"
+      ],
+      "tokens": "cmp.themeGallery.*",
+      "a11y": {
+        "pattern": "listbox",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "first selected",
+          "props": {
+            "label": {
+              "t": "theme.gallery"
+            },
+            "items": {
+              "get": "vm.gallery.themeTiles"
+            },
+            "value": {
+              "get": "vm.gallery.themeFirst"
+            }
+          }
+        },
+        {
+          "name": "previewing",
+          "props": {
+            "label": {
+              "t": "theme.gallery"
+            },
+            "items": {
+              "get": "vm.gallery.themeTiles"
+            },
+            "value": {
+              "get": "vm.gallery.themeDark"
+            },
+            "previewing": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "Slider",
+      "tier": "primitive",
+      "description": "A labelled slider for a number on steps, showing its value in words (Theme manager → Reading).",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "number",
+          "bindable": true
+        },
+        "min": {
+          "kind": "number",
+          "required": true
+        },
+        "max": {
+          "kind": "number",
+          "required": true
+        },
+        "step": {
+          "kind": "number",
+          "required": true
+        },
+        "valueText": {
+          "kind": "text",
+          "description": "The value as shown: \"60 characters\"."
+        },
+        "format": {
+          "kind": "enum",
+          "values": [
+            "number",
+            "percent"
+          ],
+          "default": "number",
+          "description": "How the value is spoken: a number, or a percentage of 1."
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "number"
+          },
+          "binds": "value"
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "dragging",
+        "focusVisible"
+      ],
+      "tokens": "cmp.slider.*",
+      "a11y": {
+        "pattern": "slider",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "at the middle",
+          "props": {
+            "label": {
+              "t": "reading.measure"
+            },
+            "value": 75,
+            "min": 50,
+            "max": 100,
+            "step": 5,
+            "valueText": {
+              "get": "vm.gallery.query"
+            }
+          }
+        },
+        {
+          "name": "at the start",
+          "props": {
+            "label": {
+              "t": "reading.lineHeight"
+            },
+            "value": 1.3,
+            "min": 1.3,
+            "max": 2,
+            "step": 0.1
+          }
+        },
+        {
+          "name": "format percent",
+          "props": {
+            "label": {
+              "t": "reading.focusDim"
+            },
+            "value": 0.3,
+            "min": 0.15,
+            "max": 0.6,
+            "step": 0.05,
+            "format": "percent"
+          }
+        }
+      ]
+    },
+    {
+      "type": "ColorField",
+      "tier": "primitive",
+      "description": "A labelled hex color field with a swatch (Theme manager → Edit colors). The value is committed on Enter or on leaving the field, so typing never applies half a color.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "description": "The color, or what was typed if it isn't one."
+        },
+        "swatch": {
+          "kind": "text",
+          "description": "The color the swatch shows: #rgb or #rrggbb, anything else shows none."
+        },
+        "description": {
+          "kind": "text",
+          "description": "Said with the field: the contrast it's checked against."
+        },
+        "invalid": {
+          "kind": "boolean",
+          "default": false
+        },
+        "error": {
+          "kind": "text",
+          "description": "Why the value isn't a color, shown instead of the description."
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus into the field (after Fix, whose button goes away)."
+        }
+      },
+      "events": {
+        "commit": {
+          "payload": {
+            "value": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "focused",
+        "invalid"
+      ],
+      "tokens": "cmp.colorField.*",
+      "a11y": {
+        "pattern": "text box",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "with a swatch",
+          "props": {
+            "label": {
+              "t": "colors.key.text"
+            },
+            "value": {
+              "get": "vm.gallery.colorHex"
+            },
+            "swatch": {
+              "get": "vm.gallery.colorHex"
+            },
+            "description": {
+              "get": "vm.gallery.query"
+            }
+          }
+        },
+        {
+          "name": "invalid",
+          "props": {
+            "label": {
+              "t": "colors.key.accent"
+            },
+            "value": {
+              "get": "vm.gallery.query"
+            },
+            "invalid": true,
+            "error": {
+              "get": "vm.gallery.query"
+            }
+          }
+        }
+      ]
+    },
+    {
       "type": "Stack",
       "tier": "layout",
       "description": "Children in a column, spaced by a space token.",
@@ -4856,6 +5133,39 @@
           "max": 1.5,
           "description": "Interface scale (DSY-03); note text is unaffected."
         },
+        "lineHeight": {
+          "kind": "number",
+          "min": 1.3,
+          "max": 2,
+          "description": "Line spacing (Theme manager → Reading); unset is font.lineHeight."
+        },
+        "measure": {
+          "kind": "number",
+          "min": 50,
+          "max": 100,
+          "description": "Reading width in characters; unset is layout.measure."
+        },
+        "paragraphSpacing": {
+          "kind": "enum",
+          "values": [
+            "compact",
+            "comfortable",
+            "airy"
+          ],
+          "default": "comfortable",
+          "description": "Space between blocks: a token mode."
+        },
+        "focusDim": {
+          "kind": "number",
+          "min": 0.15,
+          "max": 0.6,
+          "description": "Focus mode's dim strength; unset is the theme's focus.dimOpacity."
+        },
+        "themeColors": {
+          "kind": "list",
+          "of": "colorValues",
+          "description": "An edited copy of the theme showing (Edit colors): color tokens and their hex values. Anything else is ignored."
+        },
         "frame": {
           "kind": "enum",
           "values": [
@@ -5243,6 +5553,100 @@
             "scheme": "light",
             "platform": "windows",
             "uiScale": 1.5
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "lineHeight 2, measure 50",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "lineHeight": 2,
+            "measure": 50
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "paragraphSpacing compact",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "paragraphSpacing": "compact"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "paragraphSpacing comfortable",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "paragraphSpacing": "comfortable"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "paragraphSpacing airy",
+          "props": {
+            "scheme": "dark",
+            "platform": "windows",
+            "paragraphSpacing": "airy",
+            "focusDim": 0.6
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "themeColors",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "themeColors": {
+              "get": "vm.gallery.colorValues"
+            }
           },
           "children": [
             {

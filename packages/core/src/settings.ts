@@ -9,15 +9,15 @@
  */
 import type { AppStateFile } from "./bridge.ts";
 
-/** The settings that sync: appearance, the light and dark themes, and the reading font and size. */
-export const SYNCED_KEYS = ["appearance", "lightTheme", "darkTheme", "contentFont", "fontSize"] as const;
+/** The settings that sync: appearance, the light and dark themes, and the reading settings. */
+export const SYNCED_KEYS = ["appearance", "lightTheme", "darkTheme", "contentFont", "fontSize", "lineHeight", "measure", "paragraphSpacing", "focusDim"] as const;
 export type SyncedKey = (typeof SYNCED_KEYS)[number];
 export type SyncedSettings = Pick<AppStateFile, SyncedKey>;
 
-/** `private/.focus-notes/settings.json`. Parts this version doesn't write (line height, the toolbar) are kept as they are. */
+/** `private/.focus-notes/settings.json`. Parts this version doesn't write (the toolbar) are kept as they are. */
 export interface SettingsFile {
   appearance?: { mode?: "system" | "light" | "dark"; lightTheme?: string; darkTheme?: string };
-  reading?: { contentFont?: string; fontSize?: number; lineHeight?: number; measure?: number; focusDim?: number };
+  reading?: { contentFont?: string; fontSize?: number; lineHeight?: number; measure?: number; paragraphSpacing?: "compact" | "comfortable" | "airy"; focusDim?: number };
   toolbar?: string[];
 }
 
@@ -27,12 +27,15 @@ const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "obj
 const inRange = (v: unknown, min: number, max: number) => typeof v === "number" && v >= min && v <= max;
 const name = (v: unknown) => typeof v === "string" && v.length > 0 && v.length <= 100;
 
-/** Splits app state into what stays on the device and what syncs. */
+/** Reading settings whose absence means "the default" (focus dim: the theme's own), so a reset removes them. */
+const READING_KEYS = ["lineHeight", "measure", "paragraphSpacing", "focusDim"] as const;
+const SPACINGS = ["compact", "comfortable", "airy"];
+
+/** Splits app state into what stays on the device and what syncs. A key present with no value (a removal) is kept. */
 export function splitAppState<T extends Partial<AppStateFile>>(state: T): { device: Omit<T, SyncedKey>; synced: Partial<SyncedSettings> } {
   const device: Record<string, unknown> = {};
   const synced: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(state)) {
-    if (v === undefined) continue;
     ((SYNCED_KEYS as readonly string[]).includes(k) ? synced : device)[k] = v;
   }
   return { device: device as Omit<T, SyncedKey>, synced: synced as Partial<SyncedSettings> };
@@ -65,6 +68,7 @@ export function parseSettings(text: string | undefined): SettingsFile | undefine
     if (inRange(r.lineHeight, 1.2, 2.2)) reading.lineHeight = r.lineHeight as number;
     if (inRange(r.measure, 50, 100) && Number.isInteger(r.measure)) reading.measure = r.measure as number;
     if (inRange(r.focusDim, 0.1, 0.6)) reading.focusDim = r.focusDim as number;
+    if (typeof r.paragraphSpacing === "string" && SPACINGS.includes(r.paragraphSpacing)) reading.paragraphSpacing = r.paragraphSpacing as "compact";
     if (Object.keys(reading).length) out.reading = reading;
   }
   if (Array.isArray(raw.toolbar) && raw.toolbar.length <= 6 && raw.toolbar.every((c) => typeof c === "string" && /^[a-z][A-Za-z]*(\.[a-z][A-Za-z]*)+$/.test(c))) {
@@ -83,6 +87,7 @@ export function appStateOfSettings(file: SettingsFile | undefined): Partial<Sync
     ...(a?.darkTheme ? { darkTheme: a.darkTheme } : {}),
     ...(r?.contentFont ? { contentFont: r.contentFont } : {}),
     ...(r?.fontSize ? { fontSize: r.fontSize } : {}),
+    ...Object.fromEntries(READING_KEYS.filter((k) => r?.[k] !== undefined).map((k) => [k, r![k]])),
   };
 }
 
@@ -99,6 +104,11 @@ export function settingsFileOf(synced: Partial<SyncedSettings>, base: SettingsFi
     ...(synced.contentFont ? { contentFont: synced.contentFont } : {}),
     ...(synced.fontSize ? { fontSize: synced.fontSize } : {}),
   };
+  for (const k of READING_KEYS) {
+    if (!(k in synced)) continue;
+    if (synced[k] === undefined) delete reading[k];
+    else Object.assign(reading, { [k]: synced[k] });
+  }
   return {
     ...(Object.keys(appearance).length ? { appearance } : {}),
     ...(Object.keys(reading).length ? { reading } : {}),

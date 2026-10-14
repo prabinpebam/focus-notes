@@ -23,7 +23,7 @@ notes/                           # the user's instance repository (public, their
 │  ├─ access-message.json        # invite template
 │  └─ .focus-notes/
 │     ├─ themes/                 # custom themes (JSON), private by design (D-46)
-│     └─ settings.json           # opt-in synced settings (appearance, themes, font), private by design
+│     └─ settings.json           # opt-in synced settings (appearance, themes, reading), private by design
 ├─ .focus-notes/
 │  └─ workspace.json             # formatVersion and template version (DST-05)
 ├─ AGENTS.md                     # instructions for coding agents (AGT-07)

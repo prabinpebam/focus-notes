@@ -132,8 +132,8 @@ describe("PRV-03: synced settings and per-device state", () => {
   const schema = JSON.parse(readFileSync(join(import.meta.dirname, "..", "..", "..", "schemas", "settings.schema.json"), "utf8"));
   const valid = ajv.compile(schema);
 
-  it("appearance, themes, the content font, and its size sync; the rest stays on the device", () => {
-    expect([...SYNCED_KEYS].sort()).toEqual(["appearance", "contentFont", "darkTheme", "fontSize", "lightTheme"]);
+  it("appearance, themes, and the reading settings sync; the rest stays on the device", () => {
+    expect([...SYNCED_KEYS].sort()).toEqual(["appearance", "contentFont", "darkTheme", "focusDim", "fontSize", "lightTheme", "lineHeight", "measure", "paragraphSpacing"]);
     const { device, synced } = splitAppState({ version: 1, lastNotePath: "/W/a.md", appearance: "dark", fontSize: 18, uiScale: 1.25, focusMode: false, lightTheme: "sepia" });
     expect(synced).toEqual({ appearance: "dark", fontSize: 18, lightTheme: "sepia" });
     expect(device).toEqual({ version: 1, lastNotePath: "/W/a.md", uiScale: 1.25, focusMode: false });
@@ -143,7 +143,21 @@ describe("PRV-03: synced settings and per-device state", () => {
     const file = settingsFileOf({ appearance: "dark", lightTheme: "sepia", darkTheme: "ink", contentFont: "serif", fontSize: 18 }, { reading: { lineHeight: 1.6 }, toolbar: ["note.new"] });
     expect(file).toEqual({ appearance: { mode: "dark", lightTheme: "sepia", darkTheme: "ink" }, reading: { contentFont: "serif", fontSize: 18, lineHeight: 1.6 }, toolbar: ["note.new"] });
     expect(valid(file)).toBe(true);
-    expect(appStateOfSettings(file)).toEqual({ appearance: "dark", lightTheme: "sepia", darkTheme: "ink", contentFont: "serif", fontSize: 18 });
+    expect(appStateOfSettings(file)).toEqual({ appearance: "dark", lightTheme: "sepia", darkTheme: "ink", contentFont: "serif", fontSize: 18, lineHeight: 1.6 });
+  });
+
+  it("reading settings from the theme manager sync too, and a reset removes them from the file (THM-07)", () => {
+    const { synced } = splitAppState({ lineHeight: 1.8, measure: 60, paragraphSpacing: "airy", focusDim: 0.45, uiScale: 1 });
+    expect(synced).toEqual({ lineHeight: 1.8, measure: 60, paragraphSpacing: "airy", focusDim: 0.45 });
+    const file = settingsFileOf(synced, { reading: { fontSize: 18 } });
+    expect(file.reading).toEqual({ fontSize: 18, lineHeight: 1.8, measure: 60, paragraphSpacing: "airy", focusDim: 0.45 });
+    expect(valid(file)).toBe(true);
+    expect(appStateOfSettings(parseSettings(JSON.stringify(file)))).toMatchObject({ lineHeight: 1.8, measure: 60, paragraphSpacing: "airy", focusDim: 0.45 });
+    // A removal (the default again) is a key with no value: it leaves the file, not just this device.
+    const reset = splitAppState({ focusDim: undefined, lineHeight: 1.5 });
+    expect("focusDim" in reset.synced).toBe(true);
+    expect(settingsFileOf(reset.synced, file).reading).toEqual({ fontSize: 18, lineHeight: 1.5, measure: 60, paragraphSpacing: "airy" });
+    expect(parseSettings(JSON.stringify({ reading: { paragraphSpacing: "huge", measure: 49 } }))).toEqual({});
   });
 
   it("reading drops what isn't valid, and never fails", () => {

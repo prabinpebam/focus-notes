@@ -69,8 +69,9 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   let filesWereOpen = app.store.state.ui.files.open;
   let spotlightWasOpen = app.store.state.ui.spotlight.open;
   let findAllWasOpen = app.store.state.ui.findAll.open;
+  let themeWasOpen = app.store.state.ui.theme.open;
   app.store.subscribe(() => {
-    const { toolbarOpen, shortcuts, find, files, spotlight, findAll } = app.store.state.ui;
+    const { toolbarOpen, shortcuts, find, files, spotlight, findAll, theme } = app.store.state.ui;
     // Spotlight hands focus back where it was; if that's gone (a dialog it replaced), to the note.
     if (spotlightWasOpen && !spotlight.open) {
       setTimeout(() => {
@@ -84,13 +85,14 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
       setTimeout(() => { if (app.store.state.ui.find.focusFind === asked) window.dispatchEvent(new Event(REFOCUS_EVENT)); }, 0);
     }
     findAllWasOpen = findAll.open;
-    // Not when the toolbar closed because the find bar, the cheat sheet, or the Files panel took focus.
-    if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open && !files.open) || (sheetWasOpen && !shortcuts.open) || (filesWereOpen && !files.open)) {
+    // Not when the toolbar closed because the find bar, the cheat sheet, the Files panel, or the theme manager took focus.
+    if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open && !files.open && !theme.open) || (sheetWasOpen && !shortcuts.open) || (filesWereOpen && !files.open) || (themeWasOpen && !theme.open)) {
       setTimeout(() => window.dispatchEvent(new Event(REFOCUS_EVENT)), 0);
     }
     toolbarWasOpen = toolbarOpen;
     sheetWasOpen = shortcuts.open;
     filesWereOpen = files.open;
+    themeWasOpen = theme.open;
   });
   return root;
 }

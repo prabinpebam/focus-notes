@@ -76,6 +76,22 @@ const markUnavailable = (unavailable: boolean) => (el: HTMLDivElement | null) =>
 };
 
 /**
+ * A section's items in runs: a command that opens something (Theme…) is a plain menu item even in
+ * a group of checked choices, so each run of one kind is its own section under the group's name.
+ */
+function runsOf(items: CommandItem[]): { checkable: boolean; items: CommandItem[] }[] {
+  const selectable = items.some((i) => i.checked !== undefined);
+  const runs: { checkable: boolean; items: CommandItem[] }[] = [];
+  for (const item of items) {
+    const checkable = selectable && (item.checked !== undefined || Boolean(item.items));
+    const last = runs[runs.length - 1];
+    if (last && last.checkable === checkable) last.items.push(item);
+    else runs.push({ checkable, items: [item] });
+  }
+  return runs;
+}
+
+/**
  * A menu of commands in sections, with submenus, checked states, and shortcuts: what MenuButton opens,
  * and what other components that open menus themselves (TableControls) show.
  */
@@ -87,39 +103,42 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
           {sections.map((sec, index) => (
             <Fragment key={sec.id}>
               {index > 0 ? <Separator className={s.separator} /> : null}
-              <MenuSection
-                id={sec.id}
-                aria-label={sec.label ?? sec.id}
-                {...(sec.items.some((i) => i.checked !== undefined)
-                  ? { selectionMode: "multiple" as const, selectedKeys: sec.items.filter((i) => i.checked && !i.items).map((i) => i.id) }
-                  : {})}
-              >
-                {sec.label ? <Header className={s.header}>{sec.label}</Header> : null}
-                {sec.items.map((item) => item.items ? <Submenu key={item.id} item={item} onAction={onAction} /> : (
-                  <MenuItem
-                    key={item.id}
-                    id={item.id}
-                    className={s.item}
-                    textValue={item.label}
-                    ref={markUnavailable(Boolean(item.disabled))}
-                    {...(item.disabled ? { shouldCloseOnSelect: false } : {})}
-                  >
-                    {({ isSelected }) => (
-                      <>
-                        {checkable ? <span className={s.check} aria-hidden="true">{isSelected ? "✓" : ""}</span> : null}
-                        {/* The name is everything the item shows, its shortcut and an unavailable item's reason included (WCAG 2.5.3). */}
-                        <Text slot="label" className={s.label}>
-                          <span className={s.labelRow}>
-                            <span className={s.labelText}>{item.label}</span>
-                            {item.shortcut ? <Keyboard className={s.shortcut}>{item.shortcut}</Keyboard> : null}
-                          </span>
-                          {item.disabled && item.reason ? <span className={s.reason}>{item.reason}</span> : null}
-                        </Text>
-                      </>
-                    )}
-                  </MenuItem>
-                ))}
-              </MenuSection>
+              {runsOf(sec.items).map((run, r) => (
+                <MenuSection
+                  key={`${sec.id}:${r}`}
+                  id={r === 0 ? sec.id : `${sec.id}:${r}`}
+                  aria-label={sec.label ?? sec.id}
+                  {...(run.checkable
+                    ? { selectionMode: "multiple" as const, selectedKeys: run.items.filter((i) => i.checked && !i.items).map((i) => i.id) }
+                    : {})}
+                >
+                  {sec.label && r === 0 ? <Header className={s.header}>{sec.label}</Header> : null}
+                  {run.items.map((item) => item.items ? <Submenu key={item.id} item={item} onAction={onAction} /> : (
+                    <MenuItem
+                      key={item.id}
+                      id={item.id}
+                      className={s.item}
+                      textValue={item.label}
+                      ref={markUnavailable(Boolean(item.disabled))}
+                      {...(item.disabled ? { shouldCloseOnSelect: false } : {})}
+                    >
+                      {({ isSelected }) => (
+                        <>
+                          {checkable ? <span className={s.check} aria-hidden="true">{isSelected ? "✓" : ""}</span> : null}
+                          {/* The name is everything the item shows, its shortcut and an unavailable item's reason included (WCAG 2.5.3). */}
+                          <Text slot="label" className={s.label}>
+                            <span className={s.labelRow}>
+                              <span className={s.labelText}>{item.label}</span>
+                              {item.shortcut ? <Keyboard className={s.shortcut}>{item.shortcut}</Keyboard> : null}
+                            </span>
+                            {item.disabled && item.reason ? <span className={s.reason}>{item.reason}</span> : null}
+                          </Text>
+                        </>
+                      )}
+                    </MenuItem>
+                  ))}
+                </MenuSection>
+              ))}
             </Fragment>
           ))}
         </Menu>

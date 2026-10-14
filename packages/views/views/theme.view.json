@@ -1,0 +1,531 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "theme",
+  "ia": "IA-VIEW-THEME",
+  "viewModels": [
+    "vm.themeManager"
+  ],
+  "focus": "themeGallery",
+  "overlay": true,
+  "root": {
+    "type": "Stack",
+    "children": [
+      {
+        "type": "Sheet",
+        "id": "themeManager",
+        "when": {
+          "get": "vm.themeManager.open"
+        },
+        "props": {
+          "label": {
+            "t": "theme.manager.title"
+          },
+          "side": "end",
+          "width": "theme"
+        },
+        "on": {
+          "close": {
+            "run": "theme.manager.close"
+          }
+        },
+        "slots": {
+          "header": [
+            {
+              "type": "Inline",
+              "props": {
+                "justify": "between",
+                "gap": "s"
+              },
+              "children": [
+                {
+                  "type": "Heading",
+                  "props": {
+                    "level": "2",
+                    "value": {
+                      "t": "theme.manager.title"
+                    }
+                  }
+                },
+                {
+                  "type": "IconButton",
+                  "props": {
+                    "icon": "dismiss",
+                    "label": {
+                      "t": "dialog.close"
+                    },
+                    "tone": "muted"
+                  },
+                  "on": {
+                    "press": {
+                      "run": "theme.manager.close"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "SegmentedControl",
+              "props": {
+                "label": {
+                  "t": "theme.appearance"
+                },
+                "options": {
+                  "get": "vm.themeManager.modes"
+                },
+                "value": {
+                  "bind": "vm.themeManager.mode"
+                }
+              }
+            }
+          ],
+          "footer": [
+            {
+              "type": "Inline",
+              "props": {
+                "justify": "between",
+                "gap": "s",
+                "align": "center",
+                "grow": true
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "get": "vm.themeManager.status"
+                    },
+                    "tone": "muted"
+                  }
+                },
+                {
+                  "type": "Button",
+                  "props": {
+                    "label": {
+                      "t": "theme.revert"
+                    },
+                    "variant": "subtle",
+                    "icon": "undo"
+                  },
+                  "on": {
+                    "press": {
+                      "run": "theme.manager.revert"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "Tabs",
+            "id": "themeTabs",
+            "props": {
+              "label": {
+                "t": "theme.manager.sections"
+              },
+              "items": {
+                "get": "vm.themeManager.tabs"
+              },
+              "value": {
+                "bind": "vm.themeManager.tab"
+              }
+            },
+            "children": [
+              {
+                "switch": {
+                  "get": "vm.themeManager.tab"
+                },
+                "cases": {
+                  "themes": {
+                    "type": "ThemeGallery",
+                    "id": "themeGallery",
+                    "props": {
+                      "label": {
+                        "t": "theme.gallery"
+                      },
+                      "items": {
+                        "get": "vm.themeManager.tiles"
+                      },
+                      "value": {
+                        "get": "vm.themeManager.showing"
+                      },
+                      "previewing": {
+                        "get": "vm.themeManager.previewing"
+                      },
+                      "focusRequest": {
+                        "get": "vm.themeManager.focusRequest"
+                      }
+                    },
+                    "on": {
+                      "preview": {
+                        "run": "theme.preview",
+                        "args": {
+                          "id": {
+                            "get": "event.id"
+                          }
+                        }
+                      },
+                      "choose": {
+                        "run": "theme.choose",
+                        "args": {
+                          "id": {
+                            "get": "event.id"
+                          }
+                        }
+                      },
+                      "revert": {
+                        "run": "theme.previewEnd"
+                      }
+                    }
+                  },
+                  "reading": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs",
+                          "align": "start"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "reading.font"
+                              },
+                              "role": "label"
+                            }
+                          },
+                          {
+                            "type": "MenuButton",
+                            "props": {
+                              "variant": "text",
+                              "label": {
+                                "t": "reading.fontLabel",
+                                "args": {
+                                  "font": {
+                                    "get": "vm.themeManager.reading.fontText"
+                                  }
+                                }
+                              },
+                              "text": {
+                                "get": "vm.themeManager.reading.fontText"
+                              },
+                              "placement": "bottom start",
+                              "sections": {
+                                "get": "vm.themeManager.reading.fontMenu"
+                              }
+                            },
+                            "on": {
+                              "action": {
+                                "run": "command.run",
+                                "args": {
+                                  "id": {
+                                    "get": "event.id"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs",
+                          "align": "start"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "reading.size"
+                              },
+                              "role": "label"
+                            }
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s",
+                              "align": "center",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "command.font.smaller"
+                                  },
+                                  "variant": "secondary",
+                                  "disabled": {
+                                    "expr": {
+                                      "!": {
+                                        "get": "vm.themeManager.reading.canSmaller"
+                                      }
+                                    }
+                                  },
+                                  "disabledReason": {
+                                    "t": "reading.sizeMin"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "font.smaller"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.themeManager.reading.sizeText"
+                                  },
+                                  "announce": true
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "command.font.larger"
+                                  },
+                                  "variant": "secondary",
+                                  "disabled": {
+                                    "expr": {
+                                      "!": {
+                                        "get": "vm.themeManager.reading.canLarger"
+                                      }
+                                    }
+                                  },
+                                  "disabledReason": {
+                                    "t": "reading.sizeMax"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "font.larger"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Slider",
+                        "props": {
+                          "label": {
+                            "t": "reading.lineHeight"
+                          },
+                          "value": {
+                            "bind": "vm.themeManager.reading.lineHeight"
+                          },
+                          "min": 1.3,
+                          "max": 2,
+                          "step": 0.1,
+                          "valueText": {
+                            "get": "vm.themeManager.reading.lineHeightText"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Slider",
+                        "props": {
+                          "label": {
+                            "t": "reading.measure"
+                          },
+                          "value": {
+                            "bind": "vm.themeManager.reading.measure"
+                          },
+                          "min": 50,
+                          "max": 100,
+                          "step": 5,
+                          "valueText": {
+                            "get": "vm.themeManager.reading.measureText"
+                          }
+                        }
+                      },
+                      {
+                        "type": "SegmentedControl",
+                        "props": {
+                          "label": {
+                            "t": "reading.spacing"
+                          },
+                          "options": {
+                            "get": "vm.themeManager.reading.spacings"
+                          },
+                          "value": {
+                            "bind": "vm.themeManager.reading.spacing"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Slider",
+                        "props": {
+                          "label": {
+                            "t": "reading.focusDim"
+                          },
+                          "value": {
+                            "bind": "vm.themeManager.reading.focusDim"
+                          },
+                          "min": 0.15,
+                          "max": 0.6,
+                          "step": 0.05,
+                          "valueText": {
+                            "get": "vm.themeManager.reading.focusDimText"
+                          },
+                          "format": "percent"
+                        }
+                      },
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "reading.reset"
+                              },
+                              "variant": "subtle"
+                            },
+                            "on": {
+                              "press": {
+                                "run": "reading.reset"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "colors": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "get": "vm.themeManager.colors.note"
+                          },
+                          "tone": "muted"
+                        }
+                      },
+                      {
+                        "each": {
+                          "get": "vm.themeManager.colors.rows"
+                        },
+                        "as": "row",
+                        "key": "row.id",
+                        "render": {
+                          "type": "Stack",
+                          "props": {
+                            "gap": "xs",
+                            "align": "start"
+                          },
+                          "children": [
+                            {
+                              "type": "ColorField",
+                              "props": {
+                                "label": {
+                                  "get": "row.label"
+                                },
+                                "value": {
+                                  "get": "row.value"
+                                },
+                                "swatch": {
+                                  "get": "row.swatch"
+                                },
+                                "description": {
+                                  "get": "row.status"
+                                },
+                                "invalid": {
+                                  "get": "row.invalid"
+                                },
+                                "error": {
+                                  "get": "row.error"
+                                },
+                                "focusRequest": {
+                                  "get": "row.focusRequest"
+                                }
+                              },
+                              "on": {
+                                "commit": {
+                                  "run": "theme.color.set",
+                                  "args": {
+                                    "key": {
+                                      "get": "row.id"
+                                    },
+                                    "value": {
+                                      "get": "event.value"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "Button",
+                              "when": {
+                                "get": "row.canFix"
+                              },
+                              "props": {
+                                "label": {
+                                  "get": "row.fixLabel"
+                                },
+                                "variant": "secondary"
+                              },
+                              "on": {
+                                "press": {
+                                  "run": "theme.color.fix",
+                                  "args": {
+                                    "key": {
+                                      "get": "row.id"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "empty": {
+                          "type": "Text",
+                          "props": {
+                            "value": {
+                              "t": "colors.allPass"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "get": "vm.themeManager.colors.summary"
+                          },
+                          "announce": true
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

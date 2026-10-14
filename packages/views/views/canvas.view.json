@@ -55,6 +55,21 @@
       },
       "frame": {
         "get": "vm.window.frame"
+      },
+      "lineHeight": {
+        "get": "vm.app.lineHeight"
+      },
+      "measure": {
+        "get": "vm.app.measure"
+      },
+      "paragraphSpacing": {
+        "get": "vm.app.paragraphSpacing"
+      },
+      "focusDim": {
+        "get": "vm.app.focusDim"
+      },
+      "themeColors": {
+        "get": "vm.app.themeColors"
       }
     },
     "children": [

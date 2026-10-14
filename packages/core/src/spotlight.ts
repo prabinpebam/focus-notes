@@ -383,6 +383,8 @@ const INTERNAL_IDS = new Set([
   // The Files panel's own selection and rows; Spotlight acts on a result through its quick actions instead.
   "files.select", "files.activate", "files.undo", "files.drop", "files.clearSelection", "files.hideDeleted", "files.toggleDeleted",
   "files.restore", "files.restoreTo", "files.editBlur",
+  // The theme manager's own steps: previews from its gallery, a theme chosen there, its colors, closing and reverting it.
+  "theme.manager.close", "theme.manager.revert", "theme.preview", "theme.previewEnd", "theme.choose", "theme.color.set", "theme.color.fix",
 ]);
 /** Scopes where a key acts on what's in front of it, not a place a person starts from. */
 const ACTION_SCOPES = new Set(["editor", "table"]);

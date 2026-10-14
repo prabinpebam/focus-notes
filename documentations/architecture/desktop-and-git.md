@@ -238,7 +238,7 @@ Making a note private doesn't take it out of the public repository's history, wh
 
 ### Synced settings
 
-*Sync appearance* in the ⋯ menu's Theme group (THM-05) stores the settings that follow you, the appearance, the light and dark themes, and the content font and its size, in `private/.focus-notes/settings.json` (`schemas/settings.schema.json`, D-46). Syncing is on while that file exists: the app reads it over this device's own choices when it starts and writes changes to it, committed with the next save in the private repository like a note. Turning it off keeps the current look on this device and deletes the file. The main process writes only what the schema allows, and the menu item shows only where the workspace has `private/`. The last note, focus mode, and the interface scale always stay on the device (PRV-03, D-99).
+*Sync appearance* in the ⋯ menu's Theme group (THM-05) stores the settings that follow you, the appearance, the light and dark themes, and the reading settings (the content font and its size, line spacing, reading width, paragraph spacing, and focus dim, D-108), in `private/.focus-notes/settings.json` (`schemas/settings.schema.json`, D-46). Syncing is on while that file exists: the app reads it over this device's own choices when it starts and writes changes to it, committed with the next save in the private repository like a note. Turning it off keeps the current look on this device and deletes the file. The main process writes only what the schema allows, and the menu item shows only where the workspace has `private/`. The last note, focus mode, and the interface scale always stay on the device (PRV-03, D-99).
 
 ## Clones and large workspaces
 

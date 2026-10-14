@@ -1,0 +1,82 @@
+{
+  "cmp": {
+    "slider": {
+      "gap": {
+        "$type": "dimension",
+        "$value": "{space.xs}"
+      },
+      "trackHeight": {
+        "$type": "dimension",
+        "$value": "{border.focus}"
+      },
+      "thumbSize": {
+        "$type": "dimension",
+        "$value": "{size.iconS}"
+      },
+      "hit": {
+        "$type": "dimension",
+        "$value": "{size.hit}"
+      },
+      "track": {
+        "$type": "color",
+        "$value": "{color.borderStrong}"
+      },
+      "fill": {
+        "$type": "color",
+        "$value": "{color.accent}"
+      },
+      "thumb": {
+        "$type": "color",
+        "$value": "{color.accent}"
+      },
+      "thumbBorder": {
+        "$type": "color",
+        "$value": "{color.surface}"
+      },
+      "thumbBorderWidth": {
+        "$type": "dimension",
+        "$value": "{border.focus}"
+      },
+      "radius": {
+        "$type": "dimension",
+        "$value": "{radius.round}"
+      },
+      "label": {
+        "$type": "color",
+        "$value": "{color.text}"
+      },
+      "value": {
+        "$type": "color",
+        "$value": "{color.textMuted}"
+      },
+      "focusRing": {
+        "$type": "color",
+        "$value": "{color.focusRing}"
+      },
+      "focusWidth": {
+        "$type": "dimension",
+        "$value": "{border.focus}"
+      },
+      "focusOffset": {
+        "$type": "dimension",
+        "$value": "{border.focusOffset}"
+      },
+      "font": {
+        "$type": "fontFamily",
+        "$value": "{font.ui}"
+      },
+      "fontSize": {
+        "$type": "dimension",
+        "$value": "{font.uiSecondary}"
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "$value": "{font.weightSemibold}"
+      },
+      "disabledText": {
+        "$type": "color",
+        "$value": "{color.textDisabled}"
+      }
+    }
+  }
+}
