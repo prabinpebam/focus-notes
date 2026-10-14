@@ -2,8 +2,9 @@
 import { createElement, Fragment, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { FLUSH_EDITOR, type App } from "@focus-notes/core";
-import { registry, contractByType, FLUSH_EVENT, REFOCUS_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, keyRanCommand, slashCatalog, preloadViews, InWindow } from "@focus-notes/ui";
+import { registry, contractByType, FLUSH_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, keyRanCommand, slashCatalog, preloadViews, InWindow } from "@focus-notes/ui";
 import { ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
+import { panelOpen, refocusNote } from "./refocus.ts";
 
 export interface MountOptions {
   app: App;
@@ -75,6 +76,7 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   window.addEventListener("drop", stopNavigation);
   // When the toolbar closes, the caret goes back to the note.
   // The same when a dialog closes: its saved focus target may be gone (opened from the ⋯ menu).
+  const ui = () => app.store.state.ui;
   let toolbarWasOpen = app.store.state.ui.toolbarOpen;
   let sheetWasOpen = app.store.state.ui.shortcuts.open;
   let filesWereOpen = app.store.state.ui.files.open;
@@ -86,21 +88,21 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     // Spotlight hands focus back where it was; if that's gone (a dialog it replaced), to the note.
     if (spotlightWasOpen && !spotlight.open) {
       setTimeout(() => {
-        if (!document.activeElement || document.activeElement === document.body) window.dispatchEvent(new Event(REFOCUS_EVENT));
+        if (!document.activeElement || document.activeElement === document.body) refocusNote(ui);
       }, 300);
     }
     spotlightWasOpen = spotlight.open;
     // Find in all notes closing: back to the note, unless a match it opened has the find bar's focus.
     if (findAllWasOpen && !findAll.open) {
       const asked = find.focusFind;
-      setTimeout(() => { if (app.store.state.ui.find.focusFind === asked) window.dispatchEvent(new Event(REFOCUS_EVENT)); }, 0);
+      setTimeout(() => { if (app.store.state.ui.find.focusFind === asked) refocusNote(ui); }, 0);
     }
     findAllWasOpen = findAll.open;
     // Not when the toolbar closed because the find bar, the cheat sheet, the Files panel, or the theme manager took focus.
     if ((toolbarWasOpen && !toolbarOpen && !shortcuts.open && !find.open && !files.open && !theme.open) || (sheetWasOpen && !shortcuts.open) || (filesWereOpen && !files.open) || (themeWasOpen && !theme.open)) {
-      // Nor once the toolbar has opened again meanwhile (by its key, which the page handles before
-      // this timer): it has taken focus, and the note would take it back.
-      setTimeout(() => { if (!app.store.state.ui.toolbarOpen) window.dispatchEvent(new Event(REFOCUS_EVENT)); }, 0);
+      // Nor once the toolbar or another panel has opened meanwhile (by its key, which the page may
+      // handle before this timer or the note's frame): it has taken focus (DEF-4).
+      setTimeout(() => { if (!panelOpen(ui())) refocusNote(ui); }, 0);
     }
     toolbarWasOpen = toolbarOpen;
     sheetWasOpen = shortcuts.open;

@@ -105,7 +105,10 @@ function focusNote(editor: Editor): void {
   syncSelection(editor);
   editor.view.focus();
 }
-/** Dispatched when a panel closes: the caret goes back exactly where it was (Main UI → Dismiss). */
+/**
+ * Dispatched when a panel closes: the caret goes back exactly where it was (Main UI → Dismiss).
+ * `detail.wanted`, if given, is asked again when the note would take focus, a frame later.
+ */
 export const REFOCUS_EVENT = "focus-notes:refocus";
 /** Dispatched on window with `detail.id` to run an editor command from a menu or Spotlight. */
 export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
@@ -379,10 +382,14 @@ export function EditorSurface({
       }
     };
     window.addEventListener(FLUSH_EVENT, flush);
-    // After a panel's own focus restoration, put the caret back in the note.
-    const refocus = () => requestAnimationFrame(() => {
-      if (editor) focusNote(editor);
-    });
+    // After a panel's own focus restoration, put the caret back in the note: unless the one who
+    // asked no longer wants it by then, because a panel has opened and taken focus (DEF-4).
+    const refocus = (e: Event) => {
+      const wanted = (e as CustomEvent<{ wanted?: () => boolean } | null>).detail?.wanted;
+      requestAnimationFrame(() => {
+        if (editor && (!wanted || wanted())) focusNote(editor);
+      });
+    };
     window.addEventListener(REFOCUS_EVENT, refocus);
     const runAction = (e: Event) => {
       const detail = (e as CustomEvent<{ id?: string; args?: Record<string, unknown> }>).detail;
