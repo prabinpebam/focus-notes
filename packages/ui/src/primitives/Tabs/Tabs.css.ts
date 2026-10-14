@@ -15,8 +15,8 @@ export const root = {
 };
 const listBase = style({ display: "flex", gap: t.gap, borderStyle: "solid", borderWidth: 0, borderColor: t.border });
 export const list = {
-  // Across: they scroll sideways rather than ever reach past their container (D-111).
-  horizontal: style([listBase, { borderBottomWidth: t.borderWidth, overflowX: "auto", scrollbarWidth: "none" }]),
+  // Across: they wrap onto another row rather than ever reach past their container (D-111).
+  horizontal: style([listBase, { borderBottomWidth: t.borderWidth, flexWrap: "wrap" }]),
   vertical: style([listBase, { flexDirection: "column", flexGrow: 0, flexShrink: 0, flexBasis: t.listWidth, borderInlineEndWidth: t.borderWidth, paddingInlineEnd: t.gap }]),
 };
 const tabBase = style({
@@ -48,5 +48,6 @@ export const tab = {
 const panelBase = style({ outline: "none", selectors: { "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing } } });
 export const panel = {
   horizontal: panelBase,
-  vertical: style([panelBase, { flexGrow: 1, flexShrink: 1, flexBasis: t.panelMinWidth, minWidth: 0 }]),
+  // Its first line (a heading trimmed to its capitals) centered on the first tab's label (D-111).
+  vertical: style([panelBase, { flexGrow: 1, flexShrink: 1, flexBasis: t.panelMinWidth, minWidth: 0, paddingBlockStart: `calc((${t.height} - 1cap) / 2)` }]),
 };

@@ -3480,7 +3480,8 @@
                         "value": {
                           "get": "group.label"
                         },
-                        "role": "emphasis"
+                        "role": "caption",
+                        "tone": "muted"
                       }
                     },
                     {
