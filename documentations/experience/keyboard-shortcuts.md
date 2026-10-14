@@ -82,6 +82,8 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 | Cycle windows | <kbd>⌘`</kbd> |  |  | Power | macOS |
 | Quit | <kbd>⌘Q</kbd> | <kbd>Alt+F4</kbd> (<kbd>Ctrl+Q</kbd> on Linux) |  | Basic | OS |
 
+As built (WP-4.4, [D-115](../plan/decisions.md)): back and forward step along the last 50 notes opened, as a browser does; opening a note drops the ones ahead. *New window*, *Reopen closed note*, and *Close note / window* are planned with multiple windows (WP-8.5): their keys are reserved and not bound, and until then <kbd>Alt+F4</kbd> and the macOS menu bar's Close close the window. Minimize, Hide app, Cycle windows, and Quit are the system's keys; the window menu is the desktop shell's.
+
 ## Everyday editing
 
 The standard OS text keys work as expected and aren't listed one by one: moving and selecting by character, word, line, and document with the arrow keys and <kbd>Shift</kbd>; <kbd>⌥⌫</kbd> / <kbd>Ctrl+Backspace</kbd> to delete a word; <kbd>⌘⌫</kbd> to delete to the start of the line on macOS.
@@ -131,6 +133,8 @@ Markdown typing shortcuts (`**bold**`, `# `, `- `, …) are listed on [Editing](
 | Delete block | <kbd>⇧⌘K</kbd> | <kbd>Ctrl+Shift+K</kbd> | Power | VS Code (delete line) |
 | Go to heading in this note | <kbd>⇧⌘O</kbd> | <kbd>Ctrl+Shift+O</kbd> | Power | VS Code (go to symbol) |
 | Block selection mode | <kbd>Esc</kbd> | <kbd>Esc</kbd> | Pro | Notion |
+
+As built (WP-4.4, [D-115](../plan/decisions.md)): a *block* is the list item with the caret, or else the note's block (a paragraph, heading, quote, code block, list, or table). Moving swaps it with its neighbour and keeps the caret in it, Duplicate puts the copy below with the caret in it, and deleting a list's last item deletes the list. In a table the row keys come first. <kbd>Mod</kbd>+<kbd>U</kbd> shows its Markdown hint once per session.
 
 **Block selection mode (Pro).** <kbd>Esc</kbd> while typing selects the current block. <kbd>↑</kbd>/<kbd>↓</kbd> moves between blocks and <kbd>Shift</kbd>+arrows extend the selection. <kbd>Mod</kbd>+<kbd>C</kbd> copies the selected blocks as Markdown, <kbd>Backspace</kbd> deletes them, the move, duplicate, and turn-into keys work on the whole selection, and <kbd>Enter</kbd> returns to typing. A second <kbd>Esc</kbd> clears the selection.
 
@@ -189,7 +193,7 @@ These apply while [Spotlight](spotlight.html) is open.
 | Jump between result groups | <kbd>⌥↓</kbd> / <kbd>⌥↑</kbd> | <kbd>Alt+↓</kbd> / <kbd>Alt+↑</kbd> | Pro | No common standard |
 | Close | <kbd>Esc</kbd> | <kbd>Esc</kbd> | Basic | Universal |
 
-As built (WP-4.2, D-109): these keys are the `spotlightField` key scope. <kbd>→</kbd> shows the actions only with the caret at the end of the field's text, so elsewhere it still moves the caret; <kbd>←</kbd>, <kbd>Esc</kbd>, and <kbd>Backspace</kbd> act only when there's something for them to do (an action list to leave, another mode to leave) and otherwise reach the field. <kbd>⌃P</kbd> / <kbd>⌃N</kbd>, <kbd>Mod</kbd>+<kbd>1</kbd> to <kbd>9</kbd>, <kbd>⇧⌘C</kbd>, and <kbd>⌥↓</kbd> / <kbd>⌥↑</kbd> arrive with the Pro layer (WP-4.4). The browser uses the same keys: <kbd>Ctrl</kbd>+<kbd>/</kbd>, <kbd>Ctrl</kbd>+<kbd>P</kbd> (quick open, in place of printing), <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, and <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>.
+As built (WP-4.2, D-109): these keys are the `spotlightField` key scope. <kbd>→</kbd> shows the actions only with the caret at the end of the field's text, so elsewhere it still moves the caret; <kbd>←</kbd>, <kbd>Esc</kbd>, and <kbd>Backspace</kbd> act only when there's something for them to do (an action list to leave, another mode to leave) and otherwise reach the field. <kbd>⌃P</kbd> / <kbd>⌃N</kbd>, <kbd>Mod</kbd>+<kbd>1</kbd> to <kbd>9</kbd>, <kbd>⇧⌘C</kbd>, and <kbd>⌥↓</kbd> / <kbd>⌥↑</kbd> arrive with the Pro layer (WP-8.1, [D-115](../plan/decisions.md)). The browser uses the same keys: <kbd>Ctrl</kbd>+<kbd>/</kbd>, <kbd>Ctrl</kbd>+<kbd>P</kbd> (quick open, in place of printing), <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, and <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd>.
 
 ## Files panel
 

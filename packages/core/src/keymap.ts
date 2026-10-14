@@ -51,6 +51,11 @@ export const EDITOR_COMMANDS: readonly EditorCommandSpec[] = [
   ed("block.quote", "Mod+Shift+B", "writer", "blocks"),
   ed("block.codeBlock", "Mod+Alt+C", "writer", "blocks"),
   ed("task.toggle", "Mod+Enter", "writer", "blocks"),
+  // Power layer (KEY-03): whole blocks. Windows and Linux also move with Alt+↑/↓, as VS Code does.
+  ed("block.moveUp", { default: "Mod+Shift+Up", alternates: { default: ["Alt+Up"], macos: [] } }, "power", "blocks"),
+  ed("block.moveDown", { default: "Mod+Shift+Down", alternates: { default: ["Alt+Down"], macos: [] } }, "power", "blocks"),
+  ed("block.duplicate", "Mod+D", "power", "blocks"),
+  ed("block.delete", "Mod+Shift+K", "power", "blocks"),
   // Tables (Keyboard shortcuts → Tables): they apply in a table and come before the block keys there.
   tb("table.nextCell", "Tab", "basic"),
   tb("table.prevCell", "Shift+Tab", "basic"),
