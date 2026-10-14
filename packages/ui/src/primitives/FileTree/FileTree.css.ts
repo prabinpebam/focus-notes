@@ -1,25 +1,21 @@
 import { globalStyle, createVar, keyframes, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
-import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.fileTree;
 /** How deep a row is (aria-level minus one), set per row: each level indents by one step. */
 export const depth = createVar({ syntax: "<number>", inherits: false, initialValue: "0" });
 
+// It scrolls with what holds it (the Files sheet's body), which fades its edges (D-111).
 export const tree = style({
   display: "flex",
   flexDirection: "column",
   gap: t.rowGap,
-  flexGrow: 1,
-  minHeight: 0,
-  overflowY: "auto",
-  scrollbarGutter: "stable",
+  flexShrink: 0,
   fontFamily: t.font,
   fontSize: t.fontSize,
   color: t.text,
   outline: "none",
 });
-minimalScrollbar(tree, t);
 
 export const row = style({
   display: "flex",

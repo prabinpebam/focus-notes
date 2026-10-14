@@ -2,6 +2,8 @@ import { Fragment, useRef, useState } from "react";
 import { Button, Header, Keyboard, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator, SubmenuTrigger, Text } from "react-aria-components";
 import { IconButton } from "../IconButton/IconButton.tsx";
 import { Icon } from "../Icon/Icon.tsx";
+import { useFadingEdges } from "../../behaviors/fading-edges.ts";
+import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import type { IconName } from "../../icon-names.ts";
 import type { CommandItem, MenuSection as Section } from "../../data.ts";
 import * as s from "./MenuButton.css.ts";
@@ -18,12 +20,15 @@ export interface MenuButtonProps {
   placement?: "bottom end" | "bottom start" | "top start";
   sections: Section[];
   shortcut?: string;
+  /** The text variant at the edge of a panel's content (the Files sheet's New): its text lines up with the edge (D-111). */
+  bleed?: boolean;
   onAction?: (payload: { id: string }) => void;
 }
 
 /** A submenu of mutually exclusive choices (a theme, a font): its items are radio items. */
-function Submenu({ item, onAction }: { item: CommandItem; onAction?: ((payload: { id: string }) => void) | undefined }) {
+function Submenu({ item, checkable, onAction }: { item: CommandItem; checkable: boolean; onAction?: ((payload: { id: string }) => void) | undefined }) {
   const children = item.items ?? [];
+  const boundary = useWindowBoundary();
   // Beside the menu where there's room for one as wide; in a narrow window (320 px, WCAG 1.4.10),
   // below its item, over the menu. Measured as the item is reached, before the submenu opens.
   const [placement, setPlacement] = useState<"end top" | "bottom start">("end top");
@@ -34,33 +39,44 @@ function Submenu({ item, onAction }: { item: CommandItem; onAction?: ((payload: 
   return (
     <SubmenuTrigger>
       <MenuItem id={item.id} className={s.item} textValue={item.label} onFocus={(e) => measure(e.target)} onHoverStart={(e) => measure(e.target)}>
-        <span className={s.check} aria-hidden="true" />
+        {/* Lined up with the other items: a check column only when the menu has one. */}
+        {checkable ? <span className={s.check} aria-hidden="true" /> : null}
         <span className={s.label}>{item.label}</span>
         <span className={s.shortcut} aria-hidden="true"><Icon name="chevronRight" /></span>
       </MenuItem>
-      <Popover className={s.popover} placement={placement} offset={4} data-floating-child="">
-        <Menu
-          className={s.menu}
-          aria-label={item.label}
-          selectionMode="single"
-          shouldCloseOnSelect
-          selectedKeys={children.filter((i) => i.checked).map((i) => i.id)}
-          disabledKeys={children.filter((i) => i.disabled).map((i) => i.id)}
-          onAction={(key) => onAction?.({ id: String(key) })}
-        >
-          {children.map((c) => (
-            <MenuItem key={c.id} id={c.id} className={s.item} textValue={c.label}>
-              {({ isSelected }) => (
-                <>
-                  <span className={s.check} aria-hidden="true">{isSelected ? "✓" : ""}</span>
-                  <span className={s.label}>{c.label}</span>
-                </>
-              )}
-            </MenuItem>
-          ))}
-        </Menu>
+      <Popover className={s.popover} placement={placement} offset={4} {...boundary} data-floating-child="" data-surface="popover">
+        <ChoiceMenu label={item.label} items={children} onAction={onAction} />
       </Popover>
     </SubmenuTrigger>
+  );
+}
+
+/** A submenu's choices, one of them checked (Light theme → Paper). Mounted as it opens, so it can watch its own scrolling. */
+function ChoiceMenu({ label, items, onAction }: { label: string; items: CommandItem[]; onAction?: ((payload: { id: string }) => void) | undefined }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useFadingEdges(ref);
+  return (
+    <Menu
+      ref={ref}
+      className={s.menu}
+      aria-label={label}
+      selectionMode="single"
+      shouldCloseOnSelect
+      selectedKeys={items.filter((i) => i.checked).map((i) => i.id)}
+      disabledKeys={items.filter((i) => i.disabled).map((i) => i.id)}
+      onAction={(key) => onAction?.({ id: String(key) })}
+    >
+      {items.map((c) => (
+        <MenuItem key={c.id} id={c.id} className={s.item} textValue={c.label}>
+          {({ isSelected }) => (
+            <>
+              <span className={s.check} aria-hidden="true">{isSelected ? "✓" : ""}</span>
+              <span className={s.label}>{c.label}</span>
+            </>
+          )}
+        </MenuItem>
+      ))}
+    </Menu>
   );
 }
 
@@ -106,18 +122,21 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
   // Only as it opens: the item takes focus when it's first drawn (the collection draws its items
   // after the menu), and the menu's own focus handling follows it.
   const started = useRef(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  useFadingEdges(menuRef);
   const startHere = (id: string) => (el: HTMLDivElement | null) => {
     if (!el || !later || id !== start || started.current) return;
     started.current = true;
     el.focus();
   };
   return (
-        <Menu className={s.menu} aria-label={label} shouldCloseOnSelect {...(autoFocus && !later ? { autoFocus: "first" as const } : {})} onAction={(key) => { if (!unavailable.has(String(key))) onAction?.({ id: String(key) }); }}>
+        <Menu ref={menuRef} className={s.menu} aria-label={label} shouldCloseOnSelect {...(autoFocus && !later ? { autoFocus: "first" as const } : {})} onAction={(key) => { if (!unavailable.has(String(key))) onAction?.({ id: String(key) }); }}>
           {sections.map((sec, index) => (
             <Fragment key={sec.id}>
               {index > 0 ? <Separator className={s.separator} /> : null}
               {runsOf(sec.items).map((run, r) => (
                 <MenuSection
+                  className={s.section}
                   key={`${sec.id}:${r}`}
                   id={r === 0 ? sec.id : `${sec.id}:${r}`}
                   aria-label={sec.label ?? sec.id}
@@ -126,7 +145,7 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
                     : {})}
                 >
                   {sec.label && r === 0 ? <Header className={s.header}>{sec.label}</Header> : null}
-                  {run.items.map((item) => item.items ? <Submenu key={item.id} item={item} onAction={onAction} /> : (
+                  {run.items.map((item) => item.items ? <Submenu key={item.id} item={item} checkable={checkable} onAction={onAction} /> : (
                     <MenuItem
                       key={item.id}
                       id={item.id}
@@ -162,15 +181,16 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
 }
 
 /** An icon button that opens a menu of commands, each with its state and shortcut (IA-CMP-OVERFLOW). */
-export function MenuButton({ icon = "more", label, variant = "icon", text, placement = "bottom end", sections, shortcut, onAction }: MenuButtonProps) {
+export function MenuButton({ icon = "more", label, variant = "icon", text, placement = "bottom end", sections, shortcut, bleed, onAction }: MenuButtonProps) {
+  const boundary = useWindowBoundary();
   return (
     <MenuTrigger>
       {variant === "pill"
         ? <Button className={s.pill} aria-label={label}>{text ?? label}</Button>
         : variant === "text"
-          ? <Button className={s.text} aria-label={label}>{text ?? label}<Icon name="chevronDown" size="s" /></Button>
+          ? <Button className={`${s.text}${bleed ? ` ${s.textBleed}` : ""}`} aria-label={label} data-bleed={bleed ? "" : undefined}>{text ?? label}<Icon name="chevronDown" size="s" /></Button>
           : <IconButton icon={icon} label={label} {...(shortcut ? { shortcut } : {})} />}
-      <Popover className={s.popover} placement={placement} offset={8} data-floating-child="">
+      <Popover className={s.popover} placement={placement} offset={8} {...boundary} data-floating-child="" data-surface="popover">
         <CommandMenu label={label} sections={sections} onAction={onAction} />
       </Popover>
     </MenuTrigger>

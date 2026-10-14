@@ -25,6 +25,8 @@ export function TriggerButton({ label, shortcut, tone = "red", expanded, id, onP
         aria-haspopup="dialog"
         aria-expanded={expanded ?? false}
         data-trigger=""
+        // Side sheets keep clear of it (D-111).
+        data-trigger-band=""
         onPress={onPress}
       >
         <SignalDot tone={tone} />
