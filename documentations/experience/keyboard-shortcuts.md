@@ -77,6 +77,7 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 | Larger / smaller / reset font size | <kbd>⌘=</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | <kbd>Ctrl+=</kbd> / <kbd>Ctrl+-</kbd> / <kbd>Ctrl+0</kbd> |  | Writer | Browsers, VS Code |
 | Full screen | <kbd>⌃⌘F</kbd> | <kbd>F11</kbd> | Toolbar ⋯ (Fullscreen API) | Writer | macOS, Windows |
 | Minimize | <kbd>⌘M</kbd> | <kbd>Win+↓</kbd> (system) |  | Basic | OS |
+| Window menu: Restore, Move, Size, Minimize, Maximize, Snap left and right, Close |  | <kbd>Alt+Space</kbd> (the app's own, D-104) |  | Basic | Windows |
 | Hide app | <kbd>⌘H</kbd> |  |  | Basic | macOS |
 | Cycle windows | <kbd>⌘`</kbd> |  |  | Power | macOS |
 | Quit | <kbd>⌘Q</kbd> | <kbd>Alt+F4</kbd> (<kbd>Ctrl+Q</kbd> on Linux) |  | Basic | OS |
