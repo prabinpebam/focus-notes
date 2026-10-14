@@ -974,6 +974,8 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
     show: false,
     title: "Focus Notes",
     backgroundColor: dark ? "#1a1a1c" : "#fbfaf7",
+    // The app icon (build/icon.svg) for the window and the taskbar; macOS takes the bundle's.
+    ...(platform === "macos" ? {} : { icon: join(import.meta.dirname, "icon.png") }),
     // Where it was last time, and how it's drawn on this platform.
     ...frame.options(),
     ...(journey ? JOURNEY_WINDOW_OPTIONS : {}),

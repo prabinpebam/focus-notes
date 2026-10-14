@@ -106,8 +106,10 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
     if (!existsSync(gitconfig)) writeFileSync(gitconfig, "[protocol \"file\"]\n\tallow = always\n[commit]\n\tgpgsign = false\n[core]\n\tautocrlf = false\n");
     Object.assign(base, { GIT_CONFIG_GLOBAL: gitconfig, GIT_CONFIG_NOSYSTEM: "1" });
   }
+  // FOCUS_NOTES_E2E_EXE runs the packaged app (release\win-unpacked\focus-notes.exe) instead of the build.
+  const exe = process.env.FOCUS_NOTES_E2E_EXE;
   const app = await electron.launch({
-    args: [join(import.meta.dirname, "..", "out", "main", "main.mjs")],
+    ...(exe ? { executablePath: exe, args: [] } : { args: [join(import.meta.dirname, "..", "out", "main", "main.mjs")] }),
     // The warm-up after start is off in journeys, so their timing and focus stay the same (PRF-10).
     // Never the computer's focus (D-104 (7)): the windows open inactive, and the app keeps its own "active".
     env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_WARMUP: "0", FOCUS_NOTES_E2E: "1", ...extraEnv },

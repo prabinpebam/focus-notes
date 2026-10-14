@@ -1,5 +1,6 @@
 // Builds the main process (ESM) and the sandboxed preload (CommonJS, as sandboxing requires).
 import { build } from "vite";
+import { copyFileSync } from "node:fs";
 import { builtinModules } from "node:module";
 import { join } from "node:path";
 
@@ -22,4 +23,6 @@ const one = (entry, format, file, empty) =>
   });
 await one("src/main/main.ts", "es", "main.mjs", true);
 await one("src/main/preload.ts", "cjs", "preload.cjs", false);
+// The window's icon (the taskbar's, on Windows and Linux), beside the main process in the package.
+copyFileSync(join(root, "build", "icon.png"), join(root, "out", "main", "icon.png"));
 console.log("Main and preload built.");

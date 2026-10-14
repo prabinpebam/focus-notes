@@ -15,7 +15,8 @@
     "gallery:build": "node scripts/entry.mjs && vite build --config vite.gallery.config.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test:e2e": "playwright test",
-    "dist": "pnpm run build && electron-builder --publish never"
+    "dist": "pnpm run build && electron-builder --publish never",
+    "icon": "node scripts/icon.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
@@ -50,6 +51,7 @@
       { "from": "../../LICENSE", "to": "LICENSE.txt" }
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         "nsis"
       ]
@@ -72,7 +74,8 @@
         "AppImage",
         "deb"
       ],
-      "category": "Office"
+      "category": "Office",
+      "icon": "build/icon.png"
     },
     "publish": null,
     "executableName": "focus-notes"

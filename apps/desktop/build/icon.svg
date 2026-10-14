@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <title>Focus Notes</title>
+  <defs><filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter></defs>
+  <rect x="10" y="10" width="236" height="236" rx="54" fill="#fbfaf7" stroke="#e9e6de" stroke-width="4"/>
+  <circle cx="128" cy="134" r="86" fill="#1f1d1a" fill-opacity="0.12" filter="url(#soft)"/>
+  <circle cx="128" cy="128" r="82" fill="#ffffff" fill-opacity="0.92" stroke="#e9e6de" stroke-width="4"/>
+  <circle cx="128" cy="128" r="32" fill="#e5322d"/>
+</svg>
