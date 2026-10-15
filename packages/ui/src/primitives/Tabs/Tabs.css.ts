@@ -11,7 +11,9 @@ export const root = {
   horizontal: style([rootBase, { flexDirection: "column" }]),
   // Vertical: the list on the inline start and the panel beside it. Where there's no room for both,
   // the tabs lay out across, over the panel, as horizontal ones (Tabs.tsx).
-  vertical: style([rootBase, { flexDirection: "row", alignItems: "flex-start" }]),
+  // Its list and panel run the full height of what holds them (a dialog's body), so the list's
+  // divider reaches from the top of the body to the bottom (D-123).
+  vertical: style([rootBase, { flexDirection: "row", alignItems: "stretch", flexGrow: 1 }]),
 };
 const listBase = style({ display: "flex", gap: t.gap, borderStyle: "solid", borderWidth: 0, borderColor: t.border });
 export const list = {

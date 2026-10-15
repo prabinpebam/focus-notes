@@ -34,7 +34,6 @@ export const SURFACE_BASELINES: Record<string, Baseline> = {
   "cheat sheet": b("cheat-sheet", "WP-1.8", "Keyboard shortcuts"),
   "cheat sheet scrolled": b("cheat-sheet-scrolled", "WP-1.8", "Keyboard shortcuts, scrolled"),
   "files": b("files-panel", "WP-2.4", "Files panel"),
-  "files new menu": b("files-new-menu", "WP-2.4", "Files panel, New menu"),
   "files selection": b("files-selection", "WP-2.4", "Files panel, two selected"),
   "move to": b("move-to", "WP-2.4", "Move to dialog"),
   "delete confirmation": b("delete-confirmation", "WP-2.4", "Delete confirmation"),

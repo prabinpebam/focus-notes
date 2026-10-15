@@ -7,7 +7,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { quit } from "./helpers.ts";
 import { hoverTooltips, settled, visualProblems } from "./visual-quality.ts";
-import { conflictFlow, firstRunFlow, type FlowHooks } from "./flows.ts";
+import { conflictFlow, firstRunFlow, workspaceFlow, type FlowHooks } from "./flows.ts";
 
 const SIZES = [{ name: "default", size: undefined }, { name: "small", size: { width: 480, height: 360 } }] as const;
 const shot = (name: string) => `../../test-results/screens/vq-${name}.png`;
@@ -31,6 +31,18 @@ for (const { name: sizeName, size } of SIZES) {
       const l = await firstRunFlow(mode, size, checks(`${sizeName}-${mode}`, problems));
       expect(problems).toEqual([]);
       await quit(l);
+    });
+
+    test(`D-111, D-123: the first run's Your workspace step keeps the dialog inset, scrolls inside, and lists its choices in rows, ${mode}, ${sizeName} window`, async () => {
+      test.setTimeout(120_000);
+      const problems: string[] = [];
+      const { l, w } = await workspaceFlow(mode, size, checks(`${sizeName}-${mode}`, problems));
+      try {
+        expect(problems).toEqual([]);
+      } finally {
+        await quit(l);
+        w.server.close();
+      }
     });
 
     test(`D-111: the conflict resolver and Recently deleted pass the visual quality checklist, ${mode}, ${sizeName} window`, async () => {

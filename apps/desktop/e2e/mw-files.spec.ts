@@ -95,7 +95,7 @@ test("FIL-01, FIL-02: the panel opens by keyboard and from the toolbar; notes an
   await page.keyboard.type("id");
   await expect(row("Ideas")).toBeFocused();
 
-  // A new folder is named in place (Mod+Shift+N, or New → New folder), nested in the focused folder.
+  // A new folder is named in place (Mod+Shift+N, or the New folder button), nested in the focused folder.
   await page.keyboard.press("Home");
   await page.keyboard.press(`${mod}+Shift+N`);
   const name = tree.getByRole("textbox", { name: "Folder name" });
@@ -105,8 +105,18 @@ test("FIL-01, FIL-02: the panel opens by keyboard and from the toolbar; notes an
   await page.keyboard.press("Enter");
   await expect(row("Projects")).toBeFocused();
   await expect.poll(() => existsSync(join(dirs.docs, "Projects"))).toBe(true);
-  await files.getByRole("button", { name: "New" }).click();
-  await page.getByRole("menuitem", { name: /^New folder/ }).click();
+  // The header's New note and New folder buttons (D-123): named, 24 px or larger, reachable by
+  // keyboard, with the shortcut in the tooltip.
+  for (const label of ["New note", "New folder"]) {
+    const button = files.getByRole("button", { name: label, exact: true });
+    const box = (await button.boundingBox())!;
+    expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(24);
+    await button.focus();
+    await expect(button).toBeFocused();
+  }
+  await files.getByRole("button", { name: "New folder", exact: true }).hover();
+  await expect(page.getByRole("tooltip")).toContainText(/New folder.*Shift\+N/i);
+  await files.getByRole("button", { name: "New folder", exact: true }).click();
   await expect(name).toBeFocused();
   await page.keyboard.type("Drafts");
   await page.keyboard.press("Enter");

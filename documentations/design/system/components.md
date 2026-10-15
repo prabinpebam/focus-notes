@@ -64,7 +64,7 @@ Each component declares a contract in `packages/ui`. The build turns contracts i
 | **Select** | `label`, `options`, `value` (bindable) | Select (list box popup) | Settings |
 | **Combobox** | `label`, `options` (bound, filtered by a view model), `value` | Combobox | Move to, audience names |
 | **Slider** | `label`, `value`, `min`, `max`, `step`, `format`. As built (D-108): `value` bindable, `valueText` shown beside the label ("60 characters"), `format` number or percent for what's spoken; changes apply as it moves; `cmp.slider.*` | Slider | Reading width, line spacing, focus dim |
-| **SegmentedControl** | `label` (visible), `options` (2 to 5, from a view model), `value` (bindable). Arrow keys move and select | Radio group, drawn as segments | Appearance, find options, cheat sheet filters |
+| **SegmentedControl** | `label` (visible), `options` (2 to 5, from a view model), `value` (bindable), `orientation` (`horizontal`, or `vertical`: one full-width row per choice, for labels that don't fit side by side, D-123). Arrow keys move and select | Radio group, drawn as segments | Appearance, find options, cheat sheet filters |
 | **Badge** | `tone`, `value` | Text | Visibility, agent changes, status |
 | **Tag** | `value`, `removable` | Button, when removable | Audiences, filters |
 | **Swatch** | `color` (a token or a theme's value), `selected`, `label` | Radio or button | Theme gallery, color editor. As built (D-108), not a component of its own: ThemeGallery draws its tiles' samples and ColorField its swatch |

@@ -662,7 +662,9 @@ export function registerFiles(ctx: Ctx) {
       ...["expanded", "hasChildren", "selected", "current", "pending", "readOnly", "draggable", "droppable", "editing"].map((k) => [k, { type: "boolean" as const }]),
     ]),
   };
-  const CLOSED = { open: false, focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newText: "", newMenu: [], canMakePublic: false, canMakePrivate: false };
+  const NO_ITEM = { id: "", label: "", shortcut: "", disabled: false };
+  const CLOSED = { open: false, focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
+  const newNoteShortcut = () => (ctx.describeItem("note.new").shortcut as string | undefined) ?? "";
   viewModels.register({
     id: "vm.files",
     schema: {
@@ -671,9 +673,9 @@ export function registerFiles(ctx: Ctx) {
         open: { type: "boolean" }, focusRequest: { type: "number" }, items: { type: "array", items: TREE_ITEM }, focusId: { type: "string" },
         editValue: { type: "string" }, editError: { type: "string" }, editLabel: { type: "string" },
         filter: { type: "string" }, empty: { type: "boolean" }, emptyText: { type: "string" },
-        selectedCount: { type: "number" }, multi: { type: "boolean" }, selectionText: { type: "string" }, newText: { type: "string" },
+        selectedCount: { type: "number" }, multi: { type: "boolean" }, selectionText: { type: "string" },
         canMakePublic: { type: "boolean" }, canMakePrivate: { type: "boolean" },
-        newMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
+        newNote: ctx.itemSchema, newFolder: ctx.itemSchema,
       },
     },
     setters: { filter: "files.setFilter", editValue: "files.setEditValue" },
@@ -714,8 +716,10 @@ export function registerFiles(ctx: Ctx) {
         editLabel: catalog.format(f.edit?.kind === "newFolder" ? "files.folderName" : rows.find((r) => r.id === f.edit?.id)?.kind === "folder" ? "files.folderName" : "files.title"),
         filter: f.filter, empty: notes === 0,
         emptyText: f.filter.trim() ? catalog.format("files.noMatch", { query: f.filter.trim() }) : catalog.format("files.empty"),
-        selectedCount: count, multi: count > 1, selectionText: catalog.format("files.selected", { count }), newText: catalog.format("files.new"),
-        newMenu: [{ id: "new", label: "", items: [ctx.describeItem("files.newNote"), ctx.describeItem("files.newFolder")] }],
+        selectedCount: count, multi: count > 1, selectionText: catalog.format("files.selected", { count }),
+        // The header's two buttons (D-123): New note shows the app's new-note shortcut it runs.
+        newNote: { shortcut: "", ...ctx.describeItem("files.newNote"), ...(newNoteShortcut() ? { shortcut: newNoteShortcut() } : {}) },
+        newFolder: { shortcut: "", ...ctx.describeItem("files.newFolder") },
         canMakePublic: canMake(s, "public"), canMakePrivate: canMake(s, "private"),
       };
     },
