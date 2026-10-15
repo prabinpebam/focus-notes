@@ -86,6 +86,7 @@ The views people open now and then: Settings, Share and visibility, the keyboard
 - **Private share reader states:** *Opening…* (a short indicator while the browser decrypts), then the note. Anything that doesn't open, an expired, withdrawn, or mistyped link or passcode, gets one message with no technical detail and no hints about the note's existence ([Sharing and visibility → The share reader](sharing.md#the-share-reader), D-125).
 - **Accessibility:** one H1, landmarks, a skip link, and the same contrast guarantees as the built-in themes.
 - **As built (WP-5.1, D-114):** the view document `reader.view.json` (ReaderPage, NoteContent), rendered once by the publisher to static HTML with no script: Paper or Ink by `prefers-color-scheme`, the title, "Updated ⟨date⟩", the note, and the footer. The light/dark toggle isn't built yet, because the page has no script.
+- **Index of public notes (D-139):** `/n/` lists every public note as a row, newest first: its title linking to its page, "Updated ⟨date⟩" in muted text, and its excerpt when the note's front matter gives one (`excerpt:`). The same reader layout, type, themes, and footer, from the view document `index.view.json`; it's published only when there's at least one public note.
 
 **Design decisions**
 
