@@ -1,8 +1,8 @@
 /**
  * The app-built window on Windows and Linux (D-14, DSK-01, DSK-03, DSK-08). Electron's transparent
  * windows lose native resizing, snapping, maximize, and the shadow, so this does them: it moves and
- * resizes the window as the renderer's window frame reports the pointer, previews and applies snap
- * zones, maximizes and restores itself, runs the system menu's keyboard Move and Size, and lets
+ * resizes the window as the system's cursor goes once the window frame reports a drag's start (D-151),
+ * previews and applies snap zones, maximizes and restores itself, runs the system menu's keyboard Move and Size, and lets
  * clicks in the shadow margin through to whatever is behind, as the page reports the pointer near
  * the edges. The geometry is core's window-geometry.
  */
