@@ -91,6 +91,28 @@ describe("opening the panel (IA-VIEW-FILES)", () => {
     expect(vm(app).open).toBe(false);
     expect(app.store.state.note.path).toBe("b.md");
   });
+  it("DEF-20: opened before the workspace is listed, it reveals the note once listed, without asking for focus a second time", async () => {
+    const f = setup({ notes: { "journal/day.md": "# Day one\n" }, open: "journal/day.md" });
+    const scan = f.bridge.workspace!.scan;
+    let release!: () => void;
+    const listed = new Promise<void>((r) => (release = r));
+    f.bridge.workspace!.scan = async () => {
+      await listed;
+      return scan();
+    };
+    const app = createApp(f.bridge, messages);
+    const starting = app.start();
+    await settle();
+    await app.commands.run("files.open");
+    const asked = app.store.state.ui.files.focusRequest;
+    // Meanwhile the person has moved on (Tab to Recently deleted): the listing mustn't pull focus back.
+    release();
+    await starting;
+    await settle();
+    expect(vm(app).focusId).toBe("journal/day.md");
+    expect(vm(app).items.find((i) => i.id === "journal/day.md")).toMatchObject({ selected: true });
+    expect(app.store.state.ui.files.focusRequest).toBe(asked);
+  });
 });
 
 describe("creating, renaming, and deleting (FIL-01, FIL-02)", () => {

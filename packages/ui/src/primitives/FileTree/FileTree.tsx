@@ -58,9 +58,25 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
     if (editing) return;
     if (ref.current?.contains(document.activeElement)) focusRow(focused);
   }, [focused, Boolean(editing)]);
+  /**
+   * A request made while the tree had no rows yet (opened before the workspace was listed): the
+   * element focus was on then. The rows take focus once they arrive only if it's still there, never
+   * from a control the person moved to meanwhile (DEF-20).
+   */
+  const waiting = useRef<Element | null | undefined>(undefined);
   useEffect(() => {
-    if (focusRequest && !editing) focusRow(focused);
+    if (!focusRequest || editing) return;
+    if (rowEl(focused)) {
+      waiting.current = undefined;
+      focusRow(focused);
+    } else waiting.current = document.activeElement;
   }, [focusRequest]);
+  useEffect(() => {
+    if (waiting.current === undefined || editing || !rowEl(focused)) return;
+    const was = waiting.current;
+    waiting.current = undefined;
+    if (document.activeElement === was || document.activeElement === document.body) focusRow(focused);
+  }, [items]);
   // The name field takes focus with its text selected (Files → Renaming).
   useEffect(() => {
     if (!editing) return;
