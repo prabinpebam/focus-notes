@@ -192,6 +192,15 @@ export interface WorkspaceResult {
   privateNotes?: boolean;
 }
 
+/** A long first-run call's progress (PRF-13): `done` of `total`, a part, and a percentage when Git reports one. */
+export interface FirstRunProgress {
+  op: "findNotes" | "clone";
+  done?: number;
+  total?: number;
+  part?: "download" | "private" | "link";
+  percent?: number;
+}
+
 /**
  * The first run through the preload bridge (desktop only). Intent-level: never a Git command or a
  * token. A pasted token goes to the shell once, which checks it and gives it to Git's helper.
@@ -226,6 +235,11 @@ export interface FirstRunBridge {
   /** Applies a name and email to all repositories, or only to the notes workspace. False if refused. */
   setIdentity(identity: { name: string; email: string }, scope: IdentityScope): Promise<boolean>;
   repositories(): Promise<RepoChoice[]>;
+  /**
+   * Progress of a long call, streamed while it runs (PRF-13, D-149): finding the notes (repositories
+   * checked of those to check), and downloading a workspace (its part, and Git's percentage).
+   */
+  onProgress?(listener: (p: FirstRunProgress) => void): () => void;
   /** The folder a new or cloned workspace goes in: Documents/Focus Notes unless another was chosen. */
   folder(): Promise<string>;
   /** Chooses that folder with the system's dialog, in the main process (D-98). */
