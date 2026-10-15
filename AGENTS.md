@@ -30,6 +30,8 @@ The planned code layout (a pnpm monorepo) is in [`documentations/plan/distributi
      - It goes through the task tracker, and long work streams its steps and progress. A single unnamed `busy` is a defect.
      - Never call `webContents.reload()` to change state, and never unmount a view before its replacement is ready: no frame may be blank, white or unstyled (DSK-09).
      - The window stays draggable and takes the mouse in every state.
+     - Direct manipulation is attached to the hand: a dragged window follows the pointer within a frame, with no queued moves (PRF-14, D-151).
+     - Controls answer on pointer-down in the next frame, and the main process never blocks.
 7. **Licenses.** The app is MIT. Only permissive dependencies are allowed (see the licensing policy in `plan/decisions.md`).
 8. **Package sources.** Use the package sources and registries your environment requires. Never commit secrets or tokens.
 

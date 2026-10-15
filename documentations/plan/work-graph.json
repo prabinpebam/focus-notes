@@ -1396,6 +1396,35 @@
       "status": "planned"
     },
     {
+      "id": "WP-5.9",
+      "stage": "M5",
+      "title": "Snappy window and controls",
+      "summary": "The window attached to the pointer (main-process drag loop or the native move, measured), no queued moves, no repaint on move, resizing that keeps up, a main process that never stalls, and every control answering on pointer-down in the next frame.",
+      "requirements": [
+        "PRF-14"
+      ],
+      "dependsOn": [
+        "WP-2.1"
+      ],
+      "touches": [
+        "apps/desktop",
+        "packages/ui",
+        "tools/bench"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "architecture/perceived-performance.md",
+        "experience/desktop-app.html",
+        "architecture/performance-and-quality.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
       "id": "WP-6.1",
       "stage": "MW",
       "title": "Web app on your own Pages, local first",
