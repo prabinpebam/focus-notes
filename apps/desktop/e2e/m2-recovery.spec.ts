@@ -7,7 +7,7 @@
 import { test, expect } from "./fixtures.ts";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { launch, PROMPTLY, quit, tempDirs, type Launched } from "./helpers.ts";
 import { crash, journalAhead, LOSS_BUDGET_MS, START, typedPart, typeTimed } from "./recovery.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -86,7 +86,8 @@ test("QLT-03: a clean quit saves and leaves no journal; Close without saving isn
   await again.page.keyboard.type("throw this away");
   const { chmodSync } = await import("node:fs");
   chmodSync(note, 0o444);
-  await again.page.waitForTimeout(1200); // the journal has it
+  // The journal has it (the note can't take it), so closing without saving has something to drop.
+  await expect.poll(() => journalAhead(dirs.userData, note), PROMPTLY).toBe(true);
   await again.app.evaluate(({ dialog }) => {
     dialog.showMessageBox = (async () => ({ response: 1, checkboxChecked: false })) as typeof dialog.showMessageBox;
   });
