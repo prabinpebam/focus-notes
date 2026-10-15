@@ -60,7 +60,7 @@ function main(argv) {
   if (from && existsSync(from)) for (const f of readdirSync(from)) if (c.match.test(f)) copyFileSync(join(from, f), join(out, f));
   const commit = spawnSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).stdout.trim();
   const files = readdirSync(out).filter((f) => f.endsWith(".png")).sort();
-  writeFileSync(join(out, "capture.json"), JSON.stringify({ catalog: name, spec: c.spec, commit, sizes: p.sizes, args: p.args, exitCode: run.status, images: files.length, files }, null, 2));
+  writeFileSync(join(out, "capture.json"), JSON.stringify({ catalog: name, spec: c.spec, commit, sizes: p.sizes, args: p.args, ...(c.onlyEnv && p.env[c.onlyEnv] ? { only: p.env[c.onlyEnv] } : {}), exitCode: run.status, images: files.length, files }, null, 2));
   console.log(`${files.length} images in ${p.out} (journey exit code ${run.status})`);
   return run.status ?? 1;
 }

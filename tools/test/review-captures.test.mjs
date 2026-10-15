@@ -9,7 +9,7 @@ import { join, resolve } from "node:path";
 import yaml from "js-yaml";
 import { artifactName, CATALOGS, catalog, outDir } from "../review/catalogs.mjs";
 import { plan } from "../review/capture.mjs";
-import { downloadArgs, labelFor, listArgs, pickRun, reviewRoot, WORKFLOW } from "../review/fetch-captures.mjs";
+import { artifactsArgs, downloadArgs, finishedRuns, labelFor, listArgs, reviewRoot, WORKFLOW } from "../review/fetch-captures.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
 const text = readFileSync(join(root, ".github", "workflows", WORKFLOW), "utf8");
@@ -102,8 +102,9 @@ describe("fetch-captures", () => {
       { databaseId: 2, headSha: "b".repeat(40), status: "completed", conclusion: "cancelled" },
       { databaseId: 1, headSha: "a".repeat(40), status: "completed", conclusion: "failure" },
     ];
-    expect(pickRun(runs).databaseId).toBe(1);
-    expect(() => pickRun([])).toThrow(/gh workflow run review-captures.yml/);
+    expect(finishedRuns(runs).map((r) => r.databaseId)).toEqual([1]);
+    expect(() => finishedRuns([])).toThrow(/gh workflow run review-captures.yml/);
+    expect(artifactsArgs(7)).toEqual(["api", "repos/{owner}/{repo}/actions/runs/7/artifacts", "--jq", ".artifacts[].name"]);
     expect(labelFor("vq/fre polish", "0123456789abcdef")).toBe("vq-fre-polish-0123456");
     expect(reviewRoot({}, resolve("/", "side-projects", "focus-notes"))).toBe(resolve("/", "side-projects", "fre-review"));
     expect(reviewRoot({ FOCUS_NOTES_REVIEW_ROOT: "D:\\elsewhere" })).toBe("D:\\elsewhere");

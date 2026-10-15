@@ -8,7 +8,7 @@
  *   node tools/review/fetch-captures.mjs [--branch vq-fre-polish] [--catalog fre-catalog] [--label polish-2] [--run 123]
  *
  * The branch defaults to the current one, the catalogue to fre-catalog, the run to the branch's
- * latest finished run of the workflow, and the label to `<branch>-<commit>`. Needs the GitHub CLI
+ * latest finished run that captured that catalogue, and the label to `<branch>-<commit>`. Needs the GitHub CLI
  * (`gh`), signed in. Never overwrites a folder that has files in it.
  */
 import { execFileSync } from "node:child_process";
@@ -26,16 +26,18 @@ export const reviewRoot = (env = process.env, repo = root) => env.FOCUS_NOTES_RE
 /** A folder name from a branch and commit: letters, digits, dots, dashes and underscores. */
 export const labelFor = (branch, sha) => `${branch}-${sha.slice(0, 7)}`.replace(/[^\w.-]+/g, "-");
 
-/** The latest finished run in `gh run list --json databaseId,headSha,status,conclusion` output. */
-export function pickRun(runs) {
+/** The finished runs in `gh run list --json databaseId,headSha,status,conclusion` output, latest first. */
+export function finishedRuns(runs) {
   const done = runs.filter((r) => r.status === "completed" && r.conclusion !== "cancelled" && r.conclusion !== "skipped");
   if (!done.length) throw new Error("No finished run of the Review captures workflow on this branch yet: start one with gh workflow run review-captures.yml --ref <branch>.");
-  return done[0];
+  return done;
 }
 
 /** The `gh` arguments: list the branch's runs, and download one run's artifact into a folder. */
 export const listArgs = (branch) => ["run", "list", "--workflow", WORKFLOW, "--branch", branch, "--limit", "20", "--json", "databaseId,headSha,status,conclusion,createdAt"];
 export const downloadArgs = (run, name, dest) => ["run", "download", String(run), "--name", artifactName(name), "--dir", dest];
+/** The names of a run's artifacts, one per line. */
+export const artifactsArgs = (run) => ["api", `repos/{owner}/{repo}/actions/runs/${run}/artifacts`, "--jq", ".artifacts[].name"];
 
 function main(argv) {
   const opt = (flag) => {
@@ -50,7 +52,9 @@ function main(argv) {
   let sha = "";
   let conclusion = "";
   if (!run) {
-    const r = pickRun(JSON.parse(gh(listArgs(branch))));
+    // The latest finished run that captured this catalogue: a branch's runs may be of others.
+    const r = finishedRuns(JSON.parse(gh(listArgs(branch)))).find((x) => gh(artifactsArgs(x.databaseId)).split(/\r?\n/).includes(artifactName(name)));
+    if (!r) throw new Error(`No finished run on ${branch} captured ${name}: start one with gh workflow run review-captures.yml --ref ${branch} -f catalog=${name}.`);
     ({ databaseId: run, headSha: sha, conclusion } = r);
   }
   const label = opt("--label") ?? labelFor(branch, sha || String(run));
