@@ -4,9 +4,9 @@
  * measures run in `pnpm bench` against the budgets file.
  */
 import { test, expect, type Page } from "./fixtures.ts";
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { caret, launch, quit, tempDirs } from "./helpers.ts";
+import { caret, launch, onDisk, quit, tempDirs } from "./helpers.ts";
 import { tenThousandWords } from "../../../tools/bench/fixtures.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -79,7 +79,8 @@ test("PRF-03: typing reaches the disk within 1 s of the last keystroke, and savi
   // A burst, then nothing: the last keystroke's text is on disk within a second.
   await page.keyboard.type(" the end of a burst", { delay: 25 });
   const lastKey = await page.evaluate(() => (window as unknown as { __lastKey: number }).__lastKey);
-  await expect.poll(() => readFileSync(note, "utf8"), { timeout: 3000 }).toContain("the end of a burst");
+  // The wait is generous (helpers.ts `onDisk`); the budget is the measured delay, asserted below.
+  await onDisk(note, "the end of a burst");
   const saved = await page.evaluate((after) => performance.getEntriesByName("fn:note.saved", "mark").map((m) => m.startTime).find((t) => t > after), lastKey);
   expect(saved).toBeDefined();
   const delay = saved! - lastKey;

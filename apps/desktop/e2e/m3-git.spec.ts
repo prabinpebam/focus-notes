@@ -5,9 +5,9 @@
  * no typing does too (shortened here); and a push that fails shows the problem, nothing else.
  */
 import { test, expect } from "./fixtures.ts";
-import { readFileSync, renameSync } from "node:fs";
+import { renameSync } from "node:fs";
 import { join } from "node:path";
-import { caret, launch, quit } from "./helpers.ts";
+import { caret, launch, onDisk, quit } from "./helpers.ts";
 import { git, instance } from "./instance.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -21,13 +21,11 @@ const remoteText = (remote: string) => {
 const commits = (repo: string, ref = "main") => Number(git(repo, "rev-list", "--count", ref));
 const welcome = (docs: string) => join(docs, "private", "notes", "welcome.md");
 /**
- * Waits for the save to land on disk, polling often so it's seen as soon as it lands. The timeout is
- * generous because a loaded runner can be twice as slow; the save's latency budget is measured by
+ * Waits for the save to land on disk (helpers.ts `onDisk`); the save's latency budget is measured by
  * the PRF-03 journey, not here. The idle timer starts only once the write lands (Cadence.edited after
  * the write), so the commit can't come sooner than the idle time after this returns.
  */
-const onDisk = (docs: string, text: string) =>
-  expect.poll(() => readFileSync(welcome(docs), "utf8"), { timeout: 10_000, intervals: [50] }).toContain(text);
+const saved = (docs: string, text: string) => onDisk(welcome(docs), text);
 const pointer = (notesRemote: string) => git(notesRemote, "ls-tree", "main", "private").split(/\s+/)[2];
 
 async function typeAtEnd(page: import("@playwright/test").Page, text: string) {
@@ -58,7 +56,7 @@ test("EDT-11: quitting commits and pushes", async () => {
   const { dirs, privateRemote } = instance();
   const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
   await typeAtEnd(l.page, " Written before quitting.");
-  await onDisk(dirs.docs, "Written before quitting.");
+  await saved(dirs.docs, "Written before quitting.");
   expect(commits(join(dirs.docs, "private"), "HEAD")).toBe(1);
   expect(commits(privateRemote)).toBe(1);
   await quit(l);
@@ -71,7 +69,7 @@ test("EDT-11: a pause in typing commits and pushes on its own (60 s, shortened f
   const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "5000" });
   await typeAtEnd(l.page, " Then a pause.");
   // Written to disk, but not committed yet: neither in the workspace nor on the remote.
-  await onDisk(dirs.docs, "Then a pause.");
+  await saved(dirs.docs, "Then a pause.");
   expect(commits(join(dirs.docs, "private"), "HEAD")).toBe(1);
   expect(commits(privateRemote)).toBe(1);
   // Then the pause commits and pushes on its own.
