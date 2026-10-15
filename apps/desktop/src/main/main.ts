@@ -4,7 +4,7 @@
  * renderer; Git talks to the workspace's remotes (WP-3.3), and its own only requests are setup's
  * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, session, shell, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -38,6 +38,8 @@ import type { ConflictChoice, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
 import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
+import { CrashRecovery, coverBounds } from "./window/crash-cover.ts";
+import { themeCanvas, WINDOW_METRICS } from "@focus-notes/core/window-geometry";
 import { AppMenuBar } from "./window/menu-bar.ts";
 import { SnapshotCache } from "@focus-notes/core/snapshot";
 import { textHash } from "@focus-notes/core/journal";
@@ -499,6 +501,14 @@ async function readParsed(path: string): Promise<ParsedNote> {
 let journal: RecoveryJournal | undefined;
 /** What this launch restored from the journal, told to the renderer once. */
 let restored: RestoredNote[] = [];
+/** Puts the journal's unsaved text back into its notes (QLT-03): at launch, and after a renderer crash. */
+const restoreUnsaved = (j: RecoveryJournal) => restoreJournal(j, {
+  read: (p) => readFile(p, "utf8").catch(() => undefined),
+  write: async (p, text) => {
+    await atomicWrite(p, text);
+    withGit((g) => g.written(p));
+  },
+});
 
 /** The most notes the search index reads in one call (`notes:read`). */
 const NOTES_PER_READ = 64;
@@ -1211,8 +1221,8 @@ function hardenSession(): void {
   session.defaultSession.setPermissionCheckHandler(() => false);
 }
 
-/** Paper's and Ink's canvas (`color.canvas`): the native window's background until the page says its theme's. */
-const CANVAS = { light: "#fbfaf7", dark: "#1a1a1c" } as const;
+/** Paper's and Ink's canvas (`color.canvas`): the native window's background for a theme it doesn't know. */
+const CANVAS = { light: themeCanvas("paper", "light"), dark: themeCanvas("ink", "dark") } as const;
 /**
  * The theme the page's first frame is drawn in (DSK-09, D-148), resolved before the page loads from
  * this device's appearance (state.json) and the system's scheme, and passed in the page's address so
@@ -1239,7 +1249,7 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
     minHeight: 320,
     show: false,
     title: "Focus Notes",
-    backgroundColor: CANVAS[boot.scheme],
+    backgroundColor: themeCanvas(boot.theme, boot.scheme),
     // The app icon (build/icon.svg) for the window and the taskbar; macOS takes the bundle's.
     ...(platform === "macos" ? {} : { icon: join(import.meta.dirname, "icon.png") }),
     // Where it was last time, and how it's drawn on this platform.
@@ -1286,7 +1296,50 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
   // End-to-end tests turn the warm-up after start off, so their timing stays the same (PRF-10).
   // GPU or software compositing (D-121): in software the note's edges fade without the blur.
   const gpu = compositing();
-  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: boot.theme, scheme: boot.scheme, ...frame.query(), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
+  // The theme is read again each time, so a page loaded after a crash paints the theme showing now.
+  const load = () => {
+    const b = bootTheme();
+    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
+  };
+  void load();
+  // The theme's canvas now: the window's cover after a renderer crash is painted in it.
+  let canvasNow = themeCanvas(boot.theme, boot.scheme);
+  // After a renderer crash, the page is loaded again behind a cover in that canvas (DSK-09, D-148):
+  // the window never shows white or see-through while it paints. allow-reload: renderer crash.
+  let cover: View | undefined;
+  const recovery = new CrashRecovery({
+    canvas: () => canvasNow,
+    cover: {
+      show: (color) => {
+        if (win.isDestroyed()) return;
+        const v = new View();
+        v.setBackgroundColor(color);
+        const [width, height] = win.getContentSize();
+        const margin = frame.margin();
+        v.setBounds(coverBounds({ width: width!, height: height! }, margin));
+        if (margin) v.setBorderRadius(WINDOW_METRICS.radius);
+        win.contentView.addChildView(v);
+        cover = v;
+      },
+      hide: () => {
+        if (cover && !win.isDestroyed()) win.contentView.removeChildView(cover);
+        cover = undefined;
+      },
+    },
+    restore: async () => {
+      if (journal) restored = [...restored, ...(await restoreUnsaved(journal))];
+    },
+    load: () => void load().catch(() => {}),
+    onFirstFrame: (f) => {
+      const on = (e: IpcMainEvent) => {
+        if (e.sender === win.webContents && fromApp(e)) f();
+      };
+      ipcMain.on("window:firstFrame", on);
+      return () => ipcMain.removeListener("window:firstFrame", on);
+    },
+    log: logLine,
+  });
+  win.webContents.on("render-process-gone", (_e, d) => void recovery.gone(d.reason));
   const offCompositing = gpu.onChange((c) => win.webContents.send("compositing:changed", c));
   // Again once loaded: a change while the page loaded would be missed (the app ignores the same value).
   win.webContents.on("did-finish-load", () => win.webContents.send("compositing:changed", gpu.current()));
@@ -1342,6 +1395,7 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
   ipcMain.on("window:scheme", (e, scheme: unknown, canvas: unknown, accent: unknown) => {
     if (!fromApp(e) || (scheme !== "light" && scheme !== "dark")) return;
     const color = typeof canvas === "string" && /^#[0-9a-f]{6}$/i.test(canvas) ? canvas : CANVAS[scheme];
+    canvasNow = color;
     // The transparent window stays transparent: the page draws the window's canvas inside its shadow margin.
     win.setBackgroundColor(frame.kind === "custom" ? "#00000000" : color);
     frame.setAccent(accent);
@@ -1435,13 +1489,7 @@ app.whenReady().then(async () => {
     },
     log: logLine,
   });
-  if (journal) restored = await restoreJournal(journal, {
-    read: (p) => readFile(p, "utf8").catch(() => undefined),
-    write: async (p, text) => {
-      await atomicWrite(p, text);
-      withGit((g) => g.written(p));
-    },
-  });
+  if (journal) restored = await restoreUnsaved(journal);
   if (restored.length) process.stdout.write(`[focus-notes] journal: restored ${restored.length}\n`);
   mainWindow = createWindow(windowFrame);
   watcher = watchWorkspace(() => mainWindow);

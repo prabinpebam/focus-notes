@@ -4,10 +4,20 @@
  * Pure functions on device-independent pixels (DIP), as Electron reports screens and windows. The
  * desktop's main process applies them; nothing here touches a window.
  */
-import { windowMetrics } from "@focus-notes/tokens";
+import { themeValues, windowMetrics } from "@focus-notes/tokens";
 
 /** The `window.*` tokens, resolved: the shadow margin, the handles, the minimum size, and the Snap Layouts delay. */
 export const WINDOW_METRICS = windowMetrics;
+const HEX6 = /^#[0-9a-f]{6}$/i;
+/**
+ * The native window's background before the page paints (DSK-09, D-148): the chosen built-in theme's
+ * own canvas (`color.canvas`), or Paper's or Ink's for a theme it doesn't know.
+ */
+export function themeCanvas(theme: string, scheme: "light" | "dark"): string {
+  const own = themeValues[theme]?.["color.canvas"];
+  if (own && HEX6.test(own)) return own;
+  return themeValues[scheme === "dark" ? "ink" : "paper"]!["color.canvas"]!;
+}
 export interface Point { x: number; y: number }
 export interface Size { width: number; height: number }
 export interface Rect { x: number; y: number; width: number; height: number }

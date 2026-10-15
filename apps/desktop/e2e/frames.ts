@@ -94,7 +94,7 @@ export function themePalettes(): Record<"light" | "dark", { all: Rgb[]; large: R
 }
 
 /** Records every frame the page draws until `stop`; `mark` names the transition the next frames belong to. */
-export async function recordFrames(page: Page): Promise<{ mark: (label: string) => void; stop: () => Promise<Frame[]>; cdp: CDPSession }> {
+export async function recordFrames(page: Page): Promise<{ mark: (label: string) => void; stop: () => Promise<Frame[]>; cdp: CDPSession; restart: () => Promise<void> }> {
   const cdp = await page.context().newCDPSession(page);
   const frames: Frame[] = [];
   let label = "start";
@@ -106,10 +106,83 @@ export async function recordFrames(page: Page): Promise<{ mark: (label: string) 
   return {
     cdp,
     mark: (l) => void (label = l),
+    /** Starts the screencast again, as a page loaded after a renderer crash needs. */
+    restart: async () => {
+      await cdp.send("Page.startScreencast", { format: "png", everyNthFrame: 1 });
+    },
     stop: async () => {
       await cdp.send("Page.stopScreencast").catch(() => {});
       return frames;
     },
+  };
+}
+
+export interface Shift { label: string; value: number; at: number; sources: string[] }
+/**
+ * Watches the page's layout shifts (PerformanceObserver 'layout-shift', from the start of the page),
+ * each named by the transition it happened in. `shifts` returns those after the window's first frame
+ * (`fn:window.firstFrame`) that no input caused and that move more than `min` of the page (DSK-09).
+ */
+export async function watchShifts(page: Page): Promise<{ mark: (label: string) => Promise<void>; shifts: (min?: number) => Promise<Shift[]> }> {
+  await page.evaluate(() => {
+    const g = globalThis as unknown as { __fnShifts?: { label: string; list: Shift[] } };
+    if (g.__fnShifts) return;
+    const state = { label: "launch", list: [] as Shift[] };
+    g.__fnShifts = state;
+    const describe = (n: Node | null | undefined, from?: DOMRectReadOnly, to?: DOMRectReadOnly) => {
+      const move = from && to ? ` ${Math.round(from.x)},${Math.round(from.y)} ${Math.round(from.width)}x${Math.round(from.height)} → ${Math.round(to.x)},${Math.round(to.y)} ${Math.round(to.width)}x${Math.round(to.height)}` : "";
+      if (!n || !(n instanceof Element)) return `${n?.nodeName ?? "?"}${move}`;
+      const one = (e: Element) => {
+        const name = e.getAttribute("aria-label") ?? e.getAttribute("role") ?? "";
+        const data = [...e.attributes].filter((a) => a.name.startsWith("data-")).map((a) => a.name.slice(5)).join(",");
+        return `${e.tagName.toLowerCase()}${e.id ? `#${e.id}` : ""}${name ? `[${name}]` : ""}${data ? `{${data}}` : ""}`;
+      };
+      const path: string[] = [];
+      for (let e: Element | null = n; e && path.length < 4; e = e.parentElement) path.push(one(e));
+      return `${path.join(" < ")} "${(n.textContent ?? "").trim().slice(0, 40)}"${move}`;
+    };
+    new PerformanceObserver((l) => {
+      for (const e of l.getEntries() as (PerformanceEntry & { value: number; hadRecentInput: boolean; sources?: { node?: Node; previousRect: DOMRectReadOnly; currentRect: DOMRectReadOnly }[] })[]) {
+        if (e.hadRecentInput) continue;
+        state.list.push({ label: state.label, value: e.value, at: e.startTime, sources: (e.sources ?? []).map((s) => describe(s.node, s.previousRect, s.currentRect)) });
+      }
+    }).observe({ type: "layout-shift", buffered: true });
+  });
+  return {
+    mark: (label) => page.evaluate((l) => void ((globalThis as unknown as { __fnShifts: { label: string } }).__fnShifts.label = l), label),
+    shifts: (min = 0.01) => page.evaluate((m) => {
+      const first = performance.getEntriesByName("fn:window.firstFrame")[0]?.startTime ?? 0;
+      return (globalThis as unknown as { __fnShifts: { list: Shift[] } }).__fnShifts.list.filter((s) => s.at > first && s.value > m);
+    }, min),
+  };
+}
+
+/**
+ * With reduced motion, swaps are instant (D-148): watches every frame for an animation or transition
+ * that runs for any time, by name and transition. The setting itself is checked by the caller.
+ */
+export async function watchMotion(page: Page): Promise<{ mark: (label: string) => Promise<void>; moving: () => Promise<string[]> }> {
+  await page.evaluate(() => {
+    const g = globalThis as unknown as { __fnMotion?: { label: string; seen: Set<string> } };
+    if (g.__fnMotion) return;
+    const state = { label: "start", seen: new Set<string>() };
+    g.__fnMotion = state;
+    const tick = () => {
+      for (const a of document.getAnimations()) {
+        const t = a.effect?.getComputedTiming();
+        const duration = typeof t?.duration === "number" ? t.duration : 0;
+        if (a.playState !== "running" || duration <= 0) continue;
+        const target = (a.effect as KeyframeEffect | null)?.target;
+        const what = a instanceof CSSTransition ? `transition ${a.transitionProperty}` : a instanceof CSSAnimation ? `animation ${a.animationName}` : "animation";
+        state.seen.add(`${state.label}: ${what} ${duration}ms on ${target instanceof Element ? target.tagName.toLowerCase() + (target.className && typeof target.className === "string" ? "." + target.className.split(" ")[0] : "") : "?"}`);
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  return {
+    mark: (label) => page.evaluate((l) => void ((globalThis as unknown as { __fnMotion: { label: string } }).__fnMotion.label = l), label),
+    moving: () => page.evaluate(() => [...(globalThis as unknown as { __fnMotion: { seen: Set<string> } }).__fnMotion.seen]),
   };
 }
 
@@ -120,7 +193,7 @@ const near = (r: number, g: number, b: number, c: Rgb, d: number) => Math.abs(r 
  * or more of it is see-through or the other theme's surfaces (white in a dark frame), or when it's
  * blank, one color through and through, while a transition is in flight.
  */
-export function frameProblems(frames: Frame[], box: Box, viewportWidth: number, schemeOf: (label: string) => "light" | "dark" | "either"): FrameProblem[] {
+export function frameProblems(frames: Frame[], box: Box, viewportWidth: number, schemeOf: (label: string) => "light" | "dark" | "either", opts: { instant?: boolean } = {}): FrameProblem[] {
   const pal = themePalettes();
   const out: FrameProblem[] = [];
   const kinds = new Map<number, number>();
@@ -172,6 +245,12 @@ export function frameProblems(frames: Frame[], box: Box, viewportWidth: number, 
     if (pct(wrong) >= 2) out.push({ label: f.label, frame: i, problem: scheme === "either" ? `${pct(wrong).toFixed(1)}% of the window is in the other theme (a frame mixing both)` : `${pct(wrong).toFixed(1)}% of the window is outside the ${scheme} theme's palette (${scheme === "dark" ? "white or light surfaces" : "dark surfaces"})` });
     const top = Math.max(0, ...counts.values());
     if (pct(top) >= 99.9) out.push({ label: f.label, frame: i, problem: `the window is blank (${pct(top).toFixed(1)}% one color)` });
+    if (opts.instant) {
+      // With reduced motion, a swap is instant: the window's main colour is always one of a theme's own, never a blend of two.
+      const key = [...counts].find(([, n]) => n === top)?.[0] ?? 0;
+      const [r, g, b] = [((key >> 12) & 63) << 2, ((key >> 6) & 63) << 2, (key & 63) << 2];
+      if (![...pal.light.all, ...pal.dark.all].some((c) => near(r + 2, g + 2, b + 2, c, 6))) out.push({ label: f.label, frame: i, problem: `the frame is mid-transition (its main colour rgb(${r}, ${g}, ${b}) is in no theme)` });
+    }
   });
   return out;
 }

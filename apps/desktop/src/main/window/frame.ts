@@ -99,6 +99,11 @@ export class AppWindowFrame {
     };
   }
 
+  /** The shadow margin around the drawn window now, in DIP (none for a system-drawn or maximized window). */
+  margin(): number {
+    return this.#custom?.margin() ?? 0;
+  }
+
   /** The theme's accent, for the snap preview (`cmp.windowFrame.snapPreview`). */
   setAccent(color: unknown): void {
     if (typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color)) this.#accent = color;
