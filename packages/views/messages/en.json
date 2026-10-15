@@ -961,6 +961,7 @@
   "account.signedIn": "Signed in to GitHub as @{login}. {status}",
   "account.synced": "Saved to GitHub",
   "account.syncProblem": "Not synced yet",
+  "agents.selfReported": "{name} (self-reported)",
   "save.state.savedLocal": "Saved on this computer",
   "save.state.pending": "Saved here · not backed up yet",
   "save.state.syncing": "Backing up…",

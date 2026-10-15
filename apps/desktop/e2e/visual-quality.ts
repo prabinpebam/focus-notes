@@ -187,7 +187,13 @@ export async function listRings(page: Page, where: string): Promise<string[]> {
   const out: string[] = [];
   const keys = k === "combobox" ? ["ArrowUp", "ArrowDown"] : ["End", "Home"];
   for (const key of keys) {
+    // The list moves focus itself, so the browser's own Home and End (a smooth scroll of the list)
+    // must be prevented: left on, it runs on after the focus moved and leaves the item cut (DEF-9).
+    await page.evaluate(() => addEventListener("keydown", (e) => ((window as unknown as { __listKey?: KeyboardEvent }).__listKey = e), { capture: true, once: true }));
     await page.keyboard.press(key);
+    if (!(await page.evaluate(() => (window as unknown as { __listKey?: KeyboardEvent }).__listKey?.defaultPrevented ?? true))) {
+      out.push(`${where}, after ${key}: the browser's own ${key} isn't prevented, so its smooth scroll runs on after the focus moved`);
+    }
     await settled(page);
     await scrollsSettled(page);
     for (const p of await visualProblems(page, RINGS_ONLY)) out.push(`${where}, after ${key}: ${p}`);
@@ -336,7 +342,12 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
           // Only where the item itself shows: one scrolled partly out of view is cut by design.
           if (r.top < clip.top - tol || r.bottom > clip.bottom + tol) break;
           if (ring.left < clip.left - tol / 2 || ring.right > clip.right + tol / 2 || ring.top < clip.top - tol / 2 || ring.bottom > clip.bottom + tol / 2) {
-            out.push(`focus rings: the ring of ${nameOf(f)} at ${box(ring)} is cut by ${nameOf(a)} ${box(clip)}`);
+            // What a cut ring needs to tell a real clip from a measurement artifact (DEF-9): the
+            // container's scroll position, border and padding, the item's own top and scroll margin, and
+            // the device pixel ratio that snaps them.
+            const ac = getComputedStyle(a);
+            const diag = `dpr ${devicePixelRatio}; ${nameOf(a)}: top ${o.top}, scrollTop ${a.scrollTop}, clientTop ${a.clientTop}, border ${ac.borderTopWidth}, padding ${ac.paddingTop}, scrollHeight ${a.scrollHeight}, clientHeight ${a.clientHeight}; item: top ${r.top}, scroll-margin ${cs.scrollMarginTop}`;
+            out.push(`focus rings: the ring of ${nameOf(f)} at ${box(ring)} is cut by ${nameOf(a)} ${box(clip)} (${diag})`);
             break;
           }
         }

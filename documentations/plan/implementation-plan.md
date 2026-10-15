@@ -277,7 +277,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 | ID | Work package | Requirements | Depends on | Reviews |
 | --- | --- | --- | --- | --- |
-| WP-7.1 | **Agent permissions and attribution**. Permission checks in the command layer, agent trailers, the Agent badge, undo, and safety rules. | AGT-03, AGT-04, AGT-09 | WP-3.3 | code, security |
+| WP-7.1 | **Agent permissions and attribution**. Permission checks in the command layer, agent trailers, undo, and safety rules; the Agent badge and the toast land with WP-8.4 and WP-7.2 (D-145). | AGT-03, AGT-04, AGT-09 | WP-3.3 | code, security |
 | WP-7.2 | **MCP server**. The stdio MCP server with its tools, resources, and prompts. | AGT-01 | WP-7.1 | code, security |
 | WP-7.3 | **Command-line tool and deep links**. `focus-notes` with `--json`, and read-only deep links. | AGT-05, AGT-06 | WP-7.1 | code, security |
 | WP-7.4 | **Settings → Agents and the published catalog**. Connection snippets, permission controls, recent agent changes, and the design-system catalog on the product site. | AGT-02, DSY-13 | WP-7.2 | code, design-system, accessibility |
