@@ -284,6 +284,15 @@
           "$ref": "#/$defs/c_ColorField"
         },
         {
+          "$ref": "#/$defs/c_AppMark"
+        },
+        {
+          "$ref": "#/$defs/c_ItemCard"
+        },
+        {
+          "$ref": "#/$defs/c_SaveState"
+        },
+        {
           "$ref": "#/$defs/c_Stack"
         },
         {
@@ -410,6 +419,9 @@
             "$ref": "#/$defs/node"
           }
         },
+        "remount": {
+          "type": "boolean"
+        },
         "when": {}
       }
     },
@@ -507,7 +519,8 @@
                     "body",
                     "label",
                     "emphasis",
-                    "title"
+                    "title",
+                    "lead"
                   ]
                 },
                 {
@@ -649,7 +662,8 @@
                   "enum": [
                     "1",
                     "2",
-                    "3"
+                    "3",
+                    "display"
                   ]
                 },
                 {
@@ -767,7 +781,13 @@
                     "text",
                     "taskList",
                     "divider",
-                    "moreVertical"
+                    "moreVertical",
+                    "newFolder",
+                    "github",
+                    "cloud",
+                    "cloudUp",
+                    "cloudCheck",
+                    "cloudOff"
                   ]
                 },
                 {
@@ -886,7 +906,8 @@
                 {
                   "enum": [
                     "s",
-                    "m"
+                    "m",
+                    "l"
                   ]
                 },
                 {
@@ -959,7 +980,13 @@
                     "text",
                     "taskList",
                     "divider",
-                    "moreVertical"
+                    "moreVertical",
+                    "newFolder",
+                    "github",
+                    "cloud",
+                    "cloudUp",
+                    "cloudCheck",
+                    "cloudOff"
                   ]
                 },
                 {
@@ -1009,6 +1036,19 @@
                 }
               ]
             },
+            "expanded": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "busy": {
               "anyOf": [
                 {
@@ -1039,6 +1079,19 @@
               "anyOf": [
                 {
                   "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "bleed": {
+              "anyOf": [
+                {
+                  "type": "boolean"
                 },
                 {
                   "$ref": "#/$defs/read"
@@ -1172,7 +1225,13 @@
                     "text",
                     "taskList",
                     "divider",
-                    "moreVertical"
+                    "moreVertical",
+                    "newFolder",
+                    "github",
+                    "cloud",
+                    "cloudUp",
+                    "cloudCheck",
+                    "cloudOff"
                   ]
                 },
                 {
@@ -1842,7 +1901,13 @@
                     "text",
                     "taskList",
                     "divider",
-                    "moreVertical"
+                    "moreVertical",
+                    "newFolder",
+                    "github",
+                    "cloud",
+                    "cloudUp",
+                    "cloudCheck",
+                    "cloudOff"
                   ]
                 },
                 {
@@ -2229,7 +2294,13 @@
                     "text",
                     "taskList",
                     "divider",
-                    "moreVertical"
+                    "moreVertical",
+                    "newFolder",
+                    "github",
+                    "cloud",
+                    "cloudUp",
+                    "cloudCheck",
+                    "cloudOff"
                   ]
                 },
                 {
@@ -2326,6 +2397,22 @@
                 },
                 {
                   "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "orientation": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "horizontal",
+                    "vertical"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
                 }
               ]
             }
@@ -4051,6 +4138,449 @@
         }
       }
     },
+    "c_AppMark": {
+      "type": "object",
+      "description": "The Focus Notes app icon (the red dot in a frosted circle, on paper), drawn from the brand tokens: the hero of the full-window setup (D-126). Decorative unless it has a label.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "AppMark"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "m",
+                    "l"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_ItemCard": {
+      "type": "object",
+      "description": "One thing, shown rather than described (D-126, D-127): an account (its picture or initials, name and @login), a workspace (an icon, its name, when it was updated and a Public or Private badge), or an option. Its actions go in its slot.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ItemCard"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "detail": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "badge": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "icon": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "save",
+                    "darkTheme",
+                    "lightTheme",
+                    "more",
+                    "search",
+                    "add",
+                    "dismiss",
+                    "check",
+                    "newNote",
+                    "bold",
+                    "italic",
+                    "link",
+                    "minimize",
+                    "restore",
+                    "maximize",
+                    "fullScreen",
+                    "exitFullScreen",
+                    "focus",
+                    "font",
+                    "keyboard",
+                    "settings",
+                    "info",
+                    "warning",
+                    "error",
+                    "sync",
+                    "delete",
+                    "rename",
+                    "copy",
+                    "folder",
+                    "document",
+                    "chevronRight",
+                    "chevronDown",
+                    "undo",
+                    "redo",
+                    "table",
+                    "quote",
+                    "code",
+                    "bulletList",
+                    "numberedList",
+                    "heading1",
+                    "heading2",
+                    "heading3",
+                    "color",
+                    "share",
+                    "history",
+                    "matchCase",
+                    "wholeWord",
+                    "regex",
+                    "arrowUp",
+                    "arrowDown",
+                    "lock",
+                    "export",
+                    "import",
+                    "strikethrough",
+                    "text",
+                    "taskList",
+                    "divider",
+                    "moreVertical",
+                    "newFolder",
+                    "github",
+                    "cloud",
+                    "cloudUp",
+                    "cloudCheck",
+                    "cloudOff"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "avatar": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "initials": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "mark": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "m",
+                    "l"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "personal": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "title",
+                    "all"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "busy": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "autoFocus": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "title"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_SaveState": {
+      "type": "object",
+      "description": "Where saving stands, as one muted icon in a quiet pill: its words are the tooltip and name, and pressing it backs up now (EDT-11, D-132).",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SaveState"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "savedLocal",
+                    "pending",
+                    "syncing",
+                    "synced",
+                    "offline",
+                    "error"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "text": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "interactive": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "state",
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
     "c_Stack": {
       "type": "object",
       "description": "Children in a column, spaced by a space token.",
@@ -4104,6 +4634,26 @@
               ]
             },
             "padding": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "xxs",
+                    "xs",
+                    "s",
+                    "m",
+                    "l",
+                    "xl",
+                    "xxl",
+                    "xxxl"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "shortGap": {
               "anyOf": [
                 {
                   "enum": [
@@ -4447,6 +4997,39 @@
                 }
               ]
             },
+            "shortPadding": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "xxs",
+                    "xs",
+                    "s",
+                    "m",
+                    "l",
+                    "xl",
+                    "xxl",
+                    "xxxl"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "scroll": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "keyScope": {
               "anyOf": [
                 {
@@ -4545,6 +5128,7 @@
                     "topEnd",
                     "belowTopBand",
                     "fill",
+                    "window",
                     "center",
                     "bottomCenter",
                     "bottomStart"
@@ -4659,7 +5243,24 @@
                     "wideContent",
                     "popover",
                     "dialogS",
-                    "dialogL"
+                    "dialogL",
+                    "onboarding"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "block": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "start",
+                    "middle"
                   ]
                 },
                 {

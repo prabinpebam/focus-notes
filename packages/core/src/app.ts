@@ -1208,6 +1208,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       type: "object",
       properties: {
         visible: { type: "boolean" },
+        interactive: { type: "boolean" },
         state: { type: "string", enum: ["savedLocal", "pending", "syncing", "synced", "offline", "error"] },
         label: { type: "string" }, text: { type: "string" },
       },
@@ -1219,8 +1220,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         : state === "synced" ? (s.sync.backedUpAt !== undefined ? catalog.format("save.state.synced", { time: when(s.sync.backedUpAt) }) : catalog.format("save.state.syncedNow"))
           : catalog.format(`save.state.${state}`);
       const text = !s.sync.asked || !catalog.has("save.label.done") ? "" : catalog.format(s.sync.asked === "done" ? "save.label.done" : "save.label.syncing");
-      // On the desktop, wherever a note is open; the browser keeps its notes itself (D-90).
-      return { visible: Boolean(bridge.sync) && Boolean(s.note.path) && s.note.status === "ready", state, label, text };
+      // On the desktop, wherever a note is open; the browser keeps its notes itself (D-90). Without Git
+      // there's no cloud to save to, so the icon only says the note is saved here and can't be pressed.
+      return { visible: Boolean(bridge.sync) && Boolean(s.note.path) && s.note.status === "ready", interactive: Boolean(s.sync.git), state, label, text };
     },
   });
 

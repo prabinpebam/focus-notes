@@ -18,7 +18,8 @@
             "body",
             "label",
             "emphasis",
-            "title"
+            "title",
+            "lead"
           ],
           "default": "body"
         },
@@ -121,6 +122,15 @@
               "t": "gallery.sample"
             },
             "role": "title"
+          }
+        },
+        {
+          "name": "role lead",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "role": "lead"
           }
         },
         {
@@ -247,9 +257,11 @@
           "values": [
             "1",
             "2",
-            "3"
+            "3",
+            "display"
           ],
-          "default": "2"
+          "default": "2",
+          "description": "display: the interface ramp's largest size, a full-window onboarding step's title (D-126). It is an h1."
         }
       },
       "events": {},
@@ -288,6 +300,15 @@
               "t": "gallery.sample"
             },
             "level": "3"
+          }
+        },
+        {
+          "name": "level display",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "level": "display"
           }
         }
       ]
@@ -380,9 +401,11 @@
           "kind": "enum",
           "values": [
             "s",
-            "m"
+            "m",
+            "l"
           ],
-          "default": "m"
+          "default": "m",
+          "description": "l: an onboarding step's main action (Get started, D-126)."
         },
         "icon": {
           "kind": "icon"
@@ -403,6 +426,10 @@
           "kind": "boolean",
           "default": false
         },
+        "expanded": {
+          "kind": "boolean",
+          "description": "A disclosure button (More options, Having trouble?): whether what it shows is open (aria-expanded)."
+        },
         "busy": {
           "kind": "boolean",
           "default": false
@@ -414,6 +441,11 @@
         "disabledReason": {
           "kind": "message",
           "requiredWhen": "disabled"
+        },
+        "bleed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A subtle button at the start of the content (a first-run step's Back): its label lines up with the content's edge, and its hit area reaches into the padding (D-111)."
         },
         "autoFocus": {
           "kind": "boolean",
@@ -483,6 +515,26 @@
               "t": "gallery.action"
             },
             "size": "s"
+          }
+        },
+        {
+          "name": "size l",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "size": "l",
+            "variant": "primary"
+          }
+        },
+        {
+          "name": "bleed",
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "variant": "subtle",
+            "bleed": true
           }
         },
         {
@@ -1710,6 +1762,15 @@
         "value": {
           "kind": "text",
           "bindable": true
+        },
+        "orientation": {
+          "kind": "enum",
+          "values": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal",
+          "description": "vertical: one full-width row per choice, for choices whose labels don't fit side by side (the first run's Workspace, D-123)."
         }
       },
       "events": {
@@ -1759,6 +1820,21 @@
             "value": {
               "get": "vm.gallery.optionLast"
             }
+          }
+        },
+        {
+          "name": "orientation vertical",
+          "props": {
+            "label": {
+              "t": "shortcuts.platform"
+            },
+            "options": {
+              "get": "vm.gallery.options"
+            },
+            "value": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "orientation": "vertical"
           }
         }
       ]
@@ -3301,6 +3377,329 @@
       ]
     },
     {
+      "type": "AppMark",
+      "tier": "primitive",
+      "description": "The Focus Notes app icon (the red dot in a frosted circle, on paper), drawn from the brand tokens: the hero of the full-window setup (D-126). Decorative unless it has a label.",
+      "props": {
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "l"
+          ],
+          "default": "l"
+        },
+        "label": {
+          "kind": "message"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.appMark.*",
+      "a11y": {
+        "pattern": "img",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "size m",
+          "props": {
+            "size": "m"
+          }
+        },
+        {
+          "name": "size l",
+          "props": {
+            "size": "l"
+          }
+        },
+        {
+          "name": "labelled",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "ItemCard",
+      "tier": "primitive",
+      "description": "One thing, shown rather than described (D-126, D-127): an account (its picture or initials, name and @login), a workspace (an icon, its name, when it was updated and a Public or Private badge), or an option. Its actions go in its slot.",
+      "props": {
+        "title": {
+          "kind": "message",
+          "required": true
+        },
+        "detail": {
+          "kind": "message"
+        },
+        "badge": {
+          "kind": "message"
+        },
+        "icon": {
+          "kind": "icon",
+          "description": "Shown in a tile, the card's visual anchor. Without an icon, a picture or initials show instead."
+        },
+        "avatar": {
+          "kind": "text",
+          "description": "An account's picture: only a data URL the shell made (data:image/…), never an address. Missing, the initials show."
+        },
+        "initials": {
+          "kind": "text"
+        },
+        "mark": {
+          "kind": "boolean",
+          "default": false,
+          "description": "GitHub's mark beside the detail: an account on GitHub."
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "l"
+          ],
+          "default": "m",
+          "description": "l: an account's profile card, its name large."
+        },
+        "personal": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "title",
+            "all"
+          ],
+          "default": "none",
+          "description": "Which of its words are the person's own data (their name and @login, a workspace's name), not the interface's: the visual score doesn't count them (D-127)."
+        },
+        "label": {
+          "kind": "message",
+          "description": "The card's accessible name, when its title alone doesn't say it (This computer is connected to GitHub as …)."
+        },
+        "busy": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A pressable card's action is running."
+        },
+        "autoFocus": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A pressable card takes focus when it appears: a first-run step's main action, so Enter continues."
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.itemCard.*",
+      "a11y": {
+        "pattern": "group",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "workspace",
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.sample"
+            },
+            "badge": {
+              "t": "gallery.sample"
+            },
+            "icon": "folder",
+            "personal": "title"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                },
+                "variant": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "name": "profile",
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.sample"
+            },
+            "mark": true,
+            "size": "l",
+            "personal": "all"
+          }
+        },
+        {
+          "name": "github",
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.long"
+            },
+            "icon": "github"
+          }
+        },
+        {
+          "name": "option",
+          "props": {
+            "title": {
+              "t": "gallery.action"
+            },
+            "detail": {
+              "t": "gallery.sample"
+            },
+            "icon": "newNote"
+          }
+        },
+        {
+          "name": "option busy",
+          "props": {
+            "title": {
+              "t": "gallery.action"
+            },
+            "detail": {
+              "t": "gallery.sample"
+            },
+            "icon": "newNote",
+            "busy": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "SaveState",
+      "tier": "primitive",
+      "description": "Where saving stands, as one muted icon in a quiet pill: its words are the tooltip and name, and pressing it backs up now (EDT-11, D-132).",
+      "props": {
+        "state": {
+          "kind": "enum",
+          "values": [
+            "savedLocal",
+            "pending",
+            "syncing",
+            "synced",
+            "offline",
+            "error"
+          ],
+          "required": true
+        },
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "text": {
+          "kind": "text",
+          "description": "Shown beside the icon for a moment after the person asked (Backing up…, Backed up)."
+        },
+        "interactive": {
+          "kind": "boolean",
+          "description": "Pressing backs up now. Off when there's nowhere to back up to: the icon is then a plain status image."
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focusVisible",
+        "savedLocal",
+        "pending",
+        "syncing",
+        "synced",
+        "offline",
+        "error"
+      ],
+      "tokens": "cmp.saveState.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "saved here",
+          "props": {
+            "state": "savedLocal",
+            "label": {
+              "t": "save.state.savedLocal"
+            }
+          }
+        },
+        {
+          "name": "not backed up yet",
+          "props": {
+            "state": "pending",
+            "label": {
+              "t": "save.state.pending"
+            }
+          }
+        },
+        {
+          "name": "backing up, asked",
+          "props": {
+            "state": "syncing",
+            "label": {
+              "t": "save.state.syncing"
+            },
+            "text": {
+              "get": "vm.gallery.query"
+            }
+          }
+        },
+        {
+          "name": "backed up",
+          "props": {
+            "state": "synced",
+            "label": {
+              "t": "save.state.syncedNow"
+            }
+          }
+        },
+        {
+          "name": "offline",
+          "props": {
+            "state": "offline",
+            "label": {
+              "t": "save.state.offline"
+            }
+          }
+        },
+        {
+          "name": "problem",
+          "props": {
+            "state": "error",
+            "label": {
+              "t": "save.state.error"
+            }
+          }
+        }
+      ]
+    },
+    {
       "type": "Stack",
       "tier": "layout",
       "description": "Children in a column, spaced by a space token.",
@@ -3314,6 +3713,11 @@
           "kind": "token",
           "group": "space",
           "default": "none"
+        },
+        "shortGap": {
+          "kind": "token",
+          "group": "space",
+          "description": "The gap in a short window (below breakpoint.short): the full-window setup tightens up (D-131)."
         },
         "align": {
           "kind": "enum",
@@ -4147,6 +4551,16 @@
           "group": "space",
           "default": "none"
         },
+        "shortPadding": {
+          "kind": "token",
+          "group": "space",
+          "description": "The padding in a short window (below breakpoint.short): the full-window setup tightens up (D-131)."
+        },
+        "scroll": {
+          "kind": "boolean",
+          "default": false,
+          "description": "What it holds scrolls inside its padding when the surface is held shorter than its content: a dialog in the middle of a short window (D-123)."
+        },
         "keyScope": {
           "kind": "enum",
           "values": [
@@ -4177,6 +4591,24 @@
         "pattern": "none"
       },
       "fixtures": [
+        {
+          "name": "scroll",
+          "props": {
+            "padding": "xl",
+            "shape": "popover",
+            "scroll": true
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
         {
           "name": "variant canvas",
           "props": {
@@ -4611,11 +5043,13 @@
             "topEnd",
             "belowTopBand",
             "fill",
+            "window",
             "center",
             "bottomCenter",
             "bottomStart"
           ],
-          "default": "center"
+          "default": "center",
+          "description": "window: the whole window below the title bar band, which stays the window's (dragging, the window controls): the full-window setup (D-126)."
         },
         "dragBand": {
           "kind": "boolean",
@@ -4919,6 +5353,32 @@
           ]
         },
         {
+          "name": "position window",
+          "props": {
+            "position": "window"
+          },
+          "children": [
+            {
+              "type": "Surface",
+              "props": {
+                "variant": "frost",
+                "padding": "m",
+                "shape": "popover"
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           "name": "position center",
           "props": {
             "position": "center"
@@ -5105,9 +5565,19 @@
             "wideContent",
             "popover",
             "dialogS",
-            "dialogL"
+            "dialogL",
+            "onboarding"
           ],
           "default": "measure"
+        },
+        "block": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "middle"
+          ],
+          "default": "start",
+          "description": "middle: centred in the height of a scroller while there's room (the full-window setup, D-126)."
         },
         "gutter": {
           "kind": "enum",
@@ -5207,6 +5677,54 @@
               "props": {
                 "value": {
                   "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "max width onboarding",
+          "props": {
+            "maxWidth": "onboarding"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "block start",
+          "props": {
+            "block": "start"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "block middle",
+          "props": {
+            "block": "middle"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
                 }
               }
             }

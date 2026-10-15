@@ -3046,6 +3046,9 @@
                   },
                   "text": {
                     "get": "vm.saveState.text"
+                  },
+                  "interactive": {
+                    "get": "vm.saveState.interactive"
                   }
                 },
                 "on": {

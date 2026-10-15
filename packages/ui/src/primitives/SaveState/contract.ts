@@ -10,6 +10,7 @@ export const contract = defineContract({
     state: { kind: "enum", values: [...SAVE_STATES], required: true },
     label: { kind: "message", required: true },
     text: { kind: "text", description: "Shown beside the icon for a moment after the person asked (Backing up…, Backed up)." },
+    interactive: { kind: "boolean", description: "Pressing backs up now. Off when there's nowhere to back up to: the icon is then a plain status image." },
   },
   events: { press: {} },
   slots: {},
