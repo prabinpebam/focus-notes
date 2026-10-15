@@ -69,7 +69,7 @@ jobs:
         timeout-minutes: 45
         run: xvfb-run -a pnpm test:e2e
       - name: Journey tests
-        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os != 'Linux' }}
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'macOS' }}
         timeout-minutes: 45
         run: pnpm test:e2e
       # The web app's journeys gate on Windows (D-112); Linux runs them too, without blocking.
@@ -88,4 +88,40 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results-${{ matrix.os }}
+          path: test-results/
+
+  # The Windows desktop journeys gate every merge (D-112). One runner took about 18 minutes for
+  # them, which made CI the constraint on every merge; four shards in parallel take a few
+  # minutes each (D-113).
+  journeys-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Fetch Electron
+        timeout-minutes: 10
+        working-directory: apps/desktop
+        run: node -e "console.log(require('electron'))"
+      - run: node packages/tokens/build.mjs
+      - name: Build the desktop app
+        run: pnpm --filter @focus-notes/desktop run build
+      - name: Journey tests (shard ${{ matrix.shard }} of 4)
+        timeout-minutes: 30
+        working-directory: apps/desktop
+        run: pnpm test:e2e --shard=${{ matrix.shard }}/4
+      - name: Keep test results
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-windows-shard-${{ matrix.shard }}
           path: test-results/

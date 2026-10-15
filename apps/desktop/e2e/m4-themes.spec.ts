@@ -115,6 +115,9 @@ test("THM-07, keyboard only: the gallery previews each theme on the note, Esc go
   await expect(gallery(page).getByRole("option", { name: "Dusk Dark ✓", exact: true })).toHaveAttribute("aria-selected", "true");
   await expect(sheet(page).getByRole("radio", { name: "Dark" })).toBeChecked();
   await expect(sheet(page).getByText(/^Text contrast \d+\.\d:1 · AAA$/)).toBeVisible();
+  // The new theme as drawn once its controls' color transitions end (motion.micro), not a frame
+  // part way through them: mid-transition a segment's text is still the light theme's ink.
+  await settled(page);
   expect(await axeViolations(page)).toEqual([]);
   expect(await smallTargets(page)).toEqual([]);
 

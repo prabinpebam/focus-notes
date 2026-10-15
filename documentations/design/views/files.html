@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>A floating left sheet over the canvas. It has <strong>Private</strong> and <strong>Public</strong> sections, a filter field, a <strong>New</strong> menu, and <strong>Recently deleted</strong> at the bottom. Rows show note <em>titles</em>, and the current note is revealed and selected. Everything is direct: rename inline, drag to move (or cut and paste, or Move to…), multi-select to act in bulk. Every operation shows in the tree at once, then becomes one Git commit with an <strong>Undo</strong> toast, and links in other notes are updated automatically. Deleting a single private note doesn't ask, because it can be undone and restored. Deleting folders, many items, or public notes asks first. View IA-VIEW-FILES serves UC-FILE-01 to UC-FILE-10. <a href="#whats-built">What's built</a> lists what works today and what arrives with Git (D-94).</p>
+  <p>A floating left sheet over the canvas. It has <strong>Private</strong> and <strong>Public</strong> sections, a filter field, <strong>New note</strong> and <strong>New folder</strong> buttons, and <strong>Recently deleted</strong> at the bottom. Rows show note <em>titles</em>, and the current note is revealed and selected. Everything is direct: rename inline, drag to move (or cut and paste, or Move to…), multi-select to act in bulk. Every operation shows in the tree at once, then becomes one Git commit with an <strong>Undo</strong> toast, and links in other notes are updated automatically. Deleting a single private note doesn't ask, because it can be undone and restored. Deleting folders, many items, or public notes asks first. View IA-VIEW-FILES serves UC-FILE-01 to UC-FILE-10. <a href="#whats-built">What's built</a> lists what works today and what arrives with Git (D-94).</p>
 </aside>
 
 <figure class="slate-figure">
@@ -14,7 +14,7 @@
        aria-labelledby="files-title files-desc" preserveAspectRatio="xMidYMid meet"
        data-slate-svg-motion="viewport">
     <title id="files-title">The Files panel floating over the canvas</title>
-    <desc id="files-desc">A window with the trigger at the top center. A sheet floats over the left side of the canvas, inset from the window edges. It has the title Files, a New menu button, and a filter field. The Private section lists an expanded journal folder with two dated notes, a collapsed drafts folder, and the current note, Spec ideas, which is selected. The Public section lists an essays folder and an About note. Recently deleted, with a count of 3, sits at the bottom. The note text stays visible to the right.</desc>
+    <desc id="files-desc">A window with the trigger at the top center. A sheet floats over the left side of the canvas, inset from the window edges. It has the title Files, New note and New folder icon buttons, and a filter field. The Private section lists an expanded journal folder with two dated notes, a collapsed drafts folder, and the current note, Spec ideas, which is selected. The Public section lists an essays folder and an About note. Recently deleted, with a count of 3, sits at the bottom. The note text stays visible to the right.</desc>
     <g id="files-window" data-slate-svg-step="0" data-slate-svg-effect="fade">
       <rect x="40" y="30" width="880" height="500" rx="28" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
       <circle cx="480" cy="52" r="15" fill="var(--color-neutral-bg-4)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
@@ -28,8 +28,8 @@
     <g id="files-sheet" data-slate-svg-step="1" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)">
       <rect x="52" y="78" width="330" height="440" rx="16" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
       <text x="76" y="114" font-size="20" font-weight="700" fill="var(--color-neutral-fg-1)">Files</text>
-      <rect id="files-new" x="284" y="92" width="80" height="32" rx="8" fill="var(--color-neutral-bg-3)"/>
-      <text x="324" y="113" text-anchor="middle" font-size="15" fill="var(--color-neutral-fg-1)" data-slate-fit-target="files-new" data-slate-fit-padding="8">New ▾</text>
+      <g id="files-new-note" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="1.5"><rect x="290" y="92" width="32" height="32" rx="8" fill="var(--color-neutral-bg-3)" stroke="none"/><path d="M300 100h8l4 4v12h-12z"/><path d="M310 112h6M313 109v6"/></g>
+      <g id="files-new-folder" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="1.5"><path d="M338 102h6l2 2h10v10h-18z"/><path d="M350 112h6M353 109v6"/></g>
       <rect x="72" y="136" width="292" height="32" rx="8" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1"/>
       <text x="88" y="157" font-size="15" fill="var(--color-neutral-fg-2)">Filter by name</text>
       <text x="76" y="198" font-size="13" font-weight="700" letter-spacing="1" fill="var(--color-neutral-fg-2)">PRIVATE</text>
@@ -57,7 +57,7 @@
   <table>
     <thead><tr><th>Section</th><th>Rows shown</th></tr></thead>
     <tbody>
-      <tr><td>Header</td><td>Files, New ▾, Filter by name</td></tr>
+      <tr><td>Header</td><td>Files, New note and New folder buttons, Filter by name</td></tr>
       <tr><td>Private</td><td>journal (expanded): 2026-10-13, 2026-10-12. drafts (collapsed). Spec ideas (current note, selected).</td></tr>
       <tr><td>Public</td><td>essays (collapsed). About.</td></tr>
       <tr><td>Footer</td><td>Recently deleted · 3</td></tr>
@@ -110,7 +110,7 @@
 <table>
   <thead><tr><th>Action</th><th>Flow</th><th>Serves</th></tr></thead>
   <tbody>
-    <tr><td>New note</td><td>From the toolbar, <kbd>Mod</kbd>+<kbd>N</kbd>, New ▾, or a folder's ⋯. It's created in the selected folder (or the folder of the current note, or the Private root), the panel closes, and the caret lands in an empty title. Nothing is written to disk until the first character is typed, so abandoned empty notes leave no files.</td><td>UC-FILE-01</td></tr>
+    <tr><td>New note</td><td>From the toolbar, <kbd>Mod</kbd>+<kbd>N</kbd>, the Files header's New note button, or a folder's ⋯. It's created in the selected folder (or the folder of the current note, or the Private root), the panel closes, and the caret lands in an empty title. Nothing is written to disk until the first character is typed, so abandoned empty notes leave no files.</td><td>UC-FILE-01</td></tr>
     <tr><td>New folder</td><td>A new row appears in place with an inline name field ("New folder" selected). <kbd>Enter</kbd> creates it, <kbd>Esc</kbd> or clicking away with an empty name cancels. A duplicate or invalid name shows an inline error under the field, and the field stays open.</td><td>UC-FILE-04</td></tr>
     <tr><td>Duplicate (P1)</td><td>⋯ → Duplicate creates "⟨title⟩ copy" next to the original and opens it.</td><td>UC-FILE-10</td></tr>
   </tbody>

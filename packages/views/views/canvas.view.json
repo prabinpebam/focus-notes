@@ -70,6 +70,9 @@
       },
       "themeColors": {
         "get": "vm.app.themeColors"
+      },
+      "compositing": {
+        "get": "vm.app.compositing"
       }
     },
     "children": [
@@ -1552,7 +1555,8 @@
                       },
                       "role": "secondary",
                       "tone": "default",
-                      "lines": "one"
+                      "lines": "one",
+                      "inset": "control"
                     }
                   },
                   {
