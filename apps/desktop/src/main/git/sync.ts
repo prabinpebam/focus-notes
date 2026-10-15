@@ -311,17 +311,24 @@ export class GitSync {
       const mine = await this.#commit(repo, st, rel, saveMessage, repo.moves);
       if (mine) return { problem: this.#fail(mine) };
       const before = await head();
-      await c.apply();
+      // A write that fails partway is still the agent's: what it changed is committed as the agent's, then the failure is reported.
+      let failure: { error: unknown } | undefined;
+      try {
+        await c.apply();
+      } catch (error) {
+        failure = { error };
+      }
       for (const p of c.paths) this.#touch(p);
       repo.cache.clear();
       const after = await repo.cache.fresh().catch(() => undefined);
       if (!after) return { problem: this.#fail("failed") };
       const problem = await this.#commit(repo, after, rel, (changes) => agentMessage(at[0]!.rel, changes, c.client), moves);
+      if (failure) throw failure.error;
       if (problem) return { problem: this.#fail(problem) };
       const commit = await head();
       return commit && commit !== before ? { commit } : {};
     });
-    void done.then(() => this.sync("batch"));
+    void done.then(() => this.sync("batch"), () => this.sync("batch"));
     return done;
   }
 
@@ -338,6 +345,8 @@ export class GitSync {
       const msg = await this.#git(repo, ["log", "-1", "--format=%B", oid, "--"]);
       const note = agentNoteOf(msg.stdout);
       if (msg.code !== 0 || !agentOf(msg.stdout) || !note) return { problem: "notAgent" };
+      // Only a commit in this branch's history: another branch's change isn't in these notes to undo.
+      if ((await this.#git(repo, ["merge-base", "--is-ancestor", oid, "HEAD"])).code !== 0) return { problem: "notAgent" };
       const names = async (args: string[]) => {
         const r = await this.#git(repo, ["diff-tree", "-r", "-z", "--name-only", "--no-renames", ...args]);
         return r.code === 0 ? r.stdout.split("\0").filter(Boolean) : undefined;
@@ -358,7 +367,7 @@ export class GitSync {
       const problem = await this.#commit(repo, now, paths, () => undoAgentMessage(note), []);
       return problem ? { problem: this.#fail(problem) } : {};
     });
-    void done.then(() => this.sync("batch"));
+    void done.then(() => this.sync("batch"), () => this.sync("batch"));
     return done;
   }
 

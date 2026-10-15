@@ -40,6 +40,7 @@ describe("AGT-04: agent commit messages", () => {
     expect(agentName("Claude\nFocus-Notes-Agent: Me\r\nSigned-off-by: x")).toBe("Claude Focus-Notes-Agent: Me Signed-off-by: x");
     expect(agentName("  \u0000\u001b[31mred\u007f  ")).toBe("[31mred");
     expect(agentName("a".repeat(200))).toHaveLength(64);
+    expect(Array.from(agentName("a".repeat(63) + "😀😀"))).toHaveLength(64);
     expect(agentName("")).toBe("Unknown agent");
     expect(agentName(undefined)).toBe("Unknown agent");
     expect(agentName({ name: "x" })).toBe("Unknown agent");
@@ -92,6 +93,19 @@ describe("AGT-04: every agent write is its own attributed commit", () => {
     expect((await s.agentChange({ client: "x", note: priv, paths: [pub, priv], apply })).problem).toBe("failed");
     expect((await s.agentChange({ client: "x", note: join(ws, "..", "elsewhere.md"), paths: [join(ws, "..", "elsewhere.md")], apply })).problem).toBe("failed");
     expect(applied).toBe(0);
+  });
+
+  it("still attributes a write that failed partway to the agent, and reports the failure", async () => {
+    const { ws } = instance();
+    const s = await open(ws);
+    const note = join(ws, "notes", "hello.md");
+    const failing = s.agentChange({ client: "Claude Desktop", note, paths: [note], apply: async () => {
+      writeFileSync(note, "# Hello\n\nHalf");
+      throw new Error("disk full");
+    } });
+    await expect(failing).rejects.toThrow("disk full");
+    expect(subject(ws)).toBe("Agent edit: notes/hello.md");
+    expect(trailer(ws)).toBe("Claude Desktop");
   });
 
   it("never passes a note's path or the client name as a process argument (SEC-03)", async () => {
@@ -156,6 +170,18 @@ describe("AGT-04: Undo reverts exactly that commit", () => {
     expect((await s.undoAgentChange("notes", head)).problem).toBe("notAgent");
     for (const bad of ["HEAD", "--all", head.slice(0, 7), `${head}^`]) expect((await s.undoAgentChange("notes", bad)).problem, bad).toBe("notAgent");
     expect((await s.undoAgentChange("private", "0".repeat(40))).problem).toBe("notAgent");
+  });
+
+  it("only undoes a commit in the current branch's history", async () => {
+    const { ws } = instance();
+    const s = await open(ws);
+    const note = join(ws, "notes", "hello.md");
+    git(ws, "checkout", "-q", "-b", "side");
+    const { commit } = await s.agentChange({ client: "x", note, paths: [note], apply: async () => writeFileSync(note, "# Hello\n\nOn a side branch.\n") });
+    await s.sync("retry");
+    git(ws, "checkout", "-q", "main");
+    expect((await s.undoAgentChange("notes", commit!)).problem).toBe("notAgent");
+    expect(readFileSync(note, "utf8")).toBe("# Hello\n\nSee [the list](list.md).\n");
   });
 });
 
