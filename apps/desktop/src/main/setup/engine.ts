@@ -56,6 +56,8 @@ export interface SetupDeps {
   keyPair?: () => DeployKeyPair;
   now?: () => Date;
   onReport?: (report: SetupReport) => void;
+  /** Runs as each part starts, after it's reported running: the journeys' slow-down (PRF-13). Never set in a packaged app. */
+  beforeStep?: (id: SetupStepId) => Promise<void>;
   /** Step names, states, and problem codes only. */
   log?: (line: string) => void;
   /**
@@ -250,6 +252,7 @@ export class SetupEngine {
   async #step(id: SetupStepId): Promise<boolean> {
     await this.#set(id, "running");
     try {
+      await this.#d.beforeStep?.(id);
       const state = await this.#steps[id]();
       await this.#set(id, state);
       return true;

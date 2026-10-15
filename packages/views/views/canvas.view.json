@@ -4066,6 +4066,34 @@
                               },
                               "level": "display"
                             }
+                          },
+                          {
+                            "type": "Inline",
+                            "when": {
+                              "get": "vm.firstRun.hasWait"
+                            },
+                            "props": {
+                              "gap": "s",
+                              "align": "center",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Spinner",
+                                "props": {
+                                  "size": "s"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.firstRun.waitText"
+                                  },
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
                           }
                         ]
                       },
@@ -4166,7 +4194,22 @@
                                     "type": "Stack",
                                     "props": {
                                       "gap": "none"
-                                    }
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "ItemCard",
+                                        "when": {
+                                          "get": "vm.firstRun.accountSkeleton"
+                                        },
+                                        "props": {
+                                          "title": {
+                                            "get": "vm.firstRun.waitText"
+                                          },
+                                          "size": "l",
+                                          "skeleton": true
+                                        }
+                                      }
+                                    ]
                                   },
                                   "git": {
                                     "type": "Stack",
@@ -4584,7 +4627,7 @@
                                         "type": "Text",
                                         "props": {
                                           "value": {
-                                            "t": "firstRun.signIn.waiting"
+                                            "get": "vm.firstRun.approvalText"
                                           },
                                           "tone": "muted",
                                           "announce": true
@@ -4653,7 +4696,7 @@
                                             "type": "Text",
                                             "props": {
                                               "value": {
-                                                "t": "firstRun.signIn.waiting"
+                                                "get": "vm.firstRun.approvalText"
                                               },
                                               "tone": "muted",
                                               "announce": true
@@ -5152,8 +5195,46 @@
                                   "checking": {
                                     "type": "Stack",
                                     "props": {
-                                      "gap": "none"
-                                    }
+                                      "gap": "m"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "ItemCard",
+                                        "when": {
+                                          "get": "vm.firstRun.notesSkeleton"
+                                        },
+                                        "props": {
+                                          "title": {
+                                            "get": "vm.firstRun.waitText"
+                                          },
+                                          "skeleton": true
+                                        }
+                                      },
+                                      {
+                                        "type": "ItemCard",
+                                        "when": {
+                                          "get": "vm.firstRun.notesSkeleton"
+                                        },
+                                        "props": {
+                                          "title": {
+                                            "get": "vm.firstRun.waitText"
+                                          },
+                                          "skeleton": true
+                                        }
+                                      },
+                                      {
+                                        "type": "ItemCard",
+                                        "when": {
+                                          "get": "vm.firstRun.notesSkeleton"
+                                        },
+                                        "props": {
+                                          "title": {
+                                            "get": "vm.firstRun.waitText"
+                                          },
+                                          "skeleton": true
+                                        }
+                                      }
+                                    ]
                                   },
                                   "found": {
                                     "type": "Stack",
@@ -5704,6 +5785,18 @@
                                         }
                                       },
                                       {
+                                        "type": "Text",
+                                        "when": {
+                                          "get": "vm.firstRun.hasPart"
+                                        },
+                                        "props": {
+                                          "value": {
+                                            "get": "vm.firstRun.partText"
+                                          },
+                                          "tone": "muted"
+                                        }
+                                      },
+                                      {
                                         "type": "StatusRow",
                                         "when": {
                                           "get": "vm.firstRun.failed"
@@ -5864,57 +5957,6 @@
                                         }
                                       },
                                       {
-                                        "type": "Inline",
-                                        "props": {
-                                          "gap": "s",
-                                          "justify": "start",
-                                          "wrap": true
-                                        },
-                                        "children": [
-                                          {
-                                            "switch": {
-                                              "get": "vm.firstRun.details"
-                                            },
-                                            "cases": {
-                                              "true": {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.notes.details"
-                                                  },
-                                                  "variant": "subtle",
-                                                  "icon": "chevronDown",
-                                                  "expanded": true,
-                                                  "bleed": true
-                                                },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "firstRun.toggleDetails"
-                                                  }
-                                                }
-                                              },
-                                              "false": {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.notes.details"
-                                                  },
-                                                  "variant": "subtle",
-                                                  "icon": "chevronRight",
-                                                  "expanded": false,
-                                                  "bleed": true
-                                                },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "firstRun.toggleDetails"
-                                                  }
-                                                }
-                                              }
-                                            }
-                                          }
-                                        ]
-                                      },
-                                      {
                                         "type": "Stack",
                                         "props": {
                                           "gap": "s"
@@ -5922,7 +5964,7 @@
                                         "children": [
                                           {
                                             "each": {
-                                              "get": "vm.setup.steps"
+                                              "get": "vm.firstRun.parts"
                                             },
                                             "as": "step",
                                             "key": "step.id",
@@ -6009,10 +6051,7 @@
                                               }
                                             }
                                           }
-                                        ],
-                                        "when": {
-                                          "get": "vm.firstRun.details"
-                                        }
+                                        ]
                                       }
                                     ]
                                   }

@@ -4726,6 +4726,19 @@
                 }
               ]
             },
+            "skeleton": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "autoFocus": {
               "anyOf": [
                 {

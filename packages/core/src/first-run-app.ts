@@ -601,7 +601,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const f = s.firstRun;
       // ---- waits (PRF-13, D-149): named at their place, a count or percentage, the elapsed time past wait.elapsedDelay ----
       const taskOf = (op: FirstRunWaitOp) => (op ? s.tasks.find((t) => t.target === FIRST_RUN_WAITS[op]) : undefined);
-      const withElapsed = (words: string, op: string) => {
+      const withElapsed = (words: string, op: FirstRunWaitOp) => {
         const t = taskOf(op);
         return t?.elapsed ? catalog.format("firstRun.wait.elapsed", { words, seconds: t.elapsed }) : words;
       };

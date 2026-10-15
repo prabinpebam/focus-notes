@@ -208,6 +208,7 @@ const setupGit: GitRunner = (call) => {
   return setupRunner(id ? { ...call, args: ["-c", `user.name=${id.name}`, "-c", `user.email=${id.email}`, ...call.args] } : call);
 };
 const setup = () => (setupEngine ??= SetupEngine.open({
+  ...(journey ? { beforeStep: (id: SetupStepId) => slowSeam(`setup:${id}`) } : {}),
   git: setupGit,
   progressFile: dataFile(DATA_FILES.setup),
   token: () => account.token(),
