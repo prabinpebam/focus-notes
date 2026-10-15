@@ -103,13 +103,16 @@ The verifier checked the 31 *verifying* work packages in M1, MW, M3, M2, and M4 
 | WP-4.3 | M4 | Verifying | 1 of 1 (FND-04) | code, design-system, accessibility | Reviews, Audit, Installs, Baselines, Screenshots |
 | WP-4.4 | M4 | Verifying | 1 of 1 (KEY-03) | code, design-system, accessibility | Reviews, Audit, Installs, Baselines, Screenshots |
 | WP-4.5 | M4 | Verifying | 2 of 2 (THM-07, THM-13) | code, design-system, accessibility | Reviews, Audit, Installs, Baselines, Screenshots |
+| WP-5.5 | M5 | Verifying | 1 of 1 (DST-03) | code, security | Reviews (code; security re-check of the fixes), Installs, the owner's release environment and tag ruleset (D-128) |
 
 The CodeQL alerts: #3 `packages/seal/src/format.ts:207`; #4 `packages/core/src/format.ts:68`; #5 and #6 `packages/core/src/workspace.ts:129` and `:177`; #7 `packages/editor/src/format.ts:40`; #8 `packages/core/src/bridge.ts:236`; #10 `packages/core/src/history.ts:35`; #11 `packages/core/src/notes.ts:52`; #12 to #14 `packages/core/src/search/extract.ts:24`, `:66`, `:86`; #15 `packages/core/src/spotlight.ts:50`. Each is attributed to the package whose commit added the line. #1 (high, `documentations/shell/slate.js:63`) belongs to the docs site, and #9 (medium, `packages/editor/src/table-commands.ts:173`, WP-1.5) is below the bar.
+
+**WP-5.5 (release pipeline, D-128, D-129).** DST-03 is traced by `tools/test/release-workflows.test.mjs` and `tools/test/release-tools.test.mjs` (and the template's checks in `workspace-template.test.mjs`). Two dry runs of `release.yml` on `c89d27a`, run 38692554080 (the `v0.0.1-dryrun.1` tag) and run 38692597770 (a manual run on `wp-5.5`), built the Windows installer (fuses read back, packaged smoke test passed), the macOS and Linux packages, the web app bundle (smoke-tested with its own publisher) and the pinned template, and drafted nothing; `gh attestation verify` passed on the bundle with the signer workflow and tag, and failed for any other tag. Windows CI for `c89d27a`: run 38692554160. The security review found no critical or high issues; its medium and low findings are fixed after it, and from then on dry runs aren't attested at all. `preview-channel.yml` can't run before it's on `main` (`workflow_run` uses the default branch's file), so its first run after the merge is its evidence. Open: a code review, installs on clean machines, and the owner's settings in D-128 (8).
 ## M0: Walking skeleton
 
 | Demo step | Evidence | Status |
 | --- | --- | --- |
-| 1. Install the preview on clean Windows 11 | Preview build from `preview-release.yml` | Owner |
+| 1. Install the preview on clean Windows 11 | Preview build: the `v0.0.x` tag's draft pre-release from `release.yml` (D-128), or the rolling `preview` pre-release (D-129) | Owner |
 | 2. Canvas with only the trigger, caret ready in 2.5 s | `m0-walking-skeleton.spec.ts`; `PRF-02.coldReadyMs` in `pnpm bench --check` | Met |
 | 3 to 5. Heading and paragraphs, clean CommonMark, back on relaunch | `m0-walking-skeleton.spec.ts` | Met |
 | 6. The gallery shows every M0 primitive in light and dark | `vq-surfaces.spec.ts`, `screens.spec.ts`; the gallery build (`pnpm gallery`) | Owner |

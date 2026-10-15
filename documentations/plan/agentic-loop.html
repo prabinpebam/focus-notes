@@ -224,6 +224,7 @@
   <li><strong>Always the latest working state:</strong> a desktop shortcut, Focus Notes Preview, opens the newest commit on <code>main</code> whose Windows CI passed. Work in progress never reaches it.</li>
   <li><strong>Built without anyone asking:</strong> an updater on the owner's machine checks every 10 minutes and builds each new green commit into a folder of its own. A running Preview is never replaced; reopening it switches to the newest build. A short list of what changed sits beside it.</li>
   <li><strong>Separate from the builders:</strong> journeys only ever close the apps they started, and builders never use the Preview's folder.</li>
+  <li><strong>Also on GitHub:</strong> each green push to <code>main</code> replaces the pre-release named <code>preview</code> with that commit's Windows installer and unpacked app (zipped), with checksums and attestations, so the updater can download a build instead of making one (<code>preview-channel.yml</code>, D-129).</li>
   <li><strong>Feedback first:</strong> what the owner reports from Preview goes into the feedback queue and becomes the next small task. A visible change is done only once the owner has seen it in Preview, or it's marked as waiting for their look.</li>
 </ul>
 <h3>4. Measure, show, and challenge</h3>

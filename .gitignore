@@ -2,6 +2,8 @@ node_modules/
 dist/
 out/
 release/
+# The release tools are source, not output.
+!tools/release/
 coverage/
 test-results/
 playwright-report/
@@ -13,3 +15,4 @@ apps/desktop/src/renderer/index.html
 apps/desktop/src/gallery/index.html
 
 dist-reader/
+dist-publish/

@@ -1,0 +1,218 @@
+# Rolling preview (D-122 phase 3, D-129): each push to main whose Windows CI passed replaces the
+# pre-release named `preview` with that commit's Windows build: the installer and the unpacked app,
+# zipped, with SHA256SUMS and attestations. The owner's Preview updater can download it instead of
+# building locally. A commit older than the one already published never replaces it.
+#
+# workflow_run runs this file from main with a write token, so it acts only on ci's push runs from
+# this repository's own main, and builds exactly the commit that ci tested. Unsigned until DSK-07.
+#
+# Under workflow_run, GITHUB_SHA is main's tip when ci finished, and that's the commit an attestation
+# names. So a run builds only when the commit ci tested is still main's tip; when main has moved on,
+# it stops quietly at the gate and the newer commit's own ci run publishes instead (M3, D-129).
+# Check a download with
+#   gh attestation verify <file> --repo prabinpebam/focus-notes \
+#     --signer-workflow prabinpebam/focus-notes/.github/workflows/preview-channel.yml --source-ref refs/heads/main
+name: preview-channel
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  # ci's conclusion is already only Windows (D-112: macOS and Linux can't fail it); this reads the
+  # Windows jobs themselves too, so a change to ci.yml can't quietly let a red Windows build through.
+  gate:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    outputs:
+      current: ${{ steps.tip.outputs.current }}
+    steps:
+      - name: Check every Windows job passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" \
+            --jq '.jobs[] | select(.name | test("windows"; "i")) | [.name, .conclusion] | @tsv' > jobs.tsv
+          cat jobs.tsv
+          # The Windows unit and build job, and the four journey shards.
+          if [ "$(wc -l < jobs.tsv)" -lt 5 ]; then echo "::error::Expected at least 5 Windows jobs."; exit 1; fi
+          if awk -F'\t' '$2 != "success" { bad = 1 } END { exit !bad }' jobs.tsv; then
+            echo "::error::A Windows job didn't pass, so this commit isn't published."; exit 1
+          fi
+      - id: tip
+        name: Check the tested commit is still main's tip
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [ "$HEAD_SHA" = "$GITHUB_SHA" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::main has moved on to $GITHUB_SHA since ci tested $HEAD_SHA; that commit's own run publishes."
+            echo "current=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: gate
+    if: needs.gate.outputs.current == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    # A newer green commit's build waits for this one rather than cancelling it (L4).
+    concurrency:
+      group: preview-channel-build
+      cancel-in-progress: false
+    defaults:
+      run:
+        shell: bash
+    env:
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      RUN_NUMBER: ${{ github.run_number }}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Refuse to build anything but the commit the attestation will name
+        run: |
+          if [ "$HEAD_SHA" != "$GITHUB_SHA" ]; then
+            echo "::error::ci tested $HEAD_SHA but this run's commit is $GITHUB_SHA."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          # setup-node caches by itself when package.json names a packageManager (L9).
+          package-manager-cache: false
+      - run: pnpm install --frozen-lockfile
+      - run: node packages/tokens/build.mjs
+      # <desktop version>-preview.<this workflow's run number>: rises with every preview, so an
+      # updater comparing versions always sees the newest as newer.
+      - id: version
+        name: Preview version
+        run: |
+          base=$(node -p "require('./apps/desktop/package.json').version")
+          echo "version=$base-preview.$RUN_NUMBER" >> "$GITHUB_OUTPUT"
+      - name: Build the installer and the unpacked app (unsigned until DSK-07)
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: pnpm --filter @focus-notes/desktop run dist "-c.extraMetadata.version=$VERSION"
+      # Zipped before the smoke test, which writes a test copy of the executable beside it (D-116).
+      - name: Zip the unpacked app
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory preview | Out-Null
+          Compress-Archive -Path apps/desktop/release/win-unpacked/* -DestinationPath "preview/Focus-Notes-$env:VERSION-win-x64-unpacked.zip"
+          Copy-Item apps/desktop/release/*.exe preview/ -Exclude __uninstaller*
+          Set-Content preview/commit.txt $env:HEAD_SHA -NoNewline
+      - name: Check the packaged executable's fuses
+        run: pnpm exec vitest run apps/desktop/test/hardening.test.ts
+      - name: Packaged app smoke test
+        working-directory: apps/desktop
+        env:
+          FOCUS_NOTES_E2E: "1"
+          FOCUS_NOTES_E2E_EXE: ${{ github.workspace }}\apps\desktop\release\win-unpacked\focus-notes.exe
+        run: pnpm exec playwright test e2e/packaged.spec.ts
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: preview
+          path: preview/
+          if-no-files-found: error
+          retention-days: 7
+
+  attest:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: preview
+          path: dist
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum -- * > SHA256SUMS
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: "dist/*"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: preview-assets
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [build, attest]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # One replace at a time; a newer one waits rather than cancelling one half done (L4).
+    concurrency:
+      group: preview-channel-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: preview-assets
+          path: dist
+      - name: Replace the preview pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          VERSION: ${{ needs.build.outputs.version }}
+          SUBJECT: ${{ github.event.workflow_run.head_commit.message }}
+        run: |
+          # Only "not found" means there's no preview yet; any other error stops here (L5).
+          if current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/preview" --jq .object.sha 2> err.txt); then
+            :
+          elif grep -q "HTTP 404" err.txt; then
+            current=""
+          else
+            cat err.txt
+            echo "::error::Couldn't read the preview tag."
+            exit 1
+          fi
+          # Never go back: a slower run for an older commit leaves a newer preview where it is.
+          if [ -n "$current" ] && [ "$current" != "$HEAD_SHA" ]; then
+            status=$(gh api "repos/$GITHUB_REPOSITORY/compare/$current...$HEAD_SHA" --jq .status)
+            if [ "$status" != "ahead" ]; then
+              echo "::notice::The preview already has $current, which $HEAD_SHA isn't ahead of ($status). Nothing to do."
+              exit 0
+            fi
+          fi
+          short=${HEAD_SHA:0:7}
+          # The subject's first line, with Markdown's special characters escaped as notes.mjs does (L11).
+          subject=$(printf '%s' "${SUBJECT%%$'\n'*}" | sed -E 's/([][\\`*_<>])/\\\1/g')
+          {
+            echo "The newest commit on main whose Windows CI passed: $HEAD_SHA"
+            echo
+            echo "> $subject"
+            echo
+            echo "Unsigned rolling preview, replaced on every green push to main. Check a download with"
+            echo "\`sha256sum --check --ignore-missing SHA256SUMS\` and"
+            echo "\`gh attestation verify <file> --repo $GITHUB_REPOSITORY --signer-workflow $GITHUB_REPOSITORY/.github/workflows/preview-channel.yml --source-ref refs/heads/main\`."
+          } > notes.md
+          if [ -n "$current" ]; then
+            gh release delete preview --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          fi
+          gh release create preview dist/* --repo "$GITHUB_REPOSITORY" --target "$HEAD_SHA" --prerelease \
+            --title "Preview $VERSION ($short)" --notes-file notes.md
