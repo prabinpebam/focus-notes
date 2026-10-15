@@ -14,6 +14,7 @@ import { chordParts, shortcutFor, spokenChord } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
+import type { TaskTracker, TaskView } from "./tasks.ts";
 import { isRepoName, DEFAULT_SETUP, setupFailureActions, type SetupFailureAction, type SetupReport } from "./setup.ts";
 import type { SetupState } from "./setup-app.ts";
 import {
@@ -24,6 +25,14 @@ import {
 export * from "./first-run.ts";
 
 export type SignInPhase = "idle" | "code" | "window" | "waiting" | "token";
+/**
+ * The first run's waits (PRF-13, D-149), each with its words (`firstRun.wait.<op>`) unless it's
+ * silent: checking Git and the folder on arrival are responsive and show nothing (the inventory).
+ */
+export type FirstRunWaitOp = "" | "git" | "prepare" | "account" | "signIn" | "identity" | "findNotes" | "folder" | "chooseFolder" | "clone" | "create" | "open" | "strength";
+/** The waits that name themselves under the step's title; signing in has its own place, the code card. */
+const SAID: readonly FirstRunWaitOp[] = ["account", "identity", "findNotes", "folder", "clone", "create", "open"];
+const NO_PROGRESS = { op: "", done: 0, total: 0, part: "", percent: -1 };
 /**
  * Why the card shows: a new install's first run; Run setup again (from Connect, FRE-07); signing in
  * again or switching account (the Connect step alone, FRE-07); or Open another workspace from
@@ -37,15 +46,22 @@ export interface FirstRunState {
   active: boolean;
   scope: FirstRunScope;
   step: FirstRunStep;
-  /** A check or an action is under way. */
+  /** A check or an action is under way: the step's controls hold. What it is, `wait` names. */
   busy: boolean;
+  /**
+   * The work the step is waiting for (PRF-13, D-149), named so the screen can say it: "" when none.
+   * Its sign and elapsed time come from the task tracker (`firstRun.<op>`); `progress` is what the
+   * shell streams (repositories checked, a download's part and percentage).
+   */
+  wait: FirstRunWaitOp;
+  progress: { op: string; done: number; total: number; part: string; percent: number };
   git?: GitCheck;
   account?: AccountStatus;
   /** Use a different account: the account found isn't offered. */
   other: boolean;
   /** Having trouble? is open on Connect. */
   trouble: boolean;
-  signIn: { phase: SignInPhase; code: string; helper: "gcm" | "gh" | "" };
+  signIn: { phase: SignInPhase; code: string; helper: "gcm" | "gh" | ""; device?: boolean; reported?: boolean };
   /** A pasted token, only until it's sent to the shell. Never persisted. */
   token: string;
   tokenError: boolean;
@@ -81,7 +97,7 @@ export interface FirstRunState {
 }
 
 export const FIRST_RUN_INACTIVE: FirstRunState = {
-  active: false, scope: "install", step: "welcome", busy: false, other: false, trouble: false,
+  active: false, scope: "install", step: "welcome", busy: false, wait: "", progress: NO_PROGRESS, other: false, trouble: false,
   signIn: { phase: "idle", code: "", helper: "" }, token: "", tokenError: false,
   workspace: {
     mode: "create", more: false, details: false, instance: DEFAULT_SETUP.instance, private: DEFAULT_SETUP.private, publish: DEFAULT_SETUP.publish,
@@ -96,7 +112,7 @@ export interface AccountState {
 }
 export const NO_ACCOUNT: AccountState = { login: "" };
 
-interface S { firstRun: FirstRunState; account: AccountState; setup: SetupState; sync: { git: boolean; problem?: string }; appearance: { mode: "system" | "light" | "dark"; contentFont: string }; focusMode: boolean }
+interface S { firstRun: FirstRunState; account: AccountState; setup: SetupState; sync: { git: boolean; problem?: string }; appearance: { mode: "system" | "light" | "dark"; contentFont: string }; focusMode: boolean; tasks: TaskView[] }
 
 interface Ctx<St extends S> {
   store: Store<St>;
@@ -104,6 +120,8 @@ interface Ctx<St extends S> {
   catalog: MessageCatalog;
   commands: CommandRegistry<St>;
   viewModels: ViewModelRegistry<St>;
+  /** Every wait goes through the tracker (PRF-08, PRF-13): its sign, its announcement and its elapsed time. */
+  tracker?: TaskTracker;
   toast: (message: string, opts?: { tone?: "info" | "error" }) => unknown;
   persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
   /** Saves and puts away the open note while the card shows again over the canvas. False if it couldn't be saved. */
@@ -134,7 +152,7 @@ const FAIL_LABEL: Record<SetupFailureAction, string> = {
 
 export const SETUP_COMMANDS = /^(firstRun\.|window\.|toast\.|setup\.|keys\.|ui\.scale|appearance\.(system|light|dark)$|notes\.import$|command\.run$|app\.ready$)/;
 
-export function registerFirstRun<St extends S>({ store, bridge, catalog, commands, viewModels, toast, persistAppState, hold, release, now = Date.now }: Ctx<St>) {
+export function registerFirstRun<St extends S>({ store, bridge, catalog, commands, viewModels, tracker, toast, persistAppState, hold, release, now = Date.now }: Ctx<St>) {
   const fr = bridge.firstRun;
   const state = () => store.state.firstRun;
   const set = (patch: Partial<FirstRunState>) => store.update((s) => ({ ...s, firstRun: { ...s.firstRun, ...patch } }));
@@ -143,27 +161,49 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   const setLogin = (login: string) => { if (store.state.account.login !== login) store.update((s) => ({ ...s, account: { login } })); };
   const bump = () => set({ focus: state().focus + 1 });
   const platformOf = () => (bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows");
-  /** Runs a shell call with the step marked busy; a call that throws counts as "didn't work". */
-  const busy = async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
-    set({ busy: true });
+  /**
+   * Runs a shell call as a named wait (PRF-13, D-149): the step holds its controls, the tracker gives
+   * it its sign, announcement and elapsed time, and the screen says what it's waiting for. A call
+   * that throws counts as "didn't work".
+   */
+  const busy = async <T,>(op: Exclude<FirstRunWaitOp, "">, fn: () => Promise<T>): Promise<T | undefined> => {
+    set({ busy: true, wait: op, ...(op === "findNotes" || op === "clone" ? { progress: { ...NO_PROGRESS, op } } : {}) });
     try {
-      return await fn();
+      return await (tracker ? tracker.run(`firstRun.${op}`, `firstRun.wait.${op}`, fn) : fn());
     } catch {
       return undefined;
     } finally {
-      set({ busy: false });
+      set({ busy: false, wait: "" });
     }
   };
+  /**
+   * The account's repositories, asked as soon as Connect has the account (prefetch on intent,
+   * PRF-13), so Your notes usually has them on arrival. Kept until asked again (Find my notes again).
+   */
+  let repoAsk: Promise<RepoChoice[] | undefined> | undefined;
+  let repoLogin = "";
+  const askRepos = () => (repoAsk ??= fr!.repositories().catch(() => {
+    repoAsk = undefined;
+    return undefined;
+  }));
+  /** The list is asked again: another account, Find my notes again, Open another workspace. */
+  const forgetRepos = () => void (repoAsk = undefined);
   /** The login the app is signed in as: Git's account, unless Focus Notes alone was signed out (FRE-07). */
   const signedInAs = (a: AccountStatus | undefined) => (a?.account && !a.signedOut ? a.account.login : "");
   const applyAccount = (a: AccountStatus | undefined) => {
     set({ account: a ?? { gcm: state().account?.gcm ?? false, gh: state().account?.gh ?? false, problem: "failed" } });
     if (signedInAs(a)) setLogin(signedInAs(a));
+    // The account is known: Your notes' list starts now, while the person reads Connect (not for Switch account alone).
+    if (signedInAs(a) && state().scope !== "account" && !state().workspace.reposLoaded) {
+      if (repoLogin !== signedInAs(a)) forgetRepos();
+      repoLogin = signedInAs(a);
+      void askRepos();
+    }
   };
   /** Your notes starts at the workspaces found, or at Create my notes (Open from GitHub when it's shown alone). */
   const baseMode = (): WorkspaceMode => (state().workspace.repos.some((r) => r.instance) ? "found" : state().scope === "workspace" ? "clone" : "create");
   const loadRepos = async () => {
-    const repos = await busy(() => fr!.repositories());
+    const repos = await busy("findNotes", askRepos);
     setWs({ repos: repos ?? [], reposLoaded: Boolean(repos), activeId: repos?.[0] ? `${repos[0].owner}/${repos[0].name}` : "", ...(repos ? {} : { error: "firstRun.notes.error.offline" }) });
   };
 
@@ -174,13 +214,13 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const { account: _gone, ...rest } = state();
       store.update((s) => ({ ...s, firstRun: { ...rest, other: rest.scope === "account" && rest.other, token: "", tokenError: false } }));
       setSignIn({ phase: "idle", code: "", helper: "" });
-      const git = (await busy(() => fr!.git())) ?? { installed: false, ok: false, gcm: false, gh: false };
+      const git = (await busy("git", () => fr!.git())) ?? { installed: false, ok: false, gcm: false, gh: false };
       set({ git });
-      if (git.ok) applyAccount(await busy(() => fr!.account()));
+      if (git.ok) applyAccount(await busy("account", () => fr!.account()));
       bump();
     },
     notes: async () => {
-      const folder = await busy(() => fr!.folder(state().workspace.instance));
+      const folder = await busy("prepare", () => fr!.folder(state().workspace.instance));
       setWs({ folder: folder ?? "", error: "", more: false, details: false });
       if (store.state.setup.report?.options) return setWs({ mode: "create" });
       if (!state().workspace.reposLoaded) await loadRepos();
@@ -223,7 +263,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   const connected = async () => {
     const a = state().account?.account;
     if (!a || state().account?.signedOut) return;
-    if (state().scope !== "account") await busy(() => fr!.setIdentity(notesIdentity(a), "workspace"));
+    if (state().scope !== "account") await busy("identity", () => fr!.setIdentity(notesIdentity(a), "workspace"));
     await go("notes");
   };
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => unknown, enabled?: (s: St) => boolean) =>
@@ -271,7 +311,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     if (a?.account && !a.signedOut) return connected();
     // The GitHub CLI's session, or the account Git kept when Focus Notes alone signed out (FRE-07).
     if (a?.cliAccount || a?.signedOut) {
-      applyAccount(await busy(() => fr!.useExisting()));
+      applyAccount(await busy("account", () => fr!.useExisting()));
       if (signedInAs(state().account)) await connected();
     }
   });
@@ -279,9 +319,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   const signIn = (device: boolean) => async () => {
     if (state().busy) return;
     const a = state().account;
-    setSignIn({ phase: "waiting", code: "", helper: a?.gcm ? "gcm" : "gh" });
+    setSignIn({ phase: "waiting", code: "", helper: a?.gcm ? "gcm" : "gh", device, reported: false });
     set({ account: { gcm: a?.gcm ?? false, gh: a?.gh ?? false }, other: true });
-    const r = await busy(() => fr!.signIn(device));
+    const r = await busy("signIn", () => fr!.signIn(device));
     if (state().signIn.phase === "idle") return; // Cancelled meanwhile.
     setSignIn({ phase: "idle", code: "" });
     applyAccount(r);
@@ -327,7 +367,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     // The token leaves the app's state at once, whatever happens next; the form says so (D-135).
     set({ token: "" });
     if (!looksLikeToken(token)) return set({ tokenError: true, focus: state().focus + 1 });
-    const r = await busy(() => fr!.useToken(token));
+    const r = await busy("account", () => fr!.useToken(token));
     applyAccount(r);
     if (signedInAs(r)) {
       setSignIn({ phase: "idle" });
@@ -347,6 +387,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   });
   reg("firstRun.findNotes", async () => {
     setWs({ error: "", reposLoaded: false });
+    forgetRepos();
     await loadRepos();
     if (state().workspace.reposLoaded) setWs({ mode: baseMode() });
     bump();
@@ -377,7 +418,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   });
   reg<{ value: string }>("firstRun.setConfirm", (a) => setWs({ confirm: value(a), error: "", field: "" }));
   reg("firstRun.chooseFolder", async () => {
-    const folder = await busy(() => fr!.chooseFolder());
+    const folder = await busy("chooseFolder", () => fr!.chooseFolder());
     if (folder) setWs({ folder, error: "" });
   });
   // A failed part's actions (D-154): only those it offers; each changes something or goes back.
@@ -385,9 +426,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     const failed = store.state.setup.report?.steps.find((x) => x.state === "failed");
     if (!failed || state().busy || !setupFailureActions(failed.problem).includes(id as SetupFailureAction)) return;
     if (id === "back") return commands.run("firstRun.back");
-    if (id === "retry") await busy(() => commands.run("setup.retry", { id: failed.id }));
-    else if (id === "startOver") await busy(() => commands.run("setup.startOver"));
-    else await busy(() => commands.run("setup.useFolder", { how: id === "chooseFolder" ? "choose" : "new" }));
+    if (id === "retry") await busy("create", () => commands.run("setup.retry", { id: failed.id }));
+    else if (id === "startOver") await busy("create", () => commands.run("setup.startOver"));
+    else await busy("create", () => commands.run("setup.useFolder", { how: id === "chooseFolder" ? "choose" : "new" }));
     bump();
   });
   // Create my notes: with the browser passphrase only when one was typed under More options (D-124).
@@ -401,7 +442,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     if (w.instance.toLowerCase() === w.private.toLowerCase()) return fail("firstRun.workspace.error.same", "private");
     let passphrase: string | undefined;
     if (w.passphrase || w.confirm) {
-      const strength = await busy(() => bridge.setup!.passphraseStrength(w.passphrase));
+      const strength = await busy("strength", () => bridge.setup!.passphraseStrength(w.passphrase));
       if (strength) setWs({ strength: strengthLevel(strength) });
       if (!strength?.ok) return fail("firstRun.workspace.error.weak", "passphrase");
       if (w.confirm !== w.passphrase) return fail("firstRun.workspace.error.confirm", "confirm");
@@ -409,7 +450,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     }
     // The passphrase goes to the shell once, for the vault step, and leaves the app's state now.
     setWs({ passphrase: "", confirm: "", error: "", field: "", strength: 0, more: false });
-    const r = await busy(() => bridge.setup!.start({ instance: w.instance, private: w.private, folder: w.folder, publish: w.publish }, passphrase));
+    const r = await busy("create", () => bridge.setup!.start({ instance: w.instance, private: w.private, folder: w.folder, publish: w.publish }, passphrase));
     if (r) store.update((s) => ({ ...s, setup: { available: true, report: r } }));
     else setWs({ error: "firstRun.workspace.error.failed" });
     bump();
@@ -440,7 +481,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     const repo = state().workspace.repos.find((r) => `${r.owner}/${r.name}` === target);
     if (!repo || state().busy) return;
     setWs({ cloneId: `${repo.owner}/${repo.name}` });
-    await opened(await busy(() => fr!.clone(repo.owner, repo.name)) ?? { ok: false, problem: "failed" });
+    await opened(await busy("clone", () => fr!.clone(repo.owner, repo.name)) ?? { ok: false, problem: "failed" });
   });
   // Open into a folder that's taken (D-154): another folder, a new one beside the default, or Back.
   reg<{ id: string }>("firstRun.errorAction", async ({ id }) => {
@@ -449,16 +490,16 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     if (state().busy || !owner || !name || w.result?.ok !== false || w.result.problem !== "folderTaken") return;
     if (id === "back") return (setWs({ error: "" }), commands.run("firstRun.back"));
     if (id === "chooseFolder") {
-      const folder = await busy(() => fr!.chooseFolder());
+      const folder = await busy("chooseFolder", () => fr!.chooseFolder());
       if (!folder) return;
       setWs({ folder });
-      await opened(await busy(() => fr!.clone(owner, name)) ?? { ok: false, problem: "failed" });
-    } else if (id === "newFolder") await opened(await busy(() => fr!.clone(owner, name, "new")) ?? { ok: false, problem: "failed" });
+      await opened(await busy("clone", () => fr!.clone(owner, name)) ?? { ok: false, problem: "failed" });
+    } else if (id === "newFolder") await opened(await busy("clone", () => fr!.clone(owner, name, "new")) ?? { ok: false, problem: "failed" });
   });
   commands.register({ id: "firstRun.cloneActive", title: "command.firstRun.clone", shortcut: { default: "Enter", handledBy: "repoField" }, layer: "basic", group: "files", run: () => commands.run("firstRun.clone", { id: "" }) });
   reg("firstRun.openFolder", async () => {
     if (state().busy) return;
-    await opened(await busy(() => fr!.openFolder()));
+    await opened(await busy("folder", () => fr!.openFolder()));
   });
   reg("firstRun.openWorkspace", async () => {
     const s = store.state;
@@ -466,7 +507,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     // The window starts again in the workspace: at Ready, or writing when Your notes was shown alone.
     const alone = s.firstRun.scope === "workspace";
     await persistAppState({ firstRun: alone ? "done" : "ready" });
-    const r = await busy(() => fr!.openWorkspace());
+    const r = await busy("open", () => fr!.openWorkspace());
     if (!r?.ok) {
       await persistAppState({ firstRun: alone ? "done" : "notes" });
       setWs({ error: `firstRun.workspace.problem.${r?.problem ?? "failed"}` });
@@ -534,6 +575,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         instanceError: { type: "string" }, privateError: { type: "string" }, passphraseError: { type: "string" }, confirmError: { type: "string" },
         hasStrength: { type: "boolean" }, strength: { type: "number" },
         instanceFocus: { type: "number" }, privateFocus: { type: "number" }, passphraseFocus: { type: "number" }, confirmFocus: { type: "number" }, strengthText: { type: "string" },
+        // PRF-13, D-149: what the step waits for, in words, with a count or percentage and the elapsed time;
+        // the sign-in's own wait on the code card; and the part creating is on.
+        waitText: { type: "string" }, hasWait: { type: "boolean" }, approvalText: { type: "string" }, partText: { type: "string" }, hasPart: { type: "boolean" },
       },
     },
     setters: {
@@ -541,9 +585,34 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       confirm: "firstRun.setConfirm", query: "firstRun.setQuery", theme: "firstRun.setTheme",
     },
     // Ready's import button shows the import command's state, which depends on the shell (WP-3.4).
-    reads: ["firstRun", "setup", "account", "appearance.mode"],
+    reads: ["firstRun", "setup", "account", "appearance.mode", "tasks"],
     select: (s) => {
       const f = s.firstRun;
+      // ---- waits (PRF-13, D-149): named at their place, a count or percentage, the elapsed time past wait.elapsedDelay ----
+      const taskOf = (op: string) => s.tasks.find((t) => t.target === `firstRun.${op}`);
+      const withElapsed = (words: string, op: string) => {
+        const t = taskOf(op);
+        return t?.elapsed ? catalog.format("firstRun.wait.elapsed", { words, seconds: t.elapsed }) : words;
+      };
+      const pr = f.progress;
+      const waitWords = (op: FirstRunWaitOp): string => {
+        if (op === "findNotes") return pr.op === "findNotes" && pr.total ? catalog.format("firstRun.wait.findNotesCount", { done: pr.done, total: pr.total }) : catalog.format("firstRun.wait.findNotes");
+        if (op === "clone" && pr.op === "clone" && pr.part) {
+          return pr.part === "download" ? (pr.percent >= 0 ? catalog.format("firstRun.wait.downloadPercent", { percent: pr.percent }) : catalog.format("firstRun.wait.clone"))
+            : catalog.format(`firstRun.wait.part.${pr.part}`, { n: pr.part === "private" ? 2 : 3, total: 3 });
+        }
+        return catalog.format(`firstRun.wait.${op}`);
+      };
+      const waiting = f.wait && SAID.includes(f.wait) ? taskOf(f.wait) : undefined;
+      const hasWait = Boolean(waiting && waiting.phase === "on");
+      const waitText = hasWait ? withElapsed(waitWords(f.wait), f.wait) : "";
+      // Signing in: "Getting a code from GitHub…" until the helper says the code, then the approval wait.
+      const gettingCode = f.signIn.phase === "waiting" && f.signIn.device === true && !f.signIn.reported && !f.signIn.code;
+      const approvalText = withElapsed(catalog.format(gettingCode ? "firstRun.wait.code" : "firstRun.signIn.waiting"), "signIn");
+      // Creating: the part it's on, its number, and the elapsed time ("Copying the template · 2 of 9 · 14 s").
+      const setupSteps = s.setup.report?.running ? s.setup.report.steps : [];
+      const at = setupSteps.findIndex((x) => x.state === "running");
+      const partText = at < 0 ? "" : withElapsed(catalog.format("firstRun.wait.setupPart", { part: catalog.format(`setup.step.${setupSteps[at]!.id}`), n: at + 1, total: setupSteps.length }), "creating");
       const i = FIRST_RUN_STEPS.indexOf(f.step);
       const a = f.account;
       const g = f.git;
@@ -666,6 +735,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         })) : [],
         createDetail: catalog.format(lookupFailed ? "firstRun.notes.createOffline" : "firstRun.notes.createWhy"),
         folderShort: shortPath(w.folder),
+        waitText, hasWait, approvalText, partText, hasPart: Boolean(partText),
       };
     },
   });
@@ -682,7 +752,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     /** Starts the first run if this shell has one and it isn't done. Resolves to whether it's showing. */
     async begin(app: AppStateFile): Promise<boolean> {
       if (!fr) return false;
-      fr.onSignIn((p) => { if (state().signIn.phase !== "idle") setSignIn({ phase: p.phase, code: p.code ?? "", helper: p.helper }); });
+      fr.onSignIn((p) => { if (state().signIn.phase !== "idle") setSignIn({ phase: p.phase, code: p.code ?? "", helper: p.helper, reported: true }); });
+      // Long calls stream their progress: repositories checked, a download's part and percentage (PRF-13).
+      fr.onProgress?.((p) => set({ progress: { op: p.op, done: p.done ?? 0, total: p.total ?? 0, part: p.part ?? "", percent: typeof p.percent === "number" ? p.percent : -1 } }));
       store.subscribe(askAccount);
       // People who wrote with the app before it had a first run keep writing (D-101).
       if (app.firstRun === "done" || (app.firstRun === undefined && app.lastNotePath)) return false;
@@ -703,7 +775,10 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       if (!fr || state().active || (hold && !(await hold()))) return false;
       set({ active: true, scope, step, other: Boolean(opts.other), trouble: false, busy: false, focus: state().focus + 1 });
       setSignIn({ phase: "idle", code: "", helper: "" });
-      if (scope === "workspace") setWs({ reposLoaded: false, repos: [], mode: "clone", error: "" });
+      if (scope === "workspace") {
+        forgetRepos();
+        setWs({ reposLoaded: false, repos: [], mode: "clone", error: "" });
+      }
       if (scope === "setup") await persistAppState({ firstRun: step });
       void arrive[step]?.();
       return true;
