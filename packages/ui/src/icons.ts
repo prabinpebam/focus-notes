@@ -11,7 +11,7 @@ import {
   BracesVariable20Regular, ArrowUp20Regular, ArrowDown20Regular, LockClosed20Regular, ArrowExportLtr20Regular,
   ArrowImport20Regular, TextStrikethrough20Regular, TextT20Regular, TaskListLtr20Regular, LineHorizontal120Regular, FolderAdd20Regular,
   Cloud20Regular, CloudArrowUp20Regular, CloudCheckmark20Regular, CloudOff20Regular,
-  ArrowDownload20Regular, Circle20Regular, Globe20Regular,
+  ArrowDownload20Regular, Circle20Regular, Globe20Regular, CalendarLtr20Regular, ChevronLeft20Regular, Mail20Regular,
   type FluentIcon,
 } from "@fluentui/react-icons";
 import type { IconName } from "./icon-names.ts";
@@ -26,7 +26,7 @@ export const ICONS: Record<IconName, FluentIcon> = {
   font: TextFont20Regular, keyboard: Keyboard20Regular, settings: Settings20Regular, info: Info20Regular,
   warning: Warning20Regular, error: ErrorCircle20Regular, sync: ArrowSync20Regular, delete: Delete20Regular,
   rename: Rename20Regular, copy: Copy20Regular, folder: Folder20Regular, document: Document20Regular,
-  chevronRight: ChevronRight20Regular, chevronDown: ChevronDown20Regular, undo: ArrowUndo20Regular,
+  chevronRight: ChevronRight20Regular, chevronLeft: ChevronLeft20Regular, chevronDown: ChevronDown20Regular, calendar: CalendarLtr20Regular, mail: Mail20Regular, undo: ArrowUndo20Regular,
   redo: ArrowRedo20Regular, table: Table20Regular, quote: TextQuote20Regular, code: Code20Regular,
   bulletList: TextBulletList20Regular, numberedList: TextNumberListLtr20Regular, heading1: TextHeader120Regular,
   heading2: TextHeader220Regular, heading3: TextHeader320Regular, color: Color20Regular, share: Share20Regular,

@@ -10,6 +10,7 @@
  * Onboarding passes at 80 or more in total with no criterion below 10; the other three criteria are
  * judged by eye, from the screenshots. Light and dark are each measured; the lower counts.
  */
+import type { Locator } from "@playwright/test";
 import type { Page } from "./fixtures.ts";
 import { breakpoints } from "../../../packages/tokens/dist/tokens.ts";
 
@@ -111,4 +112,32 @@ export async function welcomeProblems(page: Page): Promise<string[]> {
     }
     return out;
   }, breakpoints.short);
+}
+
+/** The same measure on any region: a dialog, a popover, a Settings section (D-143). Self-contained, so it runs in the page. */
+function measureIn(region: HTMLElement): VisualMeasure {
+  const count = (t: string) => (t.match(/\S+/g) ?? []).length;
+  const personal = [...region.querySelectorAll("[data-personal]")].reduce((n, el) => n + count((el as HTMLElement).innerText), 0);
+  const words = count(region.innerText) - personal;
+  let maxLines = 0, longest = "";
+  // The person's own words (an invite message, a long link in it) aren't interface paragraphs.
+  for (const el of region.querySelectorAll("span[dir=auto], [data-item-card] p, [data-item-card] span")) {
+    if (el.closest("button, h1, h2, h3, [data-personal]") || !(el as HTMLElement).innerText?.trim()) continue;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const lines = new Set([...range.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.bottom)));
+    if (lines.size > maxLines) ((maxLines = lines.size), (longest = (el as HTMLElement).innerText.slice(0, 40)));
+  }
+  let anchor = 0;
+  for (const el of region.querySelectorAll("[data-app-mark], [data-visual-anchor]")) {
+    const r = el.getBoundingClientRect();
+    if (r.bottom > 0 && r.right > 0 && r.top < window.innerHeight && r.left < window.innerWidth) anchor = Math.max(anchor, Math.min(r.width, r.height));
+  }
+  return { words, maxLines, longest, anchor: Math.round(anchor) };
+}
+
+/** Criteria 1 and 4 for a region, with the measure behind them. */
+export async function scoreRegion(region: Locator, budget: number): Promise<VisualMeasure & { anchorScore: number; economyScore: number }> {
+  const m = await region.evaluate(measureIn);
+  return { ...m, anchorScore: anchorScore(m.anchor), economyScore: economyScore(m.words, m.maxLines, budget) };
 }

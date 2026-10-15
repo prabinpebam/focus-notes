@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://prabinpebam.github.io/focus-notes/schemas/access-message.v1.json",
   "title": "private/access-message.json: the invite template",
+  "description": "Written by the desktop app's main process when the owner edits the invite in Settings → Sharing (SHR-09, D-143). Missing, the app's default template is used.",
   "type": "object",
   "required": [
     "template"
@@ -9,7 +10,9 @@
   "properties": {
     "template": {
       "type": "string",
-      "description": "Placeholders: {name}, {title}, {link}, {passcode}, {expires}"
+      "minLength": 1,
+      "maxLength": 2000,
+      "description": "Up to 20 lines. Placeholders: {name}, {title}, {link}, {passcode}, {expires}, {site}; any other {word} is refused, and it needs {link} or {passcode}. A line whose placeholder has no value for an audience is left out."
     }
   },
   "additionalProperties": false

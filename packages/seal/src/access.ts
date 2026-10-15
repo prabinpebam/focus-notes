@@ -23,6 +23,20 @@ export function expiryFrom(choice: ExpiryChoice, now = new Date()): string | nul
   return choice === "never" ? null : new Date(now.getTime() + Number.parseInt(choice, 10) * DAY).toISOString();
 }
 
+/** A calendar date, `YYYY-MM-DD`, as the date picker gives it (D-143). */
+export const DAY_FORMAT = /^(\d{4})-(\d{2})-(\d{2})$/;
+/**
+ * An audience that works until a date picked on the calendar stops at the end of that day, in the
+ * owner's time zone (D-143). Undefined for anything that isn't a real date.
+ */
+export function expiryUntil(day: string): string | undefined {
+  const m = DAY_FORMAT.exec(day);
+  if (!m) return undefined;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const end = new Date(y, mo - 1, d, 23, 59, 59, 999);
+  return end.getFullYear() === y && end.getMonth() === mo - 1 && end.getDate() === d ? end.toISOString() : undefined;
+}
+
 export type AccessProblem =
   | "name.empty" | "name.long" | "name.taken" | "name.reserved" | "name.invalid"
   | "waysIn.none" | "passcode.short" | "passcode.weak" | "scope.empty" | "expiry.past"
@@ -244,4 +258,38 @@ export function inviteText(template: string, values: InviteValues): string {
     .filter((line) => INVITE_PLACEHOLDERS.every((p) => !line.includes(`{${p}}`) || values[p]))
     .map((line) => line.replace(/\{(name|title|link|passcode|expires|site)\}/g, (_, p: keyof InviteValues) => values[p]!))
     .join("\n").trim();
+}
+
+// ---- the owner's own invite template, private/access-message.json (SHR-09, D-143) ----
+
+/** The longest template, in characters and in lines. */
+export const TEMPLATE_MAX = 2000;
+export const TEMPLATE_LINES = 20;
+export type TemplateProblem = "template.empty" | "template.long" | "template.invalid" | "template.unknown" | "template.noWayIn";
+/** Anything in braces that looks like a placeholder: a word of letters. */
+const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
+/** Hidden characters, apart from line breaks and tabs. */
+const HIDDEN_TEXT = /[\p{Cf}\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/u;
+
+/**
+ * Why a template can't be used, if it can't: empty, too long, hidden characters, a placeholder the
+ * app doesn't know (`unknown` names it, so the owner can fix a typo such as `{pascode}`), or no way
+ * in at all (neither `{link}` nor `{passcode}`).
+ */
+export function templateProblem(template: string): { problem: TemplateProblem; placeholder?: string } | undefined {
+  if (!template.trim()) return { problem: "template.empty" };
+  if (template.length > TEMPLATE_MAX || template.split(/\r?\n/).length > TEMPLATE_LINES) return { problem: "template.long" };
+  if (HIDDEN_TEXT.test(template)) return { problem: "template.invalid" };
+  for (const [, p] of template.matchAll(PLACEHOLDER)) {
+    if (!(INVITE_PLACEHOLDERS as readonly string[]).includes(p!)) return { problem: "template.unknown", placeholder: p! };
+  }
+  if (!template.includes("{link}") && !template.includes("{passcode}")) return { problem: "template.noWayIn" };
+  return undefined;
+}
+
+/** `access-message.json`'s template, or undefined when the file isn't one (a damaged file falls back to the default). */
+export function parseAccessMessage(raw: unknown): string | undefined {
+  const o = raw as { template?: unknown } | null;
+  if (typeof o !== "object" || o === null || Array.isArray(o) || Object.keys(o).some((k) => k !== "template")) return undefined;
+  return typeof o.template === "string" && !templateProblem(o.template) ? o.template.replace(/\r\n/g, "\n") : undefined;
 }

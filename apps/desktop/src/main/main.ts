@@ -865,6 +865,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // Journeys copy into memory, so they never overwrite (or depend on) the computer's clipboard.
   const secretCopy = secretClipboard(devEnv("FOCUS_NOTES_MEMORY_CLIPBOARD") === "1" ? memoryClipboard() : clipboard);
   handle("access:reveal", async (id) => access.reveal(id));
+  handle("access:template", async (template) => {
+    if (!settingsAvailable()) throw new Error("access:failed");
+    return access.setTemplate(template);
+  });
   handle("access:copy", async (id, what, invite) => secretCopy.write(await access.secret(id, what, invite)));
   handle("sync:now", async (reason) => {
     const g = await gitOpening;

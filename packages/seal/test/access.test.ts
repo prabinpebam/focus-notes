@@ -6,7 +6,8 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  AccessEditError, applyAccessChange, audienceState, DEFAULT_EXPIRY, expiryFrom, nameProblem, parseAccessChange, passcodeProblem, shareGrants, type AccessChange,
+  AccessEditError, applyAccessChange, audienceState, DEFAULT_EXPIRY, expiryFrom, expiryUntil, inviteText, nameProblem, parseAccessChange, parseAccessMessage, passcodeProblem, shareGrants,
+  TEMPLATE_LINES, TEMPLATE_MAX, templateProblem, type AccessChange,
 } from "../src/access.ts";
 import { generatePasscode, EFF_WORD_COUNT, effWord, effWords } from "../src/words.ts";
 import { createHash } from "node:crypto";
@@ -259,5 +260,50 @@ describe("parseAccessChange: what the main process accepts from the window", () 
     for (const passcode of [{ value: STRONG, generated: true }, { generate: false }, { generate: true, value: STRONG }]) {
       expect(() => parseAccessChange({ op: "update", id: "sabcdefgh", passcode })).toThrow();
     }
+  });
+});
+
+describe("the invite template (SHR-09, D-143)", () => {
+  it("accepts the six placeholders and refuses anything else in braces, naming it", () => {
+    expect(templateProblem("Hi {name}, \"{title}\": {link}\n{site} {passcode} until {expires}")).toBeUndefined();
+    expect(templateProblem("Hi {nmae}: {link}")).toEqual({ problem: "template.unknown", placeholder: "nmae" });
+    expect(templateProblem("Use {Passcode}")).toEqual({ problem: "template.unknown", placeholder: "Passcode" });
+    // Braces that aren't a placeholder (punctuation, a space) are just text.
+    expect(templateProblem("{ smile } {link} {:-)}")).toBeUndefined();
+  });
+  it("needs a way in, and refuses empty, long, and hidden characters", () => {
+    expect(templateProblem("Hi {name}, see {site}")).toEqual({ problem: "template.noWayIn" });
+    expect(templateProblem("  \n ")).toEqual({ problem: "template.empty" });
+    expect(templateProblem(`{link}${"x".repeat(TEMPLATE_MAX)}`)).toEqual({ problem: "template.long" });
+    expect(templateProblem(`{link}${"\n".repeat(TEMPLATE_LINES)}`)).toEqual({ problem: "template.long" });
+    expect(templateProblem("{link}\u202E")).toEqual({ problem: "template.invalid" });
+    expect(templateProblem("{link}\u200B")).toEqual({ problem: "template.invalid" });
+    expect(templateProblem("{link}\u0007")).toEqual({ problem: "template.invalid" });
+    expect(templateProblem("Tab\there:\r\n{passcode}")).toBeUndefined();
+  });
+  it("reads access-message.json: only { template }, and only a valid one", () => {
+    expect(parseAccessMessage({ template: "Hi {name}\r\n{link}" })).toBe("Hi {name}\n{link}");
+    expect(parseAccessMessage({ template: "Hi {nope} {link}" })).toBeUndefined();
+    expect(parseAccessMessage({ template: "{link}", extra: 1 })).toBeUndefined();
+    expect(parseAccessMessage(["{link}"])).toBeUndefined();
+    expect(parseAccessMessage(null)).toBeUndefined();
+  });
+  it("fills an edited template like the default: a line without a value is left out, values aren't read as placeholders", () => {
+    const t = "Hello {name}!\nLink: {link}\nCode: {passcode} at {site}\nUntil {expires}.";
+    expect(inviteText(t, { name: "{passcode}", passcode: "a-b-c-d", site: "https://x/s/" })).toBe("Hello {passcode}!\nCode: a-b-c-d at https://x/s/");
+  });
+});
+
+describe("a date for the expiry (D-143)", () => {
+  it("is the end of that day where the owner is", () => {
+    const at = new Date(expiryUntil("2026-11-03")!);
+    expect([at.getFullYear(), at.getMonth(), at.getDate(), at.getHours(), at.getMinutes()]).toEqual([2026, 10, 3, 23, 59]);
+  });
+  it("refuses what isn't a real date", () => {
+    for (const bad of ["2026-02-30", "2026-13-01", "26-11-03", "2026-11-03T00:00", ""]) expect(expiryUntil(bad)).toBeUndefined();
+  });
+  it("can't be in the past when it's applied", () => {
+    expect(problem(() => apply(base(), create("Asha", { expiresAt: expiryUntil("2026-10-14")! })))).toBe("expiry.past");
+    expect(problem(() => apply(base(), create("Asha", { expiresAt: expiryUntil("2026-10-16")! })))).toBeUndefined();
   });
 });

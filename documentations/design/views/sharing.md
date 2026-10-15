@@ -34,7 +34,7 @@ An **audience** is one grant: a name, the ways in, what it opens, and when it en
 
 Every instance has one built-in audience, **You**: the owner's own grant, whose scope is every private note and whose passcode is the **vault passphrase** set in the desktop app (D-90, SEC-08). It has no link and no expiry, can't be withdrawn or deleted here, and only the passphrase's derived key is stored. The browser opens it with *Unlock*, read-only ([Web app → Unlocking private notes](../../architecture/web-app.md#unlocking-private-notes)). It's listed first in *All people with access*, with [Change passphrase] (the same as in **Settings → Workspace**).
 
-<h2 data-reader-personas="design product">The Share popover</h2>
+<h2 id="the-share-popover" data-reader-personas="design product">The Share popover</h2>
 
 Opens from ⋯ → Share and visibility, Spotlight (`> Share`), or a Files row's ⋯. A frosted popover, 380 px wide, anchored under the trigger.
 
@@ -45,6 +45,8 @@ Opens from ⋯ → Share and visibility, Spotlight (`> Share`), or a Files row's
 | People you choose | A list of audiences that open this note: name, chips for *Link* and *Passcode*, "Expires in 12 days", and a ⋯ menu (Copy invite, Copy link, Show passcode, Extend, Change what it opens, Withdraw). Audiences that open the note through a folder say "via drafts/". [Add people] is at the bottom. |
 | Anyone (public) | The public URL in a read-only field, [Copy link], and the status: **Live**, **Publishing…**, or **Not published yet** |
 | Footer | A publish status line while changes are on their way ("Works in about 2 minutes, after publishing"), and a link to *All people with access* (Settings → Sharing) |
+
+**As built (D-143):** ⋯ → *Share and visibility…* opens *Share “⟨note⟩”* as a compact dialog, not yet a frosted popover anchored under the trigger. It shows who can read the note as audience cards (with "via trips/" for a folder), each with [Copy invite]; *Only you can read it* when nobody else can; *Anyone can read it* with [Copy public link] for a public note; [Share this note with…], which opens *Add people* with this note picked and comes back here; and [All people with access]. The *Who can read* switch and the row's ⋯ menu stay in Settings → Sharing and Files for now.
 
 ### Add people
 
@@ -78,8 +80,8 @@ Every change is committed to `private/access.json` like a note, so it's live aft
 <h2 id="settings-sharing" data-reader-personas="design product">Settings → Sharing</h2>
 
 - **All people with access:** *You* (the vault) first, then every audience with its name, ways in, what it opens, expiry, and state. Filter by Active, Expired, or Withdrawn, search by name, and act on any row.
-- **As built (WP-5.3, D-134):** each audience is a card with its initials, what it opens and how, and an expiry badge, with [Invite] and ⋯ (Change…, Extend 30 days, Withdraw…, Delete…); [Share with someone] opens *Add people* as a dialog, whose *Opens* is a set of toggle chips for every private folder and note with a filter, and whose *Expires* is *Works for* (1, 7, 30, 90 days, Always). The filter and search by name, the date picker, and the template editor aren't built yet. Only the desktop's main process writes `access.json` and makes its secrets.
-- **Invite template:** edit the message, with the placeholders listed.
+- **As built (WP-5.3, D-134, D-143):** each audience is a card with its initials, what it opens and how, and an expiry badge, with [Invite] and ⋯ (Change…, Extend 30 days, Withdraw…, Delete…); [Share with someone] opens *Add people* as a dialog, which starts with a card for who it's for, what it opens, how, and for how long; its *Opens* is a set of toggle chips for every private folder and note with a filter, and its *Expires* is *Works for* (1, 7, 30, 90 days, Always) or *Or until* a day picked on a calendar (it works until the end of that day). The filter and search by name aren't built yet. Only the desktop's main process writes `access.json` and makes its secrets.
+- **Invite template:** edit the message, with the placeholders listed. As built (D-143), an *Invite message* card (Default or Edited) opens a dialog: the message, the six placeholders as buttons, a live preview with made-up values, and [Reset to default]. An unknown placeholder is named, and a message needs `{link}` or `{passcode}`. It's saved by the main process as `private/access-message.json`; saving the default removes the file.
 - **Share links on this workspace:** whether share-link publishing is set up (the deploy key and secret from [Creating a workspace](../../architecture/desktop-and-git.md#creating-a-workspace)), with [Set up] if it was skipped.
 
 <h2 id="the-share-reader" data-reader-personas="design product">The share reader</h2>

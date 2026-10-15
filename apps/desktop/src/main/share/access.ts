@@ -6,10 +6,10 @@
  * The window's listing holds no secrets: it gets one audience's link and passcode only for its open
  * invite (`reveal`), and copies through this process (`secret`), never the vault's derived key.
  */
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { applyAccessChange, audienceOf, inviteText, parseAccessChange, shareGrants, type InviteValues } from "@focus-notes/seal/access";
+import { applyAccessChange, audienceOf, inviteText, parseAccessChange, parseAccessMessage, shareGrants, templateProblem, type InviteValues } from "@focus-notes/seal/access";
 import { shareLink } from "@focus-notes/seal";
 import { validateAccess, type AccessFile, type Grant } from "@focus-notes/seal/publish";
 import { hasVault } from "@focus-notes/seal/vault";
@@ -40,7 +40,8 @@ const NOT = () => new Error("Not a share request");
 /** The invite as the window built it without secrets: a template, and its values other than the link, passcode, and site. */
 function parseInvite(v: unknown): { template: string; values: InviteValues } {
   const o = v as { template?: unknown; values?: unknown } | undefined;
-  if (!o || typeof o.template !== "string" || o.template.length > 4000 || typeof o.values !== "object" || o.values === null) throw NOT();
+  // Only a template the owner could have saved: known placeholders, no hidden characters (D-143).
+  if (!o || typeof o.template !== "string" || templateProblem(o.template) || typeof o.values !== "object" || o.values === null) throw NOT();
   const values: InviteValues = {};
   for (const [k, x] of Object.entries(o.values)) {
     if (!["name", "title", "expires"].includes(k) || typeof x !== "string" || x.length > 500) throw NOT();
@@ -59,10 +60,18 @@ export function accessStore(o: AccessStoreOptions) {
     try { raw = JSON.parse(await readFile(file(), "utf8")); } catch { throw new Error("private/access.json couldn't be read as JSON."); }
     return validateAccess(raw);
   };
+  /** The owner's invite template (SHR-09, D-143): it holds no secrets; a damaged one is ignored, never quoted. */
+  const messageFile = () => join(o.dir(), "access-message.json");
+  const template = async (): Promise<string | undefined> => {
+    const text = await readFile(messageFile(), "utf8").catch(() => undefined);
+    if (text === undefined) return undefined;
+    try { return parseAccessMessage(JSON.parse(text)); } catch { return undefined; }
+  };
   const listing = async (a: AccessFile | undefined): Promise<AccessListing> => {
     if (!a) return { available: false, vault: false, grants: [] };
     const site = await o.site().catch(() => undefined);
-    return { available: true, ...(site ? { site } : {}), vault: hasVault(a), grants: shareGrants(a).map(audienceOf) };
+    const t = await template();
+    return { available: true, ...(site ? { site } : {}), ...(t ? { template: t } : {}), vault: hasVault(a), grants: shareGrants(a).map(audienceOf) };
   };
   const grant = async (id: unknown): Promise<Grant> => {
     const g = typeof id === "string" ? shareGrants(await read()).find((x) => x.id === id) : undefined;
@@ -89,6 +98,28 @@ export function accessStore(o: AccessStoreOptions) {
         await o.write(file(), `${JSON.stringify(access, null, 2)}\n`);
         o.written(file());
         return { ...(await listing(access)), id };
+      };
+      const done = queue.then(run, run);
+      queue = done.catch(() => {});
+      return done;
+    },
+    /**
+     * Saves the owner's invite template to `private/access-message.json`, or with null removes it (back
+     * to the default); committed on the cadence like access.json. Checked here again (D-143).
+     */
+    setTemplate: (raw: unknown): Promise<AccessListing> => {
+      const run = async () => {
+        if (!existsSync(o.dir())) throw new Error("access:failed");
+        if (raw === null) {
+          if (existsSync(messageFile())) { await rm(messageFile(), { force: true }); o.written(messageFile()); }
+        } else {
+          if (typeof raw !== "string") throw NOT();
+          const bad = templateProblem(raw);
+          if (bad) throw new Error(`access:${bad.problem}`);
+          await o.write(messageFile(), `${JSON.stringify({ template: raw.replace(/\r\n/g, "\n") }, null, 2)}\n`);
+          o.written(messageFile());
+        }
+        return listing(await read());
       };
       const done = queue.then(run, run);
       queue = done.catch(() => {});

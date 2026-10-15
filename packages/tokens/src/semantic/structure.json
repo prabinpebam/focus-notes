@@ -202,6 +202,10 @@
       "$value": "{ref.size.64}",
       "$description": "An account's picture on its profile card (D-126)."
     },
+    "textArea": {
+      "$value": "{ref.size.158}",
+      "$description": "A multi-line field's least height, about six lines: the invite message (D-143)."
+    },
     "stepMark": {
       "$value": "{ref.size.64}",
       "$description": "A setup step's hero icon tile (D-135)."

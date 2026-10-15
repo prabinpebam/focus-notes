@@ -69,9 +69,12 @@ test("SHR-03: Copy public link copies a public note's page address from ⋯ and 
     await page.keyboard.press("Escape");
     await expect(page.getByRole("menu", { name: "More" })).toHaveCount(0);
 
-    // Share and visibility… opens Settings → Sharing (WP-5.3, D-139).
+    // Share and visibility… opens the note's Share popover; All people with access goes on to Settings → Sharing (D-143).
     menu = await openMore(page);
     await menu.getByRole("menuitem", { name: /^Share and visibility…/ }).click();
+    const share = page.getByRole("dialog", { name: /^Share “/ });
+    await expect(share).toBeVisible();
+    await share.getByRole("button", { name: "All people with access" }).click();
     const settings = page.getByRole("dialog", { name: "Settings" });
     await expect(settings.getByRole("tab", { name: "Sharing" })).toHaveAttribute("aria-selected", "true");
     await expect(settings.getByRole("heading", { name: "People with access" })).toBeVisible();
