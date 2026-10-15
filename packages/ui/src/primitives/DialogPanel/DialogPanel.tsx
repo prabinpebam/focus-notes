@@ -25,6 +25,8 @@ export interface DialogPanelProps {
   onOpenChange?: (payload: { open: boolean }) => void;
 }
 
+const TABBABLE = "a[href], button, input, select, textarea, [tabindex], [contenteditable='true']";
+
 /**
  * A modal dialog over a dimmed canvas (Foundations → Surfaces, layer 5). Focus stays inside while
  * it's open and returns where it was when it closes. Esc and clicking the scrim close it.
@@ -51,6 +53,29 @@ export function DialogPanel({ label, open, size = "l", header, fixed, footer, pl
       modal.style.removeProperty(name);
     };
   }, [open, height]);
+  // Focus never falls to the page while it's open (WCAG 2.4.3, DEF-12). When the control holding it
+  // goes away or stops taking it (a tab panel that was a tab stop until its first control appeared),
+  // it moves to the nearest control still there, or to the body. React Aria's own containment does
+  // this only a frame later, onto the dialog itself.
+  useEffect(() => {
+    const modal = bodyRef.current?.closest<HTMLElement>("[data-dialog-modal]");
+    if (!open || !modal) return;
+    const onOut = (e: FocusEvent) => {
+      if (e.relatedTarget) return;
+      const from = e.target instanceof HTMLElement ? e.target : null;
+      queueMicrotask(() => {
+        const doc = modal.ownerDocument;
+        if (!modal.isConnected || modal.closest("[data-exiting]") || (doc.activeElement && doc.activeElement !== doc.body)) return;
+        for (let n = from; n && modal.contains(n); n = n.parentElement) {
+          const first = [...n.querySelectorAll<HTMLElement>(TABBABLE)].find((el) => el.tabIndex >= 0 && !el.matches(":disabled") && el.getClientRects().length > 0);
+          if (first) return void first.focus();
+        }
+        bodyRef.current?.focus();
+      });
+    };
+    modal.addEventListener("focusout", onOut);
+    return () => modal.removeEventListener("focusout", onOut);
+  }, [open]);
   return (
     <ModalOverlay data-scrim="" className={`${s.overlay} ${s.placement[placement]}`} isOpen={Boolean(open)} isDismissable onOpenChange={(o) => onOpenChange?.({ open: o })}>
       <Modal className={`${s.modal} ${s.size[size]} ${s.height[height]}`} data-dialog-modal="" data-height={height}>
