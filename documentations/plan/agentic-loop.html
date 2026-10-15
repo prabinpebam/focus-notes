@@ -213,14 +213,22 @@
     <tr><td>Batch size and time-box</td><td>One fix, about 15 minutes from report to visible fix</td><td>One work package or a coherent part of one, 45-minute time-boxes that each merge what works</td></tr>
     <tr><td>Checks before merging</td><td>The fast checks for what changed (5 minutes or less); the full Windows suite runs on CI after the merge</td><td>The fast checks locally; the full Windows suite on CI for the pushed work branch (<code>wp-*</code>, <code>fix-*</code>, <code>vq-*</code>) before the merge, so local machines stay free and nothing waits on a shared machine; the bench on a quiet machine before the stage gate</td></tr>
     <tr><td>Builders</td><td>One, so the machine stays responsive and nothing steals focus; the orchestrator may make small fixes directly</td><td>Up to two in parallel, on areas that don't overlap</td></tr>
-    <tr><td>The app</td><td>Rebuilt and restarted for the owner after every merge, with a one-line note of what to look at</td><td>Not restarted; a Windows build and a short summary are ready when the owner returns</td></tr>
+    <tr><td>The app</td><td>The owner opens <strong>Focus Notes Preview</strong> whenever they like: the newest build of <code>main</code> that passed Windows CI, built automatically within minutes of the merge (see below)</td><td>The same Preview keeps updating, so the newest green build is waiting when the owner returns, with a short summary</td></tr>
     <tr><td>Reporting</td><td>A line in the progress log per step, and a short message per fix</td><td>The progress log, and a <strong>handoff summary</strong> for the owner's return: what's done with evidence, what's in progress, decisions waiting for the owner, and what to try first</td></tr>
   </tbody>
 </table>
-<p>Switching from unattended to attended: within 15 minutes the running work merges what's done, the app is rebuilt and opened, and the handoff summary is shown. Switching to unattended: the feedback queue is triaged, quick items finish, and deeper work starts.</p>
+<p>Switching from unattended to attended: within 15 minutes the running work merges what's green, so it reaches Preview, and the handoff summary is shown. Switching to unattended: the feedback queue is triaged, quick items finish, and deeper work starts.</p>
+<h3 id="preview">The owner's Preview</h3>
+<p>Progress counts only if the owner likes how the app is shaping up, so the owner can try the latest working app at any moment, without waiting for running work to finish (D-122).</p>
+<ul>
+  <li><strong>Always the latest working state:</strong> a desktop shortcut, Focus Notes Preview, opens the newest commit on <code>main</code> whose Windows CI passed. Work in progress never reaches it.</li>
+  <li><strong>Built without anyone asking:</strong> an updater on the owner's machine checks every 10 minutes and builds each new green commit into a folder of its own. A running Preview is never replaced; reopening it switches to the newest build. A short list of what changed sits beside it.</li>
+  <li><strong>Separate from the builders:</strong> journeys only ever close the apps they started, and builders never use the Preview's folder.</li>
+  <li><strong>Feedback first:</strong> what the owner reports from Preview goes into the feedback queue and becomes the next small task. A visible change is done only once the owner has seen it in Preview, or it's marked as waiting for their look.</li>
+</ul>
 <h3>4. Measure, show, and challenge</h3>
 <ul>
-  <li><strong>Measures:</strong> time from report to visible fix; merges per hour; share of builder time spent verifying versus building; minutes CI is red; requirements moved to verifying per day.</li>
+  <li><strong>Measures:</strong> time from report to visible fix; time from a green <code>main</code> to a Preview the owner can open (target 15 minutes); merges per hour; share of builder time spent verifying versus building; minutes CI is red; requirements moved to verifying per day.</li>
   <li><strong>Visible:</strong> builders log a timestamped line for every step to one progress log the owner can watch live.</li>
   <li><strong>Challenged:</strong> every 30 minutes while work is running, an independent <strong>throughput reviewer</strong> agent attacks the current approach: is the work on the constraint, is the work right for the current working mode, is anything over its time-box, are checks running that this stage doesn't need, is merge debt building, is feedback waiting, and what's the fastest path to the next thing the owner can see. The orchestrator acts on each finding or records why not, and each review adds a line to the progress log.</li>
 </ul>
