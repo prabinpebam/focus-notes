@@ -17,10 +17,6 @@ const initialWindow = (() => {
     return undefined;
   }
 })();
-/** Journeys: a drag follows the page's pointer, so the page reports its moves (D-151). The app's follows the system's cursor. */
-const pagePointer = params.get("dragPointer") === "page";
-/** Shift during the current drag, as last sent. */
-let dragShift = false;
 const listen = (channel: string) => (listener: (...args: unknown[]) => void) => {
   const handler = (_e: unknown, ...args: unknown[]) => listener(...args);
   ipcRenderer.on(channel, handler);
@@ -212,16 +208,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     toggleVertical: () => ipcRenderer.send("window:vertical"),
         close: () => ipcRenderer.send("window:close"),
         snap: (zone: string) => ipcRenderer.send("window:snap", zone),
-        drag: (phase: string, kind: string, x: number, y: number, shift: boolean) => {
-          // The shell follows the system's cursor during a drag itself (D-151): only the start, the
-          // end and Shift changing reach it, unless the page's pointer is the drag's (journeys).
-          if (phase === "start") dragShift = shift;
-          else if (phase === "move" && !pagePointer) {
-            if (shift === dragShift) return;
-            dragShift = shift;
-          }
-          ipcRenderer.send("window:drag", phase, kind, x, y, shift);
-        },
+        drag: (phase: string, kind: string, x: number, y: number, shift: boolean) => ipcRenderer.send("window:drag", phase, kind, x, y, shift),
         keyboard: (mode: string) => ipcRenderer.send("window:keyboard", mode),
         key: (key: string, fine: boolean) => ipcRenderer.send("window:key", key, fine),
       }

@@ -520,6 +520,18 @@ describe("PRF-14, D-151: the window follows the hand", () => {
     w.drag("end", "move", 0, 0, false);
     expect(w.content()).toEqual({ x: 220, y: 160, width: 1000, height: 700 });
   });
+  it("reads the cursor at each frame the page saw the pointer move, and moves that queue apply no stale position", () => {
+    const { w, win, point } = setup(undefined, undefined, undefined, true, "cursor");
+    point(500, 110);
+    w.drag("start", "move", 500, 110, false);
+    point(620, 170);
+    // Twenty of the page's frames arrive together, carrying old positions: the cursor's is applied, once.
+    for (let i = 1; i <= 20; i++) w.drag("move", "move", 500 + i, 110, false);
+    expect(win.positions).toEqual([{ x: 204, y: 144 }]);
+    w.drag("end", "move", 501, 110, false);
+    expect(win.positions).toHaveLength(1);
+    expect(w.content()).toEqual({ x: 220, y: 160, width: 1000, height: 700 });
+  });
   it("takes only Shift from the page's moves while it follows the cursor", () => {
     const { w, clock, point } = setup(undefined, undefined, undefined, true, "cursor");
     point(1095, 795);

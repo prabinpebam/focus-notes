@@ -96,8 +96,6 @@ export class AppWindowFrame {
     return {
       ...(this.#custom ? { window: JSON.stringify(this.#custom.report()) } : {}),
       ...(this.kind === "custom" ? { pointer: `edge:${POINTER_EDGE_PX}` } : {}),
-      // Where a drag's pointer comes from: the page reports its moves only when it's the journey's (D-151).
-      ...(this.#journey ? { dragPointer: "page" } : {}),
     };
   }
 

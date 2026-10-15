@@ -92,8 +92,8 @@ export function WindowFrame({ frame = "native", resizable, fullScreen = false, m
       }
       emit("start");
     };
-    // At most one move per frame goes to the shell, which follows the system's cursor itself and
-    // takes from these only Shift (Window management → Move, D-151).
+    // At most one move per frame goes to the shell: a frame signal and Shift, while the shell reads the
+    // system's cursor itself (Window management → Move, D-151); journeys' pointer is the page's.
     const move = (e: PointerEvent) => {
       if (!drag || e.pointerId !== drag.id) return;
       track(e);

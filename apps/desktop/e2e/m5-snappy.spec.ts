@@ -17,22 +17,24 @@ const bandPointer = (page: Page, type: "pointerover" | "pointerdown" | "pointerm
   page.locator("[data-drag-band]").first().dispatchEvent(type, { screenX: x, screenY: y, clientX: 80, clientY: 20, pointerId: 41, isPrimary: true, button: 0, buttons: type === "pointerup" ? 0 : 1, bubbles: true });
 const nextFrame = (page: Page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(0)))));
 
-interface Recorded { positions: { t: number; x: number; y: number }[]; ends: number[] }
+interface Recorded { positions: { t: number; x: number; y: number }[]; ends: number[]; moves: number[] }
 /** Records every position the main process gives the window, and when each drag's end arrives, without moving it. */
 const record = (app: ElectronApplication, stallMs: number) =>
   app.evaluate(({ BrowserWindow, ipcMain }, stall) => {
     const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
-    const g = globalThis as unknown as { snappy: Recorded };
-    g.snappy = { positions: [], ends: [] };
+    const g = globalThis as unknown as { snappy: Recorded; stall: number };
+    g.snappy = { positions: [], ends: [], moves: [] };
+    g.stall = stall;
     win.setPosition = (x: number, y: number) => {
       const t = Date.now();
       // A transparent window can take longer than a frame to move: the case that queued moves.
-      while (Date.now() - t < stall) { /* the system moving the window */ }
+      while (Date.now() - t < g.stall) { /* the system moving the window */ }
       g.snappy.positions.push({ t, x, y });
     };
     // Registered after the app's own, so it runs once the end has been applied.
     ipcMain.on("window:drag", (_e, phase: unknown) => {
       if (phase === "end") g.snappy.ends.push(Date.now());
+      if (phase === "move") g.snappy.moves.push(Date.now());
     });
   }, stallMs);
 const recorded = (app: ElectronApplication) => app.evaluate(() => (globalThis as unknown as { snappy: Recorded }).snappy);
@@ -62,36 +64,62 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     await bandPointer(page, "pointermove", 500, 110);
     await nextFrame(page);
     await page.evaluate(() => {
-      const g = globalThis as unknown as { mutations: number; released: number };
+      const g = globalThis as unknown as { mutations: number };
       g.mutations = 0;
       new MutationObserver((list) => void (g.mutations += list.length)).observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
-      document.addEventListener("pointerup", () => void (g.released = Date.now()), { capture: true, once: true });
     });
-    const before = await metrics();
-    await bandPointer(page, "pointerdown", 500, 110);
-    // About 3,000 px/s: 60 moves of 25 px, each in its own frame.
-    for (let i = 1; i <= 60; i++) {
-      await bandPointer(page, "pointermove", 500 + i * 25, 110 + (i % 2));
-      if (i % 4 === 0) await nextFrame(page);
-    }
-    const during = await metrics();
-    const page1 = await page.evaluate(() => (globalThis as unknown as { mutations: number }).mutations);
-    await bandPointer(page, "pointerup", 2000, 110);
+    // About 3,000 px/s: a move of 50 px every frame for 60 frames, dispatched in the page so nothing
+    // waits for the journey between them; then, if asked, the release in the very next frame.
+    const burst = (release: boolean) =>
+      page.evaluate(async (up) => {
+        const band = document.querySelector("[data-drag-band]")!;
+        const fire = (type: string, x: number) =>
+          band.dispatchEvent(new PointerEvent(type, { screenX: x, screenY: 110, clientX: 80, clientY: 20, pointerId: 41, isPrimary: true, button: 0, buttons: type === "pointerup" ? 0 : 1, bubbles: true, cancelable: true }));
+        const frame = () => new Promise((r) => requestAnimationFrame(r));
+        const g = globalThis as unknown as { mutations: number };
+        g.mutations = 0;
+        fire("pointerdown", 500);
+        for (let i = 1; i <= 60; i++) {
+          fire("pointermove", 500 + i * 50);
+          await frame();
+        }
+        const mutations = g.mutations;
+        const released = Date.now();
+        if (up) fire("pointerup", 3500);
+        return { mutations, released };
+      }, release);
+
+    // Never a queue: released while the main process is still busy moving the window.
+    const { released } = await burst(true);
     await expect.poll(async () => (await recorded(app)).ends.length).toBe(1);
     await page.waitForTimeout(200);
     const r = await recorded(app);
-    const released = await page.evaluate(() => (globalThis as unknown as { released: number }).released);
     const afterEnd = r.positions.filter((p) => p.t > r.ends[0]!).length;
     const afterRelease = r.positions.filter((p) => p.t >= released).length;
-    console.log(`[D-151] journey: ${r.positions.length} positions applied for 60 page moves (setPosition 25 ms); after the release ${afterRelease}, after the end ${afterEnd}; page layouts ${during.layouts - before.layouts}, style recalcs ${during.styles - before.styles}, DOM mutations ${page1} during the move`);
-    // Only the latest position, never a queue: nothing after the end, and at most the frame in progress and the release's own after the release.
+
+    // A move never lays out or repaints the page. (Now at full speed, to see the loop's own pace.)
+    await app.evaluate(() => void ((globalThis as unknown as { stall: number }).stall = 0));
+    const counted = r.positions.length;
+    const signals = r.moves.length;
+    const before = await metrics();
+    const { mutations } = await burst(false);
+    const during = await metrics();
+    await bandPointer(page, "pointerup", 3500, 110);
+    const all = await recorded(app);
+    const fast = all.positions.slice(counted);
+    const pings = all.moves.slice(signals);
+    const pingGaps = pings.slice(1).map((t, i) => t - pings[i]!).sort((a, b) => a - b);
+    const gaps = fast.slice(1).map((p, i) => p.t - fast[i]!.t).sort((a, b) => a - b);
+    const hz = await app.evaluate(({ screen }) => screen.getPrimaryDisplay().displayFrequency);
+    console.log(`[D-151] loop pace: ${fast.length} positions for 60 page frames, median ${gaps[Math.floor(gaps.length / 2)]} ms apart (display ${hz} Hz); the page's frames reach it ${pingGaps[Math.floor(pingGaps.length / 2)]} ms apart (${pings.length} for 60)`);
+    console.log(`[D-151] journey: ${r.positions.length} positions applied for 60 page moves (setPosition 25 ms); after the release ${afterRelease}, after the end ${afterEnd}; during a move: page layouts ${during.layouts - before.layouts}, style recalcs ${during.styles - before.styles}, DOM mutations ${mutations}`);
+    // Only the latest position: nothing after the end, and only the release's own (or the frame in progress) after the release.
     expect(afterEnd).toBe(0);
     expect(afterRelease).toBeLessThanOrEqual(2);
-    expect(r.positions.at(-1)).toMatchObject({ x: expect.any(Number) });
     expect(r.positions.length).toBeLessThan(60);
-    // A move never repaints the page.
-    expect(page1).toBe(0);
+    expect(mutations).toBe(0);
     expect(during.layouts - before.layouts).toBe(0);
+    expect(during.styles - before.styles).toBe(0);
     await quit(l);
   });
 

@@ -284,7 +284,14 @@ export class CustomWindow {
     if (!d || (kind !== d.kind && phase !== "end")) return;
     d.shift = shift;
     if (!this.#followsCursor) d.at = p;
-    if (phase === "move") return;
+    if (phase === "move") {
+      // A move the page saw is a display frame with the pointer moving: the cursor is read now, which
+      // keeps pace with the display where the main process's timers can't (Windows' 15.6 ms), and
+      // never applies a stale position, even when these queue. The page's own position (journeys)
+      // waits for the loop, so only the latest is applied.
+      if (this.#followsCursor) this.#follow();
+      return;
+    }
     this.endDrag();
   }
 
