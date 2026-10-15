@@ -4,7 +4,7 @@
  * remembered bounds are checked against the displays there are now.
  */
 import { readFileSync, renameSync, writeFileSync } from "node:fs";
-import { clampToDisplays, WINDOW_METRICS, displayAt, displayFor, SNAP_ZONES, zoneRect, type DisplayInfo, type Rect, type SnapZone } from "@focus-notes/core/window-geometry";
+import { clampToDisplays, WINDOW_METRICS, displayAt, displayFor, SNAP_ZONES, verticalRect, zoneRect, type DisplayInfo, type Rect, type SnapZone } from "@focus-notes/core/window-geometry";
 
 export interface WindowMemory {
   version: 1;
@@ -13,15 +13,19 @@ export interface WindowMemory {
   maximized?: boolean;
   /** Snapped to this zone (not maximize). */
   zone?: SnapZone;
+  /** Maximized vertically (D-141): the work area's height at `bounds`'s x and width. */
+  vertical?: boolean;
   fullScreen?: boolean;
 }
 
 export type WindowMode = "normal" | "maximized" | "snapped";
+/** Where a snapped window is: a snap zone, or "vertical" (D-141). */
+export type PlacedZone = SnapZone | "vertical";
 export interface Placement {
   /** The visible window's bounds now. */
   content: Rect;
   mode: WindowMode;
-  zone?: SnapZone;
+  zone?: PlacedZone;
   /** Where Restore puts it. */
   restore: Rect;
   fullScreen: boolean;
@@ -44,6 +48,7 @@ export function parseWindowMemory(text: string | undefined): WindowMemory {
       ...(isRect(m.bounds) ? { bounds: round(m.bounds) } : {}),
       ...(m.maximized === true ? { maximized: true } : {}),
       ...((SNAP_ZONES as readonly unknown[]).includes(m.zone) && m.zone !== "maximize" ? { zone: m.zone as SnapZone } : {}),
+      ...(m.vertical === true && m.maximized !== true && m.zone === undefined ? { vertical: true } : {}),
       ...(m.fullScreen === true ? { fullScreen: true } : {}),
     };
   } catch {
@@ -77,6 +82,10 @@ export function initialPlacement(m: WindowMemory, displays: readonly DisplayInfo
   const height = Math.min(DEFAULT_SIZE.height, wa.height);
   const centered: Rect = { x: Math.round(wa.x + (wa.width - width) / 2), y: Math.round(wa.y + (wa.height - height) / 2), width, height };
   const restore = m.bounds ? clampToDisplays(m.bounds, displays, MIN_SIZE) : centered;
+  if (m.vertical && !m.maximized && !m.zone) {
+    const display = displayFor(restore, displays);
+    return { content: verticalRect(restore, display.workArea), mode: "snapped", zone: "vertical", restore, fullScreen: m.fullScreen === true };
+  }
   const zone: SnapZone | undefined = m.maximized ? "maximize" : m.zone;
   if (!zone) return { content: restore, mode: "normal", restore, fullScreen: m.fullScreen === true };
   const display = m.bounds ? displayFor(restore, displays) : displayAt({ x: wa.x, y: wa.y }, displays);

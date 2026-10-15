@@ -278,3 +278,87 @@ describe("DSK-03: remembered bounds across launches", () => {
     expect(initialPlacement({ version: 1, bounds: { x: 100, y: 100, width: 900, height: 600 }, zone: "right" }, [main], main)).toMatchObject({ mode: "snapped", zone: "right", content: { x: 960, y: 0, width: 960, height: 1040 } });
   });
 });
+
+describe("D-141: vertical maximize, as Windows does it", () => {
+  const start = { x: 300, y: 200, width: 1000, height: 600 };
+  const full = { x: 300, y: 0, width: 1000, height: 1040 };
+  it("dragging the top edge to the screen's top previews, then fills the work area's height at the same x and width", () => {
+    const { w, preview, reports, win } = setup(start);
+    w.drag("start", "n", 800, 195, false);
+    w.drag("move", "n", 800, 3, false);
+    expect(preview).toMatchObject({ visible: true, shown: full });
+    w.drag("end", "n", 800, 3, false);
+    expect(preview.visible).toBe(false);
+    expect(w.content()).toEqual(full);
+    expect(win.bounds).toEqual(full); // no shadow margin: it's snapped
+    expect(w.margin()).toBe(0);
+    expect(reports.at(-1)).toMatchObject({ snapped: true, maximized: false });
+  });
+  it("dragging the bottom edge to the taskbar does the same", () => {
+    const { w } = setup(start);
+    drag(w, "s", [800, 805], [800, 1060]);
+    expect(w.content()).toEqual(full);
+  });
+  it("a resize that stops short, or by a corner or a side, stays a resize", () => {
+    const short = setup(start);
+    drag(short.w, "n", [800, 195], [800, 40]);
+    expect(short.w.content()).toEqual({ ...start, y: 45, height: 755 });
+    const corner = setup(start);
+    drag(corner.w, "ne", [1305, 195], [1305, 2]);
+    expect(corner.w.report().snapped).toBe(false);
+  });
+  it("restores its previous height when dragged away, and by Restore", () => {
+    const { w, reports } = setup(start);
+    drag(w, "n", [800, 195], [800, 2]);
+    drag(w, "move", [800, 20], [820, 140]);
+    expect(reports.at(-1)).toMatchObject({ snapped: false });
+    expect(w.content()).toMatchObject({ width: 1000, height: 600 });
+    const again = setup(start);
+    drag(again.w, "s", [800, 805], [800, 1039]);
+    again.w.restore();
+    expect(again.w.content()).toEqual(start);
+  });
+  it("double-clicking the top or bottom border toggles it", () => {
+    const { w } = setup(start);
+    w.toggleVertical();
+    expect(w.content()).toEqual(full);
+    w.toggleVertical();
+    expect(w.content()).toEqual(start);
+  });
+  it("Win+Shift+Up maximizes vertically and Win+Shift+Down restores, when the shell lets the keys through", () => {
+    const { w } = setup(start);
+    const winKey = (key: string): KeyInput => ({ type: "keyDown", key, control: false, alt: false, shift: true, meta: true });
+    expect(w.snapKey(winKey("ArrowUp"))).toBe(true);
+    expect(w.content()).toEqual(full);
+    expect(w.snapKey(winKey("ArrowUp"))).toBe(true);
+    expect(w.content()).toEqual(full);
+    expect(w.snapKey(winKey("ArrowDown"))).toBe(true);
+    expect(w.content()).toEqual(start);
+    expect(w.snapKey({ ...winKey("ArrowUp"), shift: false })).toBe(false);
+    expect(w.snapKey({ ...winKey("ArrowUp"), meta: false })).toBe(false);
+  });
+  it("keeps the taskbar visible, refits when the work area changes, and isn't offered while maximized", () => {
+    const displays = [{ ...main }];
+    const { w } = setup(start, displays);
+    w.toggleVertical();
+    displays[0] = { ...main, workArea: { x: 0, y: 48, width: 1920, height: 1032 } };
+    w.displaysChanged();
+    expect(w.content()).toEqual({ x: 300, y: 48, width: 1000, height: 1032 });
+    const max = setup(start);
+    max.w.maximize();
+    max.w.toggleVertical();
+    expect(max.w.content()).toEqual(main.workArea);
+  });
+  it("works on the display the window is on, with its own work area", () => {
+    const { w } = setup({ x: 2000, y: 200, width: 800, height: 500 }, [main, laptop]);
+    drag(w, "n", [2400, 195], [2400, 1]);
+    expect(w.content()).toEqual({ x: 2000, y: 0, width: 800, height: 1019 });
+  });
+  it("is remembered across launches", () => {
+    const { w, saved } = setup(start);
+    w.toggleVertical();
+    expect(saved.at(-1)).toEqual({ version: 1, bounds: start, vertical: true });
+    expect(parseWindowMemory(JSON.stringify({ version: 1, bounds: start, vertical: true }))).toEqual({ version: 1, bounds: start, vertical: true });
+    expect(initialPlacement({ version: 1, bounds: start, vertical: true }, [main], main)).toMatchObject({ mode: "snapped", zone: "vertical", content: full, restore: start });
+  });
+});

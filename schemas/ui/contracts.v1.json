@@ -7438,7 +7438,7 @@
     {
       "type": "WindowFrame",
       "tier": "host",
-      "description": "The app-built window's behavior on Windows and Linux (D-14): moving by the title bar band (with double-click to maximize and right-click for the system menu), showing the window controls while the pointer is on the band (in full screen, once it reaches the top edge), the resize handles on every edge and corner, and the app-drawn system menu. The window's shape and shadow are AppRoot's `frame`.",
+      "description": "The app-built window's behavior on Windows and Linux (D-14): moving by the title bar band (with double-click to maximize and right-click for the system menu), showing the window controls while the pointer is on the band (in full screen, once it reaches the top edge), the resize handles on every edge and corner (double-click the top or bottom one to maximize vertically), and the app-drawn system menu. The window's shape and shadow are AppRoot's `frame`.",
       "props": {
         "frame": {
           "kind": "enum",
@@ -7504,6 +7504,7 @@
           }
         },
         "toggleMaximize": {},
+        "toggleVertical": {},
         "menu": {
           "payload": {
             "x": "number",

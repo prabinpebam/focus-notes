@@ -5,7 +5,7 @@
  * Win+arrows, mixed-DPI monitors (step 1), the macOS menu bar (step 2), and the 10,000-note memory
  * and idle CPU budgets (step 7, `pnpm bench`) are the owner's checks in the gate evidence.
  */
-import { test, expect } from "./fixtures.ts";
+import { test, expect, screenAllowed } from "./fixtures.ts";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, placed, quit, tempDirs, type Launched } from "./helpers.ts";
@@ -38,12 +38,15 @@ test("M2 demo: full screen, Files, links that follow a rename, and the text back
   await expect(editor).toContainText("Start.");
   await expect(editor).toBeFocused();
 
-  // Step 3: in and out of full screen with F11 (the app's own full screen covers the display).
-  const rest = await bounds(l);
-  await page.keyboard.press("F11");
-  await expect.poll(() => bounds(l)).toEqual(await placed(l.app, await displayBounds(l)));
-  await page.keyboard.press("F11");
-  await expect.poll(() => bounds(l)).toEqual(rest);
+  // Step 3: in and out of full screen with F11 (the app's own full screen covers the display), on CI
+  // only: locally it would cover the owner's apps (D-141).
+  if (screenAllowed()) {
+    const rest = await bounds(l);
+    await page.keyboard.press("F11");
+    await expect.poll(() => bounds(l)).toEqual(await placed(l.app, await displayBounds(l)));
+    await page.keyboard.press("F11");
+    await expect.poll(() => bounds(l)).toEqual(rest);
+  }
 
   // Step 4: Files creates a folder, deletes a note, selects several, and moves them with Move to….
   await page.keyboard.press("Control+O");

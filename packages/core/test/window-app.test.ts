@@ -32,6 +32,7 @@ function setup(report: Partial<WindowReport> = {}) {
     minimize: () => calls.push("minimize"),
     maximize: () => calls.push("maximize"),
     restore: () => calls.push("restore"),
+    toggleVertical: () => calls.push("vertical"),
     close: () => calls.push("close"),
     snap: (z) => calls.push(`snap ${z}`),
     drag: (phase, kind, x, y, shift) => calls.push(`drag ${phase} ${kind} ${x},${y}${shift ? " shift" : ""}`),
@@ -75,6 +76,14 @@ describe("DSK-03, DSK-08: window commands on Windows and Linux", () => {
     await app.commands.run("window.toggleMaximize");
     await app.commands.run("window.restore");
     expect(calls).toEqual(["minimize", "maximize", "close", "snap left", "snap rightThird", "maximize", "restore", "restore"]);
+  });
+  it("D-141: double-clicking the top or bottom border maximizes vertically through the shell, but not while maximized", async () => {
+    const { app, calls, emit } = setup();
+    await app.start();
+    await app.commands.run("window.toggleVertical");
+    emit({ maximized: true });
+    expect(app.commands.describe("window.toggleVertical").enabled).toBe(false);
+    expect(calls).toEqual(["vertical"]);
   });
   it("passes the frame's moves and resizes to the shell", async () => {
     const { app, calls } = setup();

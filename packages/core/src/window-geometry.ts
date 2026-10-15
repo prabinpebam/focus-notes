@@ -172,6 +172,44 @@ export function snapZoneAt(p: Point, displays: readonly DisplayInfo[]): { zone: 
   return zone ? { zone, display } : undefined;
 }
 
+/**
+ * Windows' vertical maximize (D-141): resizing by the top or bottom edge until the pointer reaches
+ * the work area's top, or its bottom (the taskbar), fills the work area's height. The pointer must
+ * still be on the window's display: going past onto a display above or below is crossing to it.
+ */
+export function verticalSnapAt(edge: ResizeEdge, p: Point, display: DisplayInfo): boolean {
+  const b = display.bounds;
+  const wa = display.workArea;
+  if (p.x < b.x || p.x >= right(b)) return false;
+  if (edge === "n") return p.y >= b.y && p.y < wa.y + SNAP_EDGE;
+  if (edge === "s") return p.y < bottom(b) && p.y >= bottom(wa) - SNAP_EDGE;
+  return false;
+}
+/** A vertically maximized window: the work area's full height, at the same x and width. */
+export const verticalRect = (r: Rect, wa: Rect): Rect => ({ x: r.x, y: wa.y, width: r.width, height: wa.height });
+
+/**
+ * How far a CSS box shadow reaches past its box on each side, in px: the offset, the spread, and
+ * 1.5 × the blur, where Chromium's Gaussian (σ = blur / 2) ends (3σ). Inset shadows reach nothing.
+ * The drawn window's shadow must stay inside the shadow margin, or the native window's edge cuts it (D-141).
+ */
+export function shadowExtent(css: string): { top: number; right: number; bottom: number; left: number } {
+  const out = { top: 0, right: 0, bottom: 0, left: 0 };
+  for (const layer of css.split(/,(?![^(]*\))/)) {
+    const parts = layer.trim().split(/\s+(?![^(]*\))/);
+    if (parts.includes("inset") || parts[0] === "none") continue;
+    const n = parts.filter((x) => /^-?[\d.]+(px)?$/.test(x)).map((x) => parseFloat(x));
+    if (n.length < 2) continue;
+    const [x = 0, y = 0, blur = 0, spread = 0] = n;
+    const reach = spread + 1.5 * blur;
+    out.top = Math.max(out.top, reach - y);
+    out.bottom = Math.max(out.bottom, reach + y);
+    out.left = Math.max(out.left, reach - x);
+    out.right = Math.max(out.right, reach + x);
+  }
+  return out;
+}
+
 /** DIP to physical pixels on a display: each display has its own scale. */
 export function toPhysical(r: Rect, d: DisplayInfo): Rect {
   const o = d.nativeOrigin ?? { x: d.bounds.x * d.scaleFactor, y: d.bounds.y * d.scaleFactor };

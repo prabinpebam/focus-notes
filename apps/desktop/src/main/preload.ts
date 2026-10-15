@@ -202,6 +202,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
         minimize: () => ipcRenderer.send("window:minimize"),
         maximize: () => ipcRenderer.send("window:maximize"),
         restore: () => ipcRenderer.send("window:restore"),
+    toggleVertical: () => ipcRenderer.send("window:vertical"),
         close: () => ipcRenderer.send("window:close"),
         snap: (zone: string) => ipcRenderer.send("window:snap", zone),
         drag: (phase: string, kind: string, x: number, y: number, shift: boolean) => ipcRenderer.send("window:drag", phase, kind, x, y, shift),

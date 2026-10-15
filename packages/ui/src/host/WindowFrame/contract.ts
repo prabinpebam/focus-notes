@@ -3,7 +3,7 @@ import { defineContract } from "../../contract.ts";
 export const contract = defineContract({
   type: "WindowFrame",
   tier: "host",
-  description: "The app-built window's behavior on Windows and Linux (D-14): moving by the title bar band (with double-click to maximize and right-click for the system menu), showing the window controls while the pointer is on the band (in full screen, once it reaches the top edge), the resize handles on every edge and corner, and the app-drawn system menu. The window's shape and shadow are AppRoot's `frame`.",
+  description: "The app-built window's behavior on Windows and Linux (D-14): moving by the title bar band (with double-click to maximize and right-click for the system menu), showing the window controls while the pointer is on the band (in full screen, once it reaches the top edge), the resize handles on every edge and corner (double-click the top or bottom one to maximize vertically), and the app-drawn system menu. The window's shape and shadow are AppRoot's `frame`.",
   props: {
     frame: { kind: "enum", values: ["native", "rounded", "square"], default: "native", description: "Native draws nothing. Rounded puts the handles in the shadow margin; square puts them just inside the edges." },
     resizable: { kind: "boolean", bindable: true, description: "Shows the resize handles: not while maximized or full screen." },
@@ -18,6 +18,7 @@ export const contract = defineContract({
   events: {
     drag: { payload: { phase: "text", kind: "text", x: "number", y: "number", shift: "boolean" } },
     toggleMaximize: {},
+    toggleVertical: {},
     menu: { payload: { x: "number", y: "number" } },
     action: { payload: { id: "text" } },
     key: { payload: { key: "text", fine: "boolean" } },

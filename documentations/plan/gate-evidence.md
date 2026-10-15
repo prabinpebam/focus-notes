@@ -202,7 +202,8 @@ The CodeQL alerts: #3 `packages/seal/src/format.ts:207`; #4 `packages/core/src/f
 
 | Demo step | Evidence | Status |
 | --- | --- | --- |
-| 1. Snap, Snap Layouts, Win+arrows, Alt+Space, resize, mixed DPI | `m2-window.spec.ts` (app-built moving, resizing, maximize); real snapping and monitors | Met; Owner |
+| 1. Snap, Snap Layouts, Win+arrows, Alt+Space, resize, mixed DPI | `m2-window.spec.ts` (app-built moving, resizing, maximize, vertical maximize, on CI only: D-141); real snapping and monitors | Met; Owner |
+| 1a. Vertical maximize and the shadow (D-141) | `custom-window.test.ts`, `window-geometry.test.ts` (bounds, work area, taskbar, displays, Win+Shift keys, the shadow inside its margin in every theme), `window-app.test.ts`; `m2-window.spec.ts` (top-edge resize to the work area, double-click on the border, restoring the height; the captured window's edge fully transparent) | Met on CI; Owner: the real gestures |
 | 2. The macOS menu bar | `menu-bar.test.ts`, `m2-titlebar.spec.ts` | Platform parity pass (D-112) |
 | 3. Full screen with F11 | `m2-demo.spec.ts`, `m2-titlebar.spec.ts` | Met |
 | 4. Files: create, rename, delete, select several, Move to… | `m2-demo.spec.ts`, `mw-files.spec.ts` | Met |
@@ -217,7 +218,7 @@ The CodeQL alerts: #3 `packages/seal/src/format.ts:207`; #4 `packages/core/src/f
 
 **Gaps.** None in requirements.
 
-**Owner.** Step 1 by hand on two monitors with different scaling; five working days. Confirm D-104, D-105, D-106, D-107. Then the risks review, the retrospective, and acceptance (items 8 to 10).
+**Owner.** Step 1 by hand on two monitors with different scaling, and D-141 by hand: drag the top edge to the top of the screen and the bottom edge onto the taskbar (the window fills the height, same width), double-click the top or bottom border, try <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> (whether Windows passes them to a transparent window is unknown), drag the window away to get its height back, and look at the shadow on a light wallpaper; five working days. Confirm D-104, D-105, D-106, D-107. Then the risks review, the retrospective, and acceptance (items 8 to 10).
 
 ## M4: Find anything, make it yours
 
