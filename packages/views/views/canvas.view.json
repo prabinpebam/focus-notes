@@ -5347,6 +5347,22 @@
                                           },
                                           "skeleton": true
                                         }
+                                      },
+                                      {
+                                        "type": "Button",
+                                        "props": {
+                                          "label": {
+                                            "t": "firstRun.back"
+                                          },
+                                          "variant": "subtle",
+                                          "bleed": true,
+                                          "autoFocus": true
+                                        },
+                                        "on": {
+                                          "press": {
+                                            "run": "firstRun.back"
+                                          }
+                                        }
                                       }
                                     ]
                                   },

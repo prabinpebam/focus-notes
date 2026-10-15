@@ -32,6 +32,8 @@ export type SignInPhase = "idle" | "code" | "window" | "waiting" | "token";
 export type FirstRunWaitOp = "" | "git" | "prepare" | "account" | "signIn" | "identity" | "findNotes" | "folder" | "chooseFolder" | "clone" | "create" | "open" | "strength";
 /** The waits that name themselves under the step's title; signing in has its own place, the code card. */
 const SAID: readonly FirstRunWaitOp[] = ["account", "identity", "findNotes", "folder", "clone", "open"];
+/** Waits that only read, which Back and Esc may leave (PRF-13): never a download, a creation, or a sign-in (those have Cancel). */
+const LEAVABLE: readonly FirstRunWaitOp[] = ["git", "prepare", "account", "findNotes"];
 const NO_PROGRESS = { op: "", done: 0, total: 0, part: "", percent: -1 };
 /** Each wait's tracker target: fixed IDs, measured as `focus-notes:<target>` and allow-listed for the report (QLT-04). */
 export const FIRST_RUN_WAITS = {
@@ -166,6 +168,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   const setLogin = (login: string) => { if (store.state.account.login !== login) store.update((s) => ({ ...s, account: { login } })); };
   const bump = () => set({ focus: state().focus + 1 });
   const platformOf = () => (bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows");
+  /** The latest wait's turn: only it clears the step's wait when it ends. */
+  let waitTurn = 0;
   /**
    * Runs a shell call as a named wait (PRF-13, D-149): the step holds its controls, the tracker gives
    * it its sign, announcement and elapsed time, and the screen says what it's waiting for. A call
@@ -173,13 +177,15 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
    */
   const busy = async <T,>(op: Exclude<FirstRunWaitOp, "">, fn: () => Promise<T>): Promise<T | undefined> => {
     // A download starts counting afresh; finding the notes keeps the count the prefetch has.
+    const mine = ++waitTurn;
     set({ busy: true, wait: op, ...(op === "clone" ? { progress: { ...NO_PROGRESS, op } } : {}) });
     try {
       return await (tracker ? tracker.run(FIRST_RUN_WAITS[op], `firstRun.wait.${op}`, fn) : fn());
     } catch {
       return undefined;
     } finally {
-      set({ busy: false, wait: "" });
+      // A call left behind (a cancelled sign-in ending later) never clears the wait that came after it.
+      if (waitTurn === mine) set({ busy: false, wait: "" });
     }
   };
   /**
@@ -304,7 +310,12 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     // Esc in a sign-in that's waiting cancels it first.
     if (s.active && s.step === "connect" && s.signIn.phase !== "idle" && s.signIn.phase !== "token") return commands.run("firstRun.cancelSignIn");
     if (s.active && s.signIn.phase === "token") return (setSignIn({ phase: "idle" }), set({ trouble: false }), bump());
-    if (!s.active || s.busy) return;
+    if (!s.active || (s.busy && !LEAVABLE.includes(s.wait))) return;
+    // A wait that only reads can be left (PRF-13): the step stops waiting for it, and its answer, when it comes, changes nothing shown.
+    if (s.busy) {
+      waitTurn++;
+      set({ busy: false, wait: "" });
+    }
     // Open another repository or a folder goes back to where Your notes started.
     if (s.step === "notes" && !store.state.setup.report?.options && s.workspace.mode !== baseMode()) return (setWs({ mode: baseMode(), error: "" }), bump());
     if (firstStep(s.scope) === s.step) return close(false);
