@@ -111,7 +111,7 @@ The bar above never weakens, but each check runs at the moment that matches its 
 | Moment | Checks | Time budget |
 | --- | --- | --- |
 | **Each change, before the owner sees it** | Typecheck of the packages touched, `ui:check`, the boundary check, and the unit tests and journeys for what changed | 5 minutes or less |
-| **Each merge to `main`** | Attended: the full Windows suite (unit, desktop and web journeys) runs on CI after the merge, never blocking the owner. Unattended: it runs on CI for the pushed work branch before the merge. Data safety and security changes always run their full checks before merging | While the owner tests, or before the merge when they're away |
+| **Each merge to `main`** | Attended: the full Windows suite (unit, desktop and web journeys) runs on CI after the merge, never blocking the owner. Unattended: it runs on CI for the pushed work branch before the merge, and the merge waits until it's green. A failing check is never waived as "the same as main" or "a flake": fix it, or quarantine it explicitly, with a scope, an owner and an expiry recorded in the gate evidence. Data safety and security changes always run their full checks before merging | While the owner tests, or before the merge when they're away |
 | **Before a stage gate** | Everything in the work package and stage definitions of done: guard journeys, the accessibility audit, the visual quality checklist on every surface, the bench on a quiet machine | Once per stage |
 | **Before a release** | Everything, on every platform (D-112) | Once per release |
 
