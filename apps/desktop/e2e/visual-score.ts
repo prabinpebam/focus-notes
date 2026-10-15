@@ -11,6 +11,7 @@
  * judged by eye, from the screenshots. Light and dark are each measured; the lower counts.
  */
 import type { Page } from "./fixtures.ts";
+import { breakpoints } from "../../../packages/tokens/dist/tokens.ts";
 
 export const BUDGETS = { onboarding: 40, dialog: 60, popover: 60, panel: 80, settings: 80, empty: 30 } as const;
 export const ANCHOR = { full: 48, half: 24 } as const;
@@ -76,7 +77,7 @@ export async function visualScoreProblems(page: Page, step: string, budget: numb
  * display title are in view and centred, and the content sits in the middle of the height.
  */
 export async function welcomeProblems(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
+  return page.evaluate((short) => {
     const out: string[] = [];
     const surface = document.querySelector('[data-key-scope="firstRun"]') as HTMLElement | null;
     const layer = surface?.closest('[role="main"]');
@@ -98,7 +99,8 @@ export async function welcomeProblems(page: Page): Promise<string[]> {
       // Centred on the window, give or take the scrollbar's reserved gutter.
       if (Math.abs(r.left + r.width / 2 - mid) > 8) out.push(`welcome: the ${what} is ${Math.round(r.left + r.width / 2 - mid)} px off centre`);
     };
-    check(surface.querySelector("[data-app-mark]"), "app's mark", 96);
+    // A short window has the compact setup: the hero mark at its medium size (D-131).
+    check(surface.querySelector("[data-app-mark]"), "app's mark", window.innerHeight < short ? 48 : 96);
     check(surface.querySelector("h1"), "title");
     const scroller = surface.firstElementChild as HTMLElement;
     const content = scroller.firstElementChild;
@@ -108,5 +110,5 @@ export async function welcomeProblems(page: Page): Promise<string[]> {
       if (Math.abs(gap) > 8) out.push(`welcome: the content is ${Math.round(gap / 2)} px off the middle of the height`);
     }
     return out;
-  });
+  }, breakpoints.short);
 }

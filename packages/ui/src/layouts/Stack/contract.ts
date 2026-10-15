@@ -9,6 +9,7 @@ export const contract = defineContract({
   props: {
     gap: { kind: "token", group: "space", default: "none" },
     padding: { kind: "token", group: "space", default: "none" },
+    shortGap: { kind: "token", group: "space", description: "The gap in a short window (below breakpoint.short): the full-window setup tightens up (D-131)." },
     align: { kind: "enum", values: ["start", "center", "end", "stretch"], default: "stretch" },
     justify: { kind: "enum", values: ["start", "center", "end", "between"], default: "start" },
     grow: { kind: "boolean", default: false },

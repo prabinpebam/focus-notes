@@ -504,6 +504,10 @@
     },
     "wide": {
       "$value": "{ref.size.1024}"
+    },
+    "short": {
+      "$value": "{ref.size.560}",
+      "$description": "A window shorter than this (a height) gets the compact setup: a medium hero icon, a smaller title and tighter spacing, so a step fits without scrolling (D-131)."
     }
   },
   "window": {

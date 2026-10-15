@@ -21,7 +21,8 @@ export interface ComponentNode {
 }
 export interface FragmentNode { use: string; params?: Record<string, Value>; slots?: Record<string, Node[]>; when?: Value }
 export interface EachNode { each: ReadValue; as: string; key: string; render: Node; empty?: Node; when?: Value }
-export interface SwitchNode { switch: Value; cases: Record<string, Node>; when?: Value }
+/** `remount`: each case is its own subtree, mounted afresh when the case changes (a setup step, whose autoFocus must run); otherwise a case that looks alike reuses what's there, so focus stays put (a disclosure). */
+export interface SwitchNode { switch: Value; cases: Record<string, Node>; remount?: boolean; when?: Value }
 export interface SlotOutlet { slot: string }
 export type Node = ComponentNode | FragmentNode | EachNode | SwitchNode | SlotOutlet;
 

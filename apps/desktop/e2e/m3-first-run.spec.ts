@@ -251,6 +251,32 @@ test("FRE-02, FRE-01: declined and offline say so in plain words and recover wit
   }
 });
 
+test("FRE-08: GitHub can't find the starter notes: setup says so plainly, not that the sign-in lacks permissions", async () => {
+  test.setTimeout(120_000);
+  const w = await world({ gcm: true });
+  w.fakes.store(w.gh.token);
+  // The template repository is missing (a 404 on generate), twice so the step stays failed.
+  w.gh.fail("POST /repos/prabinpebam/focus-notes-workspace/generate", 404, "Not Found", 2);
+  const l = await start(w);
+  const { page } = l;
+  try {
+    await heading(page, "A quiet place to write");
+    await press(page, "Enter");
+    await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });
+    await press(page, "Enter");
+    await heading(page, "Your notes");
+    // The card is the action: one button, named by what it shows.
+    const create = card(page).getByRole("button", { name: "Create my notes Private unless you share. Backed up to GitHub.", exact: true });
+    await expect(create).toBeFocused({ timeout: 15_000 });
+    await press(page, "Enter");
+    await expect(card(page).getByText("Focus Notes couldn't find its starter notes on GitHub. Try again in a minute, or tell us if it keeps happening.")).toBeVisible({ timeout: 30_000 });
+    expect(await card(page).innerText()).not.toMatch(/permissions|doesn't allow/);
+  } finally {
+    await quit(l);
+    w.server.close();
+  }
+});
+
 test("FRE-01: Just use this computer for now starts writing with no account, in the notes folder on this computer", async () => {
   test.setTimeout(90_000);
   const w = await world({ gcm: true });
@@ -310,7 +336,7 @@ test("D-126: nothing outside setup is there or works until it's done: no trigger
       expect(await focusInSetup(), `Tab ${i + 1}`).toBe(true);
     }
     // Back to Welcome, then Just use this computer for now: setup is done and the app is all there.
-    await card(page).getByRole("button", { name: "Back" }).click();
+    await card(page).getByRole("button", { name: "Back", exact: true }).click();
     await heading(page, "A quiet place to write");
     await card(page).getByRole("button", { name: "Just use this computer for now" }).click();
     await expect(card(page)).toHaveCount(0);

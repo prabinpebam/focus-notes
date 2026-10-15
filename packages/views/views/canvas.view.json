@@ -3937,7 +3937,8 @@
               "variant": "canvas",
               "padding": "xl",
               "scroll": true,
-              "keyScope": "firstRun"
+              "keyScope": "firstRun",
+              "shortPadding": "l"
             },
             "children": [
               {
@@ -3951,7 +3952,8 @@
                   {
                     "type": "Stack",
                     "props": {
-                      "gap": "xl"
+                      "gap": "xl",
+                      "shortGap": "l"
                     },
                     "children": [
                       {
@@ -3960,7 +3962,8 @@
                           "gap": "l",
                           "align": {
                             "get": "vm.firstRun.align"
-                          }
+                          },
+                          "shortGap": "s"
                         },
                         "children": [
                           {
@@ -4023,12 +4026,14 @@
                         "switch": {
                           "get": "vm.firstRun.step"
                         },
+                        "remount": true,
                         "cases": {
                           "welcome": {
                             "type": "Stack",
                             "props": {
                               "gap": "xl",
-                              "align": "center"
+                              "align": "center",
+                              "shortGap": "l"
                             },
                             "children": [
                               {
@@ -4108,6 +4113,7 @@
                                 "switch": {
                                   "get": "vm.firstRun.connect"
                                 },
+                                "remount": true,
                                 "cases": {
                                   "checking": {
                                     "type": "Inline",
@@ -4156,7 +4162,7 @@
                                         "type": "Inline",
                                         "props": {
                                           "gap": "s",
-                                          "justify": "between",
+                                          "justify": "start",
                                           "wrap": true
                                         },
                                         "children": [
@@ -4164,57 +4170,46 @@
                                             "type": "Button",
                                             "props": {
                                               "label": {
+                                                "t": "firstRun.connect.install"
+                                              },
+                                              "variant": "primary",
+                                              "autoFocus": true
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.openPage",
+                                                "args": {
+                                                  "page": "git"
+                                                }
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.checkAgain"
+                                              }
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.checkGit"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
                                                 "t": "firstRun.back"
                                               },
-                                              "variant": "subtle",
-                                              "bleed": true
+                                              "variant": "subtle"
                                             },
                                             "on": {
                                               "press": {
                                                 "run": "firstRun.back"
                                               }
                                             }
-                                          },
-                                          {
-                                            "type": "Inline",
-                                            "props": {
-                                              "gap": "s",
-                                              "justify": "end",
-                                              "wrap": true
-                                            },
-                                            "children": [
-                                              {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.checkAgain"
-                                                  }
-                                                },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "firstRun.checkGit"
-                                                  }
-                                                }
-                                              },
-                                              {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.connect.install"
-                                                  },
-                                                  "variant": "primary",
-                                                  "autoFocus": true
-                                                },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "firstRun.openPage",
-                                                    "args": {
-                                                      "page": "git"
-                                                    }
-                                                  }
-                                                }
-                                              }
-                                            ]
                                           }
                                         ]
                                       }
@@ -4253,25 +4248,10 @@
                                         "type": "Inline",
                                         "props": {
                                           "gap": "s",
-                                          "justify": "between",
+                                          "justify": "start",
                                           "wrap": true
                                         },
                                         "children": [
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.back"
-                                              },
-                                              "variant": "subtle",
-                                              "bleed": true
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.back"
-                                              }
-                                            }
-                                          },
                                           {
                                             "type": "Button",
                                             "props": {
@@ -4288,6 +4268,20 @@
                                             "on": {
                                               "press": {
                                                 "run": "firstRun.useExisting"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.back"
+                                              },
+                                              "variant": "subtle"
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.back"
                                               }
                                             }
                                           }
@@ -4366,7 +4360,7 @@
                                             "type": "Inline",
                                             "props": {
                                               "gap": "s",
-                                              "justify": "between",
+                                              "justify": "start",
                                               "wrap": true
                                             },
                                             "children": [
@@ -4374,58 +4368,47 @@
                                                 "type": "Button",
                                                 "props": {
                                                   "label": {
+                                                    "t": "firstRun.connect.installHelper"
+                                                  },
+                                                  "variant": "primary",
+                                                  "autoFocus": true,
+                                                  "size": "l"
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.openPage",
+                                                    "args": {
+                                                      "page": "gcm"
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.checkAgain"
+                                                  }
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.checkAccount"
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
                                                     "t": "firstRun.back"
                                                   },
-                                                  "variant": "subtle",
-                                                  "bleed": true
+                                                  "variant": "subtle"
                                                 },
                                                 "on": {
                                                   "press": {
                                                     "run": "firstRun.back"
                                                   }
                                                 }
-                                              },
-                                              {
-                                                "type": "Inline",
-                                                "props": {
-                                                  "gap": "s",
-                                                  "justify": "end",
-                                                  "wrap": true
-                                                },
-                                                "children": [
-                                                  {
-                                                    "type": "Button",
-                                                    "props": {
-                                                      "label": {
-                                                        "t": "firstRun.checkAgain"
-                                                      }
-                                                    },
-                                                    "on": {
-                                                      "press": {
-                                                        "run": "firstRun.checkAccount"
-                                                      }
-                                                    }
-                                                  },
-                                                  {
-                                                    "type": "Button",
-                                                    "props": {
-                                                      "label": {
-                                                        "t": "firstRun.connect.installHelper"
-                                                      },
-                                                      "variant": "primary",
-                                                      "autoFocus": true,
-                                                      "size": "l"
-                                                    },
-                                                    "on": {
-                                                      "press": {
-                                                        "run": "firstRun.openPage",
-                                                        "args": {
-                                                          "page": "gcm"
-                                                        }
-                                                      }
-                                                    }
-                                                  }
-                                                ]
                                               }
                                             ]
                                           },
@@ -4433,25 +4416,10 @@
                                             "type": "Inline",
                                             "props": {
                                               "gap": "s",
-                                              "justify": "between",
+                                              "justify": "start",
                                               "wrap": true
                                             },
                                             "children": [
-                                              {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.back"
-                                                  },
-                                                  "variant": "subtle",
-                                                  "bleed": true
-                                                },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "firstRun.back"
-                                                  }
-                                                }
-                                              },
                                               {
                                                 "type": "Button",
                                                 "props": {
@@ -4469,6 +4437,20 @@
                                                 "on": {
                                                   "press": {
                                                     "run": "firstRun.signIn"
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.back"
+                                                  },
+                                                  "variant": "subtle"
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.back"
                                                   }
                                                 }
                                               }
@@ -4505,23 +4487,10 @@
                                         "type": "Inline",
                                         "props": {
                                           "gap": "s",
-                                          "justify": "between",
+                                          "justify": "start",
                                           "wrap": true
                                         },
                                         "children": [
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.signIn.cancel"
-                                              }
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.cancelSignIn"
-                                              }
-                                            }
-                                          },
                                           {
                                             "type": "Button",
                                             "props": {
@@ -4534,6 +4503,19 @@
                                             "on": {
                                               "press": {
                                                 "run": "firstRun.copyCode"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.signIn.cancel"
+                                              }
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.cancelSignIn"
                                               }
                                             }
                                           }
@@ -4781,25 +4763,10 @@
                                         "type": "Inline",
                                         "props": {
                                           "gap": "s",
-                                          "justify": "between",
+                                          "justify": "start",
                                           "wrap": true
                                         },
                                         "children": [
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.back"
-                                              },
-                                              "variant": "subtle",
-                                              "bleed": true
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.back"
-                                              }
-                                            }
-                                          },
                                           {
                                             "type": "Button",
                                             "props": {
@@ -4814,6 +4781,20 @@
                                             "on": {
                                               "press": {
                                                 "run": "firstRun.submitToken"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.back"
+                                              },
+                                              "variant": "subtle"
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.back"
                                               }
                                             }
                                           }
@@ -4854,25 +4835,10 @@
                                         "type": "Inline",
                                         "props": {
                                           "gap": "s",
-                                          "justify": "between",
+                                          "justify": "start",
                                           "wrap": true
                                         },
                                         "children": [
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.back"
-                                              },
-                                              "variant": "subtle",
-                                              "bleed": true
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.back"
-                                              }
-                                            }
-                                          },
                                           {
                                             "type": "Button",
                                             "props": {
@@ -4889,6 +4855,20 @@
                                             "on": {
                                               "press": {
                                                 "run": "firstRun.useExisting"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.back"
+                                              },
+                                              "variant": "subtle"
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.back"
                                               }
                                             }
                                           }
@@ -5159,6 +5139,7 @@
                                 "switch": {
                                   "get": "vm.firstRun.panel"
                                 },
+                                "remount": true,
                                 "cases": {
                                   "checking": {
                                     "type": "Inline",
@@ -5289,7 +5270,7 @@
                                         "type": "Inline",
                                         "props": {
                                           "gap": "s",
-                                          "justify": "between",
+                                          "justify": "start",
                                           "wrap": true
                                         },
                                         "children": [
@@ -5297,24 +5278,10 @@
                                             "type": "Button",
                                             "props": {
                                               "label": {
-                                                "t": "firstRun.back"
+                                                "t": "firstRun.notes.createInstead"
                                               },
                                               "variant": "subtle",
                                               "bleed": true
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.back"
-                                              }
-                                            }
-                                          },
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.notes.createInstead"
-                                              },
-                                              "variant": "subtle"
                                             },
                                             "on": {
                                               "press": {
@@ -5326,6 +5293,20 @@
                                             },
                                             "when": {
                                               "get": "vm.firstRun.canCreate"
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.back"
+                                              },
+                                              "variant": "subtle"
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.back"
+                                              }
                                             }
                                           }
                                         ]
@@ -5342,12 +5323,21 @@
                                         "type": "ItemCard",
                                         "props": {
                                           "title": {
-                                            "t": "firstRun.notes.createCard"
+                                            "t": "firstRun.notes.create"
                                           },
                                           "detail": {
                                             "t": "firstRun.notes.createWhy"
                                           },
-                                          "icon": "newNote"
+                                          "icon": "newNote",
+                                          "autoFocus": true,
+                                          "busy": {
+                                            "get": "vm.firstRun.busy"
+                                          }
+                                        },
+                                        "on": {
+                                          "press": {
+                                            "run": "firstRun.create"
+                                          }
                                         }
                                       },
                                       {
@@ -5367,7 +5357,33 @@
                                         "type": "Inline",
                                         "props": {
                                           "gap": "s",
-                                          "justify": "between",
+                                          "justify": "start",
+                                          "wrap": true
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.notes.lookAgain"
+                                              }
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.findNotes"
+                                              }
+                                            }
+                                          }
+                                        ],
+                                        "when": {
+                                          "get": "vm.firstRun.hasError"
+                                        }
+                                      },
+                                      {
+                                        "type": "Inline",
+                                        "props": {
+                                          "gap": "s",
+                                          "justify": "start",
                                           "wrap": true
                                         },
                                         "children": [
@@ -5385,51 +5401,6 @@
                                                 "run": "firstRun.back"
                                               }
                                             }
-                                          },
-                                          {
-                                            "type": "Inline",
-                                            "props": {
-                                              "gap": "s",
-                                              "justify": "end",
-                                              "wrap": true
-                                            },
-                                            "children": [
-                                              {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.notes.lookAgain"
-                                                  }
-                                                },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "firstRun.findNotes"
-                                                  }
-                                                },
-                                                "when": {
-                                                  "get": "vm.firstRun.hasError"
-                                                }
-                                              },
-                                              {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.notes.create"
-                                                  },
-                                                  "variant": "primary",
-                                                  "autoFocus": true,
-                                                  "busy": {
-                                                    "get": "vm.firstRun.busy"
-                                                  },
-                                                  "size": "l"
-                                                },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "firstRun.create"
-                                                  }
-                                                }
-                                              }
-                                            ]
                                           }
                                         ]
                                       }
@@ -5522,25 +5493,10 @@
                                         "type": "Inline",
                                         "props": {
                                           "gap": "s",
-                                          "justify": "between",
+                                          "justify": "start",
                                           "wrap": true
                                         },
                                         "children": [
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.back"
-                                              },
-                                              "variant": "subtle",
-                                              "bleed": true
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.back"
-                                              }
-                                            }
-                                          },
                                           {
                                             "type": "Button",
                                             "props": {
@@ -5558,6 +5514,20 @@
                                                 "args": {
                                                   "id": ""
                                                 }
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.back"
+                                              },
+                                              "variant": "subtle"
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.back"
                                               }
                                             }
                                           }
@@ -5596,25 +5566,10 @@
                                         "type": "Inline",
                                         "props": {
                                           "gap": "s",
-                                          "justify": "between",
+                                          "justify": "start",
                                           "wrap": true
                                         },
                                         "children": [
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.back"
-                                              },
-                                              "variant": "subtle",
-                                              "bleed": true
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.back"
-                                              }
-                                            }
-                                          },
                                           {
                                             "type": "Button",
                                             "props": {
@@ -5630,6 +5585,20 @@
                                             "on": {
                                               "press": {
                                                 "run": "firstRun.openFolder"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.back"
+                                              },
+                                              "variant": "subtle"
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.back"
                                               }
                                             }
                                           }
@@ -5892,7 +5861,7 @@
                                         "type": "Inline",
                                         "props": {
                                           "gap": "s",
-                                          "justify": "end",
+                                          "justify": "start",
                                           "wrap": true
                                         },
                                         "children": [
@@ -6225,13 +6194,15 @@
                           "ready": {
                             "type": "Stack",
                             "props": {
-                              "gap": "l"
+                              "gap": "l",
+                              "shortGap": "m"
                             },
                             "children": [
                               {
                                 "type": "Stack",
                                 "props": {
-                                  "gap": "m"
+                                  "gap": "m",
+                                  "shortGap": "s"
                                 },
                                 "children": [
                                   {
@@ -6309,6 +6280,32 @@
                                     "type": "Button",
                                     "props": {
                                       "label": {
+                                        "t": "firstRun.ready.start"
+                                      },
+                                      "variant": "primary",
+                                      "autoFocus": true,
+                                      "size": "l"
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "firstRun.finish"
+                                      }
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Inline",
+                                "props": {
+                                  "gap": "s",
+                                  "justify": "start",
+                                  "wrap": true
+                                },
+                                "children": [
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
                                         "t": "firstRun.ready.import"
                                       },
                                       "variant": "subtle",
@@ -6324,32 +6321,6 @@
                                 "when": {
                                   "get": "vm.firstRun.canImport"
                                 }
-                              },
-                              {
-                                "type": "Inline",
-                                "props": {
-                                  "gap": "s",
-                                  "justify": "end",
-                                  "wrap": true
-                                },
-                                "children": [
-                                  {
-                                    "type": "Button",
-                                    "props": {
-                                      "label": {
-                                        "t": "firstRun.ready.start"
-                                      },
-                                      "variant": "primary",
-                                      "autoFocus": true,
-                                      "size": "l"
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "firstRun.finish"
-                                      }
-                                    }
-                                  }
-                                ]
                               }
                             ]
                           }

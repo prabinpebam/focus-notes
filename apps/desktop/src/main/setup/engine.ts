@@ -63,14 +63,19 @@ class Failure extends Error {
   }
 }
 
-function problemOf(e: unknown): SetupProblem {
+/**
+ * Why a step failed. Only a real 403 is the sign-in's permissions; a 404 is something GitHub
+ * couldn't find (the template, most likely), never "your sign-in doesn't allow this".
+ */
+export function problemOf(e: unknown): SetupProblem {
   if (e instanceof Failure) return e.problem;
   if (e instanceof WeakPassphrase) return "weak";
   if (e instanceof GitHubError) {
     if (e.status === 0) return "offline";
     if (e.unauthorized) return "auth";
     if (e.rateLimited) return "rateLimited";
-    if (e.status === 403 || e.status === 404) return "permission";
+    if (e.status === 403) return "permission";
+    if (e.status === 404) return "notFound";
   }
   return "failed";
 }
@@ -311,7 +316,13 @@ export class SetupEngine {
       let repo = await api.findRepo(this.#login, instance);
       if (!repo) {
         const t = this.#d.template ?? TEMPLATE;
-        await api.generate(t, this.#login, instance, "My Focus Notes");
+        try {
+          await api.generate(t, this.#login, instance, "My Focus Notes");
+        } catch (e) {
+          // The template repository is missing or not a template: the starter notes, not the sign-in.
+          if (e instanceof GitHubError && e.status === 404) throw new Failure("templateMissing");
+          throw e;
+        }
         repo = await this.#waitFor(() => api.findRepo(this.#login, instance));
         await this.#waitFor(() => api.head(this.#login, instance, repo!.defaultBranch));
       }
