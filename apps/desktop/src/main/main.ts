@@ -85,6 +85,15 @@ const logSpawns = devEnv("FOCUS_NOTES_LOG_SPAWNS") === "1";
 const journey = devEnv("FOCUS_NOTES_E2E") === "1";
 // Software rendering, as on a CI runner with no GPU, to reproduce it on any computer (D-121).
 if (devEnv("FOCUS_NOTES_DISABLE_GPU") === "1") app.disableHardwareAcceleration();
+// Chromium switches for journeys on CI, to reach a compositing path the runner has no hardware for:
+// the GPU's (DirectComposition) through Direct3D 11 on WARP (D-153). Never in a packaged app.
+for (const s of (devEnv("FOCUS_NOTES_CHROMIUM_SWITCHES") ?? "").split(",").filter(Boolean)) {
+  const [name, value] = s.split("=");
+  if (name && /^[a-z0-9-]+$/.test(name)) {
+    if (value) app.commandLine.appendSwitch(name, value);
+    else app.commandLine.appendSwitch(name);
+  }
+}
 /**
  * The window's compositing, followed from the first window on (D-121). The override is read in a
  * packaged app too, to diagnose; journeys print the status once, so CI's log shows which path ran.

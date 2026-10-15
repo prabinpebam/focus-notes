@@ -17,24 +17,33 @@ import { join } from "node:path";
 
 const OUT = join(import.meta.dirname, "..", "..", "..", "test-results", "white-margin");
 
-interface Report { label: string; captures: number; bad: number; worst: number; samples: string[] }
+interface Report { label: string; captures: number; bad: number; worst: number; invalid: number; samples: string[] }
+/**
+ * The compositing paths a Windows window can be on: in software (a runner, a remote desktop, after
+ * the GPU went away), and on the GPU (DirectComposition), reached on a runner with no GPU through
+ * Direct3D 11 on WARP, Windows' own software rasterizer (FOCUS_NOTES_CHROMIUM_SWITCHES, never packaged).
+ */
+const MODES = [
+  { name: "software", env: {} },
+  { name: "gpu (DirectComposition on WARP)", env: { FOCUS_NOTES_CHROMIUM_SWITCHES: "use-angle=d3d11-warp,ignore-gpu-blocklist,enable-gpu-rasterization" } },
+] as const;
 
 test.describe("D-153: the shadow margin at the screen level", () => {
   test.skip(process.platform === "darwin", "macOS uses the native window (D-14)");
   test.skip(!screenAllowed(), SCREEN_SKIP);
 
-  test("the margin is never white or opaque: pass-through toggles, focus, show, minimize, resize, maximize, snap, GPU crash", async () => {
+  for (const mode of MODES) test(`the margin is never white or opaque, ${mode.name}: pass-through toggles, focus, show, minimize, resize, maximize, snap, GPU crash`, async () => {
     test.setTimeout(240_000);
     mkdirSync(OUT, { recursive: true });
     const dirs = tempDirs();
     writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", appearance: "dark" }));
     writeFileSync(join(dirs.userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 140, y: 120, width: 640, height: 440 } }));
-    const l = await launch(dirs);
+    const l = await launch(dirs, { ...mode.env });
     const { app, page } = l;
     try {
       await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
       // The backdrop, and the capture loop, in the main process.
-      await app.evaluate(async ({ BrowserWindow, desktopCapturer, screen }, out) => {
+      await app.evaluate(async ({ BrowserWindow, desktopCapturer, screen }, { out, tag }) => {
         const fs = process.getBuiltinModule("node:fs") as typeof import("node:fs");
         const path = process.getBuiltinModule("node:path") as typeof import("node:path");
         const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
@@ -42,7 +51,7 @@ test.describe("D-153: the shadow margin at the screen level", () => {
         const backdrop = new BrowserWindow({ ...d.workArea, frame: false, backgroundColor: "#ff00ff", show: false, focusable: false, skipTaskbar: true, resizable: false, hasShadow: false });
         backdrop.showInactive();
         win.moveTop();
-        const g = globalThis as unknown as { wm: { label: string; stop: boolean; reports: Record<string, { label: string; captures: number; bad: number; worst: number; samples: string[] }>; done?: Promise<void> } };
+        const g = globalThis as unknown as { wm: { label: string; stop: boolean; reports: Record<string, { label: string; captures: number; bad: number; worst: number; invalid: number; samples: string[] }>; done?: Promise<void> } };
         g.wm = { label: "rest", stop: false, reports: {} };
         const scale = d.scaleFactor;
         const size = { width: Math.round(d.size.width * scale), height: Math.round(d.size.height * scale) };
@@ -50,7 +59,7 @@ test.describe("D-153: the shadow margin at the screen level", () => {
         const once = async () => {
           const label = g.wm.label;
           const b = win.getBounds();
-          const report = (g.wm.reports[label] ??= { label, captures: 0, bad: 0, worst: 0, samples: [] });
+          const report = (g.wm.reports[label] ??= { label, captures: 0, bad: 0, worst: 0, invalid: 0, samples: [] });
           // Only a rounded window at rest has a margin; maximized, snapped and minimized have none.
           const inset = win.isMinimized() || !win.isVisible() ? 0 : await win.webContents.executeJavaScript("document.documentElement.dataset.windowFrame === 'rounded' ? 1 : 0").catch(() => 0);
           const [src] = await desktopCapturer.getSources({ types: ["screen"], thumbnailSize: size });
@@ -62,6 +71,21 @@ test.describe("D-153: the shadow margin at the screen level", () => {
             const o = (Math.round(y * scale) * W + Math.round(x * scale)) * 4;
             return [bmp[o + 2]!, bmp[o + 1]!, bmp[o]!] as const; // BGRA
           };
+          // A capture is only evidence if the backdrop around the window is in it: a capturer's blank
+          // frame (it sends some while the GPU process restarts) shows no magenta at all.
+          let around = 0, magenta = 0;
+          for (let x = b.x - 12; x < b.x + b.width + 12; x += 3) {
+            for (const y of [b.y - 8, b.y + b.height + 8]) {
+              if (x < 0 || y < 0 || x >= d.size.width || y >= d.size.height) continue;
+              around++;
+              const [r, gg, bl] = px(x, y);
+              if (r > 200 && bl > 200 && gg < 60) magenta++;
+            }
+          }
+          if (!around || magenta / around < 0.9) {
+            report.invalid++;
+            return;
+          }
           let ring = 0, bad = 0;
           // The margin's ring, clear of the drawn window's 1 px border and its corners' curve.
           for (let y = b.y; y < b.y + b.height; y++) {
@@ -81,16 +105,16 @@ test.describe("D-153: the shadow margin at the screen level", () => {
           if (share >= 0.01) {
             report.bad++;
             if (report.samples.length < 3) {
-              const file = path.join(out, `${label.replace(/[^a-z0-9]+/gi, "-")}-${report.captures}.png`);
+              const file = path.join(out, `${tag}-${label.replace(/[^a-z0-9]+/gi, "-")}-${report.captures}.png`);
               fs.writeFileSync(file, img.crop({ x: Math.max(0, Math.round((b.x - 30) * scale)), y: Math.max(0, Math.round((b.y - 30) * scale)), width: Math.round((b.width + 60) * scale), height: Math.round((b.height + 60) * scale) }).toPNG());
               report.samples.push(`${(share * 100).toFixed(1)}% → ${path.basename(file)}`);
             }
           }
         };
         g.wm.done = (async () => {
-          while (!g.wm.stop) await once().catch((e) => void (g.wm.reports.error ??= { label: `error ${String(e)}`, captures: 0, bad: 1, worst: 1, samples: [] }));
+          while (!g.wm.stop) await once().catch((e) => void (g.wm.reports.error ??= { label: `error ${String(e)}`, captures: 0, bad: 1, worst: 1, invalid: 0, samples: [] }));
         })();
-      }, OUT);
+      }, { out: OUT, tag: mode.name.split(" ")[0]! });
       const phase = async (label: string, fn: () => Promise<unknown>, settleMs = 600) => {
         await app.evaluate((_e, l) => void ((globalThis as unknown as { wm: { label: string } }).wm.label = l), label);
         await fn();
@@ -190,9 +214,9 @@ test.describe("D-153: the shadow margin at the screen level", () => {
         return Object.values(g.wm.reports);
       });
       const compositing = l.log.filter((x) => x.includes("compositing")).join(" | ");
-      process.stdout.write(`[white-margin] ${compositing}\n`);
-      for (const r of reports) process.stdout.write(`[white-margin] ${r.label}: ${r.captures} captures, ${r.bad} with ≥1% of the margin not magenta (worst ${(r.worst * 100).toFixed(1)}%) ${r.samples.join(", ")}\n`);
-      writeFileSync(join(OUT, "report.json"), JSON.stringify({ compositing, reports }, null, 2));
+      process.stdout.write(`[white-margin] ${mode.name}: ${compositing}\n`);
+      for (const r of reports) process.stdout.write(`[white-margin] ${r.label}: ${r.captures} captures, ${r.bad} with ≥1% of the margin not magenta (worst ${(r.worst * 100).toFixed(1)}%), ${r.invalid} blank captures skipped ${r.samples.join(", ")}\n`);
+      writeFileSync(join(OUT, `report-${mode.name.split(" ")[0]}.json`), JSON.stringify({ compositing, reports }, null, 2));
       expect(reports.find((r) => r.label === "rest")?.captures ?? 0, "the window at rest was captured").toBeGreaterThan(0);
       expect(reports.filter((r) => r.bad > 0).map((r) => `${r.label}: ${r.bad} of ${r.captures} captures (worst ${(r.worst * 100).toFixed(1)}%)`)).toEqual([]);
     } finally {
