@@ -21,14 +21,27 @@ async function startTyping(l: Launched) {
 }
 
 test("QLT-03: a crash while typing loses at most about a second, and the next launch restores it with a calm notice", async () => {
-  const dirs = tempDirs();
-  const note = join(dirs.docs, "Welcome.md");
-  writeFileSync(note, START);
-  const l = await launch(dirs);
-  await startTyping(l);
-  // Typing that goes on, until the journal has text the note doesn't: then the crash.
-  const typed = await typeTimed(l.page, "the quick brown fox jumps over the lazy dog again and again while the app keeps up, and on, and on, as long as it takes", { until: () => journalAhead(dirs.userData, note) });
-  const killedAt = await crash(l, dirs.userData);
+  // The crash has to land while the journal holds text the note doesn't. If the save to disk caught
+  // up in the instant between that check and the kill, there's nothing to restore, so the round is
+  // tried again from scratch (DEF-19); every assertion below is unchanged.
+  let dirs = tempDirs();
+  let note = join(dirs.docs, "Welcome.md");
+  let typed: Awaited<ReturnType<typeof typeTimed>> | undefined;
+  let killedAt = 0;
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    dirs = tempDirs();
+    note = join(dirs.docs, "Welcome.md");
+    writeFileSync(note, START);
+    const l = await launch(dirs);
+    await startTyping(l);
+    // Typing that goes on, until the journal has text the note doesn't: then the crash.
+    typed = await typeTimed(l.page, "the quick brown fox jumps over the lazy dog again and again while the app keeps up, and on, and on, as long as it takes", { until: () => journalAhead(dirs.userData, note) });
+    killedAt = await crash(l, dirs.userData);
+    if (journalAhead(dirs.userData, note)) break;
+    console.log(`[m2-recovery] attempt ${attempt}: the save caught up before the crash, so nothing to restore; again`);
+    typed = undefined;
+  }
+  if (!typed) throw new Error("In 5 attempts the crash never landed with unsaved text in the journal");
   const onDisk = typedPart(readFileSync(note, "utf8"));
   // At most an earlier part was saved: the journal has more.
   expect(typed.text.startsWith(onDisk)).toBe(true);

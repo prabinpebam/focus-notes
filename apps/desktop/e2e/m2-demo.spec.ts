@@ -98,11 +98,15 @@ test("M2 demo: full screen, Files, links that follow a rename, and the text back
   await page.keyboard.press("Enter");
   const typed = await typeTimed(page, "the demo keeps writing while the app is killed, and the words come back", { until: () => journalAhead(dirs.userData, note) });
   const killedAt = await crash(l, dirs.userData);
+  // If the save to disk caught up in the instant before the kill, nothing is left to restore (DEF-19):
+  // the text and the loss budget are still checked, and m2-recovery always covers the notice.
+  const pending = journalAhead(dirs.userData, note);
   const again = await launch(dirs);
   const restored = typedPart(readFileSync(note, "utf8"));
   expect(typed.text.startsWith(restored)).toBe(true);
   expect(typed.lostMs(restored.length, killedAt)).toBeLessThanOrEqual(LOSS_BUDGET_MS);
   await expect(again.page.getByRole("textbox", { name: "Note" })).toContainText(restored);
-  await expect(again.page.getByRole("status").filter({ hasText: "Restored what you were writing" })).toBeVisible();
+  if (pending) await expect(again.page.getByRole("status").filter({ hasText: "Restored what you were writing" })).toBeVisible();
+  else test.info().annotations.push({ type: "DEF-19", description: "the save caught up before the crash; no notice expected" });
   await quit(again);
 });
