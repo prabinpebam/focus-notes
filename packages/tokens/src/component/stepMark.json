@@ -1,5 +1,5 @@
 { "cmp": { "stepMark": {
-  "size": { "$type": "dimension", "$value": "{size.stepMark}", "$description": "A setup step's hero icon: the step's visual anchor when nothing else on it is (D-127, D-135)." },
+  "size": { "$type": "dimension", "$value": "{size.stepMark}", "$description": "A setup step's hero icon, its ring's room included: the step's visual anchor when nothing else on it is (D-127, D-135)." },
   "sizeCompact": { "$type": "dimension", "$value": "{size.cardVisual}", "$description": "In a short window (D-131)." },
   "icon": { "$type": "dimension", "$value": "{size.stepMarkIcon}" },
   "iconCompact": { "$type": "dimension", "$value": "{size.iconL}" },

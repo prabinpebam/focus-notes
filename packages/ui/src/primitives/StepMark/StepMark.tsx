@@ -15,8 +15,8 @@ export interface StepMarkProps {
 export function StepMark({ icon, tone = "neutral", busy, label }: StepMarkProps) {
   const Glyph = ICONS[icon];
   return (
-    <span className={`${s.base} ${s.tone[tone]}`} data-visual-anchor="" data-step-mark={tone} {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}>
-      <Glyph className={s.icon} aria-hidden="true" />
+    <span className={s.base} data-visual-anchor="" data-step-mark={tone} {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}>
+      <span className={`${s.tile} ${s.tone[tone]}`}><Glyph className={s.icon} aria-hidden="true" /></span>
       {busy ? <span className={s.ring} data-busy="" /> : null}
     </span>
   );

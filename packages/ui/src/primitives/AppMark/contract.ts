@@ -3,7 +3,7 @@ import { defineContract } from "../../contract.ts";
 export const contract = defineContract({
   type: "AppMark",
   tier: "primitive",
-  description: "The Focus Notes app icon (the red dot in a frosted circle, on paper), drawn from the brand tokens: the hero of the full-window setup (D-126). Decorative unless it has a label.",
+  description: "The Focus Notes app icon (the red dot in a frosted circle, on paper), drawn from the brand tokens (a dark tile in a dark theme, D-135): the hero of the full-window setup (D-126). Decorative unless it has a label.",
   props: {
     size: { kind: "enum", values: ["m", "l"], default: "l" },
     label: { kind: "message" },
