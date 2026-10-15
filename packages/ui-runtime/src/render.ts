@@ -4,7 +4,8 @@
  */
 import { Component, createElement, Fragment, memo, useCallback, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
 import type { App, AppState } from "@focus-notes/core";
-import { formatChord } from "@focus-notes/core";
+// From its own module, so a page that renders without the app (the share reader) doesn't load the app.
+import { formatChord } from "@focus-notes/core/commands";
 import type { Contract } from "@focus-notes/ui/contracts";
 import { evaluate } from "./expr.ts";
 import {

@@ -54,6 +54,55 @@ const plain = (nodes: PMNode[] = []): string => nodes.map((n) => n.text ?? plain
  * plain text, so a public page never points at, or reveals, a private note.
  */
 export function publicPage(markdown: string, notePath: string, updated: string, publicPaths: ReadonlySet<string>): PublicPage {
+  return readerPage(markdown, notePath, updated, (resolved, hash) => {
+    if (!publicPaths.has(resolved)) return null;
+    // From this page's folder (n/<note>/) to the other page's.
+    const from = publicPagePath(notePath).split("/").filter(Boolean);
+    const to = publicPagePath(resolved).split("/").filter(Boolean);
+    let i = 0;
+    while (i < from.length && i < to.length && from[i] === to[i]) i++;
+    const rel = [...from.slice(i).map(() => ".."), ...to.slice(i)].join("/");
+    return `${rel ? `${rel}/` : "./"}${hash ? `#${hash}` : ""}`;
+  });
+}
+
+/** A shared note's place on the share reader's page (WP-5.4): in the fragment, so it never reaches the server. */
+export const sharedNoteHash = (path: string) => `#note=${encodeURIComponent(path)}`;
+/** The shared note a share reader's fragment names, if it's one (`#note=<path>`). */
+export function sharedNoteFromHash(hash: string): string | undefined {
+  const m = /^#note=(.+)$/.exec(hash);
+  if (!m) return undefined;
+  try { return decodeURIComponent(m[1]!); } catch { return undefined; }
+}
+
+/**
+ * The reader model for a shared note (WP-5.4, SHR-10): the same as a public page's, but links go only
+ * to other notes the same share opens, on the share reader's page; anything else becomes plain text,
+ * so a shared note never points at, or reveals, a note outside the share. Paths are the share's own.
+ */
+export function sharedPage(markdown: string, notePath: string, updated: string, sharedPaths: ReadonlySet<string>): PublicPage {
+  // Fragment links too: only one to a note in the share stays a link, so no note can start another
+  // share's link or reach a note outside this one through the reader's fragment (review L6).
+  const fragment = (href: string) => {
+    const path = sharedNoteFromHash(href);
+    return path !== undefined && sharedPaths.has(path) ? sharedNoteHash(path) : null;
+  };
+  return readerPage(markdown, notePath, updated, (resolved, hash) => (sharedPaths.has(resolved) && !hash ? sharedNoteHash(resolved) : null), fragment);
+}
+
+/** The share reader's list of what a share opens (WP-5.4): its heading, then a link to each note, by title. */
+export function sharedListModel(heading: string, notes: readonly { path: string; title: string }[]): ReaderModel {
+  const text = (t: string, href?: string): PMNode => ({ type: "text", text: t, ...(href ? { marks: [{ type: "link", attrs: { href } }] } : {}) });
+  return {
+    title: [{ type: "heading", attrs: { level: 1 }, content: [text(heading)] }],
+    updated: 0,
+    body: [{ type: "bulletList", content: [...notes].sort((a, b) => (a.title || a.path).localeCompare(b.title || b.path)).map((n) => ({ type: "listItem", content: [{ type: "paragraph", content: [text(n.title || n.path, sharedNoteHash(n.path))] }] })) }],
+  };
+}
+
+type LinkResolver = (resolved: string, hash: string | undefined) => string | null;
+
+function readerPage(markdown: string, notePath: string, updated: string, resolve: LinkResolver, fragment: (href: string) => string | null = (h) => h): PublicPage {
   const blocks = [...(parseMarkdown(markdown).doc.content ?? [])];
   let noindex = false;
   const first = blocks[0];
@@ -65,7 +114,7 @@ export function publicPage(markdown: string, notePath: string, updated: string, 
   const fix = (n: PMNode): PMNode => ({
     ...n,
     ...(n.content ? { content: n.content.map(fix) } : {}),
-    ...(n.marks ? { marks: n.marks.map((m) => (m.type === "link" ? { ...m, attrs: { ...m.attrs, href: linkTarget(String(m.attrs?.href ?? ""), dir, notePath, publicPaths) } } : m)) } : {}),
+    ...(n.marks ? { marks: n.marks.map((m) => (m.type === "link" ? { ...m, attrs: { ...m.attrs, href: linkTarget(String(m.attrs?.href ?? ""), dir, resolve, fragment) } } : m)) } : {}),
   });
   const content = blocks.map(fix);
   const h1 = content.findIndex((b) => b.type === "heading" && b.attrs?.level === 1);
@@ -90,9 +139,10 @@ export function publicPage(markdown: string, notePath: string, updated: string, 
   return { model: { title: [titleBlock], updated: Date.parse(updated) || 0, body: content }, title, description, noindex, faces: [...faces] };
 }
 
-function linkTarget(href: string, dir: string[], notePath: string, publicPaths: ReadonlySet<string>): string | null {
+function linkTarget(href: string, dir: string[], resolve: LinkResolver, fragment: (href: string) => string | null): string | null {
   if (!href) return null;
-  if (SAFE_ABSOLUTE.test(href) || href.startsWith("#")) return href;
+  if (href.startsWith("#")) return fragment(href);
+  if (SAFE_ABSOLUTE.test(href)) return href;
   if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith("/") || href.startsWith("\\")) return null;
   const [rawPath, hash] = href.split("#", 2) as [string, string | undefined];
   let target: string;
@@ -102,13 +152,5 @@ function linkTarget(href: string, dir: string[], notePath: string, publicPaths: 
     if (s === "" || s === ".") continue;
     if (s === "..") { if (!segs.length) return null; segs.pop(); } else segs.push(s);
   }
-  const resolved = segs.join("/");
-  if (!publicPaths.has(resolved)) return null;
-  // From this page's folder (n/<note>/) to the other page's.
-  const from = publicPagePath(notePath).split("/").filter(Boolean);
-  const to = publicPagePath(resolved).split("/").filter(Boolean);
-  let i = 0;
-  while (i < from.length && i < to.length && from[i] === to[i]) i++;
-  const rel = [...from.slice(i).map(() => ".."), ...to.slice(i)].join("/");
-  return `${rel ? `${rel}/` : "./"}${hash ? `#${hash}` : ""}`;
+  return resolve(segs.join("/"), hash);
 }
