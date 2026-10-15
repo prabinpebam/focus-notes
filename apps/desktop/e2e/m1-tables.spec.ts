@@ -222,10 +222,14 @@ test("TBL-07, TBL-08: hover shows handles, the + insertion point, and New row an
   // The caret is in the new row's first cell.
   await page.keyboard.type("Inserted");
   await expect(cell(page, 2, 0)).toHaveText("Inserted");
-  // Near a column boundary on the top edge.
+  // Near a column boundary on the top edge. Like the row's +, it fades in after a moment: wait for it,
+  // or the click lands while it's still appearing and the pointer's move can leave its hover zone.
   const c1 = (await cell(page, 0, 1).boundingBox())!;
   await page.mouse.move(c1.x + 1, frame.y + 3);
-  await page.getByRole("button", { name: "Insert column between columns 1 and 2" }).click();
+  const insertColumn = page.getByRole("button", { name: "Insert column between columns 1 and 2" });
+  await expect(insertColumn).toBeVisible();
+  await settled(page);
+  await insertColumn.click();
   await expect(tableOf(page).locator("th")).toHaveCount(4);
   await expect(tableOf(page).locator("th").nth(1)).toHaveText("Column 2");
 
