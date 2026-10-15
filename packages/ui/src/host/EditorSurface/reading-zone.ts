@@ -26,6 +26,8 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   let frame = 0;
   /** Whether the person's key, input, or pointer release came since the last check (D-156). */
   let intent = false;
+  /** Whether that key is held down and repeating: the scroll then follows within a few frames (D-156). */
+  let repeating = false;
   const ease = cubicBezier(autoScroll.easing);
   const animator = createScrollAnimator(
     { get: () => scroller.scrollTop, set: (v) => (scroller.scrollTop = v) },
@@ -37,6 +39,11 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
         return Number.isFinite(ms) ? ms : autoScroll.duration;
       },
       easing: ease,
+      // The browser revealed the caret past where the scroll was heading: check once more, still the person's move.
+      onOvertaken: () => {
+        intent = true;
+        schedule();
+      },
     },
   );
 
@@ -69,7 +76,9 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
     // back, and other programmatic moves place it at once, as before (a long note's jump to its end
     // would otherwise paint every page on the way, PRF-01).
     const animate = intent;
+    const follow = repeating;
     intent = false;
+    repeating = false;
     const { view } = editor;
     let caret: { top: number; bottom: number };
     try {
@@ -91,7 +100,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
     else if (caretBottom > bottom) dest = base + (caretBottom - bottom);
     else return;
     const max = scroller.scrollHeight - scroller.clientHeight;
-    animator.to(Math.max(0, Math.min(max, dest)), !animate);
+    animator.to(Math.max(0, Math.min(max, dest)), !animate ? "instant" : follow ? "follow" : "animate");
   };
   const schedule = () => {
     if (!frame) frame = requestAnimationFrame(keep);
@@ -113,11 +122,11 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
       frame = 0;
     }
   };
-  /** The person scrolling (the wheel, or a scroll the animator didn't write) stops the auto-scroll. */
+  /**
+   * The person scrolling stops the auto-scroll: the wheel here, the scrollbar in onDown. Not any scroll
+   * the animator didn't write: the browser's own caret reveal is one, and the scroll must still finish.
+   */
   const onWheel = () => animator.cancel();
-  const onScroll = () => {
-    if (animator.dest !== null && !animator.wrote(scroller.scrollTop)) animator.cancel();
-  };
   const onUp = () => {
     if (!pointerDown) return;
     pointerDown = false;
@@ -129,9 +138,10 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   const onFocus = () => {
     if (!scrollPress) schedule();
   };
-  const onKey = () => {
+  const onKey = (e: KeyboardEvent) => {
     scrollPress = false;
     intent = true;
+    repeating = e.repeat;
   };
   const onInput = () => {
     intent = true;
@@ -146,7 +156,6 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   editor.on("focus", onFocus);
   scroller.addEventListener("pointerdown", onDown);
   scroller.addEventListener("wheel", onWheel, { passive: true });
-  scroller.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("keydown", onKey, true);
   dom.addEventListener("beforeinput", onInput, true);
   window.addEventListener("pointerup", onUp);
@@ -161,7 +170,6 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
     editor.off("focus", onFocus);
     scroller.removeEventListener("pointerdown", onDown);
     scroller.removeEventListener("wheel", onWheel);
-    scroller.removeEventListener("scroll", onScroll);
     window.removeEventListener("keydown", onKey, true);
     dom.removeEventListener("beforeinput", onInput, true);
     window.removeEventListener("pointerup", onUp);

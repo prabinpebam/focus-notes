@@ -1,9 +1,12 @@
 /**
  * The reading zone's auto-scroll (D-156): scrollTop animates over motion.autoScroll with
  * easing.inOut, frame by frame (CSS smooth-scroll can't be retargeted predictably). A new target
- * while one runs starts from wherever the note is and heads for the new target over a fresh
- * duration: scrolls never queue or stack. A duration of 0 (reduced motion) is instant. Nothing runs
- * at rest (PRF-04): a frame is requested only while an animation is in flight.
+ * while one runs continues from where the note is, at the speed it's moving, and heads for the new
+ * target with a cubic Hermite curve that stops there. It finishes no later than one frame after the
+ * running scroll would have (and within the duration), so held keys follow the caret continuously
+ * instead of pushing the end out by a fresh duration each time; scrolls never queue or stack. A
+ * duration of 0 (reduced motion) is instant. Nothing runs at rest (PRF-04): a frame is requested only
+ * while an animation is in flight.
  */
 
 /** A CSS cubic Bézier timing function, cubic-bezier(x1, y1, x2, y2), as progress → eased progress. */
@@ -41,6 +44,12 @@ export function cubicBezier(curve: readonly number[]): (t: number) => number {
 
 /** Below this distance in px a scroll is written at once, not animated. */
 export const NUDGE = 4;
+/** One frame at 60 Hz, in ms: how far a retarget may move the end out, and the shortest segment. */
+export const FRAME = 1000 / 60;
+/** While a held key repeats, each step finishes within three frames (D-156: held keys follow continuously). */
+export const FOLLOW = 3 * FRAME;
+/** How a scroll moves: animated, at once, or following a held key. */
+export type ScrollHow = "animate" | "instant" | "follow";
 
 export interface FrameClock {
   now(): number;
@@ -56,72 +65,118 @@ const browserClock: FrameClock = {
 
 export interface ScrollAnimator {
   /**
-   * Scrolls to `dest`: from the current position, over a fresh duration (or at once when it's 0, or
-   * when `instant`: a move the person's own input didn't cause, such as opening a note).
+   * Scrolls to `dest`: from rest over the duration with the in-out curve; while one runs, from where
+   * the note is at its current speed (see above). At once when the duration is 0, the move is a
+   * nudge, or "instant" (a move the person's own input didn't cause, such as opening a note).
+   * "follow" (a held key repeating) finishes within FOLLOW ms, so the caret never outruns the scroll.
    */
-  to(dest: number, instant?: boolean): void;
+  to(dest: number, how?: ScrollHow): void;
   /** Stops where the note is now (the person scrolled). */
   cancel(): void;
   /** Where the running animation is heading, or null at rest. */
   readonly dest: number | null;
-  /** Whether a scroll position is one the animator wrote (so a scroll event there isn't the person's). */
-  wrote(pos: number): boolean;
+}
+
+/** One stretch of the scroll: from p0 (moving at v0 px/ms) at t0 to p1 (at rest) at t1. */
+interface Segment { p0: number; v0: number; p1: number; t0: number; t1: number; eased: boolean }
+
+/** Where a segment is at time t: the in-out curve from rest, or a cubic Hermite from a moving start. */
+export function segmentAt(seg: Segment, t: number, easing: (s: number) => number): number {
+  const span = seg.t1 - seg.t0;
+  const s = span > 0 ? Math.min(1, Math.max(0, (t - seg.t0) / span)) : 1;
+  if (seg.eased) return seg.p0 + (seg.p1 - seg.p0) * easing(s);
+  const s2 = s * s, s3 = s2 * s;
+  return (2 * s3 - 3 * s2 + 1) * seg.p0 + (s3 - 2 * s2 + s) * span * seg.v0 + (-2 * s3 + 3 * s2) * seg.p1;
+}
+
+/**
+ * A segment from a moving start that never overshoots: a cubic Hermite with zero end speed is
+ * monotonic when the start speed times the span is between 0 and 3 times the distance, so the speed
+ * carried over is held to that (a start moving away from the target starts from rest).
+ */
+export function hermite(p0: number, v0: number, p1: number, t0: number, t1: number): Segment {
+  const span = t1 - t0;
+  const d = p1 - p0;
+  const ratio = d !== 0 && span > 0 ? Math.min(3, Math.max(0, (v0 * span) / d)) : 0;
+  return { p0, v0: span > 0 ? (ratio * d) / span : 0, p1, t0, t1, eased: false };
 }
 
 export function createScrollAnimator(
   scroll: { get(): number; set(v: number): void },
-  opts: { duration: () => number; easing: (t: number) => number; clock?: FrameClock },
+  opts: {
+    duration: () => number;
+    easing: (t: number) => number;
+    clock?: FrameClock;
+    /** Called when the note was moved past the target under it, so the caller can check again (the caret may be further). */
+    onOvertaken?: () => void;
+  },
 ): ScrollAnimator {
   const clock = opts.clock ?? browserClock;
   let frame = 0;
-  let from = 0;
-  let dest: number | null = null;
-  let start = 0;
-  let span = 0;
-  let last = NaN;
+  let seg: Segment | null = null;
 
+  /** The last position written, to tell when something else (the browser's caret reveal) moved the note. */
+  let last = NaN;
   const write = (v: number) => {
     last = v;
     scroll.set(v);
   };
+  const at = (t: number) => segmentAt(seg!, t, opts.easing);
   const step = () => {
     frame = 0;
-    if (dest === null) return;
-    const p = Math.min(1, (clock.now() - start) / span);
-    write(from + (dest - from) * opts.easing(p));
-    if (p < 1) frame = clock.request(step);
-    else dest = null;
+    if (!seg) return;
+    const now = clock.now();
+    const actual = scroll.get();
+    if (Math.abs(actual - last) > 1) {
+      // Moved under it (the browser revealing the caret): carry on from there, never jump back. If it
+      // was moved past the target, the scroll is done there.
+      const v0 = (at(now + 0.5) - at(now - 0.5)) / 1;
+      if (Math.sign(seg.p1 - actual) !== Math.sign(seg.p1 - seg.p0)) {
+        seg = null;
+        last = actual;
+        opts.onOvertaken?.();
+        return;
+      }
+      seg = hermite(actual, v0, seg.p1, now, Math.max(now + FRAME, seg.t1));
+    }
+    write(at(now));
+    if (now < seg.t1) frame = clock.request(step);
+    else seg = null;
   };
   const cancel = () => {
     if (frame) clock.cancel(frame);
     frame = 0;
-    dest = null;
+    seg = null;
   };
   return {
-    to(next, instant = false) {
-      if (!instant && dest !== null && Math.abs(next - dest) < 0.5) return; // already heading there
-      const duration = instant ? 0 : opts.duration();
-      cancel();
-      if (!(duration > 0)) {
+    to(next, how = "animate") {
+      if (how !== "instant" && seg && Math.abs(next - seg.p1) < 0.5) return; // already heading there
+      const duration = how === "instant" ? 0 : opts.duration();
+      const from = scroll.get();
+      if (!(duration > 0) || (!seg && Math.abs(next - from) < NUDGE)) {
+        // Reduced motion, a move the person didn't cause, or a nudge of a few px (or a target past the
+        // end the browser clamps away): written at once, never frame after frame while the person types.
+        cancel();
         write(next);
         return;
       }
-      from = scroll.get();
-      // A nudge of a few px (or a target past the end the browser clamps away) is written at once: an
-      // animation there would only write the same place frame after frame while the person types.
-      if (Math.abs(next - from) < NUDGE) {
-        write(next);
-        return;
+      const now = clock.now();
+      if (seg) {
+        // Retarget: keep the current speed, and end no later than a frame after the running scroll would have.
+        const v0 = (at(now + 0.5) - at(now - 0.5)) / 1;
+        const t1 = Math.max(now + FRAME, Math.min(seg.t1 + FRAME, now + (how === "follow" ? Math.min(FOLLOW, duration) : duration)));
+        seg = hermite(from, now < seg.t1 ? v0 : 0, next, now, t1);
+      } else if (how === "follow") {
+        seg = { p0: from, v0: 0, p1: next, t0: now, t1: now + Math.min(FOLLOW, duration), eased: true };
+      } else {
+        seg = { p0: from, v0: 0, p1: next, t0: now, t1: now + duration, eased: true };
       }
-      dest = next;
-      span = duration;
-      start = clock.now();
-      frame = clock.request(step);
+      last = from;
+      if (!frame) frame = clock.request(step);
     },
     cancel,
     get dest() {
-      return dest;
+      return seg ? seg.p1 : null;
     },
-    wrote: (pos) => Math.abs(pos - last) <= 1,
   };
 }

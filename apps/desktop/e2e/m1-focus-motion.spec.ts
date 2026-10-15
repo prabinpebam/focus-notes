@@ -6,7 +6,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { caret, launch, quit, tempDirs } from "./helpers.ts";
+import { caret, launch, quit, tempDirs, windowBox } from "./helpers.ts";
 
 /** Samples the note's scrollTop every frame for `ms`, from now. */
 function sampleScroll(page: Page, ms: number) {
@@ -111,6 +111,67 @@ test("D-156: with reduced motion the auto-scroll is instant", async () => {
 });
 
 
+test("D-156: a held ArrowDown in a 360 px window keeps the caret's row on screen every frame, never a jump", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), `# Title\n\n${Array.from({ length: 120 }, (_, i) => `Line ${i + 1}.`).join("\n\n")}\n`);
+  const l = await launch(dirs);
+  const { page, app } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  // The window drawn 360 px tall (inside its shadow margin on Windows and Linux), through its own bounds.
+  const margin = process.platform === "darwin" ? 0 : 16;
+  await app.evaluate(({ BrowserWindow }, m) => {
+    const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
+    w.setMinimumSize(320, 320);
+    w.setContentSize(800 + 2 * m, 360 + 2 * m);
+  }, margin);
+  await expect.poll(async () => Math.round((await windowBox(page)).height)).toBe(360);
+  await editor.locator("p").first().click();
+  await page.keyboard.press(caret.docStart);
+  // The caret starts inside the reading band, at the top of the note.
+  await expect.poll(() => pastBand(page), { timeout: 3_000 }).toBe(0);
+  await page.waitForTimeout(300);
+
+  // Every frame: the scroll, and the caret's row against the visible part of the note.
+  await page.evaluate(() => {
+    const s = document.querySelector<HTMLElement>("[data-editor-scroller]")!;
+    const out: { y: number; top: number; bottom: number }[] = [];
+    (window as unknown as { __held: typeof out }).__held = out;
+    const t0 = performance.now();
+    const loop = () => {
+      const box = s.getBoundingClientRect();
+      const range = window.getSelection()!.getRangeAt(0);
+      const r = range.getClientRects()[0] ?? range.getBoundingClientRect();
+      out.push({ y: s.scrollTop, top: r.top - box.top, bottom: r.bottom - (box.top + s.clientHeight) });
+      if (performance.now() - t0 < 2600) requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  });
+  // Held: the first press, then repeats (Playwright marks a second down of a held key as a repeat) at 30 Hz.
+  for (let i = 0; i < 45; i++) {
+    await page.keyboard.down("ArrowDown");
+    await page.waitForTimeout(33);
+  }
+  await page.keyboard.up("ArrowDown");
+  await page.waitForTimeout(800);
+  const frames = await page.evaluate(() => (window as unknown as { __held: { y: number; top: number; bottom: number }[] }).__held);
+  const ys = frames.map((f) => f.y);
+  const total = ys.at(-1)! - ys[0]!;
+  const steps = ys.map((y, i) => y - (ys[i - 1] ?? y));
+  const below = Math.max(...frames.map((f) => f.bottom));
+  const above = Math.min(...frames.map((f) => f.top));
+  console.log(`D-156 held ArrowDown: ${frames.length} frames, ${total.toFixed(0)} px; caret's row at most ${below.toFixed(1)} px past the bottom, ${above.toFixed(1)} px from the top; largest step ${(100 * Math.max(...steps) / total).toFixed(0)}%`);
+  expect(total).toBeGreaterThan(400);
+  // The caret's row is inside the visible note in every frame.
+  for (const f of frames) {
+    expect(f.bottom).toBeLessThanOrEqual(1);
+    expect(f.top).toBeGreaterThanOrEqual(-1);
+  }
+  // Smooth: downward only, and no frame covers more than a quarter of the way.
+  for (const d of steps) expect(d).toBeGreaterThanOrEqual(-0.5);
+  expect(Math.max(...steps) / total).toBeLessThan(0.25);
+  await quit(l);
+});
 /**
  * The band against the caret's visual row, as it will be drawn: its computed (possibly gliding) edges
  * against the row's line box, and whether the masked column covers the canvas from top to bottom.

@@ -79,24 +79,63 @@ describe("the auto-scroll (D-156)", () => {
     expect(Math.max(...steps)).toBeLessThan((300 / 200) * 16 * 1.8);
   });
 
-  it("a new target mid-way starts from where the note is, over a fresh 200 ms", () => {
+  it("a new target mid-way continues from where the note is, at its speed, ending a frame later at most", () => {
     const s = setup();
     s.a.to(300);
     for (let i = 0; i < 6; i++) s.tick(); // 96 ms
     const mid = s.pos();
+    const speed = mid - s.samples.at(-2)!; // px in the last frame
     expect(mid).toBeGreaterThan(0);
     expect(mid).toBeLessThan(300);
     s.a.to(500);
     expect(s.a.dest).toBe(500);
     s.tick();
-    // It continues from mid (no jump back to 0 or forward to 300).
-    expect(s.pos()).toBeGreaterThanOrEqual(mid);
-    expect(s.pos() - mid).toBeLessThan(20);
-    for (let i = 0; i < 11; i++) s.tick(); // 192 ms after the retarget: not there yet
+    // It continues from mid at about the speed it had: no jump, no stop.
+    const first = s.pos() - mid;
+    expect(first).toBeGreaterThan(speed * 0.8);
+    expect(first).toBeLessThan(speed * 1.6);
+    // The first scroll would have ended at 200 ms; this one ends by 200 ms + one frame (216.7 ms).
+    for (let i = 0; i < 6; i++) s.tick(); // 208 ms
     expect(s.pos()).toBeLessThan(500);
-    s.tick();
+    s.tick(); // 224 ms
     expect(s.pos()).toBe(500);
     expect(s.pending()).toBe(0);
+    // Monotonic all the way: it never went back.
+    s.samples.forEach((v, i) => expect(v).toBeGreaterThanOrEqual(s.samples[i - 1] ?? 0));
+  });
+
+  it("held keys (a row every 33 ms) are followed: the caret stays on screen in a 360 px window, no frame jumps", () => {
+    const s = setup();
+    const row = 24;
+    const view = 360;
+    const bandBottom = view * 0.65; // the caret's row is kept above this
+    let caret = bandBottom - row; // the caret's row bottom, in content px
+    const lags: number[] = [];
+    const steps: number[] = [];
+    let prev = s.pos();
+    let presses = 0;
+    for (let t = 0; t < 1500; t += 16) {
+      // A repeat every 33 ms moves the caret down a row; the reading zone asks for it to sit at the band's bottom.
+      if (t % 33 < 16) {
+        caret += row;
+        const dest = caret - bandBottom;
+        // The first press animates; the repeats (KeyboardEvent.repeat) follow.
+        if (dest > (s.a.dest ?? s.pos())) s.a.to(dest, presses++ === 0 ? "animate" : "follow");
+      }
+      s.tick(16);
+      lags.push(caret - s.pos()); // where the caret's row bottom is in the viewport
+      steps.push(s.pos() - prev);
+      prev = s.pos();
+    }
+    expect(Math.max(...lags)).toBeLessThanOrEqual(view); // never below the window's bottom
+    const total = s.pos();
+    expect(total).toBeGreaterThan(900);
+    for (const d of steps) expect(d).toBeGreaterThanOrEqual(-0.5);
+    expect(Math.max(...steps)).toBeLessThan(total * 0.25);
+    // Once the key is let go it settles on the last row within a frame or so of the 200 ms.
+    for (let i = 0; i < 14; i++) s.tick(16);
+    expect(s.a.dest).toBeNull();
+    expect(caret - s.pos()).toBeCloseTo(bandBottom, 0);
   });
 
   it("never queues: the same target again doesn't restart the clock", () => {
@@ -108,13 +147,45 @@ describe("the auto-scroll (D-156)", () => {
     expect(s.pos()).toBe(300);
   });
 
+  it("moved under it (the browser revealing the caret), it carries on from there and never jumps back", () => {
+    const s = setup();
+    s.a.to(1600);
+    s.tick();
+    s.setPos(1383); // the browser's own caret reveal, between frames
+    s.tick();
+    expect(s.pos()).toBeGreaterThanOrEqual(1383);
+    let prev = s.pos();
+    for (let i = 0; i < 14; i++) {
+      s.tick();
+      expect(s.pos()).toBeGreaterThanOrEqual(prev - 0.5);
+      prev = s.pos();
+    }
+    expect(s.pos()).toBe(1600);
+  });
+
+  it("moved past its target under it, it stops there and asks for a check (the caret may be further)", () => {
+    const s = setup();
+    let pos = 0;
+    let asked = 0;
+    const a = createScrollAnimator(
+      { get: () => pos, set: (v) => (pos = v) },
+      { duration: () => autoScroll.duration, easing: cubicBezier(autoScroll.easing), clock: s.clock, onOvertaken: () => asked++ },
+    );
+    a.to(300);
+    s.tick();
+    pos = 1383; // the browser's caret reveal went past 300
+    s.tick();
+    expect(pos).toBe(1383); // never back
+    expect(a.dest).toBeNull();
+    expect(asked).toBe(1);
+    expect(s.pending()).toBe(0);
+  });
+
   it("the person's scroll cancels it where it is", () => {
     const s = setup();
     s.a.to(300);
     for (let i = 0; i < 4; i++) s.tick();
     const at = s.pos();
-    expect(s.a.wrote(at)).toBe(true);
-    expect(s.a.wrote(at + 40)).toBe(false);
     s.a.cancel();
     s.tick();
     s.tick();
@@ -134,7 +205,7 @@ describe("the auto-scroll (D-156)", () => {
     const s = setup();
     s.a.to(300);
     s.tick();
-    s.a.to(5000, true);
+    s.a.to(5000, "instant");
     expect(s.pos()).toBe(5000);
     expect(s.a.dest).toBeNull();
     expect(s.pending()).toBe(0);
