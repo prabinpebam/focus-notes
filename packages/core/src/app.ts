@@ -210,8 +210,6 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
  * (UI-07, Foundations → States), rather than hidden. Each becomes a real command when it lands.
  */
 export const PLANNED_MENU_COMMANDS = [
-  // Share and visibility: the popover arrives with sharing (WP-5.3); moving a note between Public and Private with WP-3.4.
-  { id: "note.share", title: "command.note.share", icon: "share", disabledReason: "command.note.share.reason" },
   // Help and docs open the product site's help, which arrives with the product site (WP-5.6).
   { id: "help.open", title: "command.help.open", icon: "info", disabledReason: "command.help.open.reason" },
 ] as const;

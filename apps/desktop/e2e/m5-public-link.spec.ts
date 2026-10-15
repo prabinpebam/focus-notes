@@ -69,6 +69,15 @@ test("SHR-03: Copy public link copies a public note's page address from ⋯ and 
     await page.keyboard.press("Escape");
     await expect(page.getByRole("menu", { name: "More" })).toHaveCount(0);
 
+    // Share and visibility… opens Settings → Sharing (WP-5.3, D-139).
+    menu = await openMore(page);
+    await menu.getByRole("menuitem", { name: /^Share and visibility…/ }).click();
+    const settings = page.getByRole("dialog", { name: "Settings" });
+    await expect(settings.getByRole("tab", { name: "Sharing" })).toHaveAttribute("aria-selected", "true");
+    await expect(settings.getByRole("heading", { name: "People with access" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(settings).toHaveCount(0);
+
     // A public note: quick open it, then ⋯ → Copy public link.
     await page.keyboard.press(`${mod}+P`);
     const spotlight = page.getByRole("dialog", { name: "Spotlight" });
