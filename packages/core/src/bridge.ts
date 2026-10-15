@@ -75,6 +75,19 @@ export interface PlatformBridge {
   journal?: JournalBridge;
   /** False turns the warm-up after start off, as in end-to-end tests (PRF-10). */
   warmUp?: boolean;
+  /**
+   * How the window is composited (D-121): in software the note's edges fade without the blur. The
+   * desktop's; absent in the browser, which can't tell, and keeps the blur.
+   */
+  compositing?: CompositingBridge;
+}
+
+/** GPU or software compositing (D-121). */
+export type Compositing = "gpu" | "software";
+export interface CompositingBridge {
+  initial: Compositing;
+  /** Changes, as after the GPU process crashed and came back in software. Values other than the two are ignored. */
+  onChange(listener: (c: unknown) => void): () => void;
 }
 
 export interface JournalBridge {

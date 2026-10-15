@@ -119,6 +119,8 @@ export async function setWindowActive(app: ElectronApplication, active: boolean)
  * asked), and GitHub's API points at a closed local port unless a journey gives its fake: no
  * journey ever reaches the network.
  */
+/** Whether this worker printed the app's compositing yet (D-121). */
+let compositingShown = false;
 export async function launch(dirs: { userData: string; docs: string }, extraEnv: Record<string, string> = {}, opts: { firstRun?: boolean } = {}): Promise<Launched> {
   const log: string[] = [];
   const stateFile = join(dirs.userData, "state.json");
@@ -142,7 +144,13 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
     // Never the computer's focus (D-104 (7)): the windows open inactive, and the app keeps its own "active".
     env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_WARMUP: "0", FOCUS_NOTES_E2E: "1", ...extraEnv },
   });
-  app.process().stdout?.on("data", (d: Buffer) => log.push(...d.toString().split("\n").filter(Boolean)));
+  app.process().stdout?.on("data", (d: Buffer) => {
+    const lines = d.toString().split("\n").filter(Boolean);
+    log.push(...lines);
+    // Which compositing the app found, once a run, so CI's log shows whether its edges blur (D-121).
+    const found = !compositingShown && lines.find((x) => x.includes("[focus-notes] compositing:"));
+    if (found) (compositingShown = true), process.stdout.write(`${found.trim()}\n`);
+  });
   const pid = await app.evaluate(() => process.pid);
   running.set(app, pid);
   // Every window the journey uses; one that closes at once (a page that went away) needs none.

@@ -56,11 +56,14 @@ export const edge = style({
   visibility: "hidden",
   "@media": { "(forced-colors: active)": { display: "none" } },
 });
+// The top edge first hides the trigger's place entirely, `triggerClear` (80 px) in the canvas's
+// color, then fades over `scrollFade` below it, so scrolled text never meets the trigger (D-111).
+const topEdge = `calc(${t.triggerClear} + ${t.scrollFade})`;
 export const edgeSide = styleVariants({
-  top: { top: 0, selectors: { "[data-fade-top] ~ &": { visibility: "visible" } } },
+  top: { top: 0, height: topEdge, selectors: { "[data-fade-top] ~ &": { visibility: "visible" } } },
   bottom: { bottom: 0, selectors: { "[data-fade-bottom] ~ &": { visibility: "visible" } } },
 });
-/** A depth into the band as a length: 0 at the window's edge, 1 at the band's inner edge. */
+/** A depth into the fade as a length: 0 at its outer edge (the window's, or the top's solid part), 1 at its inner edge. */
 const at = (f: number) => `calc(${t.scrollFade} * ${Math.round(f * 10000) / 10000})`;
 /**
  * Layer k (0 at the window's edge): opaque over its slice of the band, from k-1 to k eighths in
@@ -74,18 +77,22 @@ const layerMask = (inward: "bottom" | "top", k: number) => {
 const layer = (inward: "bottom" | "top", k: number) =>
   style({
     position: "absolute",
-    inset: 0,
+    // The top edge's blur covers only its fade, below the solid part: a backdrop filter costs its
+    // whole box every frame, and under the solid canvas color a blur never shows. Over all 130 px
+    // at 400% zoom, a software-drawn window fell to a few frames a second (A11Y-01, D-119).
+    inset: inward === "bottom" ? `${t.triggerClear} 0 0 0` : 0,
     pointerEvents: "none",
     // Unprefixed only: with the -webkit- one as well, the build keeps just that, which Chromium ignores.
     backdropFilter: `blur(calc(${t.edgeBlur} / ${2 ** k}))`,
     maskImage: layerMask(inward, k),
-    // With reduced transparency, the fade alone (Foundations → Surfaces).
-    selectors: { ':root[data-transparency="reduced"] &': { display: "none" } },
+    // With reduced transparency, or in software compositing, where eight backdrop filters drop the
+    // window to a few frames a second (D-121): the canvas-colored fade alone.
+    selectors: { ':root[data-transparency="reduced"] &, :root[data-compositing="software"] &': { display: "none" } },
   } as Parameters<typeof style>[0]);
 export const blurTop = Array.from({ length: EDGE_BANDS }, (_, k) => layer("bottom", k));
 export const blurBottom = Array.from({ length: EDGE_BANDS }, (_, k) => layer("top", k));
 export const fade = styleVariants({
-  top: { position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: `linear-gradient(to bottom, ${t.background}, transparent)` },
+  top: { position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: `linear-gradient(to bottom, ${t.background} ${t.triggerClear}, transparent)` },
   bottom: { position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: `linear-gradient(to top, ${t.background}, transparent)` },
 });
 

@@ -22,6 +22,7 @@ export const contract = defineContract({
     focusDim: { kind: "number", min: 0.15, max: 0.6, description: "Focus mode's dim strength; unset is the theme's focus.dimOpacity." },
     themeColors: { kind: "list", of: "colorValues", description: "An edited copy of the theme showing (Edit colors): color tokens and their hex values. Anything else is ignored." },
     frame: { kind: "enum", values: ["native", "rounded", "square"], default: "native", description: "The app-built window's shape on Windows and Linux (D-14): rounded with the drawn shadow, or square (maximized, snapped, full screen)." },
+    compositing: { kind: "enum", values: ["gpu", "software"], default: "gpu", description: "How the window is composited (D-121): software turns off the note's edge blur, too costly to draw without a GPU, and keeps its fade." },
   },
   events: {},
   slots: { default: { accepts: "any" } },
@@ -43,5 +44,6 @@ export const contract = defineContract({
     { name: "themeColors", props: { scheme: "light", platform: "windows", themeColors: { get: "vm.gallery.colorValues" } }, children: sample },
     { name: "frame rounded", props: { scheme: "light", platform: "windows", frame: "rounded" }, children: sample },
     { name: "frame square", props: { scheme: "dark", platform: "linux", frame: "square" }, children: sample },
+    { name: "compositing software", props: { scheme: "light", platform: "windows", compositing: "software" }, children: sample },
   ],
 });

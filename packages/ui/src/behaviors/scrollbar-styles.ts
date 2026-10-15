@@ -6,6 +6,8 @@ export interface ScrollbarTokens {
   scrollbarThumb: string;
   scrollbarThumbHover: string;
   scrollbarTrack: string;
+  /** How far the track stays from the scroller's top and bottom: a scroller at the window's rounded corners (the note) keeps its thumb clear of them (D-111). */
+  scrollbarEnds?: string;
 }
 
 /**
@@ -17,7 +19,7 @@ export interface ScrollbarTokens {
 export function minimalScrollbar(scroller: string, t: ScrollbarTokens): void {
   globalStyle(`${scroller}::-webkit-scrollbar`, { width: t.scrollbarSize, height: t.scrollbarSize, backgroundColor: t.scrollbarTrack });
   globalStyle(`${scroller}::-webkit-scrollbar-button`, { display: "none", width: 0, height: 0 });
-  globalStyle(`${scroller}::-webkit-scrollbar-track`, { backgroundColor: t.scrollbarTrack });
+  globalStyle(`${scroller}::-webkit-scrollbar-track`, { backgroundColor: t.scrollbarTrack, ...(t.scrollbarEnds ? { marginBlock: t.scrollbarEnds } : {}) });
   globalStyle(`${scroller}::-webkit-scrollbar-corner`, { backgroundColor: t.scrollbarTrack });
   globalStyle(`${scroller}::-webkit-scrollbar-thumb`, {
     backgroundColor: t.scrollbarTrack,
@@ -29,6 +31,9 @@ export function minimalScrollbar(scroller: string, t: ScrollbarTokens): void {
   });
   globalStyle(`${scroller}[data-scrolling]::-webkit-scrollbar-thumb, ${scroller}[data-scrollbar-hover]::-webkit-scrollbar-thumb`, { backgroundColor: t.scrollbarThumb });
   globalStyle(`${scroller}[data-scrollbar-hover]::-webkit-scrollbar-thumb:hover, ${scroller}::-webkit-scrollbar-thumb:active`, { backgroundColor: t.scrollbarThumbHover });
+  // Under a modal (its scrim, the rest of the app hidden from it), the thumb never shows: a scroll
+  // just before it opened would otherwise leave it at the window's edge behind the scrim (D-111).
+  globalStyle(`:is([inert], [aria-hidden="true"]) ${scroller}::-webkit-scrollbar-thumb`, { backgroundColor: t.scrollbarTrack });
   // In Windows contrast themes the thumb never hides, so it's always findable (Foundations → Scrollbars).
   globalStyle(`${scroller}::-webkit-scrollbar-thumb`, { "@media": { "(forced-colors: active)": { backgroundColor: t.scrollbarThumb } } });
 }

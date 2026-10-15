@@ -53,6 +53,8 @@ export interface AppRootProps {
   focusDim?: number;
   /** An edited copy of the theme showing: color tokens and their hex values over the theme's own. */
   themeColors?: ColorValue[];
+  /** How the window is composited (D-121): "software" turns off the backdrop blurs too costly to draw without a GPU. */
+  compositing?: "gpu" | "software";
   lang?: string;
   children?: ReactNode;
 }
@@ -67,7 +69,7 @@ const inRange = (v: number | undefined, min: number, max: number) => typeof v ==
  * The root of every app view. Applies the theme and the token modes (DSY-03) to the document:
  * scheme, platform, reduced motion, reduced transparency, and pointer type.
  */
-export function AppRoot({ scheme, theme, contentFont, uiScale, platform, contentSize, focusMode, frame = "native", lineHeight, measure, paragraphSpacing, focusDim, themeColors, lang = "en", children }: AppRootProps) {
+export function AppRoot({ scheme, theme, contentFont, uiScale, platform, contentSize, focusMode, frame = "native", lineHeight, measure, paragraphSpacing, focusDim, themeColors, compositing = "gpu", lang = "en", children }: AppRootProps) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const applied = useRef<string[]>([]);
   useEffect(() => {
@@ -107,6 +109,13 @@ export function AppRoot({ scheme, theme, contentFont, uiScale, platform, content
     if (focusMode) html.dataset.focus = "on";
     else delete html.dataset.focus;
   }, [contentSize, focusMode]);
+
+  // Software compositing (D-121): the styles that need a GPU, the note's edge blur, read this.
+  useEffect(() => {
+    const html = document.documentElement;
+    if (compositing === "software") html.dataset.compositing = "software";
+    else delete html.dataset.compositing;
+  }, [compositing]);
 
   // Reading settings override their tokens at run time, as the note text size does.
   useEffect(() => {
