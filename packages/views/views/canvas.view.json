@@ -3973,7 +3973,7 @@
                         },
                         "children": [
                           {
-                            "type": "AppMark",
+                            "type": "Stack",
                             "when": {
                               "expr": {
                                 "==": [
@@ -3985,8 +3985,28 @@
                               }
                             },
                             "props": {
-                              "size": "l"
-                            }
+                              "gap": "s",
+                              "align": "center",
+                              "shortGap": "xs"
+                            },
+                            "children": [
+                              {
+                                "type": "AppMark",
+                                "props": {
+                                  "size": "l"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "t": "firstRun.welcome.name"
+                                  },
+                                  "role": "title",
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
                           },
                           {
                             "type": "AppMark",
@@ -4058,7 +4078,7 @@
                           "welcome": {
                             "type": "Stack",
                             "props": {
-                              "gap": "xl",
+                              "gap": "xxl",
                               "align": "center",
                               "shortGap": "l"
                             },
@@ -4092,7 +4112,7 @@
                               {
                                 "type": "Stack",
                                 "props": {
-                                  "gap": "s",
+                                  "gap": "m",
                                   "align": "center"
                                 },
                                 "children": [
@@ -6253,16 +6273,33 @@
                                     },
                                     "children": [
                                       {
-                                        "type": "SignalDot",
-                                        "props": {}
+                                        "type": "Icon",
+                                        "props": {
+                                          "name": "focus",
+                                          "size": "m"
+                                        }
                                       },
                                       {
                                         "type": "Text",
                                         "props": {
                                           "value": {
-                                            "t": "firstRun.ready.dot"
+                                            "get": "vm.firstRun.focusHint"
                                           },
                                           "role": "lead"
+                                        }
+                                      },
+                                      {
+                                        "type": "Shortcut",
+                                        "when": {
+                                          "get": "vm.firstRun.hasFocusKeys"
+                                        },
+                                        "props": {
+                                          "keys": {
+                                            "get": "vm.firstRun.focusKeys"
+                                          },
+                                          "label": {
+                                            "get": "vm.firstRun.focusSpoken"
+                                          }
                                         }
                                       }
                                     ]
@@ -6275,17 +6312,14 @@
                                     },
                                     "children": [
                                       {
-                                        "type": "Icon",
-                                        "props": {
-                                          "name": "search",
-                                          "size": "m"
-                                        }
+                                        "type": "SignalDot",
+                                        "props": {}
                                       },
                                       {
                                         "type": "Text",
                                         "props": {
                                           "value": {
-                                            "get": "vm.firstRun.searchHint"
+                                            "t": "firstRun.ready.dot"
                                           },
                                           "role": "lead"
                                         }
