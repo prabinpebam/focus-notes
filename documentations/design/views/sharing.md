@@ -62,6 +62,7 @@ The invite is built from a template that can be edited in **Settings → Sharing
 Hi {name}, I've shared "{title}" with you.
 Open it here: {link}
 Or go to {site} and use your name "{name}" with the passcode {passcode}.
+On a shared computer, use your name and the passcode: browsers remember links.
 It works until {expires}.
 ```
 
@@ -90,7 +91,9 @@ The page a reader sees at `https://<user>.github.io/<workspace>/s/`, part of IA-
 | **Site just updated** | A note that fails to read is read once more from the new build; if it still fails, the same words as above. |
 | **Signed in** | The note in the same calm reading view as public pages. An audience that opens several notes sees "Shared with you" with a list of them by title, and each note offers [All shared notes]. Links to other notes in the share stay on the page; links to anything else are plain text. Footer: [Remember on this device] (a toggle) and [Sign out on this device]. |
 
-**Staying signed in** follows `personal-site`. By default the key lasts for the browser tab (`sessionStorage`): a reload stays open, closing the tab ends it. *Open and remember* or *Remember on this device* keeps it in `localStorage` until the audience expires or is withdrawn. *Sign out on this device* forgets it in every open tab (`BroadcastChannel`). What's stored is the derived key, the grant's ID (or the name's lookup), and its expiry, never the passcode, the name, or the link secret. The page ends the session itself when the expiry passes, and a stored key that no longer opens is forgotten.
+**Staying signed in** follows `personal-site`. By default the session is for the browser tab: a reload stays open, and closing the tab ends it there. *Open and remember* or *Remember on this device* keeps it on the device until the audience expires or is withdrawn (or, for an audience that never expires, until 30 days unused). A link always opens for its tab only. *Sign out on this device* forgets it in every open tab, and anything saved before it. A tab's session also ends after 12 hours unused. What's kept is a key the browser can use but never reveal (in IndexedDB), with the grant's ID or the name's lookup and its expiry; never the passcode, the name, or the link secret. The page hides the share when its expiry passes; access itself ends at the first publish after that (D-125).
+
+The page removes the link's secret from the address bar at once, but the browser's own history (and its sync) may keep the address the link was opened at, so on a shared computer the name and passcode are the better way in.
 
 <h2 data-reader-personas="product design">Design decisions</h2>
 
