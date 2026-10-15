@@ -206,6 +206,8 @@ const setup = () => (setupEngine ??= SetupEngine.open({
   },
   // Step names, states, and problem codes only.
   log: logLine,
+  // A folder the app chose that's taken when Download runs: the next free one beside the default (D-154).
+  nextFolder: () => freeHome(),
 }));
 /** A vault passphrase from the renderer: text, or none (Skip for now). Never logged or stored. */
 const passphraseArg = (p: unknown) => (typeof p === "string" && p.length > 0 && p.length <= 1024 ? p : undefined);
@@ -259,6 +261,11 @@ async function freeHome(): Promise<string> {
 }
 /** The folder setup makes the workspace in: the one it started with, the chosen one, or the open workspace (Run setup again). */
 const setupFolder = async () => (await setup()).report().options?.folder ?? targetFolder ?? (isWorkspace() ? notesHome() : await freeHome());
+/** Whether the person chose that folder (D-154): only a folder the app chose moves when it's taken. */
+const setupChosen = async () => {
+  const o = (await setup()).report().options;
+  return o ? o.chosen === true : targetFolder !== undefined || isWorkspace();
+};
 /**
  * Deletes what the data inventory lists for signing out or removing the workspace (PRV-02): setup's
  * progress (through the engine, so it forgets too), the first run's workspace identity, and, for
@@ -301,8 +308,18 @@ async function removeLocalWorkspace(): Promise<RemovalCheck> {
   chosenHome = undefined;
   await forgetLocal("removeWorkspace");
   process.stdout.write("[focus-notes] workspace-removed\n");
-  setTimeout(() => mainWindow?.webContents.reload(), 0);
+  restartInPlace();
   return r;
+}
+/**
+ * The renderer starts again in place, never by reloading the page (DSK-09, D-148): a reload shows the
+ * unpainted page, white or see-through in the transparent window. It builds its stores and views off
+ * screen and swaps them in one frame (apps/desktop/src/renderer/main.ts).
+ */
+function restartInPlace(): void {
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("workspace:switched");
+  }, 0);
 }
 async function chooseFolder(title: string): Promise<string | undefined> {
   const w = mainWindow;
@@ -321,7 +338,7 @@ async function repositories(): Promise<RepoChoice[]> {
 }
 /**
  * Opens a workspace in this window (D-98): the main process keeps the folder, the watcher and Git
- * move to it, and the renderer starts again in it.
+ * move to it, and the renderer starts again in it, in place (D-148).
  */
 async function switchWorkspace(folder: string): Promise<void> {
   if (workspaceIdentity) {
@@ -338,7 +355,7 @@ async function switchWorkspace(folder: string): Promise<void> {
   await old?.dispose();
   watcher = watchWorkspace(() => mainWindow);
   setTimeout(() => startGit(), 3000);
-  setTimeout(() => mainWindow?.webContents.reload(), 0);
+  restartInPlace();
 }
 
 // ---- the workspace (WP-2.3) ----
@@ -985,7 +1002,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("setup:status", async () => (await setup()).report());
   // The folder is the main process's own: the one setup started with, or the one chosen with the dialog (D-98).
-  handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), folder: await setupFolder() }), passphraseArg(passphrase)));
+  handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), folder: await setupFolder(), chosen: await setupChosen() }), passphraseArg(passphrase)));
+  // Download somewhere else (D-154): the system's dialog, or the next free folder beside the default. Undefined: cancelled.
+  handle("setup:useFolder", async (how) => {
+    const folder = how === "choose" ? await chooseFolder("Choose a folder for your notes") : how === "new" ? await freeHome() : undefined;
+    if (!folder) return undefined;
+    if (how === "choose") targetFolder = folder;
+    return (await setup()).useFolder(folder, how === "choose");
+  });
   handle("setup:retry", async (id, passphrase) => {
     if (!(SETUP_STEPS as readonly unknown[]).includes(id)) throw new Error("Unknown setup step");
     return (await setup()).retry(id as SetupStepId, passphraseArg(passphrase));
@@ -1123,14 +1147,35 @@ function hardenSession(): void {
   session.defaultSession.setPermissionCheckHandler(() => false);
 }
 
+/** Paper's and Ink's canvas (`color.canvas`): the native window's background until the page says its theme's. */
+const CANVAS = { light: "#fbfaf7", dark: "#1a1a1c" } as const;
+/**
+ * The theme the page's first frame is drawn in (DSK-09, D-148), resolved before the page loads from
+ * this device's appearance (state.json) and the system's scheme, and passed in the page's address so
+ * the boot styles paint its canvas from the first frame.
+ */
+function bootTheme(): { scheme: "light" | "dark"; theme: string } {
+  let s: { appearance?: unknown; lightTheme?: unknown; darkTheme?: unknown } = {};
+  try {
+    s = JSON.parse(readFileSync(stateFile(), "utf8")) as typeof s;
+  } catch {
+    // A new install: the system's scheme, the default themes.
+  }
+  const scheme = s.appearance === "light" || s.appearance === "dark" ? s.appearance : nativeTheme.shouldUseDarkColors ? "dark" : "light";
+  const chosen = scheme === "dark" ? s.darkTheme : s.lightTheme;
+  return { scheme, theme: typeof chosen === "string" && /^[a-z][a-z0-9-]{0,40}$/.test(chosen) ? chosen : scheme === "dark" ? "ink" : "paper" };
+}
+/** How long the window waits for the page's first themed frame before it shows anyway. */
+const FIRST_FRAME_TIMEOUT_MS = 4000;
+
 function createWindow(frame: AppWindowFrame): BrowserWindow {
-  const dark = nativeTheme.shouldUseDarkColors;
+  const boot = bootTheme();
   const win = new BrowserWindow({
     minWidth: 360,
     minHeight: 320,
     show: false,
     title: "Focus Notes",
-    backgroundColor: dark ? "#1a1a1c" : "#fbfaf7",
+    backgroundColor: CANVAS[boot.scheme],
     // The app icon (build/icon.svg) for the window and the taskbar; macOS takes the bundle's.
     ...(platform === "macos" ? {} : { icon: join(import.meta.dirname, "icon.png") }),
     // Where it was last time, and how it's drawn on this platform.
@@ -1144,7 +1189,28 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
     },
   });
   if (journey) keepOutOfTheWay(win);
-  win.once("ready-to-show", () => (journey ? win.showInactive() : win.show()));
+  // Shown once the page has drawn its first themed frame with the app's layout (`fn:window.firstFrame`),
+  // never on DOM ready alone: a transparent window shows an unpainted page as white or see-through.
+  let shown = false;
+  const show = (on: "first-frame" | "timeout") => {
+    if (shown || win.isDestroyed()) return;
+    shown = true;
+    clearTimeout(fallback);
+    ipcMain.removeListener("window:firstFrame", onFirstFrame);
+    process.stdout.write(`[focus-notes] window-shown on=${on}\n`);
+    if (journey) win.showInactive();
+    else win.show();
+  };
+  const onFirstFrame = (e: IpcMainEvent) => {
+    if (e.sender === win.webContents && fromApp(e)) show("first-frame");
+  };
+  ipcMain.on("window:firstFrame", onFirstFrame);
+  let fallback: ReturnType<typeof setTimeout> | undefined;
+  win.once("ready-to-show", () => (fallback = setTimeout(() => show("timeout"), FIRST_FRAME_TIMEOUT_MS)));
+  win.on("closed", () => {
+    clearTimeout(fallback);
+    ipcMain.removeListener("window:firstFrame", onFirstFrame);
+  });
   frame.attach(win);
   // ⇧⌘V pastes plain text on macOS too (Keyboard shortcuts → Everyday editing), where Chromium binds
   // only ⌥⇧⌘V. The renderer still sees Shift held, so the editor pastes the text as it is (EDT-09).
@@ -1156,7 +1222,7 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
   // End-to-end tests turn the warm-up after start off, so their timing stays the same (PRF-10).
   // GPU or software compositing (D-121): in software the note's edges fade without the blur.
   const gpu = compositing();
-  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), ...frame.query(), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
+  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: boot.theme, scheme: boot.scheme, ...frame.query(), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
   const offCompositing = gpu.onChange((c) => win.webContents.send("compositing:changed", c));
   // Again once loaded: a change while the page loaded would be missed (the app ignores the same value).
   win.webContents.on("did-finish-load", () => win.webContents.send("compositing:changed", gpu.current()));
@@ -1211,7 +1277,7 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
   });
   ipcMain.on("window:scheme", (e, scheme: unknown, canvas: unknown, accent: unknown) => {
     if (!fromApp(e) || (scheme !== "light" && scheme !== "dark")) return;
-    const color = typeof canvas === "string" && /^#[0-9a-f]{6}$/i.test(canvas) ? canvas : scheme === "dark" ? "#1a1a1c" : "#fbfaf7";
+    const color = typeof canvas === "string" && /^#[0-9a-f]{6}$/i.test(canvas) ? canvas : CANVAS[scheme];
     // The transparent window stays transparent: the page draws the window's canvas inside its shadow margin.
     win.setBackgroundColor(frame.kind === "custom" ? "#00000000" : color);
     frame.setAccent(accent);

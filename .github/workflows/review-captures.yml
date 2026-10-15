@@ -1,0 +1,83 @@
+name: review-captures
+# Review captures at every window size (D-146): a catalogue journey's screenshots at the default,
+# smallest (480 × 360) and large (1600 × 1000) windows, light and dark, uploaded as the artifact
+# review-<catalogue> with the catalogue's index.html and manifest. The small and large windows resize
+# a real window, so they're taken only here, on CI (D-141); a local capture takes the default window
+# only. Fetch the result with: node tools/review/fetch-captures.mjs --branch <branch>.
+# Catalogues are listed in tools/review/catalogs.mjs; a new one is an entry there and a choice below.
+on:
+  workflow_dispatch:
+    inputs:
+      catalog:
+        description: Which catalogue to capture
+        type: choice
+        options: [fre-catalog, vq-surfaces]
+        default: fre-catalog
+      repeat:
+        description: How many times to run it (1 to 20), to show a check holds
+        type: string
+        default: "1"
+      grep:
+        description: Only the journeys whose title matches (optional)
+        type: string
+        default: ""
+      only:
+        description: Only these subjects, where the catalogue has them (vq-surfaces, e.g. "system menu")
+        type: string
+        default: ""
+  push:
+    # Visual quality branches get a fresh set for review on every push.
+    branches: ["vq-*"]
+permissions:
+  contents: read
+concurrency:
+  group: review-captures-${{ github.ref }}-${{ inputs.catalog || 'fre-catalog' }}
+  cancel-in-progress: true
+jobs:
+  capture:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      # Passed through the environment, never into the script's text.
+      CATALOG: ${{ inputs.catalog || 'fre-catalog' }}
+      REPEAT: ${{ inputs.repeat || '1' }}
+      GREP: ${{ inputs.grep || '' }}
+      ONLY: ${{ inputs.only || '' }}
+      FOCUS_NOTES_E2E: "1"
+      # Every window size: allowed on CI's own screen only (D-141).
+      FOCUS_NOTES_E2E_ALLOW_SCREEN: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Fetch Electron
+        timeout-minutes: 10
+        working-directory: apps/desktop
+        run: node -e "console.log(require('electron'))"
+      - run: node packages/tokens/build.mjs
+      - name: Build the desktop app
+        run: pnpm --filter @focus-notes/desktop run build
+      - name: Capture
+        timeout-minutes: 45
+        run: node tools/review/capture.mjs "$env:CATALOG" --repeat "$env:REPEAT" --grep "$env:GREP" --only "$env:ONLY"
+      # Whatever was captured, even when a journey failed: the images are what's reviewed.
+      - name: Upload the captures
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: review-${{ env.CATALOG }}
+          path: test-results/review/${{ env.CATALOG }}/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Keep test results
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-review-${{ env.CATALOG }}
+          path: test-results/desktop/

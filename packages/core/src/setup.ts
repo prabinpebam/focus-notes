@@ -25,6 +25,11 @@ export interface SetupOptions {
   private: string;
   /** Where the workspace is cloned: an absolute path that's missing, empty, or already this clone. */
   folder: string;
+  /**
+   * The person chose the folder (Choose a folder…, or the open workspace's). Otherwise the app chose
+   * it, and Download moves to the next free folder beside it if it's taken by then (D-154).
+   */
+  chosen?: boolean;
   /** Turn on GitHub Pages (the web app, public notes, and the vault). */
   publish: boolean;
 }
@@ -48,6 +53,20 @@ export interface SetupReport {
 
 export const DEFAULT_SETUP = { instance: "notes", private: "notes-private", publish: true } as const;
 
+/**
+ * What a failed part offers (D-154, no dead ends), the first leading: always something that
+ * changes what happens next, not only the same call again, and Back last. A folder that's taken:
+ * another folder. Names GitHub can't use (or a weak passphrase): Start over, with the form back.
+ * Anything else, transient or not: Try again, or Start over.
+ */
+export type SetupFailureAction = "retry" | "chooseFolder" | "newFolder" | "startOver" | "back";
+const NEEDS_NEW_NAMES: readonly SetupProblem[] = ["notInstance", "notPrivate", "linkedElsewhere", "weak"];
+export function setupFailureActions(problem: SetupProblem | undefined): SetupFailureAction[] {
+  if (problem === "folderTaken") return ["chooseFolder", "newFolder", "back"];
+  if (problem && NEEDS_NEW_NAMES.includes(problem)) return ["startOver", "back"];
+  return ["retry", "startOver", "back"];
+}
+
 /** A repository name GitHub accepts, and that's safe as a path segment. */
 export const isRepoName = (n: string) => /^[A-Za-z0-9._-]{1,100}$/.test(n) && n !== "." && n !== ".." && !n.toLowerCase().endsWith(".git");
 
@@ -63,6 +82,11 @@ export interface SetupBridge {
   retry(step: SetupStepId, passphrase?: string): Promise<SetupReport>;
   /** Forgets the progress (Run setup again). Nothing on GitHub or on disk is removed. */
   reset(): Promise<SetupReport>;
+  /**
+   * Download somewhere else after the folder was taken (D-154): `choose` opens the system's folder
+   * dialog (undefined when cancelled), `new` uses the next free folder beside the default.
+   */
+  useFolder?(how: "choose" | "new"): Promise<SetupReport | undefined>;
   /** How strong a vault passphrase is (at least 12 characters, rated strong). */
   passphraseStrength(passphrase: string): Promise<{ ok: boolean; bits: number }>;
   onReport(listener: (report: SetupReport) => void): () => void;

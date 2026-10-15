@@ -2,7 +2,10 @@
  * Readable commit messages (FIL-05, Files and sharing → Operations): `Update essays/on-focus.md`,
  * `Create notes/ideas.md`, `Move drafts/a.md → archive/a.md`. Pure, so it's unit-tested.
  */
+import { agentName } from "@focus-notes/core/agents";
 import type { StatusEntry } from "./status.ts";
+
+export { agentName };
 
 /** One file's change in a commit. Paths are repository-relative with forward slashes. */
 export interface Change {
@@ -130,6 +133,46 @@ export function resolveMessage(lines: { path: string; choice: "mine" | "theirs" 
       : `Keep both: ${l.path}${l.copy ? ` and ${l.copy}` : ""}`));
   return message(subject, body);
 }
+
+/** The trailer naming the agent that made a commit (AGT-04, Agents → Attribution and undo). */
+export const AGENT_TRAILER = "Focus-Notes-Agent";
+const AGENT_SUBJECT = "Agent edit: ";
+
+/** One line: a path or change line can't add lines, paragraphs, or trailers to a message (LOW 9). */
+const oneLine = (s: string) => s.replace(/[\r\n\u0085\u2028\u2029]+/g, " ");
+
+/** One agent write's message: `Agent edit: <note path>`, what changed when it's more than an edit, and the trailer. */
+export function agentMessage(note: string, changes: Change[], client: string): string {
+  const lines = changes.length > 1 || changes.some((c) => c.status === "R") ? changes.map((c) => oneLine(describe(c))) : [];
+  return [`${AGENT_SUBJECT}${oneLine(note)}`, ...(lines.length ? [lines.join("\n")] : []), `${AGENT_TRAILER}: ${agentName(client)}`].join("\n\n");
+}
+
+/** The agent a commit message names in its trailer (its last paragraph, never its subject), or undefined. */
+export function agentOf(message: string): string | undefined {
+  const paragraphs = message.trim().split(/\r?\n\s*\r?\n/);
+  if (paragraphs.length < 2) return undefined;
+  const line = paragraphs[paragraphs.length - 1]!.split(/\r?\n/).find((l) => l.startsWith(`${AGENT_TRAILER}: `));
+  return line ? line.slice(AGENT_TRAILER.length + 2).trim() || undefined : undefined;
+}
+
+/** The note an agent commit's subject names. */
+export const agentNoteOf = (message: string): string | undefined => {
+  const first = message.split(/\r?\n/, 1)[0] ?? "";
+  return first.startsWith(AGENT_SUBJECT) ? first.slice(AGENT_SUBJECT.length) : undefined;
+};
+
+/** The renames and moves an agent commit describes, as [from, to]: Undo expects exactly these and its note (LOW 8). */
+export function agentMovesOf(message: string): [string, string][] {
+  const out: [string, string][] = [];
+  for (const line of message.split(/\r?\n/)) {
+    const m = /^(?:Rename|Move) (.+) → (.+)$/.exec(line);
+    if (m) out.push([m[1]!, m[2]!]);
+  }
+  return out;
+}
+
+/** The writer's commit that undoes an agent's (AGT-04). */
+export const undoAgentMessage = (note: string) => `Undo agent edit: ${note}`;
 
 /** The notes repository's commit that moves its pointer to the private repository (D-07). */
 export const pointerMessage = (oid: string) => `Update private notes to ${oid.slice(0, 7)}`;
