@@ -3,6 +3,13 @@ import { autoScroll, tokens } from "@focus-notes/tokens";
 import { createScrollAnimator, cubicBezier } from "./scroll-animator.ts";
 
 const t = tokens.cmp.editorSurface;
+/**
+ * The keys that move the caret (D-156: typing, arrow keys, and clicks animate the scroll), with Enter,
+ * Backspace, and Delete, which ProseMirror handles in keydown (no beforeinput follows).
+ */
+const CARET_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown", "Enter", "Backspace", "Delete"]);
+/** Typing's input types: text, a new line, and deleting; not insertFromPaste, insertFromDrop, or history. */
+const TYPING = /^(insertText|insertCompositionText|insertParagraph|insertLineBreak|delete(Content|Word|Soft|Hard))/;
 /** The CSS custom property name inside a token reference such as "var(--fn-x)". */
 const varName = (ref: string) => ref.slice(4, -1);
 
@@ -13,9 +20,9 @@ const varName = (ref: string) => ref.slice(4, -1);
  * other selection moves are checked after the frame. A drag-selection waits for the pointer to lift.
  * Scrolling never brings the caret back: not the wheel, nor pressing, dragging, or clicking the
  * scrollbar (or the scroller around the note), nor the focus that such a press moves.
- * The scroll animates over motion.autoScroll with easing.inOut, never a jump (D-156): ProseMirror's own
- * instant scroll is turned off while the editor has focus, and a new target restarts from where the
- * note is. The wheel or the scrollbar stops it. Reduced motion (a duration of 0) makes it instant.
+ * A caret move from typing, a key, or a click in the note animates the scroll over motion.autoScroll
+ * with easing.inOut (D-156); every other scroll is ProseMirror's own, instant, as before. The animator
+ * only writes scrollTop. The wheel or the scrollbar stops it. Reduced motion (a duration of 0) makes it instant.
  * Returns a cleanup function.
  */
 export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column: HTMLElement, findOpen: boolean): () => void {
@@ -59,9 +66,14 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
       editor.view.setProps({
         scrollThreshold: { top: band.top, bottom: band.bottom, left: 0, right: 0 },
         scrollMargin: { top: band.top, bottom: band.bottom, left: 5, right: 5 },
-        // With focus, the frame's callback below scrolls (animated); ProseMirror's own would jump.
-        handleScrollToSelection: (view) => {
-          if (!view.hasFocus()) return false;
+        // Only a scroll that will animate is taken over (the frame's callback below); every other one,
+        // from a programmatic selection, focus coming back, find, or a range the contextual toolbar is
+        // opening on, is ProseMirror's own, instant and in the same task, as before D-156.
+        handleScrollToSelection: () => {
+          if (!mayAnimate()) {
+            animator.finish();
+            return false;
+          }
           schedule();
           return true;
         },
@@ -69,13 +81,21 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
     }
   };
 
+  /**
+   * Whether the scroll now may animate (D-156): only a caret move from typing, a key, or a click in the
+   * note (not a key elsewhere, a programmatic selection, or focus coming back), with the note focused,
+   * find closed, and a caret rather than a range (on a range the contextual toolbar is opening, and it
+   * is anchored there). Anything else scrolls at once.
+   */
+  const mayAnimate = () => intent && !findOpen && !editor.isDestroyed && editor.view.hasFocus() && editor.state.selection.empty;
+
   const keep = () => {
     frame = 0;
     if (pointerDown || editor.isDestroyed || !editor.view.hasFocus()) return;
     // Only a scroll the person's own key, input, or click caused animates; opening a note, focus coming
     // back, and other programmatic moves place it at once, as before (a long note's jump to its end
     // would otherwise paint every page on the way, PRF-01).
-    const animate = intent;
+    const animate = mayAnimate();
     const follow = repeating;
     intent = false;
     repeating = false;
@@ -140,18 +160,30 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   const onFocus = () => {
     if (!scrollPress) schedule();
   };
-  const onKey = (e: KeyboardEvent) => {
+  const onKey = () => {
     scrollPress = false;
+  };
+  /**
+   * A caret or typing key in the note itself (CARET_KEYS): Escape in Spotlight, a key
+   * in the link editor, Tab in a table, or a command such as paste is not one the spec lists.
+   */
+  const onNoteKey = (e: KeyboardEvent) => {
+    if (!CARET_KEYS.has(e.key)) return;
     intent = true;
     repeating = e.repeat;
   };
-  const onInput = () => {
-    intent = true;
+  /** Typing (inserting or deleting text); a paste or a drop isn't typing. */
+  const onInput = (e: InputEvent) => {
+    if (TYPING.test(e.inputType)) intent = true;
   };
   // Focus leaving the note (into the link editor, the toolbar, find) ends a running scroll at once: what
   // opens is anchored to the selection, and mid-scroll that can still be under the top band, where an
   // anchored surface is hidden and would drop the focus it was just given.
-  const onBlur = () => animator.finish();
+  const onBlur = () => {
+    intent = false;
+    repeating = false;
+    animator.finish();
+  };
 
   measure();
   const dom = editor.view.dom;
@@ -164,6 +196,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   scroller.addEventListener("pointerdown", onDown);
   scroller.addEventListener("wheel", onWheel, { passive: true });
   window.addEventListener("keydown", onKey, true);
+  dom.addEventListener("keydown", onNoteKey, true);
   dom.addEventListener("beforeinput", onInput, true);
   window.addEventListener("pointerup", onUp);
   window.addEventListener("pointercancel", onUp);
@@ -179,6 +212,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
     scroller.removeEventListener("pointerdown", onDown);
     scroller.removeEventListener("wheel", onWheel);
     window.removeEventListener("keydown", onKey, true);
+    dom.removeEventListener("keydown", onNoteKey, true);
     dom.removeEventListener("beforeinput", onInput, true);
     window.removeEventListener("pointerup", onUp);
     window.removeEventListener("pointercancel", onUp);
