@@ -95,6 +95,26 @@ describe("EDT-11 and D-07: save, commit, and push, private first", () => {
     expect(subject(privateRemote)).toBe("Update notes/welcome.md");
   });
 
+  it("backs up small changes only once a threshold is met, and reports waiting changes as soon as they're written (D-133)", async () => {
+    const { ws, privateRemote } = instance();
+    const clock = new FakeClock();
+    const reports: number[] = [];
+    const s = await open(ws, { clock, onReport: (r) => reports.push(r.waiting) });
+    const note = join(ws, "private", "notes", "welcome.md");
+    writeFileSync(note, "# Welcome\n\nSmall.\n");
+    s.written(note, 8);
+    expect(s.report.waiting).toBe(1);
+    expect(reports.at(-1)).toBe(1);
+    clock.advance(60_000);
+    await s.request("switch");
+    await s.sync("retry");
+    expect(count(privateRemote)).toBe(1);
+    // Ten minutes after the first change, the pause backs it up.
+    clock.advance(540_000);
+    await s.sync("retry");
+    expect(count(privateRemote)).toBe(2);
+  });
+
   it("commits a renamed note as a rename (FIL-07)", async () => {
     const { ws, privateRemote } = instance();
     const s = await open(ws);

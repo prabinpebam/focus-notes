@@ -16,6 +16,7 @@ import { BUNDLE_MAX_BYTES, parseBundle, planImport, safeWorkspacePath, type Bund
 import { parseSettings } from "@focus-notes/core/settings";
 import { restorePlace, titleOrName } from "@focus-notes/core/history";
 import { GitSync, NO_GIT } from "./git/sync.ts";
+import { changedChars, type BackupPolicy } from "./git/cadence.ts";
 import { createRunner, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
 import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
@@ -100,7 +101,7 @@ Everything you write here is saved as plain Markdown on your computer.
 const primary = app.requestSingleInstanceLock();
 if (!primary) app.quit();
 
-// ---- save and sync with Git (WP-3.3, D-23) ----
+// ---- save and sync with Git (WP-3.3, D-133) ----
 // The workspace folder's own repository, if it is one; otherwise saving stays local, with no Git UI.
 // The delays are configurable (D-23), which also lets the journeys use short ones.
 const envMs = (name: string) => {
@@ -108,6 +109,8 @@ const envMs = (name: string) => {
   return Number.isFinite(v) && v >= 0 ? v : undefined;
 };
 let gitSync: GitSync | undefined;
+/** Each note's text as this app last wrote it, so a write knows how many characters it changed (D-133). */
+const lastWritten = new Map<string, string>();
 let gitOpened = false;
 let gitWaiting: ((g: GitSync) => void)[] = [];
 /** Runs now if Git is open, or once it opens (a note written before then is still committed). */
@@ -121,12 +124,17 @@ let gitOpening: Promise<GitSync | undefined>;
 const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], gitOpening = new Promise<GitSync | undefined>((resolve) => {
   startGit = () => {
     startGit = () => {};
-    const idleMs = envMs("FOCUS_NOTES_IDLE_COMMIT_MS");
+    // The backup policy's thresholds (D-133); FOCUS_NOTES_IDLE_COMMIT_MS stays the 60 s pause.
+    const policy: Partial<BackupPolicy> = {};
+    for (const [key, name] of [["idleMs", "IDLE_COMMIT_MS"], ["shortIdleMs", "BACKUP_SHORT_MS"], ["minChars", "BACKUP_MIN_CHARS"], ["bigChars", "BACKUP_BIG_CHARS"], ["staleMs", "BACKUP_STALE_MS"], ["ceilingMs", "BACKUP_CEILING_MS"]] as const) {
+      const v = envMs(`FOCUS_NOTES_${name}`);
+      if (v !== undefined) policy[key] = v;
+    }
     const pointerGapMs = envMs("FOCUS_NOTES_POINTER_GAP_MS");
     resolve(GitSync.open({
       folder: notesHome(),
       ...(onSpawn ? { run: createRunner({ onSpawn: (args) => onSpawn("git", args) }) } : {}),
-      ...(idleMs !== undefined ? { idleMs } : {}),
+      policy,
       ...(pointerGapMs !== undefined ? { pointerGapMs } : {}),
       // After the window closes, the final sync on quit still runs; there's just no one to tell.
       onReport: (r) => {
@@ -750,10 +758,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const path = notePath(p);
     // The app saves its latest text: this supersedes every text the journal was sent before it (QLT-03).
     const upTo = journal?.mark();
+    // How much changed decides when it's backed up (D-133): against the text last written here, or on disk.
+    const before = lastWritten.get(path) ?? (await readFile(path, "utf8").catch(() => ""));
     await atomicWrite(path, content);
+    lastWritten.set(path, content);
     void journal?.saved(path, content, upTo);
-    // Committed on the cadence: Mod+S, switching notes, quitting, or 60 s with no typing (D-23).
-    withGit((g) => g.written(path));
+    withGit((g) => g.written(path, changedChars(before, content)));
   });
   handle("note:choose", async () => {
     const w = win();
