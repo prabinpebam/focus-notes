@@ -1,5 +1,6 @@
 /**
- * The visual quality checklist (D-111) on the surfaces a flow reaches: the first run's card, and,
+ * The visual quality checklist (D-111) on the surfaces a flow reaches: the first run's card (each of
+ * its four steps, D-124), and,
  * with a workspace in Git, the conflict resolver and Recently deleted. Light and dark, at the
  * default window size and at the minimum (480 × 360), each captured for review
  * (`test-results/screens/vq-*.png`).
@@ -11,6 +12,7 @@ import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { configure, git, instance } from "./instance.ts";
 import { makeFakes } from "../test/fakes/fakes.ts";
 import { hoverTooltips, settled, visualProblems } from "./visual-quality.ts";
+import { existingInstance, start, world } from "./github-world.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const SIZES = [{ name: "default", size: undefined }, { name: "small", size: { width: 480, height: 360 } }] as const;
@@ -35,14 +37,57 @@ for (const { name: sizeName, size } of SIZES) {
       await expect(card.getByRole("button", { name: "Get started" })).toBeFocused();
       await check(page, `${sizeName}-${mode}-first-run-welcome`, problems);
       await page.keyboard.press("Enter");
-      await expect(card.getByRole("heading", { name: "Git" })).toBeVisible();
-      await check(page, `${sizeName}-${mode}-first-run-git`, problems);
-      await expect(card.getByRole("button", { name: "Continue" })).toBeFocused();
-      await page.keyboard.press("Enter");
-      await expect(card.getByRole("heading", { name: "Sign in to GitHub" })).toBeVisible();
-      await check(page, `${sizeName}-${mode}-first-run-sign-in`, problems);
+      await expect(card.getByRole("heading", { name: "Connect your GitHub account" })).toBeVisible();
+      await expect(card.getByRole("button", { name: "Connect to GitHub" })).toBeFocused({ timeout: 15_000 });
+      await check(page, `${sizeName}-${mode}-first-run-connect`, problems);
+      await card.getByRole("button", { name: "Having trouble?" }).click();
+      await expect(card.getByRole("button", { name: "Use a token instead" })).toBeVisible();
+      await check(page, `${sizeName}-${mode}-first-run-connect-trouble`, problems);
       expect(problems).toEqual([]);
       await quit(l);
+    });
+
+    // D-124: Your notes and Ready, with a fake GitHub that has the account's notes.
+    test(`D-111, D-124: Your notes (found, Create my notes, More options) and Ready pass the visual quality checklist, ${mode}, ${sizeName} window`, async () => {
+      test.setTimeout(150_000);
+      const w = await world({ gcm: true });
+      existingInstance(w);
+      w.fakes.store(w.gh.token);
+      writeFileSync(join(w.dirs.userData, "state.json"), JSON.stringify({ version: 1, appearance: mode }));
+      if (size) writeFileSync(join(w.dirs.userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 40, y: 40, ...size } }));
+      const l = await start(w);
+      const { page } = l;
+      const card = page.getByRole("main", { name: "Set up Focus Notes" });
+      const problems: string[] = [];
+      try {
+        await expect(card.getByRole("button", { name: "Get started" })).toBeFocused();
+        await page.keyboard.press("Enter");
+        await expect(card.getByRole("button", { name: "Continue as @ada" })).toBeFocused({ timeout: 15_000 });
+        await check(page, `${sizeName}-${mode}-first-run-connect-found`, problems);
+        await page.keyboard.press("Enter");
+        await expect(card.getByRole("heading", { name: "We found your notes" })).toBeVisible({ timeout: 15_000 });
+        await check(page, `${sizeName}-${mode}-first-run-notes-found`, problems);
+        await card.getByRole("button", { name: "More options" }).click();
+        await expect(card.getByRole("button", { name: "Open another repository from GitHub…" })).toBeVisible();
+        await check(page, `${sizeName}-${mode}-first-run-notes-found-more`, problems);
+        await card.getByRole("button", { name: "Create new notes instead" }).click();
+        await expect(card.getByRole("button", { name: "Create my notes" })).toBeVisible();
+        await check(page, `${sizeName}-${mode}-first-run-notes-create`, problems);
+        await card.getByRole("button", { name: "More options" }).click();
+        await expect(card.getByRole("textbox", { name: "Public repository" })).toBeVisible();
+        await check(page, `${sizeName}-${mode}-first-run-notes-create-more`, problems);
+        await card.getByRole("button", { name: "More options" }).click();
+        await card.getByRole("button", { name: "Back" }).click();
+        await expect(card.getByRole("heading", { name: "We found your notes" })).toBeVisible();
+        await card.getByRole("button", { name: "Open", exact: true }).click();
+        await expect(card.getByRole("heading", { name: "Ready" })).toBeVisible({ timeout: 30_000 });
+        await expect(card.getByRole("button", { name: "Start writing" })).toBeFocused();
+        await check(page, `${sizeName}-${mode}-first-run-ready`, problems);
+        expect(problems).toEqual([]);
+      } finally {
+        await quit(l);
+        w.server.close();
+      }
     });
 
     test(`D-111: the conflict resolver and Recently deleted pass the visual quality checklist, ${mode}, ${sizeName} window`, async () => {

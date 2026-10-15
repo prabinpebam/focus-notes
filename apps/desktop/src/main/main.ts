@@ -25,7 +25,7 @@ import { githubFetch } from "./setup/credential.ts";
 import type { BatchOp } from "./git/message.ts";
 import { Account } from "./first-run/account.ts";
 import { createToolRunner } from "./first-run/tools.ts";
-import { applyLocalIdentity, checkWorkspace, cloneWorkspace } from "./first-run/workspace.ts";
+import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree } from "./first-run/workspace.ts";
 import type { ConflictChoice, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
@@ -195,8 +195,21 @@ function readFirstRun(): void {
     // Nothing chosen yet.
   }
 }
+/**
+ * A folder a new or cloned workspace can go in: Documents/Focus Notes, or, when that already holds
+ * notes (a folder used on this computer only, or another workspace), the first free one beside it:
+ * "Focus Notes 2", "Focus Notes 3" (D-124).
+ */
+async function freeHome(): Promise<string> {
+  const base = defaultHome();
+  for (let n = 1; n < 100; n++) {
+    const folder = n === 1 ? base : `${base} ${n}`;
+    if (await folderFree(folder)) return folder;
+  }
+  return base;
+}
 /** The folder setup makes the workspace in: the one it started with, the chosen one, or the open workspace (Run setup again). */
-const setupFolder = async () => (await setup()).report().options?.folder ?? targetFolder ?? (isWorkspace() ? notesHome() : defaultHome());
+const setupFolder = async () => (await setup()).report().options?.folder ?? targetFolder ?? (isWorkspace() ? notesHome() : await freeHome());
 /**
  * Deletes what the data inventory lists for signing out or removing the workspace (PRV-02): setup's
  * progress (through the engine, so it forgets too), the first run's workspace identity, and, for
@@ -254,7 +267,7 @@ async function repositories(): Promise<RepoChoice[]> {
   if (!s) throw new Error("Signed out");
   const repos = await s.api.ownRepos();
   const checked = await Promise.all(repos.map((r, i) => (i < 10 ? s.api.hasFile(r.owner, r.name, ".focus-notes/workspace.json").catch(() => false) : Promise.resolve(false))));
-  const list = repos.map((r, i) => ({ owner: r.owner, name: r.name, private: r.private, instance: checked[i]! }));
+  const list = repos.map((r, i) => ({ owner: r.owner, name: r.name, private: r.private, instance: checked[i]!, ...(r.pushedAt ? { pushedAt: r.pushedAt } : {}) }));
   return [...list.filter((r) => r.instance), ...list.filter((r) => !r.instance)];
 }
 /**
@@ -863,7 +876,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("firstRun:clone", async (owner, name): Promise<WorkspaceResult> => {
     if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
-    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? defaultHome());
+    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? (await freeHome()));
     if (r.ok) pendingWorkspace = r.folder;
     return r;
   });

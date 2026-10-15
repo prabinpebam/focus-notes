@@ -184,7 +184,7 @@ describe("FRE-07: Settings → Account", () => {
     await t.run("account.signIn");
     await settle();
     expect(t.vm().open).toBe(false);
-    expect(t.vm("vm.firstRun")).toMatchObject({ open: true, step: "signIn", signIn: "found", login: "ada", showProgress: false });
+    expect(t.vm("vm.firstRun")).toMatchObject({ open: true, step: "connect", connect: "found", login: "ada", showProgress: false });
     await t.run("firstRun.useExisting");
     await settle();
     expect(t.calls).toContain("useExisting");
@@ -201,7 +201,7 @@ describe("FRE-07: Settings → Account", () => {
     await t.run("account.switch");
     await settle();
     expect(t.calls).toContain("beginSwitch");
-    expect(t.vm("vm.firstRun")).toMatchObject({ open: true, step: "signIn", signIn: "choose" });
+    expect(t.vm("vm.firstRun")).toMatchObject({ open: true, step: "connect", connect: "choose" });
     // Esc: nothing changes; the shell puts the old sign-in back.
     await t.run("firstRun.back");
     await settle();
@@ -212,14 +212,14 @@ describe("FRE-07: Settings → Account", () => {
     await settle();
     await t.run("firstRun.signIn");
     await settle();
-    expect(t.vm("vm.firstRun")).toMatchObject({ signIn: "found", login: "grace" });
+    expect(t.vm("vm.firstRun")).toMatchObject({ connect: "found", login: "grace" });
     await t.run("firstRun.useExisting");
     await settle();
     expect(t.calls.filter((c) => c === "endSwitch")).toHaveLength(2);
     expect(t.app.store.state.account.login).toBe("grace");
     expect(t.app.store.state.ui.toasts.at(-1)!.message).toBe("Signed in to GitHub as @grace.");
   });
-  it("run setup again forgets setup's progress and walks the first run from Git; Esc there goes back to writing", async () => {
+  it("run setup again forgets setup's progress and walks the first run from Connect; Esc there goes back to writing", async () => {
     const t = shell();
     await t.app.start();
     await settle();
@@ -229,7 +229,7 @@ describe("FRE-07: Settings → Account", () => {
     await settle();
     expect(t.calls).toContain("setupReset");
     expect(t.vm().open).toBe(false);
-    expect(t.vm("vm.firstRun")).toMatchObject({ open: true, step: "git", showProgress: true, progress: "Step 2 of 7" });
+    expect(t.vm("vm.firstRun")).toMatchObject({ open: true, step: "connect", showProgress: true, progress: "Step 2 of 4" });
     expect(t.app.store.state.note.status).toBe("loading");
     await t.run("firstRun.back");
     await settle();
@@ -261,7 +261,7 @@ describe("PRV-02, FRE-07: Settings → Workspace → Remove this workspace from 
     await t.run("workspace.removeConfirm");
     expect(t.calls).toContain("remove");
     // Before the shell removes it, the app forgets the recent note and starts again at Your workspace.
-    expect(t.last()).toMatchObject({ firstRun: "workspace" });
+    expect(t.last()).toMatchObject({ firstRun: "notes" });
     expect(t.last()).not.toHaveProperty("lastNotePath");
   });
   it("never removes a workspace that isn't on GitHub, and puts things back if the shell refuses", async () => {

@@ -2,7 +2,7 @@
  * M3 journeys for Settings → Account and Workspace (WP-3.6: FRE-07, PRV-02, IA-VIEW-SETTINGS):
  * opening Settings by keyboard and from the ⋯ menu, signing out with and without Git's saved
  * credential, signing in again and switching account through the same helper, running setup again,
- * and removing the workspace (refused while changes aren't on GitHub, allowed after Sync now). The
+ * opening another workspace from GitHub (D-124), and removing the workspace (refused while changes aren't on GitHub, allowed after Sync now). The
  * app data folder is listed before and after, and must hold only what the data inventory names and
  * lose exactly what it says. GitHub is the in-memory fake, its repositories local bare remotes, and
  * the sign-in helpers fakes on PATH: nothing touches the network or a real account.
@@ -124,12 +124,12 @@ test("IA-VIEW-SETTINGS, FRE-07: Settings opens with Mod+, and from ⋯; signing 
     expect(top(w.dirs.userData)).toContain(DATA_FILES.account);
     expect(readFileSync(join(w.dirs.userData, DATA_FILES.account), "utf8")).not.toContain("ada");
 
-    // Sign in again: the first run's Sign in card, alone, offering the account Git still has.
+    // Sign in again: the first run's Connect card, alone, offering the account Git still has.
     await openSettings(page);
     await expect(settings(page).getByText("Git on this computer is still signed in as @ada.")).toBeVisible({ timeout: 15_000 });
     await settings(page).getByRole("button", { name: "Sign in…" }).click();
-    await heading(page, "Sign in to GitHub");
-    await expect(card(page).getByText(/^Step \d of 7$/)).toHaveCount(0);
+    await heading(page, "Connect your GitHub account");
+    await expect(card(page).getByText(/^Step \d of 4$/)).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Continue as @ada" })).toBeFocused({ timeout: 15_000 });
     expect(await settledAxe(page)).toEqual([]);
     await press(page, "Enter");
@@ -155,9 +155,9 @@ test("FRE-07: Switch account signs in again through the same helper; the termina
     w.fakes.signInAs(GRACE.token, GRACE.login);
     await openSettings(page);
     await settings(page).getByRole("button", { name: "Switch account" }).click();
-    await heading(page, "Sign in to GitHub");
+    await heading(page, "Connect your GitHub account");
     // Esc leaves the old account as it was.
-    await expect(page.getByRole("button", { name: "Sign in with GitHub" })).toBeFocused({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Connect to GitHub" })).toBeFocused({ timeout: 15_000 });
     await press(page, "Escape");
     await expect(card(page)).toHaveCount(0);
     await expect(page.getByRole("button", { name: /Signed in to GitHub as @ada/ })).toBeVisible({ timeout: 15_000 });
@@ -165,7 +165,7 @@ test("FRE-07: Switch account signs in again through the same helper; the termina
 
     await openSettings(page);
     await settings(page).getByRole("button", { name: "Switch account" }).click();
-    await expect(page.getByRole("button", { name: "Sign in with GitHub" })).toBeFocused({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Connect to GitHub" })).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
     await expect(page.getByRole("button", { name: "Continue as @grace" })).toBeFocused({ timeout: 20_000 });
     await press(page, "Enter");
@@ -214,23 +214,61 @@ test("PRV-02, FRE-07: signing out with Git's credential deletes exactly what the
   }
 });
 
-test("FRE-07: Run setup again walks the first run from Git; Esc goes back to the note", async () => {
+test("FRE-07: Run setup again walks the first run from Connect; Esc goes back to the note", async () => {
   test.setTimeout(90_000);
   const { w, l } = await setUp();
   const { page } = l;
   try {
     await openSettings(page, "Workspace");
     await settings(page).getByRole("button", { name: "Run setup again" }).click();
-    await heading(page, "Git");
-    await expect(card(page).getByText("Step 2 of 7")).toBeVisible();
+    await heading(page, "Connect your GitHub account");
+    await expect(card(page).getByText("Step 2 of 4")).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Note" })).toHaveCount(0);
     expect(top(w.dirs.userData)).not.toContain(DATA_FILES.setup);
+    await expect(card(page).getByRole("button", { name: "Continue as @ada" })).toBeFocused({ timeout: 15_000 });
     expect(await settledAxe(page)).toEqual([]);
-    await expect(card(page).getByRole("button", { name: "Continue" })).toBeFocused({ timeout: 15_000 });
     await press(page, "Escape");
     await expect(card(page)).toHaveCount(0);
     await expect(page.getByRole("textbox", { name: "Note" })).toContainText("Only mine.");
     expect(state(w).firstRun).toBe("done");
+  } finally {
+    await quit(l);
+    w.server.close();
+  }
+});
+
+// D-124: a signed-in person picks an existing workspace without running setup again.
+test("FRE-06: Settings → Open another workspace from GitHub shows the notes the account has; Open clones one beside the open workspace and starts writing in it", async () => {
+  test.setTimeout(120_000);
+  const { w, l } = await setUp();
+  const { page } = l;
+  try {
+    await openSettings(page, "Workspace");
+    await settings(page).getByRole("button", { name: "Open another workspace from GitHub…" }).click();
+    await heading(page, "We found your notes");
+    await expect(card(page).getByText(/^Step \d of 4$/)).toHaveCount(0);
+    await expect(card(page).getByText("notes", { exact: true })).toBeVisible();
+    await expect(card(page).getByText("Updated 3 days ago · Public")).toBeVisible();
+    const open = card(page).getByRole("button", { name: "Open", exact: true });
+    await expect(open).toBeFocused({ timeout: 15_000 });
+    expect(await settledAxe(page)).toEqual([]);
+    // Esc goes back to the note, as it was.
+    await press(page, "Escape");
+    await expect(card(page)).toHaveCount(0);
+    await expect(page.getByRole("textbox", { name: "Note" })).toContainText("Only mine.");
+
+    await openSettings(page, "Workspace");
+    await settings(page).getByRole("button", { name: "Open another workspace from GitHub…" }).click();
+    await expect(open).toBeFocused({ timeout: 15_000 });
+    await press(page, "Enter");
+    // The open workspace's folder is taken, so it goes in the first free one beside it, and writing starts there.
+    const second = `${w.dirs.docs} 2`;
+    await expect.poll(() => (existsSync(join(w.dirs.userData, DATA_FILES.workspace)) ? readFileSync(join(w.dirs.userData, DATA_FILES.workspace), "utf8") : ""), { timeout: 30_000 }).toContain("Focus Notes 2");
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible({ timeout: 20_000 });
+    await expect(card(page)).toHaveCount(0);
+    expect(existsSync(join(second, "private", "notes", "secret.md"))).toBe(true);
+    expect(state(w).firstRun).toBe("done");
+    noTokenInArgs(w, l);
   } finally {
     await quit(l);
     w.server.close();
@@ -263,14 +301,14 @@ test("FRE-07, PRV-02: removing the workspace is refused while changes aren't on 
     expect(execFileSync("git", ["--git-dir", priv, "show", "main:notes/secret.md"], { encoding: "utf8" })).toContain("Words not on GitHub yet.");
     await dialog.getByRole("button", { name: "Remove", exact: true }).click();
 
-    // The window starts again at the first run's Your workspace step.
-    await heading(page, "Your workspace");
+    // The window starts again at the first run's Your notes step, which finds the notes on GitHub.
+    await heading(page, "We found your notes");
     expect(existsSync(w.dirs.docs)).toBe(false);
     const after = top(w.dirs.userData);
     for (const f of after) expect(INVENTORY).toContain(f);
     expect(after).toEqual(before.filter((f) => !(filesRemovedBy("removeWorkspace") as string[]).includes(f)));
     expect(state(w)).not.toHaveProperty("lastNotePath");
-    expect(state(w).firstRun).toBe("workspace");
+    expect(state(w).firstRun).toBe("notes");
     // Nothing on GitHub is touched, and Git's sign-in stays.
     expect(execFileSync("git", ["--git-dir", priv, "show", "main:notes/secret.md"], { encoding: "utf8" })).toContain("Words not on GitHub yet.");
     expect(terminal(w)).toBe(w.gh.token);

@@ -1,15 +1,22 @@
 /**
- * The desktop's first run (FRE-01 to FRE-06, D-21, D-101): its steps, what the shell reports at each
+ * The desktop's first run (FRE-01 to FRE-06, D-21, D-101, D-124): its steps, what the shell reports at each
  * one, and the small pure rules the app and the shell share. Types and functions only: the shell
  * (the desktop's main process) runs Git, Git's sign-in helpers, and GitHub's API; the app shows
  * the steps (first-run-app.ts). Nothing here holds a token: tokens stay in the main process's
  * memory and in Git's own credential helper (SEC-03).
  */
 
-/** The steps, in order: Welcome, Git, Sign in, Identity, Workspace, Make it yours, Ready. */
-export const FIRST_RUN_STEPS = ["welcome", "git", "signIn", "identity", "workspace", "personalize", "ready"] as const;
+/**
+ * The steps, in order (D-124): Welcome; Connect (Git, checked silently, and the GitHub account);
+ * Your notes (the workspaces the account has, or Create my notes); Ready.
+ */
+export const FIRST_RUN_STEPS = ["welcome", "connect", "notes", "ready"] as const;
 export type FirstRunStep = (typeof FIRST_RUN_STEPS)[number];
 export const isFirstRunStep = (v: unknown): v is FirstRunStep => (FIRST_RUN_STEPS as readonly unknown[]).includes(v);
+/** The seven steps an earlier version saved, and the step that holds each one now (D-124). */
+const OLD_STEPS: Readonly<Record<string, FirstRunStep>> = { git: "connect", signIn: "connect", identity: "connect", workspace: "notes", personalize: "ready" };
+/** Where a saved first run resumes: its step, or the one that holds an earlier version's step now. */
+export const resumeStep = (v: unknown): FirstRunStep | undefined => (isFirstRunStep(v) ? v : typeof v === "string" && Object.hasOwn(OLD_STEPS, v) ? OLD_STEPS[v] : undefined);
 
 /** The oldest Git the app works with (D-97): `--pathspec-from-file`, `-C`, and `push.recurseSubmodules=check`. */
 export const MIN_GIT = [2, 31, 0] as const;
@@ -106,6 +113,12 @@ export type IdentityScope = "global" | "workspace";
 /** GitHub's private noreply address for an account: commits stay linked without showing an email (FRE-05). */
 export const noreplyEmail = (a: Pick<GitHubAccount, "id" | "login">) => `${a.id}+${a.login}@users.noreply.github.com`;
 
+/**
+ * The name and email on the notes' commits (FRE-05, D-124): the account's name and its private
+ * noreply address, set for the notes workspace only, so Git's global settings never change.
+ */
+export const notesIdentity = (a: GitHubAccount): { name: string; email: string } => ({ name: (a.name || a.login).trim(), email: noreplyEmail(a) });
+
 /** The identity to suggest: Git's own when it has one, otherwise the account's name and noreply address. */
 export function suggestIdentity(git: { name?: string; email?: string }, account?: GitHubAccount): Identity {
   const name = git.name?.trim() ?? "", email = git.email?.trim() ?? "";
@@ -140,6 +153,8 @@ export const TOKEN_PAGE = "https://github.com/settings/personal-access-tokens/ne
 export const DEVICE_PAGE = "https://github.com/login/device";
 /** Pages the first run may open in the browser. Only GitHub's own and Git's. */
 export const FIRST_RUN_PAGES = {
+  /** Where someone with no GitHub account makes one (D-124). */
+  signup: "https://github.com/signup",
   token: TOKEN_PAGE,
   device: DEVICE_PAGE,
   git: "https://git-scm.com/downloads",
@@ -160,6 +175,8 @@ export interface RepoChoice {
   private: boolean;
   /** It has a Focus Notes workspace's format file (copied from the template). */
   instance: boolean;
+  /** When it was last pushed to (ISO 8601), for "Updated 3 days ago". */
+  pushedAt?: string;
 }
 
 /** Why opening or cloning a workspace didn't work. */
@@ -220,15 +237,13 @@ export interface FirstRunBridge {
 }
 
 /** Whether the step's one primary action can go ahead, from what the app knows (the step machine). */
-export function canContinue(step: FirstRunStep, s: { git?: GitCheck; account?: AccountStatus; identity?: { name: string; email: string }; workspaceReady?: boolean }): boolean {
+export function canContinue(step: FirstRunStep, s: { git?: GitCheck; account?: AccountStatus; workspaceReady?: boolean }): boolean {
   switch (step) {
-    case "git": return Boolean(s.git?.ok);
-    case "signIn": return Boolean(s.account?.account && !s.account.signedOut);
-    case "identity": return Boolean(s.identity && !identityProblem(s.identity));
-    case "workspace": return Boolean(s.workspaceReady);
+    case "connect": return Boolean(s.git?.ok && s.account?.account && !s.account.signedOut);
+    case "notes": return Boolean(s.workspaceReady);
     default: return true;
   }
 }
 export const nextStep = (s: FirstRunStep): FirstRunStep | "done" => FIRST_RUN_STEPS[FIRST_RUN_STEPS.indexOf(s) + 1] ?? "done";
-/** Back stops at Welcome, and never returns to Workspace once the workspace is open. */
-export const prevStep = (s: FirstRunStep): FirstRunStep => s === "personalize" || s === "welcome" ? s : FIRST_RUN_STEPS[FIRST_RUN_STEPS.indexOf(s) - 1]!;
+/** Back stops at Welcome, and never returns to Your notes once the workspace is open. */
+export const prevStep = (s: FirstRunStep): FirstRunStep => s === "ready" || s === "welcome" ? s : FIRST_RUN_STEPS[FIRST_RUN_STEPS.indexOf(s) - 1]!;

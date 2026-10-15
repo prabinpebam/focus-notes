@@ -327,7 +327,7 @@
                             "type": "Button",
                             "props": {
                               "label": {
-                                "t": "command.setup.runAgain"
+                                "get": "vm.settings.workspace.setupLabel"
                               }
                             },
                             "on": {
@@ -337,6 +337,22 @@
                             },
                             "when": {
                               "get": "vm.settings.workspace.canRunSetup"
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.workspace.openFromGitHub"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "workspace.openFromGitHub"
+                              }
+                            },
+                            "when": {
+                              "get": "vm.settings.workspace.canOpenOther"
                             }
                           }
                         ]

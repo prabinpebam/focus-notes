@@ -1,41 +1,45 @@
 /**
- * The desktop's first run (FRE-01 to FRE-06): the step machine and its pure rules, then the steps
- * in the app against an in-memory shell. Resuming after quitting, Git found or missing, an existing
- * sign-in offered (FRE-04), declined, expired, and offline sign-ins that recover (FRE-02), a token
- * that's sent once and never kept (FRE-03, SEC-03), the identity filled in from GitHub with the
- * private noreply address (FRE-05), Create my workspace through the setup (FRE-06), and the
- * desktop's account pill (UI-12).
+ * The desktop's first run (FRE-01 to FRE-06, D-124): the step machine and its pure rules, then the
+ * four steps in the app against an in-memory shell. Resuming after quitting (an earlier version's
+ * steps too), Git checked silently and shown only when missing or too old, an existing sign-in
+ * offered (FRE-04), declined, expired, and offline sign-ins that recover (FRE-02), a token that's
+ * sent once and never kept (FRE-03, SEC-03), the notes' name and email set from the account with
+ * no step (FRE-05), the workspaces found offered first and Create my notes with the passphrase
+ * optional (FRE-06, FRE-08), Just use this computer for now, Open another workspace from Settings,
+ * and the desktop's account pill (UI-12).
  */
 import { describe, expect, it } from "vitest";
 import {
-  canContinue, createApp, deviceCode, FIRST_RUN_STEPS, gitIsNewEnough, identityProblem, looksLikeToken, nextStep, noreplyEmail, parseGitVersion, prevStep,
-  signInProblem, suggestIdentity, SETUP_STEPS, TOKEN_PAGE,
-  type AccountStatus, type AppStateFile, type FirstRunBridge, type GitCheck, type PlatformBridge, type SetupReport, type SignInProgress, type SyncReport,
+  canContinue, createApp, deviceCode, FIRST_RUN_STEPS, gitIsNewEnough, identityProblem, looksLikeToken, nextStep, noreplyEmail, notesIdentity, parseGitVersion, prevStep,
+  resumeStep, signInProblem, suggestIdentity, SETUP_STEPS, TOKEN_PAGE,
+  type AccountStatus, type AppStateFile, type FirstRunBridge, type GitCheck, type PlatformBridge, type RepoChoice, type SetupReport, type SignInProgress, type SyncReport,
 } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 const ADA = { login: "ada", id: 583231, name: "Ada Lovelace" };
 const TOKEN = "github_pat_11AAAAAAA0123456789abcdefghijklmnopqrstuvwxyz";
 
-describe("FRE-01: the step machine", () => {
-  it("has seven steps in order, and back never returns to Workspace once the workspace is open", () => {
-    expect(FIRST_RUN_STEPS).toEqual(["welcome", "git", "signIn", "identity", "workspace", "personalize", "ready"]);
-    expect(nextStep("welcome")).toBe("git");
+describe("FRE-01: the step machine (D-124)", () => {
+  it("has four steps in order, and back never returns to Your notes once the workspace is open", () => {
+    expect(FIRST_RUN_STEPS).toEqual(["welcome", "connect", "notes", "ready"]);
+    expect(nextStep("welcome")).toBe("connect");
     expect(nextStep("ready")).toBe("done");
-    expect(prevStep("git")).toBe("welcome");
+    expect(prevStep("connect")).toBe("welcome");
     expect(prevStep("welcome")).toBe("welcome");
-    expect(prevStep("personalize")).toBe("personalize");
-    expect(prevStep("ready")).toBe("personalize");
+    expect(prevStep("notes")).toBe("connect");
+    expect(prevStep("ready")).toBe("ready");
+  });
+  it("resumes an earlier version's seven steps at the step that holds each one now", () => {
+    expect(["git", "signIn", "identity", "workspace", "personalize", "ready", "notes", "nope", 3].map(resumeStep)).toEqual(["connect", "connect", "connect", "notes", "ready", "ready", "notes", undefined, undefined]);
   });
   it("continues only when the step's condition holds", () => {
+    const git = { installed: true, version: "2.45.1", ok: true, gcm: true, gh: false };
     expect(canContinue("welcome", {})).toBe(true);
-    expect(canContinue("git", { git: { installed: true, version: "2.30.1", ok: false, gcm: false, gh: false } })).toBe(false);
-    expect(canContinue("git", { git: { installed: true, version: "2.45.1", ok: true, gcm: true, gh: false } })).toBe(true);
-    expect(canContinue("signIn", { account: { gcm: true, gh: false } })).toBe(false);
-    expect(canContinue("signIn", { account: { account: ADA, gcm: true, gh: false } })).toBe(true);
-    expect(canContinue("identity", { identity: { name: "Ada", email: "nope" } })).toBe(false);
-    expect(canContinue("identity", { identity: { name: "Ada", email: "ada@example.com" } })).toBe(true);
-    expect(canContinue("workspace", { workspaceReady: false })).toBe(false);
+    expect(canContinue("connect", { git: { ...git, version: "2.30.1", ok: false }, account: { account: ADA, gcm: true, gh: false } })).toBe(false);
+    expect(canContinue("connect", { git, account: { gcm: true, gh: false } })).toBe(false);
+    expect(canContinue("connect", { git, account: { account: ADA, gcm: true, gh: false } })).toBe(true);
+    expect(canContinue("notes", { workspaceReady: false })).toBe(false);
+    expect(canContinue("notes", { workspaceReady: true })).toBe(true);
   });
 });
 
@@ -73,8 +77,12 @@ describe("FRE-02: reading the sign-in helpers' output", () => {
 });
 
 describe("FRE-05: the identity", () => {
-  it("keeps Git's own, or fills it in from GitHub with the private noreply address", () => {
+  it("the notes' name and email come from the account, with the private noreply address (D-124)", () => {
     expect(noreplyEmail(ADA)).toBe("583231+ada@users.noreply.github.com");
+    expect(notesIdentity(ADA)).toEqual({ name: "Ada Lovelace", email: "583231+ada@users.noreply.github.com" });
+    expect(notesIdentity({ ...ADA, name: "" })).toEqual({ name: "ada", email: "583231+ada@users.noreply.github.com" });
+  });
+  it("keeps Git's own, or fills it in from GitHub with the private noreply address", () => {
     expect(suggestIdentity({ name: "A. L.", email: "al@example.com" }, ADA)).toEqual({ name: "A. L.", email: "al@example.com", source: "git" });
     expect(suggestIdentity({}, ADA)).toEqual({ name: "Ada Lovelace", email: "583231+ada@users.noreply.github.com", source: "github" });
     expect(suggestIdentity({}, { ...ADA, name: "" })).toMatchObject({ name: "ada" });
@@ -95,7 +103,7 @@ const report = (states: Partial<Record<string, SetupReport["steps"][number]["sta
   steps: SETUP_STEPS.map((id) => ({ id, state: states[id] ?? "pending" })),
 });
 
-function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus> } = {}) {
+function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus>; repos?: RepoChoice[] } = {}) {
   const saved: AppStateFile[] = [];
   const calls: string[] = [];
   const tokens: string[] = [];
@@ -118,7 +126,7 @@ function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountSt
     signOut: async () => (calls.push("signOut"), (account = { gcm: true, gh: false })),
     identity: async () => suggestIdentity({}, account.account),
     setIdentity: async (i, scope) => (calls.push(`identity:${i.name}:${i.email}:${scope}`), true),
-    repositories: async () => [{ owner: "ada", name: "notes", private: false, instance: true }, { owner: "ada", name: "recipes", private: true, instance: false }],
+    repositories: async () => (calls.push("repositories"), opts.repos ?? [{ owner: "ada", name: "notes", private: false, instance: true, pushedAt: "2026-10-12T09:00:00Z" }, { owner: "ada", name: "recipes", private: true, instance: false }]),
     folder: async () => "/home/ada/Documents/Focus Notes",
     chooseFolder: async () => "/home/ada/Elsewhere",
     clone: async (owner, name) => (calls.push(`clone:${owner}/${name}`), { ok: true, folder: "/x", privateNotes: false }),
@@ -154,18 +162,18 @@ function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountSt
       onReport: (l) => ((setupListener = l), () => {}),
     },
   };
-  const app = createApp(bridge, en);
+  const app = createApp(bridge, en, "en", { clock: { now: () => Date.parse("2026-10-15T09:00:00Z"), setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms), clearTimeout: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) } });
   const vm = () => app.viewModels.select("vm.firstRun", app.store.state) as Record<string, unknown>;
   const run = (id: string, args?: Record<string, unknown>) => app.commands.run(id, args);
   return { app, vm, run, saved, calls, tokens, passphrases, last: () => saved.at(-1), pushSetup: (r: SetupReport) => setupListener!(r), pushSync: (r: SyncReport) => syncListener!(r) };
 }
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
-describe("FRE-01: the first run in the app", () => {
-  it("starts at Welcome on a new install, with no note opened behind it", async () => {
+describe("FRE-01: the first run in the app (D-124)", () => {
+  it("starts at Welcome on a new install, with no note opened behind it, in four steps", async () => {
     const t = shell();
     await t.app.start();
-    expect(t.vm()).toMatchObject({ open: true, step: "welcome", title: "A quiet place to write", progress: "Step 1 of 7" });
+    expect(t.vm()).toMatchObject({ open: true, step: "welcome", title: "A quiet place to write", progress: "Step 1 of 4" });
     expect(t.app.store.state.note.path).toBeUndefined();
   });
   it("doesn't start once done, for people who already wrote with the app, or in a shell without one", async () => {
@@ -176,103 +184,143 @@ describe("FRE-01: the first run in the app", () => {
       expect(t.app.store.state.note.path).toBe("/n/a.md");
     }
   });
-  it("keeps the step, so quitting resumes there, and finds out what the step needs again", async () => {
+  it("Just use this computer for now finishes with a new note and no account", async () => {
+    const t = shell();
+    await t.app.start();
+    await t.run("firstRun.local");
+    expect(t.vm().open).toBe(false);
+    expect(t.last()?.firstRun).toBe("done");
+    expect(t.app.store.state.note.path).toBe("/n/Untitled.md");
+    // Nothing about Git or signing in ran.
+    expect(t.calls.filter((c) => c === "git" || c.startsWith("signIn") || c === "repositories")).toEqual([]);
+  });
+  it("Connect checks Git silently: with Git ready it never shows, and the account is checked", async () => {
     const t = shell();
     await t.app.start();
     await t.run("firstRun.next");
-    expect(t.vm()).toMatchObject({ step: "git", gitState: "ok", gitText: "Git 2.45.1 is ready.", canContinue: true });
-    expect(t.last()?.firstRun).toBe("git");
-    await t.run("firstRun.next");
-    expect(t.last()?.firstRun).toBe("signIn");
-    // Quit and start again: the same step, checked again.
-    const again = shell({ state: { version: 1, firstRun: "signIn" } });
-    await again.app.start();
-    await settle();
-    expect(again.vm()).toMatchObject({ open: true, step: "signIn", progress: "Step 3 of 7" });
-    expect(again.calls).toContain("account");
-    // Esc goes back.
-    await again.run("firstRun.back");
-    expect(again.vm().step).toBe("git");
+    expect(t.vm()).toMatchObject({ step: "connect", title: "Connect your GitHub account", connect: "choose", isGit: false, progress: "Step 2 of 4" });
+    expect(t.calls.slice(0, 2)).toEqual(["git", "account"]);
+    expect(t.last()?.firstRun).toBe("connect");
   });
-  it("Git missing or too old: the install path for the platform and Check again; Continue waits for it", async () => {
-    const t = shell({ state: { version: 1, firstRun: "git" }, git: { installed: false, ok: false, gcm: false, gh: false } });
+  it("keeps the step, so quitting resumes there, and an earlier version's step resumes at the step that holds it", async () => {
+    for (const saved of ["connect", "signIn", "git", "identity"] as const) {
+      const again = shell({ state: { version: 1, firstRun: saved as AppStateFile["firstRun"] } });
+      await again.app.start();
+      await settle();
+      expect(again.vm(), saved).toMatchObject({ open: true, step: "connect" });
+      expect(again.calls).toContain("account");
+    }
+    const ws = shell({ state: { version: 1, firstRun: "workspace" as AppStateFile["firstRun"] }, account: { account: ADA, gcm: true, gh: false } });
+    await ws.app.start();
+    await settle();
+    expect(ws.vm().step).toBe("notes");
+    const made = shell({ state: { version: 1, firstRun: "personalize" as AppStateFile["firstRun"] } });
+    await made.app.start();
+    await settle();
+    expect(made.vm().step).toBe("ready");
+    // Esc goes back.
+    const back = shell({ state: { version: 1, firstRun: "connect" } });
+    await back.app.start();
+    await settle();
+    await back.run("firstRun.back");
+    expect(back.vm().step).toBe("welcome");
+  });
+  it("Git missing or too old: one helper app to install and Check again; the details wait under Having trouble?", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, git: { installed: false, ok: false, gcm: false, gh: false } });
     await t.app.start();
     await settle();
-    expect(t.vm()).toMatchObject({ gitState: "missing", canContinue: false, installCommand: "winget install --id Git.Git -e" });
+    expect(t.vm()).toMatchObject({ connect: "git", isGit: true, showTrouble: true, trouble: false, canContinue: false, installCommand: "winget install --id Git.Git -e", gitText: "Git isn't installed on this computer." });
+    expect(t.calls).not.toContain("account");
+    await t.run("firstRun.toggleTrouble");
+    expect(t.vm().trouble).toBe(true);
     await t.run("firstRun.next");
-    expect(t.vm().step).toBe("git");
-    const old = shell({ state: { version: 1, firstRun: "git" }, git: { installed: true, version: "2.25.1", ok: false, gcm: false, gh: false } });
+    expect(t.vm().step).toBe("connect");
+    expect(t.calls.filter((c) => c === "git")).toHaveLength(2);
+    const old = shell({ state: { version: 1, firstRun: "connect" }, git: { installed: true, version: "2.25.1", ok: false, gcm: false, gh: false } });
     await old.app.start();
     await settle();
-    expect(old.vm()).toMatchObject({ gitState: "old", gitText: "Git 2.25.1 is too old. Focus Notes needs Git 2.31 or newer." });
+    expect(old.vm()).toMatchObject({ connect: "git", gitState: "old", gitText: "Git 2.25.1 is too old. Focus Notes needs Git 2.31 or newer." });
   });
 });
 
-describe("FRE-02, FRE-04: signing in", () => {
-  it("an existing working credential is offered as Continue as @login, with no device code", async () => {
-    const t = shell({ state: { version: 1, firstRun: "signIn" }, account: { account: ADA, gcm: true, gh: false } });
+describe("FRE-02, FRE-04, FRE-05: connecting", () => {
+  it("an existing working credential is offered as Continue as @login, with no device code, and the notes' name comes from the account", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, account: { account: ADA, gcm: true, gh: false } });
     await t.app.start();
     await settle();
-    expect(t.vm()).toMatchObject({ signIn: "found", login: "ada", accountName: "Ada Lovelace", canContinue: true });
+    expect(t.vm()).toMatchObject({ connect: "found", login: "ada", foundText: "This computer is connected to GitHub as @ada (Ada Lovelace).", continueAs: "Continue as @ada", canContinue: true, canOther: true });
     await t.run("firstRun.useExisting");
-    expect(t.vm().step).toBe("identity");
+    expect(t.vm().step).toBe("notes");
     expect(t.calls.some((c) => c.startsWith("signIn"))).toBe(false);
+    // FRE-05: for the notes only, never Git's global settings.
+    expect(t.calls).toContain("identity:Ada Lovelace:583231+ada@users.noreply.github.com:workspace");
+  });
+  it("Having trouble? offers a different account", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, account: { account: ADA, gcm: true, gh: false } });
+    await t.app.start();
+    await settle();
+    await t.run("firstRun.toggleTrouble");
+    await t.run("firstRun.otherAccount");
+    expect(t.vm()).toMatchObject({ connect: "choose", trouble: false, canHelper: true });
+    await t.run("firstRun.useExisting");
+    expect(t.vm().step).toBe("connect");
   });
   it("a GitHub CLI session is offered too, and Git starts using it", async () => {
-    const t = shell({ state: { version: 1, firstRun: "signIn" }, account: { cliAccount: ADA, gcm: false, gh: true } });
+    const t = shell({ state: { version: 1, firstRun: "connect" }, account: { cliAccount: ADA, gcm: false, gh: true } });
     await t.app.start();
     await settle();
-    expect(t.vm()).toMatchObject({ signIn: "cli", login: "ada", canContinue: false });
-    await t.run("firstRun.useExisting");
+    expect(t.vm()).toMatchObject({ connect: "cli", login: "ada", canContinue: false });
+    await t.run("firstRun.next");
     expect(t.calls).toContain("useExisting");
-    expect(t.vm().step).toBe("identity");
+    expect(t.vm().step).toBe("notes");
   });
-  it("a device code shows in the app, Copy code and open GitHub copies it, and the sign-in ends with the login", async () => {
+  it("a device code shows in the app, Copy code and open GitHub copies it, and connecting ends with the login", async () => {
     let finish!: (a: AccountStatus) => void;
-    const t = shell({ state: { version: 1, firstRun: "signIn" }, account: { gcm: false, gh: true }, signIn: () => new Promise((r) => (finish = r)) });
+    const t = shell({ state: { version: 1, firstRun: "connect" }, account: { gcm: false, gh: true }, signIn: () => new Promise((r) => (finish = r)) });
     await t.app.start();
     await settle();
-    expect(t.vm()).toMatchObject({ signIn: "choose", canHelper: true, helperName: "the GitHub CLI" });
+    expect(t.vm()).toMatchObject({ connect: "choose", isChoose: true, canHelper: true });
     const going = t.run("firstRun.signInDevice");
     await settle();
-    expect(t.vm()).toMatchObject({ signIn: "code", code: "WDJB-MJHT" });
+    expect(t.vm()).toMatchObject({ connect: "code", code: "WDJB-MJHT" });
     await t.run("firstRun.copyCode");
     expect(t.calls).toEqual(expect.arrayContaining(["signIn:true", "copy:WDJB-MJHT", "page:device"]));
     finish({ account: ADA, gcm: false, gh: true });
     await going;
-    expect(t.vm()).toMatchObject({ signIn: "found", login: "ada", canContinue: true });
+    expect(t.vm()).toMatchObject({ connect: "found", login: "ada", canContinue: true });
   });
-  it("declined, expired, and offline say so, and Try again works without restarting", async () => {
+  it("declined, expired, and offline say so in plain words, and connecting again works without restarting", async () => {
     for (const problem of ["declined", "expired", "offline"] as const) {
       let n = 0;
-      const t = shell({ state: { version: 1, firstRun: "signIn" }, signIn: async () => (n++ === 0 ? { gcm: true, gh: false, problem } : { account: ADA, gcm: true, gh: false }) });
+      const t = shell({ state: { version: 1, firstRun: "connect" }, signIn: async () => (n++ === 0 ? { gcm: true, gh: false, problem } : { account: ADA, gcm: true, gh: false }) });
       await t.app.start();
       await settle();
       await t.run("firstRun.signIn");
-      expect(t.vm()).toMatchObject({ signIn: "choose", hasProblem: true, offline: problem === "offline" });
+      expect(t.vm()).toMatchObject({ connect: "choose", hasProblem: true, offline: problem === "offline" });
       expect(t.vm().problem).toBe(en[`firstRun.signIn.problem.${problem}` as keyof typeof en]);
+      expect(t.vm().problem).not.toMatch(/token|credential|Git\b|CLI/);
       await t.run("firstRun.signIn");
-      expect(t.vm()).toMatchObject({ signIn: "found", hasProblem: false });
+      expect(t.vm()).toMatchObject({ connect: "found", hasProblem: false });
     }
   });
   it("Cancel stops a sign-in that's waiting, and Esc does too", async () => {
-    const t = shell({ state: { version: 1, firstRun: "signIn" }, signIn: () => new Promise(() => {}) });
+    const t = shell({ state: { version: 1, firstRun: "connect" }, signIn: () => new Promise(() => {}) });
     await t.app.start();
     await settle();
     void t.run("firstRun.signIn");
     await settle();
-    expect(t.vm().signIn).toBe("code");
+    expect(t.vm().connect).toBe("code");
     await t.run("firstRun.back");
     expect(t.calls).toContain("cancel");
-    expect(t.vm()).toMatchObject({ step: "signIn", signIn: "choose" });
+    expect(t.vm()).toMatchObject({ step: "connect", connect: "choose" });
   });
   it("FRE-03, SEC-03: a pasted token is sent to the shell once and never kept in the app's state or saved", async () => {
-    const t = shell({ state: { version: 1, firstRun: "signIn" }, account: { gcm: false, gh: false } });
+    const t = shell({ state: { version: 1, firstRun: "connect" }, account: { gcm: false, gh: false } });
     await t.app.start();
     await settle();
-    expect(t.vm()).toMatchObject({ signIn: "choose", noHelper: true });
+    expect(t.vm()).toMatchObject({ connect: "choose", noHelper: true });
     await t.run("firstRun.useToken");
-    expect(t.vm().signIn).toBe("token");
+    expect(t.vm().connect).toBe("token");
     await t.run("firstRun.openPage", { page: "token" });
     expect(t.calls).toContain("page:token");
     await t.run("firstRun.setToken", { value: "not a token" });
@@ -282,39 +330,56 @@ describe("FRE-02, FRE-04: signing in", () => {
     await t.run("firstRun.setToken", { value: ` ${TOKEN} ` });
     await t.run("firstRun.submitToken");
     expect(t.tokens).toEqual([TOKEN]);
-    expect(t.vm()).toMatchObject({ signIn: "found", login: "ada", token: "" });
+    expect(t.vm()).toMatchObject({ connect: "found", login: "ada", token: "" });
     expect(JSON.stringify(t.app.store.state) + JSON.stringify(t.saved)).not.toContain(TOKEN);
   });
 });
 
-describe("FRE-05: the identity step", () => {
-  it("fills in the name and the private noreply address from GitHub, and applies them where chosen", async () => {
-    const t = shell({ state: { version: 1, firstRun: "identity" }, account: { account: ADA, gcm: true, gh: false } });
-    await t.app.start();
-    await settle();
-    expect(t.vm()).toMatchObject({ name: "Ada Lovelace", email: "583231+ada@users.noreply.github.com", scope: "global" });
-    expect(t.vm().identityNote).toMatch(/private noreply address/);
-    await t.run("firstRun.setEmail", { value: "" });
-    await t.run("firstRun.next");
-    expect(t.vm()).toMatchObject({ step: "identity", emailInvalid: true });
-    await t.run("firstRun.setEmail", { value: "583231+ada@users.noreply.github.com" });
-    await t.run("firstRun.setScope", { value: "workspace" });
-    await t.run("firstRun.next");
-    expect(t.calls).toContain("identity:Ada Lovelace:583231+ada@users.noreply.github.com:workspace");
-    expect(t.vm().step).toBe("workspace");
-  });
-});
-
-describe("FRE-06: the workspace step", () => {
-  const atWorkspace = async () => {
-    const t = shell({ state: { version: 1, firstRun: "workspace" }, account: { account: ADA, gcm: true, gh: false } });
+describe("FRE-06, FRE-08: Your notes", () => {
+  const atNotes = async (opts: { repos?: RepoChoice[] } = {}) => {
+    const t = shell({ state: { version: 1, firstRun: "notes" }, account: { account: ADA, gcm: true, gh: false }, ...opts });
     await t.app.start();
     await settle();
     return t;
   };
-  it("Create my workspace checks the names and the passphrase, sends the passphrase once, and opens the workspace once it's on this computer", async () => {
-    const t = await atWorkspace();
-    expect(t.vm()).toMatchObject({ mode: "create", instance: "notes", private: "notes-private", folder: "/home/ada/Documents/Focus Notes", made: false, canContinue: false });
+  it("We found your notes: the account's workspaces first, with when they were updated and who can see them, and Open on each", async () => {
+    const t = await atNotes();
+    expect(t.vm()).toMatchObject({ panel: "found", title: "We found your notes", showMore: true, more: false });
+    expect(t.vm().found).toEqual([{ id: "ada/notes", label: "notes", description: "Updated 3 days ago · Public", first: true }]);
+    await t.run("firstRun.clone", { id: "ada/notes" });
+    expect(t.calls).toEqual(expect.arrayContaining(["clone:ada/notes", "openWorkspace"]));
+    expect(t.last()?.firstRun).toBe("ready");
+  });
+  it("Create new notes instead, and Esc comes back to the notes found", async () => {
+    const t = await atNotes();
+    await t.run("firstRun.setMode", { value: "create" });
+    expect(t.vm()).toMatchObject({ panel: "create", title: "Your notes" });
+    await t.run("firstRun.back");
+    expect(t.vm()).toMatchObject({ step: "notes", panel: "found" });
+  });
+  it("with no notes yet, Create my notes uses the defaults, needs no passphrase, and opens the notes once they're on this computer", async () => {
+    const t = await atNotes({ repos: [{ owner: "ada", name: "recipes", private: true, instance: false }] });
+    expect(t.vm()).toMatchObject({ panel: "create", isCreate: true, instance: "notes", private: "notes-private", publish: "on", folder: "/home/ada/Documents/Focus Notes", made: false, canContinue: false });
+    await t.run("firstRun.create");
+    expect(t.passphrases).toEqual([undefined]);
+    expect(t.vm()).toMatchObject({ panel: "progress", started: true, made: false, working: true, title: "Creating your notes" });
+    // Downloaded and linked: writing can start while Pages and the push carry on.
+    t.pushSetup(report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "done", link: "done", vault: "skipped", pages: "running" }));
+    expect(t.vm()).toMatchObject({ made: true, canContinue: true, working: false, details: false, progressText: "Your notes are ready. Backing up carries on in the background." });
+    await t.run("firstRun.next");
+    expect(t.calls).toContain("openWorkspace");
+    expect(t.last()?.firstRun).toBe("ready");
+  });
+  it("a part that fails opens the details by itself", async () => {
+    const t = await atNotes({ repos: [] });
+    await t.run("firstRun.create");
+    t.pushSetup(report({ account: "done", instance: "failed" }));
+    expect(t.vm()).toMatchObject({ details: true, working: false });
+  });
+  it("More options: names, the folder, publishing, and the browser passphrase, checked and sent once only when typed", async () => {
+    const t = await atNotes({ repos: [] });
+    await t.run("firstRun.toggleMore");
+    expect(t.vm().more).toBe(true);
     await t.run("firstRun.setPrivate", { value: "notes" });
     await t.run("firstRun.create");
     expect(t.vm().error).toMatch(/two different repository names/);
@@ -325,29 +390,21 @@ describe("FRE-06: the workspace step", () => {
     await t.run("firstRun.setPassphrase", { value: "quiet maple lantern orbit" });
     await t.run("firstRun.setConfirm", { value: "quiet maple lantern" });
     await t.run("firstRun.create");
-    expect(t.vm().error).toBe("The passphrases don't match.");
+    expect(t.vm()).toMatchObject({ error: "The passphrases don't match.", more: true });
     expect(t.passphrases).toEqual([]);
     await t.run("firstRun.setConfirm", { value: "quiet maple lantern orbit" });
+    await t.run("firstRun.setPublish", { value: "off" });
+    await t.run("firstRun.chooseFolder");
+    expect(t.vm().folderText).toBe("Saved on this computer in /home/ada/Elsewhere");
     await t.run("firstRun.create");
     expect(t.passphrases).toEqual(["quiet maple lantern orbit"]);
-    expect(t.vm()).toMatchObject({ passphrase: "", confirm: "", started: true, made: false });
+    expect(t.vm()).toMatchObject({ passphrase: "", confirm: "", started: true });
     expect(JSON.stringify(t.saved)).not.toContain("lantern");
-    // Downloaded and linked: writing can start while Pages and the push carry on.
-    t.pushSetup(report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "done", link: "done", vault: "done", pages: "running" }));
-    expect(t.vm()).toMatchObject({ made: true, canContinue: true });
-    await t.run("firstRun.next");
-    expect(t.calls).toContain("openWorkspace");
-    expect(t.last()?.firstRun).toBe("personalize");
   });
-  it("Skip the passphrase for now creates the workspace without a vault", async () => {
-    const t = await atWorkspace();
-    await t.run("firstRun.createWithoutVault");
-    expect(t.passphrases).toEqual([undefined]);
-  });
-  it("Open from GitHub lists the account's repositories, Focus Notes workspaces marked, and clones the one chosen", async () => {
-    const t = await atWorkspace();
+  it("Open another repository from GitHub lists every repository, Focus Notes workspaces marked, and clones the one chosen", async () => {
+    const t = await atNotes();
     await t.run("firstRun.setMode", { value: "clone" });
-    expect(t.vm()).toMatchObject({ activeId: "ada/notes", reposSummary: "2 repositories" });
+    expect(t.vm()).toMatchObject({ panel: "clone", activeId: "ada/notes", reposSummary: "2 repositories" });
     expect((t.vm().repos as { description: string }[])[0]!.description).toBe("Focus Notes workspace");
     await t.run("firstRun.nextRepo");
     expect(t.vm().activeId).toBe("ada/recipes");
@@ -356,29 +413,45 @@ describe("FRE-06: the workspace step", () => {
     await t.run("firstRun.cloneActive");
     expect(t.calls).toEqual(expect.arrayContaining(["clone:ada/notes", "openWorkspace"]));
   });
-  it("Open a folder says why a folder can't be used", async () => {
-    const t = await atWorkspace();
+  it("Open a folder on this computer says why a folder can't be used", async () => {
+    const t = await atNotes();
     await t.run("firstRun.setMode", { value: "local" });
     await t.run("firstRun.openFolder");
     expect(t.vm().error).toMatch(/isn't a Focus Notes workspace/);
     expect(t.calls).not.toContain("openWorkspace");
   });
+  it("Settings → Open another workspace from GitHub shows Your notes alone, opens the one chosen, and Esc goes back to writing", async () => {
+    const t = shell({ state: { version: 1, firstRun: "done", lastNotePath: "/n/a.md" }, account: { account: ADA, gcm: true, gh: false } });
+    await t.app.start();
+    await settle();
+    await settle();
+    expect(t.app.store.state.account.login).toBe("ada");
+    expect((t.app.viewModels.select("vm.settings", t.app.store.state) as { workspace: { canOpenOther: boolean } }).workspace.canOpenOther).toBe(true);
+    await t.run("workspace.openFromGitHub");
+    await settle();
+    expect(t.vm()).toMatchObject({ open: true, step: "notes", panel: "found", showProgress: false, canCreate: false });
+    await t.run("firstRun.back");
+    expect(t.vm().open).toBe(false);
+    expect(t.app.store.state.note.path).toBe("/n/a.md");
+    await t.run("workspace.openFromGitHub");
+    await settle();
+    await t.run("firstRun.clone", { id: "ada/notes" });
+    expect(t.calls).toContain("openWorkspace");
+    // The window starts again in it, writing: not at Ready.
+    expect(t.last()?.firstRun).toBe("done");
+  });
 });
 
-describe("FRE-01: Make it yours and Ready", () => {
-  it("applies the theme, font, and focus mode at once, and Start writing finishes with a new note", async () => {
-    const t = shell({ state: { version: 1, firstRun: "personalize" } });
+describe("FRE-01: Ready", () => {
+  it("applies the look at once, and Start writing finishes with a new note", async () => {
+    const t = shell({ state: { version: 1, firstRun: "ready" } });
     await t.app.start();
     await settle();
     await t.run("firstRun.setTheme", { value: "dark" });
-    await t.run("firstRun.setFont", { value: "serif" });
-    await t.run("firstRun.setFocus", { value: "off" });
-    expect(t.app.store.state.appearance).toMatchObject({ mode: "dark", contentFont: "serif" });
-    expect(t.vm()).toMatchObject({ theme: "dark", font: "serif", focusMode: "off" });
+    expect(t.app.store.state.appearance).toMatchObject({ mode: "dark" });
+    expect(t.vm()).toMatchObject({ theme: "dark", searchHint: "Press Ctrl+/ to search or act." });
     await t.run("firstRun.back");
-    expect(t.vm().step).toBe("personalize");
-    await t.run("firstRun.next");
-    expect(t.vm()).toMatchObject({ step: "ready", searchHint: "Press Ctrl+/ to search or act." });
+    expect(t.vm().step).toBe("ready");
     await t.run("firstRun.next");
     expect(t.vm().open).toBe(false);
     expect(t.last()?.firstRun).toBe("done");
