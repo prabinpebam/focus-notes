@@ -12,7 +12,6 @@
  * shared ones under `private/notes/`; nothing else in the workspace (`private/access.json`,
  * `.focus-notes/`, `AGENTS.md`, `.git`) is ever reachable.
  */
-import { inScope, type GrantScope } from "@focus-notes/seal";
 
 export type AgentRoot = "public" | "private";
 
@@ -71,6 +70,10 @@ export interface AgentGrant {
   readonly write: boolean;
   /** The folder limits to check again on the real paths. */
   readonly folders: "all" | readonly string[];
+  /** The operation it was checked for: a grant is good for that one only (N3). */
+  readonly kind: "read" | "list" | "create" | "createFolder" | "update" | "move";
+  /** The shares it was checked against, to check again on the real paths. */
+  readonly sharing: AgentSharing | undefined;
 }
 /** Never final: allowed means *unresolved*, to be passed through `resolveAgentPath`. There's no `allowed` field to test by mistake. */
 export type AgentCheck = { verdict: "denied"; reason: AgentDenial } | { verdict: "unresolved"; grant: AgentGrant };
@@ -81,18 +84,20 @@ export const isAgentGrant = (g: unknown): g is AgentGrant => typeof g === "objec
 
 /**
  * Who shares what, from `private/access.json` (SHR-11): an agent may never change who a share
- * opens. Paths are workspace-relative.
+ * opens. Paths are workspace-relative; a share can also name a note by its front-matter `id`.
  */
 export interface AgentSharing {
-  /** The audiences whose shares open a private note at this path, or would open a note made in this folder. */
-  audiencesOf(path: string, kind: "note" | "folder"): string[];
-  /** Whether a share names this exact note path. */
-  named(path: string): boolean;
+  /** The audiences whose shares open a private note at this path (or with this id), or would open a note made in this folder. */
+  audiencesOf(path: string, kind: "note" | "folder", id?: string): string[];
+  /** Whether a share names this exact note, by path or by id. */
+  named(path: string, id?: string): boolean;
 }
 
 const PRIVATE_DIR = "private/notes/";
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const strings = (v: unknown) => (Array.isArray(v) ? v.filter((s): s is string => typeof s === "string") : []);
+/** Share paths compare without regard to case everywhere: on Windows and macOS `work` is `Work`, and refusing more elsewhere is safe (N2). */
+const fold = (s: string) => s.normalize("NFC").toLowerCase();
 
 /**
  * The sharing an agent must leave alone, from `access.json` as parsed: `null` when there's none.
@@ -105,22 +110,46 @@ export function agentSharing(access: unknown): AgentSharing {
   if (!list || !list.every(isObject)) return { audiencesOf: () => ["?"], named: () => true };
   const shares = (list as Record<string, unknown>[]).filter((g) => g.owner !== true && !g.revokedAt).map((g, i) => {
     const s = isObject(g.scope) ? g.scope : {};
-    const scope: GrantScope = { notes: strings(s.notes), folders: strings(s.folders), all: s.all === true };
-    return { id: typeof g.id === "string" ? g.id : `#${i}`, scope };
+    return {
+      id: typeof g.id === "string" ? g.id : `#${i}`,
+      all: s.all === true,
+      notes: strings(s.notes).map(fold),
+      folders: strings(s.folders).map((d) => fold(d.replace(/^\/+|\/+$/g, ""))).filter(Boolean),
+    };
   });
-  const rel = (p: string) => (p.startsWith(PRIVATE_DIR) ? p.slice(PRIVATE_DIR.length) : p === "private/notes" ? "" : undefined);
+  const rel = (p: string) => (p.startsWith(PRIVATE_DIR) ? fold(p.slice(PRIVATE_DIR.length)) : p === "private/notes" ? "" : undefined);
+  const inFolder = (r: string, d: string) => r === d || r.startsWith(`${d}/`);
   return {
-    audiencesOf(path, kind) {
+    audiencesOf(path, kind, id) {
       const r = rel(path);
       if (r === undefined) return [];
-      return shares.filter(({ scope }) => scope.all || (kind === "note" ? inScope(scope, { path: r })
-        : r !== "" && (scope.folders ?? []).some((f) => { const d = f.replace(/^\/+|\/+$/g, ""); return r === d || r.startsWith(`${d}/`); }))).map((s) => s.id).sort();
+      const key = id === undefined ? undefined : fold(id);
+      return shares.filter((s) => s.all || (kind === "note"
+        ? s.notes.includes(r) || (key !== undefined && s.notes.includes(key)) || s.folders.some((d) => r.startsWith(`${d}/`))
+        : r !== "" && s.folders.some((d) => inFolder(r, d)))).map((s) => s.id).sort();
     },
-    named(path) {
+    named(path, id) {
       const r = rel(path);
-      return r !== undefined && shares.some(({ scope }) => (scope.notes ?? []).includes(r));
+      const key = id === undefined ? undefined : fold(id);
+      return r !== undefined && shares.some((s) => s.notes.includes(r) || (key !== undefined && s.notes.includes(key)));
     },
   };
+}
+
+/**
+ * Whether an operation in `private/notes/` would change who a share opens: a move or rename that
+ * changes a note's audiences or moves a note a share names, or a note or folder made inside a
+ * shared folder or at a named path. Unknown shares refuse. Run on the paths asked for, and again
+ * on the real paths on disk (`resolveAgentPath`).
+ */
+export function agentShareDenied(kind: string, paths: readonly string[], s: AgentSharing | undefined): boolean {
+  if (kind !== "move" && kind !== "create" && kind !== "createFolder") return false;
+  if (!s || typeof s.audiencesOf !== "function" || typeof s.named !== "function") return true;
+  const [a, b] = paths as [string, string];
+  const same = (x: string[], y: string[]) => x.length === y.length && x.every((v, i) => v === y[i]);
+  if (kind === "move") return s.named(a) || s.named(b) || !same(s.audiencesOf(a, "note"), s.audiencesOf(b, "note"));
+  if (kind === "create") return s.named(a) || s.audiencesOf(a.slice(0, a.lastIndexOf("/")), "folder").length > 0 || s.audiencesOf(a, "note").length > 0;
+  return s.audiencesOf(a, "folder").length > 0;
 }
 
 /**
@@ -190,8 +219,6 @@ const isRoot = (path: string) => ROOTS.some(([, dir]) => dir === path);
 /** Whether a path is a folder or inside it, by whole folder names. */
 export const withinFolder = (path: string, folder: string): boolean => path === folder || path.startsWith(`${folder}/`);
 const canRead = (p: AgentPermissions, root: AgentRoot) => (root === "public" ? p.readPublic : p.readPrivate) === true;
-const parent = (p: string) => p.slice(0, p.lastIndexOf("/"));
-const same = (a: string[], b: string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
 
 /** The roots an agent may read now: none until agents can connect. */
 export function readableRoots(p: AgentPermissions): AgentRoot[] {
@@ -245,16 +272,8 @@ export function checkAgent(p: AgentPermissions, op: AgentOp, context?: AgentCont
   if (limits !== "all" && !paths.every((path) => limits.some((f) => withinFolder(path, f)))) return deny("outsideFolders");
 
   // Who a share opens never changes by an agent's hand: moves keep their audiences, nothing named moves, and nothing new appears in a share.
-  if (root === "private" && (op.kind === "move" || op.kind === "create" || op.kind === "createFolder")) {
-    const s = o.sharing;
-    if (!s || typeof s.audiencesOf !== "function" || typeof s.named !== "function") return deny("sharing");
-    if (op.kind === "move") {
-      if (s.named(paths[0]!) || s.named(paths[1]!) || !same(s.audiencesOf(paths[0]!, "note"), s.audiencesOf(paths[1]!, "note"))) return deny("sharing");
-    } else if (op.kind === "create") {
-      if (s.named(paths[0]!) || s.audiencesOf(parent(paths[0]!), "folder").length || s.audiencesOf(paths[0]!, "note").length) return deny("sharing");
-    } else if (s.audiencesOf(paths[0]!, "folder").length) return deny("sharing");
-  }
-  const grant = Object.freeze({ root, paths: Object.freeze([...paths]), write, folders: limits === "all" ? "all" : Object.freeze([...limits]) }) as unknown as AgentGrant;
+  if (root === "private" && agentShareDenied(op.kind, paths, o.sharing)) return deny("sharing");
+  const grant = Object.freeze({ root, paths: Object.freeze([...paths]), write, folders: limits === "all" ? "all" : Object.freeze([...limits]), kind: op.kind, sharing: root === "private" ? o.sharing : undefined }) as unknown as AgentGrant;
   grants.add(grant);
   return { verdict: "unresolved", grant };
 }

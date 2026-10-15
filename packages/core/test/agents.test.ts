@@ -174,6 +174,26 @@ describe("AGT-03: an agent never changes who a share opens", () => {
   it("still lets an agent edit a shared note in place, which changes no audience", () => {
     expect(why(all, { kind: "update", path: "private/notes/team/notes.md" }, shared)).toBe("unresolved");
   });
+  it("N1: counts a share that names a note by its id, wherever the note is", () => {
+    const byId = agentSharing({ grants: [{ id: "gcara", name: "Cara", scope: { notes: ["n-7f3a"] } }] });
+    expect(byId.audiencesOf("private/notes/anywhere/x.md", "note", "n-7f3a")).toEqual(["gcara"]);
+    expect(byId.audiencesOf("private/notes/anywhere/x.md", "note")).toEqual([]);
+    expect(byId.named("private/notes/x.md", "n-7f3a")).toBe(true);
+    expect(byId.named("private/notes/x.md", "n-other")).toBe(false);
+  });
+  it("N2: compares share paths without regard to case, so `work` is the shared `Work`", () => {
+    const cased: AgentContext = { sharing: agentSharing({ grants: [{ id: "g", scope: { folders: ["Work"], notes: ["Plans.md"] } }] }) };
+    expect(why(all, { kind: "move", from: "private/notes/a.md", to: "private/notes/work/a.md" }, cased)).toBe("sharing");
+    expect(why(all, { kind: "create", path: "private/notes/WORK/x.md" }, cased)).toBe("sharing");
+    expect(why(all, { kind: "createFolder", path: "private/notes/work/sub" }, cased)).toBe("sharing");
+    expect(why(all, { kind: "move", from: "private/notes/plans.md", to: "private/notes/p.md" }, cased)).toBe("sharing");
+  });
+  it("N3: binds each grant to its operation", () => {
+    for (const [op, kind] of [[{ kind: "update", path: "notes/a.md" }, "update"], [{ kind: "create", path: "notes/a.md" }, "create"], [{ kind: "createFolder", path: "notes/f" }, "createFolder"], [{ kind: "move", from: "notes/a.md", to: "notes/b.md" }, "move"], [{ kind: "read", path: "notes/a.md" }, "read"]] as [AgentOp, string][]) {
+      const r = checkAgent(all, op, noShares);
+      expect(r.verdict === "unresolved" && r.grant.kind).toBe(kind);
+    }
+  });
   it("refuses private moves and creates when the shares aren't known or can't be read", () => {
     expect(why(all, { kind: "create", path: "private/notes/a.md" }, {})).toBe("sharing");
     expect(why(all, { kind: "move", from: "private/notes/a.md", to: "private/notes/b.md" }, {})).toBe("sharing");

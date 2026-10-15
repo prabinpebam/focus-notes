@@ -6,10 +6,12 @@
  * permissions file. Node only: the MCP server (WP-7.2) and the command-line tool (WP-7.3) use it.
  */
 import { createHash } from "node:crypto";
-import { chmod, lstat, mkdir, open, readFile, realpath, rename, rm, stat, writeFile, type FileHandle } from "node:fs/promises";
-import { dirname, join, relative, sep } from "node:path";
-import { DEFAULT_AGENT_PERMISSIONS, agentPermissionsJson, isAgentGrant, parseAgentPermissions, rootDir, rootOf, takeToken, withinFolder, type AgentBucket, type AgentDenial, type AgentGrant, type AgentPermissions, type AgentRoot } from "./agents.ts";
+import { randomBytes } from "node:crypto";
+import { chmod, link, lstat, mkdir, open, readFile, realpath, rename, rm, stat, unlink, writeFile, type FileHandle } from "node:fs/promises";
+import { basename, dirname, join, relative, sep } from "node:path";
+import { DEFAULT_AGENT_PERMISSIONS, agentPermissionsJson, agentShareDenied, isAgentGrant, parseAgentPermissions, rootDir, rootOf, takeToken, withinFolder, type AgentBucket, type AgentDenial, type AgentGrant, type AgentPermissions, type AgentRoot } from "./agents.ts";
 import { DATA_FILES } from "./inventory.ts";
+import { noteId } from "@focus-notes/seal";
 
 /** A refusal while following or opening a path. */
 export class AgentRefused extends Error {
@@ -32,6 +34,7 @@ export type AgentResolution = { verdict: "denied"; reason: AgentDenial } | { ver
 export interface ResolvedAgent {
   readonly root: AgentRoot;
   readonly write: boolean;
+  readonly kind: AgentGrant["kind"];
   readonly files: readonly ResolvedAgentFile[];
   readonly rootReal: string;
 }
@@ -66,6 +69,7 @@ export async function resolveAgentPath(workspace: string, grant: AgentGrant): Pr
   // Any link on the way to the root (`private`, `notes`) would make its real path another folder.
   if (!rootReal || fold(rootReal) !== fold(join(wsReal, ...dir))) return deny("link");
   const files: ResolvedAgentFile[] = [];
+  const reals: string[] = [];
   for (const path of grant.paths) {
     const segments = path === rootDir(grant.root) ? [] : path.slice(rootDir(grant.root).length + 1).split("/");
     let cur = rootReal;
@@ -100,8 +104,11 @@ export async function resolveAgentPath(workspace: string, grant: AgentGrant): Pr
       if (st.isFile() && st.nlink > 1) return deny("link");
     }
     files.push(Object.freeze({ path, abs, exists }));
+    reals.push(real);
   }
-  const resolved: ResolvedAgent = Object.freeze({ root: grant.root, write: grant.write, files: Object.freeze(files), rootReal });
+  // The shares, again, on the paths as they're spelled on disk: `work/` may be the shared `Work/` (N2).
+  if (grant.root === "private" && agentShareDenied(grant.kind, reals, grant.sharing)) return deny("sharing");
+  const resolved: ResolvedAgent = Object.freeze({ root: grant.root, write: grant.write, kind: grant.kind, files: Object.freeze(files), rootReal });
   resolutions.add(resolved);
   return { verdict: "allowed", resolved };
 }
@@ -140,49 +147,112 @@ export async function readAgentFile(r: ResolvedAgent, path: string): Promise<{ t
   }
 }
 
+/** The front matter's `id` lines, as written: an agent may not add, change, or remove one (N1). */
+function idLines(text: string): string[] {
+  const fm = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(text);
+  return fm ? fm[1]!.split(/\r?\n/).filter((l) => /^\s*["']?id["']?\s*:/i.test(l)).map((l) => l.trim()) : [];
+}
+const sameIds = (a: string, b: string) => {
+  const x = idLines(a);
+  const y = idLines(b);
+  return x.length === y.length && x.every((l, i) => l === y[i]) && noteId(a) === noteId(b);
+};
+
 /**
- * Writes a resolved note only if it's still the version the agent read (`expected`), or, with
- * `null`, only if there's no file there yet. Otherwise it refuses with `changed` and writes
- * nothing, so a save from the editor in between is never overwritten.
+ * Makes the missing folders on the way to a resolved path one level at a time, each checked as it's
+ * made: a folder that turns into a link or a junction after resolving stops it there.
+ */
+async function ensureFolders(r: ResolvedAgent, dir: string): Promise<void> {
+  const rel = relative(r.rootReal, dir);
+  if (rel.startsWith("..")) throw new AgentRefused("link");
+  let cur = r.rootReal;
+  for (const seg of rel.split(sep).filter(Boolean)) {
+    const next = join(cur, seg);
+    let st = await lstat(next).catch((e: unknown) => (code(e) === "ENOENT" ? undefined : Promise.reject(e)));
+    if (!st) {
+      await mkdir(next).catch((e: unknown) => (code(e) === "EEXIST" ? undefined : Promise.reject(e)));
+      st = await lstat(next);
+    }
+    const real = await realOf(next);
+    if (st.isSymbolicLink() || !st.isDirectory() || !real || fold(real) !== fold(next)) throw new AgentRefused("link");
+    cur = next;
+  }
+}
+
+/** A temporary file beside the target, made only by this call, with the text written. */
+async function temporary(r: ResolvedAgent, target: string, text: string): Promise<string> {
+  await ensureFolders(r, dirname(target));
+  const tmp = join(dirname(target), `.${basename(target)}.${randomBytes(6).toString("hex")}.focus-notes-agent.tmp`);
+  const fh = await open(tmp, "wx");
+  try {
+    await fh.writeFile(text, "utf8");
+    await fh.sync();
+  } finally {
+    await fh.close();
+  }
+  return tmp;
+}
+
+/**
+ * Writes a resolved note: under an `update` grant only over the version the agent read
+ * (`expected`), and under a `create` grant (`expected` null) only where nothing is yet. Otherwise
+ * it refuses with `changed` and writes nothing, so a save from the editor in between is never
+ * overwritten. The text goes to a temporary file first and then takes the note's place in one
+ * step, so a crash never leaves half a note. Its front-matter `id` must stay as it was, and a new
+ * note brings none: the app gives ids, and a share can name a note by its id (N1).
  */
 export async function writeAgentFile(r: ResolvedAgent, path: string, text: string, expected: string | null): Promise<{ version: string }> {
   const f = fileOf(r, path);
   if (!r.write) throw new AgentRefused("notPermitted");
+  if (expected === null ? r.kind !== "create" : r.kind !== "update") throw new AgentRefused("never");
+  if (typeof text !== "string") throw new AgentRefused("invalidPath");
   if (expected === null) {
-    await mkdir(dirname(f.abs), { recursive: true });
-    const parent = await realOf(dirname(f.abs));
-    if (!parent || fold(parent) !== fold(dirname(f.abs))) throw new AgentRefused("link");
-    let fh: FileHandle;
+    if (idLines(text).length || noteId(text) !== undefined) throw new AgentRefused("sharing");
+    const tmp = await temporary(r, f.abs, text);
     try {
-      fh = await open(f.abs, "wx");
-    } catch (e) {
-      if (code(e) === "EEXIST") throw new AgentRefused("changed");
-      throw e;
-    }
-    try {
-      await verify(r, f, fh);
-      await fh.writeFile(text, "utf8");
+      // A hard link fails if anything is already there: the note is created, never replaced.
+      await link(tmp, f.abs).catch((e: unknown) => Promise.reject(code(e) === "EEXIST" ? new AgentRefused("changed") : e));
     } finally {
-      await fh.close();
+      await unlink(tmp).catch(() => {});
     }
     return { version: blobVersion(text) };
   }
-  let fh: FileHandle;
+  const current = await readAgentFile(r, path).catch((e: unknown) => Promise.reject(code(e) === "ENOENT" ? new AgentRefused("changed") : e));
+  if (current.version !== expected) throw new AgentRefused("changed");
+  if (!sameIds(current.text, text)) throw new AgentRefused("sharing");
+  const tmp = await temporary(r, f.abs, text);
   try {
-    fh = await open(f.abs, "r+");
+    // Checked once more just before the swap: still the version read, still the resolved file.
+    if ((await readAgentFile(r, path)).version !== expected) throw new AgentRefused("changed");
+    await rename(tmp, f.abs);
   } catch (e) {
-    if (code(e) === "ENOENT") throw new AgentRefused("changed");
+    await unlink(tmp).catch(() => {});
     throw e;
   }
-  try {
-    await verify(r, f, fh);
-    if (blobVersion(await fh.readFile("utf8")) !== expected) throw new AgentRefused("changed");
-    await fh.truncate(0);
-    await fh.write(text, 0, "utf8");
-  } finally {
-    await fh.close();
-  }
   return { version: blobVersion(text) };
+}
+
+/** Makes the folder a `createFolder` grant names, one level at a time. */
+export async function createAgentFolder(r: ResolvedAgent, path: string): Promise<void> {
+  const f = fileOf(r, path);
+  if (r.kind !== "createFolder") throw new AgentRefused("never");
+  await ensureFolders(r, f.abs);
+}
+
+/**
+ * Moves a note as a `move` grant names, to the checked path only and never over anything there:
+ * the note is linked at its new name (which fails if the name is taken) and then unlinked from the old.
+ */
+export async function moveAgentFile(r: ResolvedAgent, from: string, to: string): Promise<void> {
+  if (r.kind !== "move") throw new AgentRefused("never");
+  const a = fileOf(r, from);
+  const b = fileOf(r, to);
+  if (a === b || r.files[0] !== a || r.files[1] !== b) throw new AgentRefused("never");
+  // The note is still the resolved file, with no other name.
+  await readAgentFile(r, from);
+  await ensureFolders(r, dirname(b.abs));
+  await link(a.abs, b.abs).catch((e: unknown) => Promise.reject(code(e) === "EEXIST" ? new AgentRefused("changed") : e));
+  await unlink(a.abs);
 }
 
 // ---- the rate limit, per computer ----

@@ -7,11 +7,11 @@
  * permissions file notices edits made outside the app.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { agentSharing, checkAgent, type AgentOp, type AgentPermissions } from "../src/agents.ts";
-import { AgentRefused, blobVersion, readAgentFile, readAgentPermissions, resolveAgentPath, takeAgentToken, writeAgentFile, writeAgentPermissions } from "../src/agents-fs.ts";
+import { AgentRefused, blobVersion, createAgentFolder, moveAgentFile, readAgentFile, readAgentPermissions, resolveAgentPath, takeAgentToken, writeAgentFile, writeAgentPermissions } from "../src/agents-fs.ts";
 import { DATA_FILES } from "../src/inventory.ts";
 
 const all: AgentPermissions = { connect: true, readPublic: true, readPrivate: true, edit: true, createPublic: true, folders: "all" };
@@ -33,10 +33,15 @@ function workspace() {
   put("outside/x.md", "# Outside\n");
   return { ws, put };
 }
-const grant = (op: AgentOp, p: AgentPermissions = all) => {
-  const r = checkAgent(p, op, { sharing: agentSharing(null) });
+const grant = (op: AgentOp, p: AgentPermissions = all, sharing = agentSharing(null)) => {
+  const r = checkAgent(p, op, { sharing });
   if (r.verdict !== "unresolved") throw new Error(`denied: ${r.reason}`);
   return r.grant;
+};
+const resolved = async (ws: string, op: AgentOp, sharing = agentSharing(null)) => {
+  const r = await resolveAgentPath(ws, grant(op, all, sharing));
+  if (r.verdict !== "allowed") throw new Error(`denied: ${r.reason}`);
+  return r.resolved;
 };
 const resolve = async (ws: string, op: AgentOp, p?: AgentPermissions) => {
   const r = await resolveAgentPath(ws, grant(op, p));
@@ -189,5 +194,93 @@ describe("LOW 11: the permissions file", () => {
     const r = await readAgentPermissions(data);
     expect(r.changedOutside).toBe(true);
     expect(r.permissions.connect).toBe(false);
+  });
+});
+
+describe("N1: an agent never adds, changes, or removes a note's id", () => {
+  const withId = (id: string, body = "Text.") => `---\nid: ${id}\n---\n# Note\n\n${body}\n`;
+  it("refuses an edit that copies a shared note's id into another note, changes it, or removes it; keeping it is fine", async () => {
+    const { ws, put } = workspace();
+    put("private/notes/mine.md", withId("n-mine"));
+    const r = await resolved(ws, { kind: "update", path: "private/notes/mine.md" });
+    const { version } = await readAgentFile(r, "private/notes/mine.md");
+    for (const text of [withId("n-shared"), "# Note\n\nNo id now.\n", withId("n-mine").replace("id: n-mine", "id: n-mine\nid: n-shared")]) {
+      await expect(writeAgentFile(r, "private/notes/mine.md", text, version)).rejects.toMatchObject({ reason: "sharing" });
+    }
+    expect(readFileSync(join(ws, "private", "notes", "mine.md"), "utf8")).toBe(withId("n-mine"));
+    await writeAgentFile(r, "private/notes/mine.md", withId("n-mine", "Edited."), version);
+    expect(readFileSync(join(ws, "private", "notes", "mine.md"), "utf8")).toBe(withId("n-mine", "Edited."));
+  });
+  it("refuses an id added to a note that had none, and a new note that brings its own", async () => {
+    const { ws } = workspace();
+    const r = await resolved(ws, { kind: "update", path: "private/notes/secret.md" });
+    await expect(writeAgentFile(r, "private/notes/secret.md", withId("n-shared"), blobVersion("# Secret\n"))).rejects.toMatchObject({ reason: "sharing" });
+    const c = await resolved(ws, { kind: "create", path: "private/notes/new.md" });
+    await expect(writeAgentFile(c, "private/notes/new.md", withId("n-shared"), null)).rejects.toMatchObject({ reason: "sharing" });
+    expect(existsSync(join(ws, "private", "notes", "new.md"))).toBe(false);
+  });
+});
+
+describe("N2: the share check runs again on the path as it's spelled on disk", () => {
+  it.runIf(process.platform === "win32" || process.platform === "darwin")("refuses a create in `work/` that lands in the shared `Work/`, even with a sharing that compares exact case", async () => {
+    const { ws, put } = workspace();
+    put("private/notes/Work/plan.md", "# Plan\n");
+    const exact = { audiencesOf: (p: string, kind: "note" | "folder") => (kind === "folder" ? (p === "private/notes/Work" || p.startsWith("private/notes/Work/") ? ["g"] : []) : p.startsWith("private/notes/Work/") ? ["g"] : []), named: () => false };
+    const g = grant({ kind: "create", path: "private/notes/work/new.md" }, all, exact);
+    expect(await resolveAgentPath(ws, g)).toEqual({ verdict: "denied", reason: "sharing" });
+  });
+});
+
+describe("N3: a grant is only good for its own operation", () => {
+  it("creates only under a create grant, and overwrites only under an update grant", async () => {
+    const { ws } = workspace();
+    const u = await resolved(ws, { kind: "update", path: "notes/fresh.md" });
+    await expect(writeAgentFile(u, "notes/fresh.md", "# Fresh\n", null)).rejects.toMatchObject({ reason: "never" });
+    expect(existsSync(join(ws, "notes", "fresh.md"))).toBe(false);
+    const c = await resolved(ws, { kind: "create", path: "notes/a.md" });
+    await expect(writeAgentFile(c, "notes/a.md", "# Over\n", blobVersion("# A\n"))).rejects.toMatchObject({ reason: "never" });
+    const m = await resolved(ws, { kind: "move", from: "notes/a.md", to: "notes/b.md" });
+    await expect(writeAgentFile(m, "notes/a.md", "# Over\n", blobVersion("# A\n"))).rejects.toMatchObject({ reason: "never" });
+    await expect(createAgentFolder(c, "notes/a.md")).rejects.toMatchObject({ reason: "never" });
+    await expect(moveAgentFile(u, "notes/fresh.md", "notes/x.md")).rejects.toMatchObject({ reason: "never" });
+    expect(readFileSync(join(ws, "notes", "a.md"), "utf8")).toBe("# A\n");
+  });
+});
+
+describe("N4: moves and folders through resolved grants, and writes that never leave a half-written note", () => {
+  it("moves a note to the checked path only, never over another note", async () => {
+    const { ws, put } = workspace();
+    const m = await resolved(ws, { kind: "move", from: "notes/a.md", to: "notes/deep/new/b.md" });
+    await moveAgentFile(m, "notes/a.md", "notes/deep/new/b.md");
+    expect(existsSync(join(ws, "notes", "a.md"))).toBe(false);
+    expect(readFileSync(join(ws, "notes", "deep", "new", "b.md"), "utf8")).toBe("# A\n");
+    put("notes/c.md", "# C\n");
+    put("notes/d.md", "# D\n");
+    const clash = await resolved(ws, { kind: "move", from: "notes/c.md", to: "notes/d.md" });
+    await expect(moveAgentFile(clash, "notes/c.md", "notes/d.md")).rejects.toMatchObject({ reason: "changed" });
+    expect(readFileSync(join(ws, "notes", "d.md"), "utf8")).toBe("# D\n");
+    expect(readFileSync(join(ws, "notes", "c.md"), "utf8")).toBe("# C\n");
+  });
+  it("creates folders one level at a time, checking each before going further", async () => {
+    const { ws } = workspace();
+    const f = await resolved(ws, { kind: "createFolder", path: "notes/x/y/z" });
+    await createAgentFolder(f, "notes/x/y/z");
+    expect(statSync(join(ws, "notes", "x", "y", "z")).isDirectory()).toBe(true);
+  });
+  it("stops creating folders when one on the way turns into a junction after resolving", async () => {
+    const { ws } = workspace();
+    const f = await resolved(ws, { kind: "createFolder", path: "notes/j/inner" });
+    junction(join(ws, "outside"), join(ws, "notes", "j"));
+    await expect(createAgentFolder(f, "notes/j/inner")).rejects.toMatchObject({ reason: "link" });
+    expect(existsSync(join(ws, "outside", "inner"))).toBe(false);
+  });
+  it("writes through a temporary file and a rename, leaving no temporary file behind", async () => {
+    const { ws } = workspace();
+    const r = await resolved(ws, { kind: "update", path: "notes/a.md" });
+    await writeAgentFile(r, "notes/a.md", "# New\n", blobVersion("# A\n"));
+    expect(readFileSync(join(ws, "notes", "a.md"), "utf8")).toBe("# New\n");
+    expect(readdirSync(join(ws, "notes")).sort()).toEqual(["a.md", "work"]);
+    await expect(writeAgentFile(r, "notes/a.md", "# Stale\n", blobVersion("# A\n"))).rejects.toMatchObject({ reason: "changed" });
+    expect(readdirSync(join(ws, "notes")).sort()).toEqual(["a.md", "work"]);
   });
 });
