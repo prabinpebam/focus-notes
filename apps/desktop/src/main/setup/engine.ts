@@ -53,6 +53,11 @@ export interface SetupDeps {
   onReport?: (report: SetupReport) => void;
   /** Step names, states, and problem codes only. */
   log?: (line: string) => void;
+  /**
+   * The next free folder beside one the app chose that's taken by the time Download runs (D-154):
+   * "Focus Notes 2", and so on. Without it, a taken folder is a problem the person resolves.
+   */
+  nextFolder?: (taken: string) => Promise<string | undefined>;
 }
 
 interface StepRecord { state: SetupStepState; problem?: SetupProblem }
@@ -99,7 +104,7 @@ export function checkOptions(o: unknown): SetupOptions {
   if (!v || typeof v.instance !== "string" || typeof v.private !== "string" || typeof v.folder !== "string" || typeof v.publish !== "boolean") throw new Error("Setup options are incomplete");
   if (!isRepoName(v.instance) || !isRepoName(v.private) || v.instance.toLowerCase() === v.private.toLowerCase()) throw new Error("Setup needs two different repository names");
   if (!isAbsolute(v.folder) || resolve(v.folder) !== v.folder) throw new Error("Setup needs an absolute folder");
-  return { instance: v.instance, private: v.private, folder: v.folder, publish: v.publish };
+  return { instance: v.instance, private: v.private, folder: v.folder, ...(v.chosen === true ? { chosen: true } : {}), publish: v.publish };
 }
 
 /** Progress as read back: anything unexpected is dropped, and a step that was running when the app quit runs again. */
@@ -188,6 +193,23 @@ export class SetupEngine {
         return this.report();
       }
       return this.#session(passphrase, async () => void (await this.#step(id)));
+    });
+  }
+
+  /**
+   * Download somewhere else (D-154): Choose another folder… (`chosen`) or Use a new folder. Only
+   * before Download is done; the step is left to run again (`retry("clone")`).
+   */
+  useFolder(folder: string, chosen: boolean): Promise<SetupReport> {
+    return this.#queue.run(async () => {
+      if (!this.#p.options) throw new Error("Setup hasn't started");
+      if (this.#p.steps.clone?.state === "done") throw new Error("The notes are already downloaded");
+      const { chosen: _was, ...rest } = this.#p.options;
+      this.#p.options = checkOptions({ ...rest, folder, chosen });
+      this.#p.steps.clone = { state: "pending" };
+      await this.#save();
+      this.#emit();
+      return this.report();
     });
   }
 
@@ -375,14 +397,30 @@ export class SetupEngine {
 
     /** Download to this computer: clone the instance into the chosen folder. */
     clone: async () => {
-      const { folder, instance } = this.#o;
+      const { instance, chosen } = this.#o;
+      let { folder } = this.#o;
       const url = this.#url(instance);
-      if (existsSync(join(folder, ".git"))) {
-        const origin = await this.#git(folder, ["remote", "get-url", "origin"]);
-        if (origin.code !== 0 || origin.stdout.trim() !== url) throw new Failure("folderTaken");
-        return "done";
+      // Already this clone: resumed. Missing or empty: cloned into. Anything else is taken.
+      const holds = async (f: string): Promise<"clone" | "free" | "taken"> => {
+        if (existsSync(join(f, ".git"))) {
+          const origin = await this.#git(f, ["remote", "get-url", "origin"]);
+          return origin.code === 0 && origin.stdout.trim() === url ? "clone" : "taken";
+        }
+        return existsSync(f) && (await readdir(f)).length > 0 ? "taken" : "free";
+      };
+      let held = await holds(folder);
+      // A folder the app chose, filled since setup started: the next free one beside it, now (D-154).
+      if (held === "taken" && !chosen && this.#d.nextFolder) {
+        const next = await this.#d.nextFolder(folder);
+        if (next && isAbsolute(next) && resolve(next) === next && next !== folder && (await holds(next)) === "free") {
+          this.#p.options = { ...this.#o, folder: next };
+          await this.#save();
+          folder = next;
+          held = "free";
+        }
       }
-      if (existsSync(folder) && (await readdir(folder)).length > 0) throw new Failure("folderTaken");
+      if (held === "taken") throw new Failure("folderTaken");
+      if (held === "clone") return "done";
       await mkdir(dirname(folder), { recursive: true });
       await this.#gitNet(dirname(folder), ["clone", "--quiet", "--", url, folder]);
       return "done";

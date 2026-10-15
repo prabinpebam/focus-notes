@@ -11,7 +11,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canContinue, createApp, deviceCode, FIRST_RUN_STEPS, gitIsNewEnough, identityProblem, looksLikeToken, nextStep, noreplyEmail, notesIdentity, parseGitVersion, prevStep,
-  resumeStep, signInProblem, suggestIdentity, SETUP_STEPS, TOKEN_PAGE,
+  resumeStep, signInProblem, suggestIdentity, SETUP_PROBLEMS, SETUP_STEPS, TOKEN_PAGE,
   type AccountStatus, type AppStateFile, type FirstRunBridge, type GitCheck, type PlatformBridge, type RepoChoice, type SetupReport, type SignInProgress, type SyncReport,
 } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
@@ -440,6 +440,67 @@ describe("FRE-06, FRE-08: Your notes", () => {
     expect(t.vm()).toMatchObject({ hasMark: true, mark: "cloudUp", markTone: "accent", markBusy: true, progressText: "This takes about a minute." });
     t.pushSetup(report({ account: "done", instance: "failed" }));
     expect(t.vm()).toMatchObject({ details: false, working: false, failed: true, failedId: "instance", mark: "warning", markTone: "danger", markBusy: false, progressText: "That didn't work. Retry, or check GitHub." });
+  });
+  // D-154: no dead ends. Every part's every failure offers something that changes what happens next
+  // (not only the same call again) and a way back; transient failures keep Try again first.
+  it("D-154: every setup failure offers an action that changes something, and Back", async () => {
+    for (const step of SETUP_STEPS) {
+      for (const problem of SETUP_PROBLEMS) {
+        const t = await atNotes({ repos: [] });
+        await t.run("firstRun.create");
+        const before = Object.fromEntries(SETUP_STEPS.slice(0, SETUP_STEPS.indexOf(step)).map((id) => [id, "done" as const]));
+        const r = report({ ...before, [step]: "failed" });
+        r.steps = r.steps.map((s) => (s.id === step ? { ...s, problem } : s));
+        t.pushSetup(r);
+        const actions = t.vm().failActions as { id: string; label: string; variant: string; first: boolean }[];
+        const where = `${step}/${problem}`;
+        expect(actions.length, where).toBeGreaterThan(1);
+        expect(actions[0], where).toMatchObject({ variant: "primary", first: true });
+        expect(actions.every((a) => a.label && !a.label.startsWith("firstRun.")), where).toBe(true);
+        expect(actions.some((a) => a.id !== "retry" && a.id !== "back"), `${where}: an action that changes something`).toBe(true);
+        expect(actions.at(-1)?.id, `${where}: a way back`).toBe("back");
+        if (["offline", "auth", "rateLimited"].includes(problem)) expect(actions[0]!.id, where).toBe("retry");
+        if (problem === "folderTaken") expect(actions.map((a) => a.id), where).toEqual(["chooseFolder", "newFolder", "back"]);
+        // Back leaves the failed part: to Connect, where the person can come back to it.
+        await t.run("firstRun.failAction", { id: "back" });
+        expect(t.vm().step, where).toBe("connect");
+      }
+    }
+  });
+  it("D-154: a folder that's taken: Choose another folder… downloads there and carries on; Use a new folder too; Start over brings back the form", async () => {
+    const t = await atNotes({ repos: [] });
+    const used: string[] = [];
+    const retried: string[] = [];
+    const setup = t.app.bridge.setup!;
+    const taken = () => {
+      const r = report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "failed" });
+      r.steps = r.steps.map((s) => (s.id === "clone" ? { ...s, problem: "folderTaken" as const } : s));
+      return r;
+    };
+    setup.useFolder = async (how) => (used.push(how), how === "choose" ? undefined : report({ account: "done", instance: "done", private: "done", deployKey: "done" }));
+    setup.retry = async (id) => (retried.push(id), report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "done" }));
+    await t.run("firstRun.create");
+    t.pushSetup(taken());
+    expect(t.vm()).toMatchObject({ failed: true, progressText: "That folder already has other files, so your notes can't go there." });
+    // Cancelled dialog: nothing changes, nothing runs.
+    await t.run("firstRun.failAction", { id: "chooseFolder" });
+    expect(used).toEqual(["choose"]);
+    expect(retried).toEqual([]);
+    await t.run("firstRun.failAction", { id: "newFolder" });
+    expect(used).toEqual(["choose", "new"]);
+    expect(retried).toEqual(["clone"]);
+    // Start over (names GitHub can't use): setup forgets its progress (nothing on GitHub or on disk goes) and the form is back.
+    const named = report({ account: "done", instance: "failed" });
+    named.steps = named.steps.map((s) => (s.id === "instance" ? { ...s, problem: "notInstance" as const } : s));
+    t.pushSetup(named);
+    expect((t.vm().failActions as { id: string }[]).map((a) => a.id)).toEqual(["startOver", "back"]);
+    setup.reset = async () => ({ running: false, steps: SETUP_STEPS.map((id) => ({ id, state: "pending" as const })) });
+    await t.run("firstRun.failAction", { id: "startOver" });
+    expect(t.vm()).toMatchObject({ step: "notes", panel: "create", started: false });
+    // An action the failure doesn't offer does nothing.
+    t.pushSetup(taken());
+    await t.run("firstRun.failAction", { id: "retry" });
+    expect(retried).toEqual(["clone"]);
   });
   it("More options: names, the folder, publishing, and the browser passphrase, checked and sent once only when typed", async () => {
     const t = await atNotes({ repos: [] });

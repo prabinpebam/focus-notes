@@ -733,6 +733,9 @@ for (const [id, what, says, breakIt] of FAILURES) {
       await button(page, /^Create my notes/).click();
       await expect(text(page, says)).toBeVisible({ timeout: 30_000 });
       await shot(l, id);
+      // D-154: no dead ends: besides Try again, something that changes what happens next, and Back.
+      await expect(button(page, "Start over")).toBeVisible();
+      await expect(button(page, "Back")).toBeVisible();
       if (id !== "creating-failed-template") return;
       // Try again once GitHub has the starter notes: the whole rest of setup runs, to the end (D-135).
       w.gh.failures.clear();

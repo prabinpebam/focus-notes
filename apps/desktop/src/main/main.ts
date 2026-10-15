@@ -206,6 +206,8 @@ const setup = () => (setupEngine ??= SetupEngine.open({
   },
   // Step names, states, and problem codes only.
   log: logLine,
+  // A folder the app chose that's taken when Download runs: the next free one beside the default (D-154).
+  nextFolder: () => freeHome(),
 }));
 /** A vault passphrase from the renderer: text, or none (Skip for now). Never logged or stored. */
 const passphraseArg = (p: unknown) => (typeof p === "string" && p.length > 0 && p.length <= 1024 ? p : undefined);
@@ -259,6 +261,11 @@ async function freeHome(): Promise<string> {
 }
 /** The folder setup makes the workspace in: the one it started with, the chosen one, or the open workspace (Run setup again). */
 const setupFolder = async () => (await setup()).report().options?.folder ?? targetFolder ?? (isWorkspace() ? notesHome() : await freeHome());
+/** Whether the person chose that folder (D-154): only a folder the app chose moves when it's taken. */
+const setupChosen = async () => {
+  const o = (await setup()).report().options;
+  return o ? o.chosen === true : targetFolder !== undefined || isWorkspace();
+};
 /**
  * Deletes what the data inventory lists for signing out or removing the workspace (PRV-02): setup's
  * progress (through the engine, so it forgets too), the first run's workspace identity, and, for
@@ -985,7 +992,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("setup:status", async () => (await setup()).report());
   // The folder is the main process's own: the one setup started with, or the one chosen with the dialog (D-98).
-  handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), folder: await setupFolder() }), passphraseArg(passphrase)));
+  handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), folder: await setupFolder(), chosen: await setupChosen() }), passphraseArg(passphrase)));
+  // Download somewhere else (D-154): the system's dialog, or the next free folder beside the default. Undefined: cancelled.
+  handle("setup:useFolder", async (how) => {
+    const folder = how === "choose" ? await chooseFolder("Choose a folder for your notes") : how === "new" ? await freeHome() : undefined;
+    if (!folder) return undefined;
+    if (how === "choose") targetFolder = folder;
+    return (await setup()).useFolder(folder, how === "choose");
+  });
   handle("setup:retry", async (id, passphrase) => {
     if (!(SETUP_STEPS as readonly unknown[]).includes(id)) throw new Error("Unknown setup step");
     return (await setup()).retry(id as SetupStepId, passphraseArg(passphrase));

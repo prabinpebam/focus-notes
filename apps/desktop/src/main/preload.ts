@@ -160,6 +160,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     start: (options: unknown, passphrase?: string) => ipcRenderer.invoke("setup:start", options, passphrase),
     retry: (step: string, passphrase?: string) => ipcRenderer.invoke("setup:retry", step, passphrase),
     reset: () => ipcRenderer.invoke("setup:reset"),
+    useFolder: (how: string) => ipcRenderer.invoke("setup:useFolder", how),
     passphraseStrength: (passphrase: string) => ipcRenderer.invoke("setup:strength", passphrase),
     onReport: (listener: (report: unknown) => void) => {
       const handler = (_e: unknown, report: unknown) => listener(report);

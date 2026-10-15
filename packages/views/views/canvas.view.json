@@ -5664,24 +5664,35 @@
                                             },
                                             "children": [
                                               {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.retry"
-                                                  },
-                                                  "variant": "primary",
-                                                  "autoFocus": true,
-                                                  "size": "l",
-                                                  "busy": {
-                                                    "get": "vm.firstRun.busy"
-                                                  }
+                                                "each": {
+                                                  "get": "vm.firstRun.failActions"
                                                 },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "setup.retry",
-                                                    "args": {
-                                                      "id": {
-                                                        "get": "vm.firstRun.failedId"
+                                                "as": "item",
+                                                "key": "item.id",
+                                                "render": {
+                                                  "type": "Button",
+                                                  "props": {
+                                                    "label": {
+                                                      "get": "item.label"
+                                                    },
+                                                    "variant": {
+                                                      "get": "item.variant"
+                                                    },
+                                                    "autoFocus": {
+                                                      "get": "item.first"
+                                                    },
+                                                    "size": "l",
+                                                    "busy": {
+                                                      "get": "item.busy"
+                                                    }
+                                                  },
+                                                  "on": {
+                                                    "press": {
+                                                      "run": "firstRun.failAction",
+                                                      "args": {
+                                                        "id": {
+                                                          "get": "item.id"
+                                                        }
                                                       }
                                                     }
                                                   }
