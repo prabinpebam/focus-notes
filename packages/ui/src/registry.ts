@@ -50,11 +50,17 @@ import { AppMark } from "./primitives/AppMark/AppMark.tsx";
 import { StepMark } from "./primitives/StepMark/StepMark.tsx";
 import { ItemCard } from "./primitives/ItemCard/ItemCard.tsx";
 import { SaveState } from "./primitives/SaveState/SaveState.tsx";
+import { Columns } from "./layouts/Columns/Columns.tsx";
+import { StepDots } from "./primitives/StepDots/StepDots.tsx";
+import { StatusRow } from "./primitives/StatusRow/StatusRow.tsx";
+import { CodeBlock } from "./primitives/CodeBlock/CodeBlock.tsx";
+import { VersionCompare } from "./primitives/VersionCompare/VersionCompare.tsx";
+import { StrengthMeter } from "./primitives/StrengthMeter/StrengthMeter.tsx";
 
 /** The closed registry: the renderer can create these and nothing else (DSY-06). */
 export const registry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState,
-  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, NoteContent,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter,
+  Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, NoteContent,
   EditorSurface, TableControls, WindowFrame,
   Trigger, Toolbar, Dialog,
 });

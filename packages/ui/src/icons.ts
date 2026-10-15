@@ -11,6 +11,7 @@ import {
   BracesVariable20Regular, ArrowUp20Regular, ArrowDown20Regular, LockClosed20Regular, ArrowExportLtr20Regular,
   ArrowImport20Regular, TextStrikethrough20Regular, TextT20Regular, TaskListLtr20Regular, LineHorizontal120Regular, FolderAdd20Regular,
   Cloud20Regular, CloudArrowUp20Regular, CloudCheckmark20Regular, CloudOff20Regular,
+  ArrowDownload20Regular, Circle20Regular, Globe20Regular,
   type FluentIcon,
 } from "@fluentui/react-icons";
 import type { IconName } from "./icon-names.ts";
@@ -35,6 +36,8 @@ export const ICONS: Record<IconName, FluentIcon> = {
   divider: LineHorizontal120Regular,
   // The save state (D-132): saved here, backing up, backed up, offline.
   cloud: Cloud20Regular, cloudUp: CloudArrowUp20Regular, cloudCheck: CloudCheckmark20Regular, cloudOff: CloudOff20Regular,
+  // Setup (D-142): an app to install, a step not reached yet, a website.
+  download: ArrowDownload20Regular, circle: Circle20Regular, globe: Globe20Regular,
   // GitHub's own mark (Octicons, MIT), where the setup names GitHub (D-126).
   github: GitHubMark,
 };

@@ -63,6 +63,10 @@ export interface FirstRunState {
     confirm: string;
     /** A message key for what's wrong, or "". */
     error: string;
+    /** The field at fault, marked invalid with its own short error (D-142), or "". */
+    field: "" | "instance" | "private" | "passphrase" | "confirm";
+    /** The passphrase's strength as it's typed: 0 (nothing typed) to 4 (strong), for the meter (D-142). */
+    strength: number;
     folder: string;
     repos: RepoChoice[];
     reposLoaded: boolean;
@@ -79,7 +83,7 @@ export const FIRST_RUN_INACTIVE: FirstRunState = {
   signIn: { phase: "idle", code: "", helper: "" }, token: "", tokenError: false,
   workspace: {
     mode: "create", more: false, details: false, instance: DEFAULT_SETUP.instance, private: DEFAULT_SETUP.private, publish: DEFAULT_SETUP.publish,
-    passphrase: "", confirm: "", error: "", folder: "", repos: [], reposLoaded: false, query: "", activeId: "",
+    passphrase: "", confirm: "", error: "", field: "", strength: 0, folder: "", repos: [], reposLoaded: false, query: "", activeId: "",
   },
   focus: 0,
 };
@@ -109,6 +113,9 @@ interface Ctx<St extends S> {
 }
 
 /** The setup has made the workspace on this computer: cloned and linked (Writing starts before setup finishes). */
+/** The oldest Git setup works with (D-22). */
+const GIT_NEEDED = "2.31";
+
 export const workspaceMade = (r?: SetupReport) => Boolean(r && !r.running && ["clone", "link"].every((id) => r.steps.find((x) => x.id === id)?.state === "done"));
 
 const DAY = 86_400_000;
@@ -129,6 +136,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   const setSignIn = (patch: Partial<FirstRunState["signIn"]>) => store.update((s) => ({ ...s, firstRun: { ...s.firstRun, signIn: { ...s.firstRun.signIn, ...patch } } }));
   const setLogin = (login: string) => { if (store.state.account.login !== login) store.update((s) => ({ ...s, account: { login } })); };
   const bump = () => set({ focus: state().focus + 1 });
+  const platformOf = () => (bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows");
   /** Runs a shell call with the step marked busy; a call that throws counts as "didn't work". */
   const busy = async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
     set({ busy: true });
@@ -232,7 +240,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     const s = state();
     // Esc in a sign-in that's waiting cancels it first.
     if (s.active && s.step === "connect" && s.signIn.phase !== "idle" && s.signIn.phase !== "token") return commands.run("firstRun.cancelSignIn");
-    if (s.active && s.signIn.phase === "token") return (setSignIn({ phase: "idle" }), bump());
+    if (s.active && s.signIn.phase === "token") return (setSignIn({ phase: "idle" }), set({ trouble: false }), bump());
     if (!s.active || s.busy) return;
     // Open another repository or a folder goes back to where Your notes started.
     if (s.step === "notes" && !store.state.setup.report?.options && s.workspace.mode !== baseMode()) return (setWs({ mode: baseMode(), error: "" }), bump());
@@ -271,8 +279,15 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     applyAccount(r);
     set({ other: false, trouble: false, focus: state().focus + 1 });
   };
-  reg("firstRun.signIn", signIn(false));
+  // Connect to GitHub is a device code through Git's own helper (D-142): the code shows here when the
+  // helper prints it. The helper's browser sign-in waits under Having trouble?.
+  reg("firstRun.signIn", signIn(true));
   reg("firstRun.signInDevice", signIn(true));
+  reg("firstRun.signInBrowser", signIn(false));
+  reg("firstRun.copyCommand", async () => {
+    const g = state().git;
+    if (g && !g.ok) await bridge.copyText?.(catalog.format(`firstRun.git.command.${platformOf()}`));
+  });
   reg("firstRun.cancelSignIn", async () => {
     setSignIn({ phase: "idle", code: "" });
     set({ busy: false, focus: state().focus + 1 });
@@ -290,7 +305,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   });
   reg("firstRun.useToken", () => {
     setSignIn({ phase: "token" });
-    set({ token: "", tokenError: false, focus: state().focus + 1 });
+    // A fresh form: what the last sign-in said isn't about a token yet (D-142).
+    const { problem: _said, ...rest } = state().account ?? { gcm: false, gh: false };
+    set({ token: "", tokenError: false, trouble: false, focus: state().focus + 1, ...(state().account ? { account: rest } : {}) });
   });
   reg<{ value: string }>("firstRun.setToken", (a) => {
     // Typing again clears what GitHub said about the last token.
@@ -328,11 +345,20 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   });
   reg("firstRun.toggleMore", () => setWs({ more: !state().workspace.more }));
   reg("firstRun.toggleDetails", () => setWs({ details: !state().workspace.details }));
-  reg<{ value: string }>("firstRun.setInstance", (a) => setWs({ instance: value(a), error: "" }));
-  reg<{ value: string }>("firstRun.setPrivate", (a) => setWs({ private: value(a), error: "" }));
+  reg<{ value: string }>("firstRun.setInstance", (a) => setWs({ instance: value(a), error: "", field: "" }));
+  reg<{ value: string }>("firstRun.setPrivate", (a) => setWs({ private: value(a), error: "", field: "" }));
   reg<{ value: string }>("firstRun.setPublish", (a) => setWs({ publish: a.value !== "off" }));
-  reg<{ value: string }>("firstRun.setPassphrase", (a) => setWs({ passphrase: value(a), error: "" }));
-  reg<{ value: string }>("firstRun.setConfirm", (a) => setWs({ confirm: value(a), error: "" }));
+  // The meter follows the typing (D-142): the shell rates it with the same check setup uses.
+  let rated = 0;
+  reg<{ value: string }>("firstRun.setPassphrase", async (a) => {
+    const p = value(a);
+    setWs({ passphrase: p, error: "", field: "", ...(p ? {} : { strength: 0 }) });
+    const ask = ++rated;
+    if (!p || !bridge.setup) return;
+    const r = await bridge.setup.passphraseStrength(p).catch(() => undefined);
+    if (ask === rated && r) setWs({ strength: strengthLevel(r) });
+  });
+  reg<{ value: string }>("firstRun.setConfirm", (a) => setWs({ confirm: value(a), error: "", field: "" }));
   reg("firstRun.chooseFolder", async () => {
     const folder = await busy(() => fr!.chooseFolder());
     if (folder) setWs({ folder, error: "" });
@@ -341,17 +367,19 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   reg("firstRun.create", async () => {
     const w = state().workspace;
     if (state().busy || !bridge.setup) return;
-    const fail = (error: string) => (setWs({ error, more: true }), bump());
-    if (!isRepoName(w.instance) || !isRepoName(w.private) || w.instance.toLowerCase() === w.private.toLowerCase()) return fail("firstRun.workspace.error.names");
+    const fail = (error: string, field: FirstRunState["workspace"]["field"]) => (setWs({ error, field, more: true }), bump());
+    if (!isRepoName(w.instance)) return fail("firstRun.workspace.error.names", "instance");
+    if (!isRepoName(w.private) || w.instance.toLowerCase() === w.private.toLowerCase()) return fail("firstRun.workspace.error.names", "private");
     let passphrase: string | undefined;
     if (w.passphrase || w.confirm) {
       const strength = await busy(() => bridge.setup!.passphraseStrength(w.passphrase));
-      if (!strength?.ok) return fail("setup.problem.weak");
-      if (w.confirm !== w.passphrase) return fail("firstRun.workspace.error.confirm");
+      if (strength) setWs({ strength: strengthLevel(strength) });
+      if (!strength?.ok) return fail("setup.problem.weak", "passphrase");
+      if (w.confirm !== w.passphrase) return fail("firstRun.workspace.error.confirm", "confirm");
       passphrase = w.passphrase;
     }
     // The passphrase goes to the shell once, for the vault step, and leaves the app's state now.
-    setWs({ passphrase: "", confirm: "", error: "", more: false });
+    setWs({ passphrase: "", confirm: "", error: "", field: "", strength: 0, more: false });
     const r = await busy(() => bridge.setup!.start({ instance: w.instance, private: w.private, folder: w.folder, publish: w.publish }, passphrase));
     if (r) store.update((s) => ({ ...s, setup: { available: true, report: r } }));
     else setWs({ error: "firstRun.workspace.error.failed" });
@@ -439,7 +467,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         token: { type: "string" }, tokenError: { type: "boolean" },
         panel: { type: "string", enum: ["checking", "found", "create", "clone", "local", "progress"] }, more: { type: "boolean" }, details: { type: "boolean" }, canCreate: { type: "boolean" },
         isCreate: { type: "boolean" }, showMore: { type: "boolean" }, working: { type: "boolean" },
-        found: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, icon: { type: "string" }, first: { type: "boolean" } } } },
+        found: { type: "array", items: { type: "object", properties: { variant: { type: "string" }, id: { type: "string" }, label: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, icon: { type: "string" }, first: { type: "boolean" } } } },
         instance: { type: "string" }, private: { type: "string" }, publish: { type: "string" }, publishOptions: { type: "array", items: OPTION },
         passphrase: { type: "string" }, confirm: { type: "string" }, folder: { type: "string" }, folderText: { type: "string" },
         error: { type: "string" }, hasError: { type: "boolean" }, started: { type: "boolean" }, made: { type: "boolean" }, progressText: { type: "string" },
@@ -452,6 +480,13 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         tokenMessage: { type: "string" }, hasTokenMessage: { type: "boolean" },
         failed: { type: "boolean" }, failedId: { type: "string" }, lookupFailed: { type: "boolean" }, canCreateNow: { type: "boolean" }, createDetail: { type: "string" },
         folderShort: { type: "string" },
+        // D-142: the stepper, the state's own title, the helper to install, versions, field errors, the passphrase meter.
+        stepNumber: { type: "number" }, stepTotal: { type: "number" }, needHelper: { type: "boolean" }, helperText: { type: "boolean" }, problemIcon: { type: "string" }, notesIcon: { type: "string" },
+        installLabel: { type: "string" }, gitFound: { type: "string" }, gitNeeded: { type: "string" }, isGitOld: { type: "boolean" },
+        instanceInvalid: { type: "boolean" }, privateInvalid: { type: "boolean" }, passphraseInvalid: { type: "boolean" }, confirmInvalid: { type: "boolean" },
+        instanceError: { type: "string" }, privateError: { type: "string" }, passphraseError: { type: "string" }, confirmError: { type: "string" },
+        hasStrength: { type: "boolean" }, strength: { type: "number" },
+        instanceFocus: { type: "number" }, privateFocus: { type: "number" }, passphraseFocus: { type: "number" }, confirmFocus: { type: "number" }, strengthText: { type: "string" },
       },
     },
     setters: {
@@ -486,26 +521,53 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       // The token form says what GitHub (or the helper) said about the token it just cleared.
       const tokenKey = f.tokenError ? "firstRun.signIn.tokenInvalid"
         : connect === "token" && a?.problem ? (catalog.has(`firstRun.signIn.tokenProblem.${a.problem}`) ? `firstRun.signIn.tokenProblem.${a.problem}` : "firstRun.signIn.tokenProblem.failed") : "";
-      // The step's hero mark (D-135), where nothing else on it is a visual anchor: waits ring it.
+      // No helper to keep a sign-in: the step's action is installing one (D-142).
+      const needHelper = connect === "choose" && Boolean(a && ((!a.gcm && !a.gh) || a.problem === "noHelper"));
+      // The step's hero mark (D-135): one anchor, the same size and place in every state of a step,
+      // its icon and tone saying the state (D-142). Waits ring it.
       const mark: [string, "neutral" | "accent" | "danger" | "success", boolean] | undefined =
         f.step === "connect"
           ? connect === "checking" ? ["github", "neutral", true]
-          : connect === "waiting" || connect === "window" ? ["github", "accent", true]
+          : connect === "git" || needHelper ? ["download", "neutral", false]
+          : connect === "waiting" || connect === "window" || connect === "code" ? ["github", "accent", true]
           : connect === "token" ? ["lock", tokenKey ? "danger" : "neutral", false]
-          : undefined
+          : connect === "found" ? ["github", "success", false]
+          : ["github", problem ? "danger" : "neutral", false]
         : f.step === "notes"
           ? panel === "checking" ? ["search", "neutral", true]
           : panel === "clone" ? ["github", "neutral", false]
           : panel === "local" ? ["folder", "neutral", false]
           : panel === "create" && lookupFailed ? ["cloudOff", "danger", false]
           : panel === "progress" ? (made ? ["cloudCheck", "success", false] : failed || w.error ? ["warning", "danger", false] : ["cloudUp", "accent", true])
-          : undefined
+          : ["cloud", w.error ? "danger" : "neutral", false]
         : undefined;
+      // The title names the state, not just the step (D-142).
+      const titleKey = f.step === "connect"
+        ? connect === "git" ? (gitState === "old" ? "firstRun.connect.title.old" : "firstRun.connect.title.missing")
+        : needHelper ? "firstRun.connect.title.helper"
+        : `firstRun.connect.title.${connect}`
+        : f.step === "notes" ? (panel === "progress" && made ? "firstRun.notes.title.made" : `firstRun.notes.title.${panel}`)
+        : `firstRun.${f.step}.title`;
+      // A problem says what happened with its own icon (D-142).
+      const problemIcon = a?.problem === "offline" ? "cloudOff" : a?.problem === "expired" ? "history" : a?.problem === "noHelper" ? "lock" : "error";
+      // The field at fault says why on itself (D-142).
+      // A passphrase too easy to guess says so with its meter, not more words (D-142).
+      const fieldError = (name: string) => (w.error && w.field === name && w.error !== "setup.problem.weak" ? catalog.format(`firstRun.workspace.field.${w.error === "firstRun.workspace.error.confirm" ? "confirm" : "names"}`) : "");
+      const invalid = (name: string) => Boolean(w.error && w.field === name);
       return {
         // Welcome is the hero, centred; the steps after it read from the start (D-126).
         open: f.active, step: f.step, align: f.step === "welcome" ? "center" : "start",
-        title: f.step === "notes" ? catalog.format(`firstRun.notes.title.${panel}`) : catalog.format(`firstRun.${f.step}.title`),
+        title: catalog.format(catalog.has(titleKey) ? titleKey : `firstRun.${f.step}.title`),
         progress: catalog.format("firstRun.progress", { n: i + 1, total: FIRST_RUN_STEPS.length }), showProgress: f.scope === "install" || f.scope === "setup",
+        stepNumber: i + 1, stepTotal: FIRST_RUN_STEPS.length,
+        needHelper, helperText: needHelper && !problem, problemIcon, notesIcon: lookupFailed ? "cloudOff" : "error",
+        installLabel: catalog.format(gitState === "old" ? "firstRun.connect.update" : "firstRun.connect.install"), gitFound: g?.version ?? "", gitNeeded: GIT_NEEDED, isGitOld: gitState === "old",
+        instanceInvalid: invalid("instance"), privateInvalid: invalid("private"), passphraseInvalid: invalid("passphrase"), confirmInvalid: invalid("confirm"),
+        instanceError: fieldError("instance"), privateError: fieldError("private"), passphraseError: fieldError("passphrase"), confirmError: fieldError("confirm"),
+        hasStrength: Boolean(w.passphrase), strength: w.strength,
+        instanceFocus: !w.field || w.field === "instance" ? f.focus : 0, privateFocus: w.field === "private" ? f.focus : 0,
+        passphraseFocus: w.field === "passphrase" ? f.focus : 0, confirmFocus: w.field === "confirm" ? f.focus : 0,
+        strengthText: w.strength ? catalog.format(`firstRun.workspace.strength.${w.strength}`) : "",
         busy: f.busy, focus: f.focus, canContinue: canContinue(f.step, { ...(g ? { git: g } : {}), ...(a ? { account: a } : {}), workspaceReady: made }),
         connect, trouble: f.trouble,
         isGit: connect === "git", isChoose: connect === "choose", showTrouble: ["git", "found", "cli", "choose"].includes(connect),
@@ -523,7 +585,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         panel, more: w.more, details: w.details, canCreate: f.scope !== "workspace",
         isCreate: panel === "create", showMore: panel === "create" || panel === "found", working: started && !made && !w.error && !failed,
         found: w.repos.filter((r) => r.instance).slice(0, 5).map((r, n) => ({
-          id: `${r.owner}/${r.name}`, first: n === 0, label: !s.account.login || r.owner === s.account.login ? r.name : `${r.owner}/${r.name}`,
+          id: `${r.owner}/${r.name}`, first: n === 0, variant: n === 0 ? "primary" : "secondary", label: !s.account.login || r.owner === s.account.login ? r.name : `${r.owner}/${r.name}`,
           icon: r.private ? "lock" : "folder", detail: updated(r.pushedAt), badge: catalog.format(r.private ? "firstRun.notes.private" : "firstRun.notes.public"),
         })),
         instance: w.instance, private: w.private, publish: w.publish ? "on" : "off", publishOptions: options("firstRun.workspace.publish", ["on", "off"]),
@@ -539,7 +601,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         theme: s.appearance.mode, themeOptions: options("firstRun.ready.theme", ["system", "light", "dark"]),
         canImport: commands.has("notes.import") && commands.describe("notes.import").enabled,
         searchHint: catalog.format("firstRun.ready.search", { mod: formatChord("Mod+/", bridge.platform) }),
-        hasMark: Boolean(mark), mark: mark?.[0] ?? "github", markTone: mark?.[1] ?? "neutral", markBusy: Boolean(mark?.[2]),
+        hasMark: Boolean(mark) || f.step === "connect" || f.step === "notes", mark: mark?.[0] ?? "github", markTone: mark?.[1] ?? "neutral", markBusy: Boolean(mark?.[2]),
         tokenMessage: tokenKey ? catalog.format(tokenKey) : "", hasTokenMessage: Boolean(tokenKey),
         failed: Boolean(failedStep), failedId: failedStep?.id ?? "", lookupFailed, canCreateNow: !lookupFailed,
         createDetail: catalog.format(lookupFailed ? "firstRun.notes.createOffline" : "firstRun.notes.createWhy"),
@@ -591,6 +653,12 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       return state().active;
     },
   };
+}
+
+/** The meter's level (D-142): too weak (1, 2), fair (3: accepted), or strong (4). */
+export function strengthLevel(r: { ok: boolean; bits: number }): number {
+  if (r.ok) return r.bits >= 80 ? 4 : 3;
+  return r.bits >= 40 ? 2 : 1;
 }
 
 function matches(repos: RepoChoice[], query: string): RepoChoice[] {

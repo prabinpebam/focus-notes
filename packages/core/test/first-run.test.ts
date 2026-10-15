@@ -311,6 +311,32 @@ describe("FRE-02, FRE-04, FRE-05: connecting", () => {
     await going;
     expect(t.vm()).toMatchObject({ connect: "found", login: "ada", canContinue: true });
   });
+  it("D-142: Connect to GitHub is a device code; the browser sign-in and a token wait under Having trouble?, and the title names the state", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, account: { gcm: true, gh: false, problem: "failed" }, signIn: () => new Promise(() => {}) });
+    await t.app.start();
+    await settle();
+    expect(t.vm()).toMatchObject({ connect: "choose", title: "Connect your GitHub account", hasMark: true, mark: "github", stepNumber: 2, stepTotal: 4 });
+    // A fresh token form never opens showing the last sign-in's problem.
+    await t.run("firstRun.useToken");
+    expect(t.vm()).toMatchObject({ connect: "token", title: "Use a token", hasTokenMessage: false, tokenMessage: "" });
+    await t.run("firstRun.back");
+    void t.run("firstRun.signIn");
+    await settle();
+    expect(t.calls).toContain("signIn:true");
+    expect(t.vm()).toMatchObject({ connect: "code", title: "Enter the code on GitHub", markBusy: true });
+    await t.run("firstRun.cancelSignIn");
+    void t.run("firstRun.signInBrowser");
+    await settle();
+    expect(t.calls).toContain("signIn:false");
+  });
+  it("D-142: Git too old shows the version found and the one needed, and the install command copies", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, git: { installed: true, ok: false, version: "2.20.1", gcm: false, gh: false } });
+    await t.app.start();
+    await settle();
+    expect(t.vm()).toMatchObject({ connect: "git", isGitOld: true, gitFound: "2.20.1", gitNeeded: "2.31", title: "Update the helper app", installLabel: "Update the helper app", mark: "download" });
+    await t.run("firstRun.copyCommand");
+    expect(t.calls).toContain("copy:winget install --id Git.Git -e");
+  });
   it("declined, expired, and offline say so in plain words, and connecting again works without restarting", async () => {
     for (const problem of ["declined", "expired", "offline"] as const) {
       let n = 0;
@@ -383,7 +409,7 @@ describe("FRE-06, FRE-08: Your notes", () => {
   it("We found your notes: the account's workspaces first, with when they were updated and who can see them, and Open on each", async () => {
     const t = await atNotes();
     expect(t.vm()).toMatchObject({ panel: "found", title: "We found your notes", showMore: true, more: false });
-    expect(t.vm().found).toEqual([{ id: "ada/notes", label: "notes", detail: "Updated 3 days ago", badge: "Public", icon: "folder", first: true }]);
+    expect(t.vm().found).toEqual([{ id: "ada/notes", label: "notes", detail: "Updated 3 days ago", badge: "Public", icon: "folder", first: true, variant: "primary" }]);
     await t.run("firstRun.clone", { id: "ada/notes" });
     expect(t.calls).toEqual(expect.arrayContaining(["clone:ada/notes", "openWorkspace"]));
     expect(t.last()?.firstRun).toBe("ready");
@@ -391,7 +417,7 @@ describe("FRE-06, FRE-08: Your notes", () => {
   it("Create new notes instead, and Esc comes back to the notes found", async () => {
     const t = await atNotes();
     await t.run("firstRun.setMode", { value: "create" });
-    expect(t.vm()).toMatchObject({ panel: "create", title: "Your notes" });
+    expect(t.vm()).toMatchObject({ panel: "create", title: "Create your notes" });
     await t.run("firstRun.back");
     expect(t.vm()).toMatchObject({ step: "notes", panel: "found" });
   });
@@ -403,7 +429,7 @@ describe("FRE-06, FRE-08: Your notes", () => {
     expect(t.vm()).toMatchObject({ panel: "progress", started: true, made: false, working: true, title: "Creating your notes" });
     // Downloaded and linked: writing can start while Pages and the push carry on.
     t.pushSetup(report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "done", link: "done", vault: "skipped", pages: "running" }));
-    expect(t.vm()).toMatchObject({ made: true, canContinue: true, working: false, details: false, progressText: "Your notes are ready. Backing up carries on in the background." });
+    expect(t.vm()).toMatchObject({ made: true, canContinue: true, working: false, details: false, title: "Your notes are ready", progressText: "Backing up carries on in the background." });
     await t.run("firstRun.next");
     expect(t.calls).toContain("openWorkspace");
     expect(t.last()?.firstRun).toBe("ready");
@@ -422,14 +448,21 @@ describe("FRE-06, FRE-08: Your notes", () => {
     await t.run("firstRun.setPrivate", { value: "notes" });
     await t.run("firstRun.create");
     expect(t.vm().error).toMatch(/two different names/);
+    // D-142: the field at fault says why on itself, and only that one.
+    expect(t.vm()).toMatchObject({ privateError: "Choose another name.", instanceError: "" });
     await t.run("firstRun.setPrivate", { value: "notes-private" });
+    expect(t.vm().privateError).toBe("");
     await t.run("firstRun.setPassphrase", { value: "short" });
+    await settle();
+    // The meter follows the typing.
+    expect(t.vm()).toMatchObject({ hasStrength: true, strength: 1, strengthText: "Weak" });
     await t.run("firstRun.create");
     expect(t.vm().error).toMatch(/too easy to guess/i);
+    expect(t.vm()).toMatchObject({ passphraseInvalid: true, passphraseError: "", confirmInvalid: false });
     await t.run("firstRun.setPassphrase", { value: "quiet maple lantern orbit" });
     await t.run("firstRun.setConfirm", { value: "quiet maple lantern" });
     await t.run("firstRun.create");
-    expect(t.vm()).toMatchObject({ error: "The passphrases don't match.", more: true });
+    expect(t.vm()).toMatchObject({ error: "The passphrases don't match.", more: true, confirmError: "Doesn't match.", strength: 4 });
     expect(t.passphrases).toEqual([]);
     await t.run("firstRun.setConfirm", { value: "quiet maple lantern orbit" });
     await t.run("firstRun.setPublish", { value: "off" });

@@ -3821,6 +3821,379 @@
       ]
     },
     {
+      "type": "StepDots",
+      "tier": "primitive",
+      "description": "Where the setup is (D-142): one dot per step, the steps done filled, the current one a longer segment. Named as a whole (Step 2 of 4); the dots themselves are decorative.",
+      "props": {
+        "current": {
+          "kind": "number",
+          "min": 1,
+          "default": 1
+        },
+        "total": {
+          "kind": "number",
+          "min": 2,
+          "max": 8,
+          "default": 4
+        },
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "What a screen reader says: Step 2 of 4."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.stepDots.*",
+      "a11y": {
+        "pattern": "img",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "first",
+          "props": {
+            "current": 1,
+            "total": 4,
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "middle",
+          "props": {
+            "current": 2,
+            "total": 4,
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "last",
+          "props": {
+            "current": 4,
+            "total": 4,
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "StatusRow",
+      "tier": "primitive",
+      "description": "One status, shown not told (D-142): an icon and one short sentence on a tinted row, near the top of what it's about. Every setup problem uses it; the field at fault also says why on itself. Announced politely when it appears.",
+      "props": {
+        "message": {
+          "kind": "message",
+          "required": true
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "danger",
+            "warning",
+            "info",
+            "success"
+          ],
+          "default": "danger"
+        },
+        "icon": {
+          "kind": "icon",
+          "description": "What happened (cloudOff for offline, history for a code that ran out). By default the tone's own icon."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.statusRow.*",
+      "a11y": {
+        "pattern": "status",
+        "name": "message"
+      },
+      "fixtures": [
+        {
+          "name": "tone danger",
+          "props": {
+            "message": {
+              "t": "gallery.sample"
+            },
+            "tone": "danger"
+          }
+        },
+        {
+          "name": "tone warning",
+          "props": {
+            "message": {
+              "t": "gallery.sample"
+            },
+            "tone": "warning"
+          }
+        },
+        {
+          "name": "tone info",
+          "props": {
+            "message": {
+              "t": "gallery.sample"
+            },
+            "tone": "info"
+          }
+        },
+        {
+          "name": "tone success",
+          "props": {
+            "message": {
+              "t": "gallery.sample"
+            },
+            "tone": "success"
+          }
+        },
+        {
+          "name": "icon",
+          "props": {
+            "message": {
+              "t": "gallery.sample"
+            },
+            "icon": "cloudOff"
+          }
+        }
+      ]
+    },
+    {
+      "type": "CodeBlock",
+      "tier": "primitive",
+      "description": "Something to type or paste elsewhere, shown as itself (D-142): a command in a terminal, or a one-time code to enter on GitHub, in monospace with its own Copy. l: the code large, a step's focal point. Its label says where it goes, above it.",
+      "props": {
+        "value": {
+          "kind": "message",
+          "required": true,
+          "description": "The command or the code: data, read from a view model."
+        },
+        "label": {
+          "kind": "message",
+          "description": "Where it goes, above it: Run this in a terminal, Enter this code on GitHub."
+        },
+        "copyLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "l"
+          ],
+          "default": "m",
+          "description": "m: a command; l: a one-time code."
+        }
+      },
+      "events": {
+        "copy": {}
+      },
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.codeBlock.*",
+      "a11y": {
+        "pattern": "group",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "size m",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "label": {
+              "t": "gallery.sample"
+            },
+            "copyLabel": {
+              "t": "gallery.action"
+            }
+          }
+        },
+        {
+          "name": "size l",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "label": {
+              "t": "gallery.sample"
+            },
+            "copyLabel": {
+              "t": "gallery.action"
+            },
+            "size": "l"
+          }
+        }
+      ]
+    },
+    {
+      "type": "VersionCompare",
+      "tier": "primitive",
+      "description": "A version found against the version needed (D-142): two small pills with an arrow between, the found one toned as a problem, instead of a sentence. Each pill says what it is.",
+      "props": {
+        "found": {
+          "kind": "message",
+          "required": true,
+          "description": "The version found: data, read from a view model."
+        },
+        "needed": {
+          "kind": "message",
+          "required": true
+        },
+        "foundLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "Found."
+        },
+        "neededLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "Needs."
+        },
+        "label": {
+          "kind": "message",
+          "description": "The whole comparison in words, for screen readers: Git 2.20.1 is too old: 2.31 or newer is needed."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.versionCompare.*",
+      "a11y": {
+        "pattern": "group",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "too old",
+          "props": {
+            "found": {
+              "t": "gallery.sample"
+            },
+            "needed": {
+              "t": "gallery.sample"
+            },
+            "foundLabel": {
+              "t": "gallery.sample"
+            },
+            "neededLabel": {
+              "t": "gallery.sample"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "StrengthMeter",
+      "tier": "primitive",
+      "description": "How strong a passphrase is, shown under its field (D-142): four segments filled and toned by strength (weak, fair, strong), and one word or short phrase beside them. A meter to assistive technology.",
+      "props": {
+        "value": {
+          "kind": "number",
+          "min": 0,
+          "max": 4,
+          "default": 0,
+          "description": "0: nothing typed; 1 to 2: too weak; 3: fair; 4: strong."
+        },
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "The meter's name: Passphrase strength."
+        },
+        "valueText": {
+          "kind": "message",
+          "description": "What the strength means, shown beside the segments: Too easy to guess, Strong."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.strengthMeter.*",
+      "a11y": {
+        "pattern": "meter",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "value 0",
+          "props": {
+            "value": 0,
+            "label": {
+              "t": "gallery.sample"
+            },
+            "valueText": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "value 1",
+          "props": {
+            "value": 1,
+            "label": {
+              "t": "gallery.sample"
+            },
+            "valueText": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "value 2",
+          "props": {
+            "value": 2,
+            "label": {
+              "t": "gallery.sample"
+            },
+            "valueText": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "value 3",
+          "props": {
+            "value": 3,
+            "label": {
+              "t": "gallery.sample"
+            },
+            "valueText": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "value 4",
+          "props": {
+            "value": 4,
+            "label": {
+              "t": "gallery.sample"
+            },
+            "valueText": {
+              "t": "gallery.sample"
+            }
+          }
+        }
+      ]
+    },
+    {
       "type": "Stack",
       "tier": "layout",
       "description": "Children in a column, spaced by a space token.",
@@ -4607,6 +4980,57 @@
           "props": {
             "justify": "between",
             "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "props": {
+                "label": {
+                  "t": "gallery.action"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Columns",
+      "tier": "layout",
+      "description": "Children side by side in equal columns while each has room (layout.sheetMin), one under the other when it doesn't (D-142): two short fields on one row, so a setup step fits the window.",
+      "props": {
+        "gap": {
+          "kind": "token",
+          "group": "space",
+          "default": "m"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "space.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        {
+          "name": "two",
+          "props": {
+            "gap": "m"
           },
           "children": [
             {

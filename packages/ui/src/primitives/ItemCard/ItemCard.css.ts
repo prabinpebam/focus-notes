@@ -39,6 +39,12 @@ export const pressable = style({
     '&[data-pressed]:not([aria-disabled="true"])': { backgroundColor: t.action.pressed },
     "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.action.focusRing, outlineWidth: t.action.focusWidth, outlineOffset: t.action.focusOffset },
     '&[aria-disabled="true"]': { opacity: t.action.disabledOpacity },
+    // Unavailable (offline): a neutral edge, so it never reads as selected and disabled at once (D-142).
+    "&[data-unavailable]": { borderColor: t.border },
   },
 });
 export const chevron = style({ width: t.markSize, height: t.markSize, flexShrink: 0, color: t.detailColor });
+
+// The step's main action (D-142): its tile in the accent and its title large, so it outweighs the step's title.
+export const tileAction = style({ backgroundColor: t.action.tileBackground, color: t.action.tileColor });
+export const titleAction = style({ fontSize: t.action.title });

@@ -1,0 +1,9 @@
+{ "cmp": { "stepDots": {
+  "dot": { "$type": "dimension", "$value": "{size.stepDot}", "$description": "One step of the setup (D-142)." },
+  "current": { "$type": "dimension", "$value": "{size.stepDotCurrent}", "$description": "The step it's on: a longer segment." },
+  "gap": { "$type": "dimension", "$value": "{space.xs}" },
+  "radius": { "$type": "dimension", "$value": "{radius.round}" },
+  "done": { "$type": "color", "$value": "{color.accent}" },
+  "on": { "$type": "color", "$value": "{color.accent}" },
+  "todo": { "$type": "color", "$value": "{color.borderStrong}" }
+} } }

@@ -43,8 +43,8 @@ const CATALOG: [string, string, string, boolean?][] = [
   ["connect-checking", "Connect, checking this computer", "Right after Get started, while Git and the account Git already has are checked."],
   ["connect-github", "Connect, no account yet (the GitHub card)", "No GitHub sign-in on this computer: Connect to GitHub, or create a free account.", true],
   ["connect-github-trouble", "Connect, Having trouble? open", "Having trouble? opened under the GitHub card: other ways to connect."],
-  ["connect-waiting", "Connect, waiting for the browser", "After Connect to GitHub with Git Credential Manager: waiting for the person to approve in the browser.", true],
-  ["connect-window", "Connect, finish in the window that opened", "Having trouble? → Use a code instead with Git Credential Manager, before its code arrives."],
+  ["connect-waiting", "Connect, waiting for the browser", "Having trouble? → Sign in in the browser instead with Git Credential Manager: waiting for the person to approve in the browser."],
+  ["connect-window", "Connect, finish in the window that opened", "After Connect to GitHub (a device code, D-142) with Git Credential Manager, before its code arrives: its own window shows it.", true],
   ["connect-code", "Connect, a one-time code shown", "Connecting through the GitHub CLI: the code to enter on GitHub, waiting."],
   ["connect-cli", "Connect, the GitHub CLI is signed in", "Git has no sign-in but the GitHub CLI has one: Continue as offers it."],
   ["connect-found-picture", "Connect, signed in (profile card with picture)", "Git is already signed in to GitHub, and the account's picture is known.", true],
@@ -110,7 +110,7 @@ const UNREACHABLE: Record<string, string> = {};
 const NOTES = [
   "Light and dark: the app follows the system's appearance (appearance: system), switched in the main process as the OS would; the Ready step's Look therefore shows System.",
   "Sizes: the drawn window (inside its shadow margin) is resized in place; the default is the app's own 1100 × 780.",
-  "Checking this computer… and Looking for your notes…: the fake GitHub holds GET /user and GET /user/repos until each is captured.",
+  "Checking this computer and Looking for your notes: the fake GitHub holds GET /user and GET /user/repos until each is captured.",
   "Finish connecting in the window that opened, and Waiting for you to approve: a slow fake Git Credential Manager that never prints a code.",
   "A one-time code: the fake GitHub CLI (code WDJB-MJHT), waiting 60 s.",
   "The profile card's picture: a generated 128 px PNG put in the app's avatar cache (avatar.json), since journeys never fetch pictures; without it, the initials.",
@@ -316,7 +316,8 @@ const TOKEN_SHAPED = `ghp_${"Q".repeat(36)}`;
 async function getStarted(page: Page) {
   await heading(page, "A quiet place to write");
   await button(page, "Get started").click();
-  await heading(page, "Connect your GitHub account");
+  // D-142: Connect's title names its state; the stepper says where it is.
+  await expect(card(page).getByRole("img", { name: "Step 2 of 4" })).toBeVisible({ timeout: 20_000 });
 }
 async function close(l: Launched, w: World) {
   await quit(l).catch(() => {});
@@ -362,14 +363,15 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     await expect(button(page, "Use a token instead")).toBeVisible();
     await shot(l, "connect-github-trouble");
     await button(page, "Having trouble?").click();
+    // D-142: Connect to GitHub is a device code; GCM's own window shows it until GCM prints it.
     await button(page, "Connect to GitHub").click();
-    await expect(text(page, "Waiting for you to approve on GitHub…")).toBeVisible({ timeout: 15_000 });
-    await shot(l, "connect-waiting");
-    await button(page, "Cancel").click();
-    await button(page, "Having trouble?").click();
-    await button(page, "Use a code instead").click();
     await expect(text(page, "Finish connecting in your browser, or in the window that opened.")).toBeVisible({ timeout: 15_000 });
     await shot(l, "connect-window");
+    await button(page, "Cancel").click();
+    await button(page, "Having trouble?").click();
+    await button(page, "Sign in in the browser instead").click();
+    await expect(text(page, "Waiting for you to approve on GitHub…")).toBeVisible({ timeout: 15_000 });
+    await shot(l, "connect-waiting");
     await button(page, "Cancel").click();
     await expect(button(page, "Connect to GitHub")).toBeVisible();
 
@@ -387,7 +389,7 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
 
     const repos = net.hold("GET /user/repos");
     await button(page, "Continue as Ada").click();
-    await expect(text(page, "Looking for your notes…")).toBeVisible({ timeout: 15_000 });
+    await heading(page, "Looking for your notes");
     await shot(l, "notes-checking");
     repos.release();
     const create = button(page, /^Create my notes/);
@@ -437,7 +439,7 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     await shot(l, "creating-progress-details");
     await button(page, "Show details").click();
     keys.release();
-    await expect(text(page, "Your notes are ready. Backing up carries on in the background.")).toBeVisible({ timeout: 90_000 });
+    await expect(text(page, "Backing up carries on in the background.")).toBeVisible({ timeout: 90_000 });
     await expect(text(page, /^Your site:/)).toBeVisible({ timeout: 30_000 });
     await shot(l, "creating-success");
 
@@ -475,7 +477,7 @@ test("existing notes: checking, initials, We found your notes with several, More
   const { page } = l;
   try {
     await getStarted(page);
-    await expect(text(page, "Checking this computer…")).toBeVisible({ timeout: 15_000 });
+    await heading(page, "Checking this computer");
     await shot(l, "connect-checking");
     user.release();
     await expect(button(page, "Continue as Ada")).toBeFocused({ timeout: 20_000 });
@@ -673,7 +675,8 @@ test("Git missing, and Git too old", async () => {
     await expect(text(l.page, "One free helper app")).toBeVisible({ timeout: 15_000 });
     await shot(l, "connect-git-old");
     await button(l.page, "Having trouble?").click();
-    await expect(text(l.page, /Git 2\.20\.1 is too old/)).toBeVisible();
+    // D-142: the versions as a comparison (found → needed), said in full to screen readers.
+    await expect(card(l.page).getByRole("group", { name: /Git 2\.20\.1 is too old/ })).toBeVisible();
     await shot(l, "connect-git-old-trouble");
   } finally {
     await close(l, w);
@@ -710,7 +713,7 @@ for (const [id, what, says, breakIt] of FAILURES) {
       await expect(button(page, "Try again")).toBeFocused();
       await button(page, "Try again").click();
       await expect(text(page, says)).toHaveCount(0, { timeout: 30_000 });
-      await expect(text(page, "Your notes are ready. Backing up carries on in the background.")).toBeVisible({ timeout: 90_000 });
+      await expect(text(page, "Backing up carries on in the background.")).toBeVisible({ timeout: 90_000 });
       await expect(button(page, "Continue")).toBeEnabled();
       await button(page, "Show details").click();
       for (const step of ["Copy the template", "Create private repository", "Download to this computer", "Link them"]) await expect(card(page).getByText(step)).toBeVisible();

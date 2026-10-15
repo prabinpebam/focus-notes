@@ -296,10 +296,28 @@
           "$ref": "#/$defs/c_SaveState"
         },
         {
+          "$ref": "#/$defs/c_StepDots"
+        },
+        {
+          "$ref": "#/$defs/c_StatusRow"
+        },
+        {
+          "$ref": "#/$defs/c_CodeBlock"
+        },
+        {
+          "$ref": "#/$defs/c_VersionCompare"
+        },
+        {
+          "$ref": "#/$defs/c_StrengthMeter"
+        },
+        {
           "$ref": "#/$defs/c_Stack"
         },
         {
           "$ref": "#/$defs/c_Inline"
+        },
+        {
+          "$ref": "#/$defs/c_Columns"
         },
         {
           "$ref": "#/$defs/c_Surface"
@@ -790,7 +808,10 @@
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
-                    "cloudOff"
+                    "cloudOff",
+                    "download",
+                    "circle",
+                    "globe"
                   ]
                 },
                 {
@@ -989,7 +1010,10 @@
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
-                    "cloudOff"
+                    "cloudOff",
+                    "download",
+                    "circle",
+                    "globe"
                   ]
                 },
                 {
@@ -1234,7 +1258,10 @@
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
-                    "cloudOff"
+                    "cloudOff",
+                    "download",
+                    "circle",
+                    "globe"
                   ]
                 },
                 {
@@ -1910,7 +1937,10 @@
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
-                    "cloudOff"
+                    "cloudOff",
+                    "download",
+                    "circle",
+                    "globe"
                   ]
                 },
                 {
@@ -2303,7 +2333,10 @@
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
-                    "cloudOff"
+                    "cloudOff",
+                    "download",
+                    "circle",
+                    "globe"
                   ]
                 },
                 {
@@ -4326,7 +4359,10 @@
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
-                    "cloudOff"
+                    "cloudOff",
+                    "download",
+                    "circle",
+                    "globe"
                   ]
                 },
                 {
@@ -4530,7 +4566,10 @@
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
-                    "cloudOff"
+                    "cloudOff",
+                    "download",
+                    "circle",
+                    "globe"
                   ]
                 },
                 {
@@ -4772,6 +4811,543 @@
               "$ref": "#/$defs/actions"
             }
           }
+        }
+      }
+    },
+    "c_StepDots": {
+      "type": "object",
+      "description": "Where the setup is (D-142): one dot per step, the steps done filled, the current one a longer segment. Named as a whole (Step 2 of 4); the dots themselves are decorative.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "StepDots"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "current": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "total": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 2,
+                  "maximum": 8
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_StatusRow": {
+      "type": "object",
+      "description": "One status, shown not told (D-142): an icon and one short sentence on a tinted row, near the top of what it's about. Every setup problem uses it; the field at fault also says why on itself. Announced politely when it appears.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "StatusRow"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "message": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "danger",
+                    "warning",
+                    "info",
+                    "success"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "icon": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "open",
+                    "save",
+                    "darkTheme",
+                    "lightTheme",
+                    "more",
+                    "search",
+                    "add",
+                    "dismiss",
+                    "check",
+                    "newNote",
+                    "bold",
+                    "italic",
+                    "link",
+                    "minimize",
+                    "restore",
+                    "maximize",
+                    "fullScreen",
+                    "exitFullScreen",
+                    "focus",
+                    "font",
+                    "keyboard",
+                    "settings",
+                    "info",
+                    "warning",
+                    "error",
+                    "sync",
+                    "delete",
+                    "rename",
+                    "copy",
+                    "folder",
+                    "document",
+                    "chevronRight",
+                    "chevronDown",
+                    "undo",
+                    "redo",
+                    "table",
+                    "quote",
+                    "code",
+                    "bulletList",
+                    "numberedList",
+                    "heading1",
+                    "heading2",
+                    "heading3",
+                    "color",
+                    "share",
+                    "history",
+                    "matchCase",
+                    "wholeWord",
+                    "regex",
+                    "arrowUp",
+                    "arrowDown",
+                    "lock",
+                    "export",
+                    "import",
+                    "strikethrough",
+                    "text",
+                    "taskList",
+                    "divider",
+                    "moreVertical",
+                    "newFolder",
+                    "github",
+                    "cloud",
+                    "cloudUp",
+                    "cloudCheck",
+                    "cloudOff",
+                    "download",
+                    "circle",
+                    "globe"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "message"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_CodeBlock": {
+      "type": "object",
+      "description": "Something to type or paste elsewhere, shown as itself (D-142): a command in a terminal, or a one-time code to enter on GitHub, in monospace with its own Copy. l: the code large, a step's focal point. Its label says where it goes, above it.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "CodeBlock"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "copyLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "m",
+                    "l"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "value",
+            "copyLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "copy": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_VersionCompare": {
+      "type": "object",
+      "description": "A version found against the version needed (D-142): two small pills with an arrow between, the found one toned as a problem, instead of a sentence. Each pill says what it is.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "VersionCompare"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "found": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "needed": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "foundLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "neededLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "found",
+            "needed",
+            "foundLabel",
+            "neededLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_StrengthMeter": {
+      "type": "object",
+      "description": "How strong a passphrase is, shown under its field (D-142): four segments filled and toned by strength (weak, fair, strong), and one word or short phrase beside them. A meter to assistive technology.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "StrengthMeter"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 4
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "valueText": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
         }
       }
     },
@@ -5063,6 +5639,74 @@
                 },
                 {
                   "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_Columns": {
+      "type": "object",
+      "description": "Children side by side in equal columns while each has room (layout.sheetMin), one under the other when it doesn't (D-142): two short fields on one row, so a setup step fits the window.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Columns"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "gap": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "xxs",
+                    "xs",
+                    "s",
+                    "m",
+                    "l",
+                    "xl",
+                    "xxl",
+                    "xxxl"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
                 }
               ]
             }

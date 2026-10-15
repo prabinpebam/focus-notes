@@ -1,0 +1,15 @@
+{ "cmp": { "statusRow": {
+  "gap": { "$type": "dimension", "$value": "{space.s}" },
+  "paddingBlock": { "$type": "dimension", "$value": "{space.s}" },
+  "paddingInline": { "$type": "dimension", "$value": "{space.m}" },
+  "radius": { "$type": "dimension", "$value": "{radius.control}" },
+  "font": { "$type": "fontFamily", "$value": "{font.ui}" },
+  "size": { "$type": "dimension", "$value": "{font.uiBody}" },
+  "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" },
+  "icon": { "$type": "dimension", "$value": "{size.iconM}" },
+  "text": { "$type": "color", "$value": "{color.text}" },
+  "danger": { "$type": "color", "background": { "$value": "{color.dangerMuted}" }, "icon": { "$value": "{color.danger}" } },
+  "warning": { "$type": "color", "background": { "$value": "{color.warningMuted}" }, "icon": { "$value": "{color.warning}" } },
+  "info": { "$type": "color", "background": { "$value": "{color.infoMuted}" }, "icon": { "$value": "{color.info}" } },
+  "success": { "$type": "color", "background": { "$value": "{color.successMuted}" }, "icon": { "$value": "{color.success}" } }
+} } }
