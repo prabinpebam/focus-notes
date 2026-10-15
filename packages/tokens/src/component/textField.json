@@ -57,6 +57,11 @@
         "$type": "color",
         "$value": "{color.textMuted}"
       },
+      "error": {
+        "$type": "color",
+        "$value": "{color.danger}",
+        "$description": "What's wrong with the field, below it and described by it (D-135)."
+      },
       "font": {
         "$type": "fontFamily",
         "$value": "{font.ui}"

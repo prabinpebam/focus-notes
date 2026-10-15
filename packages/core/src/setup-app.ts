@@ -36,7 +36,13 @@ export function registerSetup<S extends { setup: SetupState }>({ store, bridge, 
     enabled: (s) => Boolean(s.setup.report && !s.setup.report.running),
     run: async ({ id }) => {
       if (!bridge.setup || !SETUP_STEPS.includes(id)) return;
-      apply(await bridge.setup.retry(id));
+      const r = await bridge.setup.retry(id);
+      apply(r);
+      // Try again resumes the whole sequence from the step that failed (D-135): the engine's steps
+      // are idempotent, so start() runs every step not done yet, in order, to the end.
+      const step = r.steps.find((x) => x.id === id);
+      const rest = r.steps.some((x) => x.state === "pending" || x.state === "failed");
+      if (r.options && !r.running && (step?.state === "done" || step?.state === "skipped") && rest) apply(await bridge.setup.start(r.options));
     },
   });
 

@@ -1,0 +1,28 @@
+{ "cmp": { "stepMark": {
+  "size": { "$type": "dimension", "$value": "{size.stepMark}", "$description": "A setup step's hero icon: the step's visual anchor when nothing else on it is (D-127, D-135)." },
+  "sizeCompact": { "$type": "dimension", "$value": "{size.cardVisual}", "$description": "In a short window (D-131)." },
+  "icon": { "$type": "dimension", "$value": "{size.stepMarkIcon}" },
+  "iconCompact": { "$type": "dimension", "$value": "{size.iconL}" },
+  "radius": { "$type": "dimension", "$value": "{radius.round}" },
+  "neutral": {
+    "background": { "$type": "color", "$value": "{color.surfaceSunken}" },
+    "color": { "$type": "color", "$value": "{color.text}" }
+  },
+  "accent": {
+    "background": { "$type": "color", "$value": "{color.accentMuted}" },
+    "color": { "$type": "color", "$value": "{color.accent}" }
+  },
+  "danger": {
+    "background": { "$type": "color", "$value": "{color.dangerMuted}" },
+    "color": { "$type": "color", "$value": "{color.danger}" }
+  },
+  "success": {
+    "background": { "$type": "color", "$value": "{color.successMuted}" },
+    "color": { "$type": "color", "$value": "{color.success}" }
+  },
+  "ring": { "$type": "color", "$value": "{color.accent}" },
+  "track": { "$type": "color", "$value": "{color.border}" },
+  "ringWidth": { "$type": "dimension", "$value": "{border.focus}" },
+  "ringGap": { "$type": "dimension", "$value": "{space.xs}" },
+  "duration": { "$type": "duration", "$value": "{motion.spin}" }
+} } }

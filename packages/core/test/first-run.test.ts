@@ -103,7 +103,7 @@ const report = (states: Partial<Record<string, SetupReport["steps"][number]["sta
   steps: SETUP_STEPS.map((id) => ({ id, state: states[id] ?? "pending" })),
 });
 
-function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus>; repos?: RepoChoice[] } = {}) {
+function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus>; useToken?: () => AccountStatus; repos?: RepoChoice[] } = {}) {
   const saved: AppStateFile[] = [];
   const calls: string[] = [];
   const tokens: string[] = [];
@@ -122,7 +122,7 @@ function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountSt
     },
     cancelSignIn: async () => void calls.push("cancel"),
     onSignIn: (l) => ((progress = l), () => {}),
-    useToken: async (t) => (tokens.push(t), (account = { ...account, account: ADA })),
+    useToken: async (t) => (tokens.push(t), (account = opts.useToken ? opts.useToken() : { ...account, account: ADA })),
     signOut: async () => (calls.push("signOut"), (account = { gcm: true, gh: false })),
     identity: async () => suggestIdentity({}, account.account),
     setIdentity: async (i, scope) => (calls.push(`identity:${i.name}:${i.email}:${scope}`), true),
@@ -249,7 +249,7 @@ describe("FRE-01: the first run in the app (D-124)", () => {
     const t = shell({ state: { version: 1, firstRun: "connect" }, git: { installed: false, ok: false, gcm: false, gh: false } });
     await t.app.start();
     await settle();
-    expect(t.vm()).toMatchObject({ connect: "git", isGit: true, showTrouble: true, trouble: false, canContinue: false, installCommand: "winget install --id Git.Git -e", gitText: "Git isn't installed on this computer." });
+    expect(t.vm()).toMatchObject({ connect: "git", isGit: true, showTrouble: true, trouble: false, canContinue: false, installCommand: "winget install --id Git.Git -e", gitText: "Git isn't installed." });
     expect(t.calls).not.toContain("account");
     await t.run("firstRun.toggleTrouble");
     expect(t.vm().trouble).toBe(true);
@@ -259,7 +259,7 @@ describe("FRE-01: the first run in the app (D-124)", () => {
     const old = shell({ state: { version: 1, firstRun: "connect" }, git: { installed: true, version: "2.25.1", ok: false, gcm: false, gh: false } });
     await old.app.start();
     await settle();
-    expect(old.vm()).toMatchObject({ connect: "git", gitState: "old", gitText: "Git 2.25.1 is too old. Focus Notes needs Git 2.31 or newer." });
+    expect(old.vm()).toMatchObject({ connect: "git", gitState: "old", gitText: "Git 2.25.1 is too old: 2.31 or newer is needed." });
   });
 });
 
@@ -355,6 +355,22 @@ describe("FRE-02, FRE-04, FRE-05: connecting", () => {
     expect(t.vm()).toMatchObject({ connect: "found", login: "ada", token: "" });
     expect(JSON.stringify(t.app.store.state) + JSON.stringify(t.saved)).not.toContain(TOKEN);
   });
+
+  it("D-135: a token GitHub rejects keeps the form, with the field saying why it was cleared, and focus on it", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, account: { gcm: true, gh: false }, useToken: () => ({ gcm: true, gh: false, problem: "invalid" }) });
+    await t.app.start();
+    await settle();
+    await t.run("firstRun.useToken");
+    await t.run("firstRun.setToken", { value: TOKEN });
+    const focus = t.vm().focus as number;
+    await t.run("firstRun.submitToken");
+    expect(t.vm()).toMatchObject({ connect: "token", token: "", hasTokenMessage: true, tokenMessage: "GitHub didn't accept that token, so it was cleared. Make a new one and paste it.", mark: "lock", markTone: "danger" });
+    expect(t.vm().focus).toBeGreaterThan(focus);
+    // Typing again clears what GitHub said.
+    await t.run("firstRun.setToken", { value: "g" });
+    expect(t.vm()).toMatchObject({ hasTokenMessage: false, tokenMessage: "" });
+    expect(JSON.stringify(t.app.store.state)).not.toContain(TOKEN);
+  });
 });
 
 describe("FRE-06, FRE-08: Your notes", () => {
@@ -392,11 +408,12 @@ describe("FRE-06, FRE-08: Your notes", () => {
     expect(t.calls).toContain("openWorkspace");
     expect(t.last()?.firstRun).toBe("ready");
   });
-  it("a part that fails opens the details by itself", async () => {
+  it("D-135: a part that fails says why in one sentence, with a warning mark and Try again on that part; the details stay closed", async () => {
     const t = await atNotes({ repos: [] });
     await t.run("firstRun.create");
+    expect(t.vm()).toMatchObject({ hasMark: true, mark: "cloudUp", markTone: "accent", markBusy: true, progressText: "This takes about a minute." });
     t.pushSetup(report({ account: "done", instance: "failed" }));
-    expect(t.vm()).toMatchObject({ details: true, working: false });
+    expect(t.vm()).toMatchObject({ details: false, working: false, failed: true, failedId: "instance", mark: "warning", markTone: "danger", markBusy: false, progressText: "That didn't work. Retry, or check GitHub." });
   });
   it("More options: names, the folder, publishing, and the browser passphrase, checked and sent once only when typed", async () => {
     const t = await atNotes({ repos: [] });
@@ -404,11 +421,11 @@ describe("FRE-06, FRE-08: Your notes", () => {
     expect(t.vm().more).toBe(true);
     await t.run("firstRun.setPrivate", { value: "notes" });
     await t.run("firstRun.create");
-    expect(t.vm().error).toMatch(/two different repository names/);
+    expect(t.vm().error).toMatch(/two different names/);
     await t.run("firstRun.setPrivate", { value: "notes-private" });
     await t.run("firstRun.setPassphrase", { value: "short" });
     await t.run("firstRun.create");
-    expect(t.vm().error).toMatch(/too easy to guess/);
+    expect(t.vm().error).toMatch(/too easy to guess/i);
     await t.run("firstRun.setPassphrase", { value: "quiet maple lantern orbit" });
     await t.run("firstRun.setConfirm", { value: "quiet maple lantern" });
     await t.run("firstRun.create");

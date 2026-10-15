@@ -111,7 +111,7 @@ The same rules apply on every platform. On macOS they match the system's overlay
 
 - **One family: Fluent UI System Icons** (MIT). *Regular* at 20 px in toolbars and menus, 16 px in dense rows. *Filled* only marks a selected or active state (for example, Focus on).
 - Every icon button has a text label in its tooltip and accessible name. Icons are never the only signal: active states also use a pressed background.
-- The red trigger dot isn't an icon. It's the product's signature and is drawn with its own tokens. The **app's icon** (`AppMark`: the dot in its frosted ring on a paper tile, the desktop icon's drawing) is the setup's hero, drawn with the `brand.*` tokens, the same in every theme (D-126).
+- The red trigger dot isn't an icon. It's the product's signature and is drawn with its own tokens. The **app's icon** (`AppMark`: the dot in its frosted ring on a paper tile, the desktop icon's drawing) is the setup's hero, drawn with the `brand.*` tokens, the same in every theme (D-126). A setup step with nothing else to anchor it has a **step mark** (`StepMark`): one icon in a large round tile, toned for a problem or success, with a turning ring while it waits (D-135).
 - **One exception to the family: GitHub's mark** (`mark-github` from GitHub's Octicons, MIT, credited in the third-party notices), only where the interface names GitHub (the setup's Welcome sentence, *Connect to GitHub*, an account's profile card). Per GitHub's logo guidelines it's unmodified, one color (the text's), and never larger than the app's icon (D-126).
 
 <h2 data-reader-personas="design">States</h2>

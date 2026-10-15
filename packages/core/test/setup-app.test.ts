@@ -16,6 +16,8 @@ const report = (over: Partial<Record<SetupStepId, Partial<SetupReport["steps"][n
 function setup(withSetup = true) {
   let listener: ((r: SetupReport) => void) | undefined;
   const retried: SetupStepId[] = [];
+  const started: unknown[] = [];
+  let retryReport: SetupReport | undefined;
   const bridge: PlatformBridge = {
     platform: "windows",
     readNote: async () => "# A\n",
@@ -30,10 +32,13 @@ function setup(withSetup = true) {
     ...(withSetup ? {
       setup: {
         status: async () => report({ account: { state: "done" } }, { login: "ada" }),
-        start: async () => report(),
+        start: async (options) => {
+          started.push(options);
+          return report(Object.fromEntries(SETUP_STEPS.map((id) => [id, { state: "done" }])), { options });
+        },
         retry: async (id: SetupStepId) => {
           retried.push(id);
-          return report({ account: { state: "done" }, instance: { state: "done" } });
+          return retryReport ?? report({ account: { state: "done" }, instance: { state: "done" } });
         },
         reset: async () => report(),
         passphraseStrength: async () => ({ ok: true, bits: 80 }),
@@ -49,7 +54,7 @@ function setup(withSetup = true) {
     available: boolean; running: boolean; finished: boolean; login: string; site: string; hasSite: boolean;
     steps: { id: string; label: string; state: string; problem: string; failed: boolean; done: boolean }[];
   };
-  return { app, vm, retried, push: (r: SetupReport) => listener!(r) };
+  return { app, vm, retried, started, retryWith: (r: SetupReport) => (retryReport = r), push: (r: SetupReport) => listener!(r) };
 }
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
@@ -75,7 +80,7 @@ describe("FRE-08: setup in the app", () => {
     await t.app.start();
     await settle();
     t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "templateMissing" } }, { running: false }));
-    expect(t.vm().steps[1]!.problem).toBe("Focus Notes couldn't find its starter notes on GitHub. Try again in a minute, or tell us if it keeps happening.");
+    expect(t.vm().steps[1]!.problem).toBe("Focus Notes couldn't find its starter notes on GitHub. Try again in a minute.");
     t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "notFound" } }, { running: false }));
     expect(t.vm().steps[1]!.problem).toMatch(/couldn't find/);
     expect(t.vm().steps[1]!.problem).not.toMatch(/permission/i);
@@ -100,6 +105,24 @@ describe("FRE-08: setup in the app", () => {
     expect(t.vm().steps[1]!.state).toBe("done");
     t.push(report({}, { running: true }));
     expect(t.app.commands.describe("setup.retry").enabled).toBe(false);
+  });
+
+  it("D-135: Try again resumes the whole sequence from the step that failed, to the end", async () => {
+    const t = setup();
+    await t.app.start();
+    await settle();
+    const options = { instance: "notes", private: "notes-private", folder: "/home/ada/Focus Notes", publish: true };
+    t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "templateMissing" } }, { options }));
+    // The step that failed now passes; the rest haven't started, so the shell runs them all.
+    t.retryWith(report({ account: { state: "done" }, instance: { state: "done" } }, { options }));
+    await t.app.commands.run("setup.retry", { id: "instance" });
+    expect(t.retried).toEqual(["instance"]);
+    expect(t.started).toEqual([options]);
+    expect(t.vm()).toMatchObject({ finished: true });
+    // Failing again stops there: nothing else runs.
+    t.retryWith(report({ account: { state: "done" }, instance: { state: "failed", problem: "templateMissing" } }, { options }));
+    await t.app.commands.run("setup.retry", { id: "instance" });
+    expect(t.started).toHaveLength(1);
   });
 
   it("PRF-11: reads only setup, so other changes keep the same value", async () => {

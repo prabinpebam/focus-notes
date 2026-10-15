@@ -1,12 +1,17 @@
 /**
  * A visual catalogue of the desktop's first run and setup (D-124, D-126), for the owner's review:
  * every state the journeys' fakes reach (the fake GitHub, the fake sign-in helpers, Git missing or
- * too old, GitHub unreachable, setup failing at each step), in light and dark at the default window,
- * and the main path also at the smallest (480 × 360) and a large (1600 × 1000) window. Capture only:
- * it asserts just enough to know each state is showing. Opt in with `FOCUS_NOTES_CAPTURE_FRE=1`
- * (and `FOCUS_NOTES_E2E=1`); `FOCUS_NOTES_FRE_OUT` names the folder (default
- * `test-results/fre-review`), which gets `NN-<step>-<state>.<theme>.<size>.png`, `index.html` and
- * `README.md` (`fre-catalog-index.ts`).
+ * too old, GitHub unreachable, setup failing at each step).
+ *
+ * Always (a CI gate, D-135): each state is reached and asserted: its problem is shown where it
+ * happened (a rejected token on the token form), Try again finishes setup, and every state on the
+ * setup screen passes the visual score's measurable criteria (D-127, `visual-score.ts`): a visual
+ * anchor of 48 px or more, and text economy of 10 or more, measured at the default window in light.
+ *
+ * Opt in to the screenshots with `FOCUS_NOTES_CAPTURE_FRE=1` (and `FOCUS_NOTES_E2E=1`): light and
+ * dark at the default window, and the main path also at the smallest (480 × 360) and a large
+ * (1600 × 1000) window. `FOCUS_NOTES_FRE_OUT` names the folder (default `test-results/fre-review`),
+ * which gets `NN-<step>-<state>.<theme>.<size>.png`, `index.html` and `README.md` (`fre-catalog-index.ts`).
  */
 import { test, expect, type Page } from "./fixtures.ts";
 import { execFileSync } from "node:child_process";
@@ -16,10 +21,11 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { quit, windowBox, type Launched } from "./helpers.ts";
 import { card, existingInstance, heading, repoRoot, start, tabTo, world, type World } from "./github-world.ts";
-import { anchorScore, economyScore, measureVisual } from "./visual-score.ts";
+import { anchorScore, ANCHOR, BUDGETS, economyScore, measureVisual, visualScoreProblems } from "./visual-score.ts";
 import { writeReview, type CatalogState, type Measure, type Shot } from "./fre-catalog-index.ts";
 
-test.skip(process.env.FOCUS_NOTES_CAPTURE_FRE !== "1", "Opt in with FOCUS_NOTES_CAPTURE_FRE=1");
+/** Screenshots are opt-in; the states and their checks always run. */
+const CAPTURE = process.env.FOCUS_NOTES_CAPTURE_FRE === "1";
 
 const OUT = process.env.FOCUS_NOTES_FRE_OUT ?? join(repoRoot, "test-results", "fre-review");
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -80,7 +86,7 @@ const CATALOG: [string, string, string, boolean?][] = [
   ["creating-failed-notfound", "Creating your notes, something not found", "GitHub answers 404 on a later step (the deploy key)."],
   ["creating-failed-permission", "Creating your notes, permission refused", "GitHub answers 403 on a step: the sign-in doesn't allow it."],
   ["creating-failed-offline", "Creating your notes, GitHub unreachable", "GitHub can't be reached in the middle of setup."],
-  ["creating-retried", "Creating your notes, after Try again", "Try again on the failed step (starter notes missing), once GitHub has them: what the rest of setup does 15 s later (a whole setup takes about 3 s with the fakes), details open."],
+  ["creating-retried", "Creating your notes, after Try again", "Try again on the failed step (starter notes missing), once GitHub has them: the rest of setup runs to the end, details open."],
   ["ready-ready", "Ready", "After Continue: the window starts again in the new notes, at the last step.", true],
   ["ready-canvas", "The app after Start writing", "Writing, with the account pill and the save state.", true],
   ["ready-canvas-account", "The app, account pill menu", "The account pill opened: Save to cloud and Sign out."],
@@ -109,7 +115,7 @@ const NOTES = [
   "A one-time code: the fake GitHub CLI (code WDJB-MJHT), waiting 60 s.",
   "The profile card's picture: a generated 128 px PNG put in the app's avatar cache (avatar.json), since journeys never fetch pictures; without it, the initials.",
   "Git too old: a fake git.exe reporting 2.20.1, compiled with the .NET Framework's C# compiler. Git missing: PATH without Git.",
-  "GitHub didn't accept it (invalid) and nowhere safe to keep the sign-in (noHelper) show only after Back from the token form: the token form itself shows no problem (see 16).",
+  "A token GitHub rejects (invalid), and one with nowhere safe to keep it (noHelper), are said on the token form itself, which stays (16); after Back, the GitHub card says it too (20, 21).",
   "Sign-in didn't finish (failed): the helper signs in, but what it keeps is a token GitHub rejects.",
   "Creating your notes mid-way: the fake GitHub holds the deploy key request (step 4). Failures: 404 on copying the template, 404 and 403 on the deploy key, and the deploy key request dropped (offline).",
   "Just use this computer for now has no Ready step: it goes straight to writing (54).",
@@ -170,6 +176,8 @@ const calm = async (page: Page) => {
  */
 async function shot(l: Launched, id: string, prep?: (page: Page) => Promise<void>) {
   const s = byId(id);
+  await check(l.page, id);
+  if (!CAPTURE) return;
   mkdirSync(OUT, { recursive: true });
   const sizes: SizeId[] = s.primary ? ["default", "small", "large"] : ["default"];
   for (const sz of sizes) {
@@ -190,6 +198,22 @@ async function shot(l: Launched, id: string, prep?: (page: Page) => Promise<void
   }
   await size(l, "default");
   await theme(l, "light");
+}
+
+/**
+ * D-127, D-135: every state on the setup screen passes the measurable criteria of the visual score,
+ * at the default window in light, at the top of the step: a full visual anchor (48 px or more in
+ * view) and text economy of 10 or more (an onboarding step's budget, 40 words). Soft, so a journey
+ * reports every state that fails, not just the first.
+ */
+async function check(page: Page, id: string) {
+  await page.mouse.move(0, 0);
+  if (!(await card(page).count())) return;
+  await calm(page);
+  const problems = await visualScoreProblems(page, id, BUDGETS.onboarding);
+  const m = await measureVisual(page);
+  if (m.anchor < ANCHOR.full) problems.push(`${id}: visual anchor ${anchorScore(m.anchor)}/20: the largest non-text element in view is ${m.anchor} px (48 px for full marks)`);
+  expect.soft([...new Set(problems)], `the visual score's measurable criteria on ${id}`).toEqual([]);
 }
 
 // ---- the fakes beyond the journeys' own ----
@@ -300,7 +324,7 @@ async function close(l: Launched, w: World) {
 }
 
 test.afterAll(() => {
-  if (!existsSync(manifestFile())) return;
+  if (!CAPTURE || !existsSync(manifestFile())) return;
   const m = readManifest();
   const git = (...a: string[]) => execFileSync("git", a, { cwd: repoRoot, encoding: "utf8" }).trim();
   const unreachable = { ...UNREACHABLE };
@@ -382,7 +406,7 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     const into = (t: string) => () => text(page, t).scrollIntoViewIfNeeded();
     await priv.fill("notes");
     await create.click();
-    const names = "Use two different repository names, with letters, numbers, dots, dashes, or underscores.";
+    const names = "Use two different names: letters, numbers, dots, dashes, or underscores.";
     await expect(text(page, names)).toBeVisible();
     await shot(l, "notes-create-error-names", into(names));
     await priv.fill("notes-private");
@@ -394,7 +418,7 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     await pass.fill("abc");
     await confirm.fill("abc");
     await create.click();
-    const weak = /That passphrase is too easy to guess/;
+    const weak = /Too easy to guess/;
     await expect(text(page, weak)).toBeVisible();
     await shot(l, "notes-create-error-weak", () => text(page, weak).scrollIntoViewIfNeeded());
     await pass.fill("");
@@ -461,9 +485,9 @@ test("existing notes: checking, initials, We found your notes with several, More
     await expect(button(page, "Open")).toHaveCount(4, { timeout: 15_000 }).catch(() => {});
     await shot(l, "notes-found-several");
     await button(page, "More options").click();
-    await expect(button(page, "Open another repository from GitHub…")).toBeVisible();
+    await expect(button(page, "Open from GitHub…")).toBeVisible();
     await shot(l, "notes-found-more");
-    await button(page, "Open another repository from GitHub…").click();
+    await button(page, "Open from GitHub…").click();
     await heading(page, "Open from GitHub");
     await shot(l, "notes-clone");
     const search = card(page).getByRole("combobox", { name: "Search your repositories" }).or(card(page).getByLabel("Search your repositories")).first();
@@ -474,7 +498,7 @@ test("existing notes: checking, initials, We found your notes with several, More
     await button(page, "Back").click();
     await heading(page, "We found your notes");
     await button(page, "More options").click();
-    await button(page, "Open a folder on this computer…").click();
+    await button(page, "Open a folder…").click();
     await heading(page, "Open a folder");
     await shot(l, "notes-local");
     const empty = mkdtempSync(join(tmpdir(), "fn-not-notes-"));
@@ -552,8 +576,12 @@ test("Connect's problems: declined, expired, offline, didn't finish; the token f
     await shot(l, "connect-token-error");
     await token.fill(TOKEN_SHAPED);
     await token.press("Enter");
-    await expect.poll(() => page.evaluate(() => Boolean(document.querySelector('[role="main"][aria-label="Set up Focus Notes"] [aria-busy="true"]'))), { timeout: 10_000 }).toBe(false);
-    await page.waitForTimeout(1500);
+    // D-135: said on the form itself, which stays, with focus back in the field that describes it.
+    const rejected = "GitHub didn't accept that token, so it was cleared. Make a new one and paste it.";
+    await expect(text(page, rejected)).toBeVisible({ timeout: 15_000 });
+    await expect(token).toBeFocused();
+    await expect(token).toHaveAttribute("aria-invalid", "true");
+    await expect(token).toHaveAccessibleDescription(rejected);
     await shot(l, "connect-token-rejected");
     await button(page, "Back").click();
     await expect(text(page, "GitHub didn't accept that. Connect again.")).toBeVisible({ timeout: 10_000 });
@@ -586,7 +614,8 @@ test("Connect without a sign-in helper, and with nowhere to keep a token", async
     const token = card(page).getByLabel("Token");
     await token.fill(w.gh.token);
     await token.press("Enter");
-    await page.waitForTimeout(2000);
+    await expect(text(page, "There's nowhere safe to keep it, so it was cleared. Install the sign-in helper, then paste it again.")).toBeVisible({ timeout: 15_000 });
+    await expect(token).toBeFocused();
     await button(page, "Back").click();
     await expect(text(page, "There's nowhere safe to keep the sign-in. Install the sign-in helper, then try again.")).toBeVisible({ timeout: 10_000 });
     await shot(l, "connect-problem-nohelper");
@@ -623,7 +652,7 @@ test("Git missing, and Git too old", async () => {
   let l = await begin(w);
   try {
     await getStarted(l.page);
-    await expect(text(l.page, "Focus Notes needs one free helper app to save your notes. Install it, then check again.")).toBeVisible({ timeout: 15_000 });
+    await expect(text(l.page, "One free helper app")).toBeVisible({ timeout: 15_000 });
     await shot(l, "connect-git-missing");
     await button(l.page, "Having trouble?").click();
     await expect(text(l.page, "winget install --id Git.Git -e")).toBeVisible();
@@ -641,7 +670,7 @@ test("Git missing, and Git too old", async () => {
   l = await begin(w);
   try {
     await getStarted(l.page);
-    await expect(text(l.page, "Focus Notes needs one free helper app to save your notes. Install it, then check again.")).toBeVisible({ timeout: 15_000 });
+    await expect(text(l.page, "One free helper app")).toBeVisible({ timeout: 15_000 });
     await shot(l, "connect-git-old");
     await button(l.page, "Having trouble?").click();
     await expect(text(l.page, /Git 2\.20\.1 is too old/)).toBeVisible();
@@ -676,13 +705,19 @@ for (const [id, what, says, breakIt] of FAILURES) {
       await expect(text(page, says)).toBeVisible({ timeout: 30_000 });
       await shot(l, id);
       if (id !== "creating-failed-template") return;
-      // Try again once GitHub has the starter notes: what the rest of setup does then.
+      // Try again once GitHub has the starter notes: the whole rest of setup runs, to the end (D-135).
       w.gh.failures.clear();
-      await card(page).getByRole("button", { name: /Try again/ }).first().click();
+      await expect(button(page, "Try again")).toBeFocused();
+      await button(page, "Try again").click();
       await expect(text(page, says)).toHaveCount(0, { timeout: 30_000 });
-      await page.waitForTimeout(15_000);
-      if ((await button(page, "Show details").getAttribute("aria-expanded")) !== "true") await button(page, "Show details").click();
+      await expect(text(page, "Your notes are ready. Backing up carries on in the background.")).toBeVisible({ timeout: 90_000 });
+      await expect(button(page, "Continue")).toBeEnabled();
+      await button(page, "Show details").click();
+      for (const step of ["Copy the template", "Create private repository", "Download to this computer", "Link them"]) await expect(card(page).getByText(step)).toBeVisible();
+      await expect(card(page).getByRole("img", { name: "Not started yet" })).toHaveCount(0);
       await shot(l, "creating-retried");
+      await button(page, "Continue").click();
+      await heading(page, "Ready");
     } finally {
       await close(l, w);
     }
@@ -737,7 +772,7 @@ test("Settings → Workspace → Open another workspace from GitHub: the same pi
     await expect(button(page, "Open")).toBeFocused({ timeout: 15_000 });
     await shot(l, "settings-found");
     await button(page, "More options").click();
-    await button(page, "Open another repository from GitHub…").click();
+    await button(page, "Open from GitHub…").click();
     await heading(page, "Open from GitHub");
     await shot(l, "settings-clone");
   } finally {

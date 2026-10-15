@@ -55,7 +55,7 @@ The first run shows on a new install of the desktop app: when the app's state ha
 
 <h2 id="getting-git">Getting Git</h2>
 
-Git is required, not bundled ([D-22](../plan/decisions.md)), so the app and the terminal share the same setup. *Connect* runs `git --version` on arrival. When Git is ready, nothing about it shows. When it's missing or older than 2.31, the screen says "Focus Notes needs one free helper app to save your notes." with [Install the helper app] and [Check again]; *Having trouble?* names it (Git), the version found, and the command to copy:
+Git is required, not bundled ([D-22](../plan/decisions.md)), so the app and the terminal share the same setup. *Connect* runs `git --version` on arrival. When Git is ready, nothing about it shows. When it's missing or older than 2.31, the screen shows the helper app's card ("One free helper app", "Focus Notes needs it to save your notes.") with [Install the helper app] and [Check again]; *Having trouble?* names it (Git), the version found, and the command to copy (D-135):
 
 | Platform | If Git is missing | Sign-in helper |
 | --- | --- | --- |
@@ -75,17 +75,17 @@ The app never sets up the plaintext `store` helper.
 | The GitHub CLI is signed in, but Git doesn't use it yet | The same, and [Continue as @login] runs `gh auth setup-git` |
 | Git Credential Manager or the GitHub CLI can sign in | [Connect to GitHub]: GCM's own sign-in opens the browser; with the GitHub CLI the app shows its **one-time code** in large type with [Copy code and open GitHub], then waits |
 | No sign-in helper | "To connect, Focus Notes needs GitHub's free sign-in helper." [Install the sign-in helper] (Git Credential Manager) and [Check again] |
-| *Having trouble?* (always) | *Use a code instead* (a device code from GCM), *Use a token instead*, *Get the GitHub CLI*, *About single sign-on*, and, when an account was found, *Use a different account*. Each with one plain line. |
+| *Having trouble?* (always) | *Use a code instead* (a device code from GCM), *Use a token instead*, *Get the GitHub CLI*, *About single sign-on*, and, when an account was found, *Use a different account*: compact rows, each an icon and a one-line label (D-135). |
 
-*Use a token instead*: [Create a token on GitHub] opens GitHub's token page with the name, expiry, and permissions pre-filled (repositories can't be pre-filled: the page asks). The user creates it, pastes it, and [Continue]. The app checks it with GitHub and hands it to Git's credential helper; with no helper to keep it, the screen says to install one.
+*Use a token instead*: [Create a token on GitHub] opens GitHub's token page with the name, expiry, and permissions pre-filled (repositories can't be pre-filled: the page asks). The user creates it, pastes it, and [Continue]. The app checks it with GitHub and hands it to Git's credential helper. If GitHub rejects it, or there's no helper to keep it, the form stays: the field is marked invalid, says why and that the token was cleared (the app never keeps one), and takes focus (D-135).
 
 ### Device code moments (GitHub CLI or GCM)
 
 | Moment | What the writer sees |
 | --- | --- |
-| Code shown | "Enter this code on GitHub:" and a large code in a monospaced font, for example **WDJB-MJHT**, with [Copy code and open GitHub], which opens `github.com/login/device`. |
+| Code shown | A card with GitHub's mark, the code large, for example **WDJB-MJHT**, "Enter this code on GitHub", and [Copy]; below it [Copy code and open GitHub], which opens `github.com/login/device`. |
 | A window or the browser | "Finish connecting in your browser, or in the window that opened." |
-| Waiting | "Waiting for you to approve on GitHub…", a quiet progress indicator, and [Cancel]. |
+| Waiting | GitHub's mark in a large round tile with a turning ring (the step mark, D-135), "Waiting for you to approve on GitHub…", and [Cancel]. |
 | Approved | "This computer is connected to GitHub as **@login** (Name)." [Continue as @login]. |
 | Declined or expired | "Connecting didn't finish. Try again when you're ready." [Connect to GitHub]. |
 | Offline | "Can't reach GitHub. Check your internet connection, then try again." [Try again]. |
@@ -106,7 +106,7 @@ On arrival the screen says "Looking for your notes…" while it lists the accoun
 | --- | --- |
 | **The account has notes** | **We found your notes**: each workspace's name, when it was last updated, and whether it's *Public* or *Private*, with [Open] on each. It goes in `Documents/Focus Notes` (or a free folder beside it), with its private notes when this account can reach them; if it can't: "Private notes aren't available to this account. You can still work with public notes." A quiet *Create new notes instead* goes to *Create my notes*. |
 | **No notes yet** | **Create my notes**: "Your notes stay private unless you choose to share one. They're saved on this computer and backed up to your GitHub account." [Create my notes], with the defaults: `notes` and `notes-private`, `Documents/Focus Notes`, and publishing on (the browser app reads it). |
-| **Creating** | "Creating your notes…" with a progress indicator. When the notes are on this computer: "Your notes are ready. Backing up carries on in the background." [Continue]. *Show details* lists each part as it ticks off, in this order: Sign in to GitHub · Copy the template · Create private repository · Set up the deploy key · Download to this computer · Link them · Save the vault's key · Turn on GitHub Pages · Save to GitHub. A part that fails opens the details by itself and says why, with [Try again] on it alone, and quitting resumes at the same part ([Desktop and Git → Creating a workspace](../architecture/desktop-and-git.md#creating-a-workspace), D-98). With publishing on, it ends with the site's address. |
+| **Creating** | The step mark (a rising cloud with a turning ring) and "This takes about a minute." When the notes are on this computer: "Your notes are ready. Backing up carries on in the background." [Continue]. *Show details* lists each part as it ticks off, in this order: Sign in to GitHub · Copy the template · Create private repository · Set up the deploy key · Download to this computer · Link them · Save the vault's key · Turn on GitHub Pages · Save to GitHub. A part that fails turns the mark to a warning and says why in one sentence, with [Try again] as the action, which runs that part again and then the rest to the end (D-135); quitting resumes at the same part ([Desktop and Git → Creating a workspace](../architecture/desktop-and-git.md#creating-a-workspace), D-98). With publishing on, it ends with the site's address. |
 
 **More options** (a quiet disclosure under the primary button) holds the rest, where technical words are allowed, each with one plain line:
 

@@ -2602,6 +2602,10 @@
           "kind": "boolean",
           "default": false
         },
+        "error": {
+          "kind": "message",
+          "description": "What's wrong, below the field while it's invalid, and read with it (D-135)."
+        },
         "labelHidden": {
           "kind": "boolean",
           "default": false,
@@ -2683,6 +2687,18 @@
               "t": "unlock.passphrase"
             },
             "invalid": true
+          }
+        },
+        {
+          "name": "invalid with error",
+          "props": {
+            "label": {
+              "t": "unlock.passphrase"
+            },
+            "invalid": true,
+            "error": {
+              "t": "gallery.sample"
+            }
           }
         },
         {
@@ -3427,6 +3443,93 @@
       ]
     },
     {
+      "type": "StepMark",
+      "tier": "primitive",
+      "description": "A setup step's hero: one icon in a large tile, the step's visual anchor (D-127, D-135). Toned for a problem or success; while the step waits, a ring turns around it (still with reduced motion). Decorative unless it has a label.",
+      "props": {
+        "icon": {
+          "kind": "icon",
+          "required": true
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "neutral",
+            "accent",
+            "danger",
+            "success"
+          ],
+          "default": "neutral"
+        },
+        "busy": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The step is waiting: a ring turns around the tile."
+        },
+        "label": {
+          "kind": "message"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.stepMark.*",
+      "a11y": {
+        "pattern": "img",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "tone neutral",
+          "props": {
+            "icon": "github",
+            "tone": "neutral"
+          }
+        },
+        {
+          "name": "tone accent",
+          "props": {
+            "icon": "github",
+            "tone": "accent"
+          }
+        },
+        {
+          "name": "tone danger",
+          "props": {
+            "icon": "warning",
+            "tone": "danger"
+          }
+        },
+        {
+          "name": "tone success",
+          "props": {
+            "icon": "cloudCheck",
+            "tone": "success"
+          }
+        },
+        {
+          "name": "busy",
+          "props": {
+            "icon": "github",
+            "busy": true
+          }
+        },
+        {
+          "name": "labelled",
+          "props": {
+            "icon": "cloudUp",
+            "tone": "accent",
+            "busy": true,
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        }
+      ]
+    },
+    {
       "type": "ItemCard",
       "tier": "primitive",
       "description": "One thing, shown rather than described (D-126, D-127): an account (its picture or initials, name and @login), a workspace (an icon, its name, when it was updated and a Public or Private badge), or an option. Its actions go in its slot.",
@@ -3484,6 +3587,11 @@
           "kind": "boolean",
           "default": false,
           "description": "A pressable card's action is running."
+        },
+        "disabled": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A pressable card that can't run now (offline): it stays focusable, and its detail says why (D-135)."
         },
         "autoFocus": {
           "kind": "boolean",
@@ -3584,6 +3692,19 @@
             },
             "icon": "newNote",
             "busy": true
+          }
+        },
+        {
+          "name": "option disabled",
+          "props": {
+            "title": {
+              "t": "gallery.action"
+            },
+            "detail": {
+              "t": "gallery.reason"
+            },
+            "icon": "newNote",
+            "disabled": true
           }
         }
       ]
