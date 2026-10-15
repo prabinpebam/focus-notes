@@ -311,6 +311,9 @@
           "$ref": "#/$defs/c_StrengthMeter"
         },
         {
+          "$ref": "#/$defs/c_DatePicker"
+        },
+        {
           "$ref": "#/$defs/c_Stack"
         },
         {
@@ -603,6 +606,19 @@
                 }
               ]
             },
+            "personal": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "inset": {
               "anyOf": [
                 {
@@ -811,7 +827,10 @@
                     "cloudOff",
                     "download",
                     "circle",
-                    "globe"
+                    "globe",
+                    "calendar",
+                    "chevronLeft",
+                    "mail"
                   ]
                 },
                 {
@@ -1013,7 +1032,10 @@
                     "cloudOff",
                     "download",
                     "circle",
-                    "globe"
+                    "globe",
+                    "calendar",
+                    "chevronLeft",
+                    "mail"
                   ]
                 },
                 {
@@ -1261,7 +1283,10 @@
                     "cloudOff",
                     "download",
                     "circle",
-                    "globe"
+                    "globe",
+                    "calendar",
+                    "chevronLeft",
+                    "mail"
                   ]
                 },
                 {
@@ -1940,7 +1965,10 @@
                     "cloudOff",
                     "download",
                     "circle",
-                    "globe"
+                    "globe",
+                    "calendar",
+                    "chevronLeft",
+                    "mail"
                   ]
                 },
                 {
@@ -2336,7 +2364,10 @@
                     "cloudOff",
                     "download",
                     "circle",
-                    "globe"
+                    "globe",
+                    "calendar",
+                    "chevronLeft",
+                    "mail"
                   ]
                 },
                 {
@@ -3373,6 +3404,19 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "multiline": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -4362,7 +4406,10 @@
                     "cloudOff",
                     "download",
                     "circle",
-                    "globe"
+                    "globe",
+                    "calendar",
+                    "chevronLeft",
+                    "mail"
                   ]
                 },
                 {
@@ -4569,7 +4616,10 @@
                     "cloudOff",
                     "download",
                     "circle",
-                    "globe"
+                    "globe",
+                    "calendar",
+                    "chevronLeft",
+                    "mail"
                   ]
                 },
                 {
@@ -5030,7 +5080,10 @@
                     "cloudOff",
                     "download",
                     "circle",
-                    "globe"
+                    "globe",
+                    "calendar",
+                    "chevronLeft",
+                    "mail"
                   ]
                 },
                 {
@@ -5348,6 +5401,118 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {}
+        }
+      }
+    },
+    "c_DatePicker": {
+      "type": "object",
+      "description": "A day, typed segment by segment or picked on a calendar that opens from its button (an audience's last day, D-143). Every part works from the keyboard and is named in the locale's words.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "DatePicker"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/bind"
+                }
+              ]
+            },
+            "min": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "max": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "invalid": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "change": {
+              "$ref": "#/$defs/actions"
+            }
+          }
         }
       }
     },

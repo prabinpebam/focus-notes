@@ -129,6 +129,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     load: () => ipcRenderer.invoke("access:load"),
     apply: (change: unknown) => ipcRenderer.invoke("access:apply", change),
     reveal: (id: string) => ipcRenderer.invoke("access:reveal", id),
+    setTemplate: (template: string | null) => ipcRenderer.invoke("access:template", template),
     copy: (id: string, what: string, invite?: unknown) => ipcRenderer.invoke("access:copy", id, what, invite),
   },
   // Local diagnostics (QLT-04, D-140): the main process builds and redacts the report; the window sends only its timings.

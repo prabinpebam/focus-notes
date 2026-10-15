@@ -10,7 +10,9 @@
     "vm.shareEditor",
     "vm.shareInvite",
     "vm.shareConfirm",
-    "vm.diagnostics"
+    "vm.diagnostics",
+    "vm.shareTemplate",
+    "vm.shareNote"
   ],
   "focus": "settingsCategories",
   "overlay": true,
@@ -654,6 +656,44 @@
                             }
                           }
                         ]
+                      },
+                      {
+                        "type": "ItemCard",
+                        "when": {
+                          "get": "vm.shareManage.available"
+                        },
+                        "props": {
+                          "title": {
+                            "t": "share.manage.template.heading"
+                          },
+                          "detail": {
+                            "t": "share.manage.template.detail"
+                          },
+                          "badge": {
+                            "get": "vm.shareManage.templateBadge"
+                          },
+                          "icon": "mail",
+                          "label": {
+                            "t": "share.manage.template.heading"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "share.manage.template.edit"
+                              },
+                              "size": "s",
+                              "icon": "rename"
+                            },
+                            "on": {
+                              "press": {
+                                "run": "share.manage.templateOpen"
+                              }
+                            }
+                          }
+                        ]
                       }
                     ]
                   },
@@ -1219,6 +1259,49 @@
             },
             "children": [
               {
+                "type": "ItemCard",
+                "when": {
+                  "get": "vm.shareEditor.hasInitials"
+                },
+                "props": {
+                  "title": {
+                    "get": "vm.shareEditor.cardTitle"
+                  },
+                  "detail": {
+                    "get": "vm.shareEditor.cardDetail"
+                  },
+                  "badge": {
+                    "get": "vm.shareEditor.cardBadge"
+                  },
+                  "initials": {
+                    "get": "vm.shareEditor.cardInitials"
+                  },
+                  "personal": "title"
+                }
+              },
+              {
+                "type": "ItemCard",
+                "when": {
+                  "expr": {
+                    "!": {
+                      "get": "vm.shareEditor.hasInitials"
+                    }
+                  }
+                },
+                "props": {
+                  "title": {
+                    "get": "vm.shareEditor.cardTitle"
+                  },
+                  "detail": {
+                    "get": "vm.shareEditor.cardDetail"
+                  },
+                  "badge": {
+                    "get": "vm.shareEditor.cardBadge"
+                  },
+                  "icon": "share"
+                }
+              },
+              {
                 "type": "TextField",
                 "when": {
                   "get": "vm.shareEditor.creating"
@@ -1510,6 +1593,23 @@
                 }
               },
               {
+                "type": "DatePicker",
+                "props": {
+                  "label": {
+                    "t": "share.manage.editor.untilLabel"
+                  },
+                  "value": {
+                    "bind": "vm.shareEditor.until"
+                  },
+                  "min": {
+                    "get": "vm.shareEditor.today"
+                  },
+                  "max": {
+                    "get": "vm.shareEditor.latest"
+                  }
+                }
+              },
+              {
                 "type": "Text",
                 "when": {
                   "get": "vm.shareEditor.hasProblem"
@@ -1660,7 +1760,8 @@
                                 "value": {
                                   "get": "line.text"
                                 },
-                                "role": "secondary"
+                                "role": "secondary",
+                                "personal": true
                               }
                             },
                             "empty": {
@@ -1881,6 +1982,21 @@
             },
             "children": [
               {
+                "type": "ItemCard",
+                "props": {
+                  "title": {
+                    "get": "vm.shareConfirm.name"
+                  },
+                  "initials": {
+                    "get": "vm.shareConfirm.initials"
+                  },
+                  "detail": {
+                    "get": "vm.shareConfirm.detail"
+                  },
+                  "personal": "title"
+                }
+              },
+              {
                 "type": "Text",
                 "props": {
                   "value": {
@@ -1928,6 +2044,532 @@
                     "on": {
                       "press": {
                         "run": "share.manage.confirm"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "shareTemplate",
+        "when": {
+          "get": "vm.shareTemplate.open"
+        },
+        "props": {
+          "title": {
+            "t": "share.manage.template.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.shareTemplate.open"
+          },
+          "size": "s"
+        },
+        "on": {
+          "openChange": {
+            "run": "share.manage.setTemplateOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "TextField",
+                "props": {
+                  "label": {
+                    "t": "share.manage.template.field"
+                  },
+                  "value": {
+                    "bind": "vm.shareTemplate.value"
+                  },
+                  "multiline": true,
+                  "invalid": {
+                    "get": "vm.shareTemplate.hasProblem"
+                  },
+                  "error": {
+                    "get": "vm.shareTemplate.problem"
+                  },
+                  "autoFocus": true
+                }
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "share.manage.template.placeholders"
+                      },
+                      "role": "label"
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s",
+                      "wrap": true
+                    },
+                    "children": [
+                      {
+                        "each": {
+                          "get": "vm.shareTemplate.placeholders"
+                        },
+                        "as": "p",
+                        "key": "p.id",
+                        "render": {
+                          "type": "Button",
+                          "props": {
+                            "label": {
+                              "get": "p.label"
+                            },
+                            "size": "s",
+                            "icon": "add"
+                          },
+                          "on": {
+                            "press": {
+                              "run": "share.manage.insertPlaceholder",
+                              "args": {
+                                "id": {
+                                  "get": "p.id"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "empty": {
+                          "type": "Text",
+                          "props": {
+                            "value": {
+                              "t": "share.manage.template.placeholders"
+                            },
+                            "tone": "muted"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "xs"
+                },
+                "children": [
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "share.manage.template.sample.name"
+                      },
+                      "detail": {
+                        "t": "share.manage.template.preview"
+                      },
+                      "icon": "mail"
+                    }
+                  },
+                  {
+                    "type": "Surface",
+                    "when": {
+                      "expr": {
+                        "!": {
+                          "get": "vm.shareTemplate.hasProblem"
+                        }
+                      }
+                    },
+                    "props": {
+                      "variant": "sunken",
+                      "shape": "control",
+                      "padding": "m"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs"
+                        },
+                        "children": [
+                          {
+                            "each": {
+                              "get": "vm.shareTemplate.lines"
+                            },
+                            "as": "line",
+                            "key": "line.id",
+                            "render": {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "get": "line.text"
+                                },
+                                "role": "secondary",
+                                "personal": true
+                              }
+                            },
+                            "empty": {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "t": "share.manage.template.preview"
+                                },
+                                "tone": "muted"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "between",
+                  "gap": "s",
+                  "wrap": true
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.manage.template.reset"
+                      },
+                      "variant": "subtle",
+                      "icon": "history",
+                      "disabled": {
+                        "get": "vm.shareTemplate.isDefault"
+                      },
+                      "disabledReason": {
+                        "t": "share.manage.template.default"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.templateReset"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s"
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "share.manage.cancel"
+                          },
+                          "variant": "secondary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "share.manage.setTemplateOpen",
+                            "args": {
+                              "open": false
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "share.manage.template.save"
+                          },
+                          "variant": "primary",
+                          "busy": {
+                            "get": "vm.shareTemplate.busy"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "share.manage.templateSave"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "shareNote",
+        "when": {
+          "get": "vm.shareNote.open"
+        },
+        "props": {
+          "title": {
+            "get": "vm.shareNote.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.shareNote.open"
+          },
+          "size": "s",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "share.manage.setNoteOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.shareNote.loading"
+                },
+                "props": {
+                  "value": {
+                    "t": "share.manage.loading"
+                  },
+                  "announce": true
+                }
+              },
+              {
+                "type": "ItemCard",
+                "when": {
+                  "get": "vm.shareNote.onlyYou"
+                },
+                "props": {
+                  "title": {
+                    "t": "share.manage.note.onlyYou"
+                  },
+                  "icon": "lock",
+                  "badge": {
+                    "get": "vm.shareNote.level"
+                  }
+                }
+              },
+              {
+                "type": "Stack",
+                "when": {
+                  "get": "vm.shareNote.hasPeople"
+                },
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "justify": "between",
+                      "gap": "m"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "share.manage.note.people"
+                          },
+                          "role": "label"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "get": "vm.shareNote.copied"
+                          },
+                          "role": "caption",
+                          "tone": "muted",
+                          "announce": true
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "each": {
+                      "get": "vm.shareNote.rows"
+                    },
+                    "as": "row",
+                    "key": "row.id",
+                    "render": {
+                      "type": "ItemCard",
+                      "props": {
+                        "title": {
+                          "get": "row.name"
+                        },
+                        "initials": {
+                          "get": "row.initials"
+                        },
+                        "detail": {
+                          "get": "row.detail"
+                        },
+                        "badge": {
+                          "get": "row.badge"
+                        },
+                        "label": {
+                          "get": "row.label"
+                        },
+                        "personal": "title"
+                      },
+                      "children": [
+                        {
+                          "type": "Button",
+                          "props": {
+                            "label": {
+                              "get": "row.copyLabel"
+                            },
+                            "size": "s",
+                            "icon": {
+                              "get": "row.copyIcon"
+                            }
+                          },
+                          "on": {
+                            "press": {
+                              "run": "share.manage.copyInvite",
+                              "args": {
+                                "id": {
+                                  "get": "row.id"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "empty": {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "t": "share.manage.note.onlyYou"
+                        },
+                        "tone": "muted"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "ItemCard",
+                "when": {
+                  "get": "vm.shareNote.isPublic"
+                },
+                "props": {
+                  "title": {
+                    "t": "share.manage.note.publicTitle"
+                  },
+                  "detail": {
+                    "get": "vm.shareNote.publicLink"
+                  },
+                  "badge": {
+                    "get": "vm.shareNote.level"
+                  },
+                  "icon": "globe"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.manage.note.copyPublic"
+                      },
+                      "size": "s",
+                      "icon": "link"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "note.copyPublicLink"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "ItemCard",
+                "when": {
+                  "get": "vm.shareNote.isOther"
+                },
+                "props": {
+                  "title": {
+                    "t": "share.manage.note.otherTitle"
+                  },
+                  "detail": {
+                    "t": "share.manage.note.otherDetail"
+                  },
+                  "icon": "document"
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "between",
+                  "gap": "s",
+                  "wrap": true
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.manage.note.all"
+                      },
+                      "variant": "subtle",
+                      "icon": "settings"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.noteAll"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "when": {
+                      "get": "vm.shareNote.canShare"
+                    },
+                    "props": {
+                      "label": {
+                        "t": "share.manage.note.add"
+                      },
+                      "variant": "primary",
+                      "icon": "share",
+                      "autoFocus": true
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.add"
                       }
                     }
                   }

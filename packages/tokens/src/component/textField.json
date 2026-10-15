@@ -13,6 +13,19 @@
         "$type": "dimension",
         "$value": "{size.controlM}"
       },
+      "areaHeight": {
+        "$type": "dimension",
+        "$value": "{size.textArea}",
+        "$description": "A multi-line field's least height (D-143)."
+      },
+      "paddingBlock": {
+        "$type": "dimension",
+        "$value": "{space.s}"
+      },
+      "lineHeight": {
+        "$type": "number",
+        "$value": "{font.uiLineHeight}"
+      },
       "paddingInline": {
         "$type": "dimension",
         "$value": "{space.m}"

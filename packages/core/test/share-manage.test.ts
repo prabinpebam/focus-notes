@@ -83,7 +83,8 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 function shell() {
   let access: AccessFile = { version: 1, grants: [{ id: "gownergrant1", name: "You", owner: true, salt: "AAAAAAAAAAAAAAAAAAAAAA", passcodeKey: "A".repeat(43), scope: { all: true }, createdAt: "2026-10-01T00:00:00.000Z" }] };
   const copied: string[] = [];
-  const listing = (): AccessListing => ({ available: true, site: SITE, vault: true, grants: shareGrants(access).map(audienceOf) });
+  let template: string | undefined;
+  const listing = (): AccessListing => ({ available: true, site: SITE, ...(template ? { template } : {}), vault: true, grants: shareGrants(access).map(audienceOf) });
   const secrets = (id: string) => {
     const g = shareGrants(access).find((x) => x.id === id)!;
     return { ...(g.link ? { link: shareLink(SITE, g.id, g.link.secret) } : {}), ...(g.passcode ? { passcode: g.passcode.value } : {}) };
@@ -118,6 +119,7 @@ function shell() {
         return { ...listing(), id: r.id };
       },
       reveal: async (id) => (revealed.push(id), secrets(id)),
+      setTemplate: async (t) => ((template = t ?? undefined), listing()),
       // As the main process does: the window sends the invite without secrets, and the shell fills them in.
       copy: async (id, what, invite) => {
         const s = secrets(id);
@@ -128,7 +130,7 @@ function shell() {
   const app = createApp(bridge, en);
   const vm = (id: string) => app.viewModels.select(id, app.store.state) as Record<string, any>;
   const run = (id: string, args?: Record<string, unknown>) => app.commands.run(id, args);
-  return { app, vm, run, copied, revealed, access: () => access };
+  return { app, bridge, vm, run, copied, revealed, access: () => access, setAccess: (a: AccessFile) => void (access = a), template: () => template };
 }
 
 describe("Settings → Sharing (SHR-05, SHR-08)", () => {
@@ -232,5 +234,197 @@ describe("Settings → Sharing (SHR-05, SHR-08)", () => {
     await t.run("share.manage.confirm");
     expect(shareGrants(t.access())).toHaveLength(0);
     expect(t.vm("vm.shareManage").empty).toBe(true);
+  });
+});
+
+describe("the invite template (SHR-09, D-143)", () => {
+  it("opens on the default, previews live with made-up values, refuses a bad placeholder, saves, and is used for Copy invite", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("settings.open");
+    await t.run("settings.setSection", { value: "sharing" });
+    expect(t.vm("vm.shareManage").templateBadge).toBe("Default");
+    await t.run("share.manage.templateOpen");
+    let v = t.vm("vm.shareTemplate");
+    expect(v).toMatchObject({ open: true, isDefault: true, hasProblem: false, canSave: true });
+    expect(v.value).toBe(inviteTemplate(catalog, true));
+    expect(v.placeholders.map((p: { label: string }) => p.label)).toEqual(["{name}", "{title}", "{link}", "{passcode}", "{expires}", "{site}"]);
+    expect(v.lines[0].text).toBe(`Hi Asha, I've shared "Trip plans" with you.`);
+    expect(v.lines[1].text).toBe(`Open it here: ${SITE}s/#example`);
+    expect(t.vm("vm.settings").open).toBe(false);
+    // A typo is named, and nothing is saved.
+    await t.run("share.manage.setTemplate", { value: "Hey {nmae}: {link}" });
+    v = t.vm("vm.shareTemplate");
+    expect(v).toMatchObject({ invalid: true, canSave: false, problem: "“{nmae}” isn't a placeholder. Use one from the list.", lines: [] });
+    await t.run("share.manage.templateSave");
+    expect(t.template()).toBeUndefined();
+    await t.run("share.manage.setTemplate", { value: "Hey {name}, see {site}" });
+    expect(t.vm("vm.shareTemplate").problem).toBe("Add {link} or {passcode}, so they can open it.");
+    await t.run("share.manage.setTemplate", { value: "Hey {name}!" });
+    await t.run("share.manage.insertPlaceholder", { id: "link" });
+    await t.run("share.manage.insertPlaceholder", { id: "nope" });
+    expect(t.vm("vm.shareTemplate")).toMatchObject({ value: "Hey {name}! {link}", lines: [{ id: "0", text: `Hey Asha! ${SITE}s/#example` }] });
+    await t.run("share.manage.templateSave");
+    expect(t.template()).toBe("Hey {name}! {link}");
+    expect(t.vm("vm.shareTemplate").open).toBe(false);
+    expect(t.vm("vm.settings")).toMatchObject({ open: true, section: "sharing" });
+    expect(t.vm("vm.shareManage").templateBadge).toBe("Edited");
+    // Copy invite uses it; the shell fills the link in.
+    await t.run("share.manage.add");
+    await t.run("share.manage.setName", { value: "Asha" });
+    await t.run("share.manage.togglePasscode");
+    await t.run("share.manage.submit");
+    await t.run("share.manage.copy", { what: "invite" });
+    const g = shareGrants(t.access())[0]!;
+    expect(t.copied.at(-1)).toBe(`Hey Asha! ${SITE}s/#${g.id}.${g.link!.secret}`);
+    // Reset puts the default back, and saving it removes the file.
+    await t.run("share.manage.setInviteOpen", { open: false });
+    await t.run("share.manage.templateOpen");
+    expect(t.vm("vm.shareTemplate").value).toBe("Hey {name}! {link}");
+    await t.run("share.manage.templateReset");
+    expect(t.vm("vm.shareTemplate").isDefault).toBe(true);
+    await t.run("share.manage.templateSave");
+    expect(t.template()).toBeUndefined();
+  });
+});
+
+describe("a date for the expiry (D-143)", () => {
+  it("works until the end of the picked day; a past day is refused before the shell is asked", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("settings.setSection", { value: "sharing" });
+    await t.run("share.manage.add");
+    await t.run("share.manage.setName", { value: "Asha" });
+    const d = new Date(Date.now() + 10 * 86_400_000);
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    await t.run("share.manage.setUntil", { value: day });
+    let e = t.vm("vm.shareEditor");
+    // The presets let go; the card says the day.
+    expect(e).toMatchObject({ expiry: "", until: day });
+    expect(e.cardBadge).toMatch(/^Until /);
+    await t.run("share.manage.setUntil", { value: "2001-01-01" });
+    await t.run("share.manage.submit");
+    expect(t.vm("vm.shareEditor")).toMatchObject({ open: true, problem: "Choose how long it works." });
+    await t.run("share.manage.setUntil", { value: "2026-02-30" });
+    expect(t.vm("vm.shareEditor").until).toBe("2001-01-01");
+    await t.run("share.manage.setUntil", { value: day });
+    await t.run("share.manage.submit");
+    const g = shareGrants(t.access())[0]!;
+    const at = new Date(g.expiresAt!);
+    expect([at.getFullYear(), at.getMonth(), at.getDate(), at.getHours()]).toEqual([d.getFullYear(), d.getMonth(), d.getDate(), 23]);
+    // A preset again clears the day.
+    await t.run("share.manage.setInviteOpen", { open: false });
+    await t.run("share.manage.row", { id: g.id, action: "edit" });
+    await t.run("share.manage.setExpiry", { value: "7d" });
+    e = t.vm("vm.shareEditor");
+    expect(e).toMatchObject({ expiry: "7d", until: "", cardBadge: "7 days" });
+  });
+  it("shows who it's for, what it opens, how, and for how long, as a card at the top (VVS anchor)", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("settings.setSection", { value: "sharing" });
+    await t.run("share.manage.add");
+    expect(t.vm("vm.shareEditor")).toMatchObject({ cardTitle: "Someone new", hasInitials: false, cardDetail: "Rome · Link and passcode", cardBadge: "30 days" });
+    await t.run("share.manage.setName", { value: "Book club" });
+    await t.run("share.manage.toggleLink");
+    await t.run("share.manage.togglePasscode");
+    expect(t.vm("vm.shareEditor")).toMatchObject({ cardTitle: "Book club", cardInitials: "BC", hasInitials: true, cardDetail: "Rome · No way in" });
+  });
+});
+
+describe("the Share popover for the open note (IA-VIEW-SHARE, D-143)", () => {
+  it("lists who can read this note, directly or through a folder, copies an invite, and shares it with someone new", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.manage.noteOpen");
+    let p = t.vm("vm.shareNote");
+    expect(p).toMatchObject({ open: true, title: "Share “Rome”", level: "Private", isPrivate: true, onlyYou: true, hasPeople: false, canShare: true });
+    expect(t.vm("vm.settings").open).toBe(false);
+    // Share this note with…: the editor, this note picked; closing the invite comes back here.
+    await t.run("share.manage.add");
+    expect(t.vm("vm.shareNote").open).toBe(false);
+    expect(t.vm("vm.shareEditor").items.filter((i: { pressed: boolean }) => i.pressed).map((i: { id: string }) => i.id)).toEqual(["n:trips/rome.md"]);
+    await t.run("share.manage.setName", { value: "Asha" });
+    await t.run("share.manage.submit");
+    await t.run("share.manage.setInviteOpen", { open: false });
+    expect(t.vm("vm.settings").open).toBe(false);
+    p = t.vm("vm.shareNote");
+    expect(p).toMatchObject({ open: true, level: "Shared", hasPeople: true, onlyYou: false });
+    expect(p.rows).toEqual([expect.objectContaining({ name: "Asha", initials: "AS", detail: "Link and passcode", badge: "Expires in 30 days", copyLabel: "Copy invite" })]);
+    // Another audience through the folder, and one that doesn't open it, and a withdrawn one.
+    const apply = (c: AccessChange) => t.bridge.access!.apply(c);
+    await apply({ op: "create", audience: { name: "Book club", link: true, scope: { notes: [], folders: ["trips"] }, expiresAt: null } });
+    await apply({ op: "create", audience: { name: "Ravi", link: true, scope: { notes: ["diary.md"], folders: [] }, expiresAt: null } });
+    await t.run("share.manage.load");
+    p = t.vm("vm.shareNote");
+    expect(p.rows.map((r: { name: string; detail: string }) => `${r.name}: ${r.detail}`)).toEqual(["Asha: Link and passcode", "Book club: Link · via trips/"]);
+    const asha = shareGrants(t.access())[0]!;
+    await t.run("share.manage.copyInvite", { id: asha.id });
+    expect(t.copied.at(-1)).toContain(`Hi Asha, I've shared "Rome" with you.`);
+    expect(t.copied.at(-1)).toContain(asha.passcode!.value);
+    p = t.vm("vm.shareNote");
+    expect(p.rows[0]).toMatchObject({ copyLabel: "Copied", copyIcon: "check" });
+    expect(p.copied).toBe("Invite for Asha copied");
+    // The window never held the secrets to do it.
+    expect(JSON.stringify(t.app.store.state.ui.share)).not.toContain(asha.passcode!.value);
+    // All people with access: Settings → Sharing.
+    await t.run("share.manage.noteAll");
+    expect(t.vm("vm.shareNote").open).toBe(false);
+    expect(t.vm("vm.settings")).toMatchObject({ open: true, section: "sharing" });
+  });
+});
+
+
+describe("after the security review of 8a6627c (D-143)", () => {
+  const grant = (id: string, name: string, scope: { notes?: string[]; folders?: string[]; all?: boolean }) =>
+    ({ id, name, salt: "AAAAAAAAAAAAAAAAAAAAAA", link: { secret: "B".repeat(43) }, scope, createdAt: "2026-10-01T00:00:00.000Z", expiresAt: null });
+  it("the note's Share dialog finds who can read it as the publisher does: by front-matter id, and by a folder written with a leading slash", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    // The open note's front matter names its id (the publisher's noteId).
+    t.app.store.update((s) => ({ ...s, note: { ...s.note, markdown: "---\nid: rome-7f3a\n---\n# Rome\n" } }));
+    const base = t.access();
+    t.setAccess({
+      ...base,
+      grants: [
+        ...base.grants,
+        grant("sbyidaaaaaaaaaaaaaaaa", "By id", { notes: ["rome-7f3a"] }),
+        grant("sslashaaaaaaaaaaaaaaa", "By slash", { folders: ["/trips"] }),
+        grant("sotheraaaaaaaaaaaaaaa", "Other", { notes: ["diary.md"], folders: ["/trip"] }),
+        // `all` counts only on the owner's grant (D-117 (2)).
+        grant("sallaaaaaaaaaaaaaaaaa", "All", { all: true }),
+      ],
+    } as AccessFile);
+    await t.run("share.manage.noteOpen");
+    const p = t.vm("vm.shareNote");
+    expect(p).toMatchObject({ onlyYou: false, hasPeople: true, level: "Shared" });
+    expect(p.rows.map((r: { name: string; detail: string }) => `${r.name}: ${r.detail}`)).toEqual(["By id: Link", "By slash: Link · via trips/"]);
+  });
+  it("refuses a day more than a year away, and never falls back to 30 days for a picked day", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("settings.setSection", { value: "sharing" });
+    await t.run("share.manage.add");
+    await t.run("share.manage.setName", { value: "Asha" });
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const e = t.vm("vm.shareEditor");
+    const latest = new Date();
+    latest.setFullYear(latest.getFullYear() + 1);
+    expect(e.latest).toBe(iso(latest));
+    const far = new Date(latest.getTime() + 2 * 86_400_000);
+    await t.run("share.manage.setUntil", { value: iso(far) });
+    await t.run("share.manage.submit");
+    expect(t.vm("vm.shareEditor")).toMatchObject({ open: true, problem: "Choose a day within a year." });
+    expect(shareGrants(t.access())).toHaveLength(0);
+    await t.run("share.manage.setUntil", { value: iso(latest) });
+    await t.run("share.manage.submit");
+    const at = new Date(shareGrants(t.access())[0]!.expiresAt!);
+    expect([at.getFullYear(), at.getMonth(), at.getDate()]).toEqual([latest.getFullYear(), latest.getMonth(), latest.getDate()]);
   });
 });

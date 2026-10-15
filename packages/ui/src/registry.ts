@@ -56,10 +56,11 @@ import { StatusRow } from "./primitives/StatusRow/StatusRow.tsx";
 import { CodeBlock } from "./primitives/CodeBlock/CodeBlock.tsx";
 import { VersionCompare } from "./primitives/VersionCompare/VersionCompare.tsx";
 import { StrengthMeter } from "./primitives/StrengthMeter/StrengthMeter.tsx";
+import { DatePicker } from "./primitives/DatePicker/DatePicker.tsx";
 
 /** The closed registry: the renderer can create these and nothing else (DSY-06). */
 export const registry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, DatePicker,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, NoteContent,
   EditorSurface, TableControls, WindowFrame,
   Trigger, Toolbar, Dialog,

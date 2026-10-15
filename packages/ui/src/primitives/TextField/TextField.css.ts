@@ -32,3 +32,5 @@ export const description = style({ color: t.description, fontSize: t.captionSize
 export const error = style({ color: t.error, fontSize: t.fontSize });
 /** A label for screen readers only. */
 export const hidden = style({ position: "absolute", width: t.srOnlySize, height: t.srOnlySize, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" });
+/** Several lines: as tall as about six, growing with what it holds, and only taller by hand (D-143). */
+export const area = style({ height: "auto", minHeight: t.areaHeight, paddingBlock: t.paddingBlock, lineHeight: t.lineHeight, resize: "vertical", fieldSizing: "content" } as Parameters<typeof style>[0]);

@@ -10,6 +10,7 @@ export const contract = defineContract({
     tone: { kind: "enum", values: ["default", "muted", "accent", "danger", "warning", "success"], default: "default" },
     lines: { kind: "enum", values: ["none", "one", "two", "three"], default: "none" },
     announce: { kind: "boolean", default: false, description: "A polite live region, for counts and results." },
+    personal: { kind: "boolean", default: false, description: "The person's own words (their invite message), not the interface's: the visual score doesn't count them (D-127, D-143)." },
     inset: { kind: "enum", values: ["none", "control"], default: "none", description: "control: inset like a small button's label, so a text that leads a row of buttons (the link card) lines up with them (D-111)." },
   },
   events: {},

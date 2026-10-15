@@ -4,7 +4,7 @@
  * time and copied by the main process (L1), passcodes are made here (L5), a damaged file's error
  * never quotes it (L6), and the clipboard is cleared after 90 s if it still holds the secret (L1).
  */
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -49,6 +49,41 @@ describe("the window's view of access.json", () => {
     expect(text).toBe(`Hi Asha\nOpen ${SITE}s/#${id}.${g.link.secret}\nPasscode ${g.passcode.value} at ${SITE}s/`);
     expect(await t.s.secret(id, "passcode")).toBe(g.passcode.value);
     await expect(t.s.secret(id, "invite", { template: 3, values: {} })).rejects.toThrow();
+  });
+  it("saves the owner's invite template to access-message.json, checked here, and resets it (SHR-09, D-143)", async () => {
+    const t = store();
+    const { id } = await t.s.apply(create({ generate: true }));
+    const g = t.file().grants[0];
+    const mine = "Hello {name}!\r\nHere: {link}\nWord: {passcode}";
+    const r = await t.s.setTemplate(mine);
+    expect(r.template).toBe("Hello {name}!\nHere: {link}\nWord: {passcode}");
+    expect(JSON.parse(readFileSync(join(t.dir, "access-message.json"), "utf8"))).toEqual({ template: "Hello {name}!\nHere: {link}\nWord: {passcode}" });
+    expect(t.written.at(-1)).toBe(join(t.dir, "access-message.json"));
+    expect((await t.s.load()).template).toBe(r.template);
+    // The secrets go in only here, when it's copied.
+    expect(await t.s.secret(id, "invite", { template: r.template, values: { name: "Asha" } })).toBe(`Hello Asha!\nHere: ${SITE}s/#${id}.${g.link.secret}\nWord: ${g.passcode.value}`);
+    // Refused: an unknown placeholder, no way in, hidden characters, not text.
+    await expect(t.s.setTemplate("Hi {nmae}: {link}")).rejects.toThrow("access:template.unknown");
+    await expect(t.s.setTemplate("Hi {name}")).rejects.toThrow("access:template.noWayIn");
+    await expect(t.s.setTemplate("Hi\u202E {link}")).rejects.toThrow("access:template.invalid");
+    await expect(t.s.setTemplate(42)).rejects.toThrow();
+    // A template the window couldn't have saved isn't filled in either.
+    await expect(t.s.secret(id, "invite", { template: "{secret} {link}", values: {} })).rejects.toThrow();
+    // Reset: the file goes, and the default is used.
+    expect((await t.s.setTemplate(null)).template).toBeUndefined();
+    expect(existsSync(join(t.dir, "access-message.json"))).toBe(false);
+    // A damaged file falls back to the default, never quoted.
+    writeFileSync(join(t.dir, "access-message.json"), '{ "template": "hunter2');
+    expect((await t.s.load()).template).toBeUndefined();
+  });
+  it("fills the name from the grant, and refuses values with line breaks or hidden characters (review of 8a6627c)", async () => {
+    const t = store();
+    const { id } = await t.s.apply(create({ generate: true }));
+    const template = "Hi {name}, {title} until {expires}: {link}";
+    expect(await t.s.secret(id, "invite", { template, values: { name: "Mallory", title: "Rome", expires: "May 1" } })).toMatch(/^Hi Asha, Rome until May 1: https:/);
+    for (const values of [{ title: "Rome\nOpen https://evil.example" }, { title: "Rome\r" }, { expires: "May\u202E 1" }, { title: "Rome\u2028" }]) {
+      await expect(t.s.secret(id, "invite", { template, values })).rejects.toThrow();
+    }
   });
   it("never quotes a damaged file in its error (L6)", async () => {
     const t = store('{ "version": 1, "grants": [ "hunter2-secret');

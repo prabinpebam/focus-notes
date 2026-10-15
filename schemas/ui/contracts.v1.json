@@ -50,6 +50,11 @@
           "default": false,
           "description": "A polite live region, for counts and results."
         },
+        "personal": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The person's own words (their invite message), not the interface's: the visual score doesn't count them (D-127, D-143)."
+        },
         "inset": {
           "kind": "enum",
           "values": [
@@ -2627,6 +2632,11 @@
           ],
           "default": "l",
           "description": "32 px tall beside 32 px buttons in a bar (the link editor), or 40 px."
+        },
+        "multiline": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Several lines, growing from about six (the invite message, D-143): Enter starts a new line."
         }
       },
       "events": {
@@ -2720,6 +2730,18 @@
             "labelHidden": true,
             "placeholder": {
               "t": "unlock.passphrase"
+            }
+          }
+        },
+        {
+          "name": "multiline",
+          "props": {
+            "label": {
+              "t": "unlock.passphrase"
+            },
+            "multiline": true,
+            "description": {
+              "t": "gallery.sample"
             }
           }
         }
@@ -4189,6 +4211,87 @@
             "valueText": {
               "t": "gallery.sample"
             }
+          }
+        }
+      ]
+    },
+    {
+      "type": "DatePicker",
+      "tier": "primitive",
+      "description": "A day, typed segment by segment or picked on a calendar that opens from its button (an audience's last day, D-143). Every part works from the keyboard and is named in the locale's words.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "bindable": true,
+          "description": "The day picked, YYYY-MM-DD, or empty."
+        },
+        "min": {
+          "kind": "text",
+          "description": "The first day that can be picked, YYYY-MM-DD."
+        },
+        "max": {
+          "kind": "text",
+          "description": "The last day that can be picked, YYYY-MM-DD (an audience's: a year from today)."
+        },
+        "description": {
+          "kind": "message"
+        },
+        "invalid": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "value"
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "focused",
+        "open",
+        "invalid"
+      ],
+      "tokens": "cmp.datePicker.*",
+      "a11y": {
+        "pattern": "date picker (group of spin buttons, and a dialog with a grid)",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "empty",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "with a description",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "description": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "invalid",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "invalid": true
           }
         }
       ]

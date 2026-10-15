@@ -197,7 +197,7 @@ test("UI-05, UI-07: the ⋯ menu by keyboard: every item is reachable, later one
   }
   expect(visited).toEqual(expect.arrayContaining(["Share and visibility…", "Settings…", "Help and docs", "Keyboard shortcuts"]));
 
-  // Share and visibility opens Settings → Sharing on the desktop (WP-5.3, D-139); m5-public-link.spec.ts chooses it.
+  // Share and visibility opens the note's Share popover on the desktop (D-143); m5-public-link.spec.ts chooses it.
   const share = menu.getByRole("menuitem", { name: /^Share and visibility…/ });
   await expect(share).not.toHaveAttribute("aria-disabled", "true");
   await expect(share).toHaveAccessibleName("Share and visibility…");

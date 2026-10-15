@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { FieldError, Input, Label, Text, TextField as AriaTextField } from "react-aria-components";
+import { FieldError, Input, Label, Text, TextArea, TextField as AriaTextField } from "react-aria-components";
 import * as s from "./TextField.css.ts";
 
 export interface TextFieldProps {
@@ -18,6 +18,8 @@ export interface TextFieldProps {
   focusRequest?: number;
   /** 32 px tall beside 32 px buttons in a bar (the link editor); 40 px otherwise. */
   size?: keyof typeof s.size;
+  /** Several lines (the invite message, D-143): Enter starts a new line, and it grows from about six lines. */
+  multiline?: boolean;
   id?: string;
   onChange?: (payload: { value: string }) => void;
   /** Enter in the field, outside an IME composition. */
@@ -25,10 +27,11 @@ export interface TextFieldProps {
 }
 
 /** A labelled single-line field. Secrets use type "password" and are never spell-checked or autofilled. */
-export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", id, onChange, onSubmit }: TextFieldProps) {
+export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", multiline, id, onChange, onSubmit }: TextFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
+  const area = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
-    if (focusRequest) input.current?.focus();
+    if (focusRequest) (input.current ?? area.current)?.focus();
   }, [focusRequest]);
   return (
     <AriaTextField
@@ -41,7 +44,9 @@ export function TextField({ label, value, placeholder, description, type = "text
       {...(id ? { id } : {})}
     >
       <Label className={labelHidden ? s.hidden : s.label}>{label}</Label>
-      <Input
+      {multiline ? (
+        <TextArea ref={area} className={`${s.input} ${s.area}`} spellCheck autoCorrect="off" {...(placeholder ? { placeholder } : {})} />
+      ) : <Input
         ref={input}
         className={`${s.input} ${s.size[size]}`}
         spellCheck={false}
@@ -55,7 +60,7 @@ export function TextField({ label, value, placeholder, description, type = "text
           }
         }}
         {...(placeholder ? { placeholder } : {})}
-      />
+      />}
       {description ? <Text slot="description" className={s.description}>{description}</Text> : null}
       {invalid && error ? <FieldError className={s.error}>{error}</FieldError> : null}
     </AriaTextField>

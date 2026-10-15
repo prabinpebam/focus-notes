@@ -16,6 +16,7 @@ export const contract = defineContract({
     autoFocus: { kind: "boolean", default: false },
     focusRequest: { kind: "number", min: 0 },
     size: { kind: "enum", values: ["m", "l"], default: "l", description: "32 px tall beside 32 px buttons in a bar (the link editor), or 40 px." },
+    multiline: { kind: "boolean", default: false, description: "Several lines, growing from about six (the invite message, D-143): Enter starts a new line." },
   },
   events: { change: { payload: { value: "text" }, binds: "value" }, submit: {} },
   slots: {},
@@ -30,5 +31,6 @@ export const contract = defineContract({
     { name: "invalid with error", props: { label: { t: "unlock.passphrase" }, invalid: true, error: { t: "gallery.sample" } } },
     { name: "size m", props: { label: { t: "unlock.passphrase" }, labelHidden: true, size: "m" } },
     { name: "label hidden", props: { label: { t: "unlock.passphrase" }, labelHidden: true, placeholder: { t: "unlock.passphrase" } } },
+    { name: "multiline", props: { label: { t: "unlock.passphrase" }, multiline: true, description: { t: "gallery.sample" } } },
   ],
 });

@@ -18,7 +18,7 @@ import { parseShareFragment, type AccessFile } from "../../../packages/seal/src/
 import { launch, quit } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { git, instance, write } from "./instance.ts";
-import { BUDGETS, anchorScore, economyScore } from "./visual-score.ts";
+import { BUDGETS, anchorScore, economyScore, scoreRegion } from "./visual-score.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const SITE = "https://ada.github.io/notes/";
@@ -197,6 +197,172 @@ test("D-127: Settings → Sharing and its dialogs score VVS ≥ 70 on the measur
       expect(e, scores.join("; ")).toBeGreaterThanOrEqual(10);
     }
     console.log(`VVS sharing: ${scores.join("; ")}`);
+  } finally {
+    await quit(l);
+  }
+});
+
+async function openMore(page: Page) {
+  // Mod+. shows the toolbar (and hides it again if it's showing); then ⋯ opens the menu.
+  const more = page.getByRole("button", { name: "More" });
+  if (!(await more.isVisible())) await page.keyboard.press(`${mod}+.`);
+  await expect(more).toBeVisible();
+  await more.click();
+  const menu = page.getByRole("menu", { name: "More" });
+  await expect(menu).toBeVisible();
+  return menu;
+}
+/** Criteria 1 and 4 in light and dark (D-127): the anchor at full marks, the words within the budget's tolerance; the lower of the two counts. */
+async function vvs(page: Page, region: import("@playwright/test").Locator, name: string, budget: number, log: string[]) {
+  let low = { anchor: 20, economy: 20 };
+  const parts: string[] = [];
+  for (const mode of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: mode });
+    await settled(page);
+    const m = await scoreRegion(region, budget);
+    low = { anchor: Math.min(low.anchor, m.anchorScore), economy: Math.min(low.economy, m.economyScore) };
+    parts.push(`${mode} anchor ${m.anchorScore}/20 (${m.anchor}px) economy ${m.economyScore}/20 (${m.words} words, ${m.maxLines} lines)`);
+    await capture(page, `${name}-${mode}`);
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+  log.push(`${name}: ${parts.join("; ")}`);
+  expect(low.anchor, log.at(-1)).toBe(20);
+  expect(low.economy, log.at(-1)).toBeGreaterThanOrEqual(15);
+}
+
+test("SHR-09, D-143: edit the invite template, share from the note's popover until a picked day, copy that invite; every surface keeps its anchor", async () => {
+  test.setTimeout(180_000);
+  const { dirs } = instance();
+  const priv = join(dirs.docs, "private");
+  write(join(priv, "notes", "trips", "rome.md"), "# Rome\n\nThe trip plan.\n");
+  git(priv, "add", "-A");
+  git(priv, "commit", "-q", "-m", "Add notes");
+  writeFileSync(join(dirs.userData, DATA_FILES.setup), JSON.stringify({ version: 1, site: SITE, steps: {} }));
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000", FOCUS_NOTES_POINTER_GAP_MS: "0", FOCUS_NOTES_MEMORY_CLIPBOARD: "1" });
+  const { page } = l;
+  const scores: string[] = [];
+  const settings = page.getByRole("dialog", { name: "Settings" });
+  try {
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
+
+    // ---- the invite message: a typo is named, the preview follows, Save writes access-message.json ----
+    await page.keyboard.press(`${mod}+,`);
+    await settings.getByRole("tab", { name: "Sharing" }).click();
+    const card = settings.getByRole("group", { name: "Invite message" });
+    await expect(card.getByText("Default")).toBeVisible();
+    await card.getByRole("button", { name: "Edit" }).click();
+    const tpl = page.getByRole("dialog", { name: "Invite message" });
+    const field = tpl.getByRole("textbox", { name: "Message" });
+    await expect(field).toBeFocused();
+    await expect(tpl.getByText(`Open it here: ${SITE}s/#example`)).toBeVisible();
+    await vvs(page, tpl, "template", BUDGETS.dialog, scores);
+    expect(await settledAxe(page)).toEqual([]);
+    await field.fill("Hey {nmae}, here: {link}");
+    await expect(tpl.getByText("“{nmae}” isn't a placeholder. Use one from the list.")).toBeVisible();
+    await expect(field).toHaveAttribute("aria-invalid", "true");
+    await capture(page, "template-problem");
+    await field.fill("Hey {name}, here: {link}\nUntil {expires}.");
+    await tpl.getByRole("button", { name: "{passcode}" }).click();
+    await expect(field).toHaveValue("Hey {name}, here: {link}\nUntil {expires}. {passcode}");
+    await expect(tpl.getByText(`Hey Asha, here: ${SITE}s/#example`)).toBeVisible();
+    await expect(tpl.getByText(/^Until .+\. harbor-maple-river-cloud$/)).toBeVisible();
+    expect(await settledAxe(page)).toEqual([]);
+    await tpl.getByRole("button", { name: "Save" }).click();
+    await expect(tpl).toHaveCount(0);
+    await expect(card.getByText("Edited")).toBeVisible();
+    expect(JSON.parse(readFileSync(join(priv, "access-message.json"), "utf8"))).toEqual({ template: "Hey {name}, here: {link}\nUntil {expires}. {passcode}" });
+    await page.keyboard.press("Escape");
+    await expect(settings).toHaveCount(0);
+
+    // ---- the note's Share popover: only you, then Share this note with… ----
+    let menu = await openMore(page);
+    await menu.getByRole("menuitem", { name: /^Share and visibility…/ }).click();
+    const share = page.getByRole("dialog", { name: "Share “Welcome”" });
+    await expect(share.getByText("Only you can read it")).toBeVisible();
+    await expect(share.getByRole("button", { name: "Share this note with…" })).toBeFocused();
+    await vvs(page, share, "popover-private", BUDGETS.popover, scores);
+    expect(await settledAxe(page)).toEqual([]);
+    await share.getByRole("button", { name: "Share this note with…" }).click();
+    const editor = page.getByRole("dialog", { name: "Share with someone" });
+    await expect(editor.getByRole("button", { name: "Welcome", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await page.keyboard.type("Ravi");
+    await expect(editor.locator("[data-item-card]").getByText("Ravi", { exact: true })).toBeVisible();
+    await vvs(page, editor, "editor", BUDGETS.dialog, scores);
+
+    // ---- the date: the calendar, from the keyboard: two weeks from today ----
+    await editor.getByRole("button", { name: /Calendar/ }).click();
+    const calendar = page.getByRole("dialog").filter({ has: page.getByRole("grid") });
+    await expect(calendar.getByRole("grid")).toBeVisible();
+    await capture(page, "editor-calendar");
+    expect(await settledAxe(page)).toEqual([]);
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(calendar).toHaveCount(0);
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    await expect(editor.getByText(/^Until /)).toBeVisible();
+    await expect(editor.getByRole("radiogroup", { name: "Works for" }).getByRole("radio", { checked: true })).toHaveCount(0);
+    await editor.getByRole("button", { name: "Share", exact: true }).click();
+
+    // ---- the invite: the owner's template, the secrets filled in by the main process ----
+    const invite = page.getByRole("dialog", { name: "Invite Ravi" });
+    await expect(invite.getByText(/^Hey Ravi, here: https:\/\/ada\.github\.io\/notes\/s\/#s/)).toBeVisible();
+    await vvs(page, invite, "invite", BUDGETS.dialog, scores);
+    await invite.getByRole("button", { name: "Copy invite" }).click();
+    const text = await clipboard(l);
+    const access = JSON.parse(readFileSync(join(priv, "access.json"), "utf8")) as AccessFile;
+    const ravi = access.grants.find((g) => g.name === "Ravi")!;
+    expect(text).toMatch(new RegExp(`^Hey Ravi, here: ${SITE.replace(/[./]/g, "\\$&")}s/#${ravi.id}\\.${ravi.link!.secret}\\nUntil .+\\. ${ravi.passcode!.value}$`));
+    const until = new Date(ravi.expiresAt!);
+    expect([until.getFullYear(), until.getMonth(), until.getDate(), until.getHours(), until.getMinutes()]).toEqual([d.getFullYear(), d.getMonth(), d.getDate(), 23, 59]);
+    await invite.getByRole("button", { name: "Done" }).click();
+
+    // ---- back in the popover: Ravi can read it; Copy invite from here ----
+    await expect(share).toBeVisible();
+    const row = share.getByRole("group", { name: "Access for Ravi" });
+    await expect(row.getByText("Link and passcode")).toBeVisible();
+    await expect(row.getByText("Expires in 14 days")).toBeVisible();
+    await row.getByRole("button", { name: "Copy invite" }).click();
+    await expect(row.getByRole("button", { name: "Copied" })).toBeVisible();
+    await expect(share.getByText("Invite for Ravi copied")).toBeVisible();
+    expect(await clipboard(l)).toBe(text);
+    await vvs(page, share, "popover-shared", BUDGETS.popover, scores);
+    expect(await settledAxe(page)).toEqual([]);
+
+    // ---- All people with access: Settings → Sharing, and the confirmation's card ----
+    await share.getByRole("button", { name: "All people with access" }).click();
+    await expect(settings.getByRole("tab", { name: "Sharing" })).toHaveAttribute("aria-selected", "true");
+    await vvs(page, settings, "settings-sharing", BUDGETS.settings, scores);
+    await settings.getByRole("group", { name: "Access for Ravi" }).getByRole("button", { name: "More for Ravi" }).click();
+    await page.getByRole("menuitem", { name: "Withdraw…" }).click();
+    const confirm = page.getByRole("dialog", { name: "Withdraw access for Ravi?" });
+    await expect(confirm.getByRole("button", { name: "Cancel" })).toBeFocused();
+    await vvs(page, confirm, "confirm", BUDGETS.dialog, scores);
+    await confirm.getByRole("button", { name: "Cancel" }).click();
+    await expect(settings).toBeVisible();
+
+    // ---- a small window (480 × 360): Works for still fits, light and dark ----
+    const margin = process.platform === "darwin" ? 0 : 16;
+    await l.app.evaluate(({ BrowserWindow }, m) => {
+      const w = BrowserWindow.getAllWindows()[0]!;
+      w.setMinimumSize(320, 320);
+      w.setContentSize(480 + 2 * m, 360 + 2 * m);
+    }, margin);
+    await settings.getByRole("button", { name: "Share with someone" }).click();
+    await expect(editor).toBeVisible();
+    const works = editor.getByRole("radiogroup", { name: "Works for" });
+    await works.scrollIntoViewIfNeeded();
+    const fits = await works.evaluate((el) => [...el.querySelectorAll("[role=radio], label")].every((r) => {
+      const a = r.getBoundingClientRect(), b = el.getBoundingClientRect();
+      return a.left >= b.left - 1 && a.right <= b.right + 1 && (r as HTMLElement).scrollWidth <= (r as HTMLElement).clientWidth + 1;
+    }) && el.scrollWidth <= el.clientWidth + 1);
+    for (const mode of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: mode });
+      await capture(page, `small-editor-${mode}`);
+    }
+    expect(fits, "Works for fits a 480 px window").toBe(true);
+    console.log(`VVS sharing surfaces:\n${scores.join("\n")}`);
   } finally {
     await quit(l);
   }
