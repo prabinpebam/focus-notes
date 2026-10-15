@@ -15,6 +15,7 @@ import {
   type AccountStatus, type GitCheck, type GitHubAccount, type Identity, type SignInProblem, type SignInProgress,
 } from "@focus-notes/core/first-run";
 import { existsSync } from "node:fs";
+import { basename } from "node:path";
 import { rm, writeFile } from "node:fs/promises";
 import type { GitRunner } from "../git/run.ts";
 import { CREDENTIAL_QUERY, githubToken } from "../setup/credential.ts";
@@ -43,6 +44,8 @@ export interface AccountDeps {
 
 /** A device code lasts 15 minutes; a sign-in that takes longer has expired. */
 const SIGN_IN_MS = 16 * 60_000;
+/** A Git or helper call this slow is logged (DEF-18); each one is stopped after 30 s. */
+export const SLOW_STEP_MS = 5_000;
 
 const toAccount = (u: { login: string; id: number; name: string | null }): GitHubAccount => ({ login: u.login, id: u.id, name: u.name ?? "" });
 
@@ -55,7 +58,26 @@ export class Account {
   #previous: { token: string; account: GitHubAccount } | undefined;
 
   constructor(deps: AccountDeps) {
-    this.#d = deps;
+    // Every Git and helper call says when it was slow or stopped by its timeout, with its first two
+    // arguments only (never a token, SEC-03): a stalled helper on a runner names itself (DEF-18).
+    const log = deps.log;
+    const what = (program: string, args: readonly string[]) => [program, ...args.filter((a) => !a.startsWith("-")).slice(0, 2)].join(" ");
+    const report = (name: string, ms: number, timedOut: boolean) => {
+      if (timedOut || ms >= SLOW_STEP_MS) log?.(`account: ${name} ms=${ms}${timedOut ? " stopped" : ""}`);
+    };
+    const git: GitRunner = async (call) => {
+      const t0 = Date.now();
+      const r = await deps.git(call);
+      report(what("git", call.args), Date.now() - t0, r.code === -1 && r.stderr.includes("(timed out)"));
+      return r;
+    };
+    const tools: ToolRunner = (program, call) => {
+      const t0 = Date.now();
+      const p = deps.tools(program, call);
+      const name = what(basename(program).replace(/\.(exe|cmd|bat)$/i, ""), call.args);
+      return { ...p, done: p.done.then((r) => (report(name, Date.now() - t0, r.killed), r)) };
+    };
+    this.#d = { ...deps, git, tools };
   }
 
   #git(args: string[], input?: string) {
@@ -262,6 +284,7 @@ export class Account {
       const { cliAccount: _cli, ...rest } = await this.status();
       return rest;
     }
+    const started = Date.now();
     const helpers = await this.#helpers();
     const login = this.#session?.account.login;
     await this.#reject(login);
@@ -271,6 +294,7 @@ export class Account {
     // Nothing for the mark to hold back now.
     await this.#markSignedOut(false);
     const s = await this.status();
+    this.#d.log?.(`account: sign-out ms=${Date.now() - started}`);
     // The GitHub CLI's own session isn't Git's: it isn't offered again right after signing out.
     const { cliAccount: _cli, ...rest } = s;
     return rest;

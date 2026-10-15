@@ -166,6 +166,22 @@ describe("FRE-02 to FRE-04: signing in through Git's helpers", () => {
     expect(w.fakes.stored()).toBe("{}");
     w.noTokenInArgs();
   });
+  it("DEF-18: a Git or helper call stopped by its timeout says so in the log, and how long signing out took, never with a token", { timeout: 30_000 }, async () => {
+    const w = world({ gh: true });
+    w.fakes.store(w.gh.token);
+    const lines: string[] = [];
+    const real = createRunner({ env: w.fakes.env });
+    // `git credential reject` stalls until its timeout stops it, as a helper might on a busy runner.
+    const account = new Account({
+      git: async (call) => (call.args[0] === "credential" && call.args[1] === "reject" ? { code: -1, stdout: "", stderr: "\n(timed out)" } : real(call)),
+      tools: createToolRunner(), fetch: w.gh.fetch, home: w.fakes.home, env: w.fakes.env, log: (l) => lines.push(l),
+    });
+    await account.status();
+    await account.signOut();
+    expect(lines.filter((l) => /^account: git credential reject ms=\d+ stopped$/.test(l))).toHaveLength(1);
+    expect(lines.filter((l) => /^account: sign-out ms=\d+$/.test(l))).toHaveLength(1);
+    expect(lines.join("\n")).not.toContain(w.gh.token);
+  });
 });
 
 describe("FRE-05: the identity", () => {

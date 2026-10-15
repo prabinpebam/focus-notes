@@ -72,6 +72,21 @@ async function openSettings(page: Page, section: "Account" | "Workspace" = "Acco
   await expect(tab).toHaveAttribute("aria-selected", "true");
 }
 const toast = (page: Page, text: string) => expect(page.getByText(text, { exact: true })).toBeVisible({ timeout: 15_000 });
+/**
+ * Waits for an account step that runs Git and the sign-in helper several times, each allowed 30 s by
+ * the app (account.ts), so a helper a busy runner starts slowly doesn't fail the journey while the
+ * app is still within its own limits; a failure carries the app's log, which names a slow or stopped
+ * call (DEF-18).
+ */
+async function accountStep(l: Launched, done: () => Promise<void>): Promise<void> {
+  try {
+    await done();
+  } catch (e) {
+    const log = l.log.filter((x) => x.includes("account:")).join(" | ") || "no slow Git or helper call";
+    throw new Error(`${(e as Error).message}\nApp log: ${log}`);
+  }
+}
+const ACCOUNT_STEP_MS = 45_000;
 
 test.describe.configure({ mode: "serial" });
 
@@ -226,6 +241,8 @@ test("PRV-02, FRE-07: signing out with Git's credential deletes exactly what the
     const confirm = page.getByRole("dialog", { name: "Sign out of GitHub?" });
     await expect(confirm.getByRole("radio", { name: "Remove it too" })).toBeChecked();
     await confirm.getByRole("button", { name: "Sign out", exact: true }).click();
+    // The dialog stays, its Sign out busy, until the app has signed out (DEF-18).
+    await accountStep(l, () => expect(confirm).toBeHidden({ timeout: ACCOUNT_STEP_MS }));
     await toast(page, "Signed out of GitHub on this computer, in the app and in the terminal.");
 
     const after = top(w.dirs.userData);
