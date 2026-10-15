@@ -184,6 +184,33 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     // Reported, not gated yet: after start the first one or two sizes take 30 to 140 ms in frames with
     // no script in them (the window's surface, not the page), which D-151 (11) tracks; the rest stay under 16 ms.
     expect.soft(p95, "fn:window.resizeFrame p95 (reported)").toBeGreaterThanOrEqual(0);
+    // Where a size's time goes (D-151 (11)): the same steps again, traced (not measured, as tracing
+    // slows them): each process's and thread's time in the parts of a frame, per size.
+    const cdp = await page.context().newCDPSession(page);
+    const traced: { name: string; dur?: number; ph: string; pid: number; tid: number; args?: { name?: string } }[] = [];
+    cdp.on("Tracing.dataCollected", (d) => traced.push(...(d.value as typeof traced)));
+    const complete = new Promise((r) => cdp.once("Tracing.tracingComplete", r));
+    await cdp.send("Tracing.start", { categories: "cc,viz,blink,devtools.timeline,toplevel,views", transferMode: "ReportEvents" });
+    await fire("pointerdown", 0);
+    for (let i = 1; i <= 20; i++) {
+      await fire("pointermove", -8 * (i <= 10 ? i : 20 - i));
+      await page.waitForTimeout(40);
+    }
+    await fire("pointerup", 0);
+    await page.waitForTimeout(200);
+    await cdp.send("Tracing.end");
+    await complete;
+    const threads = new Map(traced.filter((e) => e.ph === "M" && e.name === "thread_name").map((e) => [`${e.pid}:${e.tid}`, e.args?.name ?? ""]));
+    const PARTS = ["View::Layout(bounds_changed)", "ProxyMain::BeginMainFrame", "DisplayItemList::Raster", "DirectRenderer::DrawFrame", "SoftwareRenderer::SwapBuffers", "DirectRenderer::DrawRenderPass"];
+    const parts = new Map<string, [number, number, number]>();
+    for (const e of traced) {
+      if (e.ph !== "X" || !e.dur || !PARTS.includes(e.name)) continue;
+      const k = `${threads.get(`${e.pid}:${e.tid}`)?.replace(/\d+$/, "")} ${e.name}`;
+      const p = parts.get(k) ?? [0, 0, 0];
+      parts.set(k, [p[0] + 1, p[1] + e.dur / 1000, Math.max(p[2], e.dur / 1000)]);
+    }
+    const surfaces = traced.find((e) => e.name === "RenderSurfaceReasonCount" && "total" in (e.args ?? {}))?.args;
+    console.log(`[D-151] resize, traced (20 sizes, ms): ${[...parts].map(([k, [n, total, max]]) => `${k} ${n}x total ${total.toFixed(1)} max ${max.toFixed(1)}`).join("; ")}; render surfaces ${JSON.stringify(surfaces)}`);
     await quit(l);
   });
   test("PRF-14: every control answers in the next frame: input to next paint for the toolbar, Files, Spotlight and Settings, p95 at most 50 ms", async () => {
