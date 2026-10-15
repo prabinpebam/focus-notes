@@ -1363,6 +1363,68 @@
       "status": "building"
     },
     {
+      "id": "WP-5.8",
+      "stage": "M5",
+      "title": "Glitch-free windows and honest waits",
+      "summary": "No blank or white frame in any transition (no page reloads for state changes, double-buffered swaps, the first themed frame), and every wait in the inventory with its class pattern: named waits, steps and progress, prefetch, starting with setup.",
+      "requirements": [
+        "DSK-09",
+        "PRF-13"
+      ],
+      "dependsOn": [
+        "WP-2.1",
+        "WP-1.4",
+        "WP-3.2"
+      ],
+      "touches": [
+        "apps/desktop",
+        "packages/core",
+        "packages/ui",
+        "packages/views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "architecture/perceived-performance.md",
+        "experience/first-run.md",
+        "experience/desktop-app.html"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-5.9",
+      "stage": "M5",
+      "title": "Snappy window and controls",
+      "summary": "The window attached to the pointer (main-process drag loop or the native move, measured), no queued moves, no repaint on move, resizing that keeps up, a main process that never stalls, and every control answering on pointer-down in the next frame.",
+      "requirements": [
+        "PRF-14"
+      ],
+      "dependsOn": [
+        "WP-2.1"
+      ],
+      "touches": [
+        "apps/desktop",
+        "packages/ui",
+        "tools/bench"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "architecture/perceived-performance.md",
+        "experience/desktop-app.html",
+        "architecture/performance-and-quality.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
       "id": "WP-6.1",
       "stage": "MW",
       "title": "Web app on your own Pages, local first",
