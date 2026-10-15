@@ -1,7 +1,7 @@
 /**
  * Save and sync (EDT-11, FIL-05, PRF-07; Desktop and Git → Save and sync). The workspace folder's
  * repository and its `private/` submodule, each with one queue and one cached status. Notes are
- * committed by path on the cadence of D-23, each Files batch is one commit (D-94, D-95), private
+ * committed by path when the backup policy says (D-133), each Files batch is one commit (D-94, D-95), private
  * changes are committed and pushed before the notes repository's pointer moves (D-07 as amended by
  * D-90), and pulls rebase only when they can apply cleanly; otherwise nothing is touched and the
  * problem is reported (conflicts are WP-3.5).
@@ -11,7 +11,7 @@ import { readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { conflictCopy, deletedId, DELETED_LOG_ARGS, parseDeletedId, parseDeletedLog, recentDeletions, RECENTLY_DELETED_DAYS, titleOrName, type DeletedNote } from "@focus-notes/core/history";
 import { StatusCache, filesKey, gitFiles } from "./cache.ts";
-import { Cadence, FETCH_EVERY_MS, POINTER_GAP_MS, pointerDelay, retryDelay, systemClock, type Clock, type SyncReason } from "./cadence.ts";
+import { Cadence, FETCH_EVERY_MS, type BackupPolicy, POINTER_GAP_MS, pointerDelay, retryDelay, systemClock, type Clock, type SyncReason } from "./cadence.ts";
 import { releaseLock, takeLock } from "./lock.ts";
 import { batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, type BatchOp, type Change } from "./message.ts";
 import type { ConflictChoice, NoteConflict, SyncProblem, SyncReport } from "@focus-notes/core";
@@ -43,7 +43,8 @@ export interface GitSyncOptions {
   folder: string;
   run?: GitRunner;
   clock?: Clock;
-  idleMs?: number;
+  /** The backup policy's thresholds (D-133): the journeys shorten them. */
+  policy?: Partial<BackupPolicy>;
   pointerGapMs?: number;
   fetchEveryMs?: number;
   onReport?: (r: SyncReport) => void;
@@ -96,7 +97,7 @@ export class GitSync {
     this.#clock = o.clock ?? systemClock;
     this.notes = this.#repo("notes", notes);
     this.privateRepo = priv ? this.#repo("private", priv) : undefined;
-    this.#cadence = new Cadence({ clock: this.#clock, ...(o.idleMs !== undefined ? { idleMs: o.idleMs } : {}), sync: (r) => void this.sync(r) });
+    this.#cadence = new Cadence({ clock: this.#clock, ...(o.policy ? { policy: o.policy } : {}), sync: (r) => void this.sync(r) });
   }
 
   /** Opens the workspace's repositories, or resolves undefined when it isn't one (or Git is missing or too old). */
@@ -171,10 +172,14 @@ export class GitSync {
     this.#generation++;
   }
 
-  /** The app wrote a note: it's committed on the cadence (D-23). */
-  written(abs: string): void {
+  /**
+   * The app wrote a note, changing this many characters (unknown counts as a meaningful change):
+   * it's backed up when the policy says (D-133), and the app hears at once that changes wait (D-132).
+   */
+  written(abs: string, chars?: number): void {
     this.#touch(abs);
-    this.#cadence.edited();
+    this.#cadence.edited(chars);
+    this.#emit({ waiting: this.#waiting([this.notes.last, this.privateRepo?.last]) });
   }
 
   /** The app renamed a note (a file name following its title): committed with the next save, as a rename. */
@@ -192,9 +197,13 @@ export class GitSync {
     if (at) at.repo.pending.set(at.rel, this.#generation);
   }
 
-  /** Commit and push now: Mod+S, switching or closing a note, quitting (D-23). The idle commit isn't needed then. */
+  /**
+   * Back up now: Save to cloud and quitting always; switching or closing a note only when the
+   * policy's thresholds are met (D-133). The timer isn't needed then.
+   */
   request(reason: SyncReason): Promise<SyncReport> {
-    this.#cadence.cancel();
+    if (reason === "switch" && !this.#cadence.meets()) return Promise.resolve(this.#report);
+    this.#cadence.taken();
     return this.sync(reason);
   }
 
@@ -627,14 +636,16 @@ export class GitSync {
     const push = () => this.#git(repo, ["-c", "push.default=upstream", "push", "--quiet"], undefined, timeout);
     let r = await push();
     repo.cache.clear();
-    if (r.code === 0) return { moved };
+    // Pushed: nothing of this repository waits any more, which the save state shows at once (D-132).
+    const pushed = () => void (repo.last &&= { ...repo.last, ahead: 0 });
+    if (r.code === 0) return (pushed(), { moved });
     const problem = networkProblem(r.stderr);
     if (problem !== "conflict") return { problem, moved };
     const p = await pull();
     if (p) return { problem: p, moved };
     r = await push();
     repo.cache.clear();
-    return r.code === 0 ? { moved } : { problem: networkProblem(r.stderr), moved };
+    return r.code === 0 ? (pushed(), { moved }) : { problem: networkProblem(r.stderr), moved };
   }
 
   async #rebase(repo: Repo): Promise<SyncProblem | undefined> {

@@ -7,7 +7,7 @@ import { parseStatus, covers, pointerMoved, trackedChanges, STATUS_ARGS } from "
 import { StatusCache, filesKey, gitFiles } from "../src/main/git/cache.ts";
 import { batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage } from "../src/main/git/message.ts";
 import { bothChanged, parseRaw } from "../src/main/git/resolve.ts";
-import { Cadence, pointerDelay, retryDelay, type Clock } from "../src/main/git/cadence.ts";
+import { BACKUP_POLICY, backupDue, backupDueAt, Cadence, changedChars, pointerDelay, retryDelay, type Clock } from "../src/main/git/cadence.ts";
 
 const z = (...records: string[]) => records.map((r) => `${r}\0`).join("");
 
@@ -239,35 +239,77 @@ describe("FIL-10, FIL-12: restoring and settling conflicts", () => {
   });
 });
 
-describe("EDT-11 and D-23: the save cadence", () => {
-  it("commits after 60 s with no typing, restarting with each write", () => {
+describe("EDT-11 and D-133: the backup policy", () => {
+  const p = BACKUP_POLICY;
+  const u = (chars: number, since: number, lastEditAt: number) => ({ chars, since, lastEditAt });
+  it("counts the characters changed: inserted plus deleted, between the common start and end", () => {
+    expect(changedChars("abc", "abc")).toBe(0);
+    expect(changedChars("abc", "abXc")).toBe(1);
+    expect(changedChars("hello world", "hello there")).toBe(10);
+    expect(changedChars("", "x".repeat(250))).toBe(250);
+    expect(changedChars("aaaa", "aa")).toBe(2);
+  });
+  it("after a 60 s pause, backs up 200 characters or more, or a first change over 10 minutes old", () => {
+    expect(backupDueAt(u(0, 0, 0), p)).toBeUndefined();
+    expect(backupDueAt(u(200, 0, 5_000), p)).toBe(65_000);
+    expect(backupDue("idle", u(199, 0, 5_000), 65_000, p)).toBe(false);
+    // A small change waits until it's 10 minutes old, and then for the pause.
+    expect(backupDueAt(u(50, 0, 5_000), p)).toBe(600_000);
+    expect(backupDueAt(u(50, 0, 590_000), p)).toBe(650_000);
+  });
+  it("backs up 2,000 characters or more after a 10 s pause", () => {
+    expect(backupDueAt(u(2_000, 0, 5_000), p)).toBe(15_000);
+    expect(backupDueAt(u(1_999, 0, 5_000), p)).toBe(65_000);
+  });
+  it("never lets a change wait past 30 minutes: then the next 10 s pause backs up", () => {
+    // Typing with pauses under a minute: the 10-minute rule never gets its pause; the ceiling does.
+    expect(backupDueAt(u(150, 0, 1_795_000), p)).toBe(1_805_000);
+    expect(backupDueAt(u(150, 0, 1_700_000), p)).toBe(1_760_000);
+  });
+  it("switching or closing a note backs up only when a threshold is met; quitting and Save to cloud always do", () => {
+    expect(backupDue("switch", u(199, 0, 0), 1_000, p)).toBe(false);
+    expect(backupDue("switch", u(200, 0, 0), 1_000, p)).toBe(true);
+    expect(backupDue("switch", u(10, 0, 0), 600_001, p)).toBe(true);
+    expect(backupDue("switch", u(0, 0, 0), 1_000, p)).toBe(false);
+    for (const e of ["quit", "save"] as const) expect(backupDue(e, u(0, 0, 0), 1_000, p)).toBe(true);
+    expect(backupDue("quit", u(1, 0, 0), 1, p)).toBe(true);
+  });
+  it("runs one timer for the earliest moment due, restarted by each write, and starts counting again after a backup", () => {
     const clock = new FakeClock();
     const runs: string[] = [];
     const c = new Cadence({ clock, sync: (r) => runs.push(r) });
-    c.edited();
+    c.edited(150);
     clock.advance(59_000);
-    c.edited();
+    c.edited(60);
     clock.advance(59_000);
     expect(runs).toEqual([]);
     clock.advance(1_000);
     expect(runs).toEqual(["idle"]);
     expect(c.waiting).toBe(false);
+    // Small edits under the threshold: no backup after the pause.
+    c.edited(20);
+    clock.advance(60_000);
+    expect(runs).toEqual(["idle"]);
+    expect(c.switching()).toBe(false);
+    // A big edit backs up after a 10 s pause.
+    c.edited(2_000);
+    clock.advance(10_000);
+    expect(runs).toEqual(["idle", "idle"]);
   });
-  it("commits at once on Mod+S, switching notes, or quitting, and cancels the idle commit", () => {
+  it("Save to cloud and quitting back up at once and cancel the timer; switching does when a threshold is met", () => {
     const clock = new FakeClock();
     const runs: string[] = [];
-    const c = new Cadence({ clock, idleMs: 1000, sync: (r) => runs.push(r) });
-    c.edited();
+    const c = new Cadence({ clock, policy: { idleMs: 1000 }, sync: (r) => runs.push(r) });
+    c.edited(500);
     c.now("save");
     clock.advance(5000);
     expect(runs).toEqual(["save"]);
-    c.edited();
-    c.now("switch");
+    c.edited(500);
+    expect(c.switching()).toBe(true);
     c.now("quit");
     clock.advance(5000);
     expect(runs).toEqual(["save", "switch", "quit"]);
-  });
-  it("moves the pointer at most once per gap (D-07), and backs off retries", () => {
+  });  it("moves the pointer at most once per gap (D-07), and backs off retries", () => {
     expect(pointerDelay(undefined, 1000)).toBe(0);
     expect(pointerDelay(0, 60_000)).toBe(240_000);
     expect(pointerDelay(0, 300_000)).toBe(0);

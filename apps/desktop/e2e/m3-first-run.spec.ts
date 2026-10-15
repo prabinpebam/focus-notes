@@ -80,12 +80,12 @@ test("FRE-01, FRE-04, FRE-05, FRE-08: the short path: a new install connects wit
     expect(w.gh.repo("notes")?.pages?.build_type).toBe("workflow");
     expect(readFileSync(join(w.dirs.userData, "workspace.json"), "utf8")).toContain("Focus Notes");
 
-    // UI-12: the account pill shows the login with Sync now and Sign out.
+    // UI-12: the account pill shows the login with Save to cloud and Sign out (D-132).
     const pill = page.getByRole("button", { name: /Signed in to GitHub as @ada/ });
     await expect(pill).toBeVisible({ timeout: 15_000 });
     await expect(pill).toHaveText("@ada");
     await pill.click();
-    await expect(page.getByRole("menuitem", { name: "Sync now" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Save to cloud" })).toBeVisible();
     await expect(page.getByRole("menuitem", { name: "Sign out of GitHub" })).toBeVisible();
     await press(page, "Escape");
     expect(await axeViolations(page)).toEqual([]);

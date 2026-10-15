@@ -14,6 +14,7 @@
     "vm.feedback",
     "vm.picker",
     "vm.account",
+    "vm.saveState",
     "vm.unlock",
     "vm.about",
     "vm.files",
@@ -2997,7 +2998,14 @@
           "expr": {
             "and": [
               {
-                "get": "vm.account.visible"
+                "or": [
+                  {
+                    "get": "vm.account.visible"
+                  },
+                  {
+                    "get": "vm.saveState.visible"
+                  }
+                ]
               },
               {
                 "!": {
@@ -3023,6 +3031,32 @@
               "wrap": true
             },
             "children": [
+              {
+                "type": "SaveState",
+                "id": "saveState",
+                "when": {
+                  "get": "vm.saveState.visible"
+                },
+                "props": {
+                  "state": {
+                    "get": "vm.saveState.state"
+                  },
+                  "label": {
+                    "get": "vm.saveState.label"
+                  },
+                  "text": {
+                    "get": "vm.saveState.text"
+                  },
+                  "interactive": {
+                    "get": "vm.saveState.interactive"
+                  }
+                },
+                "on": {
+                  "press": {
+                    "run": "note.save"
+                  }
+                }
+              },
               {
                 "type": "PillButton",
                 "props": {

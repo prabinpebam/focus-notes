@@ -43,7 +43,8 @@ test(`QLT-03: killed at random points while typing, ${rounds} rounds, nothing is
   git("init", "-q");
   git("add", "-A");
   git("commit", "-q", "-m", "Start");
-  const env = { FOCUS_NOTES_IDLE_COMMIT_MS: "300" };
+  // Any change backs up after the pause (D-133's threshold set to one character).
+  const env = { FOCUS_NOTES_IDLE_COMMIT_MS: "300", FOCUS_NOTES_BACKUP_MIN_CHARS: "1" };
 
   let kept = "";
   const report: { round: number; typed: number; kept: number; lostMs: number }[] = [];
