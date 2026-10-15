@@ -8,9 +8,9 @@ import { join } from "node:path";
 import type { Launched } from "./helpers.ts";
 
 /**
- * A crash loses at most about a second of typing (QLT-03). The design keeps it under 0.8 s (the
- * editor hands text over at most 500 ms after it changed, and the journal keeps each handover within
- * 250 ms); the rest is room for a busy computer.
+ * A crash loses at most about a second of typing (QLT-03). The design keeps it under 0.4 s (the
+ * editor hands text over at most 250 ms after it changed, and the journal keeps each handover within
+ * 150 ms, D-152); the rest is room for a busy computer (DEF-14).
  */
 export const LOSS_BUDGET_MS = 1000;
 
@@ -56,8 +56,8 @@ export async function typeTimed(page: Page, text: string, opts: { delayMs?: numb
 
 /**
  * The journal's latest record is text the note on disk doesn't have: a crash now has something to
- * bring back. Typing that goes on is saved too (the editor hands it over every 500 ms, and it's
- * written 400 ms later), so a journey that needs a restore crashes at such a moment, whatever the
+ * bring back. Typing that goes on is saved too (the editor hands it over every 250 ms, and it's
+ * written at most 150 ms later), so a journey that needs a restore crashes at such a moment, whatever the
  * computer's speed; fault injection crashes at random moments.
  */
 export function journalAhead(userData: string, note: string): boolean {

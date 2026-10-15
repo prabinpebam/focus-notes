@@ -168,13 +168,18 @@ const afterPaint = (fn: () => void) => {
   else fn();
 };
 /**
- * The longest the text the editor hands over waits to be kept (QLT-03): in the recovery journal
- * where there is one (the desktop), or by saving the note itself (the browser). The editor hands
- * text over at most 0.5 s after it changed, so a key typed is kept within 0.75 s and a crash loses at
- * most about a second of typing. The wait is from the text's arrival, never from the last write, so
- * a handover just after one isn't held back a whole interval.
+ * The longest the text the editor hands over waits to be kept (QLT-03) in the recovery journal (the
+ * desktop). The editor hands text over at most 0.25 s after it changed, so a key typed is kept within
+ * 0.4 s and a crash loses at most about a second of typing even on a busy computer (DEF-14, D-152).
+ * The wait is from the text's arrival, never from the last write, so a handover just after one isn't
+ * held back a whole interval.
  */
-export const JOURNAL_INTERVAL_MS = 250;
+export const JOURNAL_INTERVAL_MS = 150;
+/**
+ * Without a journal (the browser), typing that never pauses saves the note itself at most this long
+ * after the text arrives, so it's kept within half a second there.
+ */
+export const UNJOURNALED_SAVE_MS = 250;
 /** The editor action that asks the editor to hand over text it hasn't sent yet (the runtime's flush). */
 export const FLUSH_EDITOR = "note.flush";
 /** Note text sizes in px (THM-06). */
@@ -391,8 +396,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
   const schedule = () => {
     clearTimeout(saveTimer);
-    // Without a journal, typing that never pauses is still saved every JOURNAL_INTERVAL_MS (QLT-03).
-    const wait = bridge.journal || unsavedSince === undefined ? SAVE_DELAY_MS : Math.min(SAVE_DELAY_MS, Math.max(0, unsavedSince + JOURNAL_INTERVAL_MS - Date.now()));
+    // Without a journal, typing that never pauses is still saved every UNJOURNALED_SAVE_MS (QLT-03).
+    const wait = bridge.journal || unsavedSince === undefined ? SAVE_DELAY_MS : Math.min(SAVE_DELAY_MS, Math.max(0, unsavedSince + UNJOURNALED_SAVE_MS - Date.now()));
     saveTimer = setTimeout(() => {
       saving = saving.then(writeNow);
     }, wait);

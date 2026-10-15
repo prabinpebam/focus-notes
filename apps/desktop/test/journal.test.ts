@@ -46,6 +46,37 @@ describe("QLT-03: the journal file", () => {
     ]);
   });
 
+  it("DEF-14: texts that arrive while a slow disk is still writing go in as one, the latest, so the journal never falls behind", async () => {
+    const a = join(notes, "a.md");
+    const b = join(notes, "b.md");
+    // The first lookup of what's on disk is slow, as a busy disk's write would be.
+    let release!: () => void;
+    const slow = new Promise<void>((r) => (release = r));
+    let calls = 0;
+    const j = await open({ baseOf: async (p: string) => (calls++ === 0 ? (await slow, diskHash(p)) : diskHash(p)) });
+    const first = j.text(a, "1");
+    while (calls === 0) await new Promise((r) => setTimeout(r, 1));
+    const waiting = [j.text(a, "12"), j.text(a, "123"), j.text(a, "1234")];
+    release();
+    await Promise.all([first, ...waiting]);
+    // Three texts arrived while the first was written: only the latest of them is appended.
+    const texts = () => readFileSync(file, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as { op: string; path: string; text?: string });
+    expect(texts().map((r) => r.text)).toEqual(["1", "1234"]);
+    // Never across another change: a save or another note keeps its place in the order.
+    await j.text(b, "b");
+    const start = texts().length;
+    const held = j.text(a, "12345");
+    const save = j.saved(a, "12345", j.mark());
+    const after = j.text(a, "123456");
+    const other = j.text(b, "bb");
+    const last = j.text(b, "bbb");
+    await Promise.all([held, save, after, other, last]);
+    expect(texts().slice(start).map((r) => [r.op, r.path === a ? "a" : "b", r.text])).toEqual([
+      ["text", "a", "12345"], ["saved", "a", undefined], ["text", "a", "123456"], ["text", "b", "bbb"],
+    ]);
+    expect((await open()).entries().map((e) => [e.path, e.text])).toEqual([[b, "bbb"], [a, "123456"]]);
+  });
+
   it("a save of the latest text clears it, and once nothing is unsaved the file is emptied", async () => {
     const a = join(notes, "a.md");
     const j = await open();

@@ -79,10 +79,11 @@ const SERIALIZE_DELAY_MS = 150;
 /**
  * While typing goes on, text is still handed over at most this long after it first changed, so the
  * recovery journal keeps up (QLT-03): the app keeps each handover within JOURNAL_INTERVAL_MS (core),
- * so a key typed is kept within 0.75 s. A keystroke that finds the handover overdue (a busy computer
- * runs keys before timers) hands over itself, so typing that never pauses can't hold the text back.
+ * so a key typed is kept within 0.4 s, leaving most of the second a crash may lose to a busy
+ * computer (DEF-14). A keystroke that finds the handover overdue (a busy computer runs keys before
+ * timers) hands over itself, so typing that never pauses can't hold the text back.
  */
-const SERIALIZE_MAX_WAIT_MS = 500;
+const SERIALIZE_MAX_WAIT_MS = 250;
 /** Dispatched on window by the runtime before a flush; surfaces hand over pending text synchronously. */
 export const FLUSH_EVENT = "focus-notes:flush";
 
