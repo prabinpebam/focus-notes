@@ -1,5 +1,5 @@
-import { _electron as electron, type ElectronApplication, type Page } from "@playwright/test";
-import { copyFileSync, existsSync, mkdtempSync, statSync, writeFileSync } from "node:fs";
+import { _electron as electron, expect, type ElectronApplication, type Page } from "@playwright/test";
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { flipFuses, FuseV1Options, FuseVersion } from "@electron/fuses";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,6 +12,18 @@ export interface Launched {
   pid: number;
   readyMs: () => Promise<number>;
 }
+
+/**
+ * Options for `expect.poll` when waiting for something the app does on its own (a save, the journal,
+ * a commit). The default backoff checks at 0, 100, 350 and 850 ms, then about every second, so a
+ * short timeout gives far less than it says (1.5 s really gives 0.85 s; DEF-8). These check every
+ * 50 ms, so it's seen as soon as it happens, for up to 10 s, because a loaded runner can be twice as
+ * slow. A wait is never the budget: a journey that has one measures the time and asserts that.
+ */
+export const PROMPTLY = { timeout: 10_000, intervals: [50] };
+
+/** Waits for `text` to be in the file on disk (see `PROMPTLY`). */
+export const onDisk = (file: string, text: string) => expect.poll(() => readFileSync(file, "utf8"), PROMPTLY).toContain(text);
 
 const mac = process.platform === "darwin";
 /**
