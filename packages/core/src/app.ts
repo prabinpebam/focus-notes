@@ -17,7 +17,7 @@ import { joinPath, newNoteFolder } from "./workspace.ts";
 import { registerImport, IMPORT_CLOSED, type ImportState } from "./import-app.ts";
 import { registerPublicLink } from "./public-link-app.ts";
 import { appStateOfSettings, parseSettings, settingsFileOf, splitAppState, type SettingsFile } from "./settings.ts";
-import { registerSync, NO_SYNC, SyncFailed, saveStateOf, type SyncState } from "./sync-app.ts";
+import { registerSync, NO_SYNC, SyncFailed, saveStateOf, syncProblemAction, type SyncState } from "./sync-app.ts";
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
@@ -526,7 +526,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       await sync.saveNow();
     }, store.state.sync.git ? "task.synced" : "task.saved")).catch((e: unknown) => {
       const conflict = e instanceof SyncFailed && e.problem === "conflict";
-      const action = conflict ? { command: "conflict.open", label: catalog.format("conflict.resolve") } : { command: "note.save", label: catalog.format("toast.retry") };
+      const special = e instanceof SyncFailed ? syncProblemAction(e.problem, catalog) : undefined;
+      const action = conflict ? { command: "conflict.open", label: catalog.format("conflict.resolve") } : special ?? { command: "note.save", label: catalog.format("toast.retry") };
       toast(e instanceof SyncFailed ? e.message : catalog.format("toast.saveFailed"), { tone: "error", action });
     }),
   });

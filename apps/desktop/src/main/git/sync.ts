@@ -49,6 +49,11 @@ export interface GitSyncOptions {
   pointerGapMs?: number;
   fetchEveryMs?: number;
   onReport?: (r: SyncReport) => void;
+  /**
+   * Whether a remote's URL is a template repository (D-157): a push to one is refused, the commits
+   * stay here, and the problem is `template`. Unknown answers are false, so saving isn't blocked.
+   */
+  templateRemote?: (url: string) => Promise<boolean>;
   /** Logs counts and problems, never paths or note text. */
   log?: (line: string) => void;
 }
@@ -757,6 +762,8 @@ export class GitSync {
       if (p && (p !== "offline" || st.ahead > 0)) return { problem: p, moved };
     }
     if (st.ahead === 0) return { moved };
+    // Never to a template repository (D-157), whatever route the workspace came by.
+    if (await this.#toTemplate(repo, st.upstream)) return { problem: "template", moved };
     const push = () => this.#git(repo, ["-c", "push.default=upstream", "push", "--quiet"], undefined, timeout);
     let r = await push();
     repo.cache.clear();
@@ -770,6 +777,20 @@ export class GitSync {
     r = await push();
     repo.cache.clear();
     return r.code === 0 ? (pushed(), { moved }) : { problem: networkProblem(r.stderr), moved };
+  }
+
+  /** Whether the remote the branch pushes to (its upstream's) is a template repository (D-157). */
+  async #toTemplate(repo: Repo, upstream: string): Promise<boolean> {
+    const check = this.#o.templateRemote;
+    if (!check) return false;
+    const names = (await this.#git(repo, ["remote"])).stdout.split(/\r?\n/).filter(Boolean);
+    const remote = names.filter((n) => upstream.startsWith(`${n}/`)).sort((a, b) => b.length - a.length)[0];
+    if (!remote) return false;
+    const url = await this.#git(repo, ["remote", "get-url", "--push", remote]);
+    if (url.code !== 0) return false;
+    const template = await check(url.stdout.trim()).catch(() => false);
+    if (template) this.#o.log?.(`git-template repo=${repo.name}`);
+    return template;
   }
 
   async #rebase(repo: Repo): Promise<SyncProblem | undefined> {

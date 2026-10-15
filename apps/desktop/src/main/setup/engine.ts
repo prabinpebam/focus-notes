@@ -17,10 +17,10 @@ import { hasVault, withVaultGrant, WeakPassphrase } from "@focus-notes/seal/vaul
 import { isRepoName, SETUP_PROBLEMS, SETUP_STEPS, type SetupOptions, type SetupProblem, type SetupReport, type SetupStepId, type SetupStepState } from "@focus-notes/core/setup";
 import { commitProblem, networkProblem, Queue, type GitResult, type GitRunner } from "../git/run.ts";
 import { pointerMessage } from "../git/message.ts";
+import { knownTemplate, KNOWN_TEMPLATES, TEMPLATE } from "../git/template-guard.ts";
 import { DEPLOY_KEY_TITLE, deployKeyPair, type DeployKeyPair } from "./deploy-key.ts";
 
-/** The template repository instances are made from (D-88). */
-export const TEMPLATE = { owner: "prabinpebam", name: "focus-notes-workspace" } as const;
+export { TEMPLATE };
 
 /**
  * The repositories that can hold someone's notes (D-147): never a template repository (GitHub's
@@ -45,6 +45,11 @@ export interface SetupDeps {
   /** The Git remote for a repository. Default: `https://github.com/<owner>/<repo>.git`. */
   remoteUrl?: (owner: string, repo: string) => string;
   template?: { owner: string; name: string };
+  /**
+   * Whether a repository is a template (D-157, the shell's `TemplateGuard`): setup never makes,
+   * downloads, or pushes to one. Known templates are refused without it.
+   */
+  isTemplate?: (owner: string, name: string) => Promise<boolean>;
   /** Waiting for GitHub to finish making a repository: tries, a second apart. */
   waitTries?: number;
   sleep?: (ms: number) => Promise<void>;
@@ -299,6 +304,12 @@ export class SetupEngine {
     return (this.#api = new GitHubApi(token, this.#d.fetch));
   }
 
+  /** Refuses a template repository (D-157): known by name, GitHub's `is_template`, or the shell's guard. */
+  async #notTemplate(name: string, flagged?: boolean): Promise<void> {
+    const t = this.#d.template ?? TEMPLATE;
+    if (flagged || knownTemplate(this.#login, name, [...KNOWN_TEMPLATES, t]) || (await this.#d.isTemplate?.(this.#login, name).catch(() => false))) throw new Failure("template");
+  }
+
   /** Polls until GitHub has finished making something (a repository from a template is made in the background). */
   async #waitFor<T>(fn: () => Promise<T | undefined | false>): Promise<T> {
     const tries = this.#d.waitTries ?? 30;
@@ -347,6 +358,7 @@ export class SetupEngine {
       const api = await this.#gh();
       const { instance } = this.#o;
       let repo = await api.findRepo(this.#login, instance);
+      await this.#notTemplate(instance, repo?.template);
       if (!repo) {
         const t = this.#d.template ?? TEMPLATE;
         try {
@@ -359,6 +371,7 @@ export class SetupEngine {
         repo = await this.#waitFor(() => api.findRepo(this.#login, instance));
         await this.#waitFor(() => api.head(this.#login, instance, repo!.defaultBranch));
       }
+      await this.#notTemplate(instance, repo.template);
       if (!repo.canPush) throw new Failure("permission");
       if (!(await api.hasFile(this.#login, instance, ".focus-notes/workspace.json"))) throw new Failure("notInstance");
       return "done";
@@ -369,6 +382,7 @@ export class SetupEngine {
       const api = await this.#gh();
       const name = this.#o.private;
       let repo = await api.findRepo(this.#login, name);
+      await this.#notTemplate(name, repo?.template);
       if (!repo) {
         await api.createRepo(name, "Private notes for Focus Notes", true);
         repo = await this.#waitFor(() => api.findRepo(this.#login, name));
@@ -400,6 +414,7 @@ export class SetupEngine {
     clone: async () => {
       const { instance, chosen } = this.#o;
       let { folder } = this.#o;
+      await this.#notTemplate(instance);
       const url = this.#url(instance);
       // Already this clone: resumed. Missing or empty: cloned into. Anything else is taken.
       const holds = async (f: string): Promise<"clone" | "free" | "taken"> => {
@@ -506,6 +521,8 @@ export class SetupEngine {
     /** Save to GitHub: push the private repository, then move the pointer to it and push the instance. */
     push: async () => {
       const ws = this.#o.folder;
+      await this.#notTemplate(this.#o.private);
+      await this.#notTemplate(this.#o.instance);
       await this.#gitNet(this.#private, ["push", "--quiet", "--set-upstream", "origin", "main"]);
       const moved = await this.#git(ws, ["status", "--porcelain", "--", "private"]);
       if (moved.stdout.trim()) {

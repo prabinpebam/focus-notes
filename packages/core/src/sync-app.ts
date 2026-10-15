@@ -25,7 +25,7 @@ export interface SyncState {
 }
 export const NO_SYNC: SyncState = { git: false };
 
-export const SYNC_PROBLEMS: readonly SyncProblem[] = ["offline", "auth", "conflict", "locked", "identity", "signing", "hook", "failed"];
+export const SYNC_PROBLEMS: readonly SyncProblem[] = ["offline", "auth", "conflict", "locked", "identity", "signing", "hook", "template", "failed"];
 
 /** The save state's six looks (D-132). */
 export type SaveStateKind = "savedLocal" | "pending" | "syncing" | "synced" | "offline" | "error";
@@ -62,6 +62,7 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
   const describe = (p: SyncProblem) => catalog.format(`sync.problem.${p}`);
   const retry = () => ({ command: "note.save", label: catalog.format("toast.retry") });
   const resolve = () => ({ command: "conflict.open", label: catalog.format("conflict.resolve") });
+  const action = (p: SyncProblem) => (p === "conflict" ? resolve() : syncProblemAction(p, catalog) ?? retry());
   const set = (patch: Partial<SyncState>) => store.update((s) => {
     const next: SyncState = { ...s.sync, ...patch };
     for (const k of Object.keys(patch) as (keyof SyncState)[]) if (patch[k] === undefined) delete next[k];
@@ -82,7 +83,7 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
     set({ git: r.git, problem: nextProblem, waiting, syncing: syncing || undefined, ...(backedUp ? { backedUpAt: now(), edited: undefined } : {}) });
     // Problems show when they first appear (EDT-11).
     // A conflict offers the resolver instead of Retry (Feedback → Save and sync status).
-    if (problem && problem !== before && !quiet && !asked) toast(describe(problem), { tone: "error", action: problem === "conflict" ? resolve() : retry() });
+    if (problem && problem !== before && !quiet && !asked) toast(describe(problem), { tone: "error", action: action(problem) });
   };
   return {
     /**
@@ -131,6 +132,14 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
       void bridge.sync?.now("switch").then((r) => apply(r), () => {});
     },
   };
+}
+
+/**
+ * A problem whose toast offers something other than Retry: a template repository (D-157) is never
+ * your notes, so the way on is choosing or creating your own (Run setup again), not trying again.
+ */
+export function syncProblemAction(p: SyncProblem, catalog: MessageCatalog): { command: string; label: string } | undefined {
+  return p === "template" ? { command: "setup.runAgain", label: catalog.format("command.setup.runAgain") } : undefined;
 }
 
 /** A sync that failed when the person asked for it: the toast says why, and offers Retry. */

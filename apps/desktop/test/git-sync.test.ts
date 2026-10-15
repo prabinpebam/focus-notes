@@ -242,6 +242,41 @@ describe("Offline, pulls, and conflicts (Desktop and Git → Save and sync)", ()
   });
 });
 
+describe("D-157: never pushes notes to a template repository", () => {
+  it("refuses the push to a template remote, keeps the commits here, and says so; other remotes still push", async () => {
+    const { ws, notesRemote, privateRemote } = instance();
+    const asked: string[] = [];
+    const s = await open(ws, { templateRemote: async (url) => (asked.push(url), url === notesRemote) });
+    const before = git(notesRemote, "rev-parse", "main");
+    const pub = join(ws, "notes", "hello.md");
+    writeFileSync(pub, "# Hello\n\nNot for a template.\n");
+    s.written(pub);
+    const priv = join(ws, "private", "notes", "welcome.md");
+    writeFileSync(priv, "# Welcome\n\nMine.\n");
+    s.written(priv);
+    const r = await s.request("save");
+    expect(r).toMatchObject({ state: "problem", problem: "template" });
+    expect(r.waiting, "the commit waits here").toBeGreaterThan(0);
+    expect(git(notesRemote, "rev-parse", "main"), "nothing reached the template").toBe(before);
+    expect(subject(ws, "HEAD")).toMatch(/^Update notes\/hello\.md/);
+    expect(git(privateRemote, "show", "main:notes/welcome.md")).toBe("# Welcome\n\nMine.");
+    expect(asked).toContain(notesRemote);
+    // Asked again, it's refused again: never pushed by a later sync.
+    expect((await s.sync("retry")).problem).toBe("template");
+    expect(git(notesRemote, "rev-parse", "main")).toBe(before);
+  });
+
+  it("saves as normal when the remote isn't a template (an unknown answer is not a template)", async () => {
+    const { ws, notesRemote } = instance();
+    const s = await open(ws, { templateRemote: async () => false });
+    const pub = join(ws, "notes", "hello.md");
+    writeFileSync(pub, "# Hello\n\nFine.\n");
+    s.written(pub);
+    expect((await s.request("save")).problem).toBeUndefined();
+    expect(git(notesRemote, "show", "main:notes/hello.md")).toBe("# Hello\n\nFine.");
+  });
+});
+
 describe("Repositories, the lock, the status cache, and credentials", () => {
   it("isn't a repository unless the workspace folder is one (saving stays local)", async () => {
     const plain = mkdtempSync(join(tmpdir(), "fn-plain-"));

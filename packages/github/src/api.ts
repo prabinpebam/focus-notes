@@ -121,8 +121,8 @@ export class GitHubApi {
   }
 
   async repo(owner: string, name: string): Promise<Repo> {
-    const r = await this.request<{ name: string; owner: { login: string }; default_branch: string; private: boolean; permissions?: { push?: boolean } }>("GET", `/repos/${owner}/${name}`);
-    return { owner: r.owner.login, name: r.name, defaultBranch: r.default_branch, private: r.private, canPush: Boolean(r.permissions?.push) };
+    const r = await this.request<{ name: string; owner: { login: string }; default_branch: string; private: boolean; permissions?: { push?: boolean }; is_template?: boolean }>("GET", `/repos/${owner}/${name}`);
+    return { owner: r.owner.login, name: r.name, defaultBranch: r.default_branch, private: r.private, canPush: Boolean(r.permissions?.push), ...(r.is_template ? { template: true } : {}) };
   }
 
   /** A repository, or undefined if there's none by that name (or it isn't visible to this token). */
