@@ -5,7 +5,7 @@
  * is abandoned), deleting exactly what the data inventory lists, and removing a workspace's local
  * clone only once everything in both repositories is on the remote.
  */
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -16,8 +16,13 @@ import { createRunner } from "../src/main/git/run.ts";
 import { Account } from "../src/main/first-run/account.ts";
 import { createToolRunner } from "../src/main/first-run/tools.ts";
 import { forgetLocalData, removalCheck, removeWorkspace } from "../src/main/workspace/remove.ts";
-import { makeFakes } from "./fakes/fakes.ts";
-import { count, git, instance, write } from "./git-fixture.ts";
+import { makeFakes, prepareFakes } from "./fakes/fakes.ts";
+import { SETUP_TIMEOUT_MS, count, git, instance, prepareTemplate, write } from "./git-fixture.ts";
+// One-time setup outside any test's time: a cold runner takes long over its first Git starts (DEF-13).
+beforeAll(() => {
+  prepareFakes();
+  prepareTemplate();
+}, SETUP_TIMEOUT_MS);
 
 const GRACE_TOKEN = "ghp_GRACE0123456789abcdefTOKEN00";
 

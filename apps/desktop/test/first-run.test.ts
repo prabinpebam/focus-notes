@@ -7,7 +7,7 @@
  * identity from GitHub with the private noreply address (FRE-05); and cloning or opening a workspace
  * with or without its private notes (FRE-06). No token appears in any process's arguments.
  */
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -18,7 +18,9 @@ import { createRunner } from "../src/main/git/run.ts";
 import { Account } from "../src/main/first-run/account.ts";
 import { commandFor, createToolRunner, findProgram, isGcmHelper, isGhHelper } from "../src/main/first-run/tools.ts";
 import { checkWorkspace, cloneWorkspace, applyLocalIdentity } from "../src/main/first-run/workspace.ts";
-import { makeFakes } from "./fakes/fakes.ts";
+import { makeFakes, prepareFakes } from "./fakes/fakes.ts";
+// One-time setup outside any test's time: a cold runner takes long over its first Git starts (DEF-13).
+beforeAll(prepareFakes, 120_000);
 
 const win = process.platform === "win32";
 

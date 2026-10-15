@@ -4,13 +4,15 @@
  * private text ever reaches the public repository's history; a workspace whose `private/` isn't a
  * repository never commits private notes to the public one; and an import is one commit (FRE-10).
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { GitSync, type GitSyncOptions } from "../src/main/git/sync.ts";
 import { createRunner } from "../src/main/git/run.ts";
 import { batchMessage } from "../src/main/git/message.ts";
-import { FakeClock, git, instance, subject } from "./git-fixture.ts";
+import { FakeClock, SETUP_TIMEOUT_MS, git, instance, prepareTemplate, subject } from "./git-fixture.ts";
+// One-time setup outside any test's time: a cold runner takes long over its first Git starts (DEF-13).
+beforeAll(prepareTemplate, SETUP_TIMEOUT_MS);
 
 vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 const opened: GitSync[] = [];

@@ -5,14 +5,16 @@
  * history (FIL-05), offline pushes that wait without losing anything, pulls, the lock file, the
  * status cache (PRF-07), and no credential in any argument (SEC-03).
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GitSync, type GitSyncOptions } from "../src/main/git/sync.ts";
 import { createRunner } from "../src/main/git/run.ts";
 import { LOCK_NAME, releaseLock, takeLock } from "../src/main/git/lock.ts";
-import { FakeClock, configure, count, git, instance, subject, write } from "./git-fixture.ts";
+import { FakeClock, SETUP_TIMEOUT_MS, configure, count, git, instance, prepareTemplate, subject, write } from "./git-fixture.ts";
+// One-time setup outside any test's time: a cold runner takes long over its first Git starts (DEF-13).
+beforeAll(prepareTemplate, SETUP_TIMEOUT_MS);
 
 vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 const opened: GitSync[] = [];
