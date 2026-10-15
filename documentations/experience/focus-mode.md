@@ -88,7 +88,8 @@ All triggers mark the band as stale, and one `requestAnimationFrame` callback do
 | Arrow, Home, End keys | `keyup` | Covered by `selectionchange` |
 | Click | Yes | Covered by `selectionchange` |
 | IME composition | No | `compositionupdate` and `compositionend` |
-| Window or container resize | `resize`, `ResizeObserver` | `ResizeObserver` on the canvas |
+| Window or container resize | `resize`, `ResizeObserver` | `ResizeObserver` on the canvas, and the window's `resize` |
+| Line metrics change: text size (<kbd>Mod</kbd>+<kbd>=</kbd> / <kbd>-</kbd> / <kbd>0</kbd>, <kbd>Ctrl</kbd>+wheel), content font, zoom | No | `ResizeObserver` on the caret's block, re-aimed as the caret moves: a short note's canvas keeps its minimum height when the text grows, but the caret's block always changes size ([D-130](../plan/decisions.md)) |
 | Web fonts finished loading, theme or font change | No | `document.fonts` `loadingdone`, theme-change event |
 | Scrolling | No | Not needed (band is in content coordinates) |
 

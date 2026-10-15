@@ -74,7 +74,7 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 | Keyboard shortcut cheat sheet | <kbd>⇧⌘/</kbd> (⌘?) | <kbd>Ctrl+Shift+/</kbd> (Ctrl+?) | | Writer | GitHub, Gmail (<kbd>?</kbd>) |
 | Toggle focus mode | <kbd>⇧⌘D</kbd> or <kbd>F8</kbd> | <kbd>Ctrl+Shift+D</kbd> or <kbd>F8</kbd> |  | Writer | Typora (F8) |
 | Toggle light / dark | <kbd>⇧⌘L</kbd> | <kbd>Ctrl+Shift+L</kbd> | Spotlight if the browser keeps it | Writer | No common standard |
-| Larger / smaller / reset font size | <kbd>⌘=</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd> | <kbd>Ctrl+=</kbd> / <kbd>Ctrl+-</kbd> / <kbd>Ctrl+0</kbd> |  | Writer | Browsers, VS Code |
+| Larger / smaller / reset font size | <kbd>⌘=</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd>, or pinch | <kbd>Ctrl+=</kbd> / <kbd>Ctrl+-</kbd> / <kbd>Ctrl+0</kbd>, or <kbd>Ctrl</kbd>+wheel or pinch |  | Writer | Browsers, VS Code ([D-130](../plan/decisions.md)) |
 | Full screen | <kbd>⌃⌘F</kbd> | <kbd>F11</kbd> | Toolbar ⋯ (Fullscreen API) | Writer | macOS, Windows |
 | Minimize | <kbd>⌘M</kbd> | <kbd>Win+↓</kbd> (system) |  | Basic | OS |
 | Window menu: Restore, Move, Size, Minimize, Maximize, Snap left and right, Close |  | <kbd>Alt+Space</kbd> (the app's own, D-104) |  | Basic | Windows |
@@ -243,3 +243,4 @@ These are the deliberate trade-offs. Each one is the choice the most popular pre
 | <kbd>Mod</kbd>+<kbd>P</kbd> | Quick open | The browser's print key | VS Code, Notion. Printing is in ⋯ and Spotlight. |
 | <kbd>⇧⌘↑</kbd> / <kbd>⇧⌘↓</kbd> (macOS) | Move block | Select to start or end of the note | Notion. <kbd>⌘A</kbd> still selects the whole note. |
 | <kbd>Mod</kbd>+<kbd>=</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Content font size | Whole-page zoom | VS Code. UI scale is a separate setting. |
+| <kbd>Ctrl</kbd>+wheel, trackpad pinch | Content font size, one step a notch | Whole-page zoom | Browsers. The page never zooms; the text size is the only zoom. <kbd>⌘</kbd>+wheel on macOS scrolls, as it does everywhere there ([D-130](../plan/decisions.md)). |

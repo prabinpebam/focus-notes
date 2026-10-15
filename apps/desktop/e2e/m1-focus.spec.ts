@@ -59,6 +59,64 @@ test("FOC-01, FOC-02: only the caret's visual row is bright, and the band follow
   await quit(l);
 });
 
+/** How far the band is from the caret's visual row (its line box), in px, and the row's font size. */
+async function bandOffRow(page: Page) {
+  return page.evaluate(() => {
+    const column = document.querySelector<HTMLElement>("[data-focus-mode]")!;
+    const props = [...Array(column.style.length)].map((_, i) => column.style[i]!).filter((p) => p.startsWith("--"));
+    const values = props.map((p) => parseFloat(column.style.getPropertyValue(p)));
+    const origin = column.getBoundingClientRect().top;
+    const range = window.getSelection()!.getRangeAt(0);
+    const r = range.getClientRects()[0] ?? range.getBoundingClientRect();
+    const node = range.startContainer;
+    const block = (node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement)!.closest("p, h1, h2, h3, li")!;
+    const cs = getComputedStyle(block);
+    const mid = (r.top + r.bottom) / 2 - origin;
+    const lh = parseFloat(cs.lineHeight);
+    return { off: Math.max(Math.abs(Math.min(...values) - (mid - lh / 2)), Math.abs(Math.max(...values) - (mid + lh / 2))), fontSize: parseFloat(cs.fontSize) };
+  });
+}
+
+test("FOC-01, FOC-05: the band follows the text size, from keys, the wheel, and reset", async () => {
+  const dirs = tempDirs();
+  // A short note: the text growing doesn't change the editor's height (its minimum), as in the owner's report.
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Heading\n\nA short paragraph on one row.\n\nAnother one.\n");
+  const l = await launch(dirs);
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  await expect.poll(() => page.evaluate(() => document.querySelector("[data-focus-mode]") !== null)).toBe(true);
+  await editor.locator("p").first().click();
+  const settled = async (size: number) => {
+    await expect.poll(async () => (await bandOffRow(page)).fontSize).toBe(size);
+    await expect.poll(async () => (await bandOffRow(page)).off).toBeLessThanOrEqual(1);
+  };
+  await settled(16);
+
+  // Larger twice with the keys, then smaller four times, then reset.
+  await page.keyboard.press(`${mod}+Equal`);
+  await page.keyboard.press(`${mod}+Equal`);
+  await settled(18);
+  for (let i = 0; i < 4; i++) await page.keyboard.press(`${mod}+Minus`);
+  await settled(14);
+  await page.keyboard.press(`${mod}+Digit0`);
+  await settled(16);
+
+  // The same with Ctrl and the wheel (D-130): up twice, down once.
+  const box = (await editor.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.keyboard.down("Control");
+  await page.mouse.wheel(0, -100);
+  await page.mouse.wheel(0, -100);
+  await page.keyboard.up("Control");
+  await settled(18);
+  await page.keyboard.down("Control");
+  await page.mouse.wheel(0, 100);
+  await page.keyboard.up("Control");
+  await settled(17);
+  await quit(l);
+});
+
 test("FOC-03: focus mode toggles with the shortcut and survives a restart", async () => {
   const dirs = tempDirs();
   const l = await launch(dirs);

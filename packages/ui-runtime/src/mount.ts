@@ -18,6 +18,10 @@ export interface MountOptions {
 }
 
 const MODIFIERS = new Set(["Meta", "Control", "Alt", "Shift", "AltGraph", "CapsLock", "Fn"]);
+/** Ctrl+wheel (D-130): how far the wheel moves for one text size step, a mouse notch being about 100 px. */
+const WHEEL_STEP_PX = 50;
+/** A wheel that counts in lines, as about this many pixels each. */
+const WHEEL_LINE_PX = 40;
 
 export function mountApp(el: Element, { app, views, view = "canvas", overlays = [] }: MountOptions): Root {
   // Before anything renders: HTML reaches the DOM only through the sanitizing policy (SEC-02).
@@ -65,6 +69,21 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     keyRanCommand();
     void app.commands.run(id);
   }, true);
+  // Ctrl and the wheel change the text size as Mod+= and Mod+- do (D-130), and so does a trackpad's
+  // pinch, which arrives as a wheel with Ctrl. The page itself never zooms. Small deltas (a pinch, a
+  // fine wheel) add up to a notch, and one event is at most one step, so a gesture never jumps sizes.
+  let wheeled = 0;
+  window.addEventListener("wheel", (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    const dy = e.deltaMode === WheelEvent.DOM_DELTA_PIXEL ? e.deltaY : e.deltaY * WHEEL_LINE_PX;
+    if (!dy) return;
+    if (Math.sign(dy) !== Math.sign(wheeled)) wheeled = 0;
+    wheeled += dy;
+    if (Math.abs(wheeled) < WHEEL_STEP_PX) return;
+    wheeled = 0;
+    void app.commands.run(dy < 0 ? "font.larger" : "font.smaller");
+  }, { capture: true, passive: false });
   // Editor commands run from menus and Spotlight reach the editor surface through a window event.
   // Saving and switching notes first collect text the editor hasn't sent yet (QLT-03, D-23).
   app.onEditorAction((id, args) => window.dispatchEvent(id === FLUSH_EDITOR ? new Event(FLUSH_EVENT) : new CustomEvent(EDITOR_ACTION_EVENT, { detail: { id, args } })));
