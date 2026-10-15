@@ -5,7 +5,11 @@
   "viewModels": [
     "vm.settings",
     "vm.signOut",
-    "vm.removeWorkspace"
+    "vm.removeWorkspace",
+    "vm.shareManage",
+    "vm.shareEditor",
+    "vm.shareInvite",
+    "vm.shareConfirm"
   ],
   "focus": "settingsCategories",
   "overlay": true,
@@ -395,6 +399,263 @@
                       }
                     ]
                   },
+                  "sharing": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "justify": "between",
+                          "gap": "m",
+                          "wrap": true
+                        },
+                        "children": [
+                          {
+                            "type": "Heading",
+                            "props": {
+                              "level": "3",
+                              "value": {
+                                "t": "share.manage.heading"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "when": {
+                              "get": "vm.shareManage.available"
+                            },
+                            "props": {
+                              "label": {
+                                "t": "share.manage.add"
+                              },
+                              "variant": "primary",
+                              "icon": "share"
+                            },
+                            "on": {
+                              "press": {
+                                "run": "share.manage.add"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "when": {
+                          "get": "vm.shareManage.available"
+                        },
+                        "props": {
+                          "value": {
+                            "t": "share.manage.live"
+                          },
+                          "tone": "muted"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "when": {
+                          "get": "vm.shareManage.loading"
+                        },
+                        "props": {
+                          "value": {
+                            "t": "share.manage.loading"
+                          },
+                          "announce": true
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "when": {
+                          "get": "vm.shareManage.unavailable"
+                        },
+                        "props": {
+                          "value": {
+                            "t": "share.manage.unavailable"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "when": {
+                          "get": "vm.shareManage.failed"
+                        },
+                        "props": {
+                          "gap": "s",
+                          "align": "start"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "share.manage.failed"
+                              },
+                              "tone": "danger",
+                              "announce": true
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "share.manage.retry"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "share.manage.load"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "when": {
+                          "get": "vm.shareManage.noSite"
+                        },
+                        "props": {
+                          "value": {
+                            "t": "share.manage.noSite"
+                          },
+                          "tone": "warning"
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "ItemCard",
+                            "when": {
+                              "get": "vm.shareManage.vault"
+                            },
+                            "props": {
+                              "title": {
+                                "t": "share.manage.vault.title"
+                              },
+                              "detail": {
+                                "t": "share.manage.vault.detail"
+                              },
+                              "badge": {
+                                "t": "share.manage.vault.badge"
+                              },
+                              "icon": "lock",
+                              "label": {
+                                "t": "share.manage.vault.label"
+                              }
+                            }
+                          },
+                          {
+                            "each": {
+                              "get": "vm.shareManage.rows"
+                            },
+                            "as": "row",
+                            "key": "row.id",
+                            "render": {
+                              "type": "ItemCard",
+                              "props": {
+                                "title": {
+                                  "get": "row.name"
+                                },
+                                "initials": {
+                                  "get": "row.initials"
+                                },
+                                "detail": {
+                                  "get": "row.detail"
+                                },
+                                "badge": {
+                                  "get": "row.badge"
+                                },
+                                "label": {
+                                  "get": "row.label"
+                                },
+                                "personal": "title"
+                              },
+                              "children": [
+                                {
+                                  "type": "Inline",
+                                  "props": {
+                                    "gap": "s"
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "Button",
+                                      "when": {
+                                        "get": "row.active"
+                                      },
+                                      "props": {
+                                        "label": {
+                                          "get": "row.inviteLabel"
+                                        },
+                                        "size": "s",
+                                        "icon": "copy"
+                                      },
+                                      "on": {
+                                        "press": {
+                                          "run": "share.manage.invite",
+                                          "args": {
+                                            "id": {
+                                              "get": "row.id"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "MenuButton",
+                                      "props": {
+                                        "icon": "more",
+                                        "label": {
+                                          "get": "row.moreLabel"
+                                        },
+                                        "sections": {
+                                          "get": "row.menu"
+                                        }
+                                      },
+                                      "on": {
+                                        "action": {
+                                          "run": "share.manage.row",
+                                          "args": {
+                                            "id": {
+                                              "get": "row.id"
+                                            },
+                                            "action": {
+                                              "get": "event.id"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "empty": {
+                              "type": "ItemCard",
+                              "props": {
+                                "title": {
+                                  "t": "share.manage.empty.title"
+                                },
+                                "detail": {
+                                  "t": "share.manage.empty.detail"
+                                },
+                                "badge": {
+                                  "t": "share.manage.empty.badge"
+                                },
+                                "icon": "share"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
                   "appearance": {
                     "type": "Stack",
                     "props": {
@@ -731,6 +992,753 @@
                     },
                     "when": {
                       "get": "vm.removeWorkspace.canRemove"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "shareEditor",
+        "when": {
+          "get": "vm.shareEditor.open"
+        },
+        "props": {
+          "title": {
+            "get": "vm.shareEditor.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.shareEditor.open"
+          },
+          "size": "s"
+        },
+        "on": {
+          "openChange": {
+            "run": "share.manage.setEditorOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "TextField",
+                "when": {
+                  "get": "vm.shareEditor.creating"
+                },
+                "props": {
+                  "label": {
+                    "t": "share.manage.editor.name"
+                  },
+                  "description": {
+                    "t": "share.manage.editor.nameHint"
+                  },
+                  "value": {
+                    "bind": "vm.shareEditor.name"
+                  },
+                  "invalid": {
+                    "get": "vm.shareEditor.nameInvalid"
+                  },
+                  "autoFocus": true
+                }
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "share.manage.editor.waysIn"
+                      },
+                      "role": "label"
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s",
+                      "wrap": true
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "share.manage.editor.link"
+                          },
+                          "icon": "link",
+                          "toggle": true,
+                          "pressed": {
+                            "get": "vm.shareEditor.link"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "share.manage.toggleLink"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "share.manage.editor.passcode"
+                          },
+                          "icon": "lock",
+                          "toggle": true,
+                          "pressed": {
+                            "get": "vm.shareEditor.passcode"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "share.manage.togglePasscode"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Stack",
+                "when": {
+                  "get": "vm.shareEditor.passcode"
+                },
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "SegmentedControl",
+                    "props": {
+                      "label": {
+                        "t": "share.manage.passcode.label"
+                      },
+                      "options": {
+                        "get": "vm.shareEditor.modes"
+                      },
+                      "value": {
+                        "bind": "vm.shareEditor.mode"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "when": {
+                      "get": "vm.shareEditor.generate"
+                    },
+                    "props": {
+                      "gap": "m",
+                      "justify": "between",
+                      "wrap": true
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "get": "vm.shareEditor.generated"
+                          },
+                          "role": "title"
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "share.manage.passcode.newWords"
+                          },
+                          "variant": "subtle",
+                          "icon": "sync",
+                          "size": "s"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "share.manage.newWords"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "TextField",
+                    "when": {
+                      "get": "vm.shareEditor.own"
+                    },
+                    "props": {
+                      "label": {
+                        "t": "share.manage.passcode.ownLabel"
+                      },
+                      "value": {
+                        "bind": "vm.shareEditor.ownValue"
+                      },
+                      "invalid": {
+                        "get": "vm.shareEditor.ownInvalid"
+                      },
+                      "description": {
+                        "get": "vm.shareEditor.ownNote"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "justify": "between",
+                      "gap": "m"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "share.manage.editor.opens"
+                          },
+                          "role": "label"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "get": "vm.shareEditor.picked"
+                          },
+                          "tone": "muted",
+                          "role": "caption",
+                          "announce": true
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "TextField",
+                    "props": {
+                      "label": {
+                        "t": "share.manage.editor.filter"
+                      },
+                      "labelHidden": true,
+                      "placeholder": {
+                        "t": "share.manage.editor.filter"
+                      },
+                      "size": "m",
+                      "value": {
+                        "bind": "vm.shareEditor.filter"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s",
+                      "wrap": true
+                    },
+                    "children": [
+                      {
+                        "each": {
+                          "get": "vm.shareEditor.items"
+                        },
+                        "as": "item",
+                        "key": "item.id",
+                        "render": {
+                          "type": "Button",
+                          "props": {
+                            "label": {
+                              "get": "item.label"
+                            },
+                            "size": "s",
+                            "icon": {
+                              "get": "item.icon"
+                            },
+                            "toggle": true,
+                            "pressed": {
+                              "get": "item.pressed"
+                            }
+                          },
+                          "on": {
+                            "press": {
+                              "run": "share.manage.toggleItem",
+                              "args": {
+                                "id": {
+                                  "get": "item.id"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "empty": {
+                          "type": "Text",
+                          "props": {
+                            "value": {
+                              "t": "share.manage.editor.noItems"
+                            },
+                            "tone": "muted"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "SegmentedControl",
+                "props": {
+                  "label": {
+                    "t": "share.manage.editor.expires"
+                  },
+                  "options": {
+                    "get": "vm.shareEditor.expiries"
+                  },
+                  "value": {
+                    "bind": "vm.shareEditor.expiry"
+                  }
+                }
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.shareEditor.hasProblem"
+                },
+                "props": {
+                  "value": {
+                    "get": "vm.shareEditor.problem"
+                  },
+                  "tone": "danger",
+                  "announce": true
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "end",
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.manage.cancel"
+                      },
+                      "variant": "secondary"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.setEditorOpen",
+                        "args": {
+                          "open": false
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "get": "vm.shareEditor.submitLabel"
+                      },
+                      "variant": "primary",
+                      "busy": {
+                        "get": "vm.shareEditor.busy"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.submit"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "shareInvite",
+        "when": {
+          "get": "vm.shareInvite.open"
+        },
+        "props": {
+          "title": {
+            "get": "vm.shareInvite.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.shareInvite.open"
+          },
+          "size": "s"
+        },
+        "on": {
+          "openChange": {
+            "run": "share.manage.setInviteOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "ItemCard",
+                "props": {
+                  "title": {
+                    "get": "vm.shareInvite.name"
+                  },
+                  "initials": {
+                    "get": "vm.shareInvite.initials"
+                  },
+                  "detail": {
+                    "get": "vm.shareInvite.detail"
+                  },
+                  "personal": "title"
+                }
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "xs"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "share.manage.invite.message"
+                      },
+                      "role": "label"
+                    }
+                  },
+                  {
+                    "type": "Surface",
+                    "props": {
+                      "variant": "sunken",
+                      "shape": "control",
+                      "padding": "m"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs"
+                        },
+                        "children": [
+                          {
+                            "each": {
+                              "get": "vm.shareInvite.lines"
+                            },
+                            "as": "line",
+                            "key": "line.id",
+                            "render": {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "get": "line.text"
+                                },
+                                "role": "secondary"
+                              }
+                            },
+                            "empty": {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "t": "share.manage.invite.noSite"
+                                },
+                                "tone": "muted"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "gap": "s",
+                  "wrap": true
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "get": "vm.shareInvite.copyInvite"
+                      },
+                      "variant": "primary",
+                      "icon": {
+                        "get": "vm.shareInvite.inviteIcon"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.copy",
+                        "args": {
+                          "what": "invite"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "when": {
+                      "get": "vm.shareInvite.hasLink"
+                    },
+                    "props": {
+                      "label": {
+                        "get": "vm.shareInvite.copyLink"
+                      },
+                      "icon": {
+                        "get": "vm.shareInvite.linkIcon"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.copy",
+                        "args": {
+                          "what": "link"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "when": {
+                      "get": "vm.shareInvite.hasPasscode"
+                    },
+                    "props": {
+                      "label": {
+                        "get": "vm.shareInvite.copyPasscode"
+                      },
+                      "icon": {
+                        "get": "vm.shareInvite.passcodeIcon"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.copy",
+                        "args": {
+                          "what": "passcode"
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Stack",
+                "when": {
+                  "get": "vm.shareInvite.hasPasscode"
+                },
+                "props": {
+                  "gap": "xs"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "share.manage.invite.passcodeLabel"
+                      },
+                      "role": "label"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.shareInvite.passcode"
+                      },
+                      "role": "title"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.shareInvite.noSite"
+                },
+                "props": {
+                  "value": {
+                    "t": "share.manage.invite.noSite"
+                  },
+                  "tone": "warning"
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.shareInvite.copied"
+                  },
+                  "tone": "success",
+                  "announce": true
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "between",
+                  "gap": "s",
+                  "wrap": true
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "share.manage.live"
+                      },
+                      "tone": "muted",
+                      "role": "caption"
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.manage.invite.done"
+                      },
+                      "variant": "secondary"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.setInviteOpen",
+                        "args": {
+                          "open": false
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "shareConfirm",
+        "when": {
+          "get": "vm.shareConfirm.open"
+        },
+        "props": {
+          "title": {
+            "get": "vm.shareConfirm.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.shareConfirm.open"
+          },
+          "size": "s",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "share.manage.setConfirmOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "get": "vm.shareConfirm.message"
+                  },
+                  "announce": true
+                }
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "end",
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "share.manage.cancel"
+                      },
+                      "variant": "secondary",
+                      "autoFocus": true
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.setConfirmOpen",
+                        "args": {
+                          "open": false
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "get": "vm.shareConfirm.confirmLabel"
+                      },
+                      "variant": "danger",
+                      "busy": {
+                        "get": "vm.shareConfirm.busy"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.confirm"
+                      }
                     }
                   }
                 ]

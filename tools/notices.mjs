@@ -27,6 +27,13 @@ entries.sort((a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b
 // Code copied into the app rather than installed: each with where it is and its license (LIC-02).
 const VENDORED = [
   {
+    name: "EFF large wordlist", version: "2016-07-18", license: "CC-BY-3.0-US", homepage: "https://www.eff.org/dice",
+    what: "The 7,776 words of `eff_large_wordlist.txt`, unmodified apart from dropping the dice numbers, in `packages/seal/src/words.ts`, for generated passcodes (SHR-07, D-52).",
+    text: `"EFF's Long Wordlist" by the Electronic Frontier Foundation (https://www.eff.org/dice),
+used under the Creative Commons Attribution 3.0 United States license
+(https://creativecommons.org/licenses/by/3.0/us/).`,
+  },
+  {
     name: "@primer/octicons", version: "19.40.0", license: "MIT", homepage: "https://primer.style/octicons",
     what: "Only the `mark-github` icon's SVG path, unmodified, in `packages/ui/src/github-mark.tsx` (D-126). GitHub's logo guidelines apply to its use.",
     text: `MIT License

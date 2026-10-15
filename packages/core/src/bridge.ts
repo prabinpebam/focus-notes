@@ -5,6 +5,7 @@ import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
 import type { ConflictChoiceKind, DeletedNote } from "./history.ts";
 import type { NativeWindowBridge, WindowBridge } from "./window-app.ts";
+import type { AccessBridge } from "./share-manage.ts";
 
 /**
  * Services a shell provides. The Electron preload implements this as `window.focusNotes`;
@@ -63,6 +64,8 @@ export interface PlatformBridge {
   firstRun?: FirstRunBridge;
   /** Synced settings in the private repository (PRV-03, D-46). Absent where there can't be one (the browser). */
   settings?: SettingsBridge;
+  /** Share audiences in the private repository's access.json (WP-5.3, D-134). Absent in the browser. */
+  access?: AccessBridge;
   /** The window the app draws and manages itself on Windows and Linux (DSK-03, D-14). Absent on macOS and in the browser. */
   window?: WindowBridge;
   /** macOS's native window: its menu bar and traffic lights (DSK-02, DSK-05, D-14). Absent elsewhere. */

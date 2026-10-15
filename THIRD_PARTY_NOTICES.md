@@ -7583,6 +7583,19 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Copied into the app
 
+## EFF large wordlist 2016-07-18
+
+License: CC-BY-3.0-US  
+Homepage: https://www.eff.org/dice
+
+The 7,776 words of `eff_large_wordlist.txt`, unmodified apart from dropping the dice numbers, in `packages/seal/src/words.ts`, for generated passcodes (SHR-07, D-52).
+
+```text
+"EFF's Long Wordlist" by the Electronic Frontier Foundation (https://www.eff.org/dice),
+used under the Creative Commons Attribution 3.0 United States license
+(https://creativecommons.org/licenses/by/3.0/us/).
+```
+
 ## @primer/octicons 19.40.0
 
 License: MIT  

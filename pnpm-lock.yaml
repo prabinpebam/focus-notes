@@ -129,6 +129,9 @@ importers:
       '@focus-notes/markdown':
         specifier: workspace:*
         version: link:../markdown
+      '@focus-notes/seal':
+        specifier: workspace:*
+        version: link:../seal
       '@focus-notes/tokens':
         specifier: workspace:*
         version: link:../tokens

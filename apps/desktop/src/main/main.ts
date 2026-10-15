@@ -18,6 +18,8 @@ import { restorePlace, titleOrName } from "@focus-notes/core/history";
 import { GitSync, NO_GIT } from "./git/sync.ts";
 import { createRunner, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
+import { generatePasscode } from "@focus-notes/seal/words";
+import { accessStore, siteFromGitConfig } from "./share/access.ts";
 import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
 import { checkOptions, SetupEngine } from "./setup/engine.ts";
@@ -834,6 +836,19 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     await rm(settingsFile(), { force: true });
     withGit((g) => g.written(settingsFile()));
   });
+  // Share audiences (WP-5.3, D-134): only this process writes access.json and makes its secrets.
+  const access = accessStore({
+    dir: privateDir,
+    site: async () => (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8")),
+    write: atomicWrite,
+    written: (file) => withGit((g) => g.written(file)),
+  });
+  handle("access:load", async () => (settingsAvailable() ? access.load() : { available: false, vault: false, grants: [] }));
+  handle("access:apply", async (change) => {
+    if (!settingsAvailable()) throw new Error("access:failed");
+    return access.apply(change);
+  });
+  handle("access:suggest", async () => generatePasscode());
   handle("sync:now", async (reason) => {
     const g = await gitOpening;
     return g ? g.request(reason === "switch" ? "switch" : "save") : NO_GIT;
