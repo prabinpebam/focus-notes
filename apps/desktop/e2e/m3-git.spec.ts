@@ -87,7 +87,7 @@ test("EDT-11: typing shows saved here at once, then not backed up yet; Mod+Shift
   await noteFocused(page);
   // The label closes again after a moment; the tooltip keeps the words.
   await expect(saveIcon(page)).toHaveText("", { timeout: 5_000 });
-  await expect(saveIcon(page)).toHaveAccessibleName(/^Backed up · /);
+  await expect(saveIcon(page)).toHaveAccessibleName(/^Backed up at /);
   await noteFocused(page);
   await quit(l);
 });

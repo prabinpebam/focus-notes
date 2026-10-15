@@ -1199,10 +1199,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
 
   // ---- the save state: the bottom-left pill's icon (EDT-11, UI-12, D-132) ----
-  const when = (at: number) => {
-    const min = Math.floor((Date.now() - at) / 60_000);
-    return min < 1 ? catalog.format("save.when.now") : min < 60 ? catalog.format("save.when.minutes", { n: min }) : catalog.format("save.when.hours", { n: Math.floor(min / 60) });
-  };
+  // The time of day, not "2 min ago": nothing repeats on a timer at rest to keep a relative time true (PRF-04).
+  const timeOfDay = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
+  const when = (at: number) => timeOfDay.format(at);
   viewModels.register({
     id: "vm.saveState",
     schema: {
@@ -1217,7 +1216,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     select: (s) => {
       const state = saveStateOf(s.sync, s.note.saveState === "unsaved" || s.note.saveState === "saving");
       const label = !catalog.has("save.state.savedLocal") ? ""
-        : state === "synced" ? (s.sync.backedUpAt !== undefined ? catalog.format("save.state.synced", { when: when(s.sync.backedUpAt) }) : catalog.format("save.state.syncedNow"))
+        : state === "synced" ? (s.sync.backedUpAt !== undefined ? catalog.format("save.state.synced", { time: when(s.sync.backedUpAt) }) : catalog.format("save.state.syncedNow"))
           : catalog.format(`save.state.${state}`);
       const text = !s.sync.asked || !catalog.has("save.label.done") ? "" : catalog.format(s.sync.asked === "done" ? "save.label.done" : "save.label.syncing");
       // On the desktop, wherever a note is open; the browser keeps its notes itself (D-90).

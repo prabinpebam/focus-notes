@@ -12,8 +12,8 @@ const messages = {
   "sync.problem.offline": "Couldn't sync: you're offline.", "sync.problem.conflict": "Couldn't sync: changes don't fit.", "sync.problem.failed": "Couldn't sync.",
   "conflict.resolve": "Resolve",
   "save.state.savedLocal": "Saved on this computer", "save.state.pending": "Saved here · not backed up yet", "save.state.syncing": "Backing up…",
-  "save.state.synced": "Backed up · {when}", "save.state.syncedNow": "Backed up", "save.state.offline": "Offline", "save.state.error": "Couldn't back up",
-  "save.when.now": "just now", "save.when.minutes": "{n} min ago", "save.when.hours": "{n} h ago", "save.label.syncing": "Backing up…", "save.label.done": "Backed up",
+  "save.state.synced": "Backed up at {time}", "save.state.syncedNow": "Backed up", "save.state.offline": "Offline", "save.state.error": "Couldn't back up",
+  "save.label.syncing": "Backing up…", "save.label.done": "Backed up",
 };
 
 function setup(withSync = true) {
@@ -128,7 +128,8 @@ describe("EDT-11: save and sync", () => {
     t.report({ git: true, state: "syncing", waiting: 1 });
     expect(t.save().state).toBe("syncing");
     t.report({ git: true, state: "idle", waiting: 0 });
-    expect(t.save()).toMatchObject({ state: "synced", label: "Backed up · just now" });
+    expect(t.save()).toMatchObject({ state: "synced" });
+    expect(t.save().label).toMatch(/^Backed up at \d{1,2}[:.]\d{2}/);
     t.report({ git: true, state: "syncing", waiting: 0 });
     expect(t.save().state).toBe("synced");
   });

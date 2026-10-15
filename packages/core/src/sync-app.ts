@@ -22,8 +22,6 @@ export interface SyncState {
   asked?: "syncing" | "done";
   /** The person changed a note since the last backup: written here, not backed up yet. */
   edited?: boolean;
-  /** Moves every minute while backed up, so "2 min ago" stays true. */
-  tick?: number;
 }
 export const NO_SYNC: SyncState = { git: false };
 
@@ -45,7 +43,6 @@ export function saveStateOf(sync: SyncState, noteSaving: boolean): SaveStateKind
 
 /** How long Save to cloud's label stays after it's done. */
 export const ASKED_DONE_MS = 2_000;
-const MINUTE = 60_000;
 
 interface Ctx<S extends { sync: SyncState }> {
   store: Store<S>;
@@ -60,7 +57,6 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
   /** Save to cloud is waiting on a sync: its own result says what happened, so the background toast stays quiet. */
   let asked = 0;
   let doneTimer: ReturnType<typeof setTimeout> | undefined;
-  let ticker: ReturnType<typeof setInterval> | undefined;
   const describe = (p: SyncProblem) => catalog.format(`sync.problem.${p}`);
   const retry = () => ({ command: "note.save", label: catalog.format("toast.retry") });
   const resolve = () => ({ command: "conflict.open", label: catalog.format("conflict.resolve") });
@@ -69,12 +65,6 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
     for (const k of Object.keys(patch) as (keyof SyncState)[]) if (patch[k] === undefined) delete next[k];
     return { ...s, sync: next };
   });
-  /** "2 min ago" keeps moving while the state is backed up, once a minute. */
-  const tick = () => {
-    const on = store.state.sync.backedUpAt !== undefined && !store.state.sync.waiting;
-    if (on && !ticker) ticker = setInterval(() => set({ tick: (store.state.sync.tick ?? 0) + 1 }), MINUTE);
-    if (!on && ticker) (clearInterval(ticker), (ticker = undefined));
-  };
   const apply = (r: SyncReport, quiet = false) => {
     const was = store.state.sync;
     const before = was.problem;
@@ -87,7 +77,6 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
     const nextProblem = keep ? before : problem;
     if (was.git === r.git && before === nextProblem && (was.waiting ?? 0) === waiting && Boolean(was.syncing) === syncing && !backedUp) return;
     set({ git: r.git, problem: nextProblem, waiting, syncing: syncing || undefined, ...(backedUp ? { backedUpAt: now(), edited: undefined } : {}) });
-    tick();
     // Problems show when they first appear (EDT-11).
     // A conflict offers the resolver instead of Retry (Feedback → Save and sync status).
     if (problem && problem !== before && !quiet && !asked) toast(describe(problem), { tone: "error", action: problem === "conflict" ? resolve() : retry() });

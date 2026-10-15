@@ -42,7 +42,7 @@ While there's a problem, opening the toolbar adds a status row at its top: "3 ch
 | Saved on this computer | check | "Saved on this computer" |
 | Not backed up yet | cloud with a dot | "Saved here · not backed up yet" |
 | Backing up | cloud with an arrow, rising gently; still with reduced motion | "Backing up…" |
-| Backed up | cloud with a check | "Backed up · 2 min ago" |
+| Backed up | cloud with a check | "Backed up at 2:41 PM" (the time of day: a relative time would need a timer at rest, PRF-04) |
 | Offline | cloud with a slash | "Offline · will back up when you're back" |
 | Problem | warning, in the danger color | "Couldn't back up · Try again" |
 
