@@ -25,6 +25,11 @@ The planned code layout (a pnpm monorepo) is in [`documentations/plan/distributi
 5. **Every requirement is planned.** Each requirement ID in `product/requirements.md` belongs to exactly one work package in `plan/work-graph.json` and one stage in `plan/roadmap.md`. When building, follow [the agentic loop](documentations/plan/agentic-loop.html) and the [definition of done](documentations/plan/definition-of-done.md).
 6. **Design system.** The app's interface is data. When code arrives, markup and styles may exist only in `packages/ui` primitives and layouts, every visual value is a token, and views are JSON documents validated by `ui:check`. Never add HTML, CSS, inline styles, or literal UI strings anywhere else. See [`documentations/design/system/overview.html`](documentations/design/system/overview.html).
    - **Visual over verbose.** Every surface that presents a task or a state must pass the [visual vs verbose score](documentations/design/visual-score.html) threshold: VVS ≥ 70 (≥ 80 for first-run steps and empty states), no criterion below 10. Prefer the right element over sentences: a profile card, option cards, a badge, a stepper, not prose describing what the UI could show (D-127).
+   - **No frozen waits, no glitches** ([Perceived performance](documentations/architecture/perceived-performance.md), D-148, D-149):
+     - A new operation that can take longer than 100 ms gets a row in the wait inventory: its class (instant, responsive, waiting, long), its pattern, the place its sign shows, its words, and its `fn:` measure.
+     - It goes through the task tracker, and long work streams its steps and progress. A single unnamed `busy` is a defect.
+     - Never call `webContents.reload()` to change state, and never unmount a view before its replacement is ready: no frame may be blank, white or unstyled (DSK-09).
+     - The window stays draggable and takes the mouse in every state.
 7. **Licenses.** The app is MIT. Only permissive dependencies are allowed (see the licensing policy in `plan/decisions.md`).
 8. **Package sources.** Use the package sources and registries your environment requires. Never commit secrets or tokens.
 

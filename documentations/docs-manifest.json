@@ -376,7 +376,16 @@
       "order": 470,
       "icon": "speed",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-15",
+      "group": "Architecture"
+    },
+    {
+      "path": "architecture/perceived-performance.md",
+      "title": "Perceived performance",
+      "order": 475,
+      "icon": "hourglass",
+      "status": "draft",
+      "updated": "2026-10-15",
       "group": "Architecture"
     },
     {

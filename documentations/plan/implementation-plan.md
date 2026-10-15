@@ -188,6 +188,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 | WP-5.5 | **Release pipeline**. Draft releases with the desktop installers, the web app bundle, checksums, SBOM, and attestations. | DST-03 | WP-0.9, WP-5.1 | code, security |
 | WP-5.6 | **Instance template and update pull requests**. The template repository generated from templates/workspace/ at each release, its pinned Deploy app workflow, and update pull requests. | DST-06 | WP-5.5 | code, design-system, accessibility |
 | WP-5.7 | **Diagnostics and release qualification**. Local diagnostics, Report a problem, and the full support-matrix pass for 1.0. | QLT-02, QLT-04 | WP-5.3, WP-5.4, WP-5.6 | code, design-system, accessibility, security |
+| WP-5.8 | **Glitch-free windows and honest waits**. No blank or white frame in any transition: no page reloads for state changes, double-buffered swaps, the first themed frame, and the frame-integrity journey. Every wait in the [inventory](../architecture/perceived-performance.md#the-wait-inventory) gets its class's pattern (named waits, steps and progress, prefetch), setup first, checked by the "no silent wait" journey (D-148, D-149). | DSK-09, PRF-13 | WP-2.1, WP-1.4, WP-3.2 | code, design-system, accessibility |
 
 **Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
 
