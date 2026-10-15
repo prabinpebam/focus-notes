@@ -14,6 +14,8 @@
  * - Fading scroll edges: only the note fades and blurs (up to 40 px) a 50 px edge, exactly where
  *   there's more to scroll to; interface surfaces never do. Fade only with reduced transparency or
  *   in software compositing (D-121).
+ * - The trigger over scrolled text: under it, the note's top edge is at least 85% canvas color and
+ *   blurred (D-119, amended).
  * - Selection by background: selected and active items show a background, never a side bar.
  * - Aligned rows: a checkbox, switch, or radio is centered on the first line of its label.
  * - Anchored tooltips: next to the control they name, centered on it, inside the window.
@@ -31,7 +33,7 @@ export interface VisualOptions {
 }
 
 /** The distances, in CSS px, the rules use (Foundations → Visual quality). */
-export const VISUAL = { dialogInset: 24, dialogMinHeight: 400, itemGap: 2, fade: 50, blur: 40, triggerClear: 80, groupGap: 16, tolerance: 1, tooltipGap: 16 } as const;
+export const VISUAL = { dialogInset: 24, dialogMinHeight: 400, itemGap: 2, fade: 50, blur: 40, triggerClear: 80, triggerVeil: 0.85, groupGap: 16, tolerance: 1, tooltipGap: 16 } as const;
 
 /** Everything on the open surfaces that breaks a rule, one line each; empty when it all holds. */
 export function visualProblems(page: Page, opts: VisualOptions = {}): Promise<string[]> {
@@ -187,10 +189,27 @@ export async function listRings(page: Page, where: string): Promise<string[]> {
   for (const key of keys) {
     await page.keyboard.press(key);
     await settled(page);
+    await scrollsSettled(page);
     for (const p of await visualProblems(page, RINGS_ONLY)) out.push(`${where}, after ${key}: ${p}`);
   }
   return out;
 }
+/** The focused element's scrolling ancestors have stopped moving: the same scroll position two frames running. */
+const scrollsSettled = (page: Page) => page.evaluate(async () => {
+  const frame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+  const read = () => {
+    const out: number[] = [];
+    for (let a = document.activeElement?.parentElement; a; a = a.parentElement) out.push(a.scrollTop, a.scrollLeft);
+    return out.join(",");
+  };
+  for (let i = 0, last = read(); i < 60; i++) {
+    await frame();
+    await frame();
+    const now = read();
+    if (now === last) return;
+    last = now;
+  }
+});
 function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
   const out: string[] = [];
   const on = (rule: string) => !skip.includes(rule);
@@ -537,7 +556,7 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
         }
         if (!edge || !showing) continue;
         const r = edge.getBoundingClientRect();
-        // The top edge also hides the trigger's place: solid over `triggerClear`, then the fade.
+        // The top edge is taller, one blur and fade over the trigger's place (`triggerClear`) and the fade (D-119).
         const tall = side === "top" ? v.triggerClear + v.fade : v.fade;
         if (Math.abs(r.height - tall) > tol) out.push(`fading scroll edges: the note's ${side} edge is ${px(r.height)} px, not ${tall}`);
         // The blur grows toward the edge, up to 40 px at it; none with reduced transparency.
@@ -570,28 +589,58 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
         if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) { out.push(`one floating thing at a time: ${nameOf(picker)} at ${box(a)} covers ${nameOf(part)} of the open toolbar at ${box(b)}`); break; }
       }
     }
-    // Scrolled text never meets the trigger: where a line passes the trigger, it's under the solid
-    // part of the note's top edge (all of it but the fade), so the dot never sits on readable text.
+    // Scrolled text under the trigger is veiled (D-119, amended): where the note's top edge shows,
+    // the canvas color over the trigger is at least `triggerVeil` opaque down to the trigger's bottom,
+    // and a blur layer covers the trigger's whole height (unless the blur is off: then the veil is
+    // all). Where the edge doesn't show, no text meets the trigger at all.
     const trigger = [...document.querySelectorAll("[data-trigger]")].find(shown);
     const note = document.querySelector("[data-editor-scroller]");
     if (trigger && note && shown(note)) {
       const t = rect(trigger);
       const edge = note.parentElement?.querySelector(':scope > [data-scroll-edge="top"]');
       const covering = edge && getComputedStyle(edge).visibility === "visible" && getComputedStyle(edge).display !== "none";
-      const solid = covering ? rect(edge).bottom - v.fade : -Infinity;
-      const walker = document.createTreeWalker(note, NodeFilter.SHOW_TEXT);
-      let hit: string | null = null;
-      for (let n = walker.nextNode(); n && !hit; n = walker.nextNode()) {
-        const text = n as Text;
-        if (!text.data.trim()) continue;
-        const range = document.createRange();
-        range.selectNodeContents(text);
-        for (const l of range.getClientRects()) {
-          const meets = l.left < t.right && l.right > t.left && l.top < t.bottom && l.bottom > t.top;
-          if (meets && Math.min(l.bottom, t.bottom) > solid + tol / 2) { hit = `“${text.data.trim().slice(0, 30)}” at ${box(l)}`; break; }
+      if (covering) {
+        const e = rect(edge);
+        const layers = [...edge.children];
+        const fadeEl = layers.pop()!;
+        // The fade's stops, as computed: a color (its alpha) at a length from the edge's top.
+        const stops = [...getComputedStyle(fadeEl).backgroundImage.matchAll(/(color\([^)]*\)|rgba?\([^)]*\))\s+(-?[\d.]+)px/g)].map(([, c, at]) => {
+          const a = /\/\s*([\d.]+)\s*\)$/.exec(c!)?.[1] ?? /^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/.exec(c!)?.[1] ?? "1";
+          return { at: Number(at), a: Number(a) };
+        });
+        const veilAt = (y: number) => {
+          const i = stops.findIndex((s) => s.at >= y);
+          if (i < 0) return stops.at(-1)?.a ?? 0;
+          if (i === 0) return stops[0]!.a;
+          const [p, q] = [stops[i - 1]!, stops[i]!];
+          return p.a + ((q.a - p.a) * (y - p.at)) / (q.at - p.at || 1);
+        };
+        const y = t.bottom - e.top;
+        const alpha = Math.min(...[t.top, (t.top + t.bottom) / 2, t.bottom].map((at) => veilAt(at - e.top)));
+        if (stops.length < 2 || alpha < v.triggerVeil - 0.005) out.push(`text under the trigger: the top edge's canvas color is ${(alpha * 100).toFixed(0)}% opaque at the trigger's bottom (${px(y)} px down), not at least ${v.triggerVeil * 100}%`);
+        const blurOff = document.documentElement.dataset.transparency === "reduced" || document.documentElement.dataset.compositing === "software";
+        if (!blurOff) {
+          const blurred = (at: number) => layers.some((l) => {
+            const r = rect(l);
+            return getComputedStyle(l).display !== "none" && /blur\([\d.]*[1-9][\d.]*px\)/.test(getComputedStyle(l).backdropFilter) && r.top <= at + tol / 2 && r.bottom >= at - tol / 2;
+          });
+          const bare = [t.top, (t.top + t.bottom) / 2, t.bottom].find((at) => !blurred(at));
+          if (bare !== undefined) out.push(`text under the trigger: no blur layer of the top edge covers ${px(bare - e.top)} px down, under the trigger at ${box(t)}`);
         }
+      } else {
+        const walker = document.createTreeWalker(note, NodeFilter.SHOW_TEXT);
+        let hit: string | null = null;
+        for (let n = walker.nextNode(); n && !hit; n = walker.nextNode()) {
+          const text = n as Text;
+          if (!text.data.trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(text);
+          for (const l of range.getClientRects()) {
+            if (l.left < t.right && l.right > t.left && l.top < t.bottom && l.bottom > t.top) { hit = `“${text.data.trim().slice(0, 30)}” at ${box(l)}`; break; }
+          }
+        }
+        if (hit) out.push(`text under the trigger: ${hit} shows under the trigger at ${box(t)}, with nothing scrolled under the top edge`);
       }
-      if (hit) out.push(`text under the trigger: ${hit} shows under the trigger at ${box(t)}${covering ? `, below the top edge's solid part (to ${px(solid)})` : ""}`);
     }
   }
 

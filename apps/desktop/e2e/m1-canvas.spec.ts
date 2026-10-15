@@ -6,6 +6,7 @@ import { test, expect, type Page } from "./fixtures.ts";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs, windowBox } from "./helpers.ts";
+import { visualProblems, type VisualOptions } from "./visual-quality.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const withMod = async (page: Page, key: string) => {
@@ -15,7 +16,9 @@ const withMod = async (page: Page, key: string) => {
 };
 /** The blur layers of the note's top or bottom edge: every child but the fade, the last (D-111, D-121). */
 const edgeLayers = (page: Page, side: string) => page.locator(`[data-scroll-edge="${side}"] > :not(:last-child)`).evaluateAll((els) =>
-  els.map((el) => ({ display: getComputedStyle(el).display, backdrop: getComputedStyle(el).backdropFilter })));
+  els.map((el) => ({ display: getComputedStyle(el).display, backdrop: getComputedStyle(el).backdropFilter, top: el.getBoundingClientRect().top - el.parentElement!.getBoundingClientRect().top, mask: getComputedStyle(el).maskImage })));
+/** The visual quality check's scroll edge and trigger rules alone (D-111, D-119). */
+const EDGES_ONLY: VisualOptions = { skip: Object.fromEntries((["window", "dialogInset", "dialogHeight", "container", "padding", "insets", "sheet", "groups", "gaps", "selection", "rings", "slider", "rows", "tooltips"] as const).map((r) => [r, "checks the edges alone"])) };
 const panel = (page: Page) => page.evaluate(() => {
   const root = document.querySelector("[data-morph-panel]") as HTMLElement;
   const b = root.getBoundingClientRect();
@@ -287,6 +290,14 @@ test("D-111: the note's edges blur progressively, crisp at the band's inner edge
     expect(blurs.length).toBeGreaterThanOrEqual(5);
     expect(blurs.every((b) => b.display !== "none" && b.backdrop.startsWith("blur("))).toBe(true);
   }
+  // The top's blur reaches the window's very edge, with no solid band (D-119, amended): its outermost
+  // layer starts at the edge, blurs 40 px, and its mask is opaque there.
+  const outer = (await edgeLayers(page, "top"))[0]!;
+  expect(outer.top).toBe(0);
+  expect(outer.backdrop).toBe("blur(40px)");
+  expect(outer.mask).toMatch(/rgb\(0, 0, 0\) 0px/);
+  // And the visual quality check: under the trigger, at least 85% canvas color and blurred.
+  expect(await visualProblems(page, EDGES_ONLY)).toEqual([]);
   await page.waitForTimeout(300);
   const box = (await scroller.boundingBox())!;
   await page.screenshot({ path: "../../test-results/screens/edge-blur-top.png", clip: { x: box.x, y: box.y, width: Math.min(box.width, 900), height: 60 } });
@@ -319,6 +330,8 @@ test("D-121: in software compositing the note's edges fade in the canvas's color
     expect(fade.image).toContain("linear-gradient");
     expect(fade.backdrop).toBe("none");
   }
+  // The fade alone still veils the trigger: at least 85% canvas color under it (D-119, amended).
+  expect(await visualProblems(page, EDGES_ONLY)).toEqual([]);
   await quit(l);
 });
 
