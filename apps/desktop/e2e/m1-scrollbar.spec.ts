@@ -17,8 +17,14 @@ test("UI-09: the scrollbar hides at rest, shows while scrolling and on hover, an
     return { gutter: el.offsetWidth - el.clientWidth, thumb, button, contentLeft: el.querySelector("[data-editor]")!.getBoundingClientRect().left, scrolling: "scrolling" in el.dataset, hover: "scrollbarHover" in el.dataset };
   });
   // Opening scrolls to the caret at the end, which shows the scrollbar briefly; then it goes idle.
-  // (Waiting for idle alone could pass before that scroll has started.)
-  await expect.poll(async () => (await scroller.evaluate((el) => el.scrollTop)) > 0 && !(await state()).scrolling, { timeout: 3000 }).toBe(true);
+  // (Waiting for idle alone could pass before that scroll has started, or between two of its animated
+  // frames (D-156), so the scroll must also have settled.)
+  await expect.poll(async () => {
+    const a = await scroller.evaluate((el) => el.scrollTop);
+    await page.waitForTimeout(250);
+    const b = await scroller.evaluate((el) => el.scrollTop);
+    return a > 0 && a === b && !(await state()).scrolling;
+  }, { timeout: 5000 }).toBe(true);
   const rest = await state();
   expect(rest.gutter).toBeGreaterThan(0); // space is reserved
   expect(rest.button).toBe("none"); // no arrows

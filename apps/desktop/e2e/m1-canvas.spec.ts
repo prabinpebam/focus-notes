@@ -137,13 +137,16 @@ test("UI-11: the note starts 25% down, the edited line stays between 25% and 65%
       const r = sel.rangeCount ? sel.getRangeAt(0).getBoundingClientRect() : null;
       return `${scroller.scrollTop}:${sel.anchorOffset}:${r?.top ?? ""}`;
     };
-    let last = sample(), same = 0;
+    let last = sample(), same = 0, since = performance.now();
     const until = performance.now() + 3000;
     const tick = () => {
       const now = sample();
-      same = now === last ? same + 1 : 0;
+      if (now === last) same++;
+      else (same = 0), (since = performance.now());
       last = now;
-      if (same >= 3 || performance.now() > until) done();
+      // Three frames and 50 ms still: at a high refresh rate the first frames of the eased auto-scroll
+      // (D-156) move less than a pixel, so three frames alone could pass before it visibly started.
+      if ((same >= 3 && performance.now() - since >= 50) || performance.now() > until) done();
       else requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -228,6 +231,8 @@ test("UI-11: scrolling never brings the caret back (wheel, the scrollbar's thumb
   // The wheel.
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.wheel(0, -1200);
+  // The wheel's scroll can land a few frames after its event on a busy start; wait for it to move first.
+  await expect.poll(top).not.toBe(end);
   const wheeled = await settled();
   expect(wheeled).toBeLessThan(end - 600);
 

@@ -179,6 +179,15 @@ async function demo(l: Launched, dirs: { docs: string }, keyboardOnly: boolean) 
     await page.keyboard.press("Escape");
     await expect(editor).toBeFocused();
   } else {
+    // Aim at text that's still: typing at the note's end scrolls it smoothly for 200 ms (D-156), and a
+    // person aims once it has settled, so the word is measured after the scroll stops moving.
+    let last = -1;
+    for (let i = 0; i < 40; i++) {
+      const top = await page.evaluate(() => (document.querySelector("[data-editor-scroller]") as HTMLElement | null)?.scrollTop ?? 0);
+      if (top === last) break;
+      last = top;
+      await page.waitForTimeout(60);
+    }
     const b = await wordBox(page, "calm");
     await page.mouse.move(b.left + 1, b.y);
     await page.mouse.down();

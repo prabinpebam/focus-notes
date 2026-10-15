@@ -177,6 +177,11 @@
         "$type": "duration",
         "$value": "{motion.micro}"
       },
+      "focusLiveDuration": {
+        "$type": "duration",
+        "$value": "{motion.none}",
+        "$description": "The band's glide while the window is resized: none, so it's on the caret's row in every frame (FOC-02, D-156)."
+      },
       "focusEasing": {
         "$type": "cubicBezier",
         "$value": "{easing.decelerate}"

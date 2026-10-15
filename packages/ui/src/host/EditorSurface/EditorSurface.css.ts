@@ -157,12 +157,20 @@ export const bandTop = createVar({ syntax: "<length>", inherits: false, initialV
 export const bandBottom = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 const dimmed = `color-mix(in srgb, black calc(${t.focusDim} * 100%), transparent)`;
 const mask = `linear-gradient(to bottom, ${dimmed} 0, ${dimmed} ${bandTop}, black ${bandTop}, black ${bandBottom}, ${dimmed} ${bandBottom}, ${dimmed} 100%)`;
+// The transition names the band's properties (--x), never their values (var(--x)): a var() there made the
+// list invalid, so it fell back to `all`, and the column's 25vh/35vh padding glided after every height
+// change while the band, measured once, stayed where the row had been (D-156).
+const propertyName = (v: string) => v.slice(4, -1);
 export const focusOn = style({
   maskImage: mask,
   WebkitMaskImage: mask,
-  transitionProperty: `${bandTop}, ${bandBottom}`,
+  transitionProperty: `${propertyName(bandTop)}, ${propertyName(bandBottom)}`,
   transitionDuration: t.focusDuration,
   transitionTimingFunction: t.focusEasing,
+  selectors: {
+    // While the window is resized the band is written every frame, so it never glides behind the row (FOC-02).
+    "&[data-band-live]": { transitionDuration: t.focusLiveDuration },
+  },
 });
 
 export const prose = style({
