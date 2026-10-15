@@ -37,6 +37,7 @@ import type { RestoredNote } from "@focus-notes/core";
 import { RecoveryJournal, restoreJournal } from "./journal.ts";
 import { watchTree, type TreeWatcher } from "./watch-tree.ts";
 import { JOURNEY_WINDOW_OPTIONS, keepOutOfTheWay } from "./window/journey-window.ts";
+import { watchCompositing } from "./window/compositing.ts";
 import { allowedRequest, HARDENED_WEB_PREFERENCES, isWebLink } from "./hardening.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
@@ -75,6 +76,14 @@ const localRemotes = devEnv("FOCUS_NOTES_GIT_REMOTES");
 const logSpawns = devEnv("FOCUS_NOTES_LOG_SPAWNS") === "1";
 /** Journeys and the bench: windows never take the computer's focus (D-104 (7)). */
 const journey = devEnv("FOCUS_NOTES_E2E") === "1";
+// Software rendering, as on a CI runner with no GPU, to reproduce it on any computer (D-121).
+if (devEnv("FOCUS_NOTES_DISABLE_GPU") === "1") app.disableHardwareAcceleration();
+/**
+ * The window's compositing, followed from the first window on (D-121). The override is read in a
+ * packaged app too, to diagnose; journeys print the status once, so CI's log shows which path ran.
+ */
+let compositingWatch: ReturnType<typeof watchCompositing> | undefined;
+const compositing = () => (compositingWatch ??= watchCompositing(app, process.env.FOCUS_NOTES_GPU_COMPOSITING, journey ? (line) => process.stdout.write(`[focus-notes] ${line}\n`) : undefined));
 const onSpawn = logSpawns ? (program: string, args: string[]) => process.stdout.write(`[focus-notes] spawn ${JSON.stringify([program, ...args])}\n`) : undefined;
 const apiFetch = githubFetch(fakeApi && /^http:\/\/127\.0\.0\.1:\d+$/.test(fakeApi)
   ? (i, init) => fetch(fakeApi + i.slice("https://api.github.com".length), init)
@@ -229,7 +238,7 @@ async function forgetLocal(event: "signOut" | "removeWorkspace"): Promise<void> 
 /**
  * Removes the workspace's local clone (FRE-07): checked again here, with the watcher and Git
  * stopped first so nothing writes into it, and only when everything is on the remote. Afterwards
- * the window starts again with no workspace, at the first run's Your workspace step.
+ * the window starts again with no workspace, at the first run's Your notes step.
  */
 /** Only a Focus Notes workspace (its format file is there) is ever removed: never just any repository. */
 const removal = async (): Promise<RemovalCheck> => (isWorkspace() ? removalCheck(setupRunner, notesHome()) : { state: "notWorkspace", waiting: 0, folder: notesHome(), repositories: [] });
@@ -1001,7 +1010,13 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
     });
   }
   // End-to-end tests turn the warm-up after start off, so their timing stays the same (PRF-10).
-  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, ...frame.query(), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
+  // GPU or software compositing (D-121): in software the note's edges fade without the blur.
+  const gpu = compositing();
+  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), ...frame.query(), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
+  const offCompositing = gpu.onChange((c) => win.webContents.send("compositing:changed", c));
+  // Again once loaded: a change while the page loaded would be missed (the app ignores the same value).
+  win.webContents.on("did-finish-load", () => win.webContents.send("compositing:changed", gpu.current()));
+  win.on("closed", offCompositing);
 
   // Ask the renderer to save pending changes before the window closes (QLT-03). If saving fails,
   // the person decides; text is never discarded silently.

@@ -4,7 +4,7 @@ import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, FOCUS_DIM, LINE_HEIGHT,
 import { cheatSheet, displayPlatform, EDITOR_COMMANDS, NATIVE_KEYS, type CheatSheetLayer, type CheatSheetPlatform } from "./keymap.ts";
 import { ViewModelRegistry } from "./view-models.ts";
 import { MessageCatalog, type Messages } from "./messages.ts";
-import type { PlatformBridge, AppStateFile } from "./bridge.ts";
+import type { PlatformBridge, AppStateFile, Compositing } from "./bridge.ts";
 import { registerBrowserFeatures, PICKER_CLOSED, UNLOCK_CLOSED, NO_INSTANCE, type PickerState, type UnlockState, type InstanceState } from "./browser.ts";
 import { isReadOnlyPath, sourceOf } from "./notes.ts";
 import { registerWorkspaceFeatures, noteReadOnly, NO_WORKSPACE, type WorkspaceState, type WorkspaceFormatOptions } from "./workspace-app.ts";
@@ -45,6 +45,8 @@ export interface AppState {
   /** Appearance and the reading settings (THM-08, THM-03, Theme manager → Reading). */
   appearance: Appearance;
   focusMode: boolean;
+  /** How the window is composited, as the shell reports it (D-121): in software the note's edges fade without the blur. */
+  compositing: Compositing;
   ui: {
     toolbarOpen: boolean;
     /** The keyboard shortcut cheat sheet (IA-VIEW-SHORTCUTS). */
@@ -253,6 +255,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lineHeight: LINE_HEIGHT.default, measure: MEASURE.default, paragraphSpacing: "comfortable",
     },
     focusMode: false,
+    compositing: bridge.compositing?.initial === "software" ? "software" : "gpu",
     ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, settings: SETTINGS_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
@@ -937,6 +940,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     ...(options.clock ? { now: options.clock.now } : {}),
   });
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
+  // The compositing can change while the app runs: the GPU process crashed and came back in software (D-121).
+  bridge.compositing?.onChange((c) => {
+    if ((c === "gpu" || c === "software") && c !== store.state.compositing) store.update((s) => ({ ...s, compositing: c }));
+  });
   const menuBar = registerMenuBar({ store, commands, catalog, platform: bridge.platform, ...(bridge.nativeWindow ? { bridge: bridge.nativeWindow } : {}) });
   const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
@@ -1077,17 +1084,19 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         /** An edited copy of the theme showing (Edit colors): its colors over the theme's tokens. */
         themeColors: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } },
         uiScale: { type: "number" },
+        /** GPU or software compositing (D-121). */
+        compositing: { type: "string", enum: ["gpu", "software"] },
         editorKeymap: { type: "array", items: { type: "object", properties: { id: { type: "string" }, chord: { type: "string" } } } },
       },
     },
-    reads: ["appearance", "focusMode", "ui.theme.preview", "ui.theme.draft"],
+    reads: ["appearance", "focusMode", "compositing", "ui.theme.preview", "ui.theme.draft"],
     select: (s) => {
       // The theme manager's keyboard preview shows on the real note (THM-07), and so does an edited copy.
       const theme = shownTheme(s);
       const a = s.appearance;
       return {
         scheme: themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode,
-        contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap,
+        contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap, compositing: s.compositing,
         lineHeight: a.lineHeight === LINE_HEIGHT.default ? undefined : a.lineHeight,
         measure: a.measure === MEASURE.default ? undefined : a.measure,
         paragraphSpacing: a.paragraphSpacing, focusDim: a.focusDim, themeColors: draftTokens(s),

@@ -568,6 +568,22 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "inset": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "none",
+                    "control"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -4897,6 +4913,22 @@
                     "native",
                     "rounded",
                     "square"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "compositing": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "gpu",
+                    "software"
                   ]
                 },
                 {

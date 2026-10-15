@@ -35,6 +35,11 @@ export const size = styleVariants({
   s: { height: t.height.s, paddingInline: t.paddingInline.s },
   m: { height: t.height.m, paddingInline: t.paddingInline.m },
 });
+/** A subtle button at the start of the content: its label lines up with the edge, its hit area reaching into the padding (D-111, D-123). */
+export const bleed = styleVariants({
+  s: { marginInlineStart: `calc(-1 * ${t.paddingInline.s})` },
+  m: { marginInlineStart: `calc(-1 * ${t.paddingInline.m})` },
+});
 
 const variantStyle = (v: { background: { rest: string; hover: string; pressed: string }; text: string; border: string }) => ({
   backgroundColor: v.background.rest,

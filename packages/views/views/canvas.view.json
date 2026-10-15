@@ -70,6 +70,9 @@
       },
       "themeColors": {
         "get": "vm.app.themeColors"
+      },
+      "compositing": {
+        "get": "vm.app.compositing"
       }
     },
     "children": [
@@ -1552,7 +1555,8 @@
                       },
                       "role": "secondary",
                       "tone": "default",
-                      "lines": "one"
+                      "lines": "one",
+                      "inset": "control"
                     }
                   },
                   {
@@ -3147,31 +3151,61 @@
                   },
                   "cases": {
                     "false": {
-                      "type": "MenuButton",
+                      "type": "Inline",
                       "props": {
-                        "label": {
-                          "t": "files.new"
-                        },
-                        "variant": "text",
-                        "text": {
-                          "get": "vm.files.newText"
-                        },
-                        "placement": "bottom end",
-                        "sections": {
-                          "get": "vm.files.newMenu"
-                        },
-                        "bleed": true
+                        "gap": "m"
                       },
-                      "on": {
-                        "action": {
-                          "run": "command.run",
-                          "args": {
-                            "id": {
-                              "get": "event.id"
+                      "children": [
+                        {
+                          "type": "IconButton",
+                          "props": {
+                            "icon": "newNote",
+                            "label": {
+                              "t": "command.note.new"
+                            },
+                            "shortcut": {
+                              "get": "vm.files.newNote.shortcut"
+                            },
+                            "disabled": {
+                              "get": "vm.files.newNote.disabled"
+                            },
+                            "disabledReason": {
+                              "t": "command.note.new.readOnly"
+                            },
+                            "tone": "muted"
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.newNote"
+                            }
+                          }
+                        },
+                        {
+                          "type": "IconButton",
+                          "props": {
+                            "icon": "newFolder",
+                            "label": {
+                              "t": "command.files.newFolder"
+                            },
+                            "shortcut": {
+                              "get": "vm.files.newFolder.shortcut"
+                            },
+                            "disabled": {
+                              "get": "vm.files.newFolder.disabled"
+                            },
+                            "disabledReason": {
+                              "t": "command.note.new.readOnly"
+                            },
+                            "tone": "muted",
+                            "bleed": true
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.newFolder"
                             }
                           }
                         }
-                      }
+                      ]
                     },
                     "true": {
                       "type": "Inline",
@@ -3852,6 +3886,7 @@
                   "shape": "popover",
                   "elevation": "3",
                   "padding": "xl",
+                  "scroll": true,
                   "keyScope": "firstRun"
                 },
                 "children": [
@@ -3916,7 +3951,8 @@
                                       "label": {
                                         "t": "firstRun.welcome.local"
                                       },
-                                      "variant": "subtle"
+                                      "variant": "subtle",
+                                      "bleed": true
                                     },
                                     "on": {
                                       "press": {
@@ -3971,7 +4007,8 @@
                                       "label": {
                                         "t": "firstRun.connect.signup"
                                       },
-                                      "variant": "subtle"
+                                      "variant": "subtle",
+                                      "bleed": true
                                     },
                                     "on": {
                                       "press": {
@@ -4049,7 +4086,8 @@
                                               "label": {
                                                 "t": "firstRun.back"
                                               },
-                                              "variant": "subtle"
+                                              "variant": "subtle",
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -4131,7 +4169,8 @@
                                               "label": {
                                                 "t": "firstRun.back"
                                               },
-                                              "variant": "subtle"
+                                              "variant": "subtle",
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -4210,7 +4249,8 @@
                                                   "label": {
                                                     "t": "firstRun.back"
                                                   },
-                                                  "variant": "subtle"
+                                                  "variant": "subtle",
+                                                  "bleed": true
                                                 },
                                                 "on": {
                                                   "press": {
@@ -4275,7 +4315,8 @@
                                                   "label": {
                                                     "t": "firstRun.back"
                                                   },
-                                                  "variant": "subtle"
+                                                  "variant": "subtle",
+                                                  "bleed": true
                                                 },
                                                 "on": {
                                                   "press": {
@@ -4620,7 +4661,8 @@
                                               "label": {
                                                 "t": "firstRun.back"
                                               },
-                                              "variant": "subtle"
+                                              "variant": "subtle",
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -4678,7 +4720,8 @@
                                               "label": {
                                                 "t": "firstRun.back"
                                               },
-                                              "variant": "subtle"
+                                              "variant": "subtle",
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -4737,7 +4780,8 @@
                                               },
                                               "variant": "subtle",
                                               "icon": "chevronDown",
-                                              "expanded": true
+                                              "expanded": true,
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -4753,7 +4797,8 @@
                                               },
                                               "variant": "subtle",
                                               "icon": "chevronRight",
-                                              "expanded": false
+                                              "expanded": false,
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -5125,7 +5170,8 @@
                                               "label": {
                                                 "t": "firstRun.back"
                                               },
-                                              "variant": "subtle"
+                                              "variant": "subtle",
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -5198,7 +5244,8 @@
                                               "label": {
                                                 "t": "firstRun.back"
                                               },
-                                              "variant": "subtle"
+                                              "variant": "subtle",
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -5351,7 +5398,8 @@
                                               "label": {
                                                 "t": "firstRun.back"
                                               },
-                                              "variant": "subtle"
+                                              "variant": "subtle",
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -5424,7 +5472,8 @@
                                               "label": {
                                                 "t": "firstRun.back"
                                               },
-                                              "variant": "subtle"
+                                              "variant": "subtle",
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -5541,7 +5590,8 @@
                                                   },
                                                   "variant": "subtle",
                                                   "icon": "chevronDown",
-                                                  "expanded": true
+                                                  "expanded": true,
+                                                  "bleed": true
                                                 },
                                                 "on": {
                                                   "press": {
@@ -5557,7 +5607,8 @@
                                                   },
                                                   "variant": "subtle",
                                                   "icon": "chevronRight",
-                                                  "expanded": false
+                                                  "expanded": false,
+                                                  "bleed": true
                                                 },
                                                 "on": {
                                                   "press": {
@@ -5772,7 +5823,8 @@
                                               },
                                               "variant": "subtle",
                                               "icon": "chevronDown",
-                                              "expanded": true
+                                              "expanded": true,
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -5788,7 +5840,8 @@
                                               },
                                               "variant": "subtle",
                                               "icon": "chevronRight",
-                                              "expanded": false
+                                              "expanded": false,
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
@@ -6085,7 +6138,8 @@
                                       "label": {
                                         "t": "firstRun.ready.import"
                                       },
-                                      "variant": "subtle"
+                                      "variant": "subtle",
+                                      "bleed": true
                                     },
                                     "on": {
                                       "press": {

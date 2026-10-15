@@ -1,5 +1,6 @@
 import { style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
+import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.surface;
 
@@ -31,3 +32,15 @@ export const elevation = styleVariants({
   "2": { boxShadow: tokens.shadow["2"] }, "3": { boxShadow: tokens.shadow["3"] },
 });
 export { padding } from "../Stack/Stack.css.ts";
+
+// Scrolling (D-123): the surface clips to its shape, and a body inside it scrolls with the padding.
+// The reserved gutter takes the place of the end padding, so content lines up either way (UI-09).
+const sb = t;
+export const clip = style({ overflow: "hidden" });
+export const body = style({ display: "flex", flexDirection: "column", flexGrow: 1, minHeight: 0, overflowY: "auto", scrollbarGutter: "stable", outline: "none" });
+minimalScrollbar(body, sb);
+const sp = tokens.space;
+const pad = (v: string) => ({ padding: v, paddingInlineEnd: `max(0px, calc(${v} - ${sb.scrollbarSize}))` });
+export const bodyPadding = styleVariants({
+  none: {}, xs: pad(sp.xs), s: pad(sp.s), m: pad(sp.m), l: pad(sp.l), xl: pad(sp.xl), xxl: pad(sp.xxl), xxxl: pad(sp.xxxl),
+});

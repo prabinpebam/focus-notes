@@ -260,7 +260,7 @@ describe("PRV-02, FRE-07: Settings → Workspace → Remove this workspace from 
     expect(t.vm("vm.removeWorkspace").message).toBe("Your notes stay on GitHub, in ada/notes and ada/notes-private. This deletes the folder /home/ada/Documents/Focus Notes from this computer, and what Focus Notes keeps about it here.");
     await t.run("workspace.removeConfirm");
     expect(t.calls).toContain("remove");
-    // Before the shell removes it, the app forgets the recent note and starts again at Your workspace.
+    // Before the shell removes it, the app forgets the recent note and starts again at Your notes.
     expect(t.last()).toMatchObject({ firstRun: "notes" });
     expect(t.last()).not.toHaveProperty("lastNotePath");
   });

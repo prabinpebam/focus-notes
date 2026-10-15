@@ -4,5 +4,10 @@
     "sunken": { "$value": "{color.surfaceSunken}" }, "inverted": { "$value": "{color.text}" } },
   "text": { "$type": "color", "default": { "$value": "{color.text}" }, "inverted": { "$value": "{color.textInverse}" } },
   "border": { "$type": "color", "$value": "{color.border}" },
-  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" }
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "scrollbarSize": { "$type": "dimension", "$value": "{size.scrollbar}" },
+  "scrollbarInset": { "$type": "dimension", "$value": "{border.scrollbarInset}" },
+  "scrollbarThumb": { "$type": "color", "$value": "{color.scrollbar}" },
+  "scrollbarThumbHover": { "$type": "color", "$value": "{color.scrollbarHover}" },
+  "scrollbarTrack": { "$type": "color", "$value": "{color.none}" }
 } } }

@@ -23,16 +23,19 @@ export interface ButtonProps {
   disabledReason?: string;
   /** Takes focus when it appears: a confirmation's choice that changes nothing (APG alert dialog), or a first-run step's primary action. */
   autoFocus?: boolean;
+  /** A subtle button at the start of the content (a first-run step's Back): its label lines up with the edge, its hit area reaching into the padding. */
+  bleed?: boolean;
   id?: string;
   onPress?: () => void;
 }
 
-export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, expanded, busy, disabled, disabledReason, autoFocus, id, onPress }: ButtonProps) {
+export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, expanded, busy, disabled, disabledReason, autoFocus, bleed, id, onPress }: ButtonProps) {
   const inert = disabled || busy;
   const keepNoteFocus = useContext(CompanionContext);
   const common = {
     id,
-    className: [s.base, s.size[size], s.variant[variant]].join(" "),
+    className: [s.base, s.size[size], s.variant[variant], ...(bleed ? [s.bleed[size]] : [])].join(" "),
+    "data-bleed": bleed ? "" : undefined,
     "aria-disabled": inert ? ("true" as const) : undefined,
     "aria-busy": busy ? ("true" as const) : undefined,
     ...(expanded !== undefined ? { "aria-expanded": expanded } : {}),

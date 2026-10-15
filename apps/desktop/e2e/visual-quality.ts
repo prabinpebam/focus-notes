@@ -12,7 +12,8 @@
  *   trigger and the window's controls.
  * - Gaps between items: the highlight shapes of neighboring list items never touch (2 px apart).
  * - Fading scroll edges: only the note fades and blurs (up to 40 px) a 50 px edge, exactly where
- *   there's more to scroll to; interface surfaces never do.
+ *   there's more to scroll to; interface surfaces never do. Fade only with reduced transparency or
+ *   in software compositing (D-121).
  * - Selection by background: selected and active items show a background, never a side bar.
  * - Aligned rows: a checkbox, switch, or radio is centered on the first line of its label.
  * - Anchored tooltips: next to the control they name, centered on it, inside the window.
@@ -22,7 +23,7 @@
  */
 import { expect, type Locator, type Page } from "@playwright/test";
 
-export type VisualRule = "window" | "dialogInset" | "dialogHeight" | "container" | "padding" | "sheet" | "gaps" | "fade" | "selection" | "rings" | "slider" | "rows" | "tooltips";
+export type VisualRule = "window" | "dialogInset" | "dialogHeight" | "container" | "padding" | "insets" | "sheet" | "groups" | "gaps" | "fade" | "trigger" | "selection" | "rings" | "slider" | "rows" | "tooltips";
 
 export interface VisualOptions {
   /** Rules that don't apply to what's open, each with the reason (shown if it's ever questioned). */
@@ -30,7 +31,7 @@ export interface VisualOptions {
 }
 
 /** The distances, in CSS px, the rules use (Foundations → Visual quality). */
-export const VISUAL = { dialogInset: 24, dialogMinHeight: 400, itemGap: 2, fade: 50, blur: 40, tolerance: 1, tooltipGap: 16 } as const;
+export const VISUAL = { dialogInset: 24, dialogMinHeight: 400, itemGap: 2, fade: 50, blur: 40, triggerClear: 80, groupGap: 16, tolerance: 1, tooltipGap: 16 } as const;
 
 /** Everything on the open surfaces that breaks a rule, one line each; empty when it all holds. */
 export function visualProblems(page: Page, opts: VisualOptions = {}): Promise<string[]> {
@@ -51,7 +52,7 @@ export async function pointerModality(page: Page) {
   await page.mouse.move(at.x + 1, at.y);
 }
 
-const TOOLTIP_RULES: VisualOptions = { skip: { dialogHeight: "checked without the tooltip", rings: "checked without the tooltip", slider: "checked without the tooltip", selection: "checked without the tooltip", dialogInset: "checked without the tooltip", container: "checked without the tooltip", padding: "checked without the tooltip", sheet: "checked without the tooltip", gaps: "checked without the tooltip", fade: "checked without the tooltip", rows: "checked without the tooltip" } };
+const TOOLTIP_RULES: VisualOptions = { skip: { dialogHeight: "checked without the tooltip", rings: "checked without the tooltip", slider: "checked without the tooltip", selection: "checked without the tooltip", dialogInset: "checked without the tooltip", container: "checked without the tooltip", padding: "checked without the tooltip", insets: "checked without the tooltip", sheet: "checked without the tooltip", groups: "checked without the tooltip", gaps: "checked without the tooltip", fade: "checked without the tooltip", trigger: "checked without the tooltip", rows: "checked without the tooltip" } };
 
 /** Hovers each control with a tooltip and checks the tooltip it shows; at least one must show. */
 export async function hoverTooltips(page: Page, controls: Locator, where: string, problems: string[], shot?: string) {
@@ -105,7 +106,67 @@ export async function dialogNeverShrinks(page: Page, name: string, steps: (() =>
   return out;
 }
 
-const RINGS_ONLY: VisualOptions = { skip: Object.fromEntries((["window", "dialogInset", "dialogHeight", "container", "padding", "sheet", "gaps", "fade", "selection", "slider", "rows", "tooltips"] as const).map((r) => [r, "checks the rings alone"])) };
+/**
+ * The note's scrollbar thumb stays clear of the window's rounded corners (D-111): at the top and
+ * the bottom of the note, the thumb (found by its pixels: shown, less hidden) is inside the window
+ * less its corner radius at both ends, so the corner's curve never cuts it.
+ */
+export async function scrollbarClearOfCorners(page: Page): Promise<string[]> {
+  const out: string[] = [];
+  const geo = await page.evaluate(() => {
+    const sc = document.querySelector<HTMLElement>("[data-editor-scroller]")!;
+    const root = document.querySelector("[data-app-root]");
+    const win = (document.documentElement.dataset.windowFrame && root ? root : document.documentElement).getBoundingClientRect();
+    const r = sc.getBoundingClientRect();
+    const radius = root ? parseFloat(getComputedStyle(root).borderTopRightRadius) || 0 : 0;
+    return { x: r.left + sc.clientLeft + sc.clientWidth, width: r.right - (r.left + sc.clientLeft + sc.clientWidth), top: win.top, bottom: win.bottom, radius };
+  });
+  if (geo.width < 2 || !geo.radius) return out;
+  for (const end of ["top", "bottom"] as const) {
+    await page.evaluate(async (e) => {
+      const sc = document.querySelector<HTMLElement>("[data-editor-scroller]")!;
+      sc.scrollTop = e === "top" ? 0 : sc.scrollHeight;
+      // The scroll event (which shows the thumb for a moment) comes with the next frame.
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    }, end);
+    await page.waitForFunction(() => !document.querySelector("[data-editor-scroller]")!.hasAttribute("data-scrolling"), undefined, { timeout: 10_000 });
+    const clip = { x: geo.x, y: geo.top, width: geo.width, height: geo.bottom - geo.top };
+    const hidden = (await page.screenshot({ clip, scale: "css" })).toString("base64");
+    await page.evaluate(() => document.querySelector("[data-editor-scroller]")!.setAttribute("data-scrollbar-hover", ""));
+    const shown = (await page.screenshot({ clip, scale: "css" })).toString("base64");
+    await page.evaluate(() => document.querySelector("[data-editor-scroller]")!.removeAttribute("data-scrollbar-hover"));
+    const rows = await page.evaluate(async ([a, b]) => {
+      const pixels = async (s: string) => {
+        const bytes = Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+        const bmp = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
+        const cv = new OffscreenCanvas(bmp.width, bmp.height);
+        const cx = cv.getContext("2d")!;
+        cx.drawImage(bmp, 0, 0);
+        return cx.getImageData(0, 0, bmp.width, bmp.height);
+      };
+      const [p, q] = [await pixels(a!), await pixels(b!)];
+      let first = -1, last = -1;
+      for (let y = 0; y < p.height; y++) {
+        for (let x = 0; x < p.width; x++) {
+          const i = (y * p.width + x) * 4;
+          if (Math.abs(p.data[i]! - q.data[i]!) + Math.abs(p.data[i + 1]! - q.data[i + 1]!) + Math.abs(p.data[i + 2]! - q.data[i + 2]!) > 24) {
+            if (first < 0) first = y;
+            last = y + 1;
+            break;
+          }
+        }
+      }
+      return { first, last, height: p.height };
+    }, [hidden, shown]);
+    if (rows.first < 0) { out.push(`scrollbar: no thumb showed at the ${end} of the note`); continue; }
+    const fromTop = rows.first, fromBottom = rows.height - rows.last;
+    if (fromTop < geo.radius - VISUAL.tolerance) out.push(`scrollbar: at the ${end} of the note the thumb starts ${fromTop} px below the window's top, inside its ${geo.radius} px corner`);
+    if (fromBottom < geo.radius - VISUAL.tolerance) out.push(`scrollbar: at the ${end} of the note the thumb ends ${fromBottom} px above the window's bottom, inside its ${geo.radius} px corner`);
+  }
+  return out;
+}
+
+const RINGS_ONLY: VisualOptions = { skip: Object.fromEntries((["window", "dialogInset", "dialogHeight", "container", "padding", "insets", "sheet", "groups", "gaps", "fade", "trigger", "selection", "slider", "rows", "tooltips"] as const).map((r) => [r, "checks the rings alone"])) };
 
 /**
  * Focus rings on every list-like surface (D-111): where focus is in a list, tree, menu, tab list,
@@ -221,6 +282,16 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       if (h < least - tol) out.push(`dialog height: ${name} is ${px(h)} px tall (at least ${px(least)})`);
       const body = m.querySelector("[data-dialog-body]");
       if (body && body.scrollHeight > body.clientHeight + 1 && h < room - tol) out.push(`dialog height: ${name} scrolls at ${px(h)} px with ${px(room)} px of room`);
+      // Side navigation (vertical tabs, Settings) runs the full height of the body, its divider from
+      // the top of the body to the bottom (D-123).
+      if (body) {
+        const bc = getComputedStyle(body);
+        const full = body.scrollHeight - parseFloat(bc.paddingTop) - parseFloat(bc.paddingBottom);
+        for (const nav of body.querySelectorAll('[role="tablist"][aria-orientation="vertical"]')) {
+          const nh = nav.getBoundingClientRect().height;
+          if (nh < full - tol) out.push(`side navigation: ${nameOf(nav)} in ${name} is ${px(nh)} px tall, short of its body's ${px(full)} px`);
+        }
+      }
     }
   }
 
@@ -271,7 +342,8 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
   /** What a surface shows: text, pictures, controls, and anything with a fill or a border. */
   // Controls count by their box, the shape their hover and press fill; one that bleeds into the
   // padding (`data-bleed`, a dialog's close button) by its icon and text, which line up with the edge.
-  const CONTROLS = 'button, a[href], input, textarea, select, svg, img, canvas, hr, kbd, [role="button"], [role="tab"], [role="radio"], [role="checkbox"], [role="switch"], [role="option"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="treeitem"], [role="slider"], [role="combobox"], [role="searchbox"], [role="textbox"], [role="separator"]';
+  // A text inset like a control's label (`data-inset="control"`, the link card's address) counts as one.
+  const CONTROLS = '[data-inset="control"], button, a[href], input, textarea, select, svg, img, canvas, hr, kbd, [role="button"], [role="tab"], [role="radio"], [role="checkbox"], [role="switch"], [role="option"], [role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="treeitem"], [role="slider"], [role="combobox"], [role="searchbox"], [role="textbox"], [role="separator"]';
   const scrolls = (el: Element) => {
     const o = getComputedStyle(el);
     return (o.overflowY === "auto" || o.overflowY === "scroll") && (el.scrollHeight > el.clientHeight + 1 || parseFloat(o.flexGrow) > 0);
@@ -362,6 +434,47 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       const values = Object.values(pad);
       if (Math.max(...values) - Math.min(...values) > tol) out.push(`uniform padding: ${nameOf(s)} has ${(Object.keys(pad) as (keyof typeof pad)[]).map((k) => `${k} ${px(pad[k])} (${nameOf(by[k].el)})`).join(", ")}`);
     }
+    // A one-row bar (the link card) reads by its ink, not its boxes: a subtle button's box is
+    // invisible at rest, so what the eye measures is its label. The ink at each end sits the same
+    // distance from the edge (D-111).
+    if (on("insets") && kind !== "toast" && s.getAttribute("data-vq-padding") !== "none") {
+      const ink: { r: Box; text: boolean }[] = [];
+      const seen = (c: string) => c !== "transparent" && !/rgba\([^)]*,\s*0\)$/.test(c);
+      for (const n of [s, ...s.querySelectorAll("*")]) {
+        if (n !== s && (n.closest("[data-surface]") !== s || !shown(n))) continue;
+        for (const c of n.childNodes) {
+          if (!(c instanceof Text) || !c.data.trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(c);
+          for (const l of range.getClientRects()) if (l.width >= 1 && l.height >= 1) ink.push({ r: l, text: true });
+        }
+        if (n === s) continue;
+        const cs = getComputedStyle(n);
+        const state = n.matches('[aria-pressed="true"], [data-selected], [data-hovered], [data-pressed], [data-focus-visible]');
+        const filled = !state && (seen(cs.backgroundColor) || cs.backgroundImage !== "none" || (cs.maskImage && cs.maskImage !== "none") || (["Top", "Right", "Bottom", "Left"] as const).some((k) => parseFloat(cs[`border${k}Width`]) > 0 && cs[`border${k}Style`] !== "none" && seen(cs[`border${k}Color`])));
+        if (filled || n.matches("svg, img, input, textarea, canvas")) ink.push({ r: rect(n), text: false });
+      }
+      const row = ink.length > 1 && ink.every(({ r }) => Math.min(r.bottom, ink[0]!.r.bottom) - Math.max(r.top, ink[0]!.r.top) > 0);
+      const first = row ? ink.reduce((a, b) => (b.r.left < a.r.left ? b : a)) : null;
+      const last = row ? ink.reduce((a, b) => (b.r.right > a.r.right ? b : a)) : null;
+      // Text at both ends: a field or an icon at an end is measured by its box, as the padding rule does.
+      if (first?.text && last?.text) {
+        const left = first.r.left - inner.left;
+        const right = inner.right - last.r.right;
+        if (Math.abs(left - right) > tol) out.push(`uniform padding: ${nameOf(s)} shows its content ${px(left)} px from the start and ${px(right)} px from the end`);
+      }
+    }
+  }
+
+  if (on("groups")) {
+    // A sheet's header and its body are separate groups: `space.l` (16 px) between them (D-111).
+    for (const s of surfaces.filter((x) => x.getAttribute("data-surface") === "sheet")) {
+      const header = s.querySelector("[data-sheet-header]");
+      const body = s.querySelector("[data-sheet-body]");
+      if (!header || !body || !shown(header) || !shown(body)) continue;
+      const gap = rect(body).top + parseFloat(getComputedStyle(body).paddingTop) - rect(header).bottom;
+      if (gap < v.groupGap - tol / 2) out.push(`grouped and spaced: ${nameOf(s)}'s header and its content are ${px(gap)} px apart (at least ${v.groupGap})`);
+    }
   }
 
   if (on("sheet")) {
@@ -400,7 +513,8 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
   }
 
   if (on("fade")) {
-    const reduced = document.documentElement.dataset.transparency === "reduced" || matchMedia("(forced-colors: active)").matches;
+    // No blur with reduced transparency, or in software compositing (D-121): the fade alone.
+    const reduced = document.documentElement.dataset.transparency === "reduced" || document.documentElement.dataset.compositing === "software" || matchMedia("(forced-colors: active)").matches;
     for (const el of document.querySelectorAll("*")) {
       const o = getComputedStyle(el);
       if (o.overflowY !== "auto" && o.overflowY !== "scroll") continue;
@@ -423,7 +537,9 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
         }
         if (!edge || !showing) continue;
         const r = edge.getBoundingClientRect();
-        if (Math.abs(r.height - v.fade) > tol) out.push(`fading scroll edges: the note's ${side} edge is ${px(r.height)} px, not ${v.fade}`);
+        // The top edge also hides the trigger's place: solid over `triggerClear`, then the fade.
+        const tall = side === "top" ? v.triggerClear + v.fade : v.fade;
+        if (Math.abs(r.height - tall) > tol) out.push(`fading scroll edges: the note's ${side} edge is ${px(r.height)} px, not ${tall}`);
         // The blur grows toward the edge, up to 40 px at it; none with reduced transparency.
         const blurs = [...edge.children].map((c) => /blur\(([\d.]+)px\)/.exec(getComputedStyle(c).backdropFilter)?.[1]).filter((b): b is string => b !== undefined && getComputedStyle(edge.children[0]!).display !== "none").map(Number);
         // 5 to 8 bands, the strongest (40 px) at the window's edge, each one in softer than the last.
@@ -438,6 +554,44 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
         // The note itself carries no mask: the edges draw the fade.
         if (mask !== "none") out.push(`fading scroll edges: the note's scroller has a mask (the edges draw the fade)`);
       }
+    }
+  }
+
+  if (on("trigger")) {
+    // The Snap Layouts picker, opened by keyboard from the toolbar's Tab order, never covers the
+    // open trigger toolbar: one floating thing at a time in the title bar (D-119).
+    const picker = surfaces.find((e) => e.querySelector("[data-zone]"));
+    // The open toolbar's shape and anything in it that shows (its content can show without it).
+    for (const panel of [...document.querySelectorAll("[data-morph-panel][data-open]")]) {
+      if (!picker) break;
+      const a = rect(picker);
+      for (const part of [panel, ...panel.querySelectorAll("button")].filter(shown)) {
+        const b = rect(part);
+        if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top) { out.push(`one floating thing at a time: ${nameOf(picker)} at ${box(a)} covers ${nameOf(part)} of the open toolbar at ${box(b)}`); break; }
+      }
+    }
+    // Scrolled text never meets the trigger: where a line passes the trigger, it's under the solid
+    // part of the note's top edge (all of it but the fade), so the dot never sits on readable text.
+    const trigger = [...document.querySelectorAll("[data-trigger]")].find(shown);
+    const note = document.querySelector("[data-editor-scroller]");
+    if (trigger && note && shown(note)) {
+      const t = rect(trigger);
+      const edge = note.parentElement?.querySelector(':scope > [data-scroll-edge="top"]');
+      const covering = edge && getComputedStyle(edge).visibility === "visible" && getComputedStyle(edge).display !== "none";
+      const solid = covering ? rect(edge).bottom - v.fade : -Infinity;
+      const walker = document.createTreeWalker(note, NodeFilter.SHOW_TEXT);
+      let hit: string | null = null;
+      for (let n = walker.nextNode(); n && !hit; n = walker.nextNode()) {
+        const text = n as Text;
+        if (!text.data.trim()) continue;
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        for (const l of range.getClientRects()) {
+          const meets = l.left < t.right && l.right > t.left && l.top < t.bottom && l.bottom > t.top;
+          if (meets && Math.min(l.bottom, t.bottom) > solid + tol / 2) { hit = `“${text.data.trim().slice(0, 30)}” at ${box(l)}`; break; }
+        }
+      }
+      if (hit) out.push(`text under the trigger: ${hit} shows under the trigger at ${box(t)}${covering ? `, below the top edge's solid part (to ${px(solid)})` : ""}`);
     }
   }
 

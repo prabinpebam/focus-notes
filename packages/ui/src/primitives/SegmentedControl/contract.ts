@@ -8,6 +8,7 @@ export const contract = defineContract({
     label: { kind: "message", required: true },
     options: { kind: "list", of: "options", required: true, description: "2 to 5 options from a view model." },
     value: { kind: "text", bindable: true },
+    orientation: { kind: "enum", values: ["horizontal", "vertical"], default: "horizontal", description: "vertical: one full-width row per choice, for choices whose labels don't fit side by side (the first run's Workspace, D-123)." },
   },
   events: { change: { payload: { value: "text" }, binds: "value" } },
   slots: {},
@@ -17,5 +18,6 @@ export const contract = defineContract({
   fixtures: [
     { name: "first selected", props: { label: { t: "shortcuts.layer" }, options: { get: "vm.gallery.options" }, value: { get: "vm.gallery.optionFirst" } } },
     { name: "last selected", props: { label: { t: "shortcuts.platform" }, options: { get: "vm.gallery.options" }, value: { get: "vm.gallery.optionLast" } } },
+    { name: "orientation vertical", props: { label: { t: "shortcuts.platform" }, options: { get: "vm.gallery.options" }, value: { get: "vm.gallery.optionFirst" }, orientation: "vertical" } },
   ],
 });
