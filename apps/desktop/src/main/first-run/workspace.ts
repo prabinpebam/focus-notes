@@ -79,6 +79,31 @@ export async function cloneWorkspace(git: GitRunner, url: string, folder: string
   return { ok: true, folder, ...(priv !== undefined ? { privateNotes: priv } : {}) };
 }
 
+/** An absolute folder, for setup: the person's choice, the open clone's, or the one setup started with. */
+export interface SetupTarget {
+  /** Undefined: the app picks a free folder (D-154). */
+  folder?: string;
+  chosen: boolean;
+}
+/**
+ * Where setup makes the workspace (D-124, D-154). The folder it started with stays; then a folder the
+ * person chose; then the open workspace only when it's saved to GitHub. A folder used on this
+ * computer only stays where it is and is never the clone's target: the app picks a free folder.
+ */
+export function setupTarget(s: { started?: { folder: string; chosen?: boolean }; picked?: string; open?: { folder: string; savedToGitHub: boolean } }): SetupTarget {
+  if (s.started) return { folder: s.started.folder, chosen: s.started.chosen === true };
+  if (s.picked) return { folder: s.picked, chosen: true };
+  if (s.open?.savedToGitHub) return { folder: s.open.folder, chosen: true };
+  return { chosen: false };
+}
+
+/** Whether a folder is the top of a Git clone with a remote to save to (not a folder used on this computer only). */
+export async function savedToGitHub(git: GitRunner, folder: string): Promise<boolean> {
+  if (!existsSync(join(folder, ".git"))) return false;
+  const r = await git({ cwd: folder, args: ["remote", "get-url", "origin"], read: true });
+  return r.code === 0 && r.stdout.trim().length > 0;
+}
+
 /** The identity for only this workspace (FRE-05): in the workspace's and `private/`'s own settings. */
 export async function applyLocalIdentity(git: GitRunner, folder: string, i: { name: string; email: string }): Promise<void> {
   for (const dir of [folder, join(folder, "private")]) {

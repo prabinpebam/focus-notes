@@ -17,7 +17,7 @@ import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 import { createRunner } from "../src/main/git/run.ts";
 import { Account } from "../src/main/first-run/account.ts";
 import { commandFor, createToolRunner, findProgram, isGcmHelper, isGhHelper } from "../src/main/first-run/tools.ts";
-import { checkWorkspace, cloneWorkspace, applyLocalIdentity } from "../src/main/first-run/workspace.ts";
+import { checkWorkspace, cloneWorkspace, applyLocalIdentity, savedToGitHub, setupTarget } from "../src/main/first-run/workspace.ts";
 import { makeFakes } from "./fakes/fakes.ts";
 
 const win = process.platform === "win32";
@@ -241,5 +241,26 @@ describe("FRE-06: opening a workspace from GitHub or this computer", () => {
     expect(await checkWorkspace(runner(w), join(r.root, "seed-p"))).toEqual({ ok: false, problem: "notWorkspace" });
     expect(await checkWorkspace(runner(w), join(r.root, "seed-n"))).toMatchObject({ ok: true, privateNotes: true });
     expect(readdirSync(taken)).toEqual(["a.txt"]);
+  });
+  // D-124, D-154 (the owner's dead end): Run setup again from a folder used on this computer only.
+  it("setup's folder: never a folder used on this computer only; the open clone, a chosen folder, or the one it started with", { timeout: 60_000 }, async () => {
+    const w = world({});
+    const r = remotes(w);
+    const local = join(r.root, "Documents", "Focus Notes 2");
+    mkdirSync(join(local, ".focus-notes"), { recursive: true });
+    writeFileSync(join(local, ".focus-notes", "workspace.json"), '{ "formatVersion": 1 }\n');
+    writeFileSync(join(local, "Draft.md"), "# Draft\n");
+    const clone = join(r.root, "Documents", "Focus Notes");
+    await cloneWorkspace(runner(w), r.notes, clone);
+    expect(await savedToGitHub(runner(w), local)).toBe(false);
+    expect(await savedToGitHub(runner(w), clone)).toBe(true);
+    expect(await savedToGitHub(runner(w), join(r.root, "missing"))).toBe(false);
+    // A folder used on this computer only stays where it is: the app picks a free folder beside it.
+    expect(setupTarget({ open: { folder: local, savedToGitHub: false } })).toEqual({ chosen: false });
+    expect(setupTarget({})).toEqual({ chosen: false });
+    expect(setupTarget({ open: { folder: clone, savedToGitHub: true } })).toEqual({ folder: clone, chosen: true });
+    expect(setupTarget({ picked: "/p", open: { folder: clone, savedToGitHub: true } })).toEqual({ folder: "/p", chosen: true });
+    expect(setupTarget({ started: { folder: local }, picked: "/p" })).toEqual({ folder: local, chosen: false });
+    expect(setupTarget({ started: { folder: "/p", chosen: true } })).toEqual({ folder: "/p", chosen: true });
   });
 });
