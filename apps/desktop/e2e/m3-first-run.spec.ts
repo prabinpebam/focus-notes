@@ -29,7 +29,7 @@ test("FRE-01, FRE-04, FRE-05, FRE-08: the short path: a new install connects wit
   const { page } = l;
   try {
     await heading(page, "A quiet place to write");
-    await expect(card(page).getByText("Step 1 of 4")).toBeVisible();
+    await expect(card(page).getByRole("img", { name: "Step 1 of 4" })).toBeVisible();
     await expect(card(page).getByText("Your notes are saved online for free using GitHub.")).toBeVisible();
     await plainWords(page);
     expect(await axeViolations(page)).toEqual([]);
@@ -37,7 +37,8 @@ test("FRE-01, FRE-04, FRE-05, FRE-08: the short path: a new install connects wit
     await press(page, "Enter");
 
     // Git is checked silently; the credential Git already has is offered (FRE-04): no code, no helper started.
-    await heading(page, "Connect your GitHub account");
+    // D-142: the title names the state: already connected.
+    await heading(page, "You're connected");
     await expect(card(page).getByRole("group", { name: "This computer is connected to GitHub as @ada (Ada)." })).toBeVisible({ timeout: 15_000 });
     await plainWords(page);
     expect(await axeViolations(page)).toEqual([]);
@@ -46,13 +47,13 @@ test("FRE-01, FRE-04, FRE-05, FRE-08: the short path: a new install connects wit
     expect(w.fakes.argv()).not.toContain('"login"');
 
     // No notes on GitHub yet: Create my notes, with the defaults and no passphrase.
-    await heading(page, "Your notes");
+    await heading(page, "Create your notes");
     await expect(page.getByRole("button", { name: "Create my notes" })).toBeFocused({ timeout: 15_000 });
     await expect(card(page).getByRole("button", { name: "More options" })).toHaveAttribute("aria-expanded", "false");
     await plainWords(page);
     expect(await axeViolations(page)).toEqual([]);
     await press(page, "Enter");
-    await expect(card(page).getByText("Your notes are ready. Backing up carries on in the background.")).toBeVisible({ timeout: 60_000 });
+    await expect(card(page).getByText("Backing up carries on in the background.")).toBeVisible({ timeout: 60_000 });
     await expect(card(page).getByText("Your site: https://ada.github.io/notes/")).toBeVisible({ timeout: 30_000 });
     await plainWords(page);
     await expect(card(page).getByRole("button", { name: "Continue" })).toBeEnabled();
@@ -61,7 +62,7 @@ test("FRE-01, FRE-04, FRE-05, FRE-08: the short path: a new install connects wit
 
     // The window starts again in the new notes (D-98), at Ready.
     await heading(page, "Ready");
-    await expect(card(page).getByText("Step 4 of 4")).toBeVisible();
+    await expect(card(page).getByRole("img", { name: "Step 4 of 4" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Start writing" })).toBeFocused();
     await press(page, "Enter");
 
@@ -158,7 +159,7 @@ test("FRE-02, FRE-06: no sign-in helper: Having trouble? → a pasted token, the
     await heading(page, "A quiet place to write");
     await expect(page.getByRole("button", { name: "Get started" })).toBeFocused();
     await press(page, "Enter");
-    await heading(page, "Connect your GitHub account");
+    await heading(page, "Install the sign-in helper");
     await expect(card(page).getByText("To connect, Focus Notes needs GitHub's free sign-in helper. Install it, then check again.")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("button", { name: "Install the sign-in helper" })).toBeFocused();
     await plainWords(page);
@@ -265,7 +266,7 @@ test("FRE-02, FRE-01: declined and offline say so in plain words and recover wit
     await press(page, "Enter");
     await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
-    await heading(page, "Your notes");
+    await heading(page, "Create your notes");
     await expect(page.getByRole("button", { name: "Create my notes" })).toBeFocused({ timeout: 15_000 });
   } finally {
     await quit(l);
@@ -273,12 +274,12 @@ test("FRE-02, FRE-01: declined and offline say so in plain words and recover wit
   // Quit mid-way: the next start resumes at the same step.
   l = await start(w);
   try {
-    await heading(l.page, "Your notes");
-    await expect(card(l.page).getByText("Step 3 of 4")).toBeVisible();
+    await heading(l.page, "Create your notes");
+    await expect(card(l.page).getByRole("img", { name: "Step 3 of 4" })).toBeVisible();
     // Esc goes back.
     await expect(l.page.getByRole("button", { name: "Create my notes" })).toBeFocused({ timeout: 15_000 });
     await press(l.page, "Escape");
-    await heading(l.page, "Connect your GitHub account");
+    await heading(l.page, "You're connected");
     noTokenInArgs(w, l);
   } finally {
     await quit(l);
@@ -299,7 +300,7 @@ test("FRE-08, D-135: GitHub can't find the starter notes: setup says so plainly,
     await press(page, "Enter");
     await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
-    await heading(page, "Your notes");
+    await heading(page, "Create your notes");
     // The card is the action: one button, named by what it shows.
     const create = card(page).getByRole("button", { name: "Create my notes Private unless you share. Backed up to GitHub.", exact: true });
     await expect(create).toBeFocused({ timeout: 15_000 });
@@ -313,7 +314,7 @@ test("FRE-08, D-135: GitHub can't find the starter notes: setup says so plainly,
     // GitHub has the starter notes again: Try again runs the rest of setup, not just that step (D-98, D-135).
     w.gh.failures.clear();
     await press(page, "Enter");
-    await expect(card(page).getByText("Your notes are ready. Backing up carries on in the background.")).toBeVisible({ timeout: 60_000 });
+    await expect(card(page).getByText("Backing up carries on in the background.")).toBeVisible({ timeout: 60_000 });
     await expect(card(page).getByText("Your site: https://ada.github.io/notes/")).toBeVisible({ timeout: 30_000 });
     const cont = card(page).getByRole("button", { name: "Continue" });
     await expect(cont).toBeEnabled();
@@ -409,7 +410,7 @@ test("FRE-01: Git missing: one free helper app to install and Check again, in pl
   try {
     await heading(page, "A quiet place to write");
     await press(page, "Enter");
-    await heading(page, "Connect your GitHub account");
+    await heading(page, "Install the helper app");
     // D-135: the helper app's card, with its icon, and one install button.
     await expect(card(page).getByText("One free helper app")).toBeVisible({ timeout: 15_000 });
     await expect(card(page).getByText("Focus Notes needs it to save your notes.")).toBeVisible();

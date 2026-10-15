@@ -1,0 +1,12 @@
+{ "cmp": { "strengthMeter": {
+  "height": { "$type": "dimension", "$value": "{size.meter}" },
+  "gap": { "$type": "dimension", "$value": "{space.xs}" },
+  "radius": { "$type": "dimension", "$value": "{radius.round}" },
+  "track": { "$type": "color", "$value": "{color.border}" },
+  "weak": { "$type": "color", "$value": "{color.danger}" },
+  "fair": { "$type": "color", "$value": "{color.warning}" },
+  "strong": { "$type": "color", "$value": "{color.success}" },
+  "font": { "$type": "fontFamily", "$value": "{font.ui}" },
+  "size": { "$type": "dimension", "$value": "{font.uiSecondary}" },
+  "labelGap": { "$type": "dimension", "$value": "{space.xs}" }
+} } }

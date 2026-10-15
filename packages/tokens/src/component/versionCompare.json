@@ -1,0 +1,15 @@
+{ "cmp": { "versionCompare": {
+  "gap": { "$type": "dimension", "$value": "{space.s}" },
+  "pillGap": { "$type": "dimension", "$value": "{space.xs}" },
+  "paddingInline": { "$type": "dimension", "$value": "{space.s}" },
+  "height": { "$type": "dimension", "$value": "{size.controlS}" },
+  "radius": { "$type": "dimension", "$value": "{radius.round}" },
+  "font": { "$type": "fontFamily", "$value": "{font.ui}" },
+  "size": { "$type": "dimension", "$value": "{font.uiSecondary}" },
+  "valueFont": { "$type": "fontFamily", "$value": "{font.mono}" },
+  "valueWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
+  "found": { "$type": "color", "background": { "$value": "{color.dangerMuted}" }, "text": { "$value": "{color.danger}" } },
+  "needed": { "$type": "color", "background": { "$value": "{color.successMuted}" }, "text": { "$value": "{color.success}" } },
+  "arrow": { "$type": "color", "$value": "{color.textMuted}" },
+  "icon": { "$type": "dimension", "$value": "{size.iconS}" }
+} } }

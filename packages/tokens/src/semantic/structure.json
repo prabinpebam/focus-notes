@@ -62,6 +62,11 @@
       "$value": "{ref.size.40}",
       "$description": "The interface ramp's largest size: the title of a full-window onboarding step (D-126)."
     },
+    "uiCode": {
+      "$type": "dimension",
+      "$value": "{ref.size.32}",
+      "$description": "A one-time code shown large and monospaced, a setup step's focal point (D-142)."
+    },
     "uiLineHeight": {
       "$type": "number",
       "$value": 1.4
@@ -207,6 +212,18 @@
     },
     "controlL": {
       "$value": "{ref.size.40}"
+    },
+    "stepDot": {
+      "$value": "{ref.size.8}",
+      "$description": "One step of the setup's stepper (D-142)."
+    },
+    "stepDotCurrent": {
+      "$value": "{ref.size.24}",
+      "$description": "The step the setup is on: a longer segment (D-142)."
+    },
+    "meter": {
+      "$value": "{ref.size.4}",
+      "$description": "A strength meter's segments (D-142)."
     },
     "triggerDot": {
       "$value": "{ref.size.10}"

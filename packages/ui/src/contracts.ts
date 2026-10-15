@@ -51,10 +51,16 @@ import { contract as AppMark } from "./primitives/AppMark/contract.ts";
 import { contract as StepMark } from "./primitives/StepMark/contract.ts";
 import { contract as ItemCard } from "./primitives/ItemCard/contract.ts";
 import { contract as SaveState } from "./primitives/SaveState/contract.ts";
+import { contract as Columns } from "./layouts/Columns/contract.ts";
+import { contract as StepDots } from "./primitives/StepDots/contract.ts";
+import { contract as StatusRow } from "./primitives/StatusRow/contract.ts";
+import { contract as CodeBlock } from "./primitives/CodeBlock/contract.ts";
+import { contract as VersionCompare } from "./primitives/VersionCompare/contract.ts";
+import { contract as StrengthMeter } from "./primitives/StrengthMeter/contract.ts";
 
 export const contracts: readonly Contract[] = [
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState,
-  Stack, Inline, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter,
+  Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage,
   EditorSurface, TableControls, WindowFrame,
   Trigger, Toolbar, Dialog,
   NoteContent,

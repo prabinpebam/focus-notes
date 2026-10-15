@@ -158,8 +158,8 @@ test("IA-VIEW-SETTINGS, FRE-07: Settings opens with Mod+, and from ⋯; signing 
     await openSettings(page);
     await expect(settings(page).getByText("Git on this computer is still signed in as @ada.")).toBeVisible({ timeout: 15_000 });
     await settings(page).getByRole("button", { name: "Sign in…" }).click();
-    await heading(page, "Connect your GitHub account");
-    await expect(card(page).getByText(/^Step \d of 4$/)).toHaveCount(0);
+    await heading(page, "You're connected");
+    await expect(card(page).getByRole("img", { name: /^Step \d of 4$/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });
     expect(await settledAxe(page)).toEqual([]);
     await press(page, "Enter");
@@ -251,8 +251,8 @@ test("FRE-07: Run setup again walks the first run from Connect; Esc goes back to
   try {
     await openSettings(page, "Workspace");
     await settings(page).getByRole("button", { name: "Run setup again" }).click();
-    await heading(page, "Connect your GitHub account");
-    await expect(card(page).getByText("Step 2 of 4")).toBeVisible();
+    await heading(page, "You're connected");
+    await expect(card(page).getByRole("img", { name: "Step 2 of 4" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Note" })).toHaveCount(0);
     expect(top(w.dirs.userData)).not.toContain(DATA_FILES.setup);
     await expect(card(page).getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });

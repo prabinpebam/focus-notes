@@ -34,22 +34,22 @@ const PICTURE = /^data:image\/(png|jpeg|gif|webp);base64,/;
 /** One thing, shown rather than described (D-126, D-127): an account, a workspace, or an option. */
 export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, size = "m", personal = "none", label, busy, disabled, autoFocus, id, children, onPress }: ItemCardProps) {
   const Glyph = icon ? ICONS[icon] : undefined;
+  const pressable = Boolean(onPress);
   const GitHub = ICONS.github;
   const Chevron = ICONS.chevronRight;
   const visual = Glyph ? (
-    <span className={s.tile} data-visual-anchor=""><Glyph className={s.tileIcon} aria-hidden="true" /></span>
+    <span className={`${s.tile} ${pressable && !disabled ? s.tileAction : ""}`} data-visual-anchor=""><Glyph className={s.tileIcon} aria-hidden="true" /></span>
   ) : avatar && PICTURE.test(avatar) ? (
     <img className={s.avatar} src={avatar} alt="" data-visual-anchor="" data-avatar="picture" />
   ) : initials ? (
     <span className={s.avatar} aria-hidden="true" data-visual-anchor="" data-avatar="initials">{initials}</span>
   ) : null;
-  const pressable = Boolean(onPress);
   // Inside a button only phrasing content: spans, laid out the same.
   const Title = pressable ? "span" : "p";
   const Detail = pressable ? "span" : "div";
   const text = (
     <Detail className={s.text}>
-      <Title className={`${s.title} ${size === "l" ? s.titleLarge : ""}`} data-personal={personal !== "none" ? "" : undefined}>{title}</Title>
+      <Title className={`${s.title} ${size === "l" ? s.titleLarge : ""} ${pressable ? s.titleAction : ""}`} data-personal={personal !== "none" ? "" : undefined}>{title}</Title>
       {detail || badge || mark ? (
         <Detail className={s.detail}>
           {mark ? <GitHub className={s.mark} aria-hidden="true" /> : null}
@@ -68,6 +68,7 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
         aria-label={label}
         aria-disabled={busy || disabled ? "true" : undefined}
         aria-busy={busy ? "true" : undefined}
+        data-unavailable={disabled ? "" : undefined}
         {...(autoFocus ? { autoFocus: true } : {})}
         onPress={busy || disabled ? undefined : onPress}
       >
