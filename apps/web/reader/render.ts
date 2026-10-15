@@ -3,7 +3,7 @@
  * with its stylesheet and fonts, and run in Node by the publisher (packages/seal) for each public
  * note. Markdown → the bridge's blocks → the reader view document, through the UI runtime (DSY-06).
  */
-import { publicPage, publicPagePath, publicNoteUrl, READER_VIEW_MODEL } from "@focus-notes/core";
+import { publicIndexModel, publicPage, publicPagePath, publicNoteUrl, PUBLIC_INDEX_VIEW_MODEL, READER_VIEW_MODEL, type PublicIndexEntry } from "@focus-notes/core";
 import { renderStaticView } from "@focus-notes/ui-runtime/static";
 import { readerContracts, readerRegistry, renderReaderDocument } from "@focus-notes/ui/reader";
 import { pages, messages } from "@focus-notes/views";
@@ -27,7 +27,7 @@ export interface NotePageInput {
 
 export { publicPagePath };
 
-export function renderNotePage(input: NotePageInput): { file: string; html: string; title: string } {
+export function renderNotePage(input: NotePageInput): { file: string; html: string; title: string; excerpt?: string } {
   const page = publicPage(input.markdown, input.path, input.updated, input.publicPaths);
   const dir = publicPagePath(input.path);
   const up = "../".repeat(dir.split("/").filter(Boolean).length);
@@ -44,5 +44,30 @@ export function renderNotePage(input: NotePageInput): { file: string; html: stri
     preload,
     body,
   });
-  return { file: `${dir}index.html`, html, title: page.title };
+  return { file: `${dir}index.html`, html, title: page.title, ...(page.excerpt ? { excerpt: page.excerpt } : {}) };
+}
+
+export interface IndexPageInput {
+  /** Each public note: its path in notes/, title, when it last changed (ISO 8601), and its excerpt if it has one. */
+  notes: readonly PublicIndexEntry[];
+  siteUrl?: string;
+  assets: ReaderAssets;
+}
+
+/** The index of public notes at `n/` (D-139): the same renderer, stylesheet, and document as the notes' pages. */
+export function renderIndexPage(input: IndexPageInput): { file: string; html: string } {
+  const en = messages.en!;
+  const heading = en["publicIndex.title"]!;
+  const model = publicIndexModel(heading, input.notes);
+  const asset = (name: string) => `../assets/${name}`;
+  const preload = ["400-normal", "700-normal"].flatMap((face) => input.assets.fonts.filter((f) => f.endsWith(".woff2") && f.includes(`-latin-${face}-`)).slice(0, 1)).map(asset);
+  const body = renderStaticView({ views: pages, view: "index", registry: readerRegistry, contracts: readerContracts, messages: en, data: { [PUBLIC_INDEX_VIEW_MODEL.id]: model } });
+  const html = renderReaderDocument({
+    title: heading,
+    ...(input.siteUrl ? { canonical: new URL("n/", input.siteUrl.endsWith("/") ? input.siteUrl : `${input.siteUrl}/`).href } : {}),
+    stylesheets: input.assets.css.map(asset),
+    preload,
+    body,
+  });
+  return { file: "n/index.html", html };
 }

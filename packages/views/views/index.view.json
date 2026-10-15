@@ -1,0 +1,42 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "index",
+  "ia": "IA-VIEW-PUBLIC",
+  "viewModels": [
+    "vm.publicIndex"
+  ],
+  "focus": "page",
+  "root": {
+    "type": "ReaderPage",
+    "id": "page",
+    "props": {
+      "skipLabel": { "t": "publicIndex.skip" }
+    },
+    "slots": {
+      "footer": [
+        { "type": "Text", "props": { "value": { "t": "reader.footer" }, "role": "caption", "tone": "muted" } }
+      ]
+    },
+    "children": [
+      { "type": "Stack", "props": { "gap": "s" }, "children": [
+        { "type": "NoteContent", "props": { "blocks": { "get": "vm.publicIndex.title" } } },
+        { "type": "Text", "props": { "value": { "t": "publicIndex.count", "args": { "count": { "get": "vm.publicIndex.count" } } }, "role": "secondary", "tone": "muted" } }
+      ] },
+      { "type": "Stack", "props": { "gap": "xl" }, "children": [
+        {
+          "each": { "get": "vm.publicIndex.rows" },
+          "as": "row",
+          "key": "row.key",
+          "empty": { "type": "Text", "props": { "value": { "t": "publicIndex.empty" }, "role": "body", "tone": "muted" } },
+          "render": { "type": "Stack", "props": { "gap": "xs" }, "children": [
+            { "type": "NoteContent", "props": { "blocks": { "get": "row.title" } } },
+            { "type": "Text", "props": { "value": { "t": "reader.updated", "args": { "date": { "get": "row.updated" } } }, "role": "secondary", "tone": "muted" } },
+            { "switch": { "get": "row.hasExcerpt" }, "cases": {
+              "true": { "type": "NoteContent", "props": { "blocks": { "get": "row.excerpt" } } }
+            } }
+          ] }
+        }
+      ] }
+    ]
+  }
+}

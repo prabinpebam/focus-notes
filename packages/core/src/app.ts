@@ -15,6 +15,7 @@ import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
 import { joinPath, newNoteFolder } from "./workspace.ts";
 import { registerImport, IMPORT_CLOSED, type ImportState } from "./import-app.ts";
+import { registerPublicLink } from "./public-link-app.ts";
 import { appStateOfSettings, parseSettings, settingsFileOf, splitAppState, type SettingsFile } from "./settings.ts";
 import { registerSync, NO_SYNC, SyncFailed, saveStateOf, type SyncState } from "./sync-app.ts";
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
@@ -200,7 +201,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
     ],
   },
   { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
-  { id: "note", label: "menu.note", items: ["note.share"] },
+  { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "shortcuts.open", "help.open"] },
 ];
@@ -209,8 +210,6 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
  * (UI-07, Foundations → States), rather than hidden. Each becomes a real command when it lands.
  */
 export const PLANNED_MENU_COMMANDS = [
-  // Share and visibility: the popover arrives with sharing (WP-5.3); moving a note between Public and Private with WP-3.4.
-  { id: "note.share", title: "command.note.share", icon: "share", disabledReason: "command.note.share.reason" },
   // Help and docs open the product site's help, which arrives with the product site (WP-5.6).
   { id: "help.open", title: "command.help.open", icon: "info", disabledReason: "command.help.open.reason" },
 ] as const;
@@ -955,6 +954,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     appState: () => appState, persistAppState, itemSchema: ITEM_SCHEMA, describeItem,
   });
   registerImport({ store, commands, viewModels, catalog, bridge, tracker, toast, menu: extraMenu });
+  registerPublicLink({ store, commands, catalog, bridge, toast });
   const conflicts = registerConflicts({
     store, commands, viewModels, catalog, bridge, tracker, toast, announce, exclusive, setNote, flush,
     loaded: (path, md) => workspace.loaded(path, md),

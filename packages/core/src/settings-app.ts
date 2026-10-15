@@ -101,6 +101,16 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     },
   });
   reg<{ open: boolean }>("settings.setOpen", ({ open }) => { if (!open) set({ open: false }); });
+  // Share and visibility… opens Settings → Sharing until its popover is built (WP-5.3, D-139).
+  commands.register({
+    id: "note.share", title: "command.note.share", icon: "share",
+    enabled: () => available() && Boolean(bridge.access),
+    disabledReason: "command.note.share.reason",
+    run: async () => {
+      await commands.run("settings.open");
+      await commands.run("settings.setSection", { value: "sharing" });
+    },
+  });
   const sections = () => SETTINGS_SECTIONS.filter((id) => id !== "sharing" || bridge.access);
   reg<{ value: string }>("settings.setSection", async (a) => {
     const v = value(a);

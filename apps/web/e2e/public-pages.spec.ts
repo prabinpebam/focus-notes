@@ -100,6 +100,38 @@ test("PRV-04: no cookies, nothing from another origin, and noindex from front ma
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
 });
 
+const shots = process.env.FOCUS_NOTES_PUBLIC_SHOTS;
+test("D-139: the index at /n/ lists each public note as a row (title, last updated, excerpt if given), light and dark at 320 px, no cookies or other origins", async ({ page, context }) => {
+  const urls = requests(page);
+  await page.goto(origin + "/n/");
+  await expect(page).toHaveTitle("Notes");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(["Notes"]);
+  await expect(page.getByText("2 public notes")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2 })).toHaveCount(2);
+  expect((await page.getByRole("heading", { level: 2 }).allTextContents()).sort()).toEqual(["Index", "On focus"]);
+  await expect(page.getByText(/^Updated /)).toHaveCount(2);
+  // Only the note whose front matter gives an excerpt shows one.
+  await expect(page.getByText("Why attention grows what you water.")).toBeVisible();
+  await expect(page.getByText("Everything published here.")).toHaveCount(0);
+  await expect(page.locator("[contenteditable], textarea, script")).toHaveCount(0);
+  await page.waitForLoadState("networkidle");
+  expect(urls.filter((u) => !u.startsWith(origin))).toEqual([]);
+  expect(await context.cookies()).toEqual([]);
+  for (const colorScheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme });
+    for (const width of [1100, 320]) {
+      await page.setViewportSize({ width, height: 700 });
+      await page.goto(origin + "/n/");
+      expect(await axeViolations(page), `${colorScheme} at ${width} px`).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      if (shots) await page.screenshot({ path: join(shots, `index-${colorScheme}-${width}.png`), fullPage: true });
+    }
+  }
+  // Each title goes to its note's page.
+  await page.getByRole("link", { name: "On focus" }).click();
+  await expect(page).toHaveURL(origin + PAGE);
+});
+
 test("PRF-12: LCP, INP, and CLS on a throttled profile, and only the first screen's fonts preloaded", async ({ page }) => {
   const cdp = await page.context().newCDPSession(page);
   // About a mid-range phone on a slow 4G connection.

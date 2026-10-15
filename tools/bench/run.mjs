@@ -199,8 +199,14 @@ async function searchTimes() {
   return measureSearch(runs);
 }
 
+// PRF-06: publishing 1,000 public and 200 shared notes with the real publisher (publish.ts, WP-5.1).
+async function publishTimes() {
+  const { measurePublish } = await import(pathToFileURL(join(import.meta.dirname, "publish.ts")).href);
+  return measurePublish(1);
+}
+
 // PRF-04 and PRF-10: memory and idle CPU with 10,000 notes, and reopening an unchanged note.
-const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()), ...(await noteTimes()), ...(await largeWorkspace({ root, mainEntry })), ...(await spotlightTimes()), ...(await searchTimes()) } };
+const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()), ...(await noteTimes()), ...(await largeWorkspace({ root, mainEntry })), ...(await spotlightTimes()), ...(await searchTimes()), ...(await publishTimes()) } };
 mkdirSync(join(root, "test-results"), { recursive: true });
 writeFileSync(join(root, "test-results", "bench.json"), JSON.stringify(report, null, 2));
 
