@@ -73,6 +73,8 @@ A task has a target (the node it affects, by ID), a message key that says what's
 | Rows being saved | A small `Spinner` at the end of each row (Files: moved, deleted, or created rows) until the write and commit finish ([Files](../views/files.html)) |
 | A region being updated | The region keeps its content, with a thin moving line along its top. With reduced motion, the line is still. |
 | A view opening | A `ProgressBar` line, then a skeleton of the view's layout. A view never opens blank. |
+| Long work (over 10 s, or several steps) | The current step in words ("Downloading your notes · 3 of 9"), a step list that ticks parts off, a determinate `ProgressBar` where the work reports progress, the elapsed time, and [Cancel] where the work can stop. The window stays usable ([Perceived performance → Patterns](../../architecture/perceived-performance.md#patterns), PRF-13). |
+| A swap (a view, a setup step, a workspace) | The old content stays until the new content is complete, then they swap in one frame. Nothing is ever blank or white in between (DSK-09). |
 | A countable wait | The words count: "Indexing notes: 4,000 of 10,000". |
 | Changes being checked | Where sync counts show, a small `Spinner` and "Checking changes…" until the [Git status](../../architecture/desktop-and-git.md#asking-git-what-changed) returns |
 
