@@ -180,6 +180,11 @@ contextBridge.exposeInMainWorld("focusNotes", {
       ipcRenderer.on("firstRun:signIn", handler);
       return () => ipcRenderer.removeListener("firstRun:signIn", handler);
     },
+    onProgress: (listener: (p: unknown) => void) => {
+      const handler = (_e: unknown, p: unknown) => listener(p);
+      ipcRenderer.on("firstRun:progress", handler);
+      return () => ipcRenderer.removeListener("firstRun:progress", handler);
+    },
     useToken: (token: string) => ipcRenderer.invoke("firstRun:useToken", token),
     signOut: (options?: { git?: boolean }) => ipcRenderer.invoke("firstRun:signOut", { git: options?.git !== false }),
     // Switch account (FRE-07): the main process takes the credential out of Git's helper, and puts it back if no one signs in.

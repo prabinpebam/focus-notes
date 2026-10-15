@@ -12,11 +12,41 @@ import { describe, expect, it } from "vitest";
 import {
   canContinue, createApp, deviceCode, FIRST_RUN_STEPS, gitIsNewEnough, identityProblem, looksLikeToken, nextStep, noreplyEmail, notesIdentity, parseGitVersion, prevStep,
   resumeStep, signInProblem, suggestIdentity, SETUP_PROBLEMS, SETUP_STEPS, TOKEN_PAGE,
-  type AccountStatus, type AppStateFile, type FirstRunBridge, type GitCheck, type PlatformBridge, type RepoChoice, type SetupReport, type SignInProgress, type SyncReport, type WorkspaceResult,
+  type AccountStatus, type AppStateFile, type FirstRunBridge, type FirstRunProgress, type GitCheck, type PlatformBridge, type RepoChoice, type SetupReport, type SignInProgress, type SyncReport, type WorkspaceResult,
 } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 const ADA = { login: "ada", id: 583231, name: "Ada Lovelace" };
+
+/** A clock the test moves by hand, so a wait's sign, words and elapsed time are checked at their times (PRF-13). */
+interface ManualClock { now(): number; setTimeout(fn: () => void, ms: number): unknown; clearTimeout(h: unknown): void; advance(ms: number): Promise<void> }
+function manualClock(): ManualClock {
+  let t = 0, n = 0;
+  const timers: { at: number; fn: () => void; id: number }[] = [];
+  return {
+    now: () => t,
+    setTimeout: (fn, ms) => (timers.push({ at: t + ms, fn, id: ++n }), n),
+    clearTimeout: (h) => { const i = timers.findIndex((x) => x.id === h); if (i >= 0) timers.splice(i, 1); },
+    async advance(ms) {
+      const end = t + ms;
+      for (;;) {
+        timers.sort((a, b) => a.at - b.at);
+        const x = timers[0];
+        if (!x || x.at > end) break;
+        timers.shift();
+        t = x.at;
+        x.fn();
+      }
+      t = end;
+      await new Promise((r) => setTimeout(r, 0));
+    },
+  };
+}
+const deferred = () => {
+  let resolve!: () => void;
+  const promise = new Promise<void>((r) => (resolve = r));
+  return { promise, resolve };
+};
 const TOKEN = "github_pat_11AAAAAAA0123456789abcdefghijklmnopqrstuvwxyz";
 
 describe("FRE-01: the step machine (D-124)", () => {
@@ -103,17 +133,18 @@ const report = (states: Partial<Record<string, SetupReport["steps"][number]["sta
   steps: SETUP_STEPS.map((id) => ({ id, state: states[id] ?? "pending" })),
 });
 
-function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus>; useToken?: () => AccountStatus; repos?: RepoChoice[]; reposOffline?: boolean; clone?: (owner: string, name: string, where?: "new") => WorkspaceResult; platform?: PlatformBridge["platform"] } = {}) {
+function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus>; useToken?: () => AccountStatus; repos?: RepoChoice[]; reposOffline?: boolean; clone?: (owner: string, name: string, where?: "new") => WorkspaceResult; platform?: PlatformBridge["platform"]; clock?: ManualClock; slowRepos?: Promise<void>; slowAccount?: Promise<void> } = {}) {
   const saved: AppStateFile[] = [];
   const calls: string[] = [];
   const tokens: string[] = [];
   const passphrases: (string | undefined)[] = [];
   let progress: ((p: SignInProgress) => void) | undefined;
+  let firstRunProgress: ((p: FirstRunProgress) => void) | undefined;
   let syncListener: ((r: SyncReport) => void) | undefined;
   let account: AccountStatus = opts.account ?? { gcm: true, gh: false };
   const fr: FirstRunBridge = {
     git: async () => (calls.push("git"), opts.git ?? GIT_OK),
-    account: async () => (calls.push("account"), account),
+    account: async () => (calls.push("account"), await opts.slowAccount, account),
     useExisting: async () => (calls.push("useExisting"), (account = { ...account, account: account.cliAccount! })),
     signIn: async (device) => {
       calls.push(`signIn:${device}`);
@@ -126,7 +157,8 @@ function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountSt
     signOut: async () => (calls.push("signOut"), (account = { gcm: true, gh: false })),
     identity: async () => suggestIdentity({}, account.account),
     setIdentity: async (i, scope) => (calls.push(`identity:${i.name}:${i.email}:${scope}`), true),
-    repositories: async () => { calls.push("repositories"); if (opts.reposOffline) throw new Error("offline"); return opts.repos ?? [{ owner: "ada", name: "notes", private: false, instance: true, pushedAt: "2026-10-12T09:00:00Z" }, { owner: "ada", name: "recipes", private: true, instance: false }]; },
+    onProgress: (l) => ((firstRunProgress = l), () => {}),
+    repositories: async () => { calls.push("repositories"); await opts.slowRepos; if (opts.reposOffline) throw new Error("offline"); return opts.repos ?? [{ owner: "ada", name: "notes", private: false, instance: true, pushedAt: "2026-10-12T09:00:00Z" }, { owner: "ada", name: "recipes", private: true, instance: false }]; },
     folder: async (instance) => `/home/ada/Documents/${instance ?? "Focus Notes"}`,
     chooseFolder: async () => (calls.push("chooseFolder"), "/home/ada/Elsewhere"),
     clone: async (owner, name, where) => (calls.push(`clone:${owner}/${name}${where ? `:${where}` : ""}`), opts.clone ? opts.clone(owner, name, where) : { ok: true, folder: "/x", privateNotes: false }),
@@ -162,10 +194,10 @@ function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountSt
       onReport: (l) => ((setupListener = l), () => {}),
     },
   };
-  const app = createApp(bridge, en, "en", { clock: { now: () => Date.parse("2026-10-15T09:00:00Z"), setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms), clearTimeout: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) } });
+  const app = createApp(bridge, en, "en", { clock: opts.clock ?? { now: () => Date.parse("2026-10-15T09:00:00Z"), setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms), clearTimeout: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) } });
   const vm = () => app.viewModels.select("vm.firstRun", app.store.state) as Record<string, unknown>;
   const run = (id: string, args?: Record<string, unknown>) => app.commands.run(id, args);
-  return { app, vm, run, saved, calls, tokens, passphrases, last: () => saved.at(-1), pushSetup: (r: SetupReport) => setupListener!(r), pushSync: (r: SyncReport) => syncListener!(r) };
+  return { app, vm, run, saved, calls, tokens, passphrases, last: () => saved.at(-1), pushSetup: (r: SetupReport) => setupListener!(r), pushSync: (r: SyncReport) => syncListener!(r), pushProgress: (p: FirstRunProgress) => firstRunProgress!(p) };
 }
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
@@ -676,5 +708,97 @@ describe("UI-12: the desktop's account pill", () => {
   it("vm.firstRun declares what it reads (PRF-11)", () => {
     const t = shell();
     expect(t.app.viewModels.get("vm.firstRun")!.reads).not.toBe("*");
+  });
+});
+
+describe("PRF-13, D-149: no step waits in silence", () => {
+  it("reading the account: nothing for 300 ms, then the profile card's skeleton and its words, then the elapsed time", async () => {
+    const clock = manualClock();
+    const slow = deferred();
+    const t = shell({ clock, slowAccount: slow.promise });
+    await t.app.start();
+    void t.run("firstRun.next");
+    await clock.advance(0);
+    expect(t.vm()).toMatchObject({ connect: "checking", hasWait: false, accountSkeleton: false, waitText: "" });
+    await clock.advance(299);
+    expect(t.vm().hasWait).toBe(false);
+    await clock.advance(1);
+    expect(t.vm()).toMatchObject({ hasWait: true, accountSkeleton: true, waitText: "Connecting to your account…" });
+    await clock.advance(2700);
+    expect(t.vm().waitText).toBe("Connecting to your account… · 3 s");
+    slow.resolve();
+    await clock.advance(0);
+    expect(t.vm()).toMatchObject({ connect: "choose", hasWait: false, accountSkeleton: false });
+  });
+  it("prefetches the notes as soon as Connect has the account, and counts them with three skeleton rows while it looks", async () => {
+    const clock = manualClock();
+    const slow = deferred();
+    const t = shell({ clock, slowRepos: slow.promise, account: { gcm: true, gh: false, account: ADA } });
+    await t.app.start();
+    await t.run("firstRun.next");
+    await clock.advance(0);
+    // Still on Connect: the list is already being asked (prefetch on intent).
+    expect(t.vm().step).toBe("connect");
+    expect(t.calls.filter((c) => c === "repositories")).toHaveLength(1);
+    t.pushProgress({ op: "findNotes", done: 3, total: 12 });
+    void t.run("firstRun.useExisting");
+    await clock.advance(0);
+    expect(t.vm()).toMatchObject({ step: "notes", panel: "checking", hasWait: false });
+    await clock.advance(300);
+    expect(t.vm()).toMatchObject({ notesSkeleton: true, waitText: "Looking for your notes on GitHub… 3 of 12" });
+    t.pushProgress({ op: "findNotes", done: 12, total: 12 });
+    await clock.advance(3000);
+    expect(t.vm().waitText).toBe("Looking for your notes on GitHub… 12 of 12 · 3 s");
+    slow.resolve();
+    await clock.advance(0);
+    expect(t.calls.filter((c) => c === "repositories")).toHaveLength(1);
+    expect(t.vm()).toMatchObject({ panel: "found", notesSkeleton: false, hasWait: false });
+  });
+  it("signing in says it's getting a code until the code shows, then counts the time it has waited for approval", async () => {
+    const clock = manualClock();
+    const slow = deferred();
+    const t = shell({ clock, account: { gcm: false, gh: true }, signIn: async () => (await slow.promise, { gcm: false, gh: true, account: ADA }) });
+    await t.app.start();
+    await t.run("firstRun.next");
+    await clock.advance(0);
+    t.app.store.update((s) => ({ ...s, firstRun: { ...s.firstRun, signIn: { ...s.firstRun.signIn } } }));
+    void t.run("firstRun.signIn");
+    await clock.advance(0);
+    expect(t.vm()).toMatchObject({ approvalText: "Waiting for you to approve on GitHub…" });
+    await clock.advance(3000);
+    expect(t.vm().approvalText).toBe("Waiting for you to approve on GitHub… · 3 s");
+    slow.resolve();
+    await clock.advance(0);
+  });
+  it("downloading names its part with its number, and Git's percentage", async () => {
+    const clock = manualClock();
+    const slow = deferred();
+    const t = shell({ clock, clone: () => ({ ok: true, folder: "/x", privateNotes: true }) });
+    await t.app.start();
+    t.app.bridge.firstRun!.clone = async () => (await slow.promise, { ok: true, folder: "/x", privateNotes: true });
+    await t.run("firstRun.next");
+    await t.run("firstRun.useExisting").catch(() => {});
+    await clock.advance(0);
+    t.app.store.update((s) => ({ ...s, firstRun: { ...s.firstRun, step: "notes", workspace: { ...s.firstRun.workspace, repos: [{ owner: "ada", name: "notes", private: false, instance: true }], reposLoaded: true, mode: "found" } } }));
+    void t.run("firstRun.clone", { id: "ada/notes" });
+    await clock.advance(300);
+    expect(t.vm().waitText).toBe("Downloading your notes · 1 of 3");
+    t.pushProgress({ op: "clone", part: "download", percent: 45 });
+    expect(t.vm().waitText).toBe("Downloading your notes · 45%");
+    t.pushProgress({ op: "clone", part: "private" });
+    expect(t.vm().waitText).toBe("Getting the private notes · 2 of 3");
+    await clock.advance(3000);
+    expect(t.vm().waitText).toBe("Getting the private notes · 2 of 3 · 3 s");
+    slow.resolve();
+    await clock.advance(0);
+  });
+  it("creating shows the part it's on with its number, and every part in plain words, without Show details", async () => {
+    const t = shell();
+    await t.app.start();
+    t.app.store.update((s) => ({ ...s, setup: { available: true, report: report({ account: "done", instance: "running" }, true) } }));
+    expect(t.vm()).toMatchObject({ partText: "Making your notes on GitHub · 2 of 9", hasPart: true });
+    const parts = t.vm().parts as { label: string; state: string }[];
+    expect(parts.map((p) => p.label)).toEqual(["Sign in to GitHub", "Make your notes on GitHub", "Make a place for private notes", "Let your website read them", "Download to this computer", "Link them", "Save the browser key", "Turn on your website", "Save to GitHub"]);
+    expect(parts.map((p) => p.label).join(" ")).not.toMatch(/\b(repositor(y|ies)|Git|commits?|tokens?|credentials?|CLI|instances?|Pages)\b/);
   });
 });

@@ -159,6 +159,8 @@ export function redact(text: string, o: RedactOptions = {}): string {
 export const MEASURE_NAMES: readonly string[] = [
   "fn:note.open", "fn:spotlight.open",
   ...["note.save", "conflict", "import.confirm", "notes.export", "unlock.remember", "unlock.submit"].map((t) => `focus-notes:${t}`),
+  // The first run's waits (PRF-13, D-149): FIRST_RUN_WAITS in first-run-app.ts.
+  ...["git", "prepare", "account", "signIn", "identity", "findNotes", "folder", "chooseFolder", "clone", "create", "open", "strength"].map((t) => `focus-notes:firstRun.${t}`),
 ];
 /** A measure's name is kept only if it's on the allow-list. */
 export const isMeasureName = (name: string) => MEASURE_NAMES.includes(name);

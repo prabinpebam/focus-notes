@@ -31,8 +31,13 @@ export type SignInPhase = "idle" | "code" | "window" | "waiting" | "token";
  */
 export type FirstRunWaitOp = "" | "git" | "prepare" | "account" | "signIn" | "identity" | "findNotes" | "folder" | "chooseFolder" | "clone" | "create" | "open" | "strength";
 /** The waits that name themselves under the step's title; signing in has its own place, the code card. */
-const SAID: readonly FirstRunWaitOp[] = ["account", "identity", "findNotes", "folder", "clone", "create", "open"];
+const SAID: readonly FirstRunWaitOp[] = ["account", "identity", "findNotes", "folder", "clone", "open"];
 const NO_PROGRESS = { op: "", done: 0, total: 0, part: "", percent: -1 };
+/** Each wait's tracker target: fixed IDs, measured as `focus-notes:<target>` and allow-listed for the report (QLT-04). */
+export const FIRST_RUN_WAITS = {
+  git: "firstRun.git", prepare: "firstRun.prepare", account: "firstRun.account", signIn: "firstRun.signIn", identity: "firstRun.identity", findNotes: "firstRun.findNotes",
+  folder: "firstRun.folder", chooseFolder: "firstRun.chooseFolder", clone: "firstRun.clone", create: "firstRun.create", open: "firstRun.open", strength: "firstRun.strength",
+} as const satisfies Record<Exclude<FirstRunWaitOp, "">, string>;
 /**
  * Why the card shows: a new install's first run; Run setup again (from Connect, FRE-07); signing in
  * again or switching account (the Connect step alone, FRE-07); or Open another workspace from
@@ -167,9 +172,10 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
    * that throws counts as "didn't work".
    */
   const busy = async <T,>(op: Exclude<FirstRunWaitOp, "">, fn: () => Promise<T>): Promise<T | undefined> => {
-    set({ busy: true, wait: op, ...(op === "findNotes" || op === "clone" ? { progress: { ...NO_PROGRESS, op } } : {}) });
+    // A download starts counting afresh; finding the notes keeps the count the prefetch has.
+    set({ busy: true, wait: op, ...(op === "clone" ? { progress: { ...NO_PROGRESS, op } } : {}) });
     try {
-      return await (tracker ? tracker.run(`firstRun.${op}`, `firstRun.wait.${op}`, fn) : fn());
+      return await (tracker ? tracker.run(FIRST_RUN_WAITS[op], `firstRun.wait.${op}`, fn) : fn());
     } catch {
       return undefined;
     } finally {
@@ -182,10 +188,13 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
    */
   let repoAsk: Promise<RepoChoice[] | undefined> | undefined;
   let repoLogin = "";
-  const askRepos = () => (repoAsk ??= fr!.repositories().catch(() => {
-    repoAsk = undefined;
-    return undefined;
-  }));
+  const askRepos = () => {
+    if (!repoAsk) set({ progress: { ...NO_PROGRESS, op: "findNotes" } });
+    return (repoAsk ??= fr!.repositories().catch(() => {
+      repoAsk = undefined;
+      return undefined;
+    }));
+  };
   /** The list is asked again: another account, Find my notes again, Open another workspace. */
   const forgetRepos = () => void (repoAsk = undefined);
   /** The login the app is signed in as: Git's account, unless Focus Notes alone was signed out (FRE-07). */
@@ -578,6 +587,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         // PRF-13, D-149: what the step waits for, in words, with a count or percentage and the elapsed time;
         // the sign-in's own wait on the code card; and the part creating is on.
         waitText: { type: "string" }, hasWait: { type: "boolean" }, approvalText: { type: "string" }, partText: { type: "string" }, hasPart: { type: "boolean" },
+        parts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, state: { type: "string", enum: ["pending", "running", "done", "failed", "skipped"] }, label: { type: "string" } } } },
+        accountSkeleton: { type: "boolean" }, notesSkeleton: { type: "boolean" },
       },
     },
     setters: {
@@ -589,7 +600,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     select: (s) => {
       const f = s.firstRun;
       // ---- waits (PRF-13, D-149): named at their place, a count or percentage, the elapsed time past wait.elapsedDelay ----
-      const taskOf = (op: string) => s.tasks.find((t) => t.target === `firstRun.${op}`);
+      const taskOf = (op: FirstRunWaitOp) => (op ? s.tasks.find((t) => t.target === FIRST_RUN_WAITS[op]) : undefined);
       const withElapsed = (words: string, op: string) => {
         const t = taskOf(op);
         return t?.elapsed ? catalog.format("firstRun.wait.elapsed", { words, seconds: t.elapsed }) : words;
@@ -612,7 +623,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       // Creating: the part it's on, its number, and the elapsed time ("Copying the template · 2 of 9 · 14 s").
       const setupSteps = s.setup.report?.running ? s.setup.report.steps : [];
       const at = setupSteps.findIndex((x) => x.state === "running");
-      const partText = at < 0 ? "" : withElapsed(catalog.format("firstRun.wait.setupPart", { part: catalog.format(`setup.step.${setupSteps[at]!.id}`), n: at + 1, total: setupSteps.length }), "creating");
+      const partText = at < 0 ? "" : withElapsed(catalog.format("firstRun.wait.setupPart", { part: catalog.format(`firstRun.wait.step.${setupSteps[at]!.id}`), n: at + 1, total: setupSteps.length }), "create");
+      // The parts, always shown while creating (PRF-13), named in the main path's plain words (D-124).
+      const parts = (s.setup.report?.steps ?? []).map((x) => ({ id: x.id, state: x.state, label: catalog.format(`firstRun.part.${x.id}`) }));
       const i = FIRST_RUN_STEPS.indexOf(f.step);
       const a = f.account;
       const g = f.git;
@@ -735,7 +748,10 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         })) : [],
         createDetail: catalog.format(lookupFailed ? "firstRun.notes.createOffline" : "firstRun.notes.createWhy"),
         folderShort: shortPath(w.folder),
-        waitText, hasWait, approvalText, partText, hasPart: Boolean(partText),
+        waitText, hasWait, approvalText, partText, hasPart: Boolean(partText), parts,
+        // The skeletons while their content is on its way (PRF-13): the profile card, and three rows of notes.
+        accountSkeleton: hasWait && f.wait === "account" && connect === "checking",
+        notesSkeleton: hasWait && f.wait === "findNotes" && panel === "checking",
       };
     },
   });

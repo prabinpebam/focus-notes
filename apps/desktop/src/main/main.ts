@@ -26,14 +26,14 @@ import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/cl
 import { ProblemLog, REPORT_PROBLEM_URL, type RedactOptions } from "@focus-notes/core/diagnostics";
 import { diagnostics, knownStrings, reportFileName, reportPathAllowed } from "./diagnostics.ts";
 import { DEFAULT_SETUP, isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
-import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
+import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type FirstRunProgress, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
 import { checkOptions, notesRepos, SetupEngine } from "./setup/engine.ts";
 import { githubFetch } from "./setup/credential.ts";
 import { avatarLoader } from "./first-run/avatar.ts";
 import type { BatchOp } from "./git/message.ts";
 import { Account } from "./first-run/account.ts";
 import { createToolRunner } from "./first-run/tools.ts";
-import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree, homesFor, savedToGitHub, setupTarget } from "./first-run/workspace.ts";
+import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree, homesFor, mapLimit, savedToGitHub, setupTarget } from "./first-run/workspace.ts";
 import type { ConflictChoice, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
@@ -365,12 +365,22 @@ async function chooseFolder(title: string): Promise<string | undefined> {
   const r = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
   return r.canceled || !r.filePaths[0] ? undefined : resolve(r.filePaths[0]);
 }
-/** Repositories in the signed-in account, Focus Notes workspaces first (checked for the ten most recent). */
+/** The first run's long calls say how they're going (PRF-13, D-149): repositories checked, a download's part and percentage. */
+const firstRunProgress = (p: FirstRunProgress) => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("firstRun:progress", p);
+};
+/** How many of the most recent repositories are checked for a workspace, and how many at once. */
+const CHECK_RECENT = 30, CHECK_AT_ONCE = 6;
+/** Repositories in the signed-in account, Focus Notes workspaces first (checked for the most recent, a few at a time, counted). */
 async function repositories(): Promise<RepoChoice[]> {
   const s = await account.api();
   if (!s) throw new Error("Signed out");
   const repos = notesRepos(await s.api.ownRepos());
-  const checked = await Promise.all(repos.map((r, i) => (i < 10 ? s.api.hasFile(r.owner, r.name, ".focus-notes/workspace.json").catch(() => false) : Promise.resolve(false))));
+  const recent = repos.slice(0, CHECK_RECENT);
+  firstRunProgress({ op: "findNotes", done: 0, total: recent.length });
+  const found = await mapLimit(recent, CHECK_AT_ONCE, (r) => s.api.hasFile(r.owner, r.name, ".focus-notes/workspace.json").catch(() => false),
+    (done, total) => firstRunProgress({ op: "findNotes", done, total }));
+  const checked = repos.map((_, i) => found[i] ?? false);
   const list = repos.map((r, i) => ({ owner: r.owner, name: r.name, private: r.private, instance: checked[i]!, ...(r.pushedAt ? { pushedAt: r.pushedAt } : {}) }));
   return [...list.filter((r) => r.instance), ...list.filter((r) => !r.instance)];
 }
@@ -841,10 +851,21 @@ async function refreshKnown(): Promise<void> {
 }
 
 function handle(channel: string, fn: (...args: any[]) => unknown): void {
-  ipcMain.handle(channel, (e, ...args) => {
+  ipcMain.handle(channel, async (e, ...args) => {
     if (!fromApp(e)) throw new Error("Refused: request didn't come from the app");
+    await slowSeam(channel);
     return fn(...args);
   });
+}
+/**
+ * The "no silent wait" journey's slow-down (PRF-13, D-149): journeys only, never a packaged app.
+ * The journey sets `globalThis.focusNotesSlow = { "<channel>": ms }` in this process, and that call
+ * waits that long first, so each wait's sign and words can be checked at their times.
+ */
+async function slowSeam(channel: string): Promise<void> {
+  if (!journey) return;
+  const ms = (globalThis as { focusNotesSlow?: Record<string, number> }).focusNotesSlow?.[channel];
+  if (typeof ms === "number" && ms > 0) await new Promise((r) => setTimeout(r, Math.min(ms, 60_000)));
 }
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
@@ -1095,7 +1116,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
     // Use a new folder (D-154): the next free one beside the default, not the chosen one.
     if (where === "new") targetFolder = undefined;
-    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? (await freeFor(name)), isTemplateRemote);
+    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? (await freeFor(name)), isTemplateRemote, (p) => firstRunProgress({ op: "clone", ...p }));
     if (r.ok) pendingWorkspace = r.folder;
     return r;
   });

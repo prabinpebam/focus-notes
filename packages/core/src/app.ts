@@ -339,7 +339,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   /** The note put away while the first run's card shows again (Run setup again, Sign in, Switch account, Open another workspace). */
   let held: string | undefined;
   const firstRun = registerFirstRun({
-    store, bridge, catalog, commands, viewModels, toast, persistAppState, now: clock.now,
+    store, bridge, catalog, commands, viewModels, tracker, toast, persistAppState, now: clock.now,
     hold: async () => {
       editorAction(FLUSH_EDITOR);
       if (!(await flush())) return false;
