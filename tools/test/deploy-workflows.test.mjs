@@ -12,7 +12,7 @@ import yaml from "js-yaml";
 
 const root = join(import.meta.dirname, "..", "..");
 const files = { project: ".github/workflows/pages.yml", template: "templates/workspace/.github/workflows/pages.yml" };
-/** The default branch, whatever it's called; scheduled runs always run there (and their event has no repository). */
+/** The default branch, whatever it's called; scheduled runs always run there. */
 const ON_DEFAULT = "github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)";
 
 describe.each(Object.entries(files))("the %s's Deploy app workflow", (_, file) => {
@@ -20,6 +20,14 @@ describe.each(Object.entries(files))("the %s's Deploy app workflow", (_, file) =
   const wf = yaml.load(text);
   const steps = wf.jobs.build.steps;
   const named = (re) => steps.findIndex((s) => re.test(s.name ?? ""));
+
+  it("#9: doesn't claim a scheduled run's event has no repository (it has, with default_branch, since 2022)", () => {
+    expect(text).not.toMatch(/event has no repository/i);
+  });
+
+  it("#8: says a failed deploy needs Re-run all jobs, because after-deploy has deleted the artifact", () => {
+    expect(text).toMatch(/Re-run all jobs/);
+  });
 
   it("SEC-05: pins every action by a full commit SHA, with its version as a comment", () => {
     const uses = [...text.matchAll(/^\s*(?:-\s+)?uses:\s*(\S+)(.*)$/gm)];

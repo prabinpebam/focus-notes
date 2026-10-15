@@ -103,7 +103,8 @@ jobs:
           retention-days: 1
   deploy:
     needs: build
-    # The default branch, whatever it's called. Scheduled runs always run there, and their event has no repository.
+    # The default branch, whatever it's called. Scheduled runs always run there; their event
+    # carries repository.default_branch too (since 2022), so the schedule test is just the plainer of the two.
     if: github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     permissions:
@@ -118,6 +119,7 @@ jobs:
   # After the deploy, whatever its result: the artifact holds this build's keyrings and sealed files,
   # and would stay downloadable from the run after a later deploy replaced them, so it's deleted. Then
   # a nightly run fails on purpose if the repository is going quiet, after the deploy, not instead of it.
+  # So a failed deploy needs "Re-run all jobs", never "Re-run failed jobs": the artifact it needs is gone.
   after-deploy:
     needs: deploy
     if: always()
