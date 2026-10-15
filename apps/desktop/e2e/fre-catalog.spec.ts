@@ -19,7 +19,7 @@ import { deflateSync } from "node:zlib";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
-import { quit, windowBox, type Launched } from "./helpers.ts";
+import { bandProblems, bandStartsMove, quit, windowBox, type Launched } from "./helpers.ts";
 import { card, existingInstance, heading, repoRoot, start, tabTo, world, type World } from "./github-world.ts";
 import { anchorScore, ANCHOR, BUDGETS, economyScore, measureVisual, visualScoreProblems } from "./visual-score.ts";
 import { writeReview, type CatalogState, type Measure, type Shot } from "./fre-catalog-index.ts";
@@ -219,6 +219,8 @@ async function shot(l: Launched, id: string, prep?: (page: Page) => Promise<void
  */
 async function check(page: Page, id: string) {
   await page.mouse.move(0, 0);
+  // D-147: in every state, the window still drags by its title bar band.
+  expect.soft(await bandProblems(page, id), `the title bar band on ${id}`).toEqual([]);
   if (!(await card(page).count())) return;
   await calm(page);
   const problems = await visualScoreProblems(page, id, BUDGETS.onboarding);
@@ -507,6 +509,8 @@ test("existing notes: checking, initials, We found your notes with several, More
     await button(page, "Continue as Ada").click();
     await heading(page, "We found your notes");
     await expect(button(page, "Open")).toHaveCount(4, { timeout: 15_000 }).catch(() => {});
+    // D-147: the full-window setup never takes the window's dragging.
+    if (process.platform !== "darwin") expect(await bandStartsMove(l.app, page)).toEqual(["start:move", "end:move"]);
     await shot(l, "notes-found-several");
     await button(page, "More options").click();
     await expect(button(page, "Open from GitHub…")).toBeVisible();
@@ -791,6 +795,12 @@ test("Settings → Workspace → Open another workspace from GitHub: the same pi
     await expect(settings).toBeVisible();
     await settings.getByRole("tab", { name: "Workspace" }).click();
     await expect(settings.getByRole("button", { name: "Open another workspace from GitHub…" })).toBeVisible();
+    // D-147: a dialog never takes the window's dragging, and a press on the band leaves it open.
+    if (process.platform !== "darwin") {
+      expect(await bandProblems(page, "Settings")).toEqual([]);
+      expect(await bandStartsMove(l.app, page)).toEqual(["start:move", "end:move"]);
+      await expect(settings).toBeVisible();
+    }
     await shot(l, "settings-workspace");
     await settings.getByRole("button", { name: "Open another workspace from GitHub…" }).click();
     await heading(page, "We found your notes");

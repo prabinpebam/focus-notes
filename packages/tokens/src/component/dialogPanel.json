@@ -1,6 +1,11 @@
 {
   "cmp": {
     "dialogPanel": {
+      "band": {
+        "$type": "dimension",
+        "$value": "{layout.titleBar}",
+        "$description": "The window's title bar band the dialog carries over its scrim (DSK-02, D-147)."
+      },
       "scrim": {
         "$type": "color",
         "$value": "{color.scrim}"

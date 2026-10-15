@@ -34,9 +34,20 @@ export interface WindowFrameProps {
 }
 
 const name = (v: string) => v.replace(/^var\(/, "").replace(/\)$/, "");
-const band = (t: EventTarget | null) => {
+/** What a press goes to rather than the window: a control, or a layer's content. */
+const CONTROLS = "[data-no-drag], [data-window-controls], [data-window-handle], button, a[href], input, textarea, select, [contenteditable]:not([contenteditable='false']), [role=menu], [role=listbox], [role=dialog], [role=toolbar]";
+/**
+ * Whether a press at (x, y) on `t` is on the title bar band. While a menu or a dialog is open, the rest
+ * of the app is inert and a press on the band reaches what holds it: the band's place still drags the
+ * window, unless a control is there (D-147).
+ */
+const band = (t: EventTarget | null, x?: number, y?: number) => {
   const el = t instanceof Element ? t : null;
-  return Boolean(el?.closest("[data-drag-band]") && !el.closest("[data-no-drag]"));
+  if (!el) return false;
+  if (el.closest("[data-drag-band]")) return !el.closest("[data-no-drag]");
+  if (x === undefined || y === undefined || el.closest(CONTROLS)) return false;
+  const r = el.ownerDocument.querySelector("[data-title-band]")?.getBoundingClientRect();
+  return Boolean(r && x >= r.left && x < r.right && y >= r.top && y < r.bottom);
 };
 
 /**
@@ -80,7 +91,7 @@ export function WindowFrame({ frame = "native", resizable, fullScreen = false, m
     const down = (e: PointerEvent) => {
       const target = e.target instanceof Element ? e.target : null;
       const handle = target?.closest("[data-window-handle]")?.getAttribute("data-window-handle") as Kind | null | undefined;
-      if (!handle && !band(target)) return;
+      if (!handle && !band(target, e.clientX, e.clientY)) return;
       // A press on the band (any button) never takes focus from the note.
       e.preventDefault();
       if (e.button !== 0 || drag) return;
@@ -107,12 +118,12 @@ export function WindowFrame({ frame = "native", resizable, fullScreen = false, m
       drag = undefined;
     };
     const dblclick = (e: MouseEvent) => {
-      if (band(e.target)) return events.current.onToggleMaximize?.();
+      if (band(e.target, e.clientX, e.clientY)) return events.current.onToggleMaximize?.();
       const handle = e.target instanceof Element ? e.target.closest("[data-window-handle]")?.getAttribute("data-window-handle") : null;
       if (handle === "n" || handle === "s") events.current.onToggleVertical?.();
     };
     const contextmenu = (e: MouseEvent) => {
-      if (!band(e.target)) return;
+      if (!band(e.target, e.clientX, e.clientY)) return;
       e.preventDefault();
       const o = fixedBox();
       events.current.onMenu?.({ x: Math.round(e.clientX - o.left), y: Math.round(e.clientY - o.top) });

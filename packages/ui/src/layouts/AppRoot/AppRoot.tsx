@@ -167,7 +167,13 @@ export function AppRoot({ scheme, theme, contentFont, uiScale, platform, content
     };
   }, []);
 
-  const root = <div ref={rootRef} className={`${s.root} ${s.frame[frame]}`} data-app-root="">{children}</div>;
+  const root = (
+    <div ref={rootRef} className={`${s.root} ${s.frame[frame]}`} data-app-root="">
+      {/* Every desktop window drags by its top band, in every state (D-147). */}
+      {platform === "web" ? null : <div className={s.band} data-drag-band="" data-title-band="" aria-hidden="true" />}
+      {children}
+    </div>
+  );
   // In a drawn window, menus, tooltips, and dialogs open inside it: clipped to its corners, never in the shadow margin.
   if (frame === "native") return root;
   return <UNSAFE_PortalProvider getContainer={() => rootRef.current}>{root}</UNSAFE_PortalProvider>;

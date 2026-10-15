@@ -79,7 +79,8 @@ export function DialogPanel({ label, open, size = "l", header, fixed, footer, pl
   return (
     <ModalOverlay data-scrim="" className={`${s.overlay} ${s.placement[placement]}`} isOpen={Boolean(open)} isDismissable onOpenChange={(o) => onOpenChange?.({ open: o })}>
       <Modal className={`${s.modal} ${s.size[size]} ${s.height[height]}`} data-dialog-modal="" data-height={height}>
-        <Dialog data-surface="dialog" className={`${s.dialog} ${s.material[material]}`} aria-label={label} {...(id ? { id } : {})}>
+        <div className={s.band} data-drag-band="" aria-hidden="true" />
+        <Dialog data-surface="dialog" data-no-drag="" className={`${s.dialog} ${s.material[material]}`} aria-label={label} {...(id ? { id } : {})}>
           {header ? <div className={s.region}>{header}</div> : null}
           {fixed ? <div className={s.region}>{fixed}</div> : null}
           {/* The body can take focus so its content can be scrolled from the keyboard, even when nothing in it is actionable. */}
