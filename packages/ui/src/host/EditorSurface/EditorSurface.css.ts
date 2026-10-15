@@ -64,7 +64,7 @@ export const edgeSide = styleVariants({
   bottom: { bottom: 0, selectors: { "[data-fade-bottom] ~ &": { visibility: "visible" } } },
 });
 /** A depth into the fade as a length: 0 at its outer edge (the window's, or the top's solid part), 1 at its inner edge. */
-const at = (f: number, from = "0px") => `calc(${from} + ${t.scrollFade} * ${Math.round(f * 10000) / 10000})`;
+const at = (f: number) => `calc(${t.scrollFade} * ${Math.round(f * 10000) / 10000})`;
 /**
  * Layer k (0 at the window's edge): opaque over its slice of the band, from k-1 to k eighths in
  * (for 8 layers), ramping in and out over one slice on either side, so neighbors overlap and no
@@ -72,14 +72,15 @@ const at = (f: number, from = "0px") => `calc(${from} + ${t.scrollFade} * ${Math
  */
 const layerMask = (inward: "bottom" | "top", k: number) => {
   const n = EDGE_BANDS;
-  // The top edge's fade starts below its solid part.
-  const from = inward === "bottom" ? t.triggerClear : "0px";
-  return `linear-gradient(to ${inward}, transparent ${at((k - 2) / n, from)}, black ${at((k - 1) / n, from)}, black ${at(k / n, from)}, transparent ${at((k + 1) / n, from)})`;
+  return `linear-gradient(to ${inward}, transparent ${at((k - 2) / n)}, black ${at((k - 1) / n)}, black ${at(k / n)}, transparent ${at((k + 1) / n)})`;
 };
 const layer = (inward: "bottom" | "top", k: number) =>
   style({
     position: "absolute",
-    inset: 0,
+    // The top edge's blur covers only its fade, below the solid part: a backdrop filter costs its
+    // whole box every frame, and under the solid canvas color a blur never shows. Over all 130 px
+    // at 400% zoom, a software-drawn window fell to a few frames a second (A11Y-01, D-119).
+    inset: inward === "bottom" ? `${t.triggerClear} 0 0 0` : 0,
     pointerEvents: "none",
     // Unprefixed only: with the -webkit- one as well, the build keeps just that, which Chromium ignores.
     backdropFilter: `blur(calc(${t.edgeBlur} / ${2 ** k}))`,

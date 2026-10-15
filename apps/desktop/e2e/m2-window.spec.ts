@@ -209,6 +209,27 @@ test.describe("Windows and Linux: the app-built window", () => {
     await quit(l);
   });
 
+  test("DSK-08, D-119: the picker opened by hover never takes focus from the trigger's toolbar, and Esc still goes back to the note", async () => {
+    const l = await start();
+    const { page } = l;
+    const editor = page.getByRole("textbox", { name: "Note" });
+    await expect(editor).toBeFocused();
+    await page.keyboard.press(`${process.platform === "darwin" ? "Meta" : "Control"}+.`);
+    const toolbar = page.getByRole("toolbar", { name: "Toolbar" });
+    await expect(toolbar.locator(":focus")).toHaveCount(1);
+    // The pointer resting on maximize opens the picker over the toolbar that's in use.
+    await page.getByRole("button", { name: "Maximize" }).hover();
+    await expect(page.getByRole("dialog", { name: "Snap layouts" })).toBeVisible();
+    await expect(toolbar.locator(":focus")).toHaveCount(1);
+    await expect(toolbar).toBeVisible();
+    await page.mouse.move(400, 400);
+    await expect(page.getByRole("dialog", { name: "Snap layouts" })).toBeHidden();
+    await expect(toolbar.locator(":focus")).toHaveCount(1);
+    await page.keyboard.press("Escape");
+    await expect(editor).toBeFocused();
+    await quit(l);
+  });
+
   test("DSK-08: Alt+Space opens the app's system menu, and Move works with the arrow keys", async () => {
     const l = await start();
     const { app, page } = l;
