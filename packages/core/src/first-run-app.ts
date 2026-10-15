@@ -113,6 +113,14 @@ export const workspaceMade = (r?: SetupReport) => Boolean(r && !r.running && ["c
 
 const DAY = 86_400_000;
 
+/** The commands that still work while setup owns the window (D-126); every other one is held. */
+/** An image the renderer may show: a data URL the shell made, never an address to fetch. */
+const AVATAR = /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/;
+/** "Ada Lovelace" → "AL"; a login → its first letter. */
+const initials = (name: string) => name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
+
+export const SETUP_COMMANDS = /^(firstRun\.|window\.|toast\.|setup\.|keys\.|ui\.scale|appearance\.(system|light|dark)$|notes\.import$|command\.run$|app\.ready$)/;
+
 export function registerFirstRun<St extends S>({ store, bridge, catalog, commands, viewModels, toast, persistAppState, hold, release, now = Date.now }: Ctx<St>) {
   const fr = bridge.firstRun;
   const state = () => store.state.firstRun;
@@ -204,6 +212,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   };
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => unknown, enabled?: (s: St) => boolean) =>
     commands.register<A>({ id, title: `command.${id}`, ...(enabled ? { enabled } : {}), run: async (a) => { await run(a); } });
+  // Nothing outside setup works until it's done (D-126): only setup's own commands, the window's,
+  // zoom, toasts, and what its steps run (Ready's look and import) are left.
+  commands.setHold((id, s) => (s.firstRun.active && !SETUP_COMMANDS.test(id) ? "command.firstRun.held" : undefined));
   const value = (a: { value?: unknown }) => (typeof a.value === "string" ? a.value : "");
 
   // ---- moving between steps ----
@@ -410,17 +421,17 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     schema: {
       type: "object",
       properties: {
-        open: { type: "boolean" }, step: { type: "string", enum: STEP_ENUM }, title: { type: "string" }, progress: { type: "string" }, showProgress: { type: "boolean" },
+        open: { type: "boolean" }, step: { type: "string", enum: STEP_ENUM }, align: { type: "string", enum: ["start", "center"] }, title: { type: "string" }, progress: { type: "string" }, showProgress: { type: "boolean" },
         busy: { type: "boolean" }, focus: { type: "number" }, canContinue: { type: "boolean" },
         connect: { type: "string", enum: ["checking", "git", "found", "cli", "choose", "code", "window", "waiting", "token"] }, trouble: { type: "boolean" },
         isGit: { type: "boolean" }, isChoose: { type: "boolean" }, showTrouble: { type: "boolean" },
         gitState: { type: "string", enum: ["checking", "ok", "old", "missing"] }, gitText: { type: "string" }, installText: { type: "string" }, installCommand: { type: "string" },
-        login: { type: "string" }, accountName: { type: "string" }, foundText: { type: "string" }, continueAs: { type: "string" }, code: { type: "string" },
+        login: { type: "string" }, handle: { type: "string" }, accountName: { type: "string" }, avatar: { type: "string" }, initials: { type: "string" }, foundText: { type: "string" }, continueAs: { type: "string" }, code: { type: "string" },
         canHelper: { type: "boolean" }, noHelper: { type: "boolean" }, problem: { type: "string" }, hasProblem: { type: "boolean" }, offline: { type: "boolean" }, canOther: { type: "boolean" },
         token: { type: "string" }, tokenError: { type: "boolean" },
         panel: { type: "string", enum: ["checking", "found", "create", "clone", "local", "progress"] }, more: { type: "boolean" }, details: { type: "boolean" }, canCreate: { type: "boolean" },
         isCreate: { type: "boolean" }, showMore: { type: "boolean" }, working: { type: "boolean" },
-        found: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, description: { type: "string" }, first: { type: "boolean" } } } },
+        found: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, icon: { type: "string" }, first: { type: "boolean" } } } },
         instance: { type: "string" }, private: { type: "string" }, publish: { type: "string" }, publishOptions: { type: "array", items: OPTION },
         passphrase: { type: "string" }, confirm: { type: "string" }, folder: { type: "string" }, folderText: { type: "string" },
         error: { type: "string" }, hasError: { type: "boolean" }, started: { type: "boolean" }, made: { type: "boolean" }, progressText: { type: "string" },
@@ -458,7 +469,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const list = matches(w.repos, w.query);
       const login = shown?.login ?? "";
       return {
-        open: f.active, step: f.step,
+        // Welcome is the hero, centred; the steps after it read from the start (D-126).
+        open: f.active, step: f.step, align: f.step === "welcome" ? "center" : "start",
         title: f.step === "notes" ? catalog.format(`firstRun.notes.title.${panel}`) : catalog.format(`firstRun.${f.step}.title`),
         progress: catalog.format("firstRun.progress", { n: i + 1, total: FIRST_RUN_STEPS.length }), showProgress: f.scope === "install" || f.scope === "setup",
         busy: f.busy, focus: f.focus, canContinue: canContinue(f.step, { ...(g ? { git: g } : {}), ...(a ? { account: a } : {}), workspaceReady: made }),
@@ -466,9 +478,11 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         isGit: connect === "git", isChoose: connect === "choose", showTrouble: ["git", "found", "cli", "choose"].includes(connect),
         gitState, gitText: g?.version ? catalog.format(g.ok ? "firstRun.git.ok" : "firstRun.git.old", { version: g.version }) : catalog.format("firstRun.git.missing"),
         installText: catalog.format(`firstRun.git.install.${platform}`), installCommand: catalog.format(`firstRun.git.command.${platform}`),
-        login, accountName: shown?.name || login,
+        login, handle: login ? `@${login}` : "", accountName: shown?.name || login,
+        // The account's picture, fetched by the shell and handed over as a data URL (no request from here), or its initials.
+        avatar: shown?.avatar && AVATAR.test(shown.avatar) ? shown.avatar : "", initials: initials(shown?.name || login),
         foundText: login ? catalog.format("firstRun.connect.found", { login, name: shown?.name || login }) : "",
-        continueAs: catalog.format("firstRun.signIn.continueAs", { login }),
+        continueAs: catalog.format("firstRun.signIn.continueAs", { name: (shown?.name || login).trim().split(/\s+/)[0] ?? login }),
         code: f.signIn.code,
         canHelper: Boolean(a?.gcm || a?.gh), noHelper: Boolean(a && !a.gcm && !a.gh), problem, hasProblem: Boolean(problem), offline: a?.problem === "offline",
         canOther: connect === "found" || connect === "cli",
@@ -477,7 +491,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         isCreate: panel === "create", showMore: panel === "create" || panel === "found", working: started && !made && !w.error && !failed,
         found: w.repos.filter((r) => r.instance).slice(0, 5).map((r, n) => ({
           id: `${r.owner}/${r.name}`, first: n === 0, label: !s.account.login || r.owner === s.account.login ? r.name : `${r.owner}/${r.name}`,
-          description: [updated(r.pushedAt), catalog.format(r.private ? "firstRun.notes.private" : "firstRun.notes.public")].filter(Boolean).join(" · "),
+          icon: r.private ? "lock" : "folder", detail: updated(r.pushedAt), badge: catalog.format(r.private ? "firstRun.notes.private" : "firstRun.notes.public"),
         })),
         instance: w.instance, private: w.private, publish: w.publish ? "on" : "off", publishOptions: options("firstRun.workspace.publish", ["on", "off"]),
         passphrase: w.passphrase, confirm: w.confirm, folder: w.folder, folderText: catalog.format("firstRun.workspace.folder", { folder: w.folder }),

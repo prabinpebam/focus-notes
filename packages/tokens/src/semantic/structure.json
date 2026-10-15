@@ -52,6 +52,16 @@
       "$type": "dimension",
       "$value": "{ref.size.20}"
     },
+    "uiLead": {
+      "$type": "dimension",
+      "$value": "{ref.size.18}",
+      "$description": "Lead text on a full-window onboarding step (D-126)."
+    },
+    "uiDisplay": {
+      "$type": "dimension",
+      "$value": "{ref.size.40}",
+      "$description": "The interface ramp's largest size: the title of a full-window onboarding step (D-126)."
+    },
     "uiLineHeight": {
       "$type": "number",
       "$value": 1.4
@@ -169,6 +179,25 @@
       "$value": "{ref.size.32}"
     },
     "controlL": {
+      "$value": "{ref.size.44}",
+      "$description": "An onboarding step's main action (Get started), D-126."
+    },
+    "appMarkL": {
+      "$value": "{ref.size.112}",
+      "$description": "The app icon as the hero of the full-window setup (D-126)."
+    },
+    "appMarkM": {
+      "$value": "{ref.size.48}"
+    },
+    "cardVisual": {
+      "$value": "{ref.size.48}",
+      "$description": "An item card's icon tile: a visual anchor (D-126, D-127)."
+    },
+    "avatar": {
+      "$value": "{ref.size.64}",
+      "$description": "An account's picture on its profile card (D-126)."
+    },
+    "controlL": {
       "$value": "{ref.size.40}"
     },
     "triggerDot": {
@@ -233,6 +262,10 @@
     },
     "dialogS": {
       "$value": "{ref.size.480}"
+    },
+    "onboarding": {
+      "$value": "{ref.size.560}",
+      "$description": "The reading column of the full-window setup (D-126): a step's display title fits on one line."
     },
     "dialogM": {
       "$value": "{ref.size.640}"

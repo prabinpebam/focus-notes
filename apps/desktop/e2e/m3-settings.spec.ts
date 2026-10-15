@@ -130,7 +130,7 @@ test("IA-VIEW-SETTINGS, FRE-07: Settings opens with Mod+, and from ⋯; signing 
     await settings(page).getByRole("button", { name: "Sign in…" }).click();
     await heading(page, "Connect your GitHub account");
     await expect(card(page).getByText(/^Step \d of 4$/)).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Continue as @ada" })).toBeFocused({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });
     expect(await settledAxe(page)).toEqual([]);
     await press(page, "Enter");
     await expect(card(page)).toHaveCount(0);
@@ -167,7 +167,7 @@ test("FRE-07: Switch account signs in again through the same helper; the termina
     await settings(page).getByRole("button", { name: "Switch account" }).click();
     await expect(page.getByRole("button", { name: "Connect to GitHub" })).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
-    await expect(page.getByRole("button", { name: "Continue as @grace" })).toBeFocused({ timeout: 20_000 });
+    await expect(page.getByRole("button", { name: "Continue as Grace" })).toBeFocused({ timeout: 20_000 });
     await press(page, "Enter");
     await toast(page, "Signed in to GitHub as @grace.");
     await expect(page.getByRole("button", { name: /Signed in to GitHub as @grace/ })).toBeVisible();
@@ -225,7 +225,7 @@ test("FRE-07: Run setup again walks the first run from Connect; Esc goes back to
     await expect(card(page).getByText("Step 2 of 4")).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Note" })).toHaveCount(0);
     expect(top(w.dirs.userData)).not.toContain(DATA_FILES.setup);
-    await expect(card(page).getByRole("button", { name: "Continue as @ada" })).toBeFocused({ timeout: 15_000 });
+    await expect(card(page).getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });
     expect(await settledAxe(page)).toEqual([]);
     await press(page, "Escape");
     await expect(card(page)).toHaveCount(0);
@@ -248,7 +248,9 @@ test("FRE-06: Settings → Open another workspace from GitHub shows the notes th
     await heading(page, "We found your notes");
     await expect(card(page).getByText(/^Step \d of 4$/)).toHaveCount(0);
     await expect(card(page).getByText("notes", { exact: true })).toBeVisible();
-    await expect(card(page).getByText("Updated 3 days ago · Public")).toBeVisible();
+    // A row: its name, when it was updated, and who can see it (D-126).
+    await expect(card(page).getByText("Updated 3 days ago", { exact: true })).toBeVisible();
+    await expect(card(page).getByText("Public", { exact: true })).toBeVisible();
     const open = card(page).getByRole("button", { name: "Open", exact: true });
     await expect(open).toBeFocused({ timeout: 15_000 });
     expect(await settledAxe(page)).toEqual([]);

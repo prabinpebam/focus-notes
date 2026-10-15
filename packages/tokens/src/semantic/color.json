@@ -44,6 +44,17 @@
     "ringBorder": { "$type": "color", "$value": "{ref.color.paper.200}" },
     "blur": { "$type": "dimension", "$value": "{ref.size.12}" }
   },
+  "brand": {
+    "$description": "The app icon (apps/desktop/scripts/icon.mjs): Paper's trigger on Paper's canvas. The same in every theme, like the icon on the desktop (D-126).",
+    "tile": { "$type": "color", "$value": "{ref.color.paper.50}" },
+    "tileBorder": { "$type": "color", "$value": "{ref.color.paper.200}" },
+    "ring": { "$type": "color", "$value": "{ref.color.white}" },
+    "ringOpacity": { "$type": "number", "$value": 0.92 },
+    "ringBorder": { "$type": "color", "$value": "{ref.color.paper.200}" },
+    "dot": { "$type": "color", "$value": "{ref.color.red.500}" },
+    "shadow": { "$type": "color", "$value": "{ref.color.paper.900}" },
+    "shadowOpacity": { "$type": "number", "$value": 0.12 }
+  },
   "focus": {
     "dimOpacity": { "$type": "number", "$value": 0.3 },
     "rowTint": { "$type": "color", "$value": "{ref.color.transparent}" }

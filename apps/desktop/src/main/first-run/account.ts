@@ -37,6 +37,8 @@ export interface AccountDeps {
    * folder's `account.json`, holding no login or token. Without it, signing out always removes Git's.
    */
   signedOutFile?: string;
+  /** The account's picture as a data URL, fetched and cached by the shell (avatar.ts, D-126). */
+  avatar?: (url: string | null | undefined, id: number) => Promise<string | undefined>;
 }
 
 /** A device code lasts 15 minutes; a sign-in that takes longer has expired. */
@@ -85,7 +87,9 @@ export class Account {
   /** Checks a token with the API: its account, or why not. The token stays in memory. */
   async #verify(token: string): Promise<GitHubAccount | SignInProblem> {
     try {
-      return toAccount(await new GitHubApi(token, this.#d.fetch).user());
+      const u = await new GitHubApi(token, this.#d.fetch).user();
+      const avatar = await this.#d.avatar?.(u.avatar_url, u.id).catch(() => undefined);
+      return { ...toAccount(u), ...(avatar ? { avatar } : {}) };
     } catch (e) {
       if (e instanceof GitHubError && e.status === 0) return "offline";
       if (e instanceof GitHubError && (e.unauthorized || e.status === 403)) return "invalid";

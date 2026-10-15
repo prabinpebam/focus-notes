@@ -169,6 +169,26 @@ function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountSt
 }
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
+describe("D-126: nothing outside setup works until it's done", () => {
+  const key = (k: string) => ({ key: k, code: `Key${k.toUpperCase()}`, ctrlKey: true, metaKey: false, altKey: false, shiftKey: false });
+  it("holds the app's commands while setup is open: disabled with a reason, keys and runs do nothing; setup's own work", async () => {
+    const t = shell();
+    await t.app.start();
+    for (const id of ["note.new", "note.open", "files.open", "spotlight.actions"].filter((i) => t.app.commands.has(i))) {
+      expect(t.app.commands.describe(id)).toMatchObject({ enabled: false, disabledReason: "command.firstRun.held" });
+    }
+    expect(t.app.commands.match(key("o"))).toBeUndefined();
+    expect(t.app.commands.match(key("n"))).toBeUndefined();
+    await t.run("note.new");
+    expect(t.app.store.state.note.path).toBeUndefined();
+    expect(t.app.commands.describe("firstRun.next").enabled).toBe(true);
+    await t.run("firstRun.local");
+    expect(t.vm().open).toBe(false);
+    expect(t.app.commands.describe("note.new").enabled).toBe(true);
+    expect(t.app.commands.match(key("n"))).toBe("note.new");
+  });
+});
+
 describe("FRE-01: the first run in the app (D-124)", () => {
   it("starts at Welcome on a new install, with no note opened behind it, in four steps", async () => {
     const t = shell();
@@ -244,11 +264,13 @@ describe("FRE-01: the first run in the app (D-124)", () => {
 });
 
 describe("FRE-02, FRE-04, FRE-05: connecting", () => {
-  it("an existing working credential is offered as Continue as @login, with no device code, and the notes' name comes from the account", async () => {
+  it("an existing working credential is offered as a profile card and Continue as <first name>, with no device code, and the notes' name comes from the account", async () => {
     const t = shell({ state: { version: 1, firstRun: "connect" }, account: { account: ADA, gcm: true, gh: false } });
     await t.app.start();
     await settle();
-    expect(t.vm()).toMatchObject({ connect: "found", login: "ada", foundText: "This computer is connected to GitHub as @ada (Ada Lovelace).", continueAs: "Continue as @ada", canContinue: true, canOther: true });
+    expect(t.vm()).toMatchObject({ connect: "found", login: "ada", foundText: "This computer is connected to GitHub as @ada (Ada Lovelace).", continueAs: "Continue as Ada", canContinue: true, canOther: true,
+      // D-126: the profile card: the name, @login, and the initials while there's no picture.
+      accountName: "Ada Lovelace", handle: "@ada", initials: "AL", avatar: "" });
     await t.run("firstRun.useExisting");
     expect(t.vm().step).toBe("notes");
     expect(t.calls.some((c) => c.startsWith("signIn"))).toBe(false);
@@ -345,7 +367,7 @@ describe("FRE-06, FRE-08: Your notes", () => {
   it("We found your notes: the account's workspaces first, with when they were updated and who can see them, and Open on each", async () => {
     const t = await atNotes();
     expect(t.vm()).toMatchObject({ panel: "found", title: "We found your notes", showMore: true, more: false });
-    expect(t.vm().found).toEqual([{ id: "ada/notes", label: "notes", description: "Updated 3 days ago · Public", first: true }]);
+    expect(t.vm().found).toEqual([{ id: "ada/notes", label: "notes", detail: "Updated 3 days ago", badge: "Public", icon: "folder", first: true }]);
     await t.run("firstRun.clone", { id: "ada/notes" });
     expect(t.calls).toEqual(expect.arrayContaining(["clone:ada/notes", "openWorkspace"]));
     expect(t.last()?.firstRun).toBe("ready");

@@ -22,6 +22,7 @@ import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/set
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
 import { checkOptions, SetupEngine } from "./setup/engine.ts";
 import { githubFetch } from "./setup/credential.ts";
+import { avatarLoader } from "./first-run/avatar.ts";
 import type { BatchOp } from "./git/message.ts";
 import { Account } from "./first-run/account.ts";
 import { createToolRunner } from "./first-run/tools.ts";
@@ -186,6 +187,8 @@ const account = new Account({
   },
   log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
   signedOutFile: dataFile(DATA_FILES.account),
+  // The picture comes only from GitHub's avatar host, never in journeys (their fake GitHub has none).
+  avatar: avatarLoader({ fetch: fakeApi ? () => Promise.reject(new Error("No pictures in journeys")) : (i, init) => fetch(i, init), file: dataFile(DATA_FILES.avatar) }),
 });
 const firstRunFile = () => dataFile(DATA_FILES.firstRun);
 /** A name and email for only the notes workspace, kept until the workspace has them (not secret). */

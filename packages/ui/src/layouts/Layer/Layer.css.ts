@@ -19,6 +19,9 @@ export const position = styleVariants({
   topEnd: { top: 0, right: 0, height: tokens.layout.titleBar, alignItems: "center", justifyContent: "flex-end" },
   belowTopBand: { top: tokens.layout.topBand, left: tokens.space.s, right: tokens.space.s, alignItems: "flex-start", justifyContent: "center" },
   fill: { inset: 0, alignItems: "stretch", justifyContent: "stretch" },
+  // The whole window below the title bar band (the full-window setup, D-126): the band stays the
+  // window's, so it still drags and shows the window controls; what it holds fills the rest.
+  window: { top: tokens.layout.titleBar, left: 0, right: 0, bottom: 0, alignItems: "stretch" },
   // A dialog in the middle of the window (the first run's card): it keeps the dialog inset from every
   // edge and is held to the room inside it, where what it holds scrolls (D-111, D-123).
   center: { inset: 0, alignItems: "center", justifyContent: "center", padding: tokens.layout.gutterCompact, boxSizing: "border-box" },
@@ -29,5 +32,5 @@ export const position = styleVariants({
 // middle, never taller either.
 export const content = style({
   pointerEvents: "auto", display: "flex", minWidth: 0, maxWidth: "100%",
-  selectors: { [`${position.center} > &`]: { maxHeight: "100%" } },
+  selectors: { [`${position.center} > &`]: { maxHeight: "100%" }, [`${position.window} > &`]: { flexGrow: 1, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gridTemplateRows: "minmax(0, 1fr)" } },
 });

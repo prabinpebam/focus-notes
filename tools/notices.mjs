@@ -24,6 +24,35 @@ for (const [license, pkgs] of Object.entries(byLicense)) {
 }
 entries.sort((a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b.version, undefined, { numeric: true }));
 
+// Code copied into the app rather than installed: each with where it is and its license (LIC-02).
+const VENDORED = [
+  {
+    name: "@primer/octicons", version: "19.40.0", license: "MIT", homepage: "https://primer.style/octicons",
+    what: "Only the `mark-github` icon's SVG path, unmodified, in `packages/ui/src/github-mark.tsx` (D-126). GitHub's logo guidelines apply to its use.",
+    text: `MIT License
+
+Copyright (c) 2026 GitHub Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.`,
+  },
+];
+
 const body = [
   "# Third-party notices",
   "",
@@ -39,6 +68,9 @@ const body = [
     "",
     ...(e.text ? ["```text", e.text.replace(/```/g, "'''"), "```", ""] : ["(The package has no license file; its manifest declares the license above.)", ""]),
   ]),
+  "# Copied into the app",
+  "",
+  ...VENDORED.flatMap((e) => [`## ${e.name} ${e.version}`, "", `License: ${e.license}  \nHomepage: ${e.homepage}`, "", e.what, "", "```text", e.text, "```", ""]),
 ].join("\n");
 
 if (process.argv.includes("--check")) {

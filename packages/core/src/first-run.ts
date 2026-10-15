@@ -51,6 +51,8 @@ export interface GitHubAccount {
   /** The numeric ID, for the private noreply address. */
   id: number;
   name: string;
+  /** The account's picture as a data URL, fetched and cached by the shell (D-126); absent offline or when it has none. */
+  avatar?: string;
 }
 
 /**

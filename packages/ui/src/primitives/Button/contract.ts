@@ -9,7 +9,7 @@ export const contract = defineContract({
   props: {
     label: { kind: "message", required: true },
     variant: { kind: "enum", values: variants, default: "secondary" },
-    size: { kind: "enum", values: ["s", "m"], default: "m" },
+    size: { kind: "enum", values: ["s", "m", "l"], default: "m", description: "l: an onboarding step's main action (Get started, D-126)." },
     icon: { kind: "icon" },
     iconPosition: { kind: "enum", values: ["start", "end"], default: "start" },
     toggle: { kind: "boolean", default: false },
@@ -29,6 +29,7 @@ export const contract = defineContract({
   fixtures: [
     ...variants.map((variant) => ({ name: `variant ${variant}`, props: { label: { t: "gallery.action" }, variant } })),
     { name: "size s", props: { label: { t: "gallery.action" }, size: "s" } },
+    { name: "size l", props: { label: { t: "gallery.action" }, size: "l", variant: "primary" } },
     { name: "bleed", props: { label: { t: "gallery.action" }, variant: "subtle", bleed: true } },
     { name: "size m with icon", props: { label: { t: "gallery.action" }, size: "m", icon: "save" } },
     { name: "icon at end", props: { label: { t: "gallery.action" }, icon: "chevronRight", iconPosition: "end" } },

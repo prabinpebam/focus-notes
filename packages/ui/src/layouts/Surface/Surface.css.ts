@@ -40,7 +40,8 @@ export const clip = style({ overflow: "hidden" });
 export const body = style({ display: "flex", flexDirection: "column", flexGrow: 1, minHeight: 0, overflowY: "auto", scrollbarGutter: "stable", outline: "none" });
 minimalScrollbar(body, sb);
 const sp = tokens.space;
-const pad = (v: string) => ({ padding: v, paddingInlineEnd: `max(0px, calc(${v} - ${sb.scrollbarSize}))` });
+// What scrolls into view (a focused button) keeps the padding around it, so its focus ring is never cut.
+const pad = (v: string) => ({ padding: v, paddingInlineEnd: `max(0px, calc(${v} - ${sb.scrollbarSize}))`, scrollPadding: v });
 export const bodyPadding = styleVariants({
   none: {}, xs: pad(sp.xs), s: pad(sp.s), m: pad(sp.m), l: pad(sp.l), xl: pad(sp.xl), xxl: pad(sp.xxl), xxxl: pad(sp.xxxl),
 });

@@ -6,7 +6,7 @@ export const contract = defineContract({
   description: "A run of interface text. Note text is never rendered with this; it lives in block components.",
   props: {
     value: { kind: "message", required: true },
-    role: { kind: "enum", values: ["caption", "secondary", "body", "label", "emphasis", "title"], default: "body" },
+    role: { kind: "enum", values: ["caption", "secondary", "body", "label", "emphasis", "title", "lead"], default: "body" },
     tone: { kind: "enum", values: ["default", "muted", "accent", "danger", "warning", "success"], default: "default" },
     lines: { kind: "enum", values: ["none", "one", "two", "three"], default: "none" },
     announce: { kind: "boolean", default: false, description: "A polite live region, for counts and results." },
@@ -18,7 +18,7 @@ export const contract = defineContract({
   tokens: "cmp.text.*",
   a11y: { pattern: "text" },
   fixtures: [
-    ...["caption", "secondary", "body", "label", "emphasis", "title"].map((role) => ({ name: `role ${role}`, props: { value: { t: "gallery.sample" }, role } })),
+    ...["caption", "secondary", "body", "label", "emphasis", "title", "lead"].map((role) => ({ name: `role ${role}`, props: { value: { t: "gallery.sample" }, role } })),
     ...["default", "muted", "accent", "danger", "warning", "success"].map((tone) => ({ name: `tone ${tone}`, props: { value: { t: "gallery.sample" }, tone } })),
     ...["none", "one", "two", "three"].map((lines) => ({ name: `lines ${lines}`, props: { value: { t: "gallery.long" }, lines } })),
     ...["none", "control"].map((inset) => ({ name: `inset ${inset}`, props: { value: { t: "gallery.sample" }, inset } })),
