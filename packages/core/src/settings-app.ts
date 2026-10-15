@@ -19,7 +19,8 @@ import type { ViewModelRegistry } from "./view-models.ts";
 import { UI_SCALES, themeById } from "./themes.ts";
 
 /** Settings' categories, in order, as built so far. */
-export const SETTINGS_SECTIONS = ["account", "workspace", "appearance"] as const;
+// Sharing only where the shell keeps access.json (the desktop, WP-5.3).
+export const SETTINGS_SECTIONS = ["account", "workspace", "sharing", "appearance"] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export interface SettingsState {
@@ -100,9 +101,12 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     },
   });
   reg<{ open: boolean }>("settings.setOpen", ({ open }) => { if (!open) set({ open: false }); });
-  reg<{ value: string }>("settings.setSection", (a) => {
+  const sections = () => SETTINGS_SECTIONS.filter((id) => id !== "sharing" || bridge.access);
+  reg<{ value: string }>("settings.setSection", async (a) => {
     const v = value(a);
-    if ((SETTINGS_SECTIONS as readonly string[]).includes(v)) set({ section: v as SettingsSection });
+    if (!sections().includes(v as SettingsSection)) return;
+    set({ section: v as SettingsSection });
+    if (v === "sharing") await commands.run("share.manage.load");
   });
 
   // ---- Account (FRE-07) ----
@@ -229,7 +233,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
       const folder = s.workspace.folder ?? "";
       return {
         open: st.open, title: catalog.format("settings.title"), section: st.section,
-        sections: SETTINGS_SECTIONS.map((id) => ({ id, label: catalog.format(`settings.section.${id}`) })),
+        sections: sections().map((id) => ({ id, label: catalog.format(`settings.section.${id}`) })),
         account: {
           state: astate, signedIn: astate === "signedIn", signedOut: astate === "signedOut", checking: astate === "checking",
           login: signedIn ? `@${a!.account!.login}` : "", name: signedIn ? a!.account!.name || a!.account!.login : "",

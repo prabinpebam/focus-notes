@@ -19,6 +19,8 @@ import { GitSync, NO_GIT } from "./git/sync.ts";
 import { changedChars, type BackupPolicy } from "./git/cadence.ts";
 import { createRunner, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
+import { accessStore, siteFromGitConfig } from "./share/access.ts";
+import { memoryClipboard, secretClipboard } from "./share/clipboard.ts";
 import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
 import { checkOptions, SetupEngine } from "./setup/engine.ts";
@@ -844,6 +846,23 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     await rm(settingsFile(), { force: true });
     withGit((g) => g.written(settingsFile()));
   });
+  // Share audiences (WP-5.3, D-134): only this process writes access.json and makes its secrets.
+  const access = accessStore({
+    dir: privateDir,
+    site: async () => (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8")),
+    write: atomicWrite,
+    written: (file) => withGit((g) => g.written(file)),
+  });
+  handle("access:load", async () => (settingsAvailable() ? access.load() : { available: false, vault: false, grants: [] }));
+  handle("access:apply", async (change) => {
+    if (!settingsAvailable()) throw new Error("access:failed");
+    return access.apply(change);
+  });
+  // A secret goes to the window only for an open invite, and to the clipboard only from here, cleared after 90 s (review L1, L2).
+  // Journeys copy into memory, so they never overwrite (or depend on) the computer's clipboard.
+  const secretCopy = secretClipboard(devEnv("FOCUS_NOTES_MEMORY_CLIPBOARD") === "1" ? memoryClipboard() : clipboard);
+  handle("access:reveal", async (id) => access.reveal(id));
+  handle("access:copy", async (id, what, invite) => secretCopy.write(await access.secret(id, what, invite)));
   handle("sync:now", async (reason) => {
     const g = await gitOpening;
     return g ? g.request(reason === "switch" ? "switch" : "save") : NO_GIT;

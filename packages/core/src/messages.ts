@@ -6,7 +6,7 @@ export type Messages = Record<string, string>;
 export class MessageCatalog {
   #cache = new Map<string, IntlMessageFormat>();
 
-  private readonly locale: string;
+  readonly locale: string;
   private readonly messages: Messages;
 
   constructor(locale: string, messages: Messages) {
