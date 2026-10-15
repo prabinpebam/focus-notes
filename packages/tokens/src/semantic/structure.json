@@ -495,6 +495,12 @@
     },
     "grow": {
       "$value": "{ref.duration.200}"
+    },
+    "none": {
+      "$value": "{ref.duration.0}"
+    },
+    "autoScroll": {
+      "$value": "{ref.duration.200}"
     }
   },
   "easing": {
@@ -507,6 +513,9 @@
     },
     "accelerate": {
       "$value": "{ref.easing.accelerate}"
+    },
+    "inOut": {
+      "$value": "{ref.easing.inOut}"
     }
   },
   "layer": {

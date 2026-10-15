@@ -24,6 +24,12 @@
     },
     "grow": {
       "$value": "{ref.duration.0}"
+    },
+    "none": {
+      "$value": "{ref.duration.0}"
+    },
+    "autoScroll": {
+      "$value": "{ref.duration.0}"
     }
   }
 }
