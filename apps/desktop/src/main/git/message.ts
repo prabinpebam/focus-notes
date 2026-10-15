@@ -131,5 +131,50 @@ export function resolveMessage(lines: { path: string; choice: "mine" | "theirs" 
   return message(subject, body);
 }
 
+/** The trailer naming the agent that made a commit (AGT-04, Agents → Attribution and undo). */
+export const AGENT_TRAILER = "Focus-Notes-Agent";
+const AGENT_SUBJECT = "Agent edit: ";
+
+/**
+ * A self-reported client name (from the MCP `initialize` handshake) as one plain line of at most 64
+ * characters: line breaks become spaces, and control and direction characters are dropped, so the
+ * name can't add lines or trailers of its own, or display as something else.
+ */
+export function agentName(raw: unknown): string {
+  if (typeof raw !== "string") return "Unknown agent";
+  const name = raw
+    .replace(/[\r\n\t\v\f\u0085\u2028\u2029]+/g, " ")
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 64)
+    .trim();
+  return name || "Unknown agent";
+}
+
+/** One agent write's message: `Agent edit: <note path>`, what changed when it's more than an edit, and the trailer. */
+export function agentMessage(note: string, changes: Change[], client: string): string {
+  const lines = changes.length > 1 || changes.some((c) => c.status === "R") ? changes.map(describe) : [];
+  return [`${AGENT_SUBJECT}${note}`, ...(lines.length ? [lines.join("\n")] : []), `${AGENT_TRAILER}: ${agentName(client)}`].join("\n\n");
+}
+
+/** The agent a commit message names in its trailer (its last paragraph, never its subject), or undefined. */
+export function agentOf(message: string): string | undefined {
+  const paragraphs = message.trim().split(/\r?\n\s*\r?\n/);
+  if (paragraphs.length < 2) return undefined;
+  const line = paragraphs[paragraphs.length - 1]!.split(/\r?\n/).find((l) => l.startsWith(`${AGENT_TRAILER}: `));
+  return line ? line.slice(AGENT_TRAILER.length + 2).trim() || undefined : undefined;
+}
+
+/** The note an agent commit's subject names. */
+export const agentNoteOf = (message: string): string | undefined => {
+  const first = message.split(/\r?\n/, 1)[0] ?? "";
+  return first.startsWith(AGENT_SUBJECT) ? first.slice(AGENT_SUBJECT.length) : undefined;
+};
+
+/** The writer's commit that undoes an agent's (AGT-04). */
+export const undoAgentMessage = (note: string) => `Undo agent edit: ${note}`;
+
 /** The notes repository's commit that moves its pointer to the private repository (D-07). */
 export const pointerMessage = (oid: string) => `Update private notes to ${oid.slice(0, 7)}`;

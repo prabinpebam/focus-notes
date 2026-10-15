@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prabinpebam.github.io/focus-notes/schemas/agents.v1.json",
+  "title": "Agent permissions on one computer (agents.json in the app data folder)",
+  "description": "What agents may do (AGT-03, D-145). Missing or invalid: nothing is allowed. Deleting, visibility changes, and sharing are never available to agents, so they have no setting.",
+  "type": "object",
+  "required": [
+    "version"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "connect": {
+      "description": "Agents can connect. Off: the server refuses to start",
+      "type": "boolean"
+    },
+    "readPublic": {
+      "description": "Read public notes (notes/). On by default, once agents can connect",
+      "type": "boolean"
+    },
+    "readPrivate": {
+      "description": "Read private and shared notes (private/notes/)",
+      "type": "boolean"
+    },
+    "edit": {
+      "description": "Create and edit notes. Editing a note also needs reading its root",
+      "type": "boolean"
+    },
+    "createPublic": {
+      "description": "Create public notes; otherwise new notes are private",
+      "type": "boolean"
+    },
+    "folders": {
+      "description": "Limit to folders: \"all\", or workspace-relative folders under notes/ or private/notes/. An empty list allows nothing",
+      "oneOf": [
+        {
+          "const": "all"
+        },
+        {
+          "type": "array",
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 512,
+            "pattern": "^(notes|private/notes)(/[^/\\\\:<>|?*\"\\u0000-\\u001f]+)*$"
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

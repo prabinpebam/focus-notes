@@ -4,6 +4,7 @@ import { join } from "node:path";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { formatWorkspaceFile, WORKSPACE_FORMAT } from "../src/workspace-format.ts";
+import { DEFAULT_AGENT_PERMISSIONS, serializeAgentPermissions } from "../src/agents.ts";
 
 const dir = join(import.meta.dirname, "..", "..", "..", "schemas");
 const load = (f: string) => JSON.parse(readFileSync(join(dir, f), "utf8"));
@@ -13,7 +14,7 @@ describe("file format schemas (AGT-08)", () => {
   addFormats(ajv);
   const files = readdirSync(dir).filter((f) => f.endsWith(".schema.json"));
   it("covers every format", () => {
-    expect(files.sort()).toEqual(["access-message.schema.json", "access.schema.json", "app-state.schema.json", "export-bundle.schema.json", "front-matter.schema.json", "keybindings.schema.json", "settings.schema.json", "theme.schema.json", "workspace.schema.json"]);
+    expect(files.sort()).toEqual(["access-message.schema.json", "access.schema.json", "agents.schema.json", "app-state.schema.json", "export-bundle.schema.json", "front-matter.schema.json", "keybindings.schema.json", "settings.schema.json", "theme.schema.json", "workspace.schema.json"]);
   });
   for (const f of files) it(`${f} compiles with a stable $id`, () => {
     const s = load(f);
@@ -24,6 +25,11 @@ describe("file format schemas (AGT-08)", () => {
     const check = (f: string, v: unknown) => ajv.getSchema(load(f).$id)!(v);
     expect(check("app-state.schema.json", { version: 1, lastNotePath: "C:/n.md", appearance: "dark" })).toBe(true);
     expect(check("app-state.schema.json", { version: 2 })).toBe(false);
+    // What the app writes for agent permissions is valid; a folder outside the note roots isn't (AGT-03, D-145).
+    expect(check("agents.schema.json", JSON.parse(serializeAgentPermissions({ connect: true, readPublic: true, readPrivate: false, edit: true, createPublic: false, folders: ["notes/projects"] })))).toBe(true);
+    expect(check("agents.schema.json", JSON.parse(serializeAgentPermissions(DEFAULT_AGENT_PERMISSIONS)))).toBe(true);
+    expect(check("agents.schema.json", { version: 1, folders: ["private/access.json"] })).toBe(false);
+    expect(check("agents.schema.json", { version: 1, delete: true })).toBe(false);
     expect(check("workspace.schema.json", { formatVersion: 1 })).toBe(true);
     expect(check("workspace.schema.json", { formatVersion: 0 })).toBe(false);
     expect(check("workspace.schema.json", { templateVersion: "1.0.0" })).toBe(false);

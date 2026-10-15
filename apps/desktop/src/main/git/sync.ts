@@ -13,7 +13,7 @@ import { conflictCopy, deletedId, DELETED_LOG_ARGS, parseDeletedId, parseDeleted
 import { StatusCache, filesKey, gitFiles } from "./cache.ts";
 import { Cadence, FETCH_EVERY_MS, type BackupPolicy, POINTER_GAP_MS, pointerDelay, retryDelay, systemClock, type Clock, type SyncReason } from "./cadence.ts";
 import { releaseLock, takeLock } from "./lock.ts";
-import { batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, type BatchOp, type Change } from "./message.ts";
+import { AGENT_TRAILER, agentMessage, agentNoteOf, agentOf, batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, undoAgentMessage, type BatchOp, type Change } from "./message.ts";
 import type { ConflictChoice, NoteConflict, SyncProblem, SyncReport } from "@focus-notes/core";
 import type { RepoHealth } from "@focus-notes/core/diagnostics";
 import { bothChanged, changedAt, divergence, GitFailed, readBlobs, settle, treeNames, type Exec, type Settle } from "./resolve.ts";
@@ -287,6 +287,96 @@ export class GitSync {
     // Pushing (and the pointer) follows, without making the Files panel wait for the network.
     void done.then(() => this.sync("batch"));
     return done;
+  }
+
+  // ---- agents (AGT-04, D-145) ----
+
+  /**
+   * One agent write as its own commit, `Agent edit: <note>` with the `Focus-Notes-Agent` trailer.
+   * The writer's own uncommitted changes to these paths are committed first, so the agent's commit
+   * holds only the agent's change and Undo restores the note exactly. All paths must be in one
+   * repository; otherwise nothing is applied. Pushing follows in the background.
+   */
+  agentChange(c: { client: string; note: string; paths: string[]; moves?: [string, string][]; apply: () => Promise<void> }): Promise<{ problem?: SyncProblem; commit?: string }> {
+    const done = this.#ops.run(async (): Promise<{ problem?: SyncProblem; commit?: string }> => {
+      if (!(await this.#lock())) return { problem: this.#fail("locked") };
+      const at = [c.note, ...c.paths].map((p) => this.#locate(p));
+      const repo = at[0]?.repo;
+      if (!repo || at.some((a) => a?.repo !== repo)) return { problem: this.#fail("failed") };
+      const rel = at.slice(1).map((a) => a!.rel);
+      const moves = (c.moves ?? []).map(([f, t]): [string, string] => [this.#locate(f)?.rel ?? "", this.#locate(t)?.rel ?? ""]);
+      const head = async () => (await this.#git(repo, ["rev-parse", "--verify", "-q", "HEAD"])).stdout.trim();
+      const st = await repo.cache.fresh().catch(() => undefined);
+      if (!st) return { problem: this.#fail("failed") };
+      const mine = await this.#commit(repo, st, rel, saveMessage, repo.moves);
+      if (mine) return { problem: this.#fail(mine) };
+      const before = await head();
+      await c.apply();
+      for (const p of c.paths) this.#touch(p);
+      repo.cache.clear();
+      const after = await repo.cache.fresh().catch(() => undefined);
+      if (!after) return { problem: this.#fail("failed") };
+      const problem = await this.#commit(repo, after, rel, (changes) => agentMessage(at[0]!.rel, changes, c.client), moves);
+      if (problem) return { problem: this.#fail(problem) };
+      const commit = await head();
+      return commit && commit !== before ? { commit } : {};
+    });
+    void done.then(() => this.sync("batch"));
+    return done;
+  }
+
+  /**
+   * Undo an agent's commit (AGT-04): its notes go back to how they were before it, as a new commit
+   * by the writer. Refused when it isn't an agent commit named by its full ID, or when any of its
+   * notes changed since, committed or not, so Undo never overwrites later writing.
+   */
+  undoAgentChange(which: "notes" | "private", oid: string): Promise<{ problem?: SyncProblem | "changed" | "notAgent" }> {
+    const done = this.#ops.run(async (): Promise<{ problem?: SyncProblem | "changed" | "notAgent" }> => {
+      const repo = which === "private" ? this.privateRepo : this.notes;
+      if (!repo || !/^([0-9a-f]{40}|[0-9a-f]{64})$/.test(oid)) return { problem: "notAgent" };
+      if (!(await this.#lock())) return { problem: this.#fail("locked") };
+      const msg = await this.#git(repo, ["log", "-1", "--format=%B", oid, "--"]);
+      const note = agentNoteOf(msg.stdout);
+      if (msg.code !== 0 || !agentOf(msg.stdout) || !note) return { problem: "notAgent" };
+      const names = async (args: string[]) => {
+        const r = await this.#git(repo, ["diff-tree", "-r", "-z", "--name-only", "--no-renames", ...args]);
+        return r.code === 0 ? r.stdout.split("\0").filter(Boolean) : undefined;
+      };
+      const paths = await names(["--no-commit-id", oid]);
+      const since = await names([oid, "HEAD"]);
+      repo.cache.clear();
+      const st = await repo.cache.fresh().catch(() => undefined);
+      if (!paths?.length || !since || !st) return { problem: this.#fail("failed") };
+      const touched = (p: string) => since.includes(p) || repo.pending.has(p) || st.entries.some((e) => e.kind !== "ignored" && (e.path === p || e.from === p));
+      if (paths.some(touched)) return { problem: "changed" };
+      const restore = await this.#git(repo, ["restore", `--source=${oid}^`, "--worktree", "--pathspec-from-file=-", "--pathspec-file-nul"], paths.join("\0"));
+      if (restore.code !== 0) return { problem: this.#fail("failed") };
+      for (const p of paths) this.#touch(join(repo.dir, p));
+      repo.cache.clear();
+      const now = await repo.cache.fresh().catch(() => undefined);
+      if (!now) return { problem: this.#fail("failed") };
+      const problem = await this.#commit(repo, now, paths, () => undoAgentMessage(note), []);
+      return problem ? { problem: this.#fail(problem) } : {};
+    });
+    void done.then(() => this.sync("batch"));
+    return done;
+  }
+
+  /** Recent agent changes (AGT-04): agent commits in both repositories, newest first. */
+  async agentChanges(limit = 50): Promise<{ repo: "notes" | "private"; commit: string; at: number; agent: string; path: string }[]> {
+    const out: { repo: "notes" | "private"; commit: string; at: number; agent: string; path: string }[] = [];
+    for (const repo of [this.notes, this.privateRepo]) {
+      if (!repo) continue;
+      const r = await repo.queue.run(() => this.#run({ cwd: repo.dir, args: ["log", `-n${Math.max(1, Math.floor(limit))}`, `--grep=^${AGENT_TRAILER}: `, "--format=%H%x1f%ct%x1f%B%x1e", "HEAD", "--"], read: true }));
+      if (r.code !== 0) continue;
+      for (const rec of r.stdout.split("\x1e")) {
+        const [commit, ct, body] = rec.replace(/^\s+/, "").split("\x1f");
+        const agent = body ? agentOf(body) : undefined;
+        const path = body ? agentNoteOf(body) : undefined;
+        if (commit && agent && path) out.push({ repo: repo.name, commit, at: Number(ct) * 1000, agent, path });
+      }
+    }
+    return out.sort((a, b) => b.at - a.at).slice(0, limit);
   }
 
   // ---- conflicts (FIL-12) ----
