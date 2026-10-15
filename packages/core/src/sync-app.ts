@@ -57,6 +57,8 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
   /** Save to cloud is waiting on a sync: its own result says what happened, so the background toast stays quiet. */
   let asked = 0;
   let doneTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Whether the shell has said if there's Git. It opens Git after the caret is ready (PRF-02), so not at once. */
+  let heard = false;
   const describe = (p: SyncProblem) => catalog.format(`sync.problem.${p}`);
   const retry = () => ({ command: "note.save", label: catalog.format("toast.retry") });
   const resolve = () => ({ command: "conflict.open", label: catalog.format("conflict.resolve") });
@@ -66,6 +68,7 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
     return { ...s, sync: next };
   });
   const apply = (r: SyncReport, quiet = false) => {
+    heard = true;
     const was = store.state.sync;
     const before = was.problem;
     const problem = r.state === "problem" ? r.problem ?? "failed" : undefined;
@@ -82,6 +85,13 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
     if (problem && problem !== before && !quiet && !asked) toast(describe(problem), { tone: "error", action: problem === "conflict" ? resolve() : retry() });
   };
   return {
+    /**
+     * Whether Save to cloud can run: with Git, and also while the shell hasn't said yet, so the key
+     * pressed just after launch isn't lost (DEF-10). The shell's answer waits for Git to open.
+     */
+    canSave(s: SyncState): boolean {
+      return s.git || (Boolean(bridge.sync) && !heard);
+    },
     start() {
       if (!bridge.sync) return;
       bridge.sync.onStatus((r) => apply(r));

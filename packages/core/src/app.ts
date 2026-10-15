@@ -421,9 +421,17 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
 
   // Back and forward between notes (Keyboard shortcuts → App and window, KEY-03), as in a browser:
   // opening a note drops the notes ahead of it; going back or forward only moves along the list.
-  const trail = { paths: [] as string[], at: -1, stepping: false };
+  // The trail moves the moment the stepped-to note shows, not after the rest of opening finishes,
+  // so forward pressed as soon as the note appears isn't lost (DEF-11).
+  const trail = { paths: [] as string[], at: -1, step: undefined as { to: number; shown: boolean } | undefined };
   const visited = (path: string) => {
-    if (trail.stepping || trail.paths[trail.at] === path) return;
+    const step = trail.step;
+    if (step && trail.paths[step.to] === path) {
+      trail.at = step.to;
+      step.shown = true;
+      return;
+    }
+    if (trail.paths[trail.at] === path) return;
     trail.paths = [...trail.paths.slice(0, trail.at + 1), path].slice(-50);
     trail.at = trail.paths.length - 1;
   };
@@ -431,14 +439,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     const to = trail.at + dir;
     const path = trail.paths[to];
     if (path === undefined) return;
-    trail.stepping = true;
+    const step = { to, shown: false };
+    trail.step = step;
     try {
       await load(path);
     } finally {
-      trail.stepping = false;
+      if (trail.step === step) trail.step = undefined;
     }
-    if (store.state.note.path === path) trail.at = to;
-    else {
+    if (!step.shown && store.state.note.path !== path) {
       // A note that's gone (deleted, or its folder removed) leaves the trail.
       trail.paths.splice(to, 1);
       if (to < trail.at) trail.at--;
@@ -528,7 +536,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     id: "sync.now", title: "command.sync.now", icon: "cloudUp",
     shortcut: { default: "Mod+Shift+S" },
     layer: "basic", group: "app",
-    enabled: (s) => s.sync.git,
+    enabled: (s) => sync.canSave(s.sync),
     run: (_a, c) => c.run("note.save"),
   });
   commands.register<{ value: string }>({

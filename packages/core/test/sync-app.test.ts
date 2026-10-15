@@ -16,7 +16,7 @@ const messages = {
   "save.label.syncing": "Backing up…", "save.label.done": "Backed up",
 };
 
-function setup(withSync = true) {
+function setup(withSync = true, opening = false) {
   const files: Record<string, string> = { "/n/a.md": "# A\n", "/n/b.md": "# B\n" };
   const calls: string[] = [];
   let listener: ((r: SyncReport) => void) | undefined;
@@ -42,7 +42,8 @@ function setup(withSync = true) {
           calls.push(`sync ${reason}`);
           return next;
         },
-        status: async () => ({ git: true, state: "idle", waiting: 0 }),
+        // Git opens after the caret is ready (PRF-02): until then the shell hasn't said anything.
+        status: () => (opening ? new Promise<SyncReport>(() => {}) : Promise.resolve({ git: true, state: "idle", waiting: 0 })),
         onStatus: (l) => {
           listener = l;
           return () => {};
@@ -148,6 +149,28 @@ describe("EDT-11: save and sync", () => {
     expect(t.save()).toMatchObject({ state: "offline", label: "Offline" });
     t.report({ git: true, state: "problem", problem: "failed", waiting: 1 });
     expect(t.save().state).toBe("error");
+  });
+
+  it("Save to cloud pressed before Git has said it's there isn't lost: it backs up, and offline says so (DEF-10)", async () => {
+    const t = setup(true, true);
+    await t.app.start();
+    await settle();
+    expect(t.app.store.state.sync.git).toBe(false);
+    expect(t.app.commands.describe("sync.now").enabled).toBe(true);
+    await t.app.commands.run("note.setContent", { value: "# A\n\nEarly.\n" });
+    t.willReturn({ git: true, state: "problem", problem: "offline", waiting: 1 });
+    await t.app.commands.run("sync.now");
+    expect(t.calls).toEqual(["write /n/a.md", "sync save"]);
+    expect(t.toasts()).toEqual(["Couldn't sync: you're offline."]);
+    expect(t.save().state).toBe("offline");
+  });
+
+  it("once the shell says there's no Git, Save to cloud isn't offered", async () => {
+    const t = setup(true);
+    await t.app.start();
+    await settle();
+    t.report({ git: false, state: "idle", waiting: 0 });
+    expect(t.app.commands.describe("sync.now").enabled).toBe(false);
   });
 
   it("without Git, saving stays local and shows no Git UI", async () => {

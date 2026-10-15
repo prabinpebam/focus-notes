@@ -209,6 +209,33 @@ describe("back and forward between notes (KEY-03, Power)", () => {
     await a.commands.run("note.back");
     expect(path()).toBe("/n/a.md");
   });
+  it("moves along the trail as soon as the note shows, so forward right after back isn't lost (DEF-11)", async () => {
+    const picks = ["/n/a.md", "/n/b.md"];
+    let slow = false;
+    const held: (() => void)[] = [];
+    // Remembering the last note can be slow (a busy computer): the note is on screen before it's done.
+    const a = app({
+      chooseNote: async () => picks.shift(),
+      readNote: async (p) => `text of ${p}`,
+      saveAppState: () => (slow ? new Promise<void>((r) => void held.push(r)) : Promise.resolve()),
+    });
+    await a.start();
+    await a.commands.run("note.open");
+    await a.commands.run("note.open");
+    slow = true;
+    const back = a.commands.run("note.back");
+    await expect.poll(() => a.store.state.note.markdown).toBe("text of /n/a.md");
+    // The person sees the note they went back to, and presses forward at once.
+    expect(a.commands.describe("note.forward").enabled).toBe(true);
+    const forward = a.commands.run("note.forward");
+    await expect.poll(() => a.store.state.note.markdown).toBe("text of /n/b.md");
+    slow = false;
+    for (const r of held) r();
+    await Promise.all([back, forward]);
+    expect(a.store.state.note.path).toBe("/n/b.md");
+    expect(a.commands.describe("note.forward").enabled).toBe(false);
+    expect(a.commands.describe("note.back").enabled).toBe(true);
+  });
   it("binds Alt+←/→ on Windows and ⌘[ / ⌘] on macOS", () => {
     const { commands } = app();
     expect(commands.match({ key: "ArrowLeft", code: "ArrowLeft", altKey: true, ctrlKey: false, metaKey: false, shiftKey: false })).toBe("note.back");
