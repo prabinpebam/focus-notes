@@ -168,6 +168,16 @@ const calm = async (page: Page) => {
   await page.waitForTimeout(200);
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity), undefined, { timeout: 10_000 }).catch(() => {});
 };
+/** D-144: the px between the focused control's focus ring (its outline, past its offset) and the named button, never touching. */
+const ringClearance = (page: Page, other: string) =>
+  page.evaluate((name) => {
+    const el = document.activeElement as HTMLElement;
+    const o = [...document.querySelectorAll("button")].find((b) => b.textContent?.trim() === name)!;
+    const cs = getComputedStyle(el);
+    const ring = cs.outlineStyle === "none" ? 0 : parseFloat(cs.outlineWidth) + parseFloat(cs.outlineOffset);
+    const a = el.getBoundingClientRect(), b = o.getBoundingClientRect();
+    return (a.bottom <= b.top ? b.top - a.bottom : a.top - b.bottom) - ring;
+  }, other);
 
 /**
  * Captures a state: light and dark at the default window, and for the main path also at the
@@ -350,11 +360,15 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
   try {
     await heading(page, "A quiet place to write");
     await expect(button(page, "Get started")).toBeFocused();
+    // D-144: the app's name shows on Welcome, under its icon.
+    await expect(card(page).getByText("Focus Notes", { exact: true })).toBeVisible();
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await shot(l, "welcome-rest");
     await tabTo(page, button(page, "Get started"));
+    expect(await ringClearance(page, "Just use this computer for now"), "Get started's focus ring clears the other button").toBeGreaterThanOrEqual(4);
     await shot(l, "welcome-focus-start");
     await tabTo(page, button(page, "Just use this computer for now"));
+    expect(await ringClearance(page, "Get started"), "Just use this computer for now's focus ring clears Get started").toBeGreaterThanOrEqual(4);
     await shot(l, "welcome-focus-local");
     await getStarted(page);
 
@@ -447,6 +461,13 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     await button(page, "Continue").click();
     await heading(page, "Ready");
     await expect(button(page, "Start writing")).toBeFocused({ timeout: 15_000 });
+    // D-144: focus mode is featured with its toggle's keys, in this platform's keys, read aloud in words.
+    await expect(text(page, "Focus mode keeps only your current line bright.")).toBeVisible();
+    const spoken = card(page).getByText(process.platform === "darwin" ? "Shift Command D" : "Control Shift D", { exact: true });
+    await expect(spoken).toBeAttached();
+    // The keys sit on the hint's line at the default window, not wrapped below it.
+    const [hintBox, capsBox] = [await text(page, "Focus mode keeps only your current line bright.").boundingBox(), await spoken.locator("..").boundingBox()];
+    expect(Math.abs(hintBox!.y + hintBox!.height / 2 - (capsBox!.y + capsBox!.height / 2)), "the focus keys on the hint's line").toBeLessThan(8);
     await shot(l, "ready-ready");
     await button(page, "Start writing").click();
     await expect(card(page)).toHaveCount(0);

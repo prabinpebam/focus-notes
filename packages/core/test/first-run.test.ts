@@ -103,7 +103,7 @@ const report = (states: Partial<Record<string, SetupReport["steps"][number]["sta
   steps: SETUP_STEPS.map((id) => ({ id, state: states[id] ?? "pending" })),
 });
 
-function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus>; useToken?: () => AccountStatus; repos?: RepoChoice[] } = {}) {
+function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus>; useToken?: () => AccountStatus; repos?: RepoChoice[]; platform?: PlatformBridge["platform"] } = {}) {
   const saved: AppStateFile[] = [];
   const calls: string[] = [];
   const tokens: string[] = [];
@@ -136,7 +136,7 @@ function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountSt
   };
   let setupListener: ((r: SetupReport) => void) | undefined;
   const bridge: PlatformBridge = {
-    platform: "windows",
+    platform: opts.platform ?? "windows",
     readNote: async () => "# A\n",
     writeNote: async () => {},
     chooseNote: async () => undefined,
@@ -521,13 +521,23 @@ describe("FRE-01: Ready", () => {
     await settle();
     await t.run("firstRun.setTheme", { value: "dark" });
     expect(t.app.store.state.appearance).toMatchObject({ mode: "dark" });
-    expect(t.vm()).toMatchObject({ theme: "dark", searchHint: "Press Ctrl+/ to search or act." });
+    expect(t.vm()).toMatchObject({ theme: "dark" });
     await t.run("firstRun.back");
     expect(t.vm().step).toBe("ready");
     await t.run("firstRun.next");
     expect(t.vm().open).toBe(false);
     expect(t.last()?.firstRun).toBe("done");
     expect(t.app.store.state.note.path).toBe("/n/Untitled.md");
+  });
+  it("D-144: features focus mode with its toggle's keys, read from the keymap, in each platform's own keys", async () => {
+    for (const [platform, keys, spoken] of [["windows", ["Ctrl", "Shift", "D"], "Control Shift D"], ["macos", ["⇧", "⌘", "D"], "Shift Command D"]] as const) {
+      const t = shell({ state: { version: 1, firstRun: "ready" }, platform });
+      await t.app.start();
+      await settle();
+      const chord = t.app.commands.describe("focus.toggle").shortcut;
+      expect(chord).toBeTruthy();
+      expect(t.vm()).toMatchObject({ focusHint: "Focus mode keeps only your current line bright.", focusKeys: keys, focusSpoken: spoken });
+    }
   });
 });
 

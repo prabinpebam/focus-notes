@@ -10,7 +10,7 @@
  */
 import type { AppStateFile, PlatformBridge } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
-import { formatChord } from "./commands.ts";
+import { chordParts, shortcutFor, spokenChord } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
@@ -476,7 +476,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         query: { type: "string" }, activeId: { type: "string" }, noMatch: { type: "boolean" }, reposSummary: { type: "string" },
         repos: { type: "array", items: ITEM },
         theme: { type: "string" }, themeOptions: { type: "array", items: OPTION },
-        canImport: { type: "boolean" }, searchHint: { type: "string" },
+        canImport: { type: "boolean" },
+        // D-144: Ready features focus mode with its toggle's keys, as key caps and in words.
+        focusHint: { type: "string" }, focusKeys: { type: "array", items: { type: "string" } }, focusSpoken: { type: "string" }, hasFocusKeys: { type: "boolean" },
         // D-135: the step's hero mark, the token form's problem, a failed setup step, a lookup that couldn't reach GitHub.
         hasMark: { type: "boolean" }, mark: { type: "string" }, markTone: { type: "string", enum: ["neutral", "accent", "danger", "success"] }, markBusy: { type: "boolean" },
         tokenMessage: { type: "string" }, hasTokenMessage: { type: "boolean" },
@@ -511,6 +513,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const shown = connect === "cli" ? a?.cliAccount : a?.account;
       const problem = a?.problem && connect === "choose" ? catalog.format(`firstRun.signIn.problem.${a.problem}`) : "";
       const platform = bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows";
+      const focusChord = shortcutFor(commands.shortcut("focus.toggle"), bridge.platform);
       const w = f.workspace;
       const started = Boolean(s.setup.report?.options);
       const panel = started ? "progress" : !w.reposLoaded && f.busy && w.mode !== "local" ? "checking" : w.mode;
@@ -602,7 +605,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         })),
         theme: s.appearance.mode, themeOptions: options("firstRun.ready.theme", ["system", "light", "dark"]),
         canImport: commands.has("notes.import") && commands.describe("notes.import").enabled,
-        searchHint: catalog.format("firstRun.ready.search", { mod: formatChord("Mod+/", bridge.platform) }),
+        // D-144: focus mode is the app's signature, so Ready features it with its toggle's keys, from the keymap.
+        focusHint: catalog.format("firstRun.ready.focus"), focusKeys: focusChord ? chordParts(focusChord, bridge.platform) : [],
+        focusSpoken: focusChord ? spokenChord(focusChord, bridge.platform) : "", hasFocusKeys: Boolean(focusChord),
         hasMark: Boolean(mark) || f.step === "connect" || f.step === "notes", mark: mark?.[0] ?? "github", markTone: mark?.[1] ?? "neutral", markBusy: Boolean(mark?.[2]),
         tokenMessage: tokenKey ? catalog.format(tokenKey) : "", hasTokenMessage: Boolean(tokenKey),
         failed: Boolean(failedStep), failedId: failedStep?.id ?? "", lookupFailed, canCreateNow: !lookupFailed,
