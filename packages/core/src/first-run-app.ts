@@ -14,7 +14,7 @@ import { chordParts, shortcutFor, spokenChord } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
-import { isRepoName, DEFAULT_SETUP, type SetupReport } from "./setup.ts";
+import { isRepoName, DEFAULT_SETUP, setupFailureActions, type SetupFailureAction, type SetupReport } from "./setup.ts";
 import type { SetupState } from "./setup-app.ts";
 import {
   canContinue, FIRST_RUN_STEPS, looksLikeToken, nextStep, notesIdentity, prevStep, resumeStep,
@@ -125,6 +125,10 @@ const DAY = 86_400_000;
 const AVATAR = /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/;
 /** "Ada Lovelace" → "AL"; a login → its first letter. */
 const initials = (name: string) => name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
+/** A failed part's action labels (D-154). */
+const FAIL_LABEL: Record<SetupFailureAction, string> = {
+  retry: "firstRun.retry", chooseFolder: "firstRun.fail.chooseFolder", newFolder: "firstRun.fail.newFolder", startOver: "firstRun.fail.startOver", back: "firstRun.back",
+};
 
 export const SETUP_COMMANDS = /^(firstRun\.|window\.|toast\.|setup\.|keys\.|ui\.scale|appearance\.(system|light|dark)$|notes\.import$|command\.run$|app\.ready$)/;
 
@@ -363,6 +367,16 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     const folder = await busy(() => fr!.chooseFolder());
     if (folder) setWs({ folder, error: "" });
   });
+  // A failed part's actions (D-154): only those it offers; each changes something or goes back.
+  reg<{ id: string }>("firstRun.failAction", async ({ id }) => {
+    const failed = store.state.setup.report?.steps.find((x) => x.state === "failed");
+    if (!failed || state().busy || !setupFailureActions(failed.problem).includes(id as SetupFailureAction)) return;
+    if (id === "back") return commands.run("firstRun.back");
+    if (id === "retry") await busy(() => commands.run("setup.retry", { id: failed.id }));
+    else if (id === "startOver") await busy(() => commands.run("setup.startOver"));
+    else await busy(() => commands.run("setup.useFolder", { how: id === "chooseFolder" ? "choose" : "new" }));
+    bump();
+  });
   // Create my notes: with the browser passphrase only when one was typed under More options (D-124).
   reg("firstRun.create", async () => {
     const w = state().workspace;
@@ -483,6 +497,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         hasMark: { type: "boolean" }, mark: { type: "string" }, markTone: { type: "string", enum: ["neutral", "accent", "danger", "success"] }, markBusy: { type: "boolean" },
         tokenMessage: { type: "string" }, hasTokenMessage: { type: "boolean" },
         failed: { type: "boolean" }, failedId: { type: "string" }, lookupFailed: { type: "boolean" }, canCreateNow: { type: "boolean" }, createDetail: { type: "string" },
+        failActions: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, variant: { type: "string" }, first: { type: "boolean" }, busy: { type: "boolean" } } } },
         folderShort: { type: "string" },
         // D-142: the stepper, the state's own title, the helper to install, versions, field errors, the passphrase meter.
         stepNumber: { type: "number" }, stepTotal: { type: "number" }, needHelper: { type: "boolean" }, helperText: { type: "boolean" }, problemIcon: { type: "string" }, notesIcon: { type: "string" },
@@ -611,6 +626,10 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         hasMark: Boolean(mark) || f.step === "connect" || f.step === "notes", mark: mark?.[0] ?? "github", markTone: mark?.[1] ?? "neutral", markBusy: Boolean(mark?.[2]),
         tokenMessage: tokenKey ? catalog.format(tokenKey) : "", hasTokenMessage: Boolean(tokenKey),
         failed: Boolean(failedStep), failedId: failedStep?.id ?? "", lookupFailed, canCreateNow: !lookupFailed,
+        // D-154: the failed part's own way on, then Back (D-131's action row: one primary, Back subtle).
+        failActions: failedStep ? setupFailureActions(failedStep.problem).map((id, n, all) => ({
+          id, label: catalog.format(FAIL_LABEL[id]), first: n === 0, busy: n === 0 && f.busy, variant: n === 0 ? "primary" : id === "back" || n === all.length - 1 ? "subtle" : "secondary",
+        })) : [],
         createDetail: catalog.format(lookupFailed ? "firstRun.notes.createOffline" : "firstRun.notes.createWhy"),
         folderShort: shortPath(w.folder),
       };
