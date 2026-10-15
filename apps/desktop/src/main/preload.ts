@@ -3,6 +3,7 @@
  * It exposes the PlatformBridge contract from packages/core as window.focusNotes.
  */
 import { contextBridge, ipcRenderer } from "electron";
+import { parsePointerZone, pointerMove } from "./window/pointer-report.ts";
 
 const params = new URLSearchParams(globalThis.location?.search ?? "");
 const platform = (params.get("platform") ?? "windows") as "macos" | "windows" | "linux";
@@ -30,13 +31,15 @@ ipcRenderer.on("compositing:changed", (_e, c: unknown) => (latestCompositing = c
  * the title bar band (macOS: the system's drag region hides the pointer from the page, D-106), and
  * leaving the page. The shell reads where the pointer is itself, so the report carries nothing, and
  * nothing is sent while the pointer is still or elsewhere (PRF-04): at most one report a frame while
- * it moves in that zone, and one more as it leaves it.
+ * it moves in that zone, and one more as it leaves it. While the window lets clicks through (the
+ * shell says so, `window:passthrough`), every move the system forwards is reported, so the window
+ * takes the mouse again wherever the pointer comes back (D-150).
  */
-const pointerZone = /^(edge|top):(\d{1,3})$/.exec(params.get("pointer") ?? "");
+const pointerZone = parsePointerZone(params.get("pointer"));
 if (pointerZone) {
-  const top = pointerZone[1] === "top";
-  const size = Number(pointerZone[2]);
   let near = false;
+  let passthrough = false;
+  ipcRenderer.on("window:passthrough", (_e, on: unknown) => (passthrough = on === true));
   let queued = false;
   const report = () => {
     if (queued) return;
@@ -48,10 +51,9 @@ if (pointerZone) {
   };
   // Mouse events, which Windows forwards to a window that ignores the mouse.
   addEventListener("mousemove", (e) => {
-    const now = top ? e.clientY < size : Math.min(e.clientX, e.clientY, innerWidth - e.clientX, innerHeight - e.clientY) < size;
-    if (!now && !near) return;
-    near = now;
-    report();
+    const move = pointerMove(pointerZone, near, passthrough, e.clientX, e.clientY, innerWidth, innerHeight);
+    near = move.near;
+    if (move.report) report();
   }, { capture: true, passive: true });
   addEventListener("mouseout", (e) => {
     if (e.relatedTarget) return;

@@ -452,3 +452,33 @@ test("PRF-04: the page reports the pointer only near the shadow margin or the ti
   expect(await settled()).toBe(reported + 1);
   await quit(l);
 });
+
+test("D-150: while the window lets clicks through, the page reports every move, so the middle takes the mouse again", async () => {
+  test.skip(!custom, "Only the app-built window lets clicks through its margin");
+  const l = await start();
+  const { app, page } = l;
+  await app.evaluate(({ ipcMain }) => {
+    const g = globalThis as unknown as { pointerReports: number };
+    g.pointerReports = 0;
+    ipcMain.on("window:pointer", () => void g.pointerReports++);
+  });
+  const reports = () => app.evaluate(() => (globalThis as unknown as { pointerReports: number }).pointerReports);
+  const passthrough = (on: boolean) => app.evaluate(({ BrowserWindow }, on) => BrowserWindow.getAllWindows()[0]!.webContents.send("window:passthrough", on), on);
+  const { w, h } = await page.evaluate(() => ({ w: innerWidth, h: innerHeight }));
+  await page.mouse.move(w / 2, h / 2);
+  await nextFrame(page);
+  const before = await reports();
+  // The pointer reaches the middle without crossing the edges while clicks pass through: it's reported.
+  await passthrough(true);
+  await page.mouse.move(w / 2 + 20, h / 2 + 10);
+  await nextFrame(page);
+  expect(await reports()).toBeGreaterThan(before);
+  // The window took the mouse again: the middle is quiet once more (PRF-04).
+  await passthrough(false);
+  await nextFrame(page);
+  const after = await reports();
+  for (let i = 1; i <= 5; i++) await page.mouse.move(w / 2 - i * 10, h / 2 - i * 5);
+  await nextFrame(page);
+  expect(await reports()).toBe(after);
+  await quit(l);
+});
