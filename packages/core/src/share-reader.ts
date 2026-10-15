@@ -23,14 +23,17 @@ export interface ShareSource {
   resume(session: unknown): Promise<OpenedShare>;
 }
 /**
- * Where the session lives (SHR-10): this tab only by default (sessionStorage), on this device when the
- * reader asks (localStorage, until the grant ends), and signing out reaches every tab (BroadcastChannel).
+ * Where the session lives (SHR-10, D-125): records in IndexedDB holding the non-extractable key, found by
+ * this tab's random record ID (in sessionStorage) or as the device's one remembered record; signing out
+ * deletes them all and reaches every tab (BroadcastChannel). `pickSession` decides which a page may use.
  */
 export interface SessionStore {
-  load(): { session: unknown; remembered: boolean } | undefined;
-  save(session: unknown, remembered: boolean): void;
+  load(): Promise<{ session: unknown; remembered: boolean } | undefined>;
+  save(session: unknown, remembered: boolean): Promise<void>;
   /** Forgets the session here and tells every other tab to forget it too. */
   signOut(): void;
+  /** Forgets only this tab's session, one that no longer opens (withdrawn, expired). */
+  forget(): Promise<void>;
   /** Another tab signed out. */
   onSignedOut(listener: () => void): () => void;
 }
@@ -72,6 +75,33 @@ export const SHARE_VIEW_MODEL: { id: string; schema: JsonSchema & { type: "objec
     },
   },
 };
+/** A stored session record's bookkeeping; the session itself (with its CryptoKey) rides alongside. */
+export interface StoredShare { id: string; remembered: boolean; savedAt: number; usedAt: number; expiresAt: string | null }
+/** A tab's session ends after 12 hours unused, even if the tab stays open or its record outlives the tab. */
+export const TAB_IDLE_MS = 12 * 3600_000;
+/** A remembered session of a grant that never expires ends after 30 days unused (each use renews it). */
+export const REMEMBER_MS = 30 * 24 * 3600_000;
+
+/**
+ * Which stored session this page may use, and which records to delete: anything saved before the last
+ * sign-out on this device, past its grant's expiry, a tab session idle 12 hours, or a remembered one of a
+ * never-expiring grant unused 30 days. This tab's own record comes first, then the device's remembered one.
+ */
+export function pickSession<T extends StoredShare>(records: readonly T[], o: { now: number; signedOutAt: number; tabId: string | undefined }): { use: T | undefined; drop: string[] } {
+  const drop: string[] = [];
+  const live = records.filter((r) => {
+    const dead = r.savedAt < o.signedOutAt
+      || (r.expiresAt !== null && !(Date.parse(r.expiresAt) > o.now))
+      || (!r.remembered && o.now - r.usedAt > TAB_IDLE_MS)
+      || (r.remembered && r.expiresAt === null && o.now - r.usedAt > REMEMBER_MS);
+    if (dead) drop.push(r.id);
+    return !dead;
+  });
+  const mine = o.tabId === undefined ? undefined : live.find((r) => r.id === o.tabId);
+  const device = live.filter((r) => r.remembered).sort((a, b) => b.usedAt - a.usedAt)[0];
+  return { use: mine ?? device, drop };
+}
+
 export const SHARE_COMMANDS = ["share.submit", "share.setRemember", "share.signOut", "share.showList"] as const;
 
 const EMPTY: ReaderModel = { title: [], updated: 0, body: [] };
@@ -107,7 +137,7 @@ export function createShareReader(o: ShareReaderOptions) {
   };
   /** Any failure: forget the session everywhere and show the one generic error. */
   const fail = () => {
-    if (open) o.store.signOut();
+    if (open) void o.store.forget();
     toGate({ error: true, signedOut: false });
   };
 
@@ -125,6 +155,8 @@ export function createShareReader(o: ShareReaderOptions) {
   const show = async (share: OpenedShare, hash: string | undefined) => {
     open = share;
     watchExpiry(share.expiresAt);
+    // Already past its expiry: the gate shows the generic error, and the share never shows (review I8).
+    if (open !== share) return;
     const list = sharedListModel(o.format("share.reader.list.title"), share.notes);
     set({ error: false, empty: false, busy: false, signedOut: false, multiple: share.notes.length > 1, list });
     const wanted = hash === undefined ? undefined : sharedNoteFromHash(hash);
@@ -161,11 +193,11 @@ export function createShareReader(o: ShareReaderOptions) {
     let share: OpenedShare;
     try { share = await attempt; } catch {
       // A stored session that no longer opens (withdrawn, expired, or a changed passcode) is forgotten.
-      if (stored) o.store.signOut();
+      if (stored) void o.store.forget();
       fail();
       return;
     }
-    o.store.save(share.session, remember);
+    await o.store.save(share.session, remember);
     set({ remember });
     await show(share, hash);
   };
@@ -178,9 +210,9 @@ export function createShareReader(o: ShareReaderOptions) {
 
     /** The page opened: with a magic link (already removed from the address), a stored session, or neither. */
     async start(link: { id: string; secret: string } | undefined, hash: string | undefined): Promise<void> {
-      // A link keeps this device's choice to remember, whatever it remembered before.
-      if (link) return opened(o.source.openLink(link), o.store.load()?.remembered ?? false, hash);
-      const stored = o.store.load();
+      // A link opens for this tab only; the reader chooses to remember it (review L3).
+      if (link) return opened(o.source.openLink(link), false, hash);
+      const stored = await o.store.load();
       if (!stored) { toGate({}); return; }
       await opened(o.source.resume(stored.session), stored.remembered, hash, true);
     },
@@ -194,7 +226,7 @@ export function createShareReader(o: ShareReaderOptions) {
     /** Remember on this device, or only in this tab (SHR-10). */
     setRemember(on: boolean) {
       set({ remember: on });
-      if (open) o.store.save(open.session, on);
+      if (open) void o.store.save(open.session, on);
     },
     signOut() {
       o.store.signOut();

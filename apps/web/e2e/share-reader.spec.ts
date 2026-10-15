@@ -97,6 +97,18 @@ async function failedSignIn(page: Page, name: string, passcode = PASSCODE) {
   await signIn(page, name, passcode);
   await expect(page.getByLabel("Passcode")).toHaveValue("");
 }
+/** The share reader's stored sessions (IndexedDB), and whether each key could be read out. */
+const records = (page: Page) => page.evaluate(async () => {
+  if (!(await indexedDB.databases()).some((d) => d.name === "focus-notes-share")) return [];
+  const db = await new Promise<IDBDatabase>((resolve, reject) => { const r = indexedDB.open("focus-notes-share"); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
+  const all = await new Promise<{ id: string; remembered: boolean; key: CryptoKey }[]>((resolve, reject) => { const g = db.transaction("sessions").objectStore("sessions").getAll(); g.onsuccess = () => resolve(g.result); g.onerror = () => reject(g.error); });
+  db.close();
+  const out: { id: string; remembered: boolean; extractable: boolean; exported: boolean }[] = [];
+  for (const r of all) out.push({ id: r.id, remembered: r.remembered, extractable: r.key.extractable, exported: await crypto.subtle.exportKey("raw", r.key).then(() => true, () => false) });
+  return out;
+});
+const textStorage = (page: Page) => page.evaluate(() => ({ session: { ...sessionStorage }, local: { ...localStorage } }));
+
 // Light and dark, wide and 320 px, saved for review when FOCUS_NOTES_SHARE_SHOTS names a folder.
 async function shot(page: Page, name: string) {
   const dir = process.env.FOCUS_NOTES_SHARE_SHOTS;
@@ -121,11 +133,11 @@ test("SHR-10: a magic link opens exactly its scope, and its secret leaves the ad
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("The plan");
   await page.getByRole("button", { name: "All shared notes" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Shared with you");
-  // This tab keeps the session (a reload stays open); it's the derived key, never the secret.
-  const stored = await page.evaluate(() => [sessionStorage.getItem("focus-notes.share"), localStorage.getItem("focus-notes.share")]);
-  expect(stored[0]).toBeTruthy();
-  expect(stored[0]).not.toContain(secrets.folder);
-  expect(stored[1]).toBeNull();
+  // This tab keeps the session (a reload stays open): a non-extractable key in IndexedDB, found by a
+  // random record ID in sessionStorage. No text storage holds a key, the secret, or the grant.
+  const kept = await records(page);
+  expect(kept).toEqual([{ id: expect.stringMatching(/^[A-Za-z0-9_-]{22}$/), remembered: false, extractable: false, exported: false }]);
+  expect(await textStorage(page)).toEqual({ session: { "focus-notes.share": kept[0]!.id }, local: {} });
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Shared with you");
   // The secret never reached the server: browsers don't send the fragment.
@@ -160,7 +172,8 @@ test("SHR-10: a name and passcode open their scope, whatever the name's case or 
   await expect(other.getByText("You're signed out on this device.")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("This note is private");
   await expect(page.getByText("You're signed out on this device.")).toBeVisible();
-  expect(await page.evaluate(() => [sessionStorage.length, localStorage.length])).toEqual([0, 0]);
+  await expect.poll(() => records(page)).toEqual([]);
+  expect(await textStorage(page)).toEqual({ session: {}, local: { "focus-notes.share.signedOutAt": expect.stringMatching(/^\d+$/) } });
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("This note is private");
   // Open and remember keeps it on this device from the start.
@@ -169,6 +182,11 @@ test("SHR-10: a name and passcode open their scope, whatever the name's case or 
   await expect(page.getByRole("button", { name: "Remember on this device" })).toHaveAttribute("aria-pressed", "true");
   await other.reload();
   await expect(other.getByRole("heading", { level: 1 })).toHaveText("Shared with you");
+  expect(await records(page)).toEqual([expect.objectContaining({ remembered: true, extractable: false, exported: false })]);
+  // A new link opens for that tab only, whatever this device remembers.
+  await other.goto(origin + link("gnote0001", secrets.note));
+  await expect(other.getByRole("heading", { level: 1 })).toHaveText("To Asha");
+  await expect(other.getByRole("button", { name: "Remember on this device" })).toHaveAttribute("aria-pressed", "false");
 });
 
 test("SHR-06: wrong, expired, and withdrawn grants all show the one generic error", async ({ page }) => {
@@ -203,7 +221,8 @@ test("SHR-06: wrong, expired, and withdrawn grants all show the one generic erro
   try {
     await page.reload();
     await expectError();
-    expect(await page.evaluate(() => [sessionStorage.length, localStorage.length])).toEqual([0, 0]);
+    await expect.poll(() => records(page)).toEqual([]);
+    expect((await textStorage(page)).session).toEqual({});
   } finally {
     await seal(false);
   }
@@ -270,4 +289,14 @@ test("PRV-04, PRF-05: no cookies, only the site's own files, and 300 KB or less 
   for (const u of scripts) compressed += gzipSync(await readFile(join(site, ...new URL(u).pathname.split("/").filter(Boolean)))).length;
   console.log(`Share reader JavaScript: ${scripts.length} files, ${(compressed / 1024).toFixed(1)} KB compressed`);
   expect(compressed).toBeLessThanOrEqual(300 * 1024);
+});
+
+test("the reader refuses to run inside another page's frame, so it can't be overlaid or clickjacked", async ({ page }) => {
+  await writeFile(join(site, "frame.html"), `<!doctype html><title>Frame</title><iframe src="/s/#gnote0001.${secrets.note}" title="Framed reader"></iframe>`);
+  const asked = served.length;
+  await page.goto(origin + "/frame.html");
+  const frame = page.frame({ url: /\/s\// })!;
+  await expect.poll(() => frame.evaluate(() => document.documentElement.innerHTML)).toBe("");
+  await page.waitForTimeout(500);
+  expect(served.slice(asked).filter((u) => u.includes("_access") || u.includes("_sealed"))).toEqual([]);
 });

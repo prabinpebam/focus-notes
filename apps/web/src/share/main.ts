@@ -14,8 +14,16 @@ import { mountPage, type RuntimeApp } from "@focus-notes/ui-runtime/page";
 import { messages, pages } from "@focus-notes/views";
 import { createSessionStore } from "./session.ts";
 
-// The magic link's secret leaves the address bar before anything else happens, so it never reaches
-// the history, a bookmark, or a screenshot of the address. Only a shared note's own fragment stays.
+// Never inside another page's frame, where it could be overlaid or clickjacked (a meta CSP can't say
+// frame-ancestors): the page empties itself before it reads the link or the site.
+if (window.top !== window.self) {
+  document.documentElement.textContent = "";
+  throw new Error("framed");
+}
+
+// The magic link's secret leaves the address bar and this page's history entry before anything else
+// happens. The browser's own history (and its sync) may still record the address it was opened at, so
+// on a shared computer the passcode is the better way in (D-125). Only a shared note's own fragment stays.
 const takeFragment = () => {
   const link = parseShareFragment(location.hash);
   if (location.hash && (link || sharedNoteFromHash(location.hash) === undefined)) history.replaceState(null, "", location.pathname + location.search);

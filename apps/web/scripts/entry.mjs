@@ -12,7 +12,8 @@ mkdirSync(dir, { recursive: true });
 writeFileSync(join(dir, "index.html"), renderEntryHtml({ title: "Focus Notes", script: "./main.ts", csp, icon: "./favicon.svg" }));
 
 // The share reader (WP-5.4, D-125) renders no HTML from text, so no Trusted Types policy exists at all.
-const shareCsp = csp.replace(/trusted-types [^;]+/, "trusted-types 'none'");
+// It shows no images at all, so not even data: URLs (review I9).
+const shareCsp = csp.replace(/trusted-types [^;]+/, "trusted-types 'none'").replace("img-src 'self' data:", "img-src 'self'");
 mkdirSync(join(dir, "s"), { recursive: true });
 writeFileSync(join(dir, "s", "index.html"), renderEntryHtml({ title: en["share.reader.documentTitle"], script: "../share/main.ts", csp: shareCsp, icon: "../favicon.svg", page: "reader" }));
 console.log("Web entry documents generated.");

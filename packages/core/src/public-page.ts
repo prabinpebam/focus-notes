@@ -81,7 +81,13 @@ export function sharedNoteFromHash(hash: string): string | undefined {
  * so a shared note never points at, or reveals, a note outside the share. Paths are the share's own.
  */
 export function sharedPage(markdown: string, notePath: string, updated: string, sharedPaths: ReadonlySet<string>): PublicPage {
-  return readerPage(markdown, notePath, updated, (resolved, hash) => (sharedPaths.has(resolved) && !hash ? sharedNoteHash(resolved) : null));
+  // Fragment links too: only one to a note in the share stays a link, so no note can start another
+  // share's link or reach a note outside this one through the reader's fragment (review L6).
+  const fragment = (href: string) => {
+    const path = sharedNoteFromHash(href);
+    return path !== undefined && sharedPaths.has(path) ? sharedNoteHash(path) : null;
+  };
+  return readerPage(markdown, notePath, updated, (resolved, hash) => (sharedPaths.has(resolved) && !hash ? sharedNoteHash(resolved) : null), fragment);
 }
 
 /** The share reader's list of what a share opens (WP-5.4): its heading, then a link to each note, by title. */
@@ -96,7 +102,7 @@ export function sharedListModel(heading: string, notes: readonly { path: string;
 
 type LinkResolver = (resolved: string, hash: string | undefined) => string | null;
 
-function readerPage(markdown: string, notePath: string, updated: string, resolve: LinkResolver): PublicPage {
+function readerPage(markdown: string, notePath: string, updated: string, resolve: LinkResolver, fragment: (href: string) => string | null = (h) => h): PublicPage {
   const blocks = [...(parseMarkdown(markdown).doc.content ?? [])];
   let noindex = false;
   const first = blocks[0];
@@ -108,7 +114,7 @@ function readerPage(markdown: string, notePath: string, updated: string, resolve
   const fix = (n: PMNode): PMNode => ({
     ...n,
     ...(n.content ? { content: n.content.map(fix) } : {}),
-    ...(n.marks ? { marks: n.marks.map((m) => (m.type === "link" ? { ...m, attrs: { ...m.attrs, href: linkTarget(String(m.attrs?.href ?? ""), dir, resolve) } } : m)) } : {}),
+    ...(n.marks ? { marks: n.marks.map((m) => (m.type === "link" ? { ...m, attrs: { ...m.attrs, href: linkTarget(String(m.attrs?.href ?? ""), dir, resolve, fragment) } } : m)) } : {}),
   });
   const content = blocks.map(fix);
   const h1 = content.findIndex((b) => b.type === "heading" && b.attrs?.level === 1);
@@ -133,9 +139,10 @@ function readerPage(markdown: string, notePath: string, updated: string, resolve
   return { model: { title: [titleBlock], updated: Date.parse(updated) || 0, body: content }, title, description, noindex, faces: [...faces] };
 }
 
-function linkTarget(href: string, dir: string[], resolve: LinkResolver): string | null {
+function linkTarget(href: string, dir: string[], resolve: LinkResolver, fragment: (href: string) => string | null): string | null {
   if (!href) return null;
-  if (SAFE_ABSOLUTE.test(href) || href.startsWith("#")) return href;
+  if (href.startsWith("#")) return fragment(href);
+  if (SAFE_ABSOLUTE.test(href)) return href;
   if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith("/") || href.startsWith("\\")) return null;
   const [rawPath, hash] = href.split("#", 2) as [string, string | undefined];
   let target: string;

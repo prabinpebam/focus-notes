@@ -68,6 +68,14 @@ describe("shared notes on the share reader (WP-5.4, SHR-10)", () => {
     ]);
   });
 
+  it("keeps fragment links only to notes in the share; any other fragment is plain text (review L6)", () => {
+    expect(links("[a](#note=drafts%2Fsub%2FDetail.md) [b](#note=Diary.md) [c](#gshare001.secretsecret) [d](#heading) [e](#note=%zz)")).toEqual([
+      "#note=drafts%2Fsub%2FDetail.md", null, null, null, null,
+    ]);
+    // Public pages keep their in-page anchors.
+    expect(publicPage("[top](#top)", "a.md", "2026-10-01T00:00:00Z", new Set(["a.md"])).model.body[0]!.content![0]!.marks![0]!.attrs!.href).toBe("#top");
+  });
+
   it("reads the note a fragment names, and nothing malformed", () => {
     expect(sharedNoteFromHash(sharedNoteHash("drafts/Plan (2).md"))).toBe("drafts/Plan (2).md");
     expect(sharedNoteFromHash("#gshare001.abc")).toBeUndefined();

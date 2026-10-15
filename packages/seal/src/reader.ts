@@ -3,11 +3,11 @@
  * owner's passphrase (or a key this browser remembered) opens it. Read-only by construction.
  */
 import {
-  decodeText, derivePasscodeBits, derivePasscodeKey, fromB64url, importKey, isSafePath, KDF, KEY_BYTES, keyringSalt, LIMITS, openFile, openKeyring, parseKeyring, parseManifest,
-  parsePublicIndex, parseSiteManifest, sealedPath, SealError, toB64url, vaultPath,
-  type Bytes, type KeyringEnvelope, type ManifestEntry, type PublicNote, type SiteManifest,
+  decodeText, derivePasscodeBits, derivePasscodeKey, fromB64url, isSafePath, KDF, keyringSalt, LIMITS, openFile, openKeyring, parseKeyring, parseManifest,
+  parsePublicIndex, parseSiteManifest, sealedPath, SealError, vaultPath,
+  type KeyringEnvelope, type ManifestEntry, type PublicNote, type SiteManifest,
 } from "./format.ts";
-import { deriveLinkBits, GRANT_ID, keyringRole, LINK_KDF, linkKeyringPath, nameLookup, passcodeKeyringPath } from "./grants.ts";
+import { deriveLinkKey, GRANT_ID, keyringRole, LINK_KDF, linkKeyringPath, nameLookup, passcodeKeyringPath } from "./grants.ts";
 
 /** Fetches a file of the site by its path from the site's root. Resolves to undefined if it isn't there. */
 export type SiteFetch = (path: string) => Promise<string | undefined>;
@@ -95,8 +95,9 @@ export class SiteReader {
       if (!GRANT_ID.test(id)) throw new SealError("key");
       const m = await this.manifest();
       const envelope = await this.#shareKeyring(m, "link", id);
-      const bits = await deriveLinkBits(fromB64url(secret), keyringSalt(envelope), id);
-      return this.#openShare(m!, envelope, "link", id, bits);
+      // Straight to a non-extractable key: usable to decrypt, never readable (security review M1).
+      const key = await deriveLinkKey(fromB64url(secret), keyringSalt(envelope), id);
+      return this.#openShare(m!, envelope, "link", id, key);
     });
   }
   async openPasscodeSession(name: string, passcode: string): Promise<OpenShare> {
@@ -104,8 +105,14 @@ export class SiteReader {
       const m = await this.manifest();
       if (!m?.nameSalt) throw new SealError("key");
       const lookup = await nameLookup(m.nameSalt, name);
-      const envelope = await this.#shareKeyring(m, "passcode", lookup);
-      return this.#openShare(m, envelope, "passcode", lookup, await derivePasscodeBits(passcode, keyringSalt(envelope)));
+      const text = await this.get(passcodeKeyringPath(m.build, lookup));
+      if (text === undefined) {
+        // The same slow derivation as a wrong passcode, so the time taken doesn't show whether the name has a share.
+        await derivePasscodeBits(passcode, DUMMY_SALT);
+        throw new SealError("key");
+      }
+      const envelope = parseKeyring(text, KDF);
+      return this.#openShare(m, envelope, "passcode", lookup, await derivePasscodeKey(passcode, keyringSalt(envelope)));
     });
   }
   /** Reopens a share from a stored session. Anything malformed or expired fails before any request; every failure is generic. */
@@ -113,7 +120,7 @@ export class SiteReader {
     return generic(async () => {
       const s = parseShareSession(stored);
       const m = await this.manifest();
-      return this.#openShare(m!, await this.#shareKeyring(m, s.via, s.ref), s.via, s.ref, fromB64url(s.key));
+      return this.#openShare(m!, await this.#shareKeyring(m, s.via, s.ref), s.via, s.ref, s.key);
     });
   }
 
@@ -123,11 +130,10 @@ export class SiteReader {
     if (text === undefined) throw new SealError("key");
     return parseKeyring(text, via === "link" ? LINK_KDF : KDF);
   }
-  async #openShare(m: SiteManifest, envelope: KeyringEnvelope, via: ShareSession["via"], ref: string, bits: Bytes): Promise<OpenShare> {
-    const key = await importKey(bits, "decrypt");
+  async #openShare(m: SiteManifest, envelope: KeyringEnvelope, via: ShareSession["via"], ref: string, key: CryptoKey): Promise<OpenShare> {
     // A link's keyring names its grant, so it must be the one the link asked for (D-117).
     const share = await this.#open(m, envelope, key, via === "link" ? keyringRole.link(ref) : keyringRole.passcode(ref), via === "link" ? ref : undefined);
-    return { share, session: { v: 1, via, ref, key: toB64url(bits), expiresAt: share.expiresAt ?? null } };
+    return { share, session: { v: 1, via, ref, key, expiresAt: share.expiresAt ?? null } };
   }
 
   async #open(m: SiteManifest, envelope: KeyringEnvelope, key: CryptoKey, role: string, grant?: string): Promise<OpenVault> {
@@ -171,20 +177,25 @@ export interface OpenVault {
 
 /**
  * What a share reader keeps to reopen a share (SHR-10, D-125): how it was opened, what finds its keyring
- * (the grant's ID for a link, the name's lookup for a passcode), the derived key, and the grant's expiry.
- * Never the link secret, the name, or the passcode.
+ * (the grant's ID for a link, the name's lookup for a passcode), the derived key as a non-extractable
+ * AES-GCM CryptoKey (stored only by structured clone, in IndexedDB), and the grant's expiry.
+ * Never the link secret, the name, or the passcode, and never the key's bytes.
  */
-export interface ShareSession { v: 1; via: "link" | "passcode"; ref: string; key: string; expiresAt: string | null }
+export interface ShareSession { v: 1; via: "link" | "passcode"; ref: string; key: CryptoKey; expiresAt: string | null }
 export interface OpenShare { share: OpenVault; session: ShareSession }
 
 const LOOKUP = /^[0-9a-f]{32}$/;
-/** A stored session, checked strictly: exactly these keys, a 32-byte key, a well-formed reference, and not expired. */
+/** A fixed salt for the derivation an unknown name still costs (timing). */
+const DUMMY_SALT = new Uint8Array(16);
+const isDecryptKey = (k: unknown): k is CryptoKey =>
+  typeof CryptoKey === "function" && k instanceof CryptoKey && !k.extractable && k.algorithm.name === "AES-GCM" && k.usages.length === 1 && k.usages[0] === "decrypt";
+/** A stored session, checked strictly: exactly these keys, a non-extractable decrypt-only AES-GCM key, a well-formed reference, and not expired. */
 export function parseShareSession(v: unknown): ShareSession {
   const s = v as Partial<ShareSession> | null;
   const fail = () => { throw new SealError("key"); };
   if (typeof s !== "object" || s === null || Object.keys(s).sort().join(",") !== "expiresAt,key,ref,v,via" || s.v !== 1) return fail();
   if (!(s.via === "link" ? GRANT_ID : s.via === "passcode" ? LOOKUP : undefined)?.test(String(s.ref))) return fail();
-  if (typeof s.key !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(s.key) || fromB64url(s.key).length !== KEY_BYTES) return fail();
+  if (!isDecryptKey(s.key)) return fail();
   if (s.expiresAt !== null && (typeof s.expiresAt !== "string" || !(Date.parse(s.expiresAt) > Date.now()))) return fail();
   return s as ShareSession;
 }

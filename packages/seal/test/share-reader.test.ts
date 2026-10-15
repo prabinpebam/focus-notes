@@ -79,10 +79,16 @@ describe("share sessions (SHR-10, D-125)", () => {
     expect(share.notes.map((n) => n.path)).toEqual(["drafts/Plan.md"]);
     expect(session).toMatchObject({ v: 1, via: "link", ref: "gshare001", expiresAt: "2099-01-01T00:00:00.000Z" });
     expect(JSON.stringify(session)).not.toContain(secret);
+    // The key can be used to decrypt, but never read out (it's a bearer credential that outlives builds).
+    expect(session.key).toBeInstanceOf(CryptoKey);
+    expect(session.key.extractable).toBe(false);
+    expect(session.key.usages).toEqual(["decrypt"]);
+    await expect(crypto.subtle.exportKey("raw", session.key)).rejects.toThrow();
+    expect(structuredClone(session).key.extractable).toBe(false);
     // The session alone opens it again, in another tab or after a reload.
     const again = await new SiteReader(async () => undefined).resume(session).catch(() => undefined);
     expect(again).toBeUndefined();
-    const reopened = await i.reader().resume(JSON.parse(JSON.stringify(session)));
+    const reopened = await i.reader().resume(structuredClone(session));
     expect(await reopened.share.read("drafts/Plan.md")).toContain("Launch quietly");
   }, 30_000);
 
@@ -93,6 +99,7 @@ describe("share sessions (SHR-10, D-125)", () => {
     expect(share.notes.map((n) => n.path)).toEqual(["Plan.md"]);
     expect(session).toMatchObject({ v: 1, via: "passcode", expiresAt: null });
     expect(session.ref).toMatch(/^[0-9a-f]{32}$/);
+    expect(session.key.extractable).toBe(false);
     const text = JSON.stringify(session).toLowerCase();
     expect(text).not.toContain("sam");
     expect(text).not.toContain("orbit");
@@ -127,7 +134,9 @@ describe("share sessions (SHR-10, D-125)", () => {
       { ...session, expiresAt: "2020-01-01T00:00:00Z" },
       { ...session, ref: "../vault" },
       { ...session, via: "vault" },
-      { ...session, key: toB64url(randomBytes(16)) },
+      { ...session, key: toB64url(randomBytes(32)) },
+      { ...session, key: await crypto.subtle.importKey("raw", randomBytes(32), "AES-GCM", true, ["decrypt"]) },
+      { ...session, key: await crypto.subtle.importKey("raw", randomBytes(32), "AES-GCM", false, ["encrypt"]) },
       { ...session, v: 2 },
       { ...session, extra: 1 },
       null, "x", 42,
@@ -135,10 +144,24 @@ describe("share sessions (SHR-10, D-125)", () => {
     for (const s of bad) await generic(watching.resume(s));
     expect(asked).toEqual([]);
     // A wrong key, or a link session moved onto another grant, opens nothing.
-    await generic(i.reader().resume({ ...session, key: toB64url(randomBytes(32)) }));
+    await generic(i.reader().resume({ ...session, key: await crypto.subtle.importKey("raw", randomBytes(32), "AES-GCM", false, ["decrypt"]) }));
     await generic(i.reader().resume({ ...session, ref: "gshare002" }));
     await generic(i.reader().resume({ ...session, via: "passcode", ref: "0".repeat(32) } satisfies ShareSession));
   }, 30_000);
+
+  it("SHR-06: an unknown name costs the same slow derivation as a wrong passcode, so timing doesn't show whether a name has a share", async () => {
+    const i = await instance([grant({ passcode: { value: PASSCODE }, scope: { notes: ["n-plan"] } })]);
+    await i.run();
+    const time = async (name: string, passcode: string) => {
+      const t = performance.now();
+      await generic(i.reader().openPasscodeSession(name, passcode));
+      return performance.now() - t;
+    };
+    await time("Sam Lee", "wrong passcode words");
+    const known = await time("Sam Lee", "wrong passcode words");
+    const unknown = await time("Nobody Here", PASSCODE);
+    expect(unknown).toBeGreaterThan(known * 0.6);
+  }, 60_000);
 
   it("SHR-06: an expiry recorded in the keyring ends the session even before the nightly build", async () => {
     const secret = toB64url(randomBytes(32));
