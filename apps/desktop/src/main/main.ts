@@ -26,7 +26,7 @@ import { ProblemLog, REPORT_PROBLEM_URL, type RedactOptions } from "@focus-notes
 import { diagnostics, knownStrings, reportFileName, reportPathAllowed } from "./diagnostics.ts";
 import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
-import { checkOptions, SetupEngine } from "./setup/engine.ts";
+import { checkOptions, notesRepos, SetupEngine } from "./setup/engine.ts";
 import { githubFetch } from "./setup/credential.ts";
 import { avatarLoader } from "./first-run/avatar.ts";
 import type { BatchOp } from "./git/message.ts";
@@ -314,7 +314,7 @@ async function chooseFolder(title: string): Promise<string | undefined> {
 async function repositories(): Promise<RepoChoice[]> {
   const s = await account.api();
   if (!s) throw new Error("Signed out");
-  const repos = await s.api.ownRepos();
+  const repos = notesRepos(await s.api.ownRepos());
   const checked = await Promise.all(repos.map((r, i) => (i < 10 ? s.api.hasFile(r.owner, r.name, ".focus-notes/workspace.json").catch(() => false) : Promise.resolve(false))));
   const list = repos.map((r, i) => ({ owner: r.owner, name: r.name, private: r.private, instance: checked[i]!, ...(r.pushedAt ? { pushedAt: r.pushedAt } : {}) }));
   return [...list.filter((r) => r.instance), ...list.filter((r) => !r.instance)];

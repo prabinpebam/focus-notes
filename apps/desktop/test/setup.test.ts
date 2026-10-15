@@ -11,8 +11,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SETUP_STEPS, type SetupOptions, type SetupReport, type SetupStepId } from "@focus-notes/core/setup";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
-import { SetupEngine, SECRET_NAME, checkOptions, problemOf, type SetupDeps } from "../src/main/setup/engine.ts";
-import { GitHubError } from "@focus-notes/github";
+import { SetupEngine, SECRET_NAME, TEMPLATE, checkOptions, notesRepos, problemOf, type SetupDeps } from "../src/main/setup/engine.ts";
+import { GitHubApi, GitHubError } from "@focus-notes/github";
 import { DEPLOY_KEY_TITLE, deployKeyPair } from "../src/main/setup/deploy-key.ts";
 import { CREDENTIAL_QUERY, githubFetch, githubToken } from "../src/main/setup/credential.ts";
 import type { GitCall } from "../src/main/git/run.ts";
@@ -360,5 +360,28 @@ describe("SEC-03: the token stays in memory", () => {
       expect(String(init?.body ?? "")).not.toContain(h.gh.token);
       expect(new Headers(init?.headers).get("Authorization")).toBe(`Bearer ${h.gh.token}`);
     }
+  });
+});
+
+describe("D-147: a template repository is never someone's notes", () => {
+  it("drops GitHub templates and the source template from the repositories offered as notes", async () => {
+    const gh = new FakeGitHub();
+    gh.login = "prabinpebam";
+    gh.add({ owner: "prabinpebam", name: "notes", template: "prabinpebam/focus-notes-workspace", files: [".focus-notes/workspace.json"] });
+    gh.add({ owner: "prabinpebam", name: "my-template", isTemplate: true, files: [".focus-notes/workspace.json"] });
+    const repos = await new GitHubApi(gh.token, gh.fetch).ownRepos();
+    expect(repos.map((r) => `${r.name}${r.template ? " (template)" : ""}`).sort()).toEqual(["focus-notes-workspace (template)", "my-template (template)", "notes"]);
+    expect(notesRepos(repos).map((r) => r.name)).toEqual(["notes"]);
+  });
+
+  it("drops the source template by name even when GitHub doesn't say it's a template, in any letter case", () => {
+    const repos = [
+      { owner: "PrabinPebam", name: "Focus-Notes-Workspace" },
+      { owner: "ada", name: "focus-notes-workspace" },
+      { owner: "ada", name: "notes", template: false },
+    ];
+    expect(notesRepos(repos)).toEqual([repos[1], repos[2]]);
+    expect(notesRepos(repos, { owner: "ada", name: "notes" })).toEqual([repos[0], repos[1]]);
+    expect(TEMPLATE).toEqual({ owner: "prabinpebam", name: "focus-notes-workspace" });
   });
 });

@@ -29,6 +29,8 @@ export interface Repo {
   canPush: boolean;
   /** When it was last pushed to (ISO 8601), if GitHub says. */
   pushedAt?: string;
+  /** A template repository (GitHub's `is_template`): something to copy, never someone's notes (D-147). */
+  template?: boolean;
 }
 
 /** A repository's deploy key, as GitHub lists it. */
@@ -114,8 +116,8 @@ export class GitHubApi {
 
   /** The signed-in account's own repositories, most recently pushed first (the first run's Open from GitHub). */
   async ownRepos(): Promise<Repo[]> {
-    const r = await this.request<{ name: string; owner: { login: string }; default_branch: string; private: boolean; permissions?: { push?: boolean }; pushed_at?: string | null }[]>("GET", "/user/repos?affiliation=owner&sort=pushed&per_page=100");
-    return r.map((x) => ({ owner: x.owner.login, name: x.name, defaultBranch: x.default_branch, private: x.private, canPush: Boolean(x.permissions?.push), ...(x.pushed_at ? { pushedAt: x.pushed_at } : {}) }));
+    const r = await this.request<{ name: string; owner: { login: string }; default_branch: string; private: boolean; permissions?: { push?: boolean }; pushed_at?: string | null; is_template?: boolean }[]>("GET", "/user/repos?affiliation=owner&sort=pushed&per_page=100");
+    return r.map((x) => ({ owner: x.owner.login, name: x.name, defaultBranch: x.default_branch, private: x.private, canPush: Boolean(x.permissions?.push), ...(x.pushed_at ? { pushedAt: x.pushed_at } : {}), ...(x.is_template ? { template: true } : {}) }));
   }
 
   async repo(owner: string, name: string): Promise<Repo> {
