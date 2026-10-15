@@ -159,6 +159,7 @@ describe("DST-03, D-98: the web app bundle", () => {
     expect(version).toBe("1.2.3");
     for (const f of ["bundle.json", "LICENSE", "THIRD_PARTY_NOTICES.md", "app/index.html", "publish/cli.mjs", "publish/render.mjs"]) expect(files).toContain(f);
     expect(files.some((f) => f.startsWith("publish/assets/") && f.endsWith(".css"))).toBe(true);
-    expect(pages.length).toBe(1);
+    // The sample note's page and the index of public notes (D-139), from the bundle's own renderer.
+    expect([...pages].sort()).toEqual(["n/hello/index.html", "n/index.html"]);
   });
 });
