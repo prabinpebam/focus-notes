@@ -5,14 +5,16 @@
  * history (FIL-05), offline pushes that wait without losing anything, pulls, the lock file, the
  * status cache (PRF-07), and no credential in any argument (SEC-03).
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GitSync, type GitSyncOptions } from "../src/main/git/sync.ts";
 import { createRunner } from "../src/main/git/run.ts";
 import { LOCK_NAME, releaseLock, takeLock } from "../src/main/git/lock.ts";
-import { FakeClock, configure, count, git, instance, subject, write } from "./git-fixture.ts";
+import { FakeClock, SETUP_TIMEOUT_MS, configure, count, git, instance, prepareTemplate, subject, write } from "./git-fixture.ts";
+// One-time setup outside any test's time: a cold runner takes long over its first Git starts (DEF-13).
+beforeAll(prepareTemplate, SETUP_TIMEOUT_MS);
 
 vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 const opened: GitSync[] = [];
@@ -113,6 +115,22 @@ describe("EDT-11 and D-07: save, commit, and push, private first", () => {
     clock.advance(540_000);
     await s.sync("retry");
     expect(count(privateRemote)).toBe(2);
+  });
+
+  it("DEF-16: a fetch with saves waiting, but nothing to send, never says it's backing up; a save does", async () => {
+    const { ws } = instance();
+    const states: string[] = [];
+    const s = await open(ws, { onReport: (r) => states.push(r.state) });
+    const note = join(ws, "private", "notes", "welcome.md");
+    writeFileSync(note, "# Welcome\n\nSmall.\n");
+    s.written(note, 8);
+    // A fetch (the window became active, or the timer) doesn't commit the saves, so it sends nothing.
+    await s.sync("fetch");
+    expect(states).not.toContain("syncing");
+    expect(s.report).toMatchObject({ state: "idle", waiting: 1 });
+    await s.request("save");
+    expect(states).toContain("syncing");
+    expect(s.report).toMatchObject({ state: "idle", waiting: 0 });
   });
 
   it("commits a renamed note as a rename (FIL-07)", async () => {

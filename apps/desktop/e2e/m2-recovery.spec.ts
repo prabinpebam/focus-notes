@@ -37,7 +37,9 @@ test("QLT-03: a crash while typing loses at most about a second, and the next la
   const restored = typedPart(readFileSync(note, "utf8"));
   // Only a prefix of what was typed, nothing invented or garbled, and only the last second lost.
   expect(typed.text.startsWith(restored)).toBe(true);
-  expect(typed.lostMs(restored.length, killedAt)).toBeLessThanOrEqual(LOSS_BUDGET_MS);
+  const lostMs = typed.lostMs(restored.length, killedAt);
+  console.log(`[m2-recovery] lost ${lostMs} ms of typing`);
+  expect(lostMs).toBeLessThanOrEqual(LOSS_BUDGET_MS);
   const editor = again.page.getByRole("textbox", { name: "Note" });
   await expect(editor).toContainText(restored);
   // One calm sentence, not an alarm: an information toast in the polite live region.

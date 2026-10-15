@@ -1,11 +1,11 @@
 /**
  * QLT-03 and PRF-10 in the app core: unsaved text goes to the recovery journal at once, and at most
- * JOURNAL_INTERVAL_MS (0.25 s) after it arrives while typing goes on; without a journal (the browser)
- * the note itself is saved as soon; what a crash left is announced calmly at the next launch; and the warm-up
+ * JOURNAL_INTERVAL_MS (0.15 s, DEF-14) after it arrives while typing goes on; without a journal (the browser)
+ * the note itself is saved within UNJOURNALED_SAVE_MS (0.25 s); what a crash left is announced calmly at the next launch; and the warm-up
  * after start waits for the caret, pauses while someone types, and is off when the shell says so.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createApp, JOURNAL_INTERVAL_MS, SAVE_DELAY_MS, WarmUp, type PlatformBridge, type RestoredNote } from "../src/index.ts";
+import { createApp, JOURNAL_INTERVAL_MS, SAVE_DELAY_MS, UNJOURNALED_SAVE_MS, WarmUp, type PlatformBridge, type RestoredNote } from "../src/index.ts";
 
 function fakeBridge(extra: Partial<PlatformBridge> = {}) {
   const files: Record<string, string> = { "/n/Welcome.md": "# Welcome\n" };
@@ -75,9 +75,11 @@ describe("QLT-03: the recovery journal, from the app", () => {
     // The handover that arrived 50 ms after the write is kept when the interval since that write ends.
     await vi.advanceTimersByTimeAsync(JOURNAL_INTERVAL_MS - 50);
     expect(journaled).toEqual([["a", t0], ["ab", t0 + JOURNAL_INTERVAL_MS]]);
+    // With the editor's 0.25 s handover, a key is kept within 0.4 s: most of QLT-03's second is headroom (DEF-14).
+    expect(JOURNAL_INTERVAL_MS).toBe(150);
   });
 
-  it("without a journal (the browser), typing that never pauses is saved at least every JOURNAL_INTERVAL_MS", async () => {
+  it("without a journal (the browser), typing that never pauses is saved at least every UNJOURNALED_SAVE_MS", async () => {
     vi.useFakeTimers();
     const f = fakeBridge();
     const app = createApp(f.bridge, messages);
@@ -86,8 +88,8 @@ describe("QLT-03: the recovery journal, from the app", () => {
       await app.commands.run("note.setContent", { value: "y".repeat(i) });
       await vi.advanceTimersByTimeAsync(100);
     }
-    // 3 s of typing: saved a JOURNAL_INTERVAL_MS (0.25 s) after each first unsaved change: at 0.25 s, 0.55 s, … 2.95 s.
-    expect(JOURNAL_INTERVAL_MS).toBe(250);
+    // 3 s of typing: saved a UNJOURNALED_SAVE_MS (0.25 s) after each first unsaved change: at 0.25 s, 0.55 s, … 2.95 s.
+    expect(UNJOURNALED_SAVE_MS).toBe(250);
     expect(f.writes.map(([, t]) => t.length)).toEqual([3, 6, 9, 12, 15, 18, 21, 24, 27, 30]);
     // A pause still saves after the usual short delay.
     await vi.advanceTimersByTimeAsync(SAVE_DELAY_MS + 10);

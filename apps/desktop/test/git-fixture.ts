@@ -8,8 +8,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Clock } from "../src/main/git/cadence.ts";
 
+/** A hung Git fails its test with its command named instead of holding the worker (DEF-13). */
+const GIT_SETUP_TIMEOUT_MS = 90_000;
 export const git = (cwd: string, ...args: string[]) =>
-  execFileSync("git", ["-c", "protocol.file.allow=always", "-c", "core.autocrlf=false", ...(cwd.endsWith(".git") ? [`--git-dir=${cwd}`] : []), ...args], { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } }).trim();
+  execFileSync("git", ["-c", "protocol.file.allow=always", "-c", "core.autocrlf=false", ...(cwd.endsWith(".git") ? [`--git-dir=${cwd}`] : []), ...args], { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }, timeout: GIT_SETUP_TIMEOUT_MS }).trim();
 export const configure = (dir: string) => {
   for (const [k, v] of [["user.name", "Test"], ["user.email", "test@example.com"], ["commit.gpgsign", "false"], ["core.autocrlf", "false"]]) git(dir, "config", k!, v!);
 };
@@ -20,6 +22,19 @@ export const write = (p: string, text: string) => {
 
 /** A notes repository with `private/` as a submodule, each with a bare remote, cloned as a workspace. Built once. */
 let built: string | undefined;
+/**
+ * Builds the template now: call it from `beforeAll` (with SETUP_TIMEOUT_MS), so the first test's time
+ * is its own and not a cold runner's first ~20 Git starts, run synchronously (DEF-13). Says how long
+ * it took when that was long, so a slow runner shows in the log.
+ */
+export function prepareTemplate(): void {
+  const t0 = Date.now();
+  template();
+  const ms = Date.now() - t0;
+  if (ms > 10_000) console.warn(`[git-fixture] the template took ${ms} ms to build`);
+}
+/** The time a file's one-time Git setup may take on a cold runner. */
+export const SETUP_TIMEOUT_MS = 180_000;
 function template(): string {
   if (built) return built;
   const root = mkdtempSync(join(tmpdir(), "fn-git-"));
