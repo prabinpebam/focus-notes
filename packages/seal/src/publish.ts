@@ -9,12 +9,13 @@ import { join, relative, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   encodeText, fromB64url, isSafePath, KDF, PUBLIC_INDEX, KEY_BYTES, randomBytes, randomId, sealedPath, sealFile, sealKeyring, SALT_BYTES, titleOf, toB64url, vaultPath,
-  derivePasscodeBits, passphraseStrength, type Manifest, type ManifestEntry, type PublicIndex, type SiteManifest,
+  derivePasscodeBits, type Manifest, type ManifestEntry, type PublicIndex, type SiteManifest,
 } from "./format.ts";
 import {
   activeShareGrants, deriveLinkBits, GRANT_ID, grantScope, inScope, isActive, keyringRole, keyringSaltFor, LINK_KDF, normalizeName, LINK_SECRET_BYTES, linkKeyringPath, nameLookup, noteId, passcodeKeyringPath, scopedPaths,
   type AccessFile, type Grant,
 } from "./grants.ts";
+import { passcodeProblem } from "./access.ts";
 
 export type { AccessFile, Grant } from "./grants.ts";
 
@@ -83,8 +84,10 @@ export function validateAccess(a: unknown): AccessFile {
     if (typeof g.scope !== "object" || g.scope === null) bad("has no scope");
     if (!normalizeName(g.name)) bad("has an empty name");
     // Every passcode in force must resist offline guessing, generated or not: `generated` is just a field
-    // in access.json, so it can't vouch for the value. Four EFF words score about 135 bits (SHR-07).
-    if (g.passcode && !g.owner && !g.revokedAt && !passphraseStrength(g.passcode.value).ok) bad("has a passcode that's too easy to guess (use 12 or more characters, or generate one)");
+    // in access.json, so it can't vouch for the value. The same rule as the app (passcodeProblem: 16 or
+    // more characters, or 3 or more different words, then the strength estimate), so a hand-edited file
+    // can't get past it; four EFF words always pass (SHR-07, D-134). The message never quotes the value.
+    if (g.passcode && !g.owner && !g.revokedAt && passcodeProblem(g.passcode.value)) bad("has a passcode that's too easy to guess (use 16 or more characters, or 3 or more words, or generate one)");
   }
   if (f.nameSalt !== undefined) {
     let ok = false;

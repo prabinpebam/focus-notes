@@ -132,6 +132,26 @@ describe("passcodes (SHR-07)", () => {
     const renewed = apply(access, { op: "update", id, passcode: { generate: true } }, NOW).access.grants.find((x) => x.id === id)!;
     expect(renewed.passcode).toMatchObject({ generated: true });
   });
+  it("the publisher applies the same rule to a hand-edited access.json, without quoting the passcode", () => {
+    const withCode = (value: string, generated?: boolean) => ({
+      ...base(),
+      grants: [...base().grants, { id: "shandedit01", name: "Asha", salt: "AAAAAAAAAAAAAAAAAAAAAA", passcode: { value, ...(generated === undefined ? {} : { generated }) }, scope: { notes: ["a.md"] }, createdAt: NOW.toISOString() }],
+    });
+    for (const p of ["password1234", "qwertyuiop12", "iloveyou2026", "Password1234", "Summer2026!!"]) {
+      for (const generated of [undefined, true]) {
+        let message = "";
+        try { validateAccess(withCode(p, generated)); } catch (e) { message = String((e as Error).message); }
+        expect(message, p).toMatch(/too easy to guess/);
+        expect(message).not.toContain(p);
+      }
+    }
+    for (let i = 0; i < 20; i++) expect(() => validateAccess(withCode(generatePasscode(), true))).not.toThrow();
+    expect(() => validateAccess(withCode("blue tractor singing 42"))).not.toThrow();
+    // A withdrawn audience's old passcode doesn't stop a deploy.
+    const old = withCode("Password1234");
+    old.grants[1] = { ...old.grants[1]!, revokedAt: NOW.toISOString() };
+    expect(() => validateAccess(old)).not.toThrow();
+  });
   it("custom: 16 or more characters, or 3 or more words, and rated strong (review M1)", () => {
     // Common passwords that pass a bits estimate alone.
     for (const p of ["password1234", "qwertyuiop12", "iloveyou2026", "Password1234", "Summer2026!!"]) {
