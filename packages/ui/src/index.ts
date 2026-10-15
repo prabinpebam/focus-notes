@@ -8,3 +8,5 @@ export { InWindow } from "./layouts/AppRoot/in-window.tsx";
 export { installTrustedTypes, slashCatalog } from "@focus-notes/editor";
 /** The code of the views people open first, loaded by the warm-up after start (PRF-10). */
 export { preloadFileTree as preloadViews } from "./primitives/FileTree/lazy.tsx";
+/** The page's first frame in its theme, and the moment it's drawn (DSK-09, D-148). */
+export { bootTheme, afterFirstThemedFrame } from "./behaviors/boot.ts";

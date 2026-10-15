@@ -1,6 +1,7 @@
 /** Mounting the app and the global keyboard handler. The only entry point shells call. */
 import { createElement, Fragment, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { flushSync } from "react-dom";
 import { FLUSH_EDITOR, type App } from "@focus-notes/core";
 import { registry, contractByType, FLUSH_EVENT, EDITOR_ACTION_EVENT, installTrustedTypes, keyRanCommand, slashCatalog, preloadViews, InWindow } from "@focus-notes/ui";
 import { ViewHost, ViewBoundary, type RuntimeDeps } from "./render.ts";
@@ -15,6 +16,8 @@ export interface MountOptions {
    * view document of their own, such as Settings (IA-VIEW-SETTINGS). Each fails on its own.
    */
   overlays?: readonly string[];
+  /** Ends what the mount listens to on the window and the app: aborted when another app replaces it (`swapApp`). */
+  signal?: AbortSignal;
 }
 
 const MODIFIERS = new Set(["Meta", "Control", "Alt", "Shift", "AltGraph", "CapsLock", "Fn"]);
@@ -23,7 +26,7 @@ const WHEEL_STEP_PX = 50;
 /** A wheel that counts in lines, as about this many pixels each. */
 const WHEEL_LINE_PX = 40;
 
-export function mountApp(el: Element, { app, views, view = "canvas", overlays = [] }: MountOptions): Root {
+export function mountApp(el: Element, { app, views, view = "canvas", overlays = [], signal }: MountOptions): Root {
   // Before anything renders: HTML reaches the DOM only through the sanitizing policy (SEC-02).
   installTrustedTypes();
   // The slash menu offers the editor's registered blocks (EDT-06, EXT-01).
@@ -68,7 +71,7 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     // Focus a key moves shows its ring, whatever the pointer did before (UI-05).
     keyRanCommand();
     void app.commands.run(id);
-  }, true);
+  }, { capture: true, ...(signal ? { signal } : {}) });
   // Ctrl and the wheel change the text size as Mod+= and Mod+- do (D-130), and so does a trackpad's
   // pinch, which arrives as a wheel with Ctrl. The page itself never zooms. Small deltas (a pinch, a
   // fine wheel) add up to a notch, and one event is at most one step, so a gesture never jumps sizes.
@@ -83,16 +86,16 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     if (Math.abs(wheeled) < WHEEL_STEP_PX) return;
     wheeled = 0;
     void app.commands.run(dy < 0 ? "font.larger" : "font.smaller");
-  }, { capture: true, passive: false });
+  }, { capture: true, passive: false, ...(signal ? { signal } : {}) });
   // Editor commands run from menus and Spotlight reach the editor surface through a window event.
   // Saving and switching notes first collect text the editor hasn't sent yet (QLT-03, D-23).
-  app.onEditorAction((id, args) => window.dispatchEvent(id === FLUSH_EDITOR ? new Event(FLUSH_EVENT) : new CustomEvent(EDITOR_ACTION_EVENT, { detail: { id, args } })));
+  const offEditor = app.onEditorAction((id, args) => window.dispatchEvent(id === FLUSH_EDITOR ? new Event(FLUSH_EVENT) : new CustomEvent(EDITOR_ACTION_EVENT, { detail: { id, args } })));
   // A file dropped outside the editor must never navigate the window away from the app.
   const stopNavigation = (e: DragEvent) => {
     if (e.dataTransfer?.types.includes("Files")) e.preventDefault();
   };
-  window.addEventListener("dragover", stopNavigation);
-  window.addEventListener("drop", stopNavigation);
+  window.addEventListener("dragover", stopNavigation, signal ? { signal } : {});
+  window.addEventListener("drop", stopNavigation, signal ? { signal } : {});
   // When the toolbar closes, the caret goes back to the note.
   // The same when a dialog closes: its saved focus target may be gone (opened from the ⋯ menu).
   const ui = () => app.store.state.ui;
@@ -102,7 +105,7 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   let spotlightWasOpen = app.store.state.ui.spotlight.open;
   let findAllWasOpen = app.store.state.ui.findAll.open;
   let themeWasOpen = app.store.state.ui.theme.open;
-  app.store.subscribe(() => {
+  const offStore = app.store.subscribe(() => {
     const { toolbarOpen, shortcuts, find, files, spotlight, findAll, theme } = app.store.state.ui;
     // Spotlight hands focus back where it was; if that's gone (a dialog it replaced), to the note.
     if (spotlightWasOpen && !spotlight.open) {
@@ -130,7 +133,26 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     filesWereOpen = files.open;
     themeWasOpen = theme.open;
   });
+  signal?.addEventListener("abort", () => {
+    offStore();
+    offEditor();
+  }, { once: true });
   return root;
+}
+
+/**
+ * Replaces the mounted app with another, already started, in one frame (DSK-09, D-148): the old tree
+ * stays on screen until the new one is rendered, and both happen in the same task, so no frame is
+ * ever painted between them. The old mount's listeners end with its `abort`.
+ */
+export function swapApp(el: Element, old: { root: Root; abort: AbortController }, next: MountOptions): Root {
+  let root: Root | undefined;
+  old.abort.abort();
+  old.root.unmount();
+  flushSync(() => {
+    root = mountApp(el, next);
+  });
+  return root!;
 }
 
 /** Collects pending text from every surface, then writes it (QLT-03). Resolves to whether it's saved. */
