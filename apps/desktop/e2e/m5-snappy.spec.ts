@@ -205,9 +205,17 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     console.log(`fn:window.resizeFrame p95=${p95}ms p50=${shown[Math.floor(shown.length / 2)]}ms max=${shown.at(-1)}ms (${shown.length} of ${sized.length} sizes shown; budget 16 ms); in order ${JSON.stringify(waits)}`);
     expect(sized.length).toBeGreaterThan(0);
     expect(shown.length).toBe(sized.length);
-    // Reported, not gated yet: after start the first one or two sizes take 30 to 140 ms in frames with
-    // no script in them (the window's surface, not the page), which D-151 (11) tracks; the rest stay under 16 ms.
-    expect.soft(p95, "fn:window.resizeFrame p95 (reported)").toBeGreaterThanOrEqual(0);
+    // Gated on software compositing (D-151 (13)), at the budget measured there: CI's runners draw and
+    // raster every size on the processor (about 5 ms a frame drawing and 6 ms a size rastering), so a
+    // size takes one to three frames at 64 Hz: p50 21 to 27 ms, p95 28 to 45 ms over four runs. A
+    // regression check, not a loosening: the 16 ms budget stands where the GPU composites, reported
+    // there until the first resizes after other journeys (D-151 (11)) are explained.
+    const software = await page.evaluate(() => document.documentElement.dataset.compositing === "software");
+    const p50 = shown[Math.floor(shown.length / 2)]!;
+    if (software) {
+      expect(p50, "fn:window.resizeFrame p50, software compositing (measured budget 35 ms)").toBeLessThanOrEqual(35);
+      expect(p95, "fn:window.resizeFrame p95, software compositing (measured budget 60 ms)").toBeLessThanOrEqual(60);
+    } else expect.soft(p95, "fn:window.resizeFrame p95 (reported)").toBeGreaterThanOrEqual(0);
     // Where a size's time goes (D-151 (11)): the same steps again, traced (not measured, as tracing
     // slows them).
     console.log(`[D-151] resize, traced (20 sizes, ms): ${await traceParts(page, async () => {
@@ -301,8 +309,9 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
       await page.getByRole("dialog", { name: "Spotlight" }).waitFor();
       await page.waitForTimeout(100);
     })}`);
-    // Gated (D-151 (12)): Spotlight's opening frame measured 56 to 88 ms on CI's software compositing
-    // until its first frame drew only the rows it shows and its frost went opaque there (D-121).
+    // Gated (D-151 (12), (13)): Spotlight measured 56 to 88 ms on CI's software compositing until its
+    // list's first frame drew only the rows it shows and, without a GPU, its frost went opaque and it
+    // appears without a fade (CI after: 32 to 40 ms).
     expect(all.length).toBe(ACTIONS.length * 5);
     expect(p95, "input to next paint p95 (budget 50 ms)").toBeLessThanOrEqual(50);
     await quit(l);
