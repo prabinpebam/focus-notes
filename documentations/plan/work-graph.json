@@ -1324,13 +1324,14 @@
       "reviews": [
         "code",
         "design-system",
-        "accessibility"
+        "accessibility",
+        "security"
       ],
       "specs": [
         "design/views/get-started.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "building"
     },
     {
       "id": "WP-5.7",
