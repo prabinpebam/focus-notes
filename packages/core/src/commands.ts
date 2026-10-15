@@ -116,6 +116,7 @@ export class CommandError extends Error {}
 export class CommandRegistry<S> {
   #commands = new Map<string, CommandDef<S, any>>();
   #listeners = new Set<(id: string, error?: unknown) => void>();
+  #hold: ((id: string, state: S) => string | undefined) | undefined;
 
   private readonly getState: () => S;
   private readonly update: (recipe: (s: S) => S) => void;
@@ -130,6 +131,20 @@ export class CommandRegistry<S> {
   register<A extends Record<string, unknown>>(def: CommandDef<S, A>): void {
     if (this.#commands.has(def.id)) throw new CommandError(`Command ${def.id} is already registered`);
     this.#commands.set(def.id, def);
+  }
+
+  /**
+   * Holds commands back while something owns the whole window (the first run, D-126): `hold`
+   * returns the message key saying why for each command it holds. A held command is disabled with
+   * that reason everywhere it's listed (toolbar, Spotlight, the macOS menu bar), its keys do
+   * nothing, and running it does nothing.
+   */
+  setHold(hold: ((id: string, state: S) => string | undefined) | undefined): void {
+    this.#hold = hold;
+  }
+
+  #held(id: string): string | undefined {
+    return this.#hold?.(id, this.getState());
   }
 
   has(id: string): boolean {
@@ -149,12 +164,14 @@ export class CommandRegistry<S> {
     const def = this.#commands.get(id);
     if (!def) throw new CommandError(`Unknown command ${id}`);
     const state = this.getState();
-    const d: CommandDescription = { id, title: def.title, enabled: def.enabled ? def.enabled(state) : true };
+    const held = this.#held(id);
+    const d: CommandDescription = { id, title: def.title, enabled: !held && (def.enabled ? def.enabled(state) : true) };
     if (def.icon) d.icon = def.icon;
     const chord = shortcutFor(def.shortcut, this.platform);
     if (chord) d.shortcut = chord;
     if (def.checked) d.checked = def.checked(state);
-    if (!d.enabled && def.disabledReason) d.disabledReason = def.disabledReason;
+    if (held) d.disabledReason = held;
+    else if (!d.enabled && def.disabledReason) d.disabledReason = def.disabledReason;
     if (def.shortcut?.handledBy) d.handledBy = def.shortcut.handledBy;
     return d;
   }
@@ -162,7 +179,7 @@ export class CommandRegistry<S> {
   async run(id: string, args: Record<string, unknown> = {}): Promise<void> {
     const def = this.#commands.get(id);
     if (!def) throw new CommandError(`Unknown command ${id}`);
-    if (def.enabled && !def.enabled(this.getState())) return;
+    if (this.#held(id) || (def.enabled && !def.enabled(this.getState()))) return;
     try {
       await def.run(args, { state: this.getState(), update: this.update, run: (i, a) => this.run(i, a) });
       for (const l of this.#listeners) l(id);
@@ -199,6 +216,7 @@ export class CommandRegistry<S> {
         const where = def.shortcut?.handledBy;
         if (scopes.length ? !where || !scopes.includes(where) : where) continue;
         if (def.shortcut?.atFieldEnd && event.caretAtEnd === false) continue;
+        if (this.#held(id)) continue;
         if (def.shortcut?.whenEnabled && def.enabled && !def.enabled(this.getState())) continue;
         for (const chord of [...chordsFor(def.shortcut, this.platform), ...(def.shortcut?.quiet ?? [])]) if (chordMatches(chord, event, this.platform, byCode)) return id;
       }

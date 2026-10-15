@@ -228,7 +228,14 @@
               }
             }
           }
-        ]
+        ],
+        "when": {
+          "expr": {
+            "!": {
+              "get": "vm.firstRun.open"
+            }
+          }
+        }
       },
       {
         "type": "Layer",
@@ -694,11 +701,20 @@
         "id": "editor",
         "when": {
           "expr": {
-            "==": [
+            "and": [
               {
-                "get": "vm.canvas.status"
+                "==": [
+                  {
+                    "get": "vm.canvas.status"
+                  },
+                  "ready"
+                ]
               },
-              "ready"
+              {
+                "!": {
+                  "get": "vm.firstRun.open"
+                }
+              }
             ]
           }
         },
@@ -2978,7 +2994,18 @@
         "type": "Layer",
         "id": "account",
         "when": {
-          "get": "vm.account.visible"
+          "expr": {
+            "and": [
+              {
+                "get": "vm.account.visible"
+              },
+              {
+                "!": {
+                  "get": "vm.firstRun.open"
+                }
+              }
+            ]
+          }
         },
         "props": {
           "layer": "panel",
@@ -3866,7 +3893,7 @@
         },
         "props": {
           "layer": "dialog",
-          "position": "center",
+          "position": "window",
           "landmark": "main",
           "label": {
             "t": "firstRun.region"
@@ -3874,49 +3901,92 @@
         },
         "children": [
           {
-            "type": "Center",
+            "type": "Surface",
             "props": {
-              "maxWidth": "dialogS"
+              "variant": "canvas",
+              "padding": "xl",
+              "scroll": true,
+              "keyScope": "firstRun"
             },
             "children": [
               {
-                "type": "Surface",
+                "type": "Center",
                 "props": {
-                  "variant": "raised",
-                  "shape": "popover",
-                  "elevation": "3",
-                  "padding": "xl",
-                  "scroll": true,
-                  "keyScope": "firstRun"
+                  "maxWidth": "onboarding",
+                  "block": "middle",
+                  "gutter": "none"
                 },
                 "children": [
                   {
                     "type": "Stack",
                     "props": {
-                      "gap": "l"
+                      "gap": "xl"
                     },
                     "children": [
                       {
-                        "type": "Text",
-                        "when": {
-                          "get": "vm.firstRun.showProgress"
+                        "type": "Stack",
+                        "props": {
+                          "gap": "l",
+                          "align": {
+                            "get": "vm.firstRun.align"
+                          }
                         },
-                        "props": {
-                          "value": {
-                            "get": "vm.firstRun.progress"
+                        "children": [
+                          {
+                            "type": "AppMark",
+                            "when": {
+                              "expr": {
+                                "==": [
+                                  {
+                                    "get": "vm.firstRun.step"
+                                  },
+                                  "welcome"
+                                ]
+                              }
+                            },
+                            "props": {
+                              "size": "l"
+                            }
                           },
-                          "tone": "muted",
-                          "role": "caption"
-                        }
-                      },
-                      {
-                        "type": "Heading",
-                        "props": {
-                          "value": {
-                            "get": "vm.firstRun.title"
+                          {
+                            "type": "AppMark",
+                            "when": {
+                              "expr": {
+                                "==": [
+                                  {
+                                    "get": "vm.firstRun.step"
+                                  },
+                                  "ready"
+                                ]
+                              }
+                            },
+                            "props": {
+                              "size": "m"
+                            }
                           },
-                          "level": "1"
-                        }
+                          {
+                            "type": "Text",
+                            "when": {
+                              "get": "vm.firstRun.showProgress"
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.firstRun.progress"
+                              },
+                              "tone": "muted",
+                              "role": "caption"
+                            }
+                          },
+                          {
+                            "type": "Heading",
+                            "props": {
+                              "value": {
+                                "get": "vm.firstRun.title"
+                              },
+                              "level": "display"
+                            }
+                          }
+                        ]
                       },
                       {
                         "switch": {
@@ -3926,40 +3996,43 @@
                           "welcome": {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "xl",
+                              "align": "center"
                             },
                             "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "t": "firstRun.welcome.body"
-                                  }
-                                }
-                              },
                               {
                                 "type": "Inline",
                                 "props": {
                                   "gap": "s",
-                                  "justify": "between",
+                                  "justify": "center",
                                   "wrap": true
                                 },
                                 "children": [
                                   {
-                                    "type": "Button",
+                                    "type": "Icon",
                                     "props": {
-                                      "label": {
-                                        "t": "firstRun.welcome.local"
-                                      },
-                                      "variant": "subtle",
-                                      "bleed": true
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "firstRun.local"
-                                      }
+                                      "name": "github",
+                                      "size": "m"
                                     }
                                   },
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "value": {
+                                        "t": "firstRun.welcome.body"
+                                      },
+                                      "role": "lead"
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "Stack",
+                                "props": {
+                                  "gap": "s",
+                                  "align": "center"
+                                },
+                                "children": [
                                   {
                                     "type": "Button",
                                     "props": {
@@ -3967,11 +4040,26 @@
                                         "t": "firstRun.welcome.start"
                                       },
                                       "variant": "primary",
-                                      "autoFocus": true
+                                      "autoFocus": true,
+                                      "size": "l"
                                     },
                                     "on": {
                                       "press": {
                                         "run": "firstRun.next"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "firstRun.welcome.local"
+                                      },
+                                      "variant": "subtle"
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "firstRun.local"
                                       }
                                     }
                                   }
@@ -3982,48 +4070,9 @@
                           "connect": {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "l"
                             },
                             "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "t": "firstRun.connect.why"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "Inline",
-                                "props": {
-                                  "gap": "s",
-                                  "justify": "start",
-                                  "wrap": true
-                                },
-                                "children": [
-                                  {
-                                    "type": "Button",
-                                    "props": {
-                                      "label": {
-                                        "t": "firstRun.connect.signup"
-                                      },
-                                      "variant": "subtle",
-                                      "bleed": true
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "firstRun.openPage",
-                                        "args": {
-                                          "page": "signup"
-                                        }
-                                      }
-                                    }
-                                  }
-                                ],
-                                "when": {
-                                  "get": "vm.firstRun.isChoose"
-                                }
-                              },
                               {
                                 "switch": {
                                   "get": "vm.firstRun.connect"
@@ -4143,16 +4192,30 @@
                                   "found": {
                                     "type": "Stack",
                                     "props": {
-                                      "gap": "m"
+                                      "gap": "l"
                                     },
                                     "children": [
                                       {
-                                        "type": "Text",
+                                        "type": "ItemCard",
                                         "props": {
-                                          "value": {
+                                          "title": {
+                                            "get": "vm.firstRun.accountName"
+                                          },
+                                          "detail": {
+                                            "get": "vm.firstRun.handle"
+                                          },
+                                          "avatar": {
+                                            "get": "vm.firstRun.avatar"
+                                          },
+                                          "initials": {
+                                            "get": "vm.firstRun.initials"
+                                          },
+                                          "mark": true,
+                                          "size": "l",
+                                          "label": {
                                             "get": "vm.firstRun.foundText"
                                           },
-                                          "announce": true
+                                          "personal": "all"
                                         }
                                       },
                                       {
@@ -4188,7 +4251,8 @@
                                               "autoFocus": true,
                                               "busy": {
                                                 "get": "vm.firstRun.busy"
-                                              }
+                                              },
+                                              "size": "l"
                                             },
                                             "on": {
                                               "press": {
@@ -4203,9 +4267,41 @@
                                   "choose": {
                                     "type": "Stack",
                                     "props": {
-                                      "gap": "m"
+                                      "gap": "l"
                                     },
                                     "children": [
+                                      {
+                                        "type": "ItemCard",
+                                        "props": {
+                                          "title": {
+                                            "t": "firstRun.connect.card"
+                                          },
+                                          "detail": {
+                                            "t": "firstRun.connect.why"
+                                          },
+                                          "icon": "github"
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.connect.signup"
+                                              },
+                                              "variant": "subtle",
+                                              "size": "s"
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.openPage",
+                                                "args": {
+                                                  "page": "signup"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      },
                                       {
                                         "type": "Text",
                                         "props": {
@@ -4286,7 +4382,8 @@
                                                         "t": "firstRun.connect.installHelper"
                                                       },
                                                       "variant": "primary",
-                                                      "autoFocus": true
+                                                      "autoFocus": true,
+                                                      "size": "l"
                                                     },
                                                     "on": {
                                                       "press": {
@@ -4334,7 +4431,9 @@
                                                   "autoFocus": true,
                                                   "busy": {
                                                     "get": "vm.firstRun.busy"
-                                                  }
+                                                  },
+                                                  "size": "l",
+                                                  "icon": "github"
                                                 },
                                                 "on": {
                                                   "press": {
@@ -4694,16 +4793,30 @@
                                   "cli": {
                                     "type": "Stack",
                                     "props": {
-                                      "gap": "m"
+                                      "gap": "l"
                                     },
                                     "children": [
                                       {
-                                        "type": "Text",
+                                        "type": "ItemCard",
                                         "props": {
-                                          "value": {
+                                          "title": {
+                                            "get": "vm.firstRun.accountName"
+                                          },
+                                          "detail": {
+                                            "get": "vm.firstRun.handle"
+                                          },
+                                          "avatar": {
+                                            "get": "vm.firstRun.avatar"
+                                          },
+                                          "initials": {
+                                            "get": "vm.firstRun.initials"
+                                          },
+                                          "mark": true,
+                                          "size": "l",
+                                          "label": {
                                             "get": "vm.firstRun.foundText"
                                           },
-                                          "announce": true
+                                          "personal": "all"
                                         }
                                       },
                                       {
@@ -4739,7 +4852,8 @@
                                               "autoFocus": true,
                                               "busy": {
                                                 "get": "vm.firstRun.busy"
-                                              }
+                                              },
+                                              "size": "l"
                                             },
                                             "on": {
                                               "press": {
@@ -5054,7 +5168,8 @@
                                         "props": {
                                           "value": {
                                             "t": "firstRun.notes.foundWhy"
-                                          }
+                                          },
+                                          "role": "lead"
                                         }
                                       },
                                       {
@@ -5079,40 +5194,23 @@
                                               }
                                             },
                                             "render": {
-                                              "type": "Inline",
+                                              "type": "ItemCard",
                                               "props": {
-                                                "gap": "s",
-                                                "justify": "between",
-                                                "wrap": true
+                                                "title": {
+                                                  "get": "item.label"
+                                                },
+                                                "detail": {
+                                                  "get": "item.detail"
+                                                },
+                                                "badge": {
+                                                  "get": "item.badge"
+                                                },
+                                                "icon": {
+                                                  "get": "item.icon"
+                                                },
+                                                "personal": "title"
                                               },
                                               "children": [
-                                                {
-                                                  "type": "Stack",
-                                                  "props": {
-                                                    "gap": "xs"
-                                                  },
-                                                  "children": [
-                                                    {
-                                                      "type": "Text",
-                                                      "props": {
-                                                        "value": {
-                                                          "get": "item.label"
-                                                        },
-                                                        "role": "label"
-                                                      }
-                                                    },
-                                                    {
-                                                      "type": "Text",
-                                                      "props": {
-                                                        "value": {
-                                                          "get": "item.description"
-                                                        },
-                                                        "tone": "muted",
-                                                        "role": "caption"
-                                                      }
-                                                    }
-                                                  ]
-                                                },
                                                 {
                                                   "type": "Button",
                                                   "props": {
@@ -5206,15 +5304,19 @@
                                   "create": {
                                     "type": "Stack",
                                     "props": {
-                                      "gap": "m"
+                                      "gap": "l"
                                     },
                                     "children": [
                                       {
-                                        "type": "Text",
+                                        "type": "ItemCard",
                                         "props": {
-                                          "value": {
+                                          "title": {
+                                            "t": "firstRun.notes.createCard"
+                                          },
+                                          "detail": {
                                             "t": "firstRun.notes.createWhy"
-                                          }
+                                          },
+                                          "icon": "newNote"
                                         }
                                       },
                                       {
@@ -5287,7 +5389,8 @@
                                                   "autoFocus": true,
                                                   "busy": {
                                                     "get": "vm.firstRun.busy"
-                                                  }
+                                                  },
+                                                  "size": "l"
                                                 },
                                                 "on": {
                                                   "press": {
@@ -6091,24 +6194,63 @@
                           "ready": {
                             "type": "Stack",
                             "props": {
-                              "gap": "m"
+                              "gap": "l"
                             },
                             "children": [
                               {
-                                "type": "Text",
+                                "type": "Stack",
                                 "props": {
-                                  "value": {
-                                    "t": "firstRun.ready.dot"
+                                  "gap": "m"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Inline",
+                                    "props": {
+                                      "gap": "m",
+                                      "align": "center"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "SignalDot",
+                                        "props": {}
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "value": {
+                                            "t": "firstRun.ready.dot"
+                                          },
+                                          "role": "lead"
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Inline",
+                                    "props": {
+                                      "gap": "m",
+                                      "align": "center"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Icon",
+                                        "props": {
+                                          "name": "search",
+                                          "size": "m"
+                                        }
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "value": {
+                                            "get": "vm.firstRun.searchHint"
+                                          },
+                                          "role": "lead"
+                                        }
+                                      }
+                                    ]
                                   }
-                                }
-                              },
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "get": "vm.firstRun.searchHint"
-                                  }
-                                }
+                                ]
                               },
                               {
                                 "type": "SegmentedControl",
@@ -6167,7 +6309,8 @@
                                         "t": "firstRun.ready.start"
                                       },
                                       "variant": "primary",
-                                      "autoFocus": true
+                                      "autoFocus": true,
+                                      "size": "l"
                                     },
                                     "on": {
                                       "press": {

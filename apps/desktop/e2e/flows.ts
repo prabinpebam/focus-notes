@@ -44,7 +44,7 @@ export async function firstRunFlow(mode: "light" | "dark", size: Size, hooks: Fl
 
 /**
  * The first run's Connect, Your notes, and Ready, signed in to the fake GitHub that has the
- * account's notes (D-124): Continue as @login; We found your notes, with More options open; Create
+ * account's notes (D-124): its profile card and Continue as <first name> (D-126); We found your notes, with More options open; Create
  * my notes, with More options open (the longest card: it keeps the dialog inset and scrolls inside,
  * D-123, checked at the top and scrolled to its end); then Open, and Ready.
  */
@@ -58,7 +58,7 @@ export async function notesFlow(mode: "light" | "dark", size: Size, hooks: FlowH
   const { page } = l;
   await heading(page, "A quiet place to write");
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("button", { name: "Continue as @ada" })).toBeFocused({ timeout: 20_000 });
+  await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 20_000 });
   await hooks.at(page, "first-run-connect-found");
   await page.keyboard.press("Enter");
   await heading(page, "We found your notes");
@@ -74,8 +74,8 @@ export async function notesFlow(mode: "light" | "dark", size: Size, hooks: FlowH
   await card(page).getByRole("button", { name: "More options" }).click();
   await expect(card(page).getByRole("textbox", { name: "Public repository" })).toBeVisible();
   await hooks.at(page, "first-run-notes-create-more");
-  // The card is a dialog (24 px from every window edge, checked by `at`) that scrolls inside.
-  const dialog = page.locator("[data-surface=dialog]").filter({ has: page.getByRole("heading", { name: "Your notes" }) });
+  // The setup is the whole window (D-126), and what it holds scrolls inside it.
+  const dialog = page.locator('[data-key-scope="firstRun"]').filter({ has: page.getByRole("heading", { name: "Your notes" }) });
   await expect(dialog).toHaveCount(1);
   await dialog.locator(":scope > div").evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
   await hooks.at(page, "first-run-notes-create-more-end");

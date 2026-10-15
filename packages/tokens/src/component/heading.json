@@ -1,7 +1,8 @@
 { "cmp": { "heading": {
   "color": { "$type": "color", "$value": "{color.text}" },
   "font": { "$type": "fontFamily", "$value": "{font.ui}" },
-  "size": { "$type": "dimension", "1": { "$value": "{font.uiTitle}" }, "2": { "$value": "{font.uiEmphasis}" }, "3": { "$value": "{font.uiBody}" } },
+  "size": { "$type": "dimension", "1": { "$value": "{font.uiTitle}" }, "2": { "$value": "{font.uiEmphasis}" }, "3": { "$value": "{font.uiBody}" }, "display": { "$value": "{font.uiDisplay}" } },
   "weight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
-  "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" }
+  "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" },
+  "displayLineHeight": { "$type": "number", "$value": "{font.headingLineHeight}", "$description": "A display title that wraps keeps its lines together (D-126)." }
 } } }

@@ -30,7 +30,7 @@ test("FRE-01, FRE-04, FRE-05, FRE-08: the short path: a new install connects wit
   try {
     await heading(page, "A quiet place to write");
     await expect(card(page).getByText("Step 1 of 4")).toBeVisible();
-    await expect(card(page).getByText("Your notes are kept safe in your own free GitHub account, so they're never lost and they're on every computer you use.")).toBeVisible();
+    await expect(card(page).getByText("Your notes are saved online for free using GitHub.")).toBeVisible();
     await plainWords(page);
     expect(await axeViolations(page)).toEqual([]);
     await expect(page.getByRole("button", { name: "Get started" })).toBeFocused();
@@ -38,10 +38,10 @@ test("FRE-01, FRE-04, FRE-05, FRE-08: the short path: a new install connects wit
 
     // Git is checked silently; the credential Git already has is offered (FRE-04): no code, no helper started.
     await heading(page, "Connect your GitHub account");
-    await expect(card(page).getByText("This computer is connected to GitHub as @ada (Ada).")).toBeVisible({ timeout: 15_000 });
+    await expect(card(page).getByRole("group", { name: "This computer is connected to GitHub as @ada (Ada)." })).toBeVisible({ timeout: 15_000 });
     await plainWords(page);
     expect(await axeViolations(page)).toEqual([]);
-    await expect(page.getByRole("button", { name: "Continue as @ada" })).toBeFocused();
+    await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused();
     await press(page, "Enter");
     expect(w.fakes.argv()).not.toContain('"login"');
 
@@ -116,13 +116,15 @@ test("FRE-02, FRE-06: connect with the GitHub CLI's code, then We found your not
     await expect(page.getByRole("button", { name: "Copy code and open GitHub" })).toBeFocused();
     await press(page, "Enter");
     await expect.poll(() => opened(l)).toContain("https://github.com/login/device");
-    await expect(card(page).getByText("This computer is connected to GitHub as @ada (Ada).")).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole("button", { name: "Continue as @ada" })).toBeFocused();
+    await expect(card(page).getByRole("group", { name: "This computer is connected to GitHub as @ada (Ada)." })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused();
     await press(page, "Enter");
 
     await heading(page, "We found your notes");
     await expect(card(page).getByText("notes", { exact: true })).toBeVisible();
-    await expect(card(page).getByText("Updated 3 days ago · Public")).toBeVisible();
+    // A row: its name, when it was updated, and who can see it (D-126).
+    await expect(card(page).getByText("Updated 3 days ago", { exact: true })).toBeVisible();
+    await expect(card(page).getByText("Public", { exact: true })).toBeVisible();
     await plainWords(page);
     expect(await axeViolations(page)).toEqual([]);
     await expect(card(page).getByRole("button", { name: "Open", exact: true })).toBeFocused();
@@ -177,7 +179,7 @@ test("FRE-02, FRE-06: no sign-in helper: Having trouble? → a pasted token, the
     await expect(card(page).getByText("That doesn't look like a GitHub token. Paste the whole token.")).toBeVisible();
     await page.keyboard.type(w.gh.token);
     await press(page, "Enter");
-    await expect(page.getByRole("button", { name: "Continue as @ada" })).toBeFocused({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });
     // FRE-03: Git's helper has it now, for the terminal too; the app kept no copy.
     expect(JSON.parse(w.fakes.stored())["github.com"].password).toBe(w.gh.token);
     await press(page, "Enter");
@@ -226,7 +228,7 @@ test("FRE-02, FRE-01: declined and offline say so in plain words and recover wit
     w.gh.offline = false;
     await expect(page.getByRole("button", { name: "Connect to GitHub" })).toBeFocused();
     await press(page, "Enter");
-    await expect(page.getByRole("button", { name: "Continue as @ada" })).toBeFocused({ timeout: 15_000 });
+    await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
     await heading(page, "Your notes");
     await expect(page.getByRole("button", { name: "Create my notes" })).toBeFocused({ timeout: 15_000 });
@@ -257,7 +259,7 @@ test("FRE-01: Just use this computer for now starts writing with no account, in 
   try {
     await heading(page, "A quiet place to write");
     await expect(page.getByRole("button", { name: "Get started" })).toBeFocused();
-    await tabTo(page, page.getByRole("button", { name: "Just use this computer for now" }), true);
+    await tabTo(page, page.getByRole("button", { name: "Just use this computer for now" }));
     await press(page, "Enter");
     await expect(card(page)).toHaveCount(0);
     const editor = page.getByRole("textbox", { name: "Note" });
@@ -269,6 +271,53 @@ test("FRE-01: Just use this computer for now starts writing with no account, in 
     expect(w.fakes.argv()).not.toContain('"login"');
     expect(existsSync(join(w.dirs.userData, "workspace.json"))).toBe(false);
     expect(JSON.parse(readFileSync(join(w.dirs.userData, "state.json"), "utf8")).firstRun).toBe("done");
+  } finally {
+    await quit(l);
+    w.server.close();
+  }
+});
+
+test("D-126: nothing outside setup is there or works until it's done: no trigger, toolbar or account pill, app keys open nothing, focus stays in setup; then everything works", async () => {
+  test.setTimeout(90_000);
+  const w = await world({ gcm: true });
+  w.fakes.store(w.gh.token);
+  const l = await start(w);
+  const { page } = l;
+  const mod = process.platform === "darwin" ? "Meta" : "Control";
+  const chrome = async () => ({
+    trigger: await page.getByRole("button", { name: "Focus Notes menu" }).count(),
+    toolbar: await page.getByRole("toolbar", { name: "Toolbar" }).count(),
+    pill: await page.getByRole("region", { name: "Account" }).count(),
+    note: await page.getByRole("textbox", { name: "Note" }).count(),
+  });
+  // Focus is in setup, or on the window's own controls (minimize, maximize, close), which stay.
+  const focusInSetup = () => page.evaluate(() => Boolean(document.activeElement?.closest('[role="main"][aria-label="Set up Focus Notes"], [data-window-controls]')));
+  try {
+    await heading(page, "A quiet place to write");
+    expect(await chrome()).toEqual({ trigger: 0, toolbar: 0, pill: 0, note: 0 });
+    await press(page, "Enter");
+    // Signed in: the account is known, and still no pill while setup runs.
+    await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 20_000 });
+    expect(await chrome()).toEqual({ trigger: 0, toolbar: 0, pill: 0, note: 0 });
+    for (const key of [`${mod}+K`, `${mod}+O`, `${mod}+/`, `${mod}+N`, `${mod}+.`]) {
+      await press(page, key);
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+      await expect(page.getByRole("complementary")).toHaveCount(0);
+      expect(await focusInSetup(), key).toBe(true);
+    }
+    for (let i = 0; i < 12; i++) {
+      await press(page, "Tab");
+      expect(await focusInSetup(), `Tab ${i + 1}`).toBe(true);
+    }
+    // Back to Welcome, then Just use this computer for now: setup is done and the app is all there.
+    await card(page).getByRole("button", { name: "Back" }).click();
+    await heading(page, "A quiet place to write");
+    await card(page).getByRole("button", { name: "Just use this computer for now" }).click();
+    await expect(card(page)).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Focus Notes menu" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
+    await press(page, `${mod}+/`);
+    await expect(page.getByRole("dialog", { name: "Spotlight" })).toBeVisible();
   } finally {
     await quit(l);
     w.server.close();

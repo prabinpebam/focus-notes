@@ -6,7 +6,7 @@ export const contract = defineContract({
   description: "Places content on a layer (trigger, panel, dialog, toast, tooltip) at a fixed position.",
   props: {
     layer: { kind: "enum", values: ["contextual", "trigger", "panel", "dialog", "toast", "tooltip"], default: "panel" },
-    position: { kind: "enum", values: ["topBand", "topEnd", "belowTopBand", "fill", "center", "bottomCenter", "bottomStart"], default: "center" },
+    position: { kind: "enum", values: ["topBand", "topEnd", "belowTopBand", "fill", "window", "center", "bottomCenter", "bottomStart"], default: "center", description: "window: the whole window below the title bar band, which stays the window's (dragging, the window controls): the full-window setup (D-126)." },
     dragBand: { kind: "boolean", default: false, description: "Puts the desktop title bar band under the layer: its top `layout.titleBar` (44 px), the window's drag region (DSK-02). The layer's own content is never part of it." },
     landmark: { kind: "enum", values: ["none", "banner", "main", "complementary", "region"], default: "none" },
     label: { kind: "message", requiredWhen: "landmark" },
@@ -20,7 +20,7 @@ export const contract = defineContract({
     ...["contextual", "trigger", "panel", "dialog", "toast", "tooltip"].map((layer) => ({
       name: `layer ${layer}`, props: { layer, position: "center" }, children: [{ type: "Surface", props: { variant: "frost", padding: "m", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] }],
     })),
-    ...["topBand", "topEnd", "belowTopBand", "fill", "center", "bottomCenter", "bottomStart"].map((position) => ({
+    ...["topBand", "topEnd", "belowTopBand", "fill", "window", "center", "bottomCenter", "bottomStart"].map((position) => ({
       name: `position ${position}`, props: { position }, children: [{ type: "Surface", props: { variant: "frost", padding: "m", shape: "popover" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] }],
     })),
     ...["none", "banner", "main", "complementary", "region"].map((landmark) => ({

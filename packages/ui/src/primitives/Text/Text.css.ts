@@ -16,6 +16,8 @@ export const role = styleVariants({
   label: { fontSize: t.size.label, fontWeight: t.weight.strong },
   emphasis: { fontSize: t.size.emphasis },
   title: { fontSize: t.size.title, fontWeight: t.weight.strong },
+  // A full-window onboarding step's body (D-126).
+  lead: { fontSize: t.size.lead },
 });
 export const tone = styleVariants({
   default: { color: t.color.default },

@@ -1,0 +1,11 @@
+{ "cmp": { "appMark": {
+  "size": { "$type": "dimension", "m": { "$value": "{size.appMarkM}" }, "l": { "$value": "{size.appMarkL}" } },
+  "tile": { "$type": "color", "$value": "{brand.tile}" },
+  "tileBorder": { "$type": "color", "$value": "{brand.tileBorder}" },
+  "ring": { "$type": "color", "$value": "{brand.ring}" },
+  "ringOpacity": { "$type": "number", "$value": "{brand.ringOpacity}" },
+  "ringBorder": { "$type": "color", "$value": "{brand.ringBorder}" },
+  "dot": { "$type": "color", "$value": "{brand.dot}" },
+  "shadow": { "$type": "color", "$value": "{brand.shadow}" },
+  "shadowOpacity": { "$type": "number", "$value": "{brand.shadowOpacity}" }
+} } }

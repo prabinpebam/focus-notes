@@ -109,7 +109,7 @@ export class GitHubApi {
   }
 
   user() {
-    return this.request<{ login: string; id: number; name: string | null }>("GET", "/user");
+    return this.request<{ login: string; id: number; name: string | null; avatar_url?: string | null }>("GET", "/user");
   }
 
   /** The signed-in account's own repositories, most recently pushed first (the first run's Open from GitHub). */

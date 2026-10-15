@@ -13,6 +13,7 @@ import {
   type FluentIcon,
 } from "@fluentui/react-icons";
 import type { IconName } from "./icon-names.ts";
+import { GitHubMark } from "./github-mark.tsx";
 
 export const ICONS: Record<IconName, FluentIcon> = {
   open: FolderOpen20Regular, save: Save20Regular, darkTheme: WeatherMoon20Regular, lightTheme: WeatherSunny20Regular,
@@ -31,4 +32,6 @@ export const ICONS: Record<IconName, FluentIcon> = {
   arrowUp: ArrowUp20Regular, arrowDown: ArrowDown20Regular, lock: LockClosed20Regular, export: ArrowExportLtr20Regular,
   import: ArrowImport20Regular, strikethrough: TextStrikethrough20Regular, text: TextT20Regular, taskList: TaskListLtr20Regular,
   divider: LineHorizontal120Regular,
+  // GitHub's own mark (Octicons, MIT), where the setup names GitHub (D-126).
+  github: GitHubMark,
 };

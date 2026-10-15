@@ -34,11 +34,14 @@ export const base = style({
 export const size = styleVariants({
   s: { height: t.height.s, paddingInline: t.paddingInline.s },
   m: { height: t.height.m, paddingInline: t.paddingInline.m },
+  // An onboarding step's main action (Get started, D-126).
+  l: { height: t.height.l, paddingInline: t.paddingInline.l, fontSize: t.fontSizeL },
 });
 /** A subtle button at the start of the content: its label lines up with the edge, its hit area reaching into the padding (D-111, D-123). */
 export const bleed = styleVariants({
   s: { marginInlineStart: `calc(-1 * ${t.paddingInline.s})` },
   m: { marginInlineStart: `calc(-1 * ${t.paddingInline.m})` },
+  l: { marginInlineStart: `calc(-1 * ${t.paddingInline.l})` },
 });
 
 const variantStyle = (v: { background: { rest: string; hover: string; pressed: string }; text: string; border: string }) => ({

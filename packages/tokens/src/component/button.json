@@ -1,10 +1,11 @@
 { "cmp": { "button": {
   "radius": { "$type": "dimension", "$value": "{radius.control}" },
-  "height": { "$type": "dimension", "s": { "$value": "{size.controlS}" }, "m": { "$value": "{size.controlM}" } },
-  "paddingInline": { "$type": "dimension", "s": { "$value": "{space.s}" }, "m": { "$value": "{space.m}" } },
+  "height": { "$type": "dimension", "s": { "$value": "{size.controlS}" }, "m": { "$value": "{size.controlM}" }, "l": { "$value": "{size.controlL}" } },
+  "paddingInline": { "$type": "dimension", "s": { "$value": "{space.s}" }, "m": { "$value": "{space.m}" }, "l": { "$value": "{space.xl}" } },
   "gap": { "$type": "dimension", "$value": "{space.xs}" },
   "font": { "$type": "fontFamily", "$value": "{font.ui}" },
   "fontSize": { "$type": "dimension", "$value": "{font.uiBody}" },
+    "fontSizeL": { "$type": "dimension", "$value": "{font.uiEmphasis}", "$description": "A large button (an onboarding step's main action, D-126)." },
   "fontWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
   "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "duration": { "$type": "duration", "$value": "{motion.micro}" },

@@ -33,6 +33,8 @@ export const DATA_FILES = {
   window: "window.json",
   /** Unsaved note text, while there is some, and after a crash until the next launch restores it (QLT-03). */
   journal: "recovery-journal.jsonl",
+  /** The signed-in account's public GitHub picture, for the first run's profile card (D-126). */
+  avatar: "avatar.json",
 } as const;
 export type DataFile = (typeof DATA_FILES)[keyof typeof DATA_FILES];
 
@@ -69,6 +71,7 @@ export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "setupProgress", path: DATA_FILES.setup, removedBy: ["runSetupAgain", "signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "signedOut", path: DATA_FILES.account, removedBy: ["signIn", "deleteDataFolder"] },
   { id: "windowPlace", path: DATA_FILES.window, removedBy: ["deleteDataFolder"] },
+  { id: "accountPicture", path: DATA_FILES.avatar, removedBy: ["deleteDataFolder"] },
   { id: "recoveryJournal", path: DATA_FILES.journal, removedBy: ["quit", "signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "chromium", path: `${CHROMIUM_FOLDERS.session}/`, removedBy: ["deleteDataFolder"] },
   { id: "codeCache", path: `${CHROMIUM_FOLDERS.codeCache}/`, removedBy: ["deleteDataFolder"] },

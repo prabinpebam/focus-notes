@@ -7,7 +7,7 @@
   "controlBorder": { "$type": "dimension", "$value": "{border.hairline}", "$description": "...and its border (cmp.button.borderWidth), D-111." },
   "size": { "$type": "dimension",
     "caption": { "$value": "{font.uiCaption}" }, "secondary": { "$value": "{font.uiSecondary}" }, "body": { "$value": "{font.uiBody}" },
-    "label": { "$value": "{font.uiBody}" }, "emphasis": { "$value": "{font.uiEmphasis}" }, "title": { "$value": "{font.uiTitle}" } },
+    "label": { "$value": "{font.uiBody}" }, "emphasis": { "$value": "{font.uiEmphasis}" }, "title": { "$value": "{font.uiTitle}" }, "lead": { "$value": "{font.uiLead}" } },
   "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" },
   "weight": { "$type": "fontWeight", "regular": { "$value": "{font.weightRegular}" }, "strong": { "$value": "{font.weightSemibold}" } }
 } } }
