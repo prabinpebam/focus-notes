@@ -1,5 +1,5 @@
 import { style, styleVariants } from "@vanilla-extract/css";
-import { tokens } from "@focus-notes/tokens";
+import { tokens, breakpoints } from "@focus-notes/tokens";
 
 const sp = tokens.space;
 const spaceMap = <P extends string>(prop: P) =>
@@ -18,3 +18,9 @@ export const justify = styleVariants({
   start: { justifyContent: "flex-start" }, center: { justifyContent: "center" }, end: { justifyContent: "flex-end" }, between: { justifyContent: "space-between" },
 });
 export const grow = style({ flexGrow: 1, minHeight: 0 });
+// The gap or padding in a short window (below breakpoint.short): the full-window setup tightens up (D-131).
+const short = `(max-height: ${breakpoints.short - 1}px)`;
+const shortMap = <P extends string>(prop: P) =>
+  styleVariants(Object.fromEntries((["none", "xs", "s", "m", "l", "xl", "xxl", "xxxl"] as const).map((k) => [k, { "@media": { [short]: { [prop]: sp[k] } } }])) as Record<"none" | "xs" | "s" | "m" | "l" | "xl" | "xxl" | "xxxl", { "@media": Record<string, Record<P, string>> }>);
+export const shortGap = shortMap("gap");
+export const shortPadding = shortMap("padding");

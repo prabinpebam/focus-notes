@@ -144,7 +144,9 @@ function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, ke
   if (isSwitch(node)) {
     const v = String(r.value(node.switch as Value, scope));
     const branch = node.cases[v];
-    return branch ? renderNode(branch, scope, deps, r, key) : null;
+    // A remounting switch (a setup step, D-131) mounts each case afresh, so its autoFocus runs even
+    // where the last case had a button; any other switch (a disclosure) keeps what's alike, and focus.
+    return branch ? renderNode(branch, scope, deps, r, node.remount ? `${key}:${v}` : key) : null;
   }
   if (!isComponent(node)) return null;
   const Comp = deps.registry[node.type];

@@ -15,8 +15,11 @@ export const contract = defineContract({
     size: { kind: "enum", values: ["m", "l"], default: "m", description: "l: an account's profile card, its name large." },
     personal: { kind: "enum", values: ["none", "title", "all"], default: "none", description: "Which of its words are the person's own data (their name and @login, a workspace's name), not the interface's: the visual score doesn't count them (D-127)." },
     label: { kind: "message", description: "The card's accessible name, when its title alone doesn't say it (This computer is connected to GitHub as …)." },
+    busy: { kind: "boolean", default: false, description: "A pressable card's action is running." },
+    autoFocus: { kind: "boolean", default: false, description: "A pressable card takes focus when it appears: a first-run step's main action, so Enter continues." },
   },
-  events: {},
+  // press: with an action, the whole card is one button: one tab stop, its title the name, no slot actions (D-131).
+  events: { press: {} },
   slots: { default: { accepts: "any" } },
   states: ["rest"],
   tokens: "cmp.itemCard.*",
@@ -25,5 +28,7 @@ export const contract = defineContract({
     { name: "workspace", props: { title: { t: "gallery.sample" }, detail: { t: "gallery.sample" }, badge: { t: "gallery.sample" }, icon: "folder", personal: "title" }, children: [{ type: "Button", props: { label: { t: "gallery.action" }, variant: "primary" } }] },
     { name: "profile", props: { title: { t: "gallery.sample" }, detail: { t: "gallery.sample" }, mark: true, size: "l", personal: "all" } },
     { name: "github", props: { title: { t: "gallery.sample" }, detail: { t: "gallery.long" }, icon: "github" } },
+    { name: "option", props: { title: { t: "gallery.action" }, detail: { t: "gallery.sample" }, icon: "newNote" } },
+    { name: "option busy", props: { title: { t: "gallery.action" }, detail: { t: "gallery.sample" }, icon: "newNote", busy: true } },
   ],
 });

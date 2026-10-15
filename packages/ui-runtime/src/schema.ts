@@ -77,7 +77,7 @@ export function buildUiSchema({ contracts, icons, tokenGroups }: SchemaInputs): 
     },
     switchNode: {
       type: "object", required: ["switch", "cases"], additionalProperties: false,
-      properties: { switch: {}, cases: { type: "object", additionalProperties: ref("node") }, when: {} },
+      properties: { switch: {}, cases: { type: "object", additionalProperties: ref("node") }, remount: { type: "boolean" }, when: {} },
     },
     slotOutlet: { type: "object", required: ["slot"], additionalProperties: false, properties: { slot: { type: "string" } } },
     node: {

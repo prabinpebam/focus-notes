@@ -11,7 +11,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SETUP_STEPS, type SetupOptions, type SetupReport, type SetupStepId } from "@focus-notes/core/setup";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
-import { SetupEngine, SECRET_NAME, checkOptions, type SetupDeps } from "../src/main/setup/engine.ts";
+import { SetupEngine, SECRET_NAME, checkOptions, problemOf, type SetupDeps } from "../src/main/setup/engine.ts";
+import { GitHubError } from "@focus-notes/github";
 import { DEPLOY_KEY_TITLE, deployKeyPair } from "../src/main/setup/deploy-key.ts";
 import { CREDENTIAL_QUERY, githubFetch, githubToken } from "../src/main/setup/credential.ts";
 import type { GitCall } from "../src/main/git/run.ts";
@@ -250,6 +251,31 @@ describe("FRE-08: every step can be retried on its own", () => {
     const r = await (await h.open()).retry("deployKey");
     expect(state(r, "deployKey")).toMatchObject({ state: "failed", problem: "blocked" });
     expect(h.gh.calls).toEqual([]);
+  });
+
+  it("a missing template is the starter notes, not the sign-in: only a real 403 is about permissions", async () => {
+    const h = harness({ done: before("instance") });
+    h.gh.fail("POST /repos/prabinpebam/focus-notes-workspace/generate", 404, "Not Found");
+    const e = await h.open();
+    expect(state(await e.retry("instance"), "instance")).toEqual({ id: "instance", state: "failed", problem: "templateMissing" });
+    expect(state(await e.retry("instance"), "instance").state).toBe("done");
+
+    const k = harness({ done: before("deployKey") });
+    k.gh.add({ owner: "ada", name: "notes", files: [".focus-notes/workspace.json"] });
+    k.gh.add({ owner: "ada", name: "notes-private", private: true, files: ["README.md"] });
+    k.gh.fail("POST /repos/ada/notes-private/keys", 404, "Not Found");
+    expect(state(await (await k.open()).retry("deployKey"), "deployKey").problem).toBe("notFound");
+  });
+
+  it("maps GitHub's answers to problems", () => {
+    expect(problemOf(new GitHubError(404, "Not Found"))).toBe("notFound");
+    expect(problemOf(new GitHubError(403, "Resource not accessible by personal access token"))).toBe("permission");
+    expect(problemOf(new GitHubError(403, "API rate limit exceeded"))).toBe("rateLimited");
+    expect(problemOf(new GitHubError(429, "Too many"))).toBe("rateLimited");
+    expect(problemOf(new GitHubError(401, "Bad credentials"))).toBe("auth");
+    expect(problemOf(new GitHubError(0, "fetch failed"))).toBe("offline");
+    expect(problemOf(new GitHubError(500, "Server error"))).toBe("failed");
+    expect(problemOf(new Error("boom"))).toBe("failed");
   });
 
   it("says when GitHub can't be reached, or refused the sign-in, and asks the helper again after a refusal", async () => {

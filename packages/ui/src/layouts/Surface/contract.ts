@@ -9,6 +9,7 @@ export const contract = defineContract({
     shape: { kind: "enum", values: ["none", "window", "sheet", "popover", "control", "round"], default: "none" },
     elevation: { kind: "enum", values: ["0", "1", "2", "3"], default: "0" },
     padding: { kind: "token", group: "space", default: "none" },
+    shortPadding: { kind: "token", group: "space", description: "The padding in a short window (below breakpoint.short): the full-window setup tightens up (D-131)." },
     scroll: { kind: "boolean", default: false, description: "What it holds scrolls inside its padding when the surface is held shorter than its content: a dialog in the middle of a short window (D-123)." },
     keyScope: { kind: "enum", values: ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "firstRun"], default: "none", description: "Keys registered for this scope work while focus is inside." },
   },

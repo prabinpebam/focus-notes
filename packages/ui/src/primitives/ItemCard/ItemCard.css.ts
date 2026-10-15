@@ -29,3 +29,16 @@ export const badge = style({
   borderRadius: t.badgeRadius, fontSize: t.badgeSize, color: t.badgeColor,
 });
 export const actions = style({ display: "flex", alignItems: "center", gap: t.textGap, flexShrink: 0, marginInlineStart: "auto" });
+// The whole card is the action (D-131): one button, the accent edge says it's the step's main one.
+export const pressable = style({
+  width: "100%", textAlign: "start", color: "inherit", cursor: "default", outline: "none", flexWrap: "nowrap",
+  borderColor: t.action.border,
+  transitionProperty: "background-color, box-shadow", transitionDuration: t.action.duration, transitionTimingFunction: t.action.easing,
+  selectors: {
+    '&[data-hovered]:not([aria-disabled="true"])': { backgroundColor: t.action.hover },
+    '&[data-pressed]:not([aria-disabled="true"])': { backgroundColor: t.action.pressed },
+    "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.action.focusRing, outlineWidth: t.action.focusWidth, outlineOffset: t.action.focusOffset },
+    '&[aria-disabled="true"]': { opacity: t.action.disabledOpacity },
+  },
+});
+export const chevron = style({ width: t.markSize, height: t.markSize, flexShrink: 0, color: t.detailColor });

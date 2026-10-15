@@ -222,6 +222,35 @@ describe("DSK-05: the macOS menu bar lists every command", () => {
     expect(f.reveals).toEqual([true, false]);
   });
 
+  it("D-126: holds the app's commands while setup owns the window, and gives them back when it's done", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    const f = fakeNative();
+    // A new install: setup opens at Welcome.
+    const app = createApp({ ...desktop(f.native), loadAppState: async () => ({ version: 1 }) }, en);
+    await app.start();
+    await vi.advanceTimersByTimeAsync(MENU_UPDATE_MS);
+    const during = f.menus.at(-1)!;
+    expect(during).toBeDefined();
+    const held = ["note.new", "note.open", "files.open", "spotlight.open", "format.bold", "focus.toggle"].filter((i) => menuBarCommands().includes(i));
+    expect(held.length).toBeGreaterThanOrEqual(4);
+    for (const id of held) {
+      expect(find(during, id), id).toMatchObject({ enabled: false, reason: en["command.firstRun.held"] });
+      // The menu reads the registry's describe().
+      expect(app.commands.describe(id).enabled).toBe(false);
+    }
+    // What setup itself needs stays on.
+    for (const id of ["appearance.dark"]) expect(find(during, id)?.enabled, id).toBe(true);
+    // Chosen from the menu while held, it does nothing.
+    f.choose("note.new");
+    await vi.advanceTimersByTimeAsync(MENU_UPDATE_MS);
+    expect(app.store.state.note.path).toBeUndefined();
+    // Just use this computer for now: setup closes and the menu bar is whole again.
+    await app.commands.run("firstRun.local");
+    await vi.advanceTimersByTimeAsync(MENU_UPDATE_MS);
+    expect(find(f.menus.at(-1)!, "note.new")?.enabled).toBe(true);
+    expect(find(f.menus.at(-1)!, "note.new")?.reason).toBeUndefined();
+  });
+
   it("has no menu bar on Windows and Linux", async () => {
     const app = createApp({ ...desktop(), platform: "windows" }, en);
     await app.start();

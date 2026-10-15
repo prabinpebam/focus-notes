@@ -1,5 +1,5 @@
 import { style, styleVariants } from "@vanilla-extract/css";
-import { tokens } from "@focus-notes/tokens";
+import { tokens, breakpoints } from "@focus-notes/tokens";
 import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
 const t = tokens.cmp.surface;
@@ -31,7 +31,7 @@ export const elevation = styleVariants({
   "0": { boxShadow: tokens.shadow["0"] }, "1": { boxShadow: tokens.shadow["1"] },
   "2": { boxShadow: tokens.shadow["2"] }, "3": { boxShadow: tokens.shadow["3"] },
 });
-export { padding } from "../Stack/Stack.css.ts";
+export { padding, shortPadding } from "../Stack/Stack.css.ts";
 
 // Scrolling (D-123): the surface clips to its shape, and a body inside it scrolls with the padding.
 // The reserved gutter takes the place of the end padding, so content lines up either way (UI-09).
@@ -44,4 +44,10 @@ const sp = tokens.space;
 const pad = (v: string) => ({ padding: v, paddingInlineEnd: `max(0px, calc(${v} - ${sb.scrollbarSize}))`, scrollPadding: v });
 export const bodyPadding = styleVariants({
   none: {}, xs: pad(sp.xs), s: pad(sp.s), m: pad(sp.m), l: pad(sp.l), xl: pad(sp.xl), xxl: pad(sp.xxl), xxxl: pad(sp.xxxl),
+});
+// In a short window (below breakpoint.short) the scroller's padding can step down (the full-window setup, D-131).
+const shortQuery = `(max-height: ${breakpoints.short - 1}px)`;
+const shortPad = (v: string) => ({ "@media": { [shortQuery]: pad(v) } });
+export const bodyShortPadding = styleVariants({
+  none: shortPad(sp.none), xs: shortPad(sp.xs), s: shortPad(sp.s), m: shortPad(sp.m), l: shortPad(sp.l), xl: shortPad(sp.xl), xxl: shortPad(sp.xxl), xxxl: shortPad(sp.xxxl),
 });
