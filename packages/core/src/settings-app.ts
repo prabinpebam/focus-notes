@@ -17,10 +17,11 @@ import type { Store } from "./store.ts";
 import type { SyncState } from "./sync-app.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { UI_SCALES, themeById } from "./themes.ts";
+import { DIAGNOSTICS_IDLE, registerDiagnostics, type DiagnosticsState } from "./diagnostics-app.ts";
 
 /** Settings' categories, in order, as built so far. */
-// Sharing only where the shell keeps access.json (the desktop, WP-5.3).
-export const SETTINGS_SECTIONS = ["account", "workspace", "sharing", "appearance"] as const;
+// Sharing only where the shell keeps access.json (the desktop, WP-5.3); About only where it builds diagnostics (WP-5.7).
+export const SETTINGS_SECTIONS = ["account", "workspace", "sharing", "appearance", "about"] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export interface SettingsState {
@@ -33,11 +34,14 @@ export interface SettingsState {
   signOut: { open: boolean; git: boolean; busy: boolean };
   /** Remove this workspace from this computer (FRE-07, PRV-02). */
   remove: { open: boolean; busy: boolean; check?: RemovalCheck };
+  /** About's diagnostics: the report's preview (QLT-04). */
+  diagnostics: DiagnosticsState;
 }
 export const SETTINGS_CLOSED: SettingsState = {
   open: false, section: "account", checking: false,
   signOut: { open: false, git: true, busy: false },
   remove: { open: false, busy: false },
+  diagnostics: DIAGNOSTICS_IDLE,
 };
 
 interface S {
@@ -101,13 +105,15 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     },
   });
   reg<{ open: boolean }>("settings.setOpen", ({ open }) => { if (!open) set({ open: false }); });
-  const sections = () => SETTINGS_SECTIONS.filter((id) => id !== "sharing" || bridge.access);
+  const sections = () => SETTINGS_SECTIONS.filter((id) => (id !== "sharing" || bridge.access) && (id !== "about" || bridge.diagnostics));
   reg<{ value: string }>("settings.setSection", async (a) => {
     const v = value(a);
     if (!sections().includes(v as SettingsSection)) return;
     set({ section: v as SettingsSection });
     if (v === "sharing") await commands.run("share.manage.load");
+    if (v === "about") await commands.run("diagnostics.load");
   });
+  registerDiagnostics({ store, bridge, catalog, commands, viewModels, toast });
 
   // ---- Account (FRE-07) ----
   reg("account.openGitHub", () => fr?.openPage(state().account?.via === "helper" ? "tokens" : "authorizations"));

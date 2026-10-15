@@ -131,6 +131,12 @@ contextBridge.exposeInMainWorld("focusNotes", {
     reveal: (id: string) => ipcRenderer.invoke("access:reveal", id),
     copy: (id: string, what: string, invite?: unknown) => ipcRenderer.invoke("access:copy", id, what, invite),
   },
+  // Local diagnostics (QLT-04, D-140): the main process builds and redacts the report; the window sends only its timings.
+  diagnostics: {
+    preview: () => ipcRenderer.invoke("diagnostics:preview"),
+    copy: (timings: unknown) => ipcRenderer.invoke("diagnostics:copy", timings),
+    save: (timings: unknown) => ipcRenderer.invoke("diagnostics:save", timings),
+  },
   // Save and sync with the user's own Git (WP-3.3): intent-level only, never a Git command.
   sync: {
     now: (reason: "save" | "switch") => ipcRenderer.invoke("sync:now", reason),

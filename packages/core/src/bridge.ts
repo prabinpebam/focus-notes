@@ -6,6 +6,7 @@ import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
 import type { ConflictChoiceKind, DeletedNote } from "./history.ts";
 import type { NativeWindowBridge, WindowBridge } from "./window-app.ts";
 import type { AccessBridge } from "./share-manage.ts";
+import type { DiagnosticsPreview, TimingSummary } from "./diagnostics.ts";
 
 /**
  * Services a shell provides. The Electron preload implements this as `window.focusNotes`;
@@ -83,6 +84,20 @@ export interface PlatformBridge {
    * desktop's; absent in the browser, which can't tell, and keeps the blur.
    */
   compositing?: CompositingBridge;
+  /**
+   * Local diagnostics (QLT-04, D-140): the shell builds the report from facts, redacts it, and
+   * copies or saves it. Nothing is sent. The desktop's; absent in the browser.
+   */
+  diagnostics?: DiagnosticsBridge;
+}
+
+export interface DiagnosticsBridge {
+  /** A summary of each part of the report, for the preview. */
+  preview(): Promise<DiagnosticsPreview>;
+  /** Puts the report on the clipboard, with the window's timings summary (names and numbers only). */
+  copy(timings: TimingSummary[]): Promise<void>;
+  /** Saves the report where the person chooses. False when they cancel. */
+  save(timings: TimingSummary[]): Promise<boolean>;
 }
 
 /** GPU or software compositing (D-121). */
