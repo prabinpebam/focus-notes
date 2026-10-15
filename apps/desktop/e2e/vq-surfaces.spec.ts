@@ -6,7 +6,7 @@
  * anchored tooltips. Each surface is also captured for the critical review in screenshots
  * (`test-results/screens/vq-*.png`).
  */
-import { test, expect } from "./fixtures.ts";
+import { test, expect, screenAllowed, SCREEN_SKIP } from "./fixtures.ts";
 import { quit } from "./helpers.ts";
 import { dialogNeverShrinks, hoverTooltips, listRings, scrollbarClearOfCorners, settled, visualProblems } from "./visual-quality.ts";
 import { SIZES, SURFACES, mod, reset, scheme, settings, spotlight, start } from "./surfaces.ts";
@@ -15,6 +15,8 @@ for (const { name: sizeName, size } of SIZES) {
   for (const want of ["light", "dark"] as const) {
     test(`D-111: every surface passes the visual quality checklist, ${want}, ${sizeName} window`, async () => {
       test.setTimeout(300_000);
+      // The small window is a real window of 480 × 360 on the screen: on CI, or with FOCUS_NOTES_E2E_ALLOW_SCREEN=1 (D-141).
+      test.skip(Boolean(size) && !screenAllowed(), SCREEN_SKIP);
       const l = await start(size);
       const { page } = l;
       await scheme(page, want);

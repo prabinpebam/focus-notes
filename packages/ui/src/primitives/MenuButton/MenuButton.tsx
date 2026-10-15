@@ -5,6 +5,7 @@ import { Icon } from "../Icon/Icon.tsx";
 import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import type { IconName } from "../../icon-names.ts";
 import type { CommandItem, MenuSection as Section } from "../../data.ts";
+import { ownHomeEnd } from "../../behaviors/menu-keys.ts";
 import * as s from "./MenuButton.css.ts";
 
 export interface MenuButtonProps {
@@ -55,7 +56,10 @@ function ChoiceMenu({ label, items, onAction }: { label: string; items: CommandI
   const ref = useRef<HTMLDivElement | null>(null);
   return (
     <Menu
-      ref={ref}
+      ref={(el: HTMLDivElement | null) => {
+        ref.current = el;
+        ownHomeEnd(el);
+      }}
       className={s.menu}
       aria-label={label}
       selectionMode="single"
@@ -127,7 +131,7 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
     el.focus();
   };
   return (
-        <Menu ref={menuRef} className={s.menu} aria-label={label} shouldCloseOnSelect {...(autoFocus && !later ? { autoFocus: "first" as const } : {})} onAction={(key) => { if (!unavailable.has(String(key))) onAction?.({ id: String(key) }); }}>
+        <Menu ref={(el: HTMLDivElement | null) => { menuRef.current = el; ownHomeEnd(el); }} className={s.menu} aria-label={label} shouldCloseOnSelect {...(autoFocus && !later ? { autoFocus: "first" as const } : {})} onAction={(key) => { if (!unavailable.has(String(key))) onAction?.({ id: String(key) }); }}>
           {sections.map((sec, index) => (
             <Fragment key={sec.id}>
               {index > 0 ? <Separator className={s.separator} /> : null}
