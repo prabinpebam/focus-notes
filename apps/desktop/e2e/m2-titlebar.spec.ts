@@ -1,4 +1,4 @@
-import { test, expect, type ElectronApplication, type Page } from "./fixtures.ts";
+import { test, expect, screenAllowed, SCREEN_SKIP, type ElectronApplication, type Page } from "./fixtures.ts";
 import { launch, placed, quit, setWindowActive, tempDirs, windowBox, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
@@ -88,6 +88,7 @@ test.describe("Windows and Linux: the app-drawn window controls", () => {
   });
 
   test("DSK-04: F11 and ⋯ go full screen; the band hides there until the pointer reaches the top edge", async () => {
+    test.skip(!screenAllowed(), SCREEN_SKIP);
     const l = await start();
     const { app, page } = l;
     const controls = page.getByRole("group", { name: "Window controls" });

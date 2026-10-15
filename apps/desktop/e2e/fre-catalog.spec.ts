@@ -13,7 +13,7 @@
  * (1600 × 1000) window. `FOCUS_NOTES_FRE_OUT` names the folder (default `test-results/fre-review`),
  * which gets `NN-<step>-<state>.<theme>.<size>.png`, `index.html` and `README.md` (`fre-catalog-index.ts`).
  */
-import { test, expect, type Page } from "./fixtures.ts";
+import { test, expect, screenAllowed, type Page } from "./fixtures.ts";
 import { execFileSync } from "node:child_process";
 import { deflateSync } from "node:zlib";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -179,7 +179,8 @@ async function shot(l: Launched, id: string, prep?: (page: Page) => Promise<void
   await check(l.page, id);
   if (!CAPTURE) return;
   mkdirSync(OUT, { recursive: true });
-  const sizes: SizeId[] = s.primary ? ["default", "small", "large"] : ["default"];
+  // The small and large windows resize the real window: on CI, or with FOCUS_NOTES_E2E_ALLOW_SCREEN=1 (D-141).
+  const sizes: SizeId[] = s.primary && screenAllowed() ? ["default", "small", "large"] : ["default"];
   for (const sz of sizes) {
     await size(l, sz);
     for (const t of ["light", "dark"] as const) {

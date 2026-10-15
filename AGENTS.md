@@ -42,6 +42,7 @@ The loop optimizes validated progress toward the definition of done per hour. Se
 - **Don't widen a branch whose Windows CI is green.** It lands at its time-box. Problems that only show on macOS or Linux, and don't block (D-112), get a separate follow-up, unless they touch data safety, security or what the owner sees in Preview.
 - **The owner tests through Preview, any time.** The "Focus Notes Preview" desktop shortcut opens the newest green `main`, built by `E:\Projects\side-projects\focus-notes-preview\update.ps1` every 10 minutes (a scheduled task). Never kill, replace or build into the Preview's folder. Getting changes to the owner means merging them green; there's no separate restart step (D-122).
 - **Always:** Windows first (D-112). Merge what works at the end of every time-box, and keep branches no older than about an hour. Never widen a running task with new feedback; queue it. Log one timestamped line per step to `E:\Projects\side-projects\builder-progress.log` (outside the repository). Journeys never take the owner's focus (`FOCUS_NOTES_E2E=1`).
+- **Never take over the owner's screen.** Local runs use FOCUS_NOTES_E2E=1 and never maximize, snap, full-screen or move a window over the owner's apps, send OS keys, or take full-screen screenshots. Screen-level journeys run on CI (D-141).
 
 ## Validate before committing
 
