@@ -24,7 +24,7 @@ import { accessStore, siteFromGitConfig } from "./share/access.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
 import { ProblemLog, REPORT_PROBLEM_URL, type RedactOptions } from "@focus-notes/core/diagnostics";
 import { diagnostics, knownStrings, reportFileName, reportPathAllowed } from "./diagnostics.ts";
-import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
+import { DEFAULT_SETUP, isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
 import { checkOptions, notesRepos, SetupEngine } from "./setup/engine.ts";
 import { githubFetch } from "./setup/credential.ts";
@@ -32,7 +32,7 @@ import { avatarLoader } from "./first-run/avatar.ts";
 import type { BatchOp } from "./git/message.ts";
 import { Account } from "./first-run/account.ts";
 import { createToolRunner } from "./first-run/tools.ts";
-import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree } from "./first-run/workspace.ts";
+import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree, homesFor, savedToGitHub, setupTarget } from "./first-run/workspace.ts";
 import type { ConflictChoice, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
@@ -216,7 +216,7 @@ const setup = () => (setupEngine ??= SetupEngine.open({
   // Step names, states, and problem codes only.
   log: logLine,
   // A folder the app chose that's taken when Download runs: the next free one beside the default (D-154).
-  nextFolder: () => freeHome(),
+  folders: (instance) => homesFor(documentsDir(), instance),
 }));
 /** A vault passphrase from the renderer: text, or none (Skip for now). Never logged or stored. */
 const passphraseArg = (p: unknown) => (typeof p === "string" && p.length > 0 && p.length <= 1024 ? p : undefined);
@@ -255,26 +255,33 @@ function readFirstRun(): void {
     // Nothing chosen yet.
   }
 }
+/** The folder the notes folders go in: Documents (beside Documents/Focus Notes, D-155). */
+const documentsDir = () => dirname(defaultHome());
 /**
- * A folder a new or cloned workspace can go in: Documents/Focus Notes, or, when that already holds
- * notes (a folder used on this computer only, or another workspace), the first free one beside it:
- * "Focus Notes 2", "Focus Notes 3" (D-124).
+ * A folder a new or cloned workspace can go in (D-155): Documents/<repository name>, or, when that
+ * already holds files (a folder used on this computer only, or another workspace), the first free
+ * one beside it: "<name> 2", "<name> 3" (D-124). Nothing existing is renamed or moved.
  */
-async function freeHome(): Promise<string> {
-  const base = defaultHome();
-  for (let n = 1; n < 100; n++) {
-    const folder = n === 1 ? base : `${base} ${n}`;
-    if (await folderFree(folder)) return folder;
-  }
-  return base;
+async function freeFor(repo: string): Promise<string> {
+  const all = homesFor(documentsDir(), repo);
+  for (const folder of all) if (await folderFree(folder)) return folder;
+  return all[0]!;
 }
-/** The folder setup makes the workspace in: the one it started with, the chosen one, or the open workspace (Run setup again). */
-const setupFolder = async () => (await setup()).report().options?.folder ?? targetFolder ?? (isWorkspace() ? notesHome() : await freeHome());
-/** Whether the person chose that folder (D-154): only a folder the app chose moves when it's taken. */
-const setupChosen = async () => {
-  const o = (await setup()).report().options;
-  return o ? o.chosen === true : targetFolder !== undefined || isWorkspace();
-};
+/** Where setup makes the workspace (D-124, D-154): never a folder used on this computer only. */
+async function setupWhere(instance?: string): Promise<{ folder: string; chosen: boolean }> {
+  const engine = await setup();
+  const local = isWorkspace() && !(await savedToGitHub(setupRunner, notesHome()));
+  // A setup started (by an earlier version) with the folder used on this computer only moves off it (D-154).
+  const r0 = engine.report();
+  if (local && r0.options && resolve(r0.options.folder) === resolve(notesHome()) && r0.steps.find((s) => s.id === "clone")?.state !== "done") await engine.useFolder(await freeFor(r0.options.instance), false);
+  const o = engine.report().options;
+  const t = setupTarget({
+    ...(o ? { started: o } : {}),
+    ...(targetFolder ? { picked: targetFolder } : {}),
+    ...(isWorkspace() ? { open: { folder: notesHome(), savedToGitHub: !local } } : {}),
+  });
+  return { folder: t.folder ?? (await freeFor(instance && isRepoName(instance) ? instance : DEFAULT_SETUP.instance)), chosen: t.chosen };
+}
 /**
  * Deletes what the data inventory lists for signing out or removing the workspace (PRV-02): setup's
  * progress (through the engine, so it forgets too), the first run's workspace identity, and, for
@@ -1011,16 +1018,17 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("setup:status", async () => (await setup()).report());
   // The folder is the main process's own: the one setup started with, or the one chosen with the dialog (D-98).
-  handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), folder: await setupFolder(), chosen: await setupChosen() }), passphraseArg(passphrase)));
+  handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), ...(await setupWhere((options as { instance?: unknown } | undefined)?.instance as string | undefined)) }), passphraseArg(passphrase)));
   // Download somewhere else (D-154): the system's dialog, or the next free folder beside the default. Undefined: cancelled.
   handle("setup:useFolder", async (how) => {
-    const folder = how === "choose" ? await chooseFolder("Choose a folder for your notes") : how === "new" ? await freeHome() : undefined;
+    const folder = how === "choose" ? await chooseFolder("Choose a folder for your notes") : how === "new" ? await freeFor((await setup()).report().options?.instance ?? DEFAULT_SETUP.instance) : undefined;
     if (!folder) return undefined;
     if (how === "choose") targetFolder = folder;
     return (await setup()).useFolder(folder, how === "choose");
   });
   handle("setup:retry", async (id, passphrase) => {
     if (!(SETUP_STEPS as readonly unknown[]).includes(id)) throw new Error("Unknown setup step");
+    await setupWhere();
     return (await setup()).retry(id as SetupStepId, passphraseArg(passphrase));
   });
   handle("setup:reset", async () => (await setup()).reset());
@@ -1054,15 +1062,18 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return true;
   });
   handle("firstRun:repositories", () => repositories());
-  handle("firstRun:folder", () => setupFolder());
+  // Where Create my notes will put them, for the name typed (D-155).
+  handle("firstRun:folder", async (instance) => (await setupWhere(typeof instance === "string" ? instance : undefined)).folder);
   handle("firstRun:chooseFolder", async () => {
     const folder = await chooseFolder("Choose a folder for your workspace");
     if (folder) targetFolder = folder;
     return folder;
   });
-  handle("firstRun:clone", async (owner, name): Promise<WorkspaceResult> => {
+  handle("firstRun:clone", async (owner, name, where): Promise<WorkspaceResult> => {
     if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
-    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? (await freeHome()));
+    // Use a new folder (D-154): the next free one beside the default, not the chosen one.
+    if (where === "new") targetFolder = undefined;
+    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? (await freeFor(name)));
     if (r.ok) pendingWorkspace = r.folder;
     return r;
   });

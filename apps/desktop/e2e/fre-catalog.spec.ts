@@ -187,6 +187,8 @@ const ringClearance = (page: Page, other: string) =>
 async function shot(l: Launched, id: string, prep?: (page: Page) => Promise<void>) {
   const s = byId(id);
   await check(l.page, id);
+  // D-154: a state that went well never shows an error left over from something earlier.
+  if (/^(creating-success|creating-retried|ready-|connect-found-|notes-found-)/.test(id)) expect.soft(await l.page.locator('[data-status-row="danger"]').count(), `no error on ${id}`).toBe(0);
   if (!CAPTURE) return;
   mkdirSync(OUT, { recursive: true });
   // The small and large windows resize the real window: on CI, or with FOCUS_NOTES_E2E_ALLOW_SCREEN=1 (D-141).

@@ -64,7 +64,7 @@ function world() {
     sleep: async () => {},
     log: (l: string) => logs.push(l),
   };
-  return { root, gh, remote, spawned, logs, progressFile, folder, open: (more: { nextFolder?: (taken: string) => Promise<string | undefined> } = {}) => SetupEngine.open({ ...deps, ...more }) };
+  return { root, gh, remote, spawned, logs, progressFile, folder, open: (more: { folders?: (instance: string) => string[] } = {}) => SetupEngine.open({ ...deps, ...more }) };
 }
 
 describe("FRE-08: Create my workspace, with real Git", () => {
@@ -180,35 +180,37 @@ describe("FRE-08: Create my workspace, with real Git", () => {
     const w = world();
     mkdirSync(w.folder, { recursive: true });
     writeFileSync(join(w.folder, "Welcome.md"), "# Welcome\n");
-    const r = await (await w.open({ nextFolder: async () => `${w.folder} 2` })).start({ instance: "notes", private: "notes-private", folder: w.folder, chosen: true, publish: false });
+    const r = await (await w.open({ folders: () => [`${w.folder} 2`] })).start({ instance: "notes", private: "notes-private", folder: w.folder, chosen: true, publish: false });
     expect(r.steps.find((s) => s.id === "clone")).toMatchObject({ state: "failed", problem: "folderTaken" });
     expect(readdirSync(w.folder)).toEqual(["Welcome.md"]);
     expect(existsSync(`${w.folder} 2`)).toBe(false);
   });
 
-  // D-154: the folder the app chose is checked again when Download runs; taken by then, the next free one beside it is used.
-  it("a folder the app chose that was filled meanwhile: Download uses the next free folder beside it, and records it", { timeout: 60_000 }, async () => {
+  // D-154, D-155: a folder the app chooses is decided when Download runs, from the repository's name:
+  // Documents/<name>, or the next free "<name> 2" beside it. The folder setup started with doesn't hold it.
+  it("a folder the app chose: Documents/<instance name> when Download runs, the next free one when taken, recorded", { timeout: 60_000 }, async () => {
     const w = world();
-    mkdirSync(w.folder, { recursive: true });
-    writeFileSync(join(w.folder, "Welcome.md"), "# Welcome\n");
-    const next = `${w.folder} 2`;
+    const docs = join(w.root, "Documents");
+    const named = join(docs, "prabins-notes");
+    mkdirSync(named, { recursive: true });
+    writeFileSync(join(named, "Welcome.md"), "# Welcome\n");
     const asked: string[] = [];
-    const engine = await w.open({ nextFolder: async (taken: string) => (asked.push(taken), next) });
-    const r = await engine.start({ instance: "notes", private: "notes-private", folder: w.folder, publish: false });
-    expect(r.steps.find((s) => s.id === "clone")).toMatchObject({ state: "done" });
+    const engine = await w.open({ folders: (name: string) => (asked.push(name), [join(docs, name), join(docs, `${name} 2`)]) });
+    const r = await engine.start({ instance: "prabins-notes", private: "prabins-notes-private", folder: w.folder, publish: false });
     expect(r.steps.every((s) => s.state === "done" || s.state === "skipped")).toBe(true);
-    expect(asked).toEqual([w.folder]);
+    expect(asked).toEqual(["prabins-notes"]);
+    const next = `${named} 2`;
     expect(r.options?.folder).toBe(next);
     expect(JSON.parse(readFileSync(w.progressFile, "utf8")).options.folder).toBe(next);
-    expect(readdirSync(w.folder)).toEqual(["Welcome.md"]);
+    expect(readdirSync(named)).toEqual(["Welcome.md"]);
+    expect(existsSync(w.folder)).toBe(false);
     expect(existsSync(join(next, ".focus-notes", "workspace.json"))).toBe(true);
   });
-
   it("a folder that's already this clone is resumed, never swapped for another", { timeout: 60_000 }, async () => {
     const w = world();
     const first = await (await w.open()).start({ instance: "notes", private: "notes-private", folder: w.folder, publish: false });
     expect(first.steps.find((s) => s.id === "clone")?.state).toBe("done");
-    const engine = await w.open({ nextFolder: async () => { throw new Error("not asked"); } });
+    const engine = await w.open({ folders: () => { throw new Error("not asked"); } });
     await engine.reset();
     const again = await engine.start({ instance: "notes", private: "notes-private", folder: w.folder, publish: false });
     expect(again.steps.find((s) => s.id === "clone")?.state).toBe("done");

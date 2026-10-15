@@ -5173,6 +5173,60 @@
                                         }
                                       },
                                       {
+                                        "type": "Inline",
+                                        "when": {
+                                          "get": "vm.firstRun.hasError"
+                                        },
+                                        "props": {
+                                          "gap": "s",
+                                          "justify": "start",
+                                          "wrap": true
+                                        },
+                                        "children": [
+                                          {
+                                            "each": {
+                                              "get": "vm.firstRun.errorActions"
+                                            },
+                                            "as": "item",
+                                            "key": "item.id",
+                                            "empty": {
+                                              "type": "Inline",
+                                              "props": {
+                                                "gap": "s"
+                                              },
+                                              "children": []
+                                            },
+                                            "render": {
+                                              "type": "Button",
+                                              "props": {
+                                                "label": {
+                                                  "get": "item.label"
+                                                },
+                                                "variant": {
+                                                  "get": "item.variant"
+                                                },
+                                                "autoFocus": {
+                                                  "get": "item.first"
+                                                },
+                                                "busy": {
+                                                  "get": "item.busy"
+                                                }
+                                              },
+                                              "on": {
+                                                "press": {
+                                                  "run": "firstRun.errorAction",
+                                                  "args": {
+                                                    "id": {
+                                                      "get": "item.id"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      {
                                         "type": "Text",
                                         "props": {
                                           "value": {
@@ -5445,6 +5499,60 @@
                                             "get": "vm.firstRun.error"
                                           }
                                         }
+                                      },
+                                      {
+                                        "type": "Inline",
+                                        "when": {
+                                          "get": "vm.firstRun.hasError"
+                                        },
+                                        "props": {
+                                          "gap": "s",
+                                          "justify": "start",
+                                          "wrap": true
+                                        },
+                                        "children": [
+                                          {
+                                            "each": {
+                                              "get": "vm.firstRun.errorActions"
+                                            },
+                                            "as": "item",
+                                            "key": "item.id",
+                                            "empty": {
+                                              "type": "Inline",
+                                              "props": {
+                                                "gap": "s"
+                                              },
+                                              "children": []
+                                            },
+                                            "render": {
+                                              "type": "Button",
+                                              "props": {
+                                                "label": {
+                                                  "get": "item.label"
+                                                },
+                                                "variant": {
+                                                  "get": "item.variant"
+                                                },
+                                                "autoFocus": {
+                                                  "get": "item.first"
+                                                },
+                                                "busy": {
+                                                  "get": "item.busy"
+                                                }
+                                              },
+                                              "on": {
+                                                "press": {
+                                                  "run": "firstRun.errorAction",
+                                                  "args": {
+                                                    "id": {
+                                                      "get": "item.id"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
                                       },
                                       {
                                         "type": "Inline",

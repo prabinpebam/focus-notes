@@ -72,6 +72,8 @@ export interface FirstRunState {
     reposLoaded: boolean;
     query: string;
     activeId: string;
+    /** The repository Open was last pressed on, for its folder actions (D-154), or "". */
+    cloneId: string;
     result?: WorkspaceResult;
   };
   /** Bumped to move focus to the step's field. */
@@ -83,7 +85,7 @@ export const FIRST_RUN_INACTIVE: FirstRunState = {
   signIn: { phase: "idle", code: "", helper: "" }, token: "", tokenError: false,
   workspace: {
     mode: "create", more: false, details: false, instance: DEFAULT_SETUP.instance, private: DEFAULT_SETUP.private, publish: DEFAULT_SETUP.publish,
-    passphrase: "", confirm: "", error: "", field: "", strength: 0, folder: "", repos: [], reposLoaded: false, query: "", activeId: "",
+    passphrase: "", confirm: "", error: "", field: "", strength: 0, folder: "", repos: [], reposLoaded: false, query: "", activeId: "", cloneId: "",
   },
   focus: 0,
 };
@@ -178,7 +180,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       bump();
     },
     notes: async () => {
-      const folder = await busy(() => fr!.folder());
+      const folder = await busy(() => fr!.folder(state().workspace.instance));
       setWs({ folder: folder ?? "", error: "", more: false, details: false });
       if (store.state.setup.report?.options) return setWs({ mode: "create" });
       if (!state().workspace.reposLoaded) await loadRepos();
@@ -190,6 +192,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     // Signing in again or switching account is the Connect step alone; Open another workspace, Your notes alone.
     if ((state().scope === "account" && step !== "connect") || (state().scope === "workspace" && step !== "notes")) return close(true);
     set({ step, trouble: false, focus: state().focus + 1 });
+    // An error belongs to the step that made it (D-154).
+    setWs({ error: "", field: "" });
     await persistAppState({ firstRun: step });
     await arrive[step]?.();
   };
@@ -349,7 +353,16 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   });
   reg("firstRun.toggleMore", () => setWs({ more: !state().workspace.more }));
   reg("firstRun.toggleDetails", () => setWs({ details: !state().workspace.details }));
-  reg<{ value: string }>("firstRun.setInstance", (a) => setWs({ instance: value(a), error: "", field: "" }));
+  // The folder follows the name as it's typed (D-155): Documents/<name>, or the folder chosen.
+  let folderAsk = 0;
+  reg<{ value: string }>("firstRun.setInstance", async (a) => {
+    const name = value(a);
+    setWs({ instance: name, error: "", field: "" });
+    if (!isRepoName(name) || !fr) return;
+    const ask = ++folderAsk;
+    const folder = await fr.folder(name).catch(() => undefined);
+    if (ask === folderAsk && folder) setWs({ folder });
+  });
   reg<{ value: string }>("firstRun.setPrivate", (a) => setWs({ private: value(a), error: "", field: "" }));
   reg<{ value: string }>("firstRun.setPublish", (a) => setWs({ publish: a.value !== "off" }));
   // The meter follows the typing (D-142): the shell rates it with the same check setup uses.
@@ -426,7 +439,21 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     const target = typeof id === "string" && id ? id : state().workspace.activeId;
     const repo = state().workspace.repos.find((r) => `${r.owner}/${r.name}` === target);
     if (!repo || state().busy) return;
+    setWs({ cloneId: `${repo.owner}/${repo.name}` });
     await opened(await busy(() => fr!.clone(repo.owner, repo.name)) ?? { ok: false, problem: "failed" });
+  });
+  // Open into a folder that's taken (D-154): another folder, a new one beside the default, or Back.
+  reg<{ id: string }>("firstRun.errorAction", async ({ id }) => {
+    const w = state().workspace;
+    const [owner, name] = w.cloneId.split("/");
+    if (state().busy || !owner || !name || w.result?.ok !== false || w.result.problem !== "folderTaken") return;
+    if (id === "back") return (setWs({ error: "" }), commands.run("firstRun.back"));
+    if (id === "chooseFolder") {
+      const folder = await busy(() => fr!.chooseFolder());
+      if (!folder) return;
+      setWs({ folder });
+      await opened(await busy(() => fr!.clone(owner, name)) ?? { ok: false, problem: "failed" });
+    } else if (id === "newFolder") await opened(await busy(() => fr!.clone(owner, name, "new")) ?? { ok: false, problem: "failed" });
   });
   commands.register({ id: "firstRun.cloneActive", title: "command.firstRun.clone", shortcut: { default: "Enter", handledBy: "repoField" }, layer: "basic", group: "files", run: () => commands.run("firstRun.clone", { id: "" }) });
   reg("firstRun.openFolder", async () => {
@@ -498,6 +525,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         tokenMessage: { type: "string" }, hasTokenMessage: { type: "boolean" },
         failed: { type: "boolean" }, failedId: { type: "string" }, lookupFailed: { type: "boolean" }, canCreateNow: { type: "boolean" }, createDetail: { type: "string" },
         failActions: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, variant: { type: "string" }, first: { type: "boolean" }, busy: { type: "boolean" } } } },
+        errorActions: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, variant: { type: "string" }, first: { type: "boolean" }, busy: { type: "boolean" } } } },
         folderShort: { type: "string" },
         // D-142: the stepper, the state's own title, the helper to install, versions, field errors, the passphrase meter.
         stepNumber: { type: "number" }, stepTotal: { type: "number" }, needHelper: { type: "boolean" }, helperText: { type: "boolean" }, problemIcon: { type: "string" }, notesIcon: { type: "string" },
@@ -538,6 +566,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const login = shown?.login ?? "";
       const failedStep = s.setup.report?.steps.find((x) => x.state === "failed");
       const lookupFailed = w.error === "firstRun.notes.error.offline";
+      // An error shows only where it belongs (D-154): a lookup's on the lookup panels, never while setup runs or once it's done.
+      const err = panel === "progress" && w.error.startsWith("firstRun.notes.") ? "" : w.error;
       // The token form says what GitHub (or the helper) said about the token it just cleared.
       const tokenKey = f.tokenError ? "firstRun.signIn.tokenInvalid"
         : connect === "token" && a?.problem ? (catalog.has(`firstRun.signIn.tokenProblem.${a.problem}`) ? `firstRun.signIn.tokenProblem.${a.problem}` : "firstRun.signIn.tokenProblem.failed") : "";
@@ -558,7 +588,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
           : panel === "clone" ? ["github", "neutral", false]
           : panel === "local" ? ["folder", "neutral", false]
           : panel === "create" && lookupFailed ? ["cloudOff", "danger", false]
-          : panel === "progress" ? (made ? ["cloudCheck", "success", false] : failed || w.error ? ["warning", "danger", false] : ["cloudUp", "accent", true])
+          : panel === "progress" ? (made ? ["cloudCheck", "success", false] : failed || err ? ["warning", "danger", false] : ["cloudUp", "accent", true])
           : ["cloud", w.error ? "danger" : "neutral", false]
         : undefined;
       // The title names the state, not just the step (D-142).
@@ -603,14 +633,14 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         canOther: connect === "found" || connect === "cli",
         token: f.token, tokenError: f.tokenError,
         panel, more: w.more, details: w.details, canCreate: f.scope !== "workspace",
-        isCreate: panel === "create", showMore: panel === "create" || panel === "found", working: started && !made && !w.error && !failed,
+        isCreate: panel === "create", showMore: panel === "create" || panel === "found", working: started && !made && !err && !failed,
         found: w.repos.filter((r) => r.instance).slice(0, 5).map((r, n) => ({
           id: `${r.owner}/${r.name}`, first: n === 0, variant: n === 0 ? "primary" : "secondary", label: !s.account.login || r.owner === s.account.login ? r.name : `${r.owner}/${r.name}`,
           icon: r.private ? "lock" : "folder", detail: updated(r.pushedAt), badge: catalog.format(r.private ? "firstRun.notes.private" : "firstRun.notes.public"),
         })),
         instance: w.instance, private: w.private, publish: w.publish ? "on" : "off", publishOptions: options("firstRun.workspace.publish", ["on", "off"]),
         passphrase: w.passphrase, confirm: w.confirm, folder: w.folder, folderText: catalog.format("firstRun.workspace.folder", { folder: w.folder }),
-        error: w.error && catalog.has(w.error) ? catalog.format(w.error) : "", hasError: Boolean(w.error),
+        error: err && catalog.has(err) ? catalog.format(err) : "", hasError: Boolean(err),
         started, made, progressText: made ? catalog.format("firstRun.workspace.made") : failedStep ? catalog.format(`setup.problem.${failedStep.problem ?? "failed"}`) : catalog.format("firstRun.notes.creating"),
         query: w.query, activeId: w.activeId,
         noMatch: w.reposLoaded && !list.length, reposSummary: !w.reposLoaded ? "" : list.length ? catalog.format("firstRun.workspace.repos", { count: list.length }) : catalog.format("firstRun.workspace.noRepos"),
@@ -629,6 +659,10 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         // D-154: the failed part's own way on, then Back (D-131's action row: one primary, Back subtle).
         failActions: failedStep ? setupFailureActions(failedStep.problem).map((id, n, all) => ({
           id, label: catalog.format(FAIL_LABEL[id]), first: n === 0, busy: n === 0 && f.busy, variant: n === 0 ? "primary" : id === "back" || n === all.length - 1 ? "subtle" : "secondary",
+        })) : [],
+        // D-154: Open into a folder that's taken offers the same real actions as setup.
+        errorActions: err && w.result?.ok === false && w.result.problem === "folderTaken" && w.cloneId ? (["chooseFolder", "newFolder", "back"] as const).map((id, n) => ({
+          id, label: catalog.format(FAIL_LABEL[id]), first: n === 0, busy: n === 0 && f.busy, variant: n === 0 ? "primary" : n === 1 ? "secondary" : "subtle",
         })) : [],
         createDetail: catalog.format(lookupFailed ? "firstRun.notes.createOffline" : "firstRun.notes.createWhy"),
         folderShort: shortPath(w.folder),

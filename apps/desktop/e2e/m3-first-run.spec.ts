@@ -8,7 +8,7 @@
  */
 import { test, expect } from "./fixtures.ts";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { delimiter, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import type { Page } from "@playwright/test";
 import { quit } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
@@ -71,15 +71,17 @@ test("FRE-01, FRE-04, FRE-05, FRE-08: the short path: a new install connects wit
     await expect(editor).toBeVisible();
     await editor.click();
     await page.keyboard.type("# First private note\n\nWritten after the first run.");
-    const priv = join(w.dirs.docs, "private", "notes");
+    // D-155: the folder is named after the notes' repository, beside Documents/Focus Notes.
+    const ws = join(dirname(w.dirs.docs), "notes");
+    const priv = join(ws, "private", "notes");
     await expect.poll(() => readdirSync(priv).filter((f) => f.endsWith(".md")).length, { timeout: 10_000 }).toBeGreaterThan(0);
-    expect(w.git(w.dirs.docs, "config", "--get", "push.recurseSubmodules")).toBe("check");
+    expect(w.git(ws, "config", "--get", "push.recurseSubmodules")).toBe("check");
     // FRE-05: the account's name and noreply address, for the notes only; Git's global settings untouched.
-    expect(w.git(w.dirs.docs, "config", "--local", "--get", "user.email")).toBe("583231+ada@users.noreply.github.com");
-    expect(w.git(join(w.dirs.docs, "private"), "config", "--local", "--get", "user.email")).toBe("583231+ada@users.noreply.github.com");
+    expect(w.git(ws, "config", "--local", "--get", "user.email")).toBe("583231+ada@users.noreply.github.com");
+    expect(w.git(join(ws, "private"), "config", "--local", "--get", "user.email")).toBe("583231+ada@users.noreply.github.com");
     expect(() => w.git(w.fakes.home, "config", "--global", "--get", "user.email")).toThrow();
     expect(w.gh.repo("notes")?.pages?.build_type).toBe("workflow");
-    expect(readFileSync(join(w.dirs.userData, "workspace.json"), "utf8")).toContain("Focus Notes");
+    expect(JSON.parse(readFileSync(join(w.dirs.userData, "workspace.json"), "utf8")).folder).toBe(ws);
 
     // UI-12: the account pill shows the login with Save to cloud and Sign out (D-132).
     const pill = page.getByRole("button", { name: /Signed in to GitHub as @ada/ });
@@ -134,8 +136,9 @@ test("FRE-02, FRE-06: connect with the GitHub CLI's code, then We found your not
     await heading(page, "Ready");
     await press(page, "Enter");
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
-    expect(readFileSync(join(w.dirs.docs, "private", "notes", "secret.md"), "utf8")).toContain("Only mine.");
-    expect(w.git(join(w.dirs.docs, "private"), "symbolic-ref", "--short", "HEAD")).toBe("main");
+    const ws = join(dirname(w.dirs.docs), "notes");
+    expect(readFileSync(join(ws, "private", "notes", "secret.md"), "utf8")).toContain("Only mine.");
+    expect(w.git(join(ws, "private"), "symbolic-ref", "--short", "HEAD")).toBe("main");
     expect(w.fakes.argv()).toContain('["gh","auth","setup-git","--hostname","github.com"]');
     noTokenInArgs(w, l);
   } finally {

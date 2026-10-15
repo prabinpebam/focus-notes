@@ -226,11 +226,15 @@ export interface FirstRunBridge {
   /** Applies a name and email to all repositories, or only to the notes workspace. False if refused. */
   setIdentity(identity: { name: string; email: string }, scope: IdentityScope): Promise<boolean>;
   repositories(): Promise<RepoChoice[]>;
-  /** The folder a new or cloned workspace goes in: Documents/Focus Notes unless another was chosen. */
-  folder(): Promise<string>;
+  /**
+   * The folder a new workspace goes in (D-155): the chosen one, the open clone's, or
+   * Documents/<instance repository name> (the next free "<name> 2" beside it when taken).
+   */
+  folder(instance?: string): Promise<string>;
   /** Chooses that folder with the system's dialog, in the main process (D-98). */
   chooseFolder(): Promise<string | undefined>;
-  clone(owner: string, name: string): Promise<WorkspaceResult>;
+  /** Clones into the chosen folder, or Documents/<name>; `new`: the next free folder for the name, not the chosen one (D-154). */
+  clone(owner: string, name: string, where?: "new"): Promise<WorkspaceResult>;
   /** Chooses an existing clone with the system's dialog and checks it. Undefined if cancelled. */
   openFolder(): Promise<WorkspaceResult | undefined>;
   /** Opens the workspace just made, cloned, or chosen: the window starts again in it. */
