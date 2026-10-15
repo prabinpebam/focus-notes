@@ -79,6 +79,26 @@ export async function cloneWorkspace(git: GitRunner, url: string, folder: string
   return { ok: true, folder, ...(priv !== undefined ? { privateNotes: priv } : {}) };
 }
 
+/** Windows' device names, which no file or folder can have (before any extension). */
+const RESERVED = /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]|conin\$|conout\$)$/i;
+/**
+ * The folder for a repository's notes (D-155): its name, which GitHub already limits to letters,
+ * digits, `.`, `_` and `-`. Windows drops trailing dots and refuses device names, so those change:
+ * "notes." → "notes", "con" → "con-notes"; nothing but dots → "notes".
+ */
+export function folderName(repo: string): string {
+  const n = repo.replace(/[. ]+$/, "");
+  if (!n) return "notes";
+  const dot = n.indexOf(".");
+  const stem = dot < 0 ? n : n.slice(0, dot);
+  return RESERVED.test(stem) ? `${stem}-notes${n.slice(stem.length)}` : n;
+}
+/** The folders a repository's notes can go in, in order: `<documents>/<name>`, then "<name> 2" to "<name> 99" (D-155). */
+export function homesFor(documents: string, repo: string): string[] {
+  const base = join(documents, folderName(repo));
+  return Array.from({ length: 99 }, (_, i) => (i === 0 ? base : `${base} ${i + 1}`));
+}
+
 /** An absolute folder, for setup: the person's choice, the open clone's, or the one setup started with. */
 export interface SetupTarget {
   /** Undefined: the app picks a free folder (D-154). */

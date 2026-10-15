@@ -180,7 +180,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       bump();
     },
     notes: async () => {
-      const folder = await busy(() => fr!.folder());
+      const folder = await busy(() => fr!.folder(state().workspace.instance));
       setWs({ folder: folder ?? "", error: "", more: false, details: false });
       if (store.state.setup.report?.options) return setWs({ mode: "create" });
       if (!state().workspace.reposLoaded) await loadRepos();
@@ -353,7 +353,16 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   });
   reg("firstRun.toggleMore", () => setWs({ more: !state().workspace.more }));
   reg("firstRun.toggleDetails", () => setWs({ details: !state().workspace.details }));
-  reg<{ value: string }>("firstRun.setInstance", (a) => setWs({ instance: value(a), error: "", field: "" }));
+  // The folder follows the name as it's typed (D-155): Documents/<name>, or the folder chosen.
+  let folderAsk = 0;
+  reg<{ value: string }>("firstRun.setInstance", async (a) => {
+    const name = value(a);
+    setWs({ instance: name, error: "", field: "" });
+    if (!isRepoName(name) || !fr) return;
+    const ask = ++folderAsk;
+    const folder = await fr.folder(name).catch(() => undefined);
+    if (ask === folderAsk && folder) setWs({ folder });
+  });
   reg<{ value: string }>("firstRun.setPrivate", (a) => setWs({ private: value(a), error: "", field: "" }));
   reg<{ value: string }>("firstRun.setPublish", (a) => setWs({ publish: a.value !== "off" }));
   // The meter follows the typing (D-142): the shell rates it with the same check setup uses.

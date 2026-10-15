@@ -54,10 +54,11 @@ export interface SetupDeps {
   /** Step names, states, and problem codes only. */
   log?: (line: string) => void;
   /**
-   * The next free folder beside one the app chose that's taken by the time Download runs (D-154):
-   * "Focus Notes 2", and so on. Without it, a taken folder is a problem the person resolves.
+   * The folders, in order, a download into a folder the app chose can use for an instance's name
+   * (D-154, D-155): Documents/<name>, "<name> 2", and so on. Decided when Download runs. Without it,
+   * the folder setup started with is used, and a taken one is a problem the person resolves.
    */
-  nextFolder?: (taken: string) => Promise<string | undefined>;
+  folders?: (instance: string) => string[];
 }
 
 interface StepRecord { state: SetupStepState; problem?: SetupProblem }
@@ -409,14 +410,20 @@ export class SetupEngine {
         return existsSync(f) && (await readdir(f)).length > 0 ? "taken" : "free";
       };
       let held = await holds(folder);
-      // A folder the app chose, filled since setup started: the next free one beside it, now (D-154).
-      if (held === "taken" && !chosen && this.#d.nextFolder) {
-        const next = await this.#d.nextFolder(folder);
-        if (next && isAbsolute(next) && resolve(next) === next && next !== folder && (await holds(next)) === "free") {
-          this.#p.options = { ...this.#o, folder: next };
-          await this.#save();
-          folder = next;
-          held = "free";
+      // A folder the app chose (D-154, D-155): already these notes, it's resumed; otherwise the first
+      // of the name's folders that's these notes or free, now.
+      if (held !== "clone" && !chosen && this.#d.folders) {
+        for (const f of this.#d.folders(instance)) {
+          if (!isAbsolute(f) || resolve(f) !== f) continue;
+          const h = await holds(f);
+          if (h === "taken") continue;
+          if (f !== folder) {
+            this.#p.options = { ...this.#o, folder: f };
+            await this.#save();
+          }
+          folder = f;
+          held = h;
+          break;
         }
       }
       if (held === "taken") throw new Failure("folderTaken");

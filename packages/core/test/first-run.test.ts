@@ -127,7 +127,7 @@ function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountSt
     identity: async () => suggestIdentity({}, account.account),
     setIdentity: async (i, scope) => (calls.push(`identity:${i.name}:${i.email}:${scope}`), true),
     repositories: async () => { calls.push("repositories"); if (opts.reposOffline) throw new Error("offline"); return opts.repos ?? [{ owner: "ada", name: "notes", private: false, instance: true, pushedAt: "2026-10-12T09:00:00Z" }, { owner: "ada", name: "recipes", private: true, instance: false }]; },
-    folder: async () => "/home/ada/Documents/Focus Notes",
+    folder: async (instance) => `/home/ada/Documents/${instance ?? "Focus Notes"}`,
     chooseFolder: async () => (calls.push("chooseFolder"), "/home/ada/Elsewhere"),
     clone: async (owner, name, where) => (calls.push(`clone:${owner}/${name}${where ? `:${where}` : ""}`), opts.clone ? opts.clone(owner, name, where) : { ok: true, folder: "/x", privateNotes: false }),
     openFolder: async () => (calls.push("openFolder"), { ok: false, problem: "notWorkspace" }),
@@ -423,7 +423,7 @@ describe("FRE-06, FRE-08: Your notes", () => {
   });
   it("with no notes yet, Create my notes uses the defaults, needs no passphrase, and opens the notes once they're on this computer", async () => {
     const t = await atNotes({ repos: [{ owner: "ada", name: "recipes", private: true, instance: false }] });
-    expect(t.vm()).toMatchObject({ panel: "create", isCreate: true, instance: "notes", private: "notes-private", publish: "on", folder: "/home/ada/Documents/Focus Notes", made: false, canContinue: false });
+    expect(t.vm()).toMatchObject({ panel: "create", isCreate: true, instance: "notes", private: "notes-private", publish: "on", folder: "/home/ada/Documents/notes", made: false, canContinue: false });
     await t.run("firstRun.create");
     expect(t.passphrases).toEqual([undefined]);
     expect(t.vm()).toMatchObject({ panel: "progress", started: true, made: false, working: true, title: "Creating your notes" });
@@ -539,6 +539,18 @@ describe("FRE-06, FRE-08: Your notes", () => {
     await u.run("firstRun.errorAction", { id: "back" });
     expect(u.vm()).toMatchObject({ hasError: false, errorActions: [] });
     taken = false;
+  });
+  // D-155: the folder is named after the notes' repository, and follows the name as it's typed.
+  it("D-155: Saved on this computer in Documents/<the name typed>", async () => {
+    const t = await atNotes({ repos: [] });
+    expect(t.vm().folder).toBe("/home/ada/Documents/notes");
+    await t.run("firstRun.setInstance", { value: "prabins-notes" });
+    await settle();
+    expect(t.vm().folder).toBe("/home/ada/Documents/prabins-notes");
+    // A name GitHub can't use leaves the folder as it was.
+    await t.run("firstRun.setInstance", { value: "no spaces" });
+    await settle();
+    expect(t.vm().folder).toBe("/home/ada/Documents/prabins-notes");
   });
   it("More options: names, the folder, publishing, and the browser passphrase, checked and sent once only when typed", async () => {
     const t = await atNotes({ repos: [] });

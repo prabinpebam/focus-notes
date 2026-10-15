@@ -17,7 +17,7 @@ import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 import { createRunner } from "../src/main/git/run.ts";
 import { Account } from "../src/main/first-run/account.ts";
 import { commandFor, createToolRunner, findProgram, isGcmHelper, isGhHelper } from "../src/main/first-run/tools.ts";
-import { checkWorkspace, cloneWorkspace, applyLocalIdentity, savedToGitHub, setupTarget } from "../src/main/first-run/workspace.ts";
+import { checkWorkspace, cloneWorkspace, applyLocalIdentity, folderName, homesFor, savedToGitHub, setupTarget } from "../src/main/first-run/workspace.ts";
 import { makeFakes } from "./fakes/fakes.ts";
 
 const win = process.platform === "win32";
@@ -242,7 +242,22 @@ describe("FRE-06: opening a workspace from GitHub or this computer", () => {
     expect(await checkWorkspace(runner(w), join(r.root, "seed-n"))).toMatchObject({ ok: true, privateNotes: true });
     expect(readdirSync(taken)).toEqual(["a.txt"]);
   });
-  // D-124, D-154 (the owner's dead end): Run setup again from a folder used on this computer only.
+  // D-155: the folder is named after the repository; names Windows can't use as a folder are adjusted.
+  it("folder names: the repository's name, safe on Windows, with free names beside it", () => {
+    expect(folderName("prabins-notes")).toBe("prabins-notes");
+    expect(folderName("notes")).toBe("notes");
+    expect(folderName(".notes")).toBe(".notes");
+    expect(folderName("notes.")).toBe("notes");
+    expect(folderName("notes...")).toBe("notes");
+    expect(folderName("...")).toBe("notes");
+    for (const r of ["con", "CON", "prn", "aux", "nul", "com1", "lpt9", "con.notes", "Nul.txt"]) expect(folderName(r), r).not.toMatch(/^(con|prn|aux|nul|com\d|lpt\d)(\.|$)/i);
+    expect(folderName("con")).toBe("con-notes");
+    expect(folderName("con.notes")).toBe("con-notes.notes");
+    expect(folderName("console")).toBe("console");
+    const list = homesFor(join("D:", "Docs"), "prabins-notes");
+    expect(list.slice(0, 3)).toEqual([join("D:", "Docs", "prabins-notes"), join("D:", "Docs", "prabins-notes 2"), join("D:", "Docs", "prabins-notes 3")]);
+    expect(list).toHaveLength(99);
+  });  // D-124, D-154 (the owner's dead end): Run setup again from a folder used on this computer only.
   it("setup's folder: never a folder used on this computer only; the open clone, a chosen folder, or the one it started with", { timeout: 60_000 }, async () => {
     const w = world({});
     const r = remotes(w);
