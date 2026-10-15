@@ -63,7 +63,7 @@ interface Options {
    * Where a drag's pointer is (D-151): the system's cursor, read once a frame ("cursor", the app), or
    * the positions the page reports ("page": journeys, whose pointer is the page's own). Default "page".
    */
-  dragPointer?: "cursor" | "page";
+  dragPointer?: () => "cursor" | "page";
   /** Milliseconds per frame of the display the window is on: the drag loop's interval. Default 60 Hz. */
   frameMs?: () => number;
   /** Runs `fn` every `ms` until the returned function is called. Tests give a clock of their own. */
@@ -289,7 +289,7 @@ export class CustomWindow {
   }
 
   get #followsCursor(): boolean {
-    return this.#o.dragPointer === "cursor";
+    return this.#o.dragPointer?.() === "cursor";
   }
   /** Whether a drag's loop is running: only while a drag lasts (PRF-04). */
   get dragging(): boolean {

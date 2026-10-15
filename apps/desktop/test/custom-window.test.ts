@@ -74,7 +74,7 @@ function setup(content: Rect = { x: 100, y: 100, width: 1000, height: 700 }, dis
     save: (m) => saved.push(m),
     forwardsMoves,
     passthrough: (on) => passes.push(on),
-    dragPointer,
+    dragPointer: () => dragPointer,
     frameMs: () => 1000 / 144,
     every: clock.every,
   }, placement);

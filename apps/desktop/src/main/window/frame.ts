@@ -145,7 +145,8 @@ export class AppWindowFrame {
       },
       // The main process follows the system's cursor itself during a drag, once a frame of the
       // window's display (D-151); journeys' pointer is the page's.
-      dragPointer: this.#journey ? "page" : "cursor",
+      // The screen-level journey (CI only) follows a real cursor: `globalThis.focusNotesDragPointer = "cursor"`.
+      dragPointer: () => (!this.#journey ? "cursor" : (globalThis as { focusNotesDragPointer?: "cursor" | "page" }).focusNotesDragPointer ?? "page"),
       frameMs: () => 1000 / (screen.getDisplayMatching(win.getBounds()).displayFrequency || 60),
     }, p);
     this.#custom = custom;

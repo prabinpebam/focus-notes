@@ -63,7 +63,7 @@ function customWindow(forwardsMoves: boolean) {
     notify: () => {},
     save: () => {},
     forwardsMoves,
-    dragPointer: "cursor",
+    dragPointer: () => "cursor",
   }, { content, mode: "normal", restore: content, fullScreen: false });
   /** The pointer moves, and the page reports it (`window:pointer`) if it can see it. */
   const move = (x: number, y: number, seen = true) => {
