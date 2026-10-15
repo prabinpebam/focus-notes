@@ -108,15 +108,29 @@ export interface KeyringPayload { grant: string; expiresAt: string | null; manif
 /**
  * The keyring's header, its role (`vault`, `link|<grant id>`, `passcode|<lookup>`), and the build,
  * authenticated as additional data: a keyring moved to another's place, or to another build, opens nothing.
+ * `v2` since the role joined it (WP-5.2); publisher and reader deploy together, so only `v2` is accepted.
  */
+const KEYRING_LABEL = "focus-notes/keyring/v2";
 const keyringAad = (build: string, kdf: KeyringKdf, salt: string, role: string) =>
-  kdf === KDF ? `focus-notes/keyring/v1|${build}|${KDF}|${ITERATIONS}|${salt}|${role}` : `focus-notes/keyring/v1|${build}|${kdf}|${salt}|${role}`;
+  kdf === KDF ? `${KEYRING_LABEL}|${build}|${KDF}|${ITERATIONS}|${salt}|${role}` : `${KEYRING_LABEL}|${build}|${kdf}|${salt}|${role}`;
+
+/**
+ * A keyring's payload is padded with spaces (which JSON ignores) to a multiple of this many bytes, so
+ * its size says nothing about the grant ID's length or whether it expires: every keyring is the same size.
+ */
+export const KEYRING_BLOCK = 256;
+function padded(payload: KeyringPayload): Bytes {
+  const json = utf8(JSON.stringify(payload));
+  const out = new Uint8Array(Math.ceil(json.length / KEYRING_BLOCK) * KEYRING_BLOCK).fill(0x20);
+  out.set(json);
+  return out;
+}
 
 /** Seals a grant's keyring with its derived key (PBKDF2 bits for passcodes, HKDF bits for links). */
 export async function sealKeyring(derivedKey: Bytes, salt: Bytes, build: string, payload: KeyringPayload, kdf: KeyringKdf, role: string): Promise<string> {
   const key = await importKey(derivedKey, "encrypt");
   const s = toB64url(salt);
-  const body = await encrypt(key, utf8(JSON.stringify(payload)), keyringAad(build, kdf, s, role));
+  const body = await encrypt(key, padded(payload), keyringAad(build, kdf, s, role));
   const envelope: KeyringEnvelope = kdf === KDF ? { v: 1, kdf, iterations: ITERATIONS, salt: s, ...body } : { v: 1, kdf, salt: s, ...body };
   return JSON.stringify(envelope);
 }
@@ -186,7 +200,10 @@ export const encodeText = utf8;
 
 // ---- the public side ----
 
-/** `nameSalt`: the workspace's public salt for passcode keyrings' names, present when there are any (WP-5.2). */
+/**
+ * `nameSalt`: the workspace's public salt for passcode keyrings' names (WP-5.2). The publisher writes it
+ * whenever the instance has an `access.json`, passcode audiences or not, so its presence says nothing about them.
+ */
 export interface SiteManifest { format: 1; build: string; notes: string; vault: boolean; nameSalt?: string }
 export interface PublicNote { path: string; title: string; updated: string }
 export interface PublicIndex { format: 1; notes: PublicNote[] }
