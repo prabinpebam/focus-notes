@@ -80,18 +80,17 @@ Lines for a way in that the audience doesn't have are left out. [Copy invite], [
 
 <h2 id="the-share-reader" data-reader-personas="design product">The share reader</h2>
 
-The page a reader sees at `https://<user>.github.io/<workspace>/s/<token>/`, part of IA-VIEW-PUBLIC.
+The page a reader sees at `https://<user>.github.io/<workspace>/s/`, part of IA-VIEW-PUBLIC. A magic link is that page with the grant and its secret in the fragment, `s/#<grant>.<secret>`, which browsers never send to the server (D-125).
 
 | Moment | What the reader sees |
 | --- | --- |
 | **Magic link** | The fragment after `#` is read and removed from the address bar at once. A brief "Opening…", then the note. Nothing to type. |
-| **No link** | A calm card: "This note is private." Two fields, **Your name** and **Passcode**, then [Open], and ☐ *Remember on this device*. |
-| **Wrong name or passcode** | "That name and passcode don't open this note. Check them and try again." It never says which one was wrong, or whether the name exists. |
-| **Expired or withdrawn** | "This access has ended. Ask the person who shared it for a new one." |
-| **Site just updated** | Reloads once by itself. If still mismatched: "The site was just updated. Try again in a minute." |
-| **Signed in** | The note in the same calm reading view as public pages. A folder audience sees "Shared with you" with a list of the notes it opens. Footer: *Sign out on this device*. |
+| **No link** | "This note is private", a line saying what to do, two fields, **Your name** and **Passcode**, then [Open] and [Open and remember]. The name matches whatever its letter case or spacing. |
+| **Anything that doesn't open** | A wrong name or passcode, a wrong link, or an audience that has expired or been withdrawn all get the same words: "That didn't open anything. Check your name and passcode, or the link, and try again. If it still doesn't work, ask the person who shared it with you." It never says which one was wrong, whether the name exists, or whether access ever existed (D-125). |
+| **Site just updated** | A note that fails to read is read once more from the new build; if it still fails, the same words as above. |
+| **Signed in** | The note in the same calm reading view as public pages. An audience that opens several notes sees "Shared with you" with a list of them by title, and each note offers [All shared notes]. Links to other notes in the share stay on the page; links to anything else are plain text. Footer: [Remember on this device] (a toggle) and [Sign out on this device]. |
 
-**Staying signed in** follows `personal-site`. By default the key lasts for the browser session (`sessionStorage`). *Remember on this device* keeps it in `localStorage` until the audience expires. *Sign out* forgets it in every open tab (`BroadcastChannel`). What's stored is the derived key, the grant's ID, and its expiry, never the passcode or the link secret.
+**Staying signed in** follows `personal-site`. By default the key lasts for the browser tab (`sessionStorage`): a reload stays open, closing the tab ends it. *Open and remember* or *Remember on this device* keeps it in `localStorage` until the audience expires or is withdrawn. *Sign out on this device* forgets it in every open tab (`BroadcastChannel`). What's stored is the derived key, the grant's ID (or the name's lookup), and its expiry, never the passcode, the name, or the link secret. The page ends the session itself when the expiry passes, and a stored key that no longer opens is forgotten.
 
 <h2 data-reader-personas="product design">Design decisions</h2>
 

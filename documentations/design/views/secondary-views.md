@@ -78,12 +78,12 @@ The views people open now and then: Settings, Share and visibility, the keyboard
 
 <h2 id="public-note-page" data-reader-personas="design product">Public note page</h2>
 
-**IA-VIEW-PUBLIC.** Serves UC-READ-01. It's the page readers see at `/n/<path>/`, and also the private share reader at `/s/<token>/`.
+**IA-VIEW-PUBLIC.** Serves UC-READ-01. It's the page readers see at `/n/<path>/`, and also the private share reader at `/s/` (D-125).
 
 - **Look:** the same reading column, type, and default themes as the app (Paper or Ink, following the reader's `prefers-color-scheme`), with a small light/dark toggle in the top-right corner. There's no trigger, because readers can't act on the note.
 - **Content:** the title, then "Updated ⟨date⟩" in muted text, then the note, then a quiet footer: "Published with Focus Notes".
 - **Sizes:** readable from 320 px wide up. Tables scroll sideways inside their frame. Print styles drop the toggle and footer.
-- **Private share reader states:** *Unlocking…* (a short indicator while the browser decrypts), then the note. *Link expired:* "This link has expired. Ask the person who shared it for a new one." *Link not valid:* "This link doesn't work. It may have been withdrawn or copied incompletely." No technical detail and no hints about the note's existence.
+- **Private share reader states:** *Opening…* (a short indicator while the browser decrypts), then the note. Anything that doesn't open, an expired, withdrawn, or mistyped link or passcode, gets one message with no technical detail and no hints about the note's existence ([Sharing and visibility → The share reader](sharing.md#the-share-reader), D-125).
 - **Accessibility:** one H1, landmarks, a skip link, and the same contrast guarantees as the built-in themes.
 - **As built (WP-5.1, D-114):** the view document `reader.view.json` (ReaderPage, NoteContent), rendered once by the publisher to static HTML with no script: Paper or Ink by `prefers-color-scheme`, the title, "Updated ⟨date⟩", the note, and the footer. The light/dark toggle isn't built yet, because the page has no script.
 
