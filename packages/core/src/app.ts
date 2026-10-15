@@ -353,7 +353,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
   });
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o) });
-  registerShareManage({ store, access: bridge.access, copyText: bridge.copyText?.bind(bridge), catalog, commands, viewModels });
+  registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
     // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).

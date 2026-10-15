@@ -18,8 +18,8 @@ import { restorePlace, titleOrName } from "@focus-notes/core/history";
 import { GitSync, NO_GIT } from "./git/sync.ts";
 import { createRunner, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
-import { generatePasscode } from "@focus-notes/seal/words";
 import { accessStore, siteFromGitConfig } from "./share/access.ts";
+import { secretClipboard } from "./share/clipboard.ts";
 import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
 import { checkOptions, SetupEngine } from "./setup/engine.ts";
@@ -848,7 +848,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!settingsAvailable()) throw new Error("access:failed");
     return access.apply(change);
   });
-  handle("access:suggest", async () => generatePasscode());
+  // A secret goes to the window only for an open invite, and to the clipboard only from here, cleared after 90 s (review L1, L2).
+  const secretCopy = secretClipboard(clipboard);
+  handle("access:reveal", async (id) => access.reveal(id));
+  handle("access:copy", async (id, what, invite) => secretCopy.write(await access.secret(id, what, invite)));
   handle("sync:now", async (reason) => {
     const g = await gitOpening;
     return g ? g.request(reason === "switch" ? "switch" : "save") : NO_GIT;

@@ -8,7 +8,8 @@ import { describe, expect, it } from "vitest";
 import {
   AccessEditError, applyAccessChange, audienceState, DEFAULT_EXPIRY, expiryFrom, nameProblem, parseAccessChange, passcodeProblem, shareGrants, type AccessChange,
 } from "../src/access.ts";
-import { generatePasscode, EFF_WORD_COUNT, effWord } from "../src/words.ts";
+import { generatePasscode, EFF_WORD_COUNT, effWord, effWords } from "../src/words.ts";
+import { createHash } from "node:crypto";
 import { fromB64url } from "../src/format.ts";
 import { GRANT_ID, type AccessFile } from "../src/grants.ts";
 import { validateAccess } from "../src/publish.ts";
@@ -24,6 +25,8 @@ const create = (name: string, more: Partial<Extract<AccessChange, { op: "create"
   op: "create",
   audience: { name, link: true, scope: { notes: ["trip.md"], folders: [] }, expiresAt: expiryFrom("30d", NOW), ...more },
 });
+/** The main process's way: main-issued words come from the EFF list. */
+const apply = (a: AccessFile, c: AccessChange, now = NOW) => applyAccessChange(a, c, now, { generate: generatePasscode });
 const problem = (f: () => unknown) => {
   try { f(); } catch (e) { return e instanceof AccessEditError ? e.problem : `other: ${String(e)}`; }
   return undefined;
@@ -32,7 +35,7 @@ const problem = (f: () => unknown) => {
 describe("creating an audience (SHR-05)", () => {
   it("adds a link grant with fresh secrets, a nameSalt, and nothing else changed", () => {
     const before = base();
-    const { access, id } = applyAccessChange(before, create("Asha"), NOW);
+    const { access, id } = apply(before, create("Asha"), NOW);
     expect(access.grants).toHaveLength(2);
     expect(access.grants[0]).toEqual(before.grants[0]);
     const g = access.grants[1]!;
@@ -45,54 +48,61 @@ describe("creating an audience (SHR-05)", () => {
     expect(fromB64url(access.nameSalt!)).toHaveLength(16);
     expect(() => validateAccess(access)).not.toThrow();
     // Each audience gets its own secrets.
-    const again = applyAccessChange(access, create("Book club"), NOW).access.grants[2]!;
+    const again = apply(access, create("Book club"), NOW).access.grants[2]!;
     expect(again.link!.secret).not.toBe(g.link!.secret);
     expect(again.salt).not.toBe(g.salt);
   });
   it("keeps an existing nameSalt", () => {
     const a = { ...base(), nameSalt: "c2FsdHNhbHRzYWx0c2FsdA" };
-    expect(applyAccessChange(a, create("Asha"), NOW).access.nameSalt).toBe("c2FsdHNhbHRzYWx0c2FsdA");
+    expect(apply(a, create("Asha"), NOW).access.nameSalt).toBe("c2FsdHNhbHRzYWx0c2FsdA");
   });
   it("adds a passcode grant, alone or beside a link", () => {
-    const p = applyAccessChange(base(), create("Asha", { link: false, passcode: { value: STRONG, generated: true } }), NOW).access.grants[1]!;
+    const p = apply(base(), create("Asha", { link: false, passcode: { value: STRONG } }), NOW).access.grants[1]!;
     expect(p.link).toBeUndefined();
-    expect(p.passcode).toEqual({ value: STRONG, generated: true });
-    const both = applyAccessChange(base(), create("Asha", { passcode: { value: STRONG, generated: true } }), NOW).access.grants[1]!;
+    // Typed by the owner: never marked generated, whatever it looks like.
+    expect(p.passcode).toEqual({ value: STRONG, generated: false });
+    const both = apply(base(), create("Asha", { passcode: { value: STRONG } }), NOW).access.grants[1]!;
     expect(both.link && both.passcode).toBeTruthy();
-    expect(() => validateAccess(applyAccessChange(base(), create("Asha", { passcode: { value: STRONG, generated: true } }), NOW).access)).not.toThrow();
+    expect(() => validateAccess(apply(base(), create("Asha", { passcode: { value: STRONG } }), NOW).access)).not.toThrow();
   });
   it("needs a way in and something to open", () => {
-    expect(problem(() => applyAccessChange(base(), create("Asha", { link: false }), NOW))).toBe("waysIn.none");
-    expect(problem(() => applyAccessChange(base(), create("Asha", { scope: { notes: [], folders: [] } }), NOW))).toBe("scope.empty");
+    expect(problem(() => apply(base(), create("Asha", { link: false }), NOW))).toBe("waysIn.none");
+    expect(problem(() => apply(base(), create("Asha", { scope: { notes: [], folders: [] } }), NOW))).toBe("scope.empty");
   });
   it("keeps folders and notes apart, without duplicates or leading slashes", () => {
-    const g = applyAccessChange(base(), create("Asha", { scope: { notes: ["/a.md", "a.md"], folders: ["trips/", "trips"] } }), NOW).access.grants[1]!;
+    const g = apply(base(), create("Asha", { scope: { notes: ["/a.md", "a.md"], folders: ["trips/", "trips"] } }), NOW).access.grants[1]!;
     expect(g.scope).toEqual({ notes: ["a.md"], folders: ["trips"] });
   });
 });
 
 describe("names (SHR-05, D-125 (5))", () => {
   it("are trimmed with inner white space as one space, and the letter case kept", () => {
-    expect(applyAccessChange(base(), create("  Sam   Lee "), NOW).access.grants[1]!.name).toBe("Sam Lee");
+    expect(apply(base(), create("  Sam   Lee "), NOW).access.grants[1]!.name).toBe("Sam Lee");
   });
   it("must be unique among audiences that still work, whatever the case or spacing", () => {
-    const { access } = applyAccessChange(base(), create("Sam Lee"), NOW);
-    expect(problem(() => applyAccessChange(access, create("sam  LEE"), NOW))).toBe("name.taken");
+    const { access } = apply(base(), create("Sam Lee"), NOW);
+    expect(problem(() => apply(access, create("sam  LEE"), NOW))).toBe("name.taken");
     expect(nameProblem(access, "SAM LEE", undefined, NOW)).toBe("name.taken");
     // Full-width letters normalize the same (NFKC).
     expect(nameProblem(access, "Ｓａｍ Lee", undefined, NOW)).toBe("name.taken");
   });
   it("can be reused once the earlier audience is withdrawn or expired", () => {
-    const a = applyAccessChange(base(), create("Asha"), NOW);
-    const withdrawn = applyAccessChange(a.access, { op: "withdraw", id: a.id }, NOW).access;
+    const a = apply(base(), create("Asha"), NOW);
+    const withdrawn = apply(a.access, { op: "withdraw", id: a.id }, NOW).access;
     expect(nameProblem(withdrawn, "Asha", undefined, NOW)).toBeUndefined();
     const later = new Date(NOW.getTime() + 31 * DAY);
     expect(nameProblem(a.access, "asha", undefined, later)).toBeUndefined();
   });
   it("can't be empty, too long, or the vault's own name", () => {
-    expect(problem(() => applyAccessChange(base(), create("   "), NOW))).toBe("name.empty");
-    expect(problem(() => applyAccessChange(base(), create("x".repeat(81)), NOW))).toBe("name.long");
-    expect(problem(() => applyAccessChange(base(), create("you"), NOW))).toBe("name.reserved");
+    expect(problem(() => apply(base(), create("   "), NOW))).toBe("name.empty");
+    expect(problem(() => apply(base(), create("x".repeat(81)), NOW))).toBe("name.long");
+    expect(problem(() => apply(base(), create("you"), NOW))).toBe("name.reserved");
+  });
+  it("can't hold control or format characters (review L4)", () => {
+    for (const name of ["Asha\u200b", "As\u0007ha", "Asha\u202e", "\u2066Asha", "Asha\u0000"]) {
+      expect(problem(() => apply(base(), create(name), NOW))).toBe("name.invalid");
+      expect(nameProblem(base(), name, undefined, NOW)).toBe("name.invalid");
+    }
   });
 });
 
@@ -107,15 +117,37 @@ describe("passcodes (SHR-07)", () => {
     for (const w of a.split("-")) expect(w).toMatch(/^[a-z]+$/);
     expect(passcodeProblem(a)).toBeUndefined();
   });
-  it("custom: at least 12 characters and rated strong; the generated flag vouches for nothing", () => {
+  it("the list is pinned: 7,776 different words, exactly as published (review L7)", () => {
+    const list = effWords();
+    expect(new Set(list).size).toBe(7776);
+    expect(createHash("sha256").update(list.join("\n")).digest("hex")).toBe("abae49761b88f3f1ba31ef944bea1f61b795a3cd7e1cfb7d276ed45bf77967ba");
+  });
+  it("made by the main process: { generate: true } gets four fresh words, marked generated (review L5)", () => {
+    const g = apply(base(), create("Asha", { passcode: { generate: true } }), NOW).access.grants[1]!;
+    expect(g.passcode!.generated).toBe(true);
+    expect(g.passcode!.value).toMatch(/^[a-z]+(-[a-z]+){3}$/);
+    // Without a generator (the window's copy of these rules) it can't be made.
+    expect(() => applyAccessChange(base(), create("Asha", { passcode: { generate: true } }), NOW)).toThrow();
+    const { access, id } = apply(base(), create("Asha"), NOW);
+    const renewed = apply(access, { op: "update", id, passcode: { generate: true } }, NOW).access.grants.find((x) => x.id === id)!;
+    expect(renewed.passcode).toMatchObject({ generated: true });
+  });
+  it("custom: 16 or more characters, or 3 or more words, and rated strong (review M1)", () => {
+    // Common passwords that pass a bits estimate alone.
+    for (const p of ["password1234", "qwertyuiop12", "iloveyou2026", "Password1234", "Summer2026!!"]) {
+      expect(passcodeProblem(p), p).toBe("passcode.short");
+      expect(problem(() => apply(base(), create("Asha", { passcode: { value: p } }), NOW)), p).toBe("passcode.short");
+    }
     expect(passcodeProblem("short")).toBe("passcode.short");
-    expect(passcodeProblem("aaaaaaaaaaaaaaaa")).toBe("passcode.weak");
+    expect(passcodeProblem("aaaaaaaaaaaaaaaaaaaa")).toBe("passcode.weak");
     expect(passcodeProblem("blue tractor singing 42")).toBeUndefined();
-    expect(problem(() => applyAccessChange(base(), create("Asha", { passcode: { value: "aaaaaaaaaaaaaaaa", generated: true } }), NOW))).toBe("passcode.weak");
-    expect(problem(() => applyAccessChange(base(), create("Asha", { passcode: { value: "password", generated: false } }), NOW))).toBe("passcode.short");
+    expect(passcodeProblem("the the the the")).toBe("passcode.short");
+    expect(passcodeProblem("Correct7Horse!Staple")).toBeUndefined();
+    expect(problem(() => apply(base(), create("Asha", { passcode: { value: "aaaaaaaaaaaaaaaaaaaa" } }), NOW))).toBe("passcode.weak");
+    expect(problem(() => apply(base(), create("Asha", { passcode: { value: "password" } }), NOW))).toBe("passcode.short");
   });
   it("are stored trimmed, as the reader derives them", () => {
-    const g = applyAccessChange(base(), create("Asha", { passcode: { value: `  ${STRONG} `, generated: false } }), NOW).access.grants[1]!;
+    const g = apply(base(), create("Asha", { passcode: { value: `  ${STRONG} ` } }), NOW).access.grants[1]!;
     expect(g.passcode!.value).toBe(STRONG);
   });
 });
@@ -129,10 +161,10 @@ describe("expiry (SHR-08)", () => {
     expect(expiryFrom("never", NOW)).toBeNull();
   });
   it("can't be in the past", () => {
-    expect(problem(() => applyAccessChange(base(), create("Asha", { expiresAt: new Date(NOW.getTime() - 1).toISOString() }), NOW))).toBe("expiry.past");
+    expect(problem(() => apply(base(), create("Asha", { expiresAt: new Date(NOW.getTime() - 1).toISOString() }), NOW))).toBe("expiry.past");
   });
   it("states: active, expires soon (3 days or less), expired, withdrawn", () => {
-    const { access, id } = applyAccessChange(base(), create("Asha"), NOW);
+    const { access, id } = apply(base(), create("Asha"), NOW);
     const g = access.grants.find((x) => x.id === id)!;
     expect(audienceState(g, NOW)).toBe("active");
     expect(audienceState(g, new Date(NOW.getTime() + 28 * DAY))).toBe("soon");
@@ -141,52 +173,52 @@ describe("expiry (SHR-08)", () => {
     expect(audienceState({ ...g, revokedAt: NOW.toISOString() }, NOW)).toBe("withdrawn");
   });
   it("extends, which brings an expired audience back", () => {
-    const { access, id } = applyAccessChange(base(), create("Asha", { expiresAt: expiryFrom("1d", NOW) }), NOW);
+    const { access, id } = apply(base(), create("Asha", { expiresAt: expiryFrom("1d", NOW) }), NOW);
     const later = new Date(NOW.getTime() + 2 * DAY);
-    const g = applyAccessChange(access, { op: "update", id, expiresAt: expiryFrom("90d", later) }, later).access.grants.find((x) => x.id === id)!;
+    const g = apply(access, { op: "update", id, expiresAt: expiryFrom("90d", later) }, later).access.grants.find((x) => x.id === id)!;
     expect(audienceState(g, later)).toBe("active");
   });
 });
 
 describe("changing what it opens and how (SHR-08)", () => {
   it("changes the scope and keeps the secrets", () => {
-    const { access, id } = applyAccessChange(base(), create("Asha"), NOW);
+    const { access, id } = apply(base(), create("Asha"), NOW);
     const before = access.grants.find((g) => g.id === id)!;
-    const after = applyAccessChange(access, { op: "update", id, scope: { notes: [], folders: ["trips"] } }, NOW).access.grants.find((g) => g.id === id)!;
+    const after = apply(access, { op: "update", id, scope: { notes: [], folders: ["trips"] } }, NOW).access.grants.find((g) => g.id === id)!;
     expect(after.scope).toEqual({ notes: [], folders: ["trips"] });
     expect(after.link).toEqual(before.link);
     expect(after.salt).toBe(before.salt);
   });
   it("adds a passcode, or removes the link, but never both ways", () => {
-    const { access, id } = applyAccessChange(base(), create("Asha"), NOW);
-    const withCode = applyAccessChange(access, { op: "update", id, passcode: { value: STRONG, generated: true } }, NOW).access;
-    const noLink = applyAccessChange(withCode, { op: "update", id, link: false }, NOW).access.grants.find((g) => g.id === id)!;
+    const { access, id } = apply(base(), create("Asha"), NOW);
+    const withCode = apply(access, { op: "update", id, passcode: { value: STRONG } }, NOW).access;
+    const noLink = apply(withCode, { op: "update", id, link: false }, NOW).access.grants.find((g) => g.id === id)!;
     expect(noLink.link).toBeUndefined();
     expect(noLink.passcode?.value).toBe(STRONG);
-    expect(problem(() => applyAccessChange(withCode, { op: "update", id, link: false, passcode: null }, NOW))).toBe("waysIn.none");
+    expect(problem(() => apply(withCode, { op: "update", id, link: false, passcode: null }, NOW))).toBe("waysIn.none");
   });
   it("never edits, withdraws, or deletes the vault, or an unknown grant", () => {
-    for (const op of ["withdraw", "delete"] as const) expect(problem(() => applyAccessChange(base(), { op, id: "gownergrant1" }, NOW))).toBe("owner");
-    expect(problem(() => applyAccessChange(base(), { op: "update", id: "gownergrant1", scope: { notes: ["a.md"], folders: [] } }, NOW))).toBe("owner");
-    expect(problem(() => applyAccessChange(base(), { op: "withdraw", id: "nosuchgrant" }, NOW))).toBe("notFound");
+    for (const op of ["withdraw", "delete"] as const) expect(problem(() => apply(base(), { op, id: "gownergrant1" }, NOW))).toBe("owner");
+    expect(problem(() => apply(base(), { op: "update", id: "gownergrant1", scope: { notes: ["a.md"], folders: [] } }, NOW))).toBe("owner");
+    expect(problem(() => apply(base(), { op: "withdraw", id: "nosuchgrant" }, NOW))).toBe("notFound");
   });
 });
 
 describe("withdrawing and deleting (SHR-08)", () => {
   it("withdraw keeps the record, with when", () => {
-    const { access, id } = applyAccessChange(base(), create("Asha"), NOW);
-    const w = applyAccessChange(access, { op: "withdraw", id }, NOW).access;
+    const { access, id } = apply(base(), create("Asha"), NOW);
+    const w = apply(access, { op: "withdraw", id }, NOW).access;
     const g = w.grants.find((x) => x.id === id)!;
     expect(g.revokedAt).toBe(NOW.toISOString());
     expect(g.link).toBeDefined();
     expect(shareGrants(w)).toHaveLength(1);
     expect(() => validateAccess(w)).not.toThrow();
     // A withdrawn audience can't be changed back by an edit.
-    expect(problem(() => applyAccessChange(w, { op: "update", id, expiresAt: null }, NOW))).toBe("withdrawn");
+    expect(problem(() => apply(w, { op: "update", id, expiresAt: null }, NOW))).toBe("withdrawn");
   });
   it("delete removes the record", () => {
-    const { access, id } = applyAccessChange(base(), create("Asha"), NOW);
-    const d = applyAccessChange(access, { op: "delete", id }, NOW).access;
+    const { access, id } = apply(base(), create("Asha"), NOW);
+    const d = apply(access, { op: "delete", id }, NOW).access;
     expect(d.grants.map((g) => g.id)).toEqual(["gownergrant1"]);
   });
 });
@@ -199,6 +231,13 @@ describe("parseAccessChange: what the main process accepts from the window", () 
     for (const bad of [null, {}, { op: "drop" }, { op: "withdraw", id: "../x" }, { op: "create", audience: { name: 3 } },
       { op: "create", audience: { ...c.op === "create" ? c.audience : {}, scope: { notes: [1] } } }, { op: "update", id: "sabcdefgh", owner: true }]) {
       expect(() => parseAccessChange(bad)).toThrow();
+    }
+  });
+  it("lets the window ask for words or give its own passcode, never claim its own is generated (review L5)", () => {
+    expect(parseAccessChange({ op: "update", id: "sabcdefgh", passcode: { generate: true } })).toEqual({ op: "update", id: "sabcdefgh", passcode: { generate: true } });
+    expect(parseAccessChange({ op: "update", id: "sabcdefgh", passcode: { value: STRONG } })).toEqual({ op: "update", id: "sabcdefgh", passcode: { value: STRONG } });
+    for (const passcode of [{ value: STRONG, generated: true }, { generate: false }, { generate: true, value: STRONG }]) {
+      expect(() => parseAccessChange({ op: "update", id: "sabcdefgh", passcode })).toThrow();
     }
   });
 });

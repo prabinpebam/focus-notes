@@ -6,53 +6,45 @@
  * keeps the dialogs' state, explains problems before asking, and builds the invite.
  */
 import {
-  audienceState, DEFAULT_EXPIRY, EXPIRY_CHOICES, expiryFrom, nameProblem, passcodeProblem, shareGrants,
-  type AccessChange, type AccessProblem, type ExpiryChoice,
+  audienceState, DEFAULT_EXPIRY, EXPIRY_CHOICES, expiryFrom, INVITE_PLACEHOLDERS, inviteText, nameProblem, passcodeProblem,
+  type AccessChange, type AccessProblem, type Audience, type ExpiryChoice, type InviteValues,
 } from "@focus-notes/seal/access";
-import { shareLink, type AccessFile, type Grant } from "@focus-notes/seal";
+
+export { inviteText, type Audience, type InviteValues } from "@focus-notes/seal/access";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import type { TreeNode, WorkspaceTree } from "./workspace.ts";
 
-/** What the shell reports: whether there's a private repository, the site, and the share audiences with their secrets. */
+/** What the shell reports: whether there's a private repository, the site, and the share audiences, without their secrets. */
 export interface AccessListing {
   available: boolean;
   /** The Pages site's address, once publishing is set up. Links need it. */
   site?: string;
   /** Whether the owner's vault grant is in force (it's never sent here). */
   vault: boolean;
-  grants: Grant[];
+  grants: Audience[];
 }
 /** The desktop's access.json (D-134). Absent in the browser. */
 export interface AccessBridge {
   load(): Promise<AccessListing>;
   /** Makes one change and commits it. Rejects with a message containing `access:<problem>` when it can't. */
   apply(change: AccessChange): Promise<AccessListing & { id: string }>;
-  /** Four fresh EFF words (SHR-07). */
-  suggestPasscode(): Promise<string>;
+  /** One audience's link and passcode, for its open invite only (review L2). */
+  reveal(id: string): Promise<{ link?: string; passcode?: string }>;
+  /**
+   * Copies the link, the passcode, or the invite: the shell fills in the invite's link, passcode, and
+   * site itself, and clears the clipboard after 90 s (review L1).
+   */
+  copy(id: string, what: "invite" | "link" | "passcode", invite?: { template: string; values: InviteValues }): Promise<void>;
 }
 
 // ---- the invite (SHR-09) ----
 
-export type InviteValues = Partial<Record<"name" | "title" | "link" | "passcode" | "expires" | "site", string>>;
-const PLACEHOLDERS = ["name", "title", "link", "passcode", "expires", "site"] as const;
-
-/**
- * The invite: the template with its placeholders filled in. A line that uses a placeholder with no
- * value (a link for a passcode-only audience, an expiry for one that never expires) is left out.
- */
-export function inviteText(template: string, values: InviteValues): string {
-  return template.split(/\r?\n/)
-    .filter((line) => PLACEHOLDERS.every((p) => !line.includes(`{${p}}`) || values[p]))
-    .map((line) => line.replace(/\{(name|title|link|passcode|expires|site)\}/g, (_, p: keyof InviteValues) => values[p]!))
-    .join("\n").trim();
-}
-
 /** The default template, from the catalog: the shared-computer line only for audiences with both ways in (D-125 (1)). */
 export function inviteTemplate(catalog: MessageCatalog, both: boolean): string {
-  const raw = Object.fromEntries(PLACEHOLDERS.map((p) => [p, `{${p}}`]));
+  const raw = Object.fromEntries(INVITE_PLACEHOLDERS.map((p) => [p, `{${p}}`]));
   return ["hi", "link", "passcode", ...(both ? ["sharedComputer"] : []), "expires"].map((k) => catalog.format(`share.manage.invite.${k}`, raw)).join("\n");
 }
 
@@ -91,7 +83,8 @@ export interface ShareEditor {
   link: boolean;
   passcode: boolean;
   mode: "generate" | "own";
-  generated: string;
+  /** Editing an audience that has a passcode: make new words when saving (otherwise it's kept). */
+  renew: boolean;
   own: string;
   notes: string[];
   folders: string[];
@@ -106,10 +99,11 @@ export interface ShareManageState {
   loading: boolean;
   failed: boolean;
   editor: ShareEditor;
-  invite: { open: boolean; id?: string; copied?: "invite" | "link" | "passcode" };
+  /** The open invite, with its audience's secrets while it's open (review L2). */
+  invite: { open: boolean; id?: string; copied?: "invite" | "link" | "passcode"; secrets?: { link?: string; passcode?: string } };
   confirm: { open: boolean; kind: "withdraw" | "delete"; id?: string; busy: boolean };
 }
-const EDITOR_CLOSED: ShareEditor = { open: false, name: "", link: true, passcode: true, mode: "generate", generated: "", own: "", notes: [], folders: [], filter: "", expiry: DEFAULT_EXPIRY, busy: false };
+const EDITOR_CLOSED: ShareEditor = { open: false, name: "", link: true, passcode: true, mode: "generate", renew: false, own: "", notes: [], folders: [], filter: "", expiry: DEFAULT_EXPIRY, busy: false };
 export const SHARE_MANAGE_CLOSED: ShareManageState = { loading: false, failed: false, editor: EDITOR_CLOSED, invite: { open: false }, confirm: { open: false, kind: "withdraw", busy: false } };
 
 interface S {
@@ -120,7 +114,6 @@ interface S {
 interface Ctx<St extends S> {
   store: Store<St>;
   access: AccessBridge | undefined;
-  copyText: ((text: string) => Promise<void>) | undefined;
   catalog: MessageCatalog;
   commands: CommandRegistry<St>;
   viewModels: ViewModelRegistry<St>;
@@ -130,7 +123,7 @@ interface Ctx<St extends S> {
 const problemOf = (e: unknown): AccessProblem | "failed" => (/access:([a-zA-Z.]+)/.exec(String((e as Error)?.message ?? e))?.[1] as AccessProblem | undefined) ?? "failed";
 const DAY = 86_400_000;
 
-export function registerShareManage<St extends S>({ store, access, copyText, catalog, commands, viewModels, now = () => new Date() }: Ctx<St>) {
+export function registerShareManage<St extends S>({ store, access, catalog, commands, viewModels, now = () => new Date() }: Ctx<St>) {
   const st = () => store.state.ui.share;
   const set = (patch: Partial<ShareManageState>) => store.update((s) => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, ...patch } } }));
   const setEditor = (patch: Partial<ShareEditor>) => set({ editor: { ...st().editor, ...patch } });
@@ -152,11 +145,10 @@ export function registerShareManage<St extends S>({ store, access, copyText, cat
   // ---- the editor ----
   reg("share.manage.add", async () => {
     if (!access) return;
-    const words = await access.suggestPasscode().catch(() => "");
     // This note, when it's private (Add people: "this note (checked)").
     const current = shareables(store.state.workspace.tree).find((x) => x.kind === "note" && (store.state.note.path ?? "").replace(/\\/g, "/").endsWith(`/private/notes/${x.path}`));
     leaveSettings();
-    setEditor({ ...EDITOR_CLOSED, open: true, generated: words, notes: current ? [current.path] : [] });
+    setEditor({ ...EDITOR_CLOSED, open: true, notes: current ? [current.path] : [] });
   });
   reg<{ id: string }>("share.manage.edit", ({ id }) => {
     const g = grant(id);
@@ -164,18 +156,17 @@ export function registerShareManage<St extends S>({ store, access, copyText, cat
     leaveSettings();
     setEditor({
       ...EDITOR_CLOSED, open: true, id, name: g.name, link: Boolean(g.link), passcode: Boolean(g.passcode),
-      generated: g.passcode?.value ?? "", notes: g.scope.notes ?? [], folders: g.scope.folders ?? [], expiry: "",
+      notes: g.scope.notes ?? [], folders: g.scope.folders ?? [], expiry: "",
     });
   });
   reg<{ value: string }>("share.manage.setName", (a) => setEditor({ name: text(a), problem: undefined }));
   reg("share.manage.toggleLink", () => setEditor({ link: !st().editor.link, problem: undefined }));
   reg("share.manage.togglePasscode", async () => {
     const e = st().editor;
-    if (!e.passcode && !e.generated && access) setEditor({ generated: await access.suggestPasscode().catch(() => "") });
     setEditor({ passcode: !st().editor.passcode, problem: undefined });
   });
   reg<{ value: string }>("share.manage.setMode", (a) => { if (a.value === "generate" || a.value === "own") setEditor({ mode: a.value, problem: undefined }); });
-  reg("share.manage.newWords", async () => { if (access) setEditor({ generated: await access.suggestPasscode().catch(() => st().editor.generated) }); });
+  reg("share.manage.newWords", () => setEditor({ renew: !st().editor.renew }));
   reg<{ value: string }>("share.manage.setOwn", (a) => setEditor({ own: text(a), problem: undefined }));
   reg<{ value: string }>("share.manage.setFilter", (a) => setEditor({ filter: text(a) }));
   reg<{ id: string }>("share.manage.toggleItem", ({ id }) => {
@@ -188,7 +179,8 @@ export function registerShareManage<St extends S>({ store, access, copyText, cat
   reg<{ value: string }>("share.manage.setExpiry", (a) => { if ((EXPIRY_CHOICES as readonly string[]).includes(a.value)) setEditor({ expiry: a.value as ExpiryChoice }); });
   reg<{ open: boolean }>("share.manage.setEditorOpen", ({ open }) => {
     if (open || st().editor.busy) return;
-    setEditor({ open: false });
+    // Nothing typed is kept once it closes (review L2).
+    set({ editor: EDITOR_CLOSED });
     backToSettings();
   });
 
@@ -196,7 +188,7 @@ export function registerShareManage<St extends S>({ store, access, copyText, cat
   const editorProblem = (e: ShareEditor): AccessProblem | undefined => {
     const listing = st().listing;
     if (!e.id && listing) {
-      const bad = nameProblem({ version: 1, grants: listing.grants } as AccessFile, e.name, undefined, now());
+      const bad = nameProblem(listing, e.name, undefined, now());
       if (bad) return bad;
     }
     if (!e.link && !e.passcode) return "waysIn.none";
@@ -209,52 +201,62 @@ export function registerShareManage<St extends S>({ store, access, copyText, cat
     if (!access || e.busy) return;
     const bad = editorProblem(e);
     if (bad) return void setEditor({ problem: bad });
-    const passcode = e.passcode ? (e.mode === "own" ? { value: e.own, generated: false } : { value: e.generated, generated: true }) : undefined;
+    // Words are made by the shell (review L5); an edited audience keeps its passcode unless asked for new words.
+    const passcode = e.passcode ? (e.mode === "own" ? { value: e.own } : { generate: true as const }) : undefined;
     const scope = { notes: e.notes, folders: e.folders };
     const before = grant(e.id);
+    const keep = Boolean(before?.passcode && e.mode === "generate" && !e.renew);
     const change: AccessChange = e.id
       ? {
         op: "update", id: e.id, link: e.link, scope,
         ...(e.expiry ? { expiresAt: expiryFrom(e.expiry, now()) } : {}),
-        ...(!passcode ? (before?.passcode ? { passcode: null } : {}) : passcode.value !== before?.passcode?.value ? { passcode } : {}),
+        ...(!passcode ? (before?.passcode ? { passcode: null } : {}) : keep ? {} : { passcode }),
       }
       : { op: "create", audience: { name: e.name, link: e.link, ...(passcode ? { passcode } : {}), scope, expiresAt: expiryFrom(e.expiry || DEFAULT_EXPIRY, now()) } };
     setEditor({ busy: true, problem: undefined });
     try {
       const { id, ...listing } = await access.apply(change);
-      set({ listing, editor: { ...st().editor, busy: false, open: false }, invite: { open: true, id } });
+      set({ listing, editor: EDITOR_CLOSED });
+      await openInvite(id);
     } catch (err) {
       setEditor({ busy: false, problem: problemOf(err) });
     }
   });
 
   // ---- the invite ----
-  const invite = (g: Grant) => {
-    const site = st().listing?.site;
+  /** The invite's title: a note's title, or a folder's own name, never the private path above it (review L3). */
+  const inviteTitle = (g: Audience) => {
     const items = shareables(store.state.workspace.tree);
-    const labels = [...(g.scope.notes ?? []).map((p) => items.find((x) => x.kind === "note" && x.path === p)?.label ?? p.replace(/^.*\//, "").replace(/\.(md|markdown)$/i, "")), ...(g.scope.folders ?? [])];
-    const title = labels.length > 1 ? catalog.format("share.manage.scope.several", { first: labels[0]!, count: labels.length - 1 }) : labels[0] ?? "";
-    const link = site && g.link ? shareLink(site, g.id, g.link.secret) : undefined;
-    const expires = g.expiresAt ? new Intl.DateTimeFormat(catalog.locale, { dateStyle: "long" }).format(new Date(g.expiresAt)) : undefined;
-    const values: InviteValues = { name: g.name, title, ...(link ? { link } : {}), ...(site && g.passcode ? { passcode: g.passcode.value, site: new URL("s/", site.endsWith("/") ? site : `${site}/`).href } : {}), ...(expires ? { expires } : {}) };
-    return { text: inviteText(inviteTemplate(catalog, Boolean(link && values.passcode)), values), link, passcode: g.passcode?.value, title };
+    const labels = [
+      ...(g.scope.notes ?? []).map((p) => items.find((x) => x.kind === "note" && x.path === p)?.label ?? p.replace(/^.*\//, "").replace(/\.(md|markdown)$/i, "")),
+      ...(g.scope.folders ?? []).map((f) => f.replace(/\/+$/, "").replace(/^.*\//, "")),
+    ];
+    return labels.length > 1 ? catalog.format("share.manage.scope.several", { first: labels[0]!, count: labels.length - 1 }) : labels[0] ?? "";
   };
-  reg<{ id: string }>("share.manage.invite", ({ id }) => {
-    if (!grant(id)) return;
+  /** The invite without its secrets: the shell fills them in when it copies. */
+  const inviteParts = (g: Audience) => {
+    const site = st().listing?.site;
+    const both = Boolean(site && g.link && g.passcode);
+    const expires = g.expiresAt ? new Intl.DateTimeFormat(catalog.locale, { dateStyle: "long" }).format(new Date(g.expiresAt)) : undefined;
+    return { template: inviteTemplate(catalog, both), values: { name: g.name, title: inviteTitle(g), ...(expires ? { expires } : {}) } };
+  };
+  const openInvite = async (id: string) => {
+    if (!access || !grant(id)) return;
     leaveSettings();
     set({ invite: { open: true, id } });
-  });
+    const secrets = await access.reveal(id).catch(() => ({}));
+    if (st().invite.open && st().invite.id === id) set({ invite: { ...st().invite, secrets } });
+  };
+  reg<{ id: string }>("share.manage.invite", ({ id }) => openInvite(id));
   reg<{ what: string }>("share.manage.copy", async ({ what }) => {
-    const g = grant(st().invite.id);
-    if (!g || !copyText || (what !== "invite" && what !== "link" && what !== "passcode")) return;
-    const i = invite(g);
-    const value = what === "invite" ? i.text : what === "link" ? i.link : i.passcode;
-    if (!value) return;
-    await copyText(value);
-    set({ invite: { ...st().invite, copied: what } });
+    const id = st().invite.id;
+    if (!access || !id || !grant(id) || (what !== "invite" && what !== "link" && what !== "passcode")) return;
+    const ok = await access.copy(id, what, what === "invite" ? inviteParts(grant(id)!) : undefined).then(() => true, () => false);
+    if (ok && st().invite.id === id) set({ invite: { ...st().invite, copied: what } });
   });
   reg<{ open: boolean }>("share.manage.setInviteOpen", ({ open }) => {
     if (open) return;
+    // The secrets go with it (review L2).
     set({ invite: { open: false } });
     backToSettings();
   });
@@ -294,19 +296,19 @@ export function registerShareManage<St extends S>({ store, access, copyText, cat
   });
 
   // ---- view models ----
-  const scopeLabel = (g: Grant) => {
+  const scopeLabel = (g: Audience) => {
     const items = shareables(store.state.workspace.tree);
     const labels = [...(g.scope.folders ?? []).map((f) => `${f}/`), ...(g.scope.notes ?? []).map((p) => items.find((x) => x.path === p)?.label ?? p.replace(/^.*\//, "").replace(/\.(md|markdown)$/i, ""))];
     return labels.length > 1 ? catalog.format("share.manage.scope.several", { first: labels[0]!, count: labels.length - 1 }) : labels[0] ?? "";
   };
   const ways = (g: { link?: unknown; passcode?: unknown }) => catalog.format(`share.manage.ways.${g.link && g.passcode ? "both" : g.link ? "link" : "passcode"}`);
-  const badge = (g: Grant) => {
+  const badge = (g: Audience) => {
     const state = audienceState(g, now());
     if (state === "withdrawn" || state === "expired") return catalog.format(`share.manage.state.${state}`);
     if (!g.expiresAt) return catalog.format("share.manage.state.never");
     return catalog.format("share.manage.state.expiresIn", { days: Math.max(1, Math.ceil((Date.parse(g.expiresAt) - now().getTime()) / DAY)) });
   };
-  const menu = (g: Grant) => {
+  const menu = (g: Audience) => {
     const state = audienceState(g, now());
     const item = (id: string, icon: string) => ({ id, label: catalog.format(`share.manage.action.${id}`), icon });
     const items = state === "withdrawn" ? [item("delete", "delete")]
@@ -336,7 +338,7 @@ export function registerShareManage<St extends S>({ store, access, copyText, cat
     reads: ["ui.share.listing", "ui.share.loading", "ui.share.failed", "workspace.tree"],
     select: (s) => {
       const m = s.ui.share;
-      const grants = m.listing ? shareGrants({ version: 1, grants: m.listing.grants }) : [];
+      const grants = m.listing?.grants ?? [];
       return {
         available: Boolean(access && m.listing?.available), unavailable: Boolean(m.listing && !m.listing.available), loading: m.loading, failed: m.failed,
         empty: Boolean(m.listing?.available) && !grants.length, hasAudiences: grants.length > 0,
@@ -359,7 +361,7 @@ export function registerShareManage<St extends S>({ store, access, copyText, cat
       type: "object",
       properties: {
         open: BOOL, creating: BOOL, title: STR, name: STR, link: BOOL, passcode: BOOL, mode: STR, modes: { type: "array", items: OPTION },
-        generate: BOOL, own: BOOL, generated: STR, ownValue: STR, ownInvalid: BOOL, ownNote: STR,
+        generate: BOOL, own: BOOL, generated: STR, canRenew: BOOL, renew: BOOL, ownValue: STR, ownInvalid: BOOL, ownNote: STR,
         filter: STR, items: { type: "array", items: { type: "object", properties: { id: STR, label: STR, icon: STR, pressed: BOOL } } },
         picked: STR, expiry: STR, expiries: { type: "array", items: OPTION }, problem: STR, hasProblem: BOOL, nameInvalid: BOOL, busy: BOOL, submitLabel: STR, noItems: BOOL,
       },
@@ -368,6 +370,7 @@ export function registerShareManage<St extends S>({ store, access, copyText, cat
     reads: ["ui.share.editor", "ui.share.listing", "workspace.tree"],
     select: (s) => {
       const e = s.ui.share.editor;
+      const had = Boolean(e.id && s.ui.share.listing?.grants.find((g) => g.id === e.id)?.passcode);
       const all = shareables(s.workspace.tree);
       const q = e.filter.trim().toLocaleLowerCase();
       const picked = (x: Shareable) => (x.kind === "folder" ? e.folders : e.notes).includes(x.path);
@@ -380,7 +383,9 @@ export function registerShareManage<St extends S>({ store, access, copyText, cat
         title: e.id ? catalog.format("share.manage.editor.editTitle", { name: e.name }) : catalog.format("share.manage.editor.title"),
         name: e.name, link: e.link, passcode: e.passcode, mode: e.mode,
         modes: ["generate", "own"].map((id) => ({ id, label: catalog.format(`share.manage.passcode.${id}`) })),
-        generate: e.passcode && e.mode === "generate", own: e.passcode && e.mode === "own", generated: e.generated, ownValue: e.own,
+        generate: e.passcode && e.mode === "generate", own: e.passcode && e.mode === "own", ownValue: e.own,
+        canRenew: Boolean(e.id && had), renew: e.renew,
+        generated: catalog.format(e.id && had ? (e.renew ? "share.manage.passcode.renew" : "share.manage.passcode.keep") : "share.manage.passcode.made"),
         ownInvalid: Boolean(e.own && own), ownNote: catalog.format(e.own && own ? `share.manage.problem.${own}` : "share.manage.passcode.rule"),
         filter: e.filter,
         items: shown.map((x) => ({ id: `${x.kind === "folder" ? "f" : "n"}:${x.path}`, label: x.label, icon: x.kind === "folder" ? "folder" : "document", pressed: picked(x) })),
@@ -408,14 +413,20 @@ export function registerShareManage<St extends S>({ store, access, copyText, cat
     select: (s) => {
       const i = s.ui.share.invite;
       const g = i.id ? s.ui.share.listing?.grants.find((x) => x.id === i.id) : undefined;
-      const built = g ? invite(g) : undefined;
+      const site = s.ui.share.listing?.site;
+      const parts = g ? inviteParts(g) : undefined;
+      // The preview shows the secrets while the invite is open; copying goes through the shell.
+      const sec = i.secrets ?? {};
+      const siteValue = site ? new URL("s/", site.endsWith("/") ? site : `${site}/`).href : undefined;
+      const text = parts ? inviteText(parts.template, { ...parts.values, ...(sec.link ? { link: sec.link } : {}), ...(sec.passcode && siteValue ? { passcode: sec.passcode, site: siteValue } : {}) }) : "";
+      const hasLink = Boolean(g?.link && site), hasPasscode = Boolean(g?.passcode);
       const copied = (what: string) => i.copied === what;
       const label = (what: string) => catalog.format(copied(what) ? "share.manage.invite.copied" : `share.manage.invite.copy.${what}`);
       return {
         open: i.open && Boolean(g), title: catalog.format("share.manage.invite.title", { name: g?.name ?? "" }),
         name: g?.name ?? "", initials: initials(g?.name ?? ""), detail: g ? catalog.format("share.manage.row.detail", { scope: scopeLabel(g), ways: ways(g) }) : "",
-        lines: (built?.text ?? "").split("\n").map((text, n) => ({ id: String(n), text })),
-        link: built?.link ?? "", hasLink: Boolean(built?.link), passcode: built?.passcode ?? "", hasPasscode: Boolean(built?.passcode),
+        lines: text.split("\n").map((line, n) => ({ id: String(n), text: line })),
+        link: sec.link ?? "", hasLink, passcode: sec.passcode ?? "", hasPasscode,
         noSite: Boolean(g?.link && !s.ui.share.listing?.site),
         copyInvite: label("invite"), copyLink: label("link"), copyPasscode: label("passcode"),
         inviteIcon: copied("invite") ? "check" : "copy", linkIcon: copied("link") ? "check" : "copy", passcodeIcon: copied("passcode") ? "check" : "copy",

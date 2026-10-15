@@ -5,7 +5,8 @@
  * what an audience opens, extending, withdrawing, and deleting.
  */
 import { describe, expect, it } from "vitest";
-import { applyAccessChange, shareGrants, type AccessChange } from "@focus-notes/seal/access";
+import { applyAccessChange, audienceOf, shareGrants, type AccessChange } from "@focus-notes/seal/access";
+import { shareLink } from "@focus-notes/seal";
 import { generatePasscode } from "@focus-notes/seal/words";
 import type { AccessFile } from "@focus-notes/seal";
 import { createApp, initials, inviteTemplate, inviteText, MessageCatalog, shareables, type AccessListing, type PlatformBridge } from "../src/index.ts";
@@ -39,6 +40,23 @@ describe("the invite (SHR-09)", () => {
   });
 });
 
+describe("the invite's title (review L3)", () => {
+  it("names a shared folder by its own name, not the private path above it", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("settings.setSection", { value: "sharing" });
+    await t.run("share.manage.add");
+    await t.run("share.manage.setName", { value: "Asha" });
+    await t.run("share.manage.toggleItem", { id: "n:trips/rome.md" });
+    await t.run("share.manage.toggleItem", { id: "f:work/clients/acme" });
+    await t.run("share.manage.submit");
+    await t.run("share.manage.copy", { what: "invite" });
+    expect(t.copied.at(-1)).toContain(`I've shared "acme" with you.`);
+    expect(t.copied.at(-1)).not.toContain("work/clients");
+  });
+});
+
 describe("helpers", () => {
   it("initials: one or two letters", () => {
     expect(initials("Asha")).toBe("AS");
@@ -65,7 +83,12 @@ const settle = () => new Promise((r) => setTimeout(r, 0));
 function shell() {
   let access: AccessFile = { version: 1, grants: [{ id: "gownergrant1", name: "You", owner: true, salt: "AAAAAAAAAAAAAAAAAAAAAA", passcodeKey: "A".repeat(43), scope: { all: true }, createdAt: "2026-10-01T00:00:00.000Z" }] };
   const copied: string[] = [];
-  const listing = (): AccessListing => ({ available: true, site: SITE, vault: true, grants: shareGrants(access) });
+  const listing = (): AccessListing => ({ available: true, site: SITE, vault: true, grants: shareGrants(access).map(audienceOf) });
+  const secrets = (id: string) => {
+    const g = shareGrants(access).find((x) => x.id === id)!;
+    return { ...(g.link ? { link: shareLink(SITE, g.id, g.link.secret) } : {}), ...(g.passcode ? { passcode: g.passcode.value } : {}) };
+  };
+  const revealed: string[] = [];
   const bridge: PlatformBridge = {
     platform: "windows",
     readNote: async () => "# A\n",
@@ -77,7 +100,6 @@ function shell() {
     saveAppState: async () => {},
     systemScheme: () => "light",
     onSystemSchemeChange: () => () => {},
-    copyText: async (t) => void copied.push(t),
     workspace: {
       info: async () => ({ folder: "/w" }),
       scan: async () => ({
@@ -91,17 +113,22 @@ function shell() {
     access: {
       load: async () => listing(),
       apply: async (change: AccessChange) => {
-        const r = applyAccessChange(access, JSON.parse(JSON.stringify(change)) as AccessChange);
+        const r = applyAccessChange(access, JSON.parse(JSON.stringify(change)) as AccessChange, new Date(), { generate: generatePasscode });
         access = r.access;
         return { ...listing(), id: r.id };
       },
-      suggestPasscode: async () => generatePasscode(),
+      reveal: async (id) => (revealed.push(id), secrets(id)),
+      // As the main process does: the window sends the invite without secrets, and the shell fills them in.
+      copy: async (id, what, invite) => {
+        const s = secrets(id);
+        copied.push(what === "invite" ? inviteText(invite!.template, { ...invite!.values, ...s, site: `${SITE}s/` }) : (what === "link" ? s.link : s.passcode)!);
+      },
     },
   };
   const app = createApp(bridge, en);
   const vm = (id: string) => app.viewModels.select(id, app.store.state) as Record<string, any>;
   const run = (id: string, args?: Record<string, unknown>) => app.commands.run(id, args);
-  return { app, vm, run, copied, access: () => access };
+  return { app, vm, run, copied, revealed, access: () => access };
 }
 
 describe("Settings → Sharing (SHR-05, SHR-08)", () => {
@@ -123,7 +150,8 @@ describe("Settings → Sharing (SHR-05, SHR-08)", () => {
     await t.run("share.manage.add");
     let e = t.vm("vm.shareEditor");
     expect(e).toMatchObject({ open: true, creating: true, link: true, passcode: true, mode: "generate" });
-    expect(e.generated.split("-")).toHaveLength(4);
+    // The words are made by the shell when it's shared (review L5): the window holds none.
+    expect(e.generated).toBe("Four random words, made when you share.");
     expect(e.items.filter((i: { pressed: boolean }) => i.pressed).map((i: { id: string }) => i.id)).toEqual(["n:trips/rome.md"]);
     expect(t.vm("vm.settings").open).toBe(false);
     // Problems are explained before anything is asked of the shell.
@@ -131,7 +159,7 @@ describe("Settings → Sharing (SHR-05, SHR-08)", () => {
     expect(t.vm("vm.shareEditor")).toMatchObject({ hasProblem: true, nameInvalid: true, problem: "Enter a name for who you're sharing with." });
     await t.run("share.manage.setName", { value: "Asha" });
     await t.run("share.manage.setMode", { value: "own" });
-    await t.run("share.manage.setOwn", { value: "aaaaaaaaaaaaaaaa" });
+    await t.run("share.manage.setOwn", { value: "aaaaaaaaaaaaaaaaaaaa" });
     expect(t.vm("vm.shareEditor")).toMatchObject({ ownInvalid: true, ownNote: "That passcode is too easy to guess. Use a few unrelated words, or generate one." });
     await t.run("share.manage.setMode", { value: "generate" });
     await t.run("share.manage.toggleItem", { id: "f:trips" });
@@ -144,6 +172,10 @@ describe("Settings → Sharing (SHR-05, SHR-08)", () => {
     const inv = t.vm("vm.shareInvite");
     expect(inv.open).toBe(true);
     expect(inv.link).toBe(`${SITE}s/#${g.id}.${g.link!.secret}`);
+    expect(t.revealed).toEqual([g.id]);
+    // The listing itself carries no secret (review L2).
+    expect(JSON.stringify(t.app.store.state.ui.share.listing)).not.toContain(g.link!.secret);
+    expect(JSON.stringify(t.app.store.state.ui.share.listing)).not.toContain(g.passcode!.value);
     expect(inv.lines.map((l: { text: string }) => l.text)).toContain("On a shared computer, use your name and the passcode: browsers remember links.");
     await t.run("share.manage.copy", { what: "invite" });
     expect(t.copied.at(-1)).toContain(`Hi Asha, I've shared "Rome and 1 more" with you.`);
@@ -152,6 +184,8 @@ describe("Settings → Sharing (SHR-05, SHR-08)", () => {
     expect(t.copied.at(-1)).toBe(g.passcode!.value);
     await t.run("share.manage.setInviteOpen", { open: false });
     expect(t.vm("vm.settings")).toMatchObject({ open: true, section: "sharing" });
+    // Closing the invite forgets its secrets.
+    expect(JSON.stringify(t.app.store.state.ui.share)).not.toContain(g.passcode!.value);
     const row = t.vm("vm.shareManage").rows[0];
     expect(row).toMatchObject({ name: "Asha", initials: "AS", badge: "Expires in 30 days", detail: "trips/ and 1 more · Link and passcode", active: true });
   });

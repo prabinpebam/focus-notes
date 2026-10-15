@@ -6,7 +6,7 @@
  * generator. Web Crypto only, no Node: the window imports the checks.
  */
 import { normalizePassphrase, passphraseStrength, randomBytes, randomId, SALT_BYTES, toB64url } from "./format.ts";
-import { GRANT_ID, isActive, LINK_SECRET_BYTES, normalizeName, type AccessFile, type Grant } from "./grants.ts";
+import { GRANT_ID, isActive, LINK_SECRET_BYTES, normalizeName, type AccessFile, type Grant, type GrantScope } from "./grants.ts";
 
 /** The longest audience name (schemas/access.schema.json). */
 export const NAME_MAX = 80;
@@ -24,7 +24,7 @@ export function expiryFrom(choice: ExpiryChoice, now = new Date()): string | nul
 }
 
 export type AccessProblem =
-  | "name.empty" | "name.long" | "name.taken" | "name.reserved"
+  | "name.empty" | "name.long" | "name.taken" | "name.reserved" | "name.invalid"
   | "waysIn.none" | "passcode.short" | "passcode.weak" | "scope.empty" | "expiry.past"
   | "notFound" | "owner" | "withdrawn";
 /** A change that can't be made. Its message is the problem's code, never a name or a secret. */
@@ -37,7 +37,10 @@ export class AccessEditError extends Error {
 }
 
 export interface ScopeInput { notes: string[]; folders: string[] }
-export interface PasscodeInput { value: string; generated: boolean }
+/** A passcode the owner typed, or a request for main-issued words (only those are stored as `generated`). */
+export type PasscodeInput = { value: string } | { generate: true };
+/** How the main process makes words (seal/words.ts); the window has none, so it can't claim them. */
+export interface ApplyOptions { generate?: () => string }
 export interface AudienceInput { name: string; link: boolean; passcode?: PasscodeInput; scope: ScopeInput; expiresAt: string | null }
 export type AccessChange =
   | { op: "create"; audience: AudienceInput }
@@ -46,10 +49,22 @@ export type AccessChange =
   | { op: "withdraw"; id: string }
   | { op: "delete"; id: string };
 
+/** An audience as the window sees it: what it opens and how, never a secret (review L2). */
+export interface Audience {
+  id: string; name: string; scope: GrantScope; createdAt: string; expiresAt?: string | null; revokedAt?: string | null;
+  link: boolean; passcode: boolean; generated: boolean;
+}
+export const audienceOf = (g: Grant): Audience => ({
+  id: g.id, name: g.name, scope: g.scope, createdAt: g.createdAt, expiresAt: g.expiresAt ?? null, revokedAt: g.revokedAt ?? null,
+  link: Boolean(g.link), passcode: Boolean(g.passcode), generated: Boolean(g.passcode?.generated),
+});
+type Timed = Pick<Grant, "expiresAt" | "revokedAt">;
+const inForce = (g: Timed, now: number) => !g.revokedAt && (!g.expiresAt || Date.parse(g.expiresAt) > now);
+
 export type AudienceState = "active" | "soon" | "expired" | "withdrawn";
-export function audienceState(g: Grant, now = new Date()): AudienceState {
+export function audienceState(g: Timed, now = new Date()): AudienceState {
   if (g.revokedAt) return "withdrawn";
-  if (!isActive(g, now.getTime())) return "expired";
+  if (!inForce(g, now.getTime())) return "expired";
   return g.expiresAt && Date.parse(g.expiresAt) - now.getTime() <= SOON_MS ? "soon" : "active";
 }
 
@@ -59,20 +74,36 @@ export const shareGrants = (access: AccessFile): Grant[] => access.grants.filter
 /** A name as it's stored: Unicode NFKC, every run of white space as one space, trimmed; its letter case kept. */
 export const tidyName = (name: string) => name.normalize("NFKC").replace(/\s+/gu, " ").trim();
 
-/** Why a name can't be used, if it can't: empty, too long, the vault's own, or another working audience's. */
-export function nameProblem(access: AccessFile, name: string, exceptId?: string, now = new Date()): AccessProblem | undefined {
+/** Control and format characters (zero-width, bidirectional overrides): a name that reads one way and is another. */
+const HIDDEN = /[\p{Cc}\p{Cf}]/u;
+
+/** Why a name can't be used, if it can't: hidden characters, empty, too long, the vault's own, or another working audience's. */
+export function nameProblem(access: { grants: readonly (Timed & Pick<Grant, "id" | "name" | "owner">)[] }, name: string, exceptId?: string, now = new Date()): AccessProblem | undefined {
+  if (HIDDEN.test(name)) return "name.invalid";
   const key = normalizeName(name);
   if (!key) return "name.empty";
   if (tidyName(name).length > NAME_MAX) return "name.long";
   if (key === normalizeName("You")) return "name.reserved";
-  const taken = access.grants.some((g) => !g.owner && g.id !== exceptId && isActive(g, now.getTime()) && normalizeName(g.name) === key);
+  const taken = access.grants.some((g) => !g.owner && g.id !== exceptId && inForce(g, now.getTime()) && normalizeName(g.name) === key);
   return taken ? "name.taken" : undefined;
 }
 
-/** Why a passcode is too easy to guess offline, if it is (SHR-07): fewer than 12 characters, or not rated strong. */
+/** A custom passcode's least length when it isn't several words. */
+export const PASSCODE_MIN_CHARS = 16;
+/** Or this many different words of 3 letters or more. */
+export const PASSCODE_MIN_WORDS = 3;
+const wordsIn = (s: string) => new Set(s.toLocaleLowerCase().split(/[^\p{L}]+/u).filter((w) => [...w].length >= 3)).size;
+
+/**
+ * Why a passcode is too easy to guess offline, if it is (SHR-07, review M1): it needs 16 characters or
+ * more, or 3 or more different words, and then the strength estimate. Common passwords
+ * ("Password1234", "Summer2026!!") are short single words, which a bits estimate alone lets through;
+ * this rule keeps them out without a bundled dictionary. Four EFF words always pass.
+ */
 export function passcodeProblem(value: string): AccessProblem | undefined {
-  if (normalizePassphrase(value).length < 12) return "passcode.short";
-  return passphraseStrength(value).ok ? undefined : "passcode.weak";
+  const p = normalizePassphrase(value);
+  if ([...p].length < PASSCODE_MIN_CHARS && wordsIn(p) < PASSCODE_MIN_WORDS) return "passcode.short";
+  return passphraseStrength(p).ok ? undefined : "passcode.weak";
 }
 
 const tidyPath = (p: string) => p.trim().replace(/^\/+/, "").replace(/\/+$/, "");
@@ -88,10 +119,14 @@ function checkExpiry(at: string | null, now: Date): string | null {
   if (!Number.isFinite(t) || t <= now.getTime()) throw new AccessEditError("expiry.past");
   return new Date(t).toISOString();
 }
-function checkPasscode(p: PasscodeInput): { value: string; generated: boolean } {
+function checkPasscode(p: PasscodeInput, o: ApplyOptions): { value: string; generated: boolean } {
+  if ("generate" in p) {
+    if (!o.generate) throw new Error("Passcodes are made by the main process");
+    return { value: o.generate(), generated: true };
+  }
   const bad = passcodeProblem(p.value);
   if (bad) throw new AccessEditError(bad);
-  return { value: normalizePassphrase(p.value), generated: p.generated };
+  return { value: normalizePassphrase(p.value), generated: false };
 }
 const newLink = () => ({ secret: toB64url(randomBytes(LINK_SECRET_BYTES)) });
 
@@ -100,14 +135,14 @@ const newLink = () => ({ secret: toB64url(randomBytes(LINK_SECRET_BYTES)) });
  * anything the publisher would refuse or the owner wouldn't mean: no way in, nothing to open, a name
  * in use, a weak passcode, an expiry in the past, or the vault's grant.
  */
-export function applyAccessChange(access: AccessFile, change: AccessChange, now = new Date()): { access: AccessFile; id: string } {
+export function applyAccessChange(access: AccessFile, change: AccessChange, now = new Date(), o: ApplyOptions = {}): { access: AccessFile; id: string } {
   if (change.op === "create") {
     const a = change.audience;
     const bad = nameProblem(access, a.name, undefined, now);
     if (bad) throw new AccessEditError(bad);
     if (!a.link && !a.passcode) throw new AccessEditError("waysIn.none");
     const scope = tidyScope(a.scope);
-    const passcode = a.passcode ? checkPasscode(a.passcode) : undefined;
+    const passcode = a.passcode ? checkPasscode(a.passcode, o) : undefined;
     const expiresAt = checkExpiry(a.expiresAt, now);
     let id = randomId("s", 16);
     while (access.grants.some((g) => g.id === id)) id = randomId("s", 16);
@@ -136,7 +171,7 @@ export function applyAccessChange(access: AccessFile, change: AccessChange, now 
   if (change.link === true && !g.link) next.link = newLink();
   if (change.link === false) delete next.link;
   if (change.passcode === null) delete next.passcode;
-  else if (change.passcode) next.passcode = checkPasscode(change.passcode);
+  else if (change.passcode) next.passcode = checkPasscode(change.passcode, o);
   if (!next.link && !next.passcode) throw new AccessEditError("waysIn.none");
   // Brought back from expiry: its name mustn't clash with an audience made since.
   if (isActive(next, now.getTime()) && !isActive(g, now.getTime())) {
@@ -159,8 +194,9 @@ function parseScope(v: unknown): ScopeInput {
   return { notes: strings(v.notes), folders: strings(v.folders) };
 }
 function parsePasscode(v: unknown): PasscodeInput {
-  if (!isObj(v) || !only(v, ["value", "generated"]) || typeof v.value !== "string" || v.value.length > 500 || typeof v.generated !== "boolean") throw new Error("Not a share change");
-  return { value: v.value, generated: v.generated };
+  if (isObj(v) && only(v, ["generate"]) && v.generate === true) return { generate: true };
+  if (!isObj(v) || !only(v, ["value"]) || typeof v.value !== "string" || v.value.length > 500) throw new Error("Not a share change");
+  return { value: v.value };
 }
 const parseExpiry = (v: unknown): string | null => {
   if (v === null || (typeof v === "string" && v.length <= 40)) return v;
@@ -191,4 +227,21 @@ export function parseAccessChange(v: unknown): AccessChange {
     ...(v.scope !== undefined ? { scope: parseScope(v.scope) } : {}),
     ...(v.expiresAt !== undefined ? { expiresAt: parseExpiry(v.expiresAt) } : {}),
   };
+}
+
+// ---- the invite (SHR-09) ----
+
+export type InviteValues = Partial<Record<"name" | "title" | "link" | "passcode" | "expires" | "site", string>>;
+export const INVITE_PLACEHOLDERS = ["name", "title", "link", "passcode", "expires", "site"] as const;
+
+/**
+ * The invite: the template with its placeholders filled in. A line that uses a placeholder with no
+ * value (a link for a passcode-only audience, an expiry for one that never expires) is left out.
+ * Values are put in once, so nothing in a value is read as a placeholder.
+ */
+export function inviteText(template: string, values: InviteValues): string {
+  return template.split(/\r?\n/)
+    .filter((line) => INVITE_PLACEHOLDERS.every((p) => !line.includes(`{${p}}`) || values[p]))
+    .map((line) => line.replace(/\{(name|title|link|passcode|expires|site)\}/g, (_, p: keyof InviteValues) => values[p]!))
+    .join("\n").trim();
 }

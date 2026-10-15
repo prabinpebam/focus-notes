@@ -23,7 +23,7 @@ An **audience** is one grant: a name, the ways in, what it opens, and when it en
 | --- | --- |
 | **Name** | The only detail recorded about who it's for (owner decision). A person ("Asha") or a group ("Book club"). Unique among audiences that still work. It isn't secret: the reader types it next to the passcode. |
 | **Ways in** | Magic link, passcode, or both. Both open exactly the same notes. |
-| **Passcode** | **Generated** (default): four random words from the EFF large wordlist, about 52 bits, for example `harbor-maple-river-cloud`. **Your own**: any passcode that passes the strength check (at least 12 characters, and rated "strong" by the zxcvbn-ts estimator, MIT). Weak passcodes can't be saved, because a published file can be attacked offline with unlimited guesses. |
+| **Passcode** | **Generated** (default): four random words from the EFF large wordlist, about 52 bits, for example `harbor-maple-river-cloud`. **Your own**: 16 or more characters, or 3 or more different words, and then rated strong by the strength estimate (as built, D-134; a zxcvbn-style dictionary isn't bundled, so the length or word rule keeps common passwords such as "Password1234" out). Weak passcodes can't be saved, because a published file can be attacked offline with unlimited guesses. |
 | **Opens** | Any mix of notes and folders. A folder includes notes added to it later. |
 | **Expires** | 1 day, 7 days, 30 days (default), 90 days, a date, or never (with a warning). |
 | **State** | Active · Expires soon (3 days or less) · Expired · Withdrawn · Waiting to publish |
@@ -66,7 +66,7 @@ On a shared computer, use your name and the passcode: browsers remember links.
 It works until {expires}.
 ```
 
-Lines for a way in that the audience doesn't have are left out, and the shared-computer line appears only when the audience has both a link and a passcode (D-134). [Copy invite], [Copy link], and [Copy passcode] each copy one thing. The link and passcode can be shown and copied again later, because the secret is kept in the private repository (never published).
+Lines for a way in that the audience doesn't have are left out, and the shared-computer line appears only when the audience has both a link and a passcode (D-134). A shared folder is named in the invite by its own name, never the private path above it. Copying goes through the desktop's main process, which clears the clipboard after 90 seconds if it still holds what was copied; Windows clipboard history and its cloud sync may keep a copy, which the app can't prevent, so on a shared computer turn clipboard history off or send the passcode another way. [Copy invite], [Copy link], and [Copy passcode] each copy one thing. The link and passcode can be shown and copied again later, because the secret is kept in the private repository (never published).
 
 ### Withdraw and extend
 

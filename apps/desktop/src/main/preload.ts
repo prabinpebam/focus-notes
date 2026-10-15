@@ -128,7 +128,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
   access: {
     load: () => ipcRenderer.invoke("access:load"),
     apply: (change: unknown) => ipcRenderer.invoke("access:apply", change),
-    suggestPasscode: () => ipcRenderer.invoke("access:suggest"),
+    reveal: (id: string) => ipcRenderer.invoke("access:reveal", id),
+    copy: (id: string, what: string, invite?: unknown) => ipcRenderer.invoke("access:copy", id, what, invite),
   },
   // Save and sync with the user's own Git (WP-3.3): intent-level only, never a Git command.
   sync: {

@@ -83,6 +83,8 @@ const LIST = [
 ].join(" ").split(" ");
 
 export const EFF_WORD_COUNT = LIST.length;
+/** The whole list, in order, for pinning it in a test. */
+export const effWords = (): readonly string[] => LIST;
 /** The word at a position in the list, 0 to 7,775 (the dice roll 11111 is 0). */
 export const effWord = (i: number): string => LIST[i]!;
 

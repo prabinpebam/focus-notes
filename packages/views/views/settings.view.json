@@ -1158,7 +1158,7 @@
                           "value": {
                             "get": "vm.shareEditor.generated"
                           },
-                          "role": "title"
+                          "tone": "muted"
                         }
                       },
                       {
@@ -1169,12 +1169,19 @@
                           },
                           "variant": "subtle",
                           "icon": "sync",
-                          "size": "s"
+                          "size": "s",
+                          "toggle": true,
+                          "pressed": {
+                            "get": "vm.shareEditor.renew"
+                          }
                         },
                         "on": {
                           "press": {
                             "run": "share.manage.newWords"
                           }
+                        },
+                        "when": {
+                          "get": "vm.shareEditor.canRenew"
                         }
                       }
                     ]
