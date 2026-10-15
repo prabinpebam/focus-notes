@@ -1,21 +1,35 @@
-# Update app (DST-06, D-135): once a week, looks for a newer Focus Notes release and, if there is
+# Update app (DST-06, D-137): once a week, looks for a newer Focus Notes release and, if there is
 # one, opens a pull request that moves .focus-notes/app.json (the version and the bundle's SHA-256
 # that Deploy app deploys) and the other template-managed files in .focus-notes/managed.json. It
 # never touches notes/ or private/. Nothing changes until you review and merge the pull request.
 #
 # The release's bundle and template are checked against its SHA256SUMS and its attestation, made by
-# the release workflow for that exact tag, before anything from them is used. There's only ever one
-# update pull request, from the focus-notes/update branch; a newer release moves it.
+# the release workflow for that exact tag on a GitHub-hosted runner, before anything from them is
+# used; the template is read in memory, never unpacked. A release is taken only once it's been out
+# for 3 days, unless you run this by hand with "skip the wait". There's only ever one update pull
+# request, from the focus-notes/update branch; a newer release moves it, and a version whose pull
+# request you closed is skipped. Workflow files (this one and pages.yml) can't be changed with the
+# workflow's own token, so the pull request says "action needed" and lists them, with the SHA-256
+# each should have, for you to copy by hand.
 #
-# Setup: Settings -> Actions -> General -> "Allow GitHub Actions to create and approve pull requests"
-# must be on, or opening the pull request fails with HTTP 403. Workflow files (this one and
-# pages.yml) can't be changed with the workflow's own token, so the pull request lists those for you
-# to copy by hand.
+# Kill switch: deleting a release (or its files) withdraws it. Instances stop being offered it, and
+# a Deploy app pinned to it fails safe at the download, leaving the site as it was.
+#
+# Trade-off: opening the pull request needs Settings -> Actions -> General -> "Allow GitHub Actions
+# to create and approve pull requests". That lets any workflow here with pull-requests: write open
+# and approve pull requests, which matters if you require reviews before merging. Leave it off and
+# this still pushes the focus-notes/update branch and puts a link to open the pull request yourself
+# in the run's summary.
 name: Update app
 on:
   schedule:
     - cron: "41 5 * * 1"
   workflow_dispatch:
+    inputs:
+      skip-wait:
+        description: Take a release less than 3 days old
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -46,6 +60,7 @@ jobs:
         name: Find the latest release
         env:
           GH_TOKEN: ${{ github.token }}
+          SKIP_WAIT: ${{ inputs.skip-wait }}
         run: |
           gh api "repos/$FOCUS_NOTES_SOURCE/releases?per_page=100" > "$RUNNER_TEMP/releases.json"
           node .github/focus-notes/update.mjs latest "$RUNNER_TEMP/releases.json" >> "$GITHUB_OUTPUT"
@@ -64,8 +79,12 @@ jobs:
           VERSION: ${{ steps.latest.outputs.version }}
         working-directory: ${{ runner.temp }}/release
         run: |
-          awk -v a="focus-notes-web-$VERSION.tgz" -v b="focus-notes-workspace-$VERSION.tgz" '$2 == a || $2 == b' SHA256SUMS > checked.sums
-          test "$(wc -l < checked.sums)" -eq 2
+          : > checked.sums
+          for f in "focus-notes-web-$VERSION.tgz" "focus-notes-workspace-$VERSION.tgz"; do
+            # Each name exactly once, so it's never ambiguous which line counts.
+            test "$(awk -v n="$f" '$2 == n' SHA256SUMS | wc -l)" -eq 1
+            awk -v n="$f" '$2 == n' SHA256SUMS >> checked.sums
+          done
           sha256sum --check --strict checked.sums
       # Made by the source's release workflow, for exactly this version's tag (D-128).
       - name: Check their attestations
@@ -75,16 +94,14 @@ jobs:
           VERSION: ${{ steps.latest.outputs.version }}
         run: |
           for f in "focus-notes-web-$VERSION.tgz" "focus-notes-workspace-$VERSION.tgz"; do
-            gh attestation verify "$RUNNER_TEMP/release/$f" --repo "$FOCUS_NOTES_SOURCE" --signer-workflow "$FOCUS_NOTES_SOURCE/.github/workflows/release.yml" --source-ref "refs/tags/v$VERSION"
+            gh attestation verify "$RUNNER_TEMP/release/$f" --repo "$FOCUS_NOTES_SOURCE" --cert-identity "https://github.com/$FOCUS_NOTES_SOURCE/.github/workflows/release.yml@refs/tags/v$VERSION" --source-ref "refs/tags/v$VERSION" --deny-self-hosted-runners
           done
       - name: Plan the update
         if: steps.latest.outputs.version != ''
         env:
           VERSION: ${{ steps.latest.outputs.version }}
         run: |
-          mkdir -p "$RUNNER_TEMP/template"
-          tar -xzf "$RUNNER_TEMP/release/focus-notes-workspace-$VERSION.tgz" -C "$RUNNER_TEMP/template" --no-same-owner
-          node .github/focus-notes/update.mjs plan --version "$VERSION" --template "$RUNNER_TEMP/template" --bundle "$RUNNER_TEMP/release/focus-notes-web-$VERSION.tgz" --out "$RUNNER_TEMP/update"
+          node .github/focus-notes/update.mjs plan --version "$VERSION" --template "$RUNNER_TEMP/release/focus-notes-workspace-$VERSION.tgz" --bundle "$RUNNER_TEMP/release/focus-notes-web-$VERSION.tgz" --out "$RUNNER_TEMP/update"
       - if: steps.latest.outputs.version != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

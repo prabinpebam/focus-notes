@@ -14,10 +14,10 @@ A [Focus Notes](https://github.com/prabinpebam/focus-notes) workspace: plain Mar
 
 ## Updates
 
-**Actions → Update app** runs once a week (or **Run workflow** any time). When there's a newer Focus Notes release, it checks the release's checksums and attestation and opens one pull request that changes `.focus-notes/app.json` and the other files listed in `.focus-notes/managed.json`, never your notes. Review it and merge it to deploy the new version; nothing changes until you do.
+**Actions → Update app** runs once a week (or **Run workflow** any time; tick *Take a release less than 3 days old* to skip the wait). When a Focus Notes release has been out for 3 days, it checks the release's checksums and attestation and opens one pull request that changes `.focus-notes/app.json` and the other files listed in `.focus-notes/managed.json`, never your notes. Review it and merge it to deploy the new version; nothing changes until you do. Close it to skip that version.
 
-- Turn on **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests**, or the workflow can't open the pull request.
-- A workflow's own token can't change workflow files, so when `.github/workflows/` changes, the pull request lists those files for you to copy from the [template repository](https://github.com/prabinpebam/focus-notes-workspace).
+- **The trade-off:** to open the pull request, turn on **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests**. That lets any workflow here with `pull-requests: write` open and approve pull requests, which matters if you require approvals before merging. Leave it off and the workflow still pushes the `focus-notes/update` branch and puts a link to open the pull request yourself in the run's summary.
+- A workflow's own token can't change workflow files, so when `.github/workflows/` changes, the pull request's title says *action needed* and it lists those files, with the SHA-256 each should have, for you to copy from the [template repository](https://github.com/prabinpebam/focus-notes-workspace). *Deploy app* warns until `pages.yml` matches.
 
 ## Using Git yourself
 

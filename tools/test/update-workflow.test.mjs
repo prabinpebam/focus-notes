@@ -1,17 +1,18 @@
 /**
- * DST-06 (WP-5.6, D-135): the template's Update app workflow and its script, and publishing the
+ * DST-06 (WP-5.6, D-137): the template's Update app workflow and its script, and publishing the
  * template repository from a release. Updates arrive as one pull request from a bot branch that
  * changes only the pin and the template-managed files the manifest lists, after the release's bundle
  * and template pass their SHA-256 and attestation checks; nothing merges by itself.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import yaml from "js-yaml";
 import {
   BRANCH, PIN, MANIFEST, assetsOf, checkManagedPath, compareVersions, decide, isWorkflow, pickLatest, planUpdate, prBody, prTitle, readManifest, readPin,
 } from "../../templates/workspace/.github/focus-notes/update.mjs";
-import { checkVersion, commitMessage, sumFor, verifyArgs } from "../release/publish-template.mjs";
+import { checkVersion, commitMessage, sumFor } from "../release/publish-template.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
 const tpl = join(root, "templates", "workspace");
@@ -21,7 +22,7 @@ const steps = (job) => wf.jobs[job].steps;
 const named = (job, re) => steps(job).find((s) => re.test(s.name ?? ""));
 const SHA = "ab".repeat(32);
 const ON_DEFAULT = "github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)";
-const release = (tag, extra = {}) => ({ tag_name: tag, draft: false, prerelease: false, assets: assetsOf(tag.slice(1)).map((name) => ({ name })), ...extra });
+const release = (tag, extra = {}) => ({ tag_name: tag, draft: false, prerelease: false, published_at: "2026-01-01T00:00:00Z", assets: assetsOf(tag.slice(1)).map((name) => ({ name })), ...extra });
 
 describe("DST-06: the Update app workflow's shape", () => {
   it("runs weekly and by hand, never on pull requests", () => {
@@ -67,11 +68,11 @@ describe("DST-06: the Update app workflow's shape", () => {
     const order = [/Find the latest/, /Download/, /SHA-256/, /attestations/, /Plan the update/].map((re) => steps("check").findIndex((s) => re.test(s.name ?? "")));
     expect(order.every((i) => i > 0)).toBe(true);
     expect(order).toEqual([...order].sort((a, b) => a - b));
-    expect(named("check", /SHA-256/).run).toMatch(/test "\$\(wc -l < checked\.sums\)" -eq 2/);
+    expect(named("check", /SHA-256/).run).toMatch(/-eq 1/);
     expect(named("check", /SHA-256/).run).toMatch(/sha256sum --check --strict checked\.sums/);
     const attest = named("check", /attestations/).run;
     for (const f of ["focus-notes-web-$VERSION.tgz", "focus-notes-workspace-$VERSION.tgz"]) expect(attest).toContain(`"${f}"`);
-    expect(attest).toContain('gh attestation verify "$RUNNER_TEMP/release/$f" --repo "$FOCUS_NOTES_SOURCE" --signer-workflow "$FOCUS_NOTES_SOURCE/.github/workflows/release.yml" --source-ref "refs/tags/v$VERSION"');
+    expect(attest).toContain('gh attestation verify "$RUNNER_TEMP/release/$f" --repo "$FOCUS_NOTES_SOURCE" --cert-identity "https://github.com/$FOCUS_NOTES_SOURCE/.github/workflows/release.yml@refs/tags/v$VERSION" --source-ref "refs/tags/v$VERSION" --deny-self-hosted-runners');
     expect(wf.env.FOCUS_NOTES_SOURCE).toBe("prabinpebam/focus-notes");
     // Hidden folders (.focus-notes/, .github/) must reach the writing job.
     expect(steps("check").at(-1).with["include-hidden-files"]).toBe(true);
@@ -134,7 +135,7 @@ describe("DST-06: what an update may change", () => {
   const current = files({ [PIN]: "old", ".github/focus-notes/update.mjs": "new", ".github/workflows/pages.yml": "old wf", "notes/x.md": "mine" });
 
   it("changes only the listed files that differ; workflow files are listed for a manual copy; missing ones stay", () => {
-    expect(planUpdate({ version: "1.2.3", bundleSha256: SHA, readNext: next, readCurrent: current })).toEqual({ version: "1.2.3", write: [PIN], manual: [".github/workflows/pages.yml"] });
+    expect(planUpdate({ version: "1.2.3", bundleSha256: SHA, readNext: next, readCurrent: current })).toEqual({ version: "1.2.3", write: [PIN], manual: [".github/workflows/pages.yml"], hashes: { ".github/workflows/pages.yml": createHash("sha256").update("new wf").digest("hex") } });
     expect(isWorkflow(".github/workflows/update.yml")).toBe(true);
     expect(isWorkflow(".github/focus-notes/update.mjs")).toBe(false);
   });
@@ -155,10 +156,10 @@ describe("DST-06: one update pull request at a time, which the owner merges", ()
   });
 
   it("says what changed, what to copy by hand, and that nothing changes until it's merged", () => {
-    const body = prBody({ from: "1.2.2", version: "1.2.3", write: [PIN], manual: [".github/workflows/pages.yml"] });
+    const body = prBody({ from: "1.2.2", version: "1.2.3", write: [PIN], manual: [".github/workflows/pages.yml"], hashes: { ".github/workflows/pages.yml": SHA } });
     expect(body).toContain("releases/tag/v1.2.3");
     expect(body).toContain("- `.focus-notes/app.json`");
-    expect(body).toMatch(/Copy these yourself[\s\S]*- `\.github\/workflows\/pages\.yml`/);
+    expect(body).toMatch(/Action needed: copy these yourself[\s\S]*- `\.github\/workflows\/pages\.yml`/);
     expect(body).toContain("Nothing changes until you merge");
   });
 });
@@ -170,10 +171,7 @@ describe("DST-06: publishing the template repository from a release, by hand", (
     const sums = `${SHA}  focus-notes-workspace-1.2.3.tgz\n${"cd".repeat(32)}  focus-notes-web-1.2.3.tgz\n`;
     expect(sumFor(sums, "focus-notes-workspace-1.2.3.tgz")).toBe(SHA);
     expect(() => sumFor(sums, "x.tgz")).toThrow(/0 lines/);
-    expect(verifyArgs("f.tgz", "1.2.3")).toEqual([
-      "attestation", "verify", "f.tgz", "--repo", "prabinpebam/focus-notes",
-      "--signer-workflow", "prabinpebam/focus-notes/.github/workflows/release.yml", "--source-ref", "refs/tags/v1.2.3",
-    ]);
+    expect(() => sumFor(sums + sums, "focus-notes-workspace-1.2.3.tgz")).toThrow(/2 lines/);
     expect(commitMessage("1.2.3")).toBe("Focus Notes 1.2.3: the template pinned to focus-notes-web-1.2.3.tgz");
   });
 

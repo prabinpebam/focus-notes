@@ -8,7 +8,7 @@
 # bundle is checked against that SHA-256 and against the release's GitHub artifact attestation
 # before anything in it runs, and every action is pinned by full commit SHA, because this workflow
 # holds your deploy key (SEC-05). The pin lives outside this file so the Update app workflow can
-# propose a new one with its own token, which may not edit workflows (D-135). Updates arrive as a
+# propose a new one with its own token, which may not edit workflows (D-137). Updates arrive as a
 # pull request that changes both values together; nothing changes until you merge it (DST-06).
 name: Deploy app
 on:
@@ -25,6 +25,8 @@ concurrency:
   cancel-in-progress: true
 env:
   FOCUS_NOTES_SOURCE: prabinpebam/focus-notes
+  # No pin below this deploys: the template raises it when an older release must never run again.
+  FOCUS_NOTES_MIN_VERSION: "0.0.1"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -55,6 +57,20 @@ jobs:
             echo "::error::No released Focus Notes is pinned yet. Merge the Update app pull request, or run Actions -> Update app."
             exit 1
           fi
+          # Compares the x.y.z parts; at the minimum itself, a suffixed pin (-beta) comes before it.
+          core=${version%%-*}
+          min_core=${FOCUS_NOTES_MIN_VERSION%%-*}
+          lowest=$(printf '%s\n%s\n' "$min_core" "$core" | sort -V | head -n 1)
+          if [ "$lowest" != "$min_core" ] || { [ "$core" = "$min_core" ] && [ "$version" != "$core" ] && [ "$FOCUS_NOTES_MIN_VERSION" = "$min_core" ]; }; then
+            echo "::error::.focus-notes/app.json pins a release below $FOCUS_NOTES_MIN_VERSION, which must not deploy. Run Actions -> Update app."
+            exit 1
+          fi
+          # A pull request that moved the pin may ask for this file to be copied by hand.
+          expected=$(jq -r '.workflows[".github/workflows/pages.yml"] // empty' .focus-notes/app.json)
+          actual=$(sha256sum .github/workflows/pages.yml | cut -d ' ' -f 1)
+          if [ -n "$expected" ] && [ "$expected" != "$actual" ]; then
+            echo "::warning::.github/workflows/pages.yml isn't the version this release expects. Copy it from the update pull request's list."
+          fi
           { echo "FOCUS_NOTES_VERSION=$version"; echo "FOCUS_NOTES_SHA256=$sha256"; } >> "$GITHUB_ENV"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -73,7 +89,7 @@ jobs:
       - name: Check the bundle's attestation
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh attestation verify "$RUNNER_TEMP/bundle.tgz" --repo "$FOCUS_NOTES_SOURCE" --signer-workflow "$FOCUS_NOTES_SOURCE/.github/workflows/release.yml" --source-ref "refs/tags/v$FOCUS_NOTES_VERSION"
+        run: gh attestation verify "$RUNNER_TEMP/bundle.tgz" --repo "$FOCUS_NOTES_SOURCE" --cert-identity "https://github.com/$FOCUS_NOTES_SOURCE/.github/workflows/release.yml@refs/tags/v$FOCUS_NOTES_VERSION" --source-ref "refs/tags/v$FOCUS_NOTES_VERSION" --deny-self-hosted-runners
       - name: Unpack the app
         run: |
           mkdir -p "$RUNNER_TEMP/bundle" _site

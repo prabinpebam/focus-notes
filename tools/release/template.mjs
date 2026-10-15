@@ -9,11 +9,11 @@
  * .focus-notes/workspace.json names the same templateVersion. The release attaches it; an
  * instance's Update app workflow finds it on the latest release, checks it (SHA256SUMS and the
  * attestation) and proposes its template-managed files as a pull request, and
- * tools/release/publish-template.mjs pushes it to the template repository (WP-5.6, D-135).
+ * tools/release/publish-template.mjs pushes it to the template repository (WP-5.6, D-137).
  */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -26,14 +26,19 @@ export const templateName = (version) => `focus-notes-workspace-${version}.tgz`;
 /**
  * The pin file `.focus-notes/app.json` that Deploy app reads, for the bundle's version and SHA-256.
  * The pin is a file, not the workflow's text, so an instance's Update app workflow can move it with
- * its own token, which may not edit workflows (D-135).
+ * its own token, which may not edit workflows (D-137). `workflows` records each template workflow's
+ * SHA-256, so a copy can tell when the files an update asked to copy by hand weren't.
  */
-export function pinApp(text, { version, sha256 }) {
+export function pinApp(text, { version, sha256, workflows }) {
   if (!/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(version)) throw new Error(`Not a version: ${version}`);
   if (!/^[0-9a-f]{64}$/.test(sha256)) throw new Error(`Not a SHA-256: ${sha256}`);
   const pin = JSON.parse(text);
   if (Object.keys(pin).sort().join() !== "sha256,version") throw new Error("app.json must hold exactly version and sha256");
-  return `${JSON.stringify({ version, sha256 })}\n`;
+  for (const [p, h] of Object.entries(workflows ?? {})) {
+    if (!/^\.github\/workflows\/[a-z]+\.yml$/.test(p)) throw new Error(`Not a template workflow: ${p}`);
+    if (!/^[0-9a-f]{64}$/.test(h)) throw new Error(`Not a SHA-256 for ${p}: ${h}`);
+  }
+  return `${JSON.stringify(workflows ? { version, sha256, workflows } : { version, sha256 })}\n`;
 }
 
 /** The workspace format file with the template version it came from. */
@@ -51,7 +56,9 @@ export function packTemplate({ version, bundle, out }) {
   try {
     cpSync(template, stage, { recursive: true });
     const pin = join(stage, ".focus-notes", "app.json");
-    writeFileSync(pin, pinApp(readFileSync(pin, "utf8"), { version, sha256 }));
+    const wfDir = join(stage, ".github", "workflows");
+    const workflows = Object.fromEntries(readdirSync(wfDir).sort().map((w) => [`.github/workflows/${w}`, sha256Of(join(wfDir, w))]));
+    writeFileSync(pin, pinApp(readFileSync(pin, "utf8"), { version, sha256, workflows }));
     const format = join(stage, ".focus-notes", "workspace.json");
     writeFileSync(format, pinFormat(readFileSync(format, "utf8"), version));
     mkdirSync(out, { recursive: true });

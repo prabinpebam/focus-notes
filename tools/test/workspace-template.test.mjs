@@ -124,7 +124,7 @@ describe("the template's Deploy app workflow (D-48, SEC-05)", () => {
   it("pins a version and a SHA-256 for the bundle in .focus-notes/app.json, a placeholder the deploy refuses until a release has one", () => {
     const { env } = workflow();
     expect(pin()).toEqual({ version: "0.0.0", sha256: "0".repeat(64) });
-    expect(env).toEqual({ FOCUS_NOTES_SOURCE: "prabinpebam/focus-notes" });
+    expect(env).toEqual({ FOCUS_NOTES_SOURCE: "prabinpebam/focus-notes", FOCUS_NOTES_MIN_VERSION: "0.0.1" });
     // Read straight after the checkout and before anything is downloaded; the placeholder stops the run.
     expect(steps()[0].uses).toMatch(/^actions\/checkout@/);
     const step = steps()[1];
