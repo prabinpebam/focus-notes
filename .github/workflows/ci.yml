@@ -16,6 +16,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    # A hung step fails the run in minutes instead of holding a runner for GitHub's six hours (D-113).
+    timeout-minutes: 90
     # Windows first (D-112): only Windows must pass until the owner has accepted the Windows app.
     # macOS and Linux still run and report, but never fail the workflow, until the platform parity pass.
     continue-on-error: ${{ matrix.os != 'windows-latest' }}
@@ -27,6 +29,14 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Electron 42 has no install script: it downloads its binary the first time it's required.
+      # Fetch it here, once and visibly, so the download never happens inside a test's launch
+      # (where a slow download timed out every journey).
+      - name: Fetch Electron
+        id: electron
+        timeout-minutes: 10
+        working-directory: apps/desktop
+        run: node -e "console.log(require('electron'))"
       - run: node packages/tokens/build.mjs
       - name: Repository checks (boundaries, chain, plan, licenses, ui:check)
         run: pnpm check
@@ -39,23 +49,28 @@ jobs:
         run: pnpm typecheck
       - name: Unit tests
         run: pnpm test
+      # The build, budgets and journeys run even after a failed check or unit test, so one failure
+      # never hides another (D-113), but only once Electron is fetched.
       - name: Build the desktop app
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' }}
         run: pnpm --filter @focus-notes/desktop run build
       # Budgets are enforced on one fixed runner type (Performance and quality); macOS runners'
       # start times swing too far between runs to gate on, so they only report.
       - name: Budgets (QLT-05)
-        if: runner.os == 'Windows'
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'Windows' }}
         run: pnpm bench --check
       - name: Budgets, report only
-        if: runner.os == 'macOS'
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'macOS' }}
         run: pnpm bench
       # Journeys always run, even when an earlier step such as the budgets fails, so one
       # failure never hides another (D-113).
       - name: Journey tests (Linux)
-        if: ${{ !cancelled() && runner.os == 'Linux' }}
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'Linux' }}
+        timeout-minutes: 45
         run: xvfb-run -a pnpm test:e2e
       - name: Journey tests
-        if: ${{ !cancelled() && runner.os != 'Linux' }}
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os != 'Linux' }}
+        timeout-minutes: 45
         run: pnpm test:e2e
       # The web app's journeys gate on Windows (D-112); Linux runs them too, without blocking.
       - name: Web app journeys (Chromium)

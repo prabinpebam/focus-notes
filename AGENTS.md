@@ -33,6 +33,7 @@ The loop optimizes validated progress toward the definition of done per hour. Se
 
 - **Attended** (the owner is testing and giving feedback): work the owner's feedback queue, one fix at a time, about 15 minutes from report to a fix they can see. Run only the fast checks for what changed (5 minutes or less), merge, rebuild and restart the app for them, and let CI run the full Windows suite. One builder at a time.
 - **Unattended** (the owner is away): do deeper, systematic work on the critical path in 45-minute time-boxes, push the work branch so CI runs the full Windows suite before merging, and leave a handoff summary for the owner's return. At most two builders, on areas that don't overlap.
+- **The merge gate has no exceptions** in either mode, apart from the attended fast loop above. A work branch merges only when its Windows CI is green. A failure that's "the same as main" or "a flake" isn't green: either fix it first, or quarantine it explicitly, by marking the check skipped with a recorded scope, owner and expiry in `documentations/plan/gate-evidence.md`. Two ad hoc exceptions on 15 October let a regression into main (D-113).
 - **Always:** Windows first (D-112). Merge what works at the end of every time-box, and keep branches no older than about an hour. Never widen a running task with new feedback; queue it. Log one timestamped line per step to `E:\Projects\side-projects\builder-progress.log` (outside the repository). Journeys never take the owner's focus (`FOCUS_NOTES_E2E=1`).
 
 ## Validate before committing
