@@ -49,10 +49,20 @@ async function privateNotes(git: GitRunner, folder: string): Promise<boolean | u
   return true;
 }
 
-/** Checks that a folder is the top of a Git clone with a workspace's layout, and fetches a missing `private/`. */
-export async function checkWorkspace(git: GitRunner, folder: string): Promise<WorkspaceResult> {
+/** Whether a remote's URL is a template repository (D-157, the shell's `TemplateGuard`). */
+export type TemplateRemote = (url: string) => Promise<boolean>;
+
+/**
+ * Checks that a folder is the top of a Git clone with a workspace's layout, and fetches a missing
+ * `private/`. A clone of a template repository (its `origin`) is never opened (D-157).
+ */
+export async function checkWorkspace(git: GitRunner, folder: string, isTemplate?: TemplateRemote): Promise<WorkspaceResult> {
   const top = await git({ cwd: folder, args: ["rev-parse", "--path-format=absolute", "--show-toplevel"], read: true });
   if (top.code !== 0 || !same(top.stdout.trim(), folder)) return { ok: false, problem: "notGit" };
+  if (isTemplate) {
+    const origin = await git({ cwd: folder, args: ["remote", "get-url", "--push", "origin"], read: true });
+    if (origin.code === 0 && (await isTemplate(origin.stdout.trim()).catch(() => false))) return { ok: false, problem: "template" };
+  }
   if (!existsSync(join(folder, FORMAT))) return { ok: false, problem: "notWorkspace" };
   const priv = await privateNotes(git, folder);
   return { ok: true, folder, ...(priv !== undefined ? { privateNotes: priv } : {}) };
@@ -60,9 +70,10 @@ export async function checkWorkspace(git: GitRunner, folder: string): Promise<Wo
 
 /**
  * Clones a workspace into a folder that's missing or empty. A repository that isn't a workspace is
- * removed again, since the folder was empty before.
+ * removed again, since the folder was empty before. A template repository is never cloned (D-157).
  */
-export async function cloneWorkspace(git: GitRunner, url: string, folder: string): Promise<WorkspaceResult> {
+export async function cloneWorkspace(git: GitRunner, url: string, folder: string, isTemplate?: TemplateRemote): Promise<WorkspaceResult> {
+  if (await isTemplate?.(url).catch(() => false)) return { ok: false, problem: "template" };
   if (!(await folderFree(folder))) return { ok: false, problem: "folderTaken" };
   await mkdir(dirname(folder), { recursive: true });
   const r = await git({ cwd: dirname(folder), args: ["clone", "--quiet", "--", url, folder], timeoutMs: NETWORK_MS });

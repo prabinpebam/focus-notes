@@ -242,4 +242,16 @@ describe("FRE-06: opening a workspace from GitHub or this computer", () => {
     expect(await checkWorkspace(runner(w), join(r.root, "seed-n"))).toMatchObject({ ok: true, privateNotes: true });
     expect(readdirSync(taken)).toEqual(["a.txt"]);
   });
+  it("D-157: never clones or opens a template repository, whatever route", { timeout: 60_000 }, async () => {
+    const w = world({});
+    const r = remotes(w);
+    const isTemplate = async (url: string) => url.replace(/\\/g, "/") === r.notes.replace(/\\/g, "/");
+    const folder = join(r.root, "from-github");
+    expect(await cloneWorkspace(runner(w), r.notes, folder, isTemplate)).toEqual({ ok: false, problem: "template" });
+    expect(existsSync(folder), "nothing downloaded").toBe(false);
+    // A folder already cloned from a template (Open a folder on this computer, or switching to it).
+    expect(await checkWorkspace(runner(w), join(r.root, "seed-n"), isTemplate)).toEqual({ ok: false, problem: "template" });
+    // Not a template: both go on as before.
+    expect(await checkWorkspace(runner(w), join(r.root, "seed-n"), async () => false)).toMatchObject({ ok: true });
+  });
 });

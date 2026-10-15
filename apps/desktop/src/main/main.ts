@@ -17,6 +17,7 @@ import { BUNDLE_MAX_BYTES, parseBundle, planImport, safeWorkspacePath, type Bund
 import { parseSettings } from "@focus-notes/core/settings";
 import { restorePlace, titleOrName } from "@focus-notes/core/history";
 import { GitSync, NO_GIT } from "./git/sync.ts";
+import { TemplateGuard } from "./git/template-guard.ts";
 import { changedChars, type BackupPolicy } from "./git/cadence.ts";
 import { createRunner, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
@@ -163,6 +164,8 @@ const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], g
       ...(onSpawn ? { run: createRunner({ onSpawn: (args) => onSpawn("git", args) }) } : {}),
       policy,
       ...(pointerGapMs !== undefined ? { pointerGapMs } : {}),
+      // Never pushed to a template repository (D-157).
+      templateRemote: isTemplateRemote,
       // After the window closes, the final sync on quit still runs; there's just no one to tell.
       onReport: (r) => {
         if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("sync:status", r);
@@ -201,6 +204,7 @@ const setup = () => (setupEngine ??= SetupEngine.open({
   token: () => account.token(),
   fetch: apiFetch,
   remoteUrl,
+  isTemplate: (owner, name) => templateGuard.isTemplateRepo(owner, name),
   onReport: (r) => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("setup:report", r);
   },
@@ -229,6 +233,24 @@ const account = new Account({
   // The picture comes only from GitHub's avatar host, never in journeys (their fake GitHub has none).
   avatar: avatarLoader({ fetch: fakeApi ? () => Promise.reject(new Error("No pictures in journeys")) : (i, init) => fetch(i, init), file: dataFile(DATA_FILES.avatar) }),
 });
+/**
+ * A template repository is never someone's notes (D-157): asked before cloning or opening a
+ * workspace, by setup's steps, and before every push. GitHub's answer is kept for the session; when
+ * it can't answer, a repository not known as a template isn't blocked. Journeys without the fake
+ * GitHub never ask the real one.
+ */
+const templateGuard = new TemplateGuard({
+  lookup: async (owner, name) => {
+    if (journey && !fakeApi) return undefined;
+    const s = await account.api();
+    const r = s ? await s.api.findRepo(owner, name) : undefined;
+    return r ? r.template === true : undefined;
+  },
+  ...(localRemotes ? { localBase: localRemotes } : {}),
+});
+function isTemplateRemote(url: string): Promise<boolean> {
+  return templateGuard.isTemplateRemote(url);
+}
 const firstRunFile = () => dataFile(DATA_FILES.firstRun);
 /** A name and email for only the notes workspace, kept until the workspace has them (not secret). */
 let workspaceIdentity: { name: string; email: string } | undefined;
@@ -1053,14 +1075,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("firstRun:clone", async (owner, name): Promise<WorkspaceResult> => {
     if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
-    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? (await freeHome()));
+    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? (await freeHome()), isTemplateRemote);
     if (r.ok) pendingWorkspace = r.folder;
     return r;
   });
   handle("firstRun:openFolder", async (): Promise<WorkspaceResult | undefined> => {
     const folder = await chooseFolder("Open a workspace folder");
     if (!folder) return undefined;
-    const r = await checkWorkspace(setupRunner, folder);
+    const r = await checkWorkspace(setupRunner, folder, isTemplateRemote);
     if (r.ok) pendingWorkspace = folder;
     return r;
   });
@@ -1069,7 +1091,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const made = ["clone", "link"].every((id) => report.steps.find((x) => x.id === id)?.state === "done");
     const folder = pendingWorkspace ?? (made ? report.options?.folder : undefined);
     if (!folder) return { ok: false, problem: "failed" };
-    const r = await checkWorkspace(setupRunner, folder);
+    const r = await checkWorkspace(setupRunner, folder, isTemplateRemote);
     if (r.ok) await switchWorkspace(folder);
     return r;
   });

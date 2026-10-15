@@ -14,7 +14,7 @@ export type SetupStepState = "pending" | "running" | "done" | "failed" | "skippe
 /** Why a step failed, as a code the app turns into words. Never GitHub's or Git's own text. */
 export const SETUP_PROBLEMS = [
   "signedOut", "auth", "offline", "rateLimited", "permission", "notFound", "templateMissing", "notInstance", "notPrivate", "folderTaken",
-  "linkedElsewhere", "identity", "signing", "hook", "conflict", "locked", "weak", "blocked", "failed",
+  "linkedElsewhere", "identity", "signing", "hook", "conflict", "locked", "weak", "blocked", "template", "failed",
 ] as const;
 export type SetupProblem = (typeof SETUP_PROBLEMS)[number];
 
@@ -60,7 +60,7 @@ export const DEFAULT_SETUP = { instance: "notes", private: "notes-private", publ
  * Anything else, transient or not: Try again, or Start over.
  */
 export type SetupFailureAction = "retry" | "chooseFolder" | "newFolder" | "startOver" | "back";
-const NEEDS_NEW_NAMES: readonly SetupProblem[] = ["notInstance", "notPrivate", "linkedElsewhere", "weak"];
+const NEEDS_NEW_NAMES: readonly SetupProblem[] = ["notInstance", "notPrivate", "linkedElsewhere", "weak", "template"];
 export function setupFailureActions(problem: SetupProblem | undefined): SetupFailureAction[] {
   if (problem === "folderTaken") return ["chooseFolder", "newFolder", "back"];
   if (problem && NEEDS_NEW_NAMES.includes(problem)) return ["startOver", "back"];

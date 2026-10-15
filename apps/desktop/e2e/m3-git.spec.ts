@@ -159,3 +159,27 @@ test("EDT-11: a push that can't reach the remote shows the problem, keeps the co
   await noteFocused(page);
   await quit(l);
 });
+
+test("D-157: a workspace whose remote is a template never pushes to it: the commit stays here, and the toast offers Run setup again", async () => {
+  const { dirs, privateRemote } = instance();
+  // The private repository's remote has the Focus Notes template's name, under the journeys' local remotes.
+  const remotes = join(dirs.docs, "..", "remotes");
+  const template = join(remotes, "prabinpebam", "focus-notes-workspace.git");
+  git(dirs.docs, "clone", "-q", "--bare", privateRemote, template);
+  const priv = join(dirs.docs, "private");
+  git(priv, "remote", "set-url", "origin", template);
+  git(priv, "fetch", "-q");
+  const before = git(template, "rev-parse", "main");
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000", FOCUS_NOTES_GIT_REMOTES: remotes });
+  const { page } = l;
+  await typeAtEnd(page, " Not for a template.");
+  await page.keyboard.press(`${mod}+Shift+S`);
+  await expect(page.getByText("This is a template repository. Your notes weren't saved to it.")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: "Run setup again" })).toBeVisible();
+  expect(git(priv, "log", "-1", "--format=%s"), "the commit stays here").toBe("Update notes/welcome.md");
+  expect(git(template, "rev-parse", "main"), "nothing reached the template").toBe(before);
+  expect(remoteText(privateRemote)).toBe("# Welcome\n\nFirst line.");
+  await expect.poll(() => stateOf(page), PROMPTLY).toBe("error");
+  await noteFocused(page);
+  await quit(l);
+});

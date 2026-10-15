@@ -167,6 +167,39 @@ describe("FRE-08: the API steps", () => {
     expect(state(await (await other.open()).retry("instance"), "instance")).toMatchObject({ state: "failed", problem: "notInstance" });
   });
 
+  it("D-157: instance and private refuse a template repository by that name, known or as GitHub says, with no write", async () => {
+    const h = harness({ done: before("instance") });
+    h.gh.add({ owner: "ada", name: "notes", isTemplate: true, files: [".focus-notes/workspace.json"] });
+    expect(state(await (await h.open()).retry("instance"), "instance")).toMatchObject({ state: "failed", problem: "template" });
+    // A known template by name (any case), even when GitHub doesn't say so.
+    const known = harness({ done: before("instance") });
+    known.gh.add({ owner: "ada", name: "notes", files: [".focus-notes/workspace.json"] });
+    const e = await known.open({ template: { owner: "Ada", name: "NOTES" } });
+    expect(state(await e.retry("instance"), "instance")).toMatchObject({ state: "failed", problem: "template" });
+    expect(known.gh.calls.filter((c) => c.method !== "GET")).toEqual([]);
+
+    const priv = harness({ done: before("private") });
+    priv.gh.add({ owner: "ada", name: "notes-private", private: true, isTemplate: true, files: ["README.md"] });
+    expect(state(await (await priv.open()).retry("private"), "private")).toMatchObject({ state: "failed", problem: "template" });
+  });
+
+  it("D-157: download and save to GitHub check the guard first: a template is never cloned or pushed to", async () => {
+    const asked: string[] = [];
+    const isTemplate = async (o: string, n: string) => (asked.push(`${o}/${n}`), n === "notes");
+    for (const step of ["clone", "push"] as const) {
+      const h = harness({ done: before(step) });
+      const r = await (await h.open({ isTemplate })).retry(step);
+      expect(state(r, step)).toMatchObject({ state: "failed", problem: "template" });
+      expect(h.gitCalls.filter((c) => c.args.includes("push") || c.args.includes("clone")), step).toEqual([]);
+    }
+    expect(asked).toContain("ada/notes");
+    // Not a template (or GitHub can't say): the steps go on as before (here, to Git, which these tests don't have).
+    const ok = harness({ done: before("push") });
+    const r = await (await ok.open({ isTemplate: async () => false })).retry("push");
+    expect(state(r, "push").problem).not.toBe("template");
+    expect(ok.gitCalls.some((c) => c.args.includes("push"))).toBe(true);
+  });
+
   it("private: makes it private, and never uses a public repository by that name", async () => {
     const h = harness({ done: before("private") });
     expect(state(await (await h.open()).retry("private"), "private").state).toBe("done");

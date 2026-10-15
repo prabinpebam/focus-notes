@@ -182,7 +182,7 @@ export interface RepoChoice {
 }
 
 /** Why opening or cloning a workspace didn't work. */
-export const WORKSPACE_PROBLEMS = ["folderTaken", "notGit", "notWorkspace", "offline", "auth", "failed"] as const;
+export const WORKSPACE_PROBLEMS = ["folderTaken", "notGit", "notWorkspace", "template", "offline", "auth", "failed"] as const;
 export type WorkspaceProblem = (typeof WORKSPACE_PROBLEMS)[number];
 export interface WorkspaceResult {
   ok: boolean;
