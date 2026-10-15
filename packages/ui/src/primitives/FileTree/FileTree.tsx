@@ -36,6 +36,9 @@ const EXPAND_AFTER_MS = 600;
  * and an inline name field. Selection and expansion belong to the view model: this reports intents.
  * Enter, F2, Delete, and Mod+A are commands scoped to `filesTree`, so they're in the keymap.
  */
+/** The last focus request each tree met, by id, kept while it's re-created (DEF-20). */
+const metRequests = new Map<string, number>();
+
 export function FileTree({ label, items, focusId, focusRequest, editValue = "", editLabel, editError, id, onSelect, onExpand, onAction, onDrop, onEditChange, onEditBlur }: FileTreeProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
@@ -66,11 +69,25 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
   const waiting = useRef<Element | null | undefined>(undefined);
   useEffect(() => {
     if (!focusRequest || editing) return;
+    // A tree re-created by a render (its panel's content rebuilt) mounts with the request it already
+    // met: met again, it would pull focus from the control the person is on, and their Enter would
+    // open the note (DEF-20). Only a request it hasn't met moves focus.
+    const key = id ?? "";
+    if (metRequests.get(key) === focusRequest) return;
+    metRequests.set(key, focusRequest);
     if (rowEl(focused)) {
       waiting.current = undefined;
       focusRow(focused);
     } else waiting.current = document.activeElement;
   }, [focusRequest]);
+  // Closed (not re-created), the next opening's request is met again, whatever its number.
+  useEffect(() => () => {
+    const key = id ?? "";
+    const met = metRequests.get(key);
+    setTimeout(() => {
+      if (metRequests.get(key) === met && !document.getElementById(id ?? "")) metRequests.delete(key);
+    }, 0);
+  }, []);
   useEffect(() => {
     if (waiting.current === undefined || editing || !rowEl(focused)) return;
     const was = waiting.current;
