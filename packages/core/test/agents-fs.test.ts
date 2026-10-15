@@ -11,7 +11,7 @@ import { existsSync, linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { agentSharing, checkAgent, type AgentOp, type AgentPermissions } from "../src/agents.ts";
-import { AgentRefused, blobVersion, createAgentFolder, moveAgentFile, readAgentFile, readAgentPermissions, resolveAgentPath, takeAgentToken, writeAgentFile, writeAgentPermissions } from "../src/agents-fs.ts";
+import { AgentRefused, blobVersion, cleanAgentTemporaries, createAgentFolder, moveAgentFile, readAgentFile, readAgentPermissions, resolveAgentPath, takeAgentToken, writeAgentFile, writeAgentPermissions } from "../src/agents-fs.ts";
 import { DATA_FILES } from "../src/inventory.ts";
 
 const all: AgentPermissions = { connect: true, readPublic: true, readPrivate: true, edit: true, createPublic: true, folders: "all" };
@@ -114,10 +114,21 @@ describe("HIGH 2: links and junctions are followed, not trusted by name", () => 
     await expect(writeAgentFile(r.resolved, "notes/a.md", "x", blobVersion("# Secret\n"))).rejects.toMatchObject({ reason: "link" });
     expect(readFileSync(join(ws, "private", "notes", "secret.md"), "utf8")).toBe("# Secret\n");
   });
-  it.runIf(process.platform === "win32" || process.platform === "darwin")("checks the folder limits again on the path as it's spelled on disk", async () => {
+  it("refuses a path spelled differently from the disk, so folder limits and shares only ever see the real names (NEW-1)", async () => {
     const { ws } = workspace();
-    expect(await resolve(ws, { kind: "read", path: "notes/Work/w.md" }, { ...all, folders: ["notes/Work"] })).toBe("outsideFolders");
+    expect(await resolve(ws, { kind: "read", path: "notes/Work/w.md" }, { ...all, folders: ["notes/Work"] })).toMatch(/invalidPath|allowed/);
+    if (process.platform === "win32" || process.platform === "darwin") expect(await resolve(ws, { kind: "read", path: "notes/Work/w.md" }, { ...all, folders: ["notes/Work"] })).toBe("invalidPath");
     expect(await resolve(ws, { kind: "read", path: "notes/work/w.md" }, { ...all, folders: ["notes/work"] })).toBe("allowed");
+  });
+  it.runIf(process.platform === "win32")("never changes a note's file-name case through an update (NEW-1)", async () => {
+    const { ws, put } = workspace();
+    put("private/notes/Plan.md", "# Plan\n");
+    const g = grant({ kind: "update", path: "private/notes/plan.md" });
+    expect((await resolveAgentPath(ws, g)).verdict).toBe("denied");
+    expect(readdirSync(join(ws, "private", "notes")).sort()).toEqual(["Plan.md", "secret.md"]);
+    const ok = await resolved(ws, { kind: "update", path: "private/notes/Plan.md" });
+    await writeAgentFile(ok, "private/notes/Plan.md", "# Plan\n\nMore.\n", blobVersion("# Plan\n"));
+    expect(readdirSync(join(ws, "private", "notes")).sort()).toEqual(["Plan.md", "secret.md"]);
   });
   it("accepts only grants the check made, and only resolutions it made", async () => {
     const { ws } = workspace();
@@ -227,7 +238,8 @@ describe("N2: the share check runs again on the path as it's spelled on disk", (
     put("private/notes/Work/plan.md", "# Plan\n");
     const exact = { audiencesOf: (p: string, kind: "note" | "folder") => (kind === "folder" ? (p === "private/notes/Work" || p.startsWith("private/notes/Work/") ? ["g"] : []) : p.startsWith("private/notes/Work/") ? ["g"] : []), named: () => false };
     const g = grant({ kind: "create", path: "private/notes/work/new.md" }, all, exact);
-    expect(await resolveAgentPath(ws, g)).toEqual({ verdict: "denied", reason: "sharing" });
+    // Refused on disk: by its spelling (NEW-1), and otherwise by the share check on the real path.
+    expect(await resolveAgentPath(ws, g)).toMatchObject({ verdict: "denied" });
   });
 });
 
@@ -282,5 +294,33 @@ describe("N4: moves and folders through resolved grants, and writes that never l
     expect(readdirSync(join(ws, "notes")).sort()).toEqual(["a.md", "work"]);
     await expect(writeAgentFile(r, "notes/a.md", "# Stale\n", blobVersion("# A\n"))).rejects.toMatchObject({ reason: "changed" });
     expect(readdirSync(join(ws, "notes")).sort()).toEqual(["a.md", "work"]);
+  });
+});
+
+describe("round 3: moves undone on failure, and temporary files cleaned", () => {
+  it("removes the new name again when the old one can't be removed, so a note is never in two places (NEW-2)", async () => {
+    const { ws } = workspace();
+    const m = await resolved(ws, { kind: "move", from: "notes/a.md", to: "notes/b.md" });
+    const failing = { unlink: async () => { throw Object.assign(new Error("busy"), { code: "EPERM" }); } };
+    await expect(moveAgentFile(m, "notes/a.md", "notes/b.md", failing)).rejects.toThrow("busy");
+    expect(existsSync(join(ws, "notes", "b.md"))).toBe(false);
+    expect(readFileSync(join(ws, "notes", "a.md"), "utf8")).toBe("# A\n");
+    expect(statSync(join(ws, "notes", "a.md")).nlink).toBe(1);
+  });
+  it("removes only its own stale temporary files, only inside the note roots, never through a junction (NEW-3)", async () => {
+    const { ws, put } = workspace();
+    const mine = "notes/work/.w.md.0123456789ab.focus-notes-agent.tmp";
+    const fresh = "private/notes/.s.md.abcdefabcdef.focus-notes-agent.tmp";
+    put(mine, "half");
+    put(fresh, "in use");
+    put("notes/keep.tmp", "not ours");
+    put("notes/.x.md.0123456789ab.other.tmp", "not ours");
+    put("outside/.x.md.0123456789ab.focus-notes-agent.tmp", "outside");
+    junction(join(ws, "outside"), join(ws, "notes", "out"));
+    const old = new Date(Date.now() - 10 * 60_000);
+    for (const p of [mine, "outside/.x.md.0123456789ab.focus-notes-agent.tmp"]) utimesSync(join(ws, p), old, old);
+    expect(await cleanAgentTemporaries(ws)).toBe(1);
+    expect(existsSync(join(ws, mine))).toBe(false);
+    for (const p of [fresh, "notes/keep.tmp", "notes/.x.md.0123456789ab.other.tmp", "outside/.x.md.0123456789ab.focus-notes-agent.tmp"]) expect(existsSync(join(ws, p)), p).toBe(true);
   });
 });

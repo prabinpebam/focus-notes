@@ -7,7 +7,7 @@
  */
 import { createHash } from "node:crypto";
 import { randomBytes } from "node:crypto";
-import { chmod, link, lstat, mkdir, open, readFile, realpath, rename, rm, stat, unlink, writeFile, type FileHandle } from "node:fs/promises";
+import { chmod, link, lstat, mkdir, open, readdir, readFile, realpath, rename, rm, stat, unlink, writeFile, type FileHandle } from "node:fs/promises";
 import { basename, dirname, join, relative, sep } from "node:path";
 import { DEFAULT_AGENT_PERMISSIONS, agentPermissionsJson, agentShareDenied, isAgentGrant, parseAgentPermissions, rootDir, rootOf, takeToken, withinFolder, type AgentBucket, type AgentDenial, type AgentGrant, type AgentPermissions, type AgentRoot } from "./agents.ts";
 import { DATA_FILES } from "./inventory.ts";
@@ -86,6 +86,9 @@ export async function resolveAgentPath(workspace: string, grant: AgentGrant): Pr
         break;
       }
       if (st.isSymbolicLink()) return deny("link");
+      // Spelled exactly as on disk: on NTFS and APFS `plan.md` opens `Plan.md`, and a rename would
+      // change its case, and with it which path-named shares open it (NEW-1).
+      if (!(await readdir(cur).catch(() => [] as string[])).includes(segments[i]!)) return deny("invalidPath");
       // A junction, a short name, or anything else whose real path isn't the one asked for.
       const r = await realOf(next);
       if (!r || fold(r) !== fold(next)) return deny("link");
@@ -182,6 +185,7 @@ async function ensureFolders(r: ResolvedAgent, dir: string): Promise<void> {
 /** A temporary file beside the target, made only by this call, with the text written. */
 async function temporary(r: ResolvedAgent, target: string, text: string): Promise<string> {
   await ensureFolders(r, dirname(target));
+  // Named so `cleanAgentTemporaries` knows it, and nothing else, as its own.
   const tmp = join(dirname(target), `.${basename(target)}.${randomBytes(6).toString("hex")}.focus-notes-agent.tmp`);
   const fh = await open(tmp, "wx");
   try {
@@ -243,7 +247,7 @@ export async function createAgentFolder(r: ResolvedAgent, path: string): Promise
  * Moves a note as a `move` grant names, to the checked path only and never over anything there:
  * the note is linked at its new name (which fails if the name is taken) and then unlinked from the old.
  */
-export async function moveAgentFile(r: ResolvedAgent, from: string, to: string): Promise<void> {
+export async function moveAgentFile(r: ResolvedAgent, from: string, to: string, ops: { unlink: (p: string) => Promise<void> } = { unlink }): Promise<void> {
   if (r.kind !== "move") throw new AgentRefused("never");
   const a = fileOf(r, from);
   const b = fileOf(r, to);
@@ -252,7 +256,47 @@ export async function moveAgentFile(r: ResolvedAgent, from: string, to: string):
   await readAgentFile(r, from);
   await ensureFolders(r, dirname(b.abs));
   await link(a.abs, b.abs).catch((e: unknown) => Promise.reject(code(e) === "EEXIST" ? new AgentRefused("changed") : e));
-  await unlink(a.abs);
+  try {
+    await ops.unlink(a.abs);
+  } catch (e) {
+    // The old name couldn't go (held open, no permission): the new one goes instead, so the note is in one place (NEW-2).
+    await unlink(b.abs).catch(() => {});
+    throw e;
+  }
+}
+
+const TEMPORARY = /^\..+\.[0-9a-f]{12}\.focus-notes-agent\.tmp$/;
+
+/**
+ * Removes temporary files an agent write left behind (a crash between writing and renaming): only
+ * this module's own names, only older than `maxAgeMs` (another process may be writing one now),
+ * only inside the two note roots, never through a link or junction, and never in `.git`. The MCP
+ * server and the command-line tool call it as they start (NEW-3). Returns how many it removed.
+ */
+export async function cleanAgentTemporaries(workspace: string, maxAgeMs = 5 * 60_000): Promise<number> {
+  const wsReal = await realOf(workspace);
+  if (!wsReal) return 0;
+  let removed = 0;
+  const walk = async (dir: string, depth: number): Promise<void> => {
+    if (depth > 32) return;
+    for (const entry of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+      const p = join(dir, entry.name);
+      const st = await lstat(p).catch(() => undefined);
+      if (!st || st.isSymbolicLink() || entry.isSymbolicLink()) continue;
+      if (st.isDirectory()) {
+        const real = await realOf(p);
+        if (entry.name.toLowerCase() !== ".git" && real && fold(real) === fold(p)) await walk(p, depth + 1);
+      } else if (st.isFile() && TEMPORARY.test(entry.name) && Date.now() - st.mtimeMs > maxAgeMs) {
+        await unlink(p).then(() => void removed++, () => {});
+      }
+    }
+  };
+  for (const root of ["public", "private"] as const) {
+    const dir = rootDir(root).split("/");
+    const rootReal = await realOf(join(workspace, ...dir));
+    if (rootReal && fold(rootReal) === fold(join(wsReal, ...dir))) await walk(rootReal, 0);
+  }
+  return removed;
 }
 
 // ---- the rate limit, per computer ----
