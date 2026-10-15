@@ -109,20 +109,24 @@ export function registerFiles(ctx: Ctx) {
   const rootLabel = (id: string) => catalog.format(`files.root.${id === "local" && bridge.platform !== "web" ? "folder" : id}`);
 
   // ---- opening, revealing, closing ----
-  // Opened before the workspace was first listed: the current note is revealed once it is.
+  // Opened before the workspace was first listed: the current note is revealed once it is. Focus was
+  // asked for when it opened; it isn't asked again, since the person may have moved on meanwhile (Tab
+  // to Recently deleted), and a key meant there would land in the tree (DEF-20). The tree takes it
+  // then only if focus is still where it was (FileTree).
   let revealWhenListed = false;
   store.subscribe(() => {
     if (!revealWhenListed || !tree().roots.length) return;
     revealWhenListed = false;
-    if (files().open) reveal();
+    if (files().open) reveal(undefined, false);
   });
   /** Opens the panel with a note or folder shown and selected: the open note unless one is given (Spotlight's quick actions). */
-  const reveal = (target?: string) => {
+  const reveal = (target?: string, focus = true) => {
     if (!tree().roots.length) revealWhenListed = true;
     const path = target ?? store.state.note.path;
     const add = path && findNode(tree(), path) ? ancestorsOf(tree(), path) : [];
     setFiles((f) => ({
-      open: true, filter: "", edit: undefined, focusRequest: f.focusRequest + 1,
+      // Revealed again once listed, what the person did meanwhile (a filter typed) stays.
+      open: true, ...(focus ? { filter: "", edit: undefined, focusRequest: f.focusRequest + 1 } : {}),
       expanded: [...new Set([...f.expanded, ...add])],
       collapsed: f.collapsed.filter((c) => !path || c !== rootRowId(rootOf(tree(), path)?.id ?? "local")),
       selection: path && findNode(tree(), path) ? { selected: [path], anchor: path, focus: path } : f.selection,
