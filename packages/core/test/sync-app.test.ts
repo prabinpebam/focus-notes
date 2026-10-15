@@ -11,6 +11,9 @@ const messages = {
   "toast.retry": "Retry", "toast.saveFailed": "Couldn't save.", "trigger.saveProblem": "Couldn't save", "trigger.syncProblem": "Couldn't sync",
   "sync.problem.offline": "Couldn't sync: you're offline.", "sync.problem.conflict": "Couldn't sync: changes don't fit.", "sync.problem.failed": "Couldn't sync.",
   "conflict.resolve": "Resolve",
+  "save.state.savedLocal": "Saved on this computer", "save.state.pending": "Saved here · not backed up yet", "save.state.syncing": "Backing up…",
+  "save.state.synced": "Backed up · {when}", "save.state.syncedNow": "Backed up", "save.state.offline": "Offline", "save.state.error": "Couldn't back up",
+  "save.when.now": "just now", "save.when.minutes": "{n} min ago", "save.when.hours": "{n} h ago", "save.label.syncing": "Backing up…", "save.label.done": "Backed up",
 };
 
 function setup(withSync = true) {
@@ -54,6 +57,7 @@ function setup(withSync = true) {
     willReturn: (r: SyncReport) => void (next = r),
     canvas: () => app.viewModels.select("vm.canvas", app.store.state) as { problem: boolean; problemLabel: string },
     toasts: () => app.store.state.ui.toasts.map((t) => t.message),
+    save: () => app.viewModels.select("vm.saveState", app.store.state) as { visible: boolean; state: string; label: string; text: string },
   };
 }
 const settle = () => new Promise((r) => setTimeout(r, 0));
@@ -108,6 +112,41 @@ describe("EDT-11: save and sync", () => {
     await settle();
     expect(t.calls).toEqual(["write /n/a.md", "sync switch"]);
     expect(t.app.store.state.note.path).toBe("/n/b.md");
+  });
+
+  it("shows the save state: saved here at once, then not backed up yet, backing up, and backed up (D-132)", async () => {
+    const t = setup();
+    await t.app.start();
+    await settle();
+    expect(t.save()).toMatchObject({ visible: true, state: "synced", label: "Backed up", text: "" });
+    await t.app.commands.run("note.setContent", { value: "# A\n\nTyping.\n" });
+    expect(t.save()).toMatchObject({ state: "savedLocal", label: "Saved on this computer" });
+    await t.app.flush();
+    t.report({ git: true, state: "idle", waiting: 1 });
+    expect(t.save()).toMatchObject({ state: "pending", label: "Saved here · not backed up yet" });
+    // A background sync with something to send shows; a fetch with nothing waiting doesn't.
+    t.report({ git: true, state: "syncing", waiting: 1 });
+    expect(t.save().state).toBe("syncing");
+    t.report({ git: true, state: "idle", waiting: 0 });
+    expect(t.save()).toMatchObject({ state: "synced", label: "Backed up · just now" });
+    t.report({ git: true, state: "syncing", waiting: 0 });
+    expect(t.save().state).toBe("synced");
+  });
+
+  it("Save to cloud opens the label, says it's done once, and offline shows as offline (D-132)", async () => {
+    const t = setup();
+    await t.app.start();
+    await settle();
+    await t.app.commands.run("note.setContent", { value: "# A\n\nAsked.\n" });
+    const n = t.app.store.state.announcement.n;
+    await t.app.commands.run("sync.now");
+    expect(t.calls).toEqual(["write /n/a.md", "sync save"]);
+    expect(t.save()).toMatchObject({ text: "Backed up" });
+    expect(t.app.store.state.announcement).toMatchObject({ text: "Backed up", n: n + 1 });
+    t.report({ git: true, state: "problem", problem: "offline", waiting: 1 });
+    expect(t.save()).toMatchObject({ state: "offline", label: "Offline" });
+    t.report({ git: true, state: "problem", problem: "failed", waiting: 1 });
+    expect(t.save().state).toBe("error");
   });
 
   it("without Git, saving stays local and shows no Git UI", async () => {

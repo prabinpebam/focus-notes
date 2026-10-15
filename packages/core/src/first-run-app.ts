@@ -394,12 +394,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   // Start writing: a new note, private by default (D-05), or the note put away for Run setup again.
   reg("firstRun.finish", () => close(true));
 
-  // ---- the account pill (UI-12): Sync now; Sign out is Settings' (settings-app.ts) ----
-  commands.register({
-    id: "sync.now", title: "command.sync.now", icon: "save",
-    enabled: (s) => s.sync.git,
-    run: (_a, c) => c.run("note.save"),
-  });
+  // The account pill's Save to cloud is `sync.now` (app.ts, D-132); Sign out is Settings' (settings-app.ts).
 
   /** "Updated 3 days ago", from a repository's last push. */
   const updated = (iso: string | undefined) => {
