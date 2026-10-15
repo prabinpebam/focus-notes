@@ -75,7 +75,7 @@ CI installs from lockfiles with frozen versions.
 | Command-line tool and MCP server | Inside the desktop app. Also `@focus-notes/cli` on npm (P1). | Installers, npm |
 | Integrity | `SHA256SUMS`, CycloneDX SBOM, GitHub artifact attestations | GitHub Releases |
 
-**As built (WP-5.5, D-126).** `release.yml` attaches the Windows NSIS installer (x64), the macOS `.dmg` and `.zip` and the Linux AppImage and `.deb` (x64), `focus-notes-web-<version>.tgz`, `focus-notes-workspace-<version>.tgz` (the workspace template with its *Deploy app* workflow pinned to that bundle's version and SHA-256), `focus-notes-<version>.cdx.json` (the SBOM, made by `tools/release/sbom.mjs` from the same package list as `THIRD_PARTY_NOTICES`), and `SHA256SUMS`, each with a build-provenance attestation. Not yet: arm64 builds, signing and notarization, and the `latest*.yml` update metadata, which arrive with signed, self-updating builds (DSK-07). The bundle also holds `bundle.json` (its name, version and commit), `LICENSE` and `THIRD_PARTY_NOTICES.md`, and `publish/` holds the page renderer (`render.mjs` and `assets/`) beside `cli.mjs`, so a template instance renders public pages with `--reader`.
+**As built (WP-5.5, D-128).** `release.yml` attaches the Windows NSIS installer (x64), the macOS `.dmg` and `.zip` and the Linux AppImage and `.deb` (x64), `focus-notes-web-<version>.tgz`, `focus-notes-workspace-<version>.tgz` (the workspace template with its *Deploy app* workflow pinned to that bundle's version and SHA-256), `focus-notes-<version>.cdx.json` (the SBOM, made by `tools/release/sbom.mjs` from the same package list as `THIRD_PARTY_NOTICES`), and `SHA256SUMS`, each with a build-provenance attestation. Not yet: arm64 builds, signing and notarization, and the `latest*.yml` update metadata, which arrive with signed, self-updating builds (DSK-07). The bundle also holds `bundle.json` (its name, version and commit), `LICENSE` and `THIRD_PARTY_NOTICES.md`, and `publish/` holds the page renderer (`render.mjs` and `assets/`) beside `cli.mjs`, so a template instance renders public pages with `--reader`.
 
 ## Release process
 
@@ -90,11 +90,11 @@ CI installs from lockfiles with frozen versions.
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Build</p>
-<p><code>release.yml</code> builds on Windows, macOS, and Linux runners, signs and notarizes, and produces the outputs above with checksums, the SBOM, and attestations, into a <strong>draft</strong> release. As built (D-126): a <code>v&lt;x.y.z&gt;</code> tag starts it; only the Windows build must pass, and macOS and Linux report without blocking (D-112); nothing is signed until DSK-07; versions below 1.0.0 and suffixed versions are drafted as pre-releases; the notes list the commits since the previous release tag. A manual run, or a tag with <code>-dryrun</code> in it, does everything except the release.</p>
+<p><code>release.yml</code> builds on Windows, macOS, and Linux runners, signs and notarizes, and produces the outputs above with checksums, the SBOM, and attestations, into a <strong>draft</strong> release. As built (D-128): a <code>v&lt;x.y.z&gt;</code> tag starts it; only the Windows build must pass, and macOS and Linux report without blocking (D-112); nothing is signed until DSK-07; versions below 1.0.0 and suffixed versions are drafted as pre-releases; the notes list the commits since the previous release tag. A manual run, or a tag <code>v&lt;x.y.z&gt;-dryrun[.n]</code>, builds, smoke-tests and checksums everything but attests nothing and drafts nothing, so no dry run's files can pass a check; other tags that read like a dry run are refused. Before drafting, the release job checks the tag (peeled, if annotated) still names the commit that was built. Each file is checked with <code>gh attestation verify &lt;file&gt; --repo prabinpebam/focus-notes --signer-workflow prabinpebam/focus-notes/.github/workflows/release.yml --source-ref refs/tags/v&lt;x.y.z&gt;</code>, which accepts only this workflow's attestation for that tag; a template instance's <em>Deploy app</em> workflow checks its bundle the same way.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Verify</p>
-<p>Automated smoke tests install each build, then run first run against a test account and a publish against a test workspace. A person checks the draft. As built (D-126): the Windows build's fuses are read back and the packaged app starts and shows a note, and the web app bundle is unpacked and its own publisher publishes a sample note with nothing else installed. Installing on clean machines and the test-account runs are the release checklist's, by hand, until they're automated.</p>
+<p>Automated smoke tests install each build, then run first run against a test account and a publish against a test workspace. A person checks the draft. As built (D-128): the Windows build's fuses are read back and the packaged app starts and shows a note, and the web app bundle is unpacked and its own publisher publishes a sample note with nothing else installed. Installing on clean machines and the test-account runs are the release checklist's, by hand, until they're automated.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Publish</p>
@@ -115,7 +115,7 @@ CI installs from lockfiles with frozen versions.
 
 ## The rolling preview
 
-Besides tagged releases, every push to `main` whose Windows CI passed replaces one pre-release, named `preview`, with that commit's Windows build: the installer, the unpacked app zipped, `commit.txt`, and `SHA256SUMS`, each attested (`preview-channel.yml`, D-127). It runs only for `ci`'s push runs on this repository's own `main`, reads the Windows jobs' results itself, builds exactly the commit `ci` tested, and never replaces a newer commit's preview with an older one. Its version is `<app version>-preview.<run number>`, so it always rises. The owner's Preview can download it instead of building locally (D-122); it isn't an update channel for anyone else.
+Besides tagged releases, every push to `main` whose Windows CI passed replaces one pre-release, named `preview`, with that commit's Windows build: the installer, the unpacked app zipped, `commit.txt`, and `SHA256SUMS`, each attested (`preview-channel.yml`, D-129). Check a download with `gh attestation verify <file> --repo prabinpebam/focus-notes --signer-workflow prabinpebam/focus-notes/.github/workflows/preview-channel.yml --source-ref refs/heads/main`. It runs only for `ci`'s push runs on this repository's own `main`, only while the commit `ci` tested is still `main`'s tip (the commit an attestation names; when `main` has moved on, the newer commit's run publishes), reads the Windows jobs' results itself, builds exactly the commit `ci` tested, and never replaces a newer commit's preview with an older one. Its version is `<app version>-preview.<run number>`, so it always rises. The owner's Preview can download it instead of building locally (D-122); it isn't an update channel for anyone else.
 
 ## Signing
 
@@ -125,7 +125,7 @@ Besides tagged releases, every push to `main` whose Windows CI passed replaces o
 | Windows | An Authenticode certificate: a cloud signing service, or a free open-source signing program if the project qualifies | SmartScreen warns on download until the app builds a reputation |
 | Linux | Checksums and attestations. Packages signed where the channel supports it. | Unaffected |
 
-Signing secrets live only in the release workflow's protected environment, which requires approval to run. Until then (DSK-07), every build is unsigned and says so in its release notes; the repository holds no secrets (PKG-04).
+Signing secrets will live only in the release workflow's `release` environment, once the owner has protected it: a required reviewer and a deployment policy that admits only `v*` tags, which are repository settings, not files (D-128). Until then (DSK-07), every build is unsigned and says so in its release notes; the repository holds no secrets (PKG-04).
 
 <h2 id="the-product-site">The project's own site</h2>
 

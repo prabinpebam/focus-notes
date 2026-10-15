@@ -1,11 +1,12 @@
-# Release (DST-03, D-126): a tag v<x.y.z> builds the desktop installers on Windows, macOS and Linux,
+# Release (DST-03, D-128): a tag v<x.y.z> builds the desktop installers on Windows, macOS and Linux,
 # the web app bundle template instances deploy (D-98), the workspace template pinned to it, and an
 # SBOM; smoke-tests them; writes SHA256SUMS; attests every file's build provenance; and drafts a
 # GitHub Release with notes from the commits since the last tag. A person checks the draft and
 # publishes it. Versions below 1.0.0 (stage exits) and suffixed versions are pre-releases.
 #
 # Dry run: a manual run (Actions -> release -> Run workflow, "dry run" ticked, the default) or a tag
-# with -dryrun in it builds, smoke-tests and attests everything, and stops before the release.
+# v<x.y.z>-dryrun[.n] builds, smoke-tests and checksums everything, and stops before attesting, so a
+# dry run's files never carry an attestation (M2). Other tags that read like a dry run are refused.
 #
 # Windows first (D-112): only the Windows build must pass; macOS and Linux build and report without
 # blocking. Unsigned until DSK-07: there are no signing secrets in this repository (PKG-04).
@@ -17,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       dry-run:
-        description: Build, smoke-test and attest without drafting a release
+        description: Build and smoke-test without attesting or drafting a release
         type: boolean
         default: true
 permissions:
@@ -81,6 +82,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
+          # setup-node caches by itself when package.json names a packageManager (L9).
+          package-manager-cache: false
       - run: pnpm install --frozen-lockfile
       - run: node packages/tokens/build.mjs
       - name: Build the installers (unsigned until DSK-07)
@@ -125,6 +128,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
+          # setup-node caches by itself when package.json names a packageManager (L9).
+          package-manager-cache: false
       - run: pnpm install --frozen-lockfile
       - run: node packages/tokens/build.mjs
       - name: Build the web app, the page renderer and the publisher
@@ -145,9 +150,42 @@ jobs:
           path: dist/
           if-no-files-found: error
 
-  # Checksums and attestations, in a job that builds nothing: the only one holding id-token.
-  attest:
+  # Every built file in one folder: each artifact downloads into its own, so two with the same file
+  # name fail here instead of one silently replacing the other (L8). Read-only, dry runs included.
+  collect:
     needs: [version, desktop, web]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: asset-*
+          path: parts
+      - name: One folder, no duplicate names, and checksums
+        run: |
+          dups=$(find parts -type f -printf '%f\n' | sort | uniq -d)
+          if [ -n "$dups" ]; then
+            echo "::error::More than one artifact has these files: $dups"
+            exit 1
+          fi
+          mkdir dist
+          find parts -type f -exec mv -t dist {} +
+          cd dist
+          sha256sum -- * > SHA256SUMS
+          { echo "### Release assets"; echo '```'; cat SHA256SUMS; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-assets
+          path: dist/
+          if-no-files-found: error
+
+  # Attestations only for a real release, so no dry run's files can ever pass a check (M2), in a job
+  # that builds nothing and alone holds id-token. Check one with
+  #   gh attestation verify <file> --repo prabinpebam/focus-notes \
+  #     --signer-workflow prabinpebam/focus-notes/.github/workflows/release.yml --source-ref refs/tags/v<x.y.z>
+  attest:
+    needs: [version, collect]
+    if: needs.version.outputs.dry-run == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -157,26 +195,17 @@ jobs:
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: asset-*
+          name: release-assets
           path: dist
-          merge-multiple: true
-      - name: Checksums
-        working-directory: dist
-        run: |
-          sha256sum -- * > SHA256SUMS
-          { echo "### Release assets"; echo '```'; cat SHA256SUMS; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: "dist/*"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: release-assets
-          path: dist/
-          if-no-files-found: error
 
-  # The only job that can write to the repository, and only on a tag that isn't a dry run.
+  # The only job that can write to the repository, and only on a tag that isn't a dry run. The
+  # release environment's required reviewer and its v* tag policy are repository settings the owner
+  # sets by hand (D-128); this file can't make them.
   release:
-    needs: [version, attest]
+    needs: [version, collect, attest]
     if: needs.version.outputs.dry-run == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -199,6 +228,13 @@ jobs:
           VERSION: ${{ needs.version.outputs.version }}
           PRERELEASE: ${{ needs.version.outputs.prerelease }}
         run: |
+          # The tag must still name the commit this run built (the commits endpoint peels an
+          # annotated tag), or the release would attach these files to a different commit (L6).
+          tagged=$(gh api "repos/$GITHUB_REPOSITORY/commits/refs/tags/$TAG" --jq .sha)
+          if [ "$tagged" != "$GITHUB_SHA" ]; then
+            echo "::error::$TAG names $tagged, but this run built $GITHUB_SHA."
+            exit 1
+          fi
           flags=(--draft --verify-tag)
           if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
           gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --title "Focus Notes $VERSION" --notes-file notes/release-notes.md "${flags[@]}"

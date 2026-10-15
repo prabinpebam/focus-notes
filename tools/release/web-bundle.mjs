@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * The released web app bundle (DST-03, D-98, D-126): focus-notes-web-<version>.tgz, which template
+ * The released web app bundle (DST-03, D-98, D-128): focus-notes-web-<version>.tgz, which template
  * instances' Deploy app workflows download at their pinned version and check before running.
  *
  *   node tools/release/web-bundle.mjs pack --version <x.y.z> --out dist

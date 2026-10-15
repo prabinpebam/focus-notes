@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Release notes from the commits merged since the last release tag (DST-03, D-126):
+ * Release notes from the commits merged since the last release tag (DST-03, D-128):
  *
  *   node tools/release/notes.mjs --tag v1.2.3 [--ref HEAD] [--repository owner/name]
  *
@@ -37,11 +37,11 @@ export function releaseNotes({ tag, previous, commits, repository = "prabinpebam
     "",
     "## Check your download",
     "",
-    "Every file here is listed in `SHA256SUMS` and has a GitHub artifact attestation from this repository's release workflow:",
+    "Every file here is listed in `SHA256SUMS` and has a GitHub artifact attestation from this repository's release workflow, for this tag:",
     "",
     "```sh",
     "sha256sum --check --ignore-missing SHA256SUMS",
-    `gh attestation verify <file> --repo ${repository}`,
+    `gh attestation verify <file> --repo ${repository} --signer-workflow ${repository}/.github/workflows/release.yml --source-ref refs/tags/${tag}`,
     "```",
     "",
     "The installers aren't code-signed yet (DSK-07): Windows SmartScreen and macOS Gatekeeper warn before the first start. Windows is the supported platform; the macOS and Linux builds are previews until the platform parity pass (D-112).",

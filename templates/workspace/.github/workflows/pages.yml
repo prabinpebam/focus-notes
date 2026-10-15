@@ -61,10 +61,11 @@ jobs:
             "https://github.com/$FOCUS_NOTES_SOURCE/releases/download/v$FOCUS_NOTES_VERSION/focus-notes-web-$FOCUS_NOTES_VERSION.tgz"
       - name: Check the bundle's SHA-256
         run: echo "$FOCUS_NOTES_SHA256  $RUNNER_TEMP/bundle.tgz" | sha256sum --check --strict -
+      # Made by the source's release workflow, for exactly this version's tag (D-128).
       - name: Check the bundle's attestation
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh attestation verify "$RUNNER_TEMP/bundle.tgz" --repo "$FOCUS_NOTES_SOURCE"
+        run: gh attestation verify "$RUNNER_TEMP/bundle.tgz" --repo "$FOCUS_NOTES_SOURCE" --signer-workflow "$FOCUS_NOTES_SOURCE/.github/workflows/release.yml" --source-ref "refs/tags/v$FOCUS_NOTES_VERSION"
       - name: Unpack the app
         run: |
           mkdir -p "$RUNNER_TEMP/bundle" _site

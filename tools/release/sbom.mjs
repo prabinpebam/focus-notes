@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * The release's SBOM (DST-03, D-126): a CycloneDX 1.6 JSON document of every production dependency
+ * The release's SBOM (DST-03, D-128): a CycloneDX 1.6 JSON document of every production dependency
  * that ships, the same list THIRD_PARTY_NOTICES.md is generated from (`pnpm licenses list --prod`),
  * made here rather than by a downloaded scanner so the release job runs no third-party code for it.
  *

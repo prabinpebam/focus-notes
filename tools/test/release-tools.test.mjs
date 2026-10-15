@@ -1,5 +1,5 @@
 /**
- * The release tools (DST-03, D-126): the version and dry-run rules, the notes from the commits since
+ * The release tools (DST-03, D-128): the version and dry-run rules, the notes from the commits since
  * the last tag, the CycloneDX SBOM, the workspace template pinned to a bundle, and the web app bundle
  * itself, packed from a real publisher and page renderer and smoke-tested with nothing else installed.
  */
@@ -28,8 +28,15 @@ describe("DST-03: the version a release run builds", () => {
   });
   it("a -dryrun tag, or a manual run with dry run ticked, never publishes", () => {
     expect(releaseVersion({ ...base, refType: "tag", refName: "v0.0.2-dryrun.1" }).dryRun).toBe(true);
+    expect(releaseVersion({ ...base, refType: "tag", refName: "v0.0.2-dryrun" }).dryRun).toBe(true);
     expect(releaseVersion({ ...base, refType: "tag", refName: "v1.2.3", dryRunInput: "true" }).dryRun).toBe(true);
+    expect(releaseVersion({ ...base, refType: "tag", refName: "v1.2.3", dryRunInput: "TRUE" }).dryRun).toBe(true);
     expect(releaseVersion({ ...base, refType: "branch", refName: "wp-5.5", dryRunInput: "true" })).toEqual({ version: "0.0.1-dryrun.42", tag: "v0.0.1-dryrun.42", dryRun: true, prerelease: true });
+  });
+  it("L7: refuses a tag that looks like a dry run, in any case or spelling, unless it's exactly -dryrun", () => {
+    for (const t of ["v1.2.3-DRYRUN.1", "v1.2.3-DryRun", "v1.2.3-dry-run.1", "v1.2.3-dry.run", "v1.2.3-beta.dryrun", "v1.2.3-dryrun1", "v1.2.3-xdryrun"]) {
+      expect(() => releaseVersion({ ...base, refType: "tag", refName: t }), t).toThrow(/dry run/);
+    }
   });
   it("refuses a real release from a branch, and a tag that isn't a version", () => {
     expect(() => releaseVersion({ ...base, refType: "branch", refName: "main", dryRunInput: "false" })).toThrow(/Only a v<version> tag/);
@@ -64,7 +71,7 @@ describe("DST-03: release notes from the commits since the last tag", () => {
     expect(md).toMatch(/^## Changes since v0\.0\.1\n/);
     expect(md).toContain("- Fix the \\*caret\\* in \\`code\\` (");
     expect(md).toContain("sha256sum --check --ignore-missing SHA256SUMS");
-    expect(md).toContain("gh attestation verify <file> --repo prabinpebam/focus-notes");
+    expect(md).toContain("gh attestation verify <file> --repo prabinpebam/focus-notes --signer-workflow prabinpebam/focus-notes/.github/workflows/release.yml --source-ref refs/tags/v0.0.2");
     expect(md).toMatch(/aren't code-signed yet \(DSK-07\)/);
     expect(md).toContain("focus-notes-web-0.0.2.tgz");
     expect(releaseNotes({ tag: "v1.0.0", previous: null, commits: [] })).toMatch(/^## Changes\n\n- No changes\./);

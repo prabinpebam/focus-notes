@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * The workspace template, pinned to a release's web app bundle (DST-06 groundwork, D-126):
+ * The workspace template, pinned to a release's web app bundle (DST-06 groundwork, D-128):
  *
  *   node tools/release/template.mjs --version <x.y.z> --bundle dist/focus-notes-web-<x.y.z>.tgz --out dist
  *

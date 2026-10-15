@@ -1,5 +1,5 @@
 /**
- * The release pipeline's workflows (DST-03, D-126, D-127): release.yml drafts a release from a tag
+ * The release pipeline's workflows (DST-03, D-128, D-129): release.yml drafts a release from a tag
  * with installers, the web app bundle, the pinned workspace template, an SBOM, checksums and
  * attestations; preview-channel.yml replaces the rolling `preview` pre-release after each green
  * Windows CI on main. Both pin every action by SHA, keep each job's permissions to what it needs,
@@ -39,7 +39,13 @@ describe.each([["release.yml", release], ["preview-channel.yml", preview]])("%s:
     expect(Object.keys(wf.on)).not.toContain("pull_request");
     expect(wf.permissions).toEqual({ contents: "read" });
     for (const s of allSteps(wf)) {
-      if (s.uses?.startsWith("actions/setup-node@")) expect(s.with?.cache, "no cache in a publishing workflow").toBeUndefined();
+      // setup-node turns its package-manager cache on by itself when package.json names a
+      // packageManager, so it's switched off explicitly (L9); pnpm/action-setup's stays off.
+      if (s.uses?.startsWith("actions/setup-node@")) {
+        expect(s.with?.cache, "no cache in a publishing workflow").toBeUndefined();
+        expect(s.with?.["package-manager-cache"]).toBe(false);
+      }
+      if (s.uses?.startsWith("pnpm/action-setup@")) expect(s.with?.cache ?? false).toBe(false);
       expect(s.uses ?? "").not.toMatch(/^actions\/cache/);
       if (s.uses?.startsWith("actions/checkout@")) expect(s.with["persist-credentials"]).toBe(false);
     }
@@ -64,25 +70,46 @@ describe.each([["release.yml", release], ["preview-channel.yml", preview]])("%s:
     }
   });
 
-  it("writes SHA256SUMS before attesting every file it publishes", () => {
+  it("attests every file it publishes, SHA256SUMS included, in a job named attest", () => {
     const [name, job] = Object.entries(wf.jobs).find(([, j]) => stepsOf(j).some((s) => s.uses?.startsWith("actions/attest-build-provenance@")));
     expect(name).toBe("attest");
-    const sums = index(job, /sha256sum -- \* > SHA256SUMS/);
     const attest = index(job, /^actions\/attest-build-provenance@/);
-    expect(sums).toBeGreaterThan(0);
-    expect(attest).toBe(sums + 1);
     expect(stepsOf(job)[attest].with["subject-path"]).toBe("dist/*");
+    // Never more than one copy of the attesting action.
+    expect(allSteps(wf).filter((s) => s.uses?.startsWith("actions/attest-build-provenance@"))).toHaveLength(1);
   });
 });
 
-describe("release.yml (DST-03, D-126)", () => {
+describe("M2: verification names the signing workflow and the ref, not just the repository", () => {
+  it("the release notes and the docs give the release's workflow and tag", async () => {
+    const { releaseNotes } = await import("../release/notes.mjs");
+    expect(releaseNotes({ tag: "v1.2.3", previous: null, commits: [] })).toContain(
+      "gh attestation verify <file> --repo prabinpebam/focus-notes --signer-workflow prabinpebam/focus-notes/.github/workflows/release.yml --source-ref refs/tags/v1.2.3");
+    const dist = readFileSync(join(root, "documentations", "plan", "distribution.md"), "utf8");
+    expect(dist).toContain("--signer-workflow prabinpebam/focus-notes/.github/workflows/release.yml --source-ref refs/tags/v");
+    expect(dist).toContain("--signer-workflow prabinpebam/focus-notes/.github/workflows/preview-channel.yml --source-ref refs/heads/main");
+  });
+
+  it("the preview's notes give preview-channel.yml and main", () => {
+    const run = stepsOf(preview.wf.jobs.publish).at(-1).run;
+    expect(run).toContain("--signer-workflow $GITHUB_REPOSITORY/.github/workflows/preview-channel.yml --source-ref refs/heads/main");
+  });
+
+  it("the template's Deploy app workflow checks the bundle came from release.yml at its tag", () => {
+    const tpl = yaml.load(readFileSync(join(root, "templates", "workspace", ".github", "workflows", "pages.yml"), "utf8"));
+    const step = tpl.jobs.build.steps.find((s) => /attestation/.test(s.name ?? ""));
+    expect(step.run).toBe('gh attestation verify "$RUNNER_TEMP/bundle.tgz" --repo "$FOCUS_NOTES_SOURCE" --signer-workflow "$FOCUS_NOTES_SOURCE/.github/workflows/release.yml" --source-ref "refs/tags/v$FOCUS_NOTES_VERSION"');
+  });
+});
+
+describe("release.yml (DST-03, D-128)", () => {
   const { wf } = release;
   const job = (n) => wf.jobs[n];
 
   it("DST-03: runs on a v<version> tag, or by hand as a dry run (the default)", () => {
     expect(wf.on.push).toEqual({ tags: ["v[0-9]*"] });
     expect(wf.on.workflow_dispatch.inputs["dry-run"]).toMatchObject({ type: "boolean", default: true });
-    expect(Object.keys(wf.jobs)).toEqual(["version", "desktop", "web", "attest", "release"]);
+    expect(Object.keys(wf.jobs)).toEqual(["version", "desktop", "web", "collect", "attest", "release"]);
     expect(stepsOf(job("version")).find((s) => s.id === "v").run).toBe("node tools/release/version.mjs");
     expect(stepsOf(job("version")).find((s) => s.id === "v").env.DRY_RUN_INPUT).toBe("${{ inputs.dry-run }}");
   });
@@ -121,16 +148,31 @@ describe("release.yml (DST-03, D-126)", () => {
     expect(stepsOf(w).at(-1).with.name).toBe("asset-web");
   });
 
-  it("DST-03: attests only after Windows and the bundle are built, from every asset-* artifact", () => {
-    const a = job("attest");
-    expect(a.needs).toEqual(["version", "desktop", "web"]);
-    expect(stepsOf(a)[0].with).toMatchObject({ pattern: "asset-*", path: "dist", "merge-multiple": true });
+  it("DST-03, L8: collects every asset-* artifact into its own folder, fails on a duplicate name, then writes SHA256SUMS", () => {
+    const c = job("collect");
+    expect(c.needs).toEqual(["version", "desktop", "web"]);
+    expect(c.permissions).toBeUndefined();
+    expect(stepsOf(c)[0].with).toEqual({ pattern: "asset-*", path: "parts" });
+    const run = stepsOf(c)[1].run;
+    expect(run).toMatch(/uniq -d/);
+    expect(run.indexOf("uniq -d")).toBeLessThan(run.indexOf("exit 1"));
+    expect(run.indexOf("exit 1")).toBeLessThan(run.indexOf("sha256sum -- * > SHA256SUMS"));
+    expect(stepsOf(c).at(-1).with.name).toBe("release-assets");
   });
 
-  it("DST-03: drafts the release only on a real tag, in the protected release environment, with the notes", () => {
+  it("M2: attests only a real release, never a dry run, and the attesting job only downloads and attests", () => {
+    const a = job("attest");
+    expect(a.if).toBe("needs.version.outputs.dry-run == 'false'");
+    expect(a.needs).toEqual(["version", "collect"]);
+    expect(stepsOf(a).map((s) => (s.uses ?? "").split("@")[0])).toEqual(["actions/download-artifact", "actions/attest-build-provenance"]);
+    expect(stepsOf(a)[0].with).toEqual({ name: "release-assets", path: "dist" });
+  });
+
+  it("DST-03: drafts the release only on a real tag, in the release environment, with the notes", () => {
     const r = job("release");
-    expect(r.needs).toEqual(["version", "attest"]);
+    expect(r.needs).toEqual(["version", "collect", "attest"]);
     expect(r.if).toBe("needs.version.outputs.dry-run == 'false'");
+    // The environment's reviewers and tag policy are repository settings the owner sets (M1, D-128).
     expect(r.environment).toBe("release");
     const run = stepsOf(r).at(-1).run;
     expect(run).toMatch(/flags=\(--draft --verify-tag\)/);
@@ -140,18 +182,29 @@ describe("release.yml (DST-03, D-126)", () => {
     expect(stepsOf(job("version"))[0].with["fetch-depth"]).toBe(0);
   });
 
+  it("L6: refuses to draft when the tag (peeled) no longer names the commit that was built", () => {
+    const run = stepsOf(job("release")).at(-1).run;
+    expect(run).toMatch(/gh api "repos\/\$GITHUB_REPOSITORY\/commits\/refs\/tags\/\$TAG" --jq \.sha/);
+    expect(run).toMatch(/"\$tagged" != "\$GITHUB_SHA"/);
+    expect(run.indexOf("$GITHUB_SHA")).toBeLessThan(run.indexOf("gh release create"));
+  });
+
   it("supersedes preview-release.yml: stage exits are draft pre-releases from the same pipeline", () => {
     expect(existsSync(join(root, ".github", "workflows", "preview-release.yml"))).toBe(false);
+    expect(Object.keys(wf.jobs)).toEqual(["version", "desktop", "web", "collect", "attest", "release"]);
+    expect(release.text).not.toMatch(/protected/);
   });
 });
 
-describe("preview-channel.yml (D-122 phase 3, D-127)", () => {
+describe("preview-channel.yml (D-122 phase 3, D-129)", () => {
   const { wf } = preview;
   const job = (n) => wf.jobs[n];
 
-  it("runs only when ci completes on main, never on its own trigger", () => {
+  it("runs only when ci completes on main, never on its own trigger; L4: build and publish queue per job", () => {
     expect(wf.on).toEqual({ workflow_run: { workflows: [ci.wf.name], types: ["completed"], branches: ["main"] } });
-    expect(wf.concurrency).toEqual({ group: "preview-channel", "cancel-in-progress": false });
+    expect(wf.concurrency).toBeUndefined();
+    expect(job("build").concurrency).toEqual({ group: "preview-channel-build", "cancel-in-progress": false });
+    expect(job("publish").concurrency).toEqual({ group: "preview-channel-publish", "cancel-in-progress": false });
     expect(Object.keys(wf.jobs)).toEqual(["gate", "build", "attest", "publish"]);
   });
 
@@ -169,6 +222,20 @@ describe("preview-channel.yml (D-122 phase 3, D-127)", () => {
     expect(job("publish").needs).toEqual(["build", "attest"]);
   });
 
+  it("M3: builds only when main's tip is the commit ci tested, so the attestation names the commit it built", () => {
+    const g = job("gate");
+    const step = stepsOf(g).find((s) => s.id === "tip");
+    expect(step.env.HEAD_SHA).toBe("${{ github.event.workflow_run.head_sha }}");
+    expect(step.run).toMatch(/"\$HEAD_SHA" = "\$GITHUB_SHA"/);
+    expect(step.run).toMatch(/current=true/);
+    expect(step.run).toMatch(/current=false/);
+    expect(g.outputs.current).toBe("${{ steps.tip.outputs.current }}");
+    expect(job("build").if).toBe("needs.gate.outputs.current == 'true'");
+    // And the build itself refuses a mismatch, whatever the gate said.
+    expect(stepsOf(job("build"))[0].run).toMatch(/"\$HEAD_SHA" != "\$GITHUB_SHA"/);
+    expect(stepsOf(job("build"))[0].run).toMatch(/exit 1/);
+  });
+
   it("ci names its Windows jobs so the gate finds them: the Windows test job and four journey shards", () => {
     expect(ci.wf.jobs.test.strategy.matrix.os).toContain("windows-latest");
     expect(ci.wf.jobs["journeys-windows"].strategy.matrix.shard).toHaveLength(4);
@@ -179,7 +246,7 @@ describe("preview-channel.yml (D-122 phase 3, D-127)", () => {
     const b = job("build");
     expect(b["runs-on"]).toBe("windows-latest");
     expect(b.permissions).toBeUndefined();
-    expect(stepsOf(b)[0].with.ref).toBe("${{ github.event.workflow_run.head_sha }}");
+    expect(stepsOf(b).find((s) => s.uses?.startsWith("actions/checkout@")).with.ref).toBe("${{ github.event.workflow_run.head_sha }}");
     const zip = index(b, /Zip the unpacked app/), smoke = index(b, /Packaged app smoke test/), fuses = index(b, /fuses/);
     expect(index(b, /Build the installer/)).toBeLessThan(zip);
     expect(zip).toBeLessThan(fuses);
@@ -187,6 +254,11 @@ describe("preview-channel.yml (D-122 phase 3, D-127)", () => {
     expect(stepsOf(b)[zip].run).toMatch(/Compress-Archive -Path apps\/desktop\/release\/win-unpacked\/\*/);
     expect(stepsOf(b)[zip].run).toMatch(/-Exclude __uninstaller\*/);
     expect(stepsOf(b)[zip].run).toMatch(/commit\.txt \$env:HEAD_SHA/);
+  });
+
+  it("writes SHA256SUMS before attesting", () => {
+    const a = job("attest");
+    expect(index(a, /^actions\/attest-build-provenance@/)).toBe(index(a, /sha256sum -- \* > SHA256SUMS/) + 1);
   });
 
   it("replaces the `preview` pre-release at that commit, and never with an older commit than the one there", () => {
@@ -197,5 +269,18 @@ describe("preview-channel.yml (D-122 phase 3, D-127)", () => {
     expect(run.indexOf("gh release delete preview")).toBeLessThan(run.indexOf("gh release create preview"));
     expect(run).toMatch(/gh release create preview dist\/\* --repo "\$GITHUB_REPOSITORY" --target "\$HEAD_SHA" --prerelease/);
     expect(run).toMatch(/--title "Preview \$VERSION \(\$short\)"/);
+  });
+
+  it("L5: only a 404 means there's no preview yet; any other error fails the job", () => {
+    const run = stepsOf(job("publish")).at(-1).run;
+    expect(run).toMatch(/grep -q "HTTP 404"/);
+    expect(run).not.toMatch(/2>\/dev\/null \|\| true/);
+    expect(run).not.toMatch(/\|\| true/);
+  });
+
+  it("L11: escapes the commit subject's Markdown, as notes.mjs does", () => {
+    const run = stepsOf(job("publish")).at(-1).run;
+    expect(run).toContain("sed -E 's/([][\\\\`*_<>])/\\\\\\1/g'");
+    expect(run).toMatch(/echo "> \$subject"/);
   });
 });

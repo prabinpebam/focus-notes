@@ -1,10 +1,17 @@
-# Rolling preview (D-122 phase 3, D-127): each push to main whose Windows CI passed replaces the
+# Rolling preview (D-122 phase 3, D-129): each push to main whose Windows CI passed replaces the
 # pre-release named `preview` with that commit's Windows build: the installer and the unpacked app,
 # zipped, with SHA256SUMS and attestations. The owner's Preview updater can download it instead of
 # building locally. A commit older than the one already published never replaces it.
 #
 # workflow_run runs this file from main with a write token, so it acts only on ci's push runs from
 # this repository's own main, and builds exactly the commit that ci tested. Unsigned until DSK-07.
+#
+# Under workflow_run, GITHUB_SHA is main's tip when ci finished, and that's the commit an attestation
+# names. So a run builds only when the commit ci tested is still main's tip; when main has moved on,
+# it stops quietly at the gate and the newer commit's own ci run publishes instead (M3, D-129).
+# Check a download with
+#   gh attestation verify <file> --repo prabinpebam/focus-notes \
+#     --signer-workflow prabinpebam/focus-notes/.github/workflows/preview-channel.yml --source-ref refs/heads/main
 name: preview-channel
 on:
   workflow_run:
@@ -13,10 +20,6 @@ on:
     branches: [main]
 permissions:
   contents: read
-concurrency:
-  group: preview-channel
-  # A publish in progress finishes; a newer green commit waits for it, then replaces it.
-  cancel-in-progress: false
 jobs:
   # ci's conclusion is already only Windows (D-112: macOS and Linux can't fail it); this reads the
   # Windows jobs themselves too, so a change to ci.yml can't quietly let a red Windows build through.
@@ -30,6 +33,8 @@ jobs:
     timeout-minutes: 5
     permissions:
       actions: read
+    outputs:
+      current: ${{ steps.tip.outputs.current }}
     steps:
       - name: Check every Windows job passed
         env:
@@ -44,11 +49,27 @@ jobs:
           if awk -F'\t' '$2 != "success" { bad = 1 } END { exit !bad }' jobs.tsv; then
             echo "::error::A Windows job didn't pass, so this commit isn't published."; exit 1
           fi
+      - id: tip
+        name: Check the tested commit is still main's tip
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [ "$HEAD_SHA" = "$GITHUB_SHA" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::main has moved on to $GITHUB_SHA since ci tested $HEAD_SHA; that commit's own run publishes."
+            echo "current=false" >> "$GITHUB_OUTPUT"
+          fi
 
   build:
     needs: gate
+    if: needs.gate.outputs.current == 'true'
     runs-on: windows-latest
     timeout-minutes: 45
+    # A newer green commit's build waits for this one rather than cancelling it (L4).
+    concurrency:
+      group: preview-channel-build
+      cancel-in-progress: false
     defaults:
       run:
         shell: bash
@@ -58,6 +79,12 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
+      - name: Refuse to build anything but the commit the attestation will name
+        run: |
+          if [ "$HEAD_SHA" != "$GITHUB_SHA" ]; then
+            echo "::error::ci tested $HEAD_SHA but this run's commit is $GITHUB_SHA."
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
@@ -66,6 +93,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
+          # setup-node caches by itself when package.json names a packageManager (L9).
+          package-manager-cache: false
       - run: pnpm install --frozen-lockfile
       - run: node packages/tokens/build.mjs
       # <desktop version>-preview.<this workflow's run number>: rises with every preview, so an
@@ -134,6 +163,10 @@ jobs:
     needs: [build, attest]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # One replace at a time; a newer one waits rather than cancelling one half done (L4).
+    concurrency:
+      group: preview-channel-publish
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
@@ -148,8 +181,17 @@ jobs:
           VERSION: ${{ needs.build.outputs.version }}
           SUBJECT: ${{ github.event.workflow_run.head_commit.message }}
         run: |
+          # Only "not found" means there's no preview yet; any other error stops here (L5).
+          if current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/preview" --jq .object.sha 2> err.txt); then
+            :
+          elif grep -q "HTTP 404" err.txt; then
+            current=""
+          else
+            cat err.txt
+            echo "::error::Couldn't read the preview tag."
+            exit 1
+          fi
           # Never go back: a slower run for an older commit leaves a newer preview where it is.
-          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/preview" --jq .object.sha 2>/dev/null || true)
           if [ -n "$current" ] && [ "$current" != "$HEAD_SHA" ]; then
             status=$(gh api "repos/$GITHUB_REPOSITORY/compare/$current...$HEAD_SHA" --jq .status)
             if [ "$status" != "ahead" ]; then
@@ -158,14 +200,19 @@ jobs:
             fi
           fi
           short=${HEAD_SHA:0:7}
+          # The subject's first line, with Markdown's special characters escaped as notes.mjs does (L11).
+          subject=$(printf '%s' "${SUBJECT%%$'\n'*}" | sed -E 's/([][\\`*_<>])/\\\1/g')
           {
             echo "The newest commit on main whose Windows CI passed: $HEAD_SHA"
             echo
-            echo "> ${SUBJECT%%$'\n'*}"
+            echo "> $subject"
             echo
             echo "Unsigned rolling preview, replaced on every green push to main. Check a download with"
-            echo "\`sha256sum --check --ignore-missing SHA256SUMS\` and \`gh attestation verify <file> --repo $GITHUB_REPOSITORY\`."
+            echo "\`sha256sum --check --ignore-missing SHA256SUMS\` and"
+            echo "\`gh attestation verify <file> --repo $GITHUB_REPOSITORY --signer-workflow $GITHUB_REPOSITORY/.github/workflows/preview-channel.yml --source-ref refs/heads/main\`."
           } > notes.md
-          gh release delete preview --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes 2>/dev/null || true
+          if [ -n "$current" ]; then
+            gh release delete preview --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          fi
           gh release create preview dist/* --repo "$GITHUB_REPOSITORY" --target "$HEAD_SHA" --prerelease \
             --title "Preview $VERSION ($short)" --notes-file notes.md
