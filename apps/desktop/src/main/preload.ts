@@ -21,6 +21,9 @@ const listen = (channel: string) => (listener: (...args: unknown[]) => void) => 
   ipcRenderer.on(channel, handler);
   return () => ipcRenderer.removeListener(channel, handler);
 };
+/** The latest compositing the main process sent (D-121), kept for the app, which listens only once it starts. */
+let latestCompositing: unknown;
+ipcRenderer.on("compositing:changed", (_e, c: unknown) => (latestCompositing = c));
 
 /**
  * The pointer near the window's edges (Windows and Linux: the click-through margin, D-104) or near
@@ -59,6 +62,14 @@ if (pointerZone) {
 
 contextBridge.exposeInMainWorld("focusNotes", {
   platform,
+  // GPU or software compositing (D-121): the main process reads it, and tells of changes after a GPU crash.
+  compositing: {
+    initial: params.get("compositing") === "software" ? "software" : "gpu",
+    onChange: (listener: (...args: unknown[]) => void) => {
+      if (latestCompositing !== undefined) listener(latestCompositing);
+      return listen("compositing:changed")(listener);
+    },
+  },
   // Off only when the main process says so: end-to-end tests (PRF-10).
   warmUp: params.get("warmup") !== "0",
   readNote: (path: string) => ipcRenderer.invoke("note:read", path),

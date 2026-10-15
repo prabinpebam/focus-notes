@@ -48,6 +48,15 @@
           "kind": "boolean",
           "default": false,
           "description": "A polite live region, for counts and results."
+        },
+        "inset": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "control"
+          ],
+          "default": "none",
+          "description": "control: inset like a small button's label, so a text that leads a row of buttons (the link card) lines up with them (D-111)."
         }
       },
       "events": {},
@@ -202,6 +211,24 @@
               "t": "gallery.long"
             },
             "lines": "three"
+          }
+        },
+        {
+          "name": "inset none",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "inset": "none"
+          }
+        },
+        {
+          "name": "inset control",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "inset": "control"
           }
         }
       ]
@@ -5328,6 +5355,15 @@
           ],
           "default": "native",
           "description": "The app-built window's shape on Windows and Linux (D-14): rounded with the drawn shadow, or square (maximized, snapped, full screen)."
+        },
+        "compositing": {
+          "kind": "enum",
+          "values": [
+            "gpu",
+            "software"
+          ],
+          "default": "gpu",
+          "description": "How the window is composited (D-121): software turns off the note's edge blur, too costly to draw without a GPU, and keeps its fade."
         }
       },
       "events": {},
@@ -5836,6 +5872,24 @@
             "scheme": "dark",
             "platform": "linux",
             "frame": "square"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "compositing software",
+          "props": {
+            "scheme": "light",
+            "platform": "windows",
+            "compositing": "software"
           },
           "children": [
             {

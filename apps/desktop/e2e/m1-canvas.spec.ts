@@ -13,6 +13,9 @@ const withMod = async (page: Page, key: string) => {
   await page.keyboard.press(key);
   await page.keyboard.up(mod);
 };
+/** The blur layers of the note's top or bottom edge: every child but the fade, the last (D-111, D-121). */
+const edgeLayers = (page: Page, side: string) => page.locator(`[data-scroll-edge="${side}"] > :not(:last-child)`).evaluateAll((els) =>
+  els.map((el) => ({ display: getComputedStyle(el).display, backdrop: getComputedStyle(el).backdropFilter })));
 const panel = (page: Page) => page.evaluate(() => {
   const root = document.querySelector("[data-morph-panel]") as HTMLElement;
   const b = root.getBoundingClientRect();
@@ -269,16 +272,52 @@ test("UI-11: scrolling never brings the caret back (wheel, the scrollbar's thumb
 test("D-111: the note's edges blur progressively, crisp at the band's inner edge and strongly blurred at the window's edge", async () => {
   const dirs = tempDirs();
   writeFileSync(join(dirs.docs, "Welcome.md"), "# Title\n\n" + Array.from({ length: 120 }, (_, i) => `Line ${i + 1}: the quick brown fox jumps over the lazy dog, again and again.`).join("\n") + "\n");
-  const l = await launch(dirs);
+  // The GPU path, whatever this computer composites with (a CI runner draws in software, D-121).
+  const l = await launch(dirs, { FOCUS_NOTES_GPU_COMPOSITING: "gpu" });
   const { page } = l;
   await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
   const scroller = page.locator("[data-editor-scroller]");
   await scroller.evaluate((el) => { el.scrollTop = (el.scrollHeight - el.clientHeight) / 2; });
   await expect(page.locator('[data-scroll-edge="top"]')).toBeVisible();
   await expect(page.locator('[data-scroll-edge="bottom"]')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.dataset.compositing)).toBeUndefined();
+  // Every blur layer is drawn, the outermost blurred most.
+  for (const side of ["top", "bottom"]) {
+    const blurs = await edgeLayers(page, side);
+    expect(blurs.length).toBeGreaterThanOrEqual(5);
+    expect(blurs.every((b) => b.display !== "none" && b.backdrop.startsWith("blur("))).toBe(true);
+  }
   await page.waitForTimeout(300);
   const box = (await scroller.boundingBox())!;
   await page.screenshot({ path: "../../test-results/screens/edge-blur-top.png", clip: { x: box.x, y: box.y, width: Math.min(box.width, 900), height: 60 } });
   await page.screenshot({ path: "../../test-results/screens/edge-blur-bottom.png", clip: { x: box.x, y: box.y + box.height - 60, width: Math.min(box.width, 900), height: 60 } });
+  await quit(l);
+});
+
+test("D-121: in software compositing the note's edges fade in the canvas's color, with no backdrop blur", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Title\n\n" + Array.from({ length: 120 }, (_, i) => `Line ${i + 1}: the quick brown fox jumps over the lazy dog, again and again.`).join("\n") + "\n");
+  const l = await launch(dirs, { FOCUS_NOTES_GPU_COMPOSITING: "software" });
+  const { page } = l;
+  await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+  expect(l.log.some((line) => line.includes("compositing: software"))).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.dataset.compositing)).toBe("software");
+  const scroller = page.locator("[data-editor-scroller]");
+  await scroller.evaluate((el) => { el.scrollTop = (el.scrollHeight - el.clientHeight) / 2; });
+  await expect(page.locator('[data-scroll-edge="top"]')).toBeVisible();
+  await expect(page.locator('[data-scroll-edge="bottom"]')).toBeVisible();
+  for (const side of ["top", "bottom"]) {
+    // No blur layer is drawn; the fade, the edge's last child, still is.
+    const blurs = await edgeLayers(page, side);
+    expect(blurs.length).toBeGreaterThanOrEqual(5);
+    expect(blurs.every((b) => b.display === "none")).toBe(true);
+    const fade = await page.locator(`[data-scroll-edge="${side}"] > :last-child`).evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { display: cs.display, image: cs.backgroundImage, backdrop: cs.backdropFilter };
+    });
+    expect(fade.display).not.toBe("none");
+    expect(fade.image).toContain("linear-gradient");
+    expect(fade.backdrop).toBe("none");
+  }
   await quit(l);
 });

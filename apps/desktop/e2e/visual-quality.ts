@@ -12,7 +12,8 @@
  *   trigger and the window's controls.
  * - Gaps between items: the highlight shapes of neighboring list items never touch (2 px apart).
  * - Fading scroll edges: only the note fades and blurs (up to 40 px) a 50 px edge, exactly where
- *   there's more to scroll to; interface surfaces never do.
+ *   there's more to scroll to; interface surfaces never do. Fade only with reduced transparency or
+ *   in software compositing (D-121).
  * - Selection by background: selected and active items show a background, never a side bar.
  * - Aligned rows: a checkbox, switch, or radio is centered on the first line of its label.
  * - Anchored tooltips: next to the control they name, centered on it, inside the window.
@@ -502,7 +503,8 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
   }
 
   if (on("fade")) {
-    const reduced = document.documentElement.dataset.transparency === "reduced" || matchMedia("(forced-colors: active)").matches;
+    // No blur with reduced transparency, or in software compositing (D-121): the fade alone.
+    const reduced = document.documentElement.dataset.transparency === "reduced" || document.documentElement.dataset.compositing === "software" || matchMedia("(forced-colors: active)").matches;
     for (const el of document.querySelectorAll("*")) {
       const o = getComputedStyle(el);
       if (o.overflowY !== "auto" && o.overflowY !== "scroll") continue;

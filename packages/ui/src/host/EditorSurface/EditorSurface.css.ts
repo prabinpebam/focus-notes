@@ -85,8 +85,9 @@ const layer = (inward: "bottom" | "top", k: number) =>
     // Unprefixed only: with the -webkit- one as well, the build keeps just that, which Chromium ignores.
     backdropFilter: `blur(calc(${t.edgeBlur} / ${2 ** k}))`,
     maskImage: layerMask(inward, k),
-    // With reduced transparency, the fade alone (Foundations → Surfaces).
-    selectors: { ':root[data-transparency="reduced"] &': { display: "none" } },
+    // With reduced transparency, or in software compositing, where eight backdrop filters drop the
+    // window to a few frames a second (D-121): the canvas-colored fade alone.
+    selectors: { ':root[data-transparency="reduced"] &, :root[data-compositing="software"] &': { display: "none" } },
   } as Parameters<typeof style>[0]);
 export const blurTop = Array.from({ length: EDGE_BANDS }, (_, k) => layer("bottom", k));
 export const blurBottom = Array.from({ length: EDGE_BANDS }, (_, k) => layer("top", k));
