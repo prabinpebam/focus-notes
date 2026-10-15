@@ -39,6 +39,7 @@ function setup(content: Rect = { x: 100, y: 100, width: 1000, height: 700 }, dis
   const reports: WindowReport[] = [];
   const saved: WindowMemory[] = [];
   const preview: { shown?: Rect; visible: boolean } = { visible: false };
+  const passes: boolean[] = [];
   let cursor = { x: 0, y: 0 };
   const w = new CustomWindow(win, {
     frame: "custom",
@@ -48,8 +49,9 @@ function setup(content: Rect = { x: 100, y: 100, width: 1000, height: 700 }, dis
     notify: (r) => reports.push(r),
     save: (m) => saved.push(m),
     forwardsMoves,
+    passthrough: (on) => passes.push(on),
   }, placement);
-  return { w, win, reports, saved, preview, point: (x: number, y: number) => (cursor = { x, y }) };
+  return { w, win, reports, saved, preview, passes, point: (x: number, y: number) => (cursor = { x, y }) };
 }
 const drag = (w: CustomWindow, kind: Parameters<CustomWindow["drag"]>[1], from: [number, number], to: [number, number], shift = false) => {
   w.drag("start", kind, ...from, shift);
@@ -360,5 +362,111 @@ describe("D-141: vertical maximize, as Windows does it", () => {
     expect(saved.at(-1)).toEqual({ version: 1, bounds: start, vertical: true });
     expect(parseWindowMemory(JSON.stringify({ version: 1, bounds: start, vertical: true }))).toEqual({ version: 1, bounds: start, vertical: true });
     expect(initialPlacement({ version: 1, bounds: start, vertical: true }, [main], main)).toMatchObject({ mode: "snapped", zone: "vertical", content: full, restore: start });
+  });
+});
+
+describe("D-150: a window that let clicks through takes the mouse again", () => {
+  it("after the pointer left through the margin and came back inside without crossing the edges", () => {
+    const { w, win, passes, point } = setup();
+    w.trackPointer();
+    point(86, 500);
+    w.pointerCheck();
+    expect(win.ignore).toBe(true);
+    // The page is told, so it reports every move the system forwards, not only near the edges.
+    expect(passes).toEqual([true]);
+    point(20, 500);
+    w.pointerCheck();
+    expect(win.ignore).toBe(true);
+    // Alt+Tab, a window uncovering it: the pointer is now in the middle. The first forwarded move restores the mouse.
+    point(600, 400);
+    w.pointerCheck();
+    expect(win.ignore).toBe(false);
+    expect(passes).toEqual([true, false]);
+  });
+  it("whenever the system shows, restores, or activates it, unless the pointer is in the margin", () => {
+    const { w, win, point } = setup();
+    w.trackPointer();
+    point(86, 500);
+    w.pointerCheck();
+    point(20, 500);
+    w.pointerCheck();
+    expect(win.ignore).toBe(true);
+    // Activated from the taskbar with the pointer elsewhere: it takes the mouse.
+    w.settle();
+    expect(win.ignore).toBe(false);
+    point(600, 400);
+    w.settle();
+    expect(win.ignore).toBe(false);
+    // Activated with the pointer actually in the margin: clicks there still pass through.
+    point(86, 500);
+    w.settle();
+    expect(win.ignore).toBe(true);
+    point(600, 400);
+    w.settle();
+    expect(win.ignore).toBe(false);
+  });
+  it("as it maximizes, snaps, maximizes vertically, goes full screen, and restores, wherever the pointer was", () => {
+    for (const change of [
+      (w: CustomWindow) => w.maximize(),
+      (w: CustomWindow) => w.snap("left"),
+      (w: CustomWindow) => w.toggleVertical(),
+      (w: CustomWindow) => w.toggleFullScreen(),
+    ]) {
+      const { w, win, point } = setup();
+      w.trackPointer();
+      // In the margin at the window's top-left, which the new shape covers.
+      point(86, 86);
+      w.pointerCheck();
+      expect(win.ignore).toBe(true);
+      change(w);
+      expect(w.margin()).toBe(0);
+      expect(win.ignore).toBe(false);
+    }
+  });
+  it("when the displays change under a still pointer", () => {
+    const { w, win, point } = setup();
+    w.trackPointer();
+    point(86, 500);
+    w.pointerCheck();
+    expect(win.ignore).toBe(true);
+    // The window was moved to it by the system: the pointer is over the visible window now, unmoved.
+    point(600, 400);
+    w.displaysChanged();
+    expect(win.ignore).toBe(false);
+  });
+  it("never lets a click through anywhere on the visible window, in any mode", () => {
+    const corners = (r: Rect) => [[r.x, r.y], [r.x + r.width - 1, r.y], [r.x, r.y + r.height - 1], [r.x + r.width - 1, r.y + r.height - 1], [r.x + r.width / 2, r.y + r.height / 2]] as const;
+    const modes: [string, (w: CustomWindow) => void][] = [
+      ["normal", () => {}],
+      ["maximized", (w) => w.maximize()],
+      ["snapped", (w) => w.snap("right")],
+      ["vertical", (w) => w.toggleVertical()],
+      ["full screen", (w) => w.toggleFullScreen()],
+    ];
+    for (const [name, change] of modes) {
+      const { w, win, point } = setup();
+      w.trackPointer();
+      change(w);
+      const visible = w.content();
+      for (const [x, y] of corners(visible)) {
+        point(x, y);
+        w.pointerCheck();
+        expect(win.ignore ?? false, `${name} at ${x},${y}`).toBe(false);
+      }
+      // And every pixel of the window that isn't the visible window is margin.
+      if (w.margin() === 0) expect(win.bounds, name).toEqual(visible);
+    }
+  });
+  it("on Linux, takes the mouse when activated, and still watches only while the pointer is in the margin", () => {
+    const { w, win, point } = setup(undefined, undefined, undefined, false);
+    w.trackPointer();
+    point(86, 500);
+    w.pointerCheck();
+    expect(w.watching).toBe(true);
+    point(600, 400);
+    w.settle();
+    expect(win.ignore).toBe(false);
+    expect(w.watching).toBe(false);
+    w.stop();
   });
 });

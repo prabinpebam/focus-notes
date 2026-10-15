@@ -134,6 +134,10 @@ export class AppWindowFrame {
       save: (m) => writeWindowMemory(this.#file, m),
       // Electron forwards pointer moves to an ignoring window on Windows, not on Linux.
       forwardsMoves: process.platform === "win32",
+      // While it lets clicks through, the page reports every forwarded move (D-150).
+      passthrough: (on) => {
+        if (!win.isDestroyed()) win.webContents.send("window:passthrough", on);
+      },
     }, p);
     this.#custom = custom;
     if (p.fullScreen) win.once("ready-to-show", () => custom.toggleFullScreen());
@@ -152,7 +156,17 @@ export class AppWindowFrame {
     const check = () => custom.pointerCheck();
     win.on("hide", check);
     win.on("minimize", check);
-    win.on("focus", notify);
+    // Shown, restored, activated, or moved or resized by the system (Win+arrow, Aero Snap): the window
+    // takes the mouse unless the pointer is in its margin now, never left letting clicks through (D-150).
+    const settle = () => custom.settle();
+    win.on("show", settle);
+    win.on("restore", settle);
+    win.on("moved", settle);
+    win.on("resized", settle);
+    win.on("focus", () => {
+      settle();
+      notify();
+    });
     win.on("blur", () => {
       custom.endKeyboard(true);
       notify();

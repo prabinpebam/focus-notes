@@ -56,6 +56,8 @@ interface Options {
   save: (m: WindowMemory) => void;
   /** The system forwards pointer moves to the page while the window ignores the mouse (Windows, not Linux). */
   forwardsMoves: boolean;
+  /** Tells the page the window lets clicks through, or no longer does, so it reports every forwarded move meanwhile (D-150). */
+  passthrough?: (on: boolean) => void;
 }
 
 const ARROWS: Record<string, ArrowKey> = { ArrowLeft: "Left", ArrowRight: "Right", ArrowUp: "Up", ArrowDown: "Down" };
@@ -163,12 +165,14 @@ export class CustomWindow {
     this.#setMode(zone === "maximize" ? "maximized" : "snapped", zone === "maximize" ? undefined : zone);
     this.#apply(zoneRect(zone, display.workArea));
     this.save();
+    this.settle();
   }
   restore(): void {
     if (this.#mode === "normal" || this.#full) return;
     this.#setMode("normal");
     this.#apply(clampToDisplays(this.#restore, this.#displays(), MIN_SIZE));
     this.save();
+    this.settle();
   }
   toggleMaximize(): void {
     if (this.#mode === "maximized") this.restore();
@@ -187,6 +191,7 @@ export class CustomWindow {
     this.#setMode("snapped", "vertical");
     this.#apply(verticalRect(r, display.workArea));
     this.save();
+    this.settle();
   }
   /** Double-clicking the top or bottom border: maximizes vertically, or restores a vertically maximized window. */
   toggleVertical(): void {
@@ -224,6 +229,7 @@ export class CustomWindow {
       this.#win.setBounds(display.bounds);
     }
     this.save();
+    this.settle();
   }
 
   /**
@@ -280,6 +286,7 @@ export class CustomWindow {
     this.#restore = this.content();
     this.notify();
     this.save();
+    this.settle();
   }
 
   /** On a display with another scale, the window keeps its size in DIP, which keeps its size on screen. */
@@ -338,6 +345,7 @@ export class CustomWindow {
     this.#restore = this.content();
     this.notify();
     this.save();
+    this.settle();
   }
 
   /** Displays came or went, or changed their work areas: a maximized or snapped window refits; a normal one stays reachable. */
@@ -351,6 +359,7 @@ export class CustomWindow {
     } else if (this.#zone === "vertical") this.#apply(verticalRect(this.content(), this.#display().workArea));
     else this.#apply(zoneRect(this.#mode === "maximized" ? "maximize" : this.#zone ?? "maximize", this.#display().workArea));
     this.notify();
+    this.settle();
   }
 
   /**
@@ -360,7 +369,9 @@ export class CustomWindow {
    * margin and the handles. While the window ignores the mouse, Windows still forwards the moves to
    * the page. Linux can't, so there, and only while the pointer is in the margin of an ignoring
    * window, the pointer is checked every `POINTER_WATCH_MS` until it leaves the margin or the
-   * window hides (D-104).
+   * window hides (D-104). While it lets clicks through, the page reports every forwarded move, not
+   * only near the edges, so a pointer that reaches the middle without crossing them (Alt+Tab, a window
+   * that moved or appeared under it) takes the mouse again (D-150).
    */
   trackPointer(): void {
     this.#tracking = true;
@@ -376,12 +387,29 @@ export class CustomWindow {
     // A hidden or minimized window takes the pointer again when it's back, where the page can see it.
     if (!w.isVisible() || w.isMinimized()) return this.#setIgnore(false);
     if (this.#drag || this.#keys) return;
-    const b = w.getBounds();
+    const at = this.#pointerAt();
+    // Out of the window: where the system forwards moves nothing changes; elsewhere the window takes the pointer again, so it sees it come back.
+    if (at === "away") return this.#o.forwardsMoves ? undefined : this.#setIgnore(false);
+    this.#setIgnore(at === "margin");
+  }
+  /**
+   * The system showed, restored, activated, moved, or resized the window, or its shape changed: it
+   * takes the mouse unless the pointer is in its margin right now (D-150). A window someone just
+   * activated is never left letting their clicks through.
+   */
+  settle(): void {
+    const w = this.#win;
+    if (!this.#tracking || w.isDestroyed()) return;
+    if (!w.isVisible() || w.isMinimized() || this.#drag || this.#keys) return this.#setIgnore(false);
+    this.#setIgnore(this.#pointerAt() === "margin");
+  }
+  /** Where the pointer is: away from the window, in its shadow margin, or on the visible window (its handles included). */
+  #pointerAt(): "away" | "margin" | "window" {
+    const b = this.#win.getBounds();
     const c = this.#o.screen.getCursorScreenPoint();
     const p = { x: c.x - b.x, y: c.y - b.y };
-    // Out of the window: where the system forwards moves nothing changes; elsewhere the window takes the pointer again, so it sees it come back.
-    if (p.x < 0 || p.y < 0 || p.x >= b.width || p.y >= b.height) return this.#o.forwardsMoves ? undefined : this.#setIgnore(false);
-    this.#setIgnore(hitZone(p, { width: b.width, height: b.height }, { margin: this.margin(), ...metrics }, this.resizable()) === "outside");
+    if (p.x < 0 || p.y < 0 || p.x >= b.width || p.y >= b.height) return "away";
+    return hitZone(p, { width: b.width, height: b.height }, { margin: this.margin(), ...metrics }, this.resizable()) === "outside" ? "margin" : "window";
   }
   /** Whether the pointer is being checked on a timer now: on Linux, only while it's in the margin. */
   get watching(): boolean {
@@ -394,6 +422,7 @@ export class CustomWindow {
     if (ignore !== this.#ignoring) {
       this.#ignoring = ignore;
       if (!this.#win.isDestroyed()) this.#win.setIgnoreMouseEvents(ignore, ignore ? { forward: true } : undefined);
+      this.#o.passthrough?.(ignore);
     }
     // The page can't see a pointer the window ignores unless the system forwards its moves.
     if (ignore && !this.#o.forwardsMoves) {
