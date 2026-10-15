@@ -4,11 +4,6 @@ import { tokens } from "@focus-notes/tokens";
 const t = tokens.cmp.text;
 
 export const base = style({ fontFamily: t.font, lineHeight: t.lineHeight, margin: 0, overflowWrap: "anywhere" });
-// Leading a row of buttons (the link card): inset like their labels, inside their padding and border (D-111).
-export const inset = styleVariants({
-  none: {},
-  control: { paddingInline: `calc(${t.controlInset} + ${t.controlBorder})` },
-});
 export const role = styleVariants({
   caption: { fontSize: t.size.caption },
   secondary: { fontSize: t.size.secondary },

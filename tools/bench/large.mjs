@@ -6,6 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { settledMedian } from "./settle.mjs";
 
 const WORDS = "calm focus note write plain markdown quiet band caret typing journal draft ideas sync commit save folder link title paragraph sentence page story morning evening reading notes".split(" ");
 const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
@@ -40,20 +41,56 @@ export function generateWorkspace(notes = 10_000) {
  * Resident memory of all the app's processes, with pages they share counted once: each process's
  * private working set (what Task Manager shows as its memory), plus the largest shared working set
  * (Electron's own code, mapped into every process). Summing whole working sets would count that
- * code once per process. Measured on Windows, the reference platform for CI (Performance and
- * quality → Performance budgets); elsewhere it isn't reported yet.
+ * code once per process. The processes are this instance's own, from Electron's `getAppMetrics()`,
+ * and each one's two figures come from one reading of the system's process counters. Measured on
+ * Windows, the reference platform for CI (Performance and quality → Performance budgets);
+ * elsewhere it isn't reported yet.
  */
-function residentMB(metrics) {
+function memorySample(metrics) {
   if (process.platform !== "win32") return undefined;
   const pids = metrics.map((m) => m.pid).join(",");
-  const out = execFileSync("powershell", ["-NoProfile", "-Command", `Get-CimInstance Win32_PerfFormattedData_PerfProc_Process | Where-Object { @(${pids}) -contains $_.IDProcess } | ForEach-Object { '{0} {1}' -f $_.WorkingSetPrivate, $_.WorkingSet }`], { encoding: "utf8" });
-  const rows = out.trim().split(/\r?\n/).map((l) => l.trim().split(" ").map(Number)).filter((r) => r.length === 2 && r.every(Number.isFinite));
-  if (rows.length !== metrics.length) throw new Error(`Found memory for ${rows.length} of ${metrics.length} processes`);
-  // FOCUS_NOTES_BENCH_DETAIL=1 prints each process's memory, to find where it goes.
-  if (process.env.FOCUS_NOTES_BENCH_DETAIL) console.error("DETAIL", execFileSync("powershell", ["-NoProfile", "-Command", `Get-CimInstance Win32_PerfFormattedData_PerfProc_Process | Where-Object { @(${pids}) -contains $_.IDProcess } | ForEach-Object { '{0}:{1}:{2}' -f $_.IDProcess, [int]($_.WorkingSetPrivate/1MB), [int]($_.WorkingSet/1MB) }`], { encoding: "utf8" }).trim().split(/\r?\n/).join(" "), metrics.map((m) => `${m.pid}=${m.type}`).join(" "));
-  const priv = rows.reduce((n, [p]) => n + p, 0);
-  const shared = Math.max(...rows.map(([p, ws]) => ws - p));
-  return (priv + shared) / (1024 * 1024);
+  const out = execFileSync("powershell", ["-NoProfile", "-Command", `Get-CimInstance Win32_PerfFormattedData_PerfProc_Process | Where-Object { @(${pids}) -contains $_.IDProcess } | ForEach-Object { '{0} {1} {2}' -f $_.IDProcess, $_.WorkingSetPrivate, $_.WorkingSet }`], { encoding: "utf8" });
+  const byPid = new Map(out.trim().split(/\r?\n/).map((l) => l.trim().split(" ").map(Number)).filter((r) => r.length === 3 && r.every(Number.isFinite)).map(([pid, ...r]) => [pid, r]));
+  const missing = metrics.filter((m) => !byPid.has(m.pid));
+  if (missing.length) throw new Error(`Found no memory for ${missing.map((m) => `${m.type} ${m.pid}`).join(", ")}`);
+  const MB = 1024 * 1024;
+  const procs = metrics.map((m) => {
+    const [wsPrivate, ws] = byPid.get(m.pid);
+    // Private bytes (committed, not only resident) is Electron's own, printed to explain a reading.
+    return { pid: m.pid, type: m.serviceName ? `${m.type} ${m.serviceName}` : m.type, wsPrivate: wsPrivate / MB, shared: (ws - wsPrivate) / MB, privateBytes: (m.memory.privateBytes ?? NaN) / 1024 };
+  });
+  return { resident: procs.reduce((n, p) => n + p.wsPrivate, 0) + Math.max(...procs.map((p) => p.shared)), procs };
+}
+
+/** One sample on a line: the total, then each process's private and shared working set and private bytes, in MB. */
+const describe = (s) => `${Math.round(s.resident)} MB = ` + s.procs.map((p) => `${p.type} ${p.pid} ${Math.round(p.wsPrivate)}+${Math.round(p.shared)} (${Math.round(p.privateBytes)})`).join(", ");
+
+/**
+ * PRF-04's reading (D-120): from `settleMs` after the last use, a sample every `everyMs` until
+ * `settledMedian` finds a window of them that agrees, at most `maxMs`; the reading is that window's
+ * median. Prints every sample in CI or with FOCUS_NOTES_BENCH_DETAIL=1, so a reading can be explained.
+ */
+async function settledMemory(app, page, { settleMs = 20_000, everyMs = 2_000, maxMs = 120_000 } = {}) {
+  if (process.platform !== "win32") return undefined;
+  const detail = Boolean(process.env.CI || process.env.FOCUS_NOTES_BENCH_DETAIL);
+  const read = async () => memorySample(await app.evaluate(({ app: a }) => a.getAppMetrics()));
+  const first = await read();
+  if (detail) console.error(`PRF-04 detail: just after use ${describe(first)} (MB: private + shared working set (private bytes))`);
+  await page.waitForTimeout(settleMs);
+  const samples = [];
+  const start = Date.now();
+  for (;;) {
+    const s = await read();
+    samples.push(s.resident);
+    if (detail) console.error(`PRF-04 detail: +${Math.round((settleMs + Date.now() - start) / 1000)} s ${describe(s)}`);
+    const value = settledMedian(samples);
+    if (value !== undefined) return value;
+    if (Date.now() - start > maxMs) {
+      console.error(`PRF-04: memory didn't settle in ${maxMs / 1000} s; reading the median of the last samples`);
+      return median(samples.slice(-8));
+    }
+    await page.waitForTimeout(everyMs);
+  }
 }
 
 /** Sums one field of every process's metrics. */
@@ -137,12 +174,12 @@ export async function largeWorkspace({ root, mainEntry, notes = 10_000, reopenRu
       reopen.push(await open("Alpha"));
       await open("Beta");
     }
-    // Some writing, so memory is measured after use, not only after reading.
+    // Some writing, so memory is measured after use, not only after reading; then read once the
+    // app has settled (D-120).
     await page.keyboard.press(`${mod}+End`);
     await page.keyboard.press("Enter");
     await page.keyboard.type("A paragraph typed during the benchmark, then saved.", { delay: 10 });
-    await page.waitForTimeout(3000);
-    const memory = residentMB(await app.evaluate(({ app: a }) => a.getAppMetrics()));
+    const memory = await settledMemory(app, page);
     if (process.env.FOCUS_NOTES_BENCH_DETAIL) {
       const h = await cdp.send("Runtime.getHeapUsage");
       const m = await app.evaluate(() => process.memoryUsage());

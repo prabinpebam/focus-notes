@@ -33,6 +33,7 @@ jobs:
       # Fetch it here, once and visibly, so the download never happens inside a test's launch
       # (where a slow download timed out every journey).
       - name: Fetch Electron
+        id: electron
         timeout-minutes: 10
         working-directory: apps/desktop
         run: node -e "console.log(require('electron'))"
@@ -48,24 +49,27 @@ jobs:
         run: pnpm typecheck
       - name: Unit tests
         run: pnpm test
+      # The build, budgets and journeys run even after a failed check or unit test, so one failure
+      # never hides another (D-113), but only once Electron is fetched.
       - name: Build the desktop app
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' }}
         run: pnpm --filter @focus-notes/desktop run build
       # Budgets are enforced on one fixed runner type (Performance and quality); macOS runners'
       # start times swing too far between runs to gate on, so they only report.
       - name: Budgets (QLT-05)
-        if: runner.os == 'Windows'
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'Windows' }}
         run: pnpm bench --check
       - name: Budgets, report only
-        if: runner.os == 'macOS'
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'macOS' }}
         run: pnpm bench
       # Journeys always run, even when an earlier step such as the budgets fails, so one
       # failure never hides another (D-113).
       - name: Journey tests (Linux)
-        if: ${{ !cancelled() && runner.os == 'Linux' }}
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'Linux' }}
         timeout-minutes: 45
         run: xvfb-run -a pnpm test:e2e
       - name: Journey tests
-        if: ${{ !cancelled() && runner.os != 'Linux' }}
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os != 'Linux' }}
         timeout-minutes: 45
         run: pnpm test:e2e
       # The web app's journeys gate on Windows (D-112); Linux runs them too, without blocking.

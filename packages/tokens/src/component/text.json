@@ -3,8 +3,6 @@
     "default": { "$value": "{color.text}" }, "muted": { "$value": "{color.textMuted}" }, "accent": { "$value": "{color.accent}" },
     "danger": { "$value": "{color.danger}" }, "warning": { "$value": "{color.warning}" }, "success": { "$value": "{color.success}" } },
   "font": { "$type": "fontFamily", "$value": "{font.ui}" },
-  "controlInset": { "$type": "dimension", "$value": "{space.s}", "$description": "A text that leads a row of buttons is inset like their labels: a small button's inline padding (cmp.button.paddingInline.s)..." },
-  "controlBorder": { "$type": "dimension", "$value": "{border.hairline}", "$description": "...and its border (cmp.button.borderWidth), D-111." },
   "size": { "$type": "dimension",
     "caption": { "$value": "{font.uiCaption}" }, "secondary": { "$value": "{font.uiSecondary}" }, "body": { "$value": "{font.uiBody}" },
     "label": { "$value": "{font.uiBody}" }, "emphasis": { "$value": "{font.uiEmphasis}" }, "title": { "$value": "{font.uiTitle}" } },
