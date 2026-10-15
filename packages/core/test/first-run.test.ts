@@ -447,7 +447,7 @@ describe("FRE-06, FRE-08: Your notes", () => {
     expect(t.vm().more).toBe(true);
     await t.run("firstRun.setPrivate", { value: "notes" });
     await t.run("firstRun.create");
-    expect(t.vm().error).toMatch(/two different names/);
+    expect(t.vm().error).toBe("Use two different names.");
     // D-142: the field at fault says why on itself, and only that one.
     expect(t.vm()).toMatchObject({ privateError: "Choose another name.", instanceError: "" });
     await t.run("firstRun.setPrivate", { value: "notes-private" });

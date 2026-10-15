@@ -1331,5 +1331,7 @@
   "firstRun.git.name": "The helper app is Git, free and open source.",
   "firstRun.signIn.browser": "Sign in in the browser instead",
   "command.firstRun.signInBrowser": "Sign in in the browser instead",
-  "command.firstRun.copyCommand": "Copy the install command"
+  "command.firstRun.copyCommand": "Copy the install command",
+  "firstRun.workspace.error.same": "Use two different names.",
+  "firstRun.workspace.error.weak": "Too easy to guess: use four or more random words."
 }

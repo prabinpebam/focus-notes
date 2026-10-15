@@ -408,7 +408,7 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     const into = (t: string) => () => text(page, t).scrollIntoViewIfNeeded();
     await priv.fill("notes");
     await create.click();
-    const names = "Use two different names: letters, numbers, dots, dashes, or underscores.";
+    const names = "Use two different names.";
     await expect(text(page, names)).toBeVisible();
     await shot(l, "notes-create-error-names", into(names));
     await priv.fill("notes-private");

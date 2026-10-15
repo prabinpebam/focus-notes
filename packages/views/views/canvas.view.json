@@ -5441,7 +5441,13 @@
                                               "busy": {
                                                 "get": "vm.firstRun.busy"
                                               },
-                                              "size": "l"
+                                              "size": "l",
+                                              "disabled": {
+                                                "get": "vm.firstRun.noMatch"
+                                              },
+                                              "disabledReason": {
+                                                "t": "firstRun.workspace.noRepos"
+                                              }
                                             },
                                             "on": {
                                               "press": {

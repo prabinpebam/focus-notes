@@ -369,12 +369,14 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     if (state().busy || !bridge.setup) return;
     const fail = (error: string, field: FirstRunState["workspace"]["field"]) => (setWs({ error, field, more: true }), bump());
     if (!isRepoName(w.instance)) return fail("firstRun.workspace.error.names", "instance");
-    if (!isRepoName(w.private) || w.instance.toLowerCase() === w.private.toLowerCase()) return fail("firstRun.workspace.error.names", "private");
+    if (!isRepoName(w.private)) return fail("firstRun.workspace.error.names", "private");
+    // The same name twice says only that: the field shows which (D-142).
+    if (w.instance.toLowerCase() === w.private.toLowerCase()) return fail("firstRun.workspace.error.same", "private");
     let passphrase: string | undefined;
     if (w.passphrase || w.confirm) {
       const strength = await busy(() => bridge.setup!.passphraseStrength(w.passphrase));
       if (strength) setWs({ strength: strengthLevel(strength) });
-      if (!strength?.ok) return fail("setup.problem.weak", "passphrase");
+      if (!strength?.ok) return fail("firstRun.workspace.error.weak", "passphrase");
       if (w.confirm !== w.passphrase) return fail("firstRun.workspace.error.confirm", "confirm");
       passphrase = w.passphrase;
     }
@@ -471,7 +473,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         instance: { type: "string" }, private: { type: "string" }, publish: { type: "string" }, publishOptions: { type: "array", items: OPTION },
         passphrase: { type: "string" }, confirm: { type: "string" }, folder: { type: "string" }, folderText: { type: "string" },
         error: { type: "string" }, hasError: { type: "boolean" }, started: { type: "boolean" }, made: { type: "boolean" }, progressText: { type: "string" },
-        query: { type: "string" }, activeId: { type: "string" }, reposSummary: { type: "string" },
+        query: { type: "string" }, activeId: { type: "string" }, noMatch: { type: "boolean" }, reposSummary: { type: "string" },
         repos: { type: "array", items: ITEM },
         theme: { type: "string" }, themeOptions: { type: "array", items: OPTION },
         canImport: { type: "boolean" }, searchHint: { type: "string" },
@@ -552,7 +554,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const problemIcon = a?.problem === "offline" ? "cloudOff" : a?.problem === "expired" ? "history" : a?.problem === "noHelper" ? "lock" : "error";
       // The field at fault says why on itself (D-142).
       // A passphrase too easy to guess says so with its meter, not more words (D-142).
-      const fieldError = (name: string) => (w.error && w.field === name && w.error !== "setup.problem.weak" ? catalog.format(`firstRun.workspace.field.${w.error === "firstRun.workspace.error.confirm" ? "confirm" : "names"}`) : "");
+      const fieldError = (name: string) => (w.error && w.field === name && w.error !== "firstRun.workspace.error.weak" ? catalog.format(`firstRun.workspace.field.${w.error === "firstRun.workspace.error.confirm" ? "confirm" : "names"}`) : "");
       const invalid = (name: string) => Boolean(w.error && w.field === name);
       return {
         // Welcome is the hero, centred; the steps after it read from the start (D-126).
@@ -593,7 +595,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         error: w.error && catalog.has(w.error) ? catalog.format(w.error) : "", hasError: Boolean(w.error),
         started, made, progressText: made ? catalog.format("firstRun.workspace.made") : failedStep ? catalog.format(`setup.problem.${failedStep.problem ?? "failed"}`) : catalog.format("firstRun.notes.creating"),
         query: w.query, activeId: w.activeId,
-        reposSummary: !w.reposLoaded ? "" : list.length ? catalog.format("firstRun.workspace.repos", { count: list.length }) : catalog.format("firstRun.workspace.noRepos"),
+        noMatch: w.reposLoaded && !list.length, reposSummary: !w.reposLoaded ? "" : list.length ? catalog.format("firstRun.workspace.repos", { count: list.length }) : catalog.format("firstRun.workspace.noRepos"),
         repos: list.map((r) => ({
           id: `${r.owner}/${r.name}`, label: `${r.owner}/${r.name}`, icon: r.private ? "lock" : "document",
           description: catalog.format(r.instance ? "firstRun.workspace.repo.instance" : r.private ? "firstRun.workspace.repo.private" : "firstRun.workspace.repo.public"),
