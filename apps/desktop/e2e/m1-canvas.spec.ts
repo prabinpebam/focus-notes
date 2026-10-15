@@ -321,3 +321,51 @@ test("D-121: in software compositing the note's edges fade in the canvas's color
   }
   await quit(l);
 });
+
+test("D-130: Ctrl and the wheel change the text size one step a notch, as Mod+= and Mod+- do, and Mod+0 resets", async () => {
+  const dirs = tempDirs();
+  const l = await launch(dirs);
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  const size = () => editor.evaluate((el) => getComputedStyle(el).fontSize);
+  const zoom = () => l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().map((w) => w.webContents.getZoomFactor()));
+  const width = await page.evaluate(() => window.innerWidth);
+  const box = (await editor.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + 20);
+  const wheel = async (dy: number, times = 1) => {
+    await page.keyboard.down("Control");
+    for (let i = 0; i < times; i++) await page.mouse.wheel(0, dy);
+    await page.keyboard.up("Control");
+  };
+  expect(await size()).toBe("16px");
+
+  // One notch, one step: up is larger, down is smaller, along the same steps as the keys.
+  await wheel(-100);
+  await expect.poll(size).toBe("17px");
+  await wheel(-100, 2);
+  await expect.poll(size).toBe("20px");
+  await wheel(100);
+  await expect.poll(size).toBe("18px");
+  // A fast flick is still one step; a pinch or a fine wheel's small deltas add up to one.
+  await wheel(-600);
+  await expect.poll(size).toBe("20px");
+  await wheel(-10, 3);
+  await page.waitForTimeout(150);
+  expect(await size()).toBe("20px");
+  await wheel(-10, 3);
+  await expect.poll(size).toBe("22px");
+  // The page itself never zooms: the text size is the only zoom.
+  expect(await zoom()).toEqual([1]);
+  expect(await page.evaluate(() => [window.innerWidth, window.visualViewport?.scale ?? 1])).toEqual([width, 1]);
+
+  // It's kept, as the keys' size is, and Mod+0 resets it.
+  await quit(l);
+  const again = await launch(dirs);
+  const note = again.page.getByRole("textbox", { name: "Note" });
+  await expect(note).toBeFocused();
+  await expect.poll(() => note.evaluate((el) => getComputedStyle(el).fontSize)).toBe("22px");
+  await withMod(again.page, "Digit0");
+  await expect.poll(() => note.evaluate((el) => getComputedStyle(el).fontSize)).toBe("16px");
+  await quit(again);
+});
