@@ -11,6 +11,7 @@
  * (Desktop and Git → Changes shown before they're saved). Paths are the shell's own (`readNote`).
  */
 import { clipName, compareNames, fileStemForTitle, hasForbiddenChars, MAX_NAME_CHARS, RESERVED_WINDOWS } from "./text.ts";
+import { parseAtx, stripLinks, stripUnderscores } from "./scan.ts";
 
 export type RootId = "local" | "public" | "private";
 export interface NoteNode {
@@ -126,7 +127,7 @@ export function followsTitle(fileName: string, title: string): boolean {
 }
 
 const inline = (s: string) =>
-  s.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/[*`]|~~/g, "").replace(/(^|\s)_+|_+(?=\s|$)/g, "$1").replace(/\s+/g, " ").trim();
+  stripUnderscores(stripLinks(s).replace(/[*`]|~~/g, "")).replace(/\s+/g, " ").trim();
 
 /** A note's title: its first H1, outside front matter and code (content-model.md → A note file). */
 export function titleOfMarkdown(markdown: string): string | undefined {
@@ -174,9 +175,9 @@ function findTitle(lines: readonly string[]): { line: number; setext: boolean; t
       fence = f;
       continue;
     }
-    const atx = /^ {0,3}#(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/.exec(line);
-    if (atx) {
-      const t = inline(atx[1] ?? "");
+    const atx = parseAtx(line);
+    if (atx?.level === 1) {
+      const t = inline(atx.text ?? "");
       if (t) return { line: i, setext: false, text: t };
       continue;
     }

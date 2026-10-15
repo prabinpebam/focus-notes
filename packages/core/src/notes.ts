@@ -6,6 +6,7 @@
  */
 
 import { RESERVED_WINDOWS } from "./text.ts";
+import { trimWhere } from "./scan.ts";
 
 export type NoteSource = "local" | "public" | "private";
 const PREFIX = /^(public|private):/;
@@ -49,7 +50,7 @@ export function safeLocalPath(path: string): string {
  * note shows in Files and nothing lands outside the root.
  */
 export function safeWorkspacePath(path: string): string {
-  const parts = safeLocalPath(path).split("/").map((s) => s.replace(/^[.\s]+|[.\s]+$/g, "")).filter(Boolean);
+  const parts = safeLocalPath(path).split("/").map((s) => trimWhere(s, (c) => c === "." || /\s/.test(c))).filter(Boolean);
   if (!parts.length || !/\.(md|markdown)$/i.test(parts.at(-1)!)) parts.push("Untitled.md");
   return parts.map((s) => {
     const dot = s.indexOf(".");

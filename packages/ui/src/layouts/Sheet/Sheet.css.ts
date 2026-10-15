@@ -62,7 +62,8 @@ export const width = styleVariants({
 export const main = style({
   display: "flex",
   flexDirection: "column",
-  gap: t.gap,
+  // The header and the body are separate groups (D-111).
+  gap: t.groupGap,
   flexGrow: 1,
   minHeight: 0,
   selectors: {
