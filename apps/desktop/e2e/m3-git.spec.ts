@@ -2,8 +2,8 @@
  * M3 journeys for save and sync with Git (WP-3.3, EDT-11, D-132, D-07): the workspace is a clone
  * of a local bare remote with `private/` as a submodule, so nothing touches the network. Save to
  * cloud (Mod+Shift+S, and Mod+S) commits and pushes, private first and then the pointer; quitting
- * commits and pushes; 60 s with no typing does too (shortened here); a push that fails shows the
- * problem. The bottom-left pill's icon shows each state, and focus never
+ * commits and pushes; a pause backs up only once enough changed (D-133, thresholds shortened here);
+ * a push that fails shows the problem. The bottom-left pill's icon shows each state, and focus never
  * leaves the note.
  */
 import { test, expect } from "./fixtures.ts";
@@ -92,6 +92,25 @@ test("EDT-11: typing shows saved here at once, then not backed up yet; Mod+Shift
   await quit(l);
 });
 
+test("EDT-11: small edits under the threshold aren't backed up after the pause; a large edit backs up on its own (D-133)", async () => {
+  const { dirs, privateRemote } = instance();
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "1500", FOCUS_NOTES_BACKUP_SHORT_MS: "1000", FOCUS_NOTES_BACKUP_BIG_CHARS: "60" });
+  const { page } = l;
+  await typeAtEnd(page, " Small.");
+  await saved(dirs.docs, "Small.");
+  // Well past the pause: nothing committed, and the icon says it isn't backed up yet.
+  await page.waitForTimeout(4_000);
+  expect(commits(join(dirs.docs, "private"), "HEAD")).toBe(1);
+  expect(commits(privateRemote)).toBe(1);
+  expect(await stateOf(page)).toBe("pending");
+  // Enough change backs up after the short pause, with no key pressed.
+  await page.keyboard.type(" And now a much longer passage that crosses the large-edit line.");
+  await expect.poll(() => remoteText(privateRemote), { timeout: 15_000 }).toContain("crosses the large-edit line.");
+  await expect.poll(() => stateOf(page), PROMPTLY).toBe("synced");
+  await noteFocused(page);
+  await quit(l);
+});
+
 test("EDT-11: quitting commits and pushes", async () => {
   const { dirs, privateRemote } = instance();
   const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
@@ -103,10 +122,10 @@ test("EDT-11: quitting commits and pushes", async () => {
   await expect.poll(() => remoteText(privateRemote), { timeout: 15_000 }).toBe("# Welcome\n\nFirst line. Written before quitting.");
 });
 
-test("EDT-11: a pause in typing commits and pushes on its own (60 s, shortened for the test); the icon follows", async () => {
+test("EDT-11: a pause in typing commits and pushes on its own once enough changed (60 s and 200 characters, shortened); the icon follows", async () => {
   const { dirs, privateRemote } = instance();
   // Well above the save's latency on a slow runner, so "written but not committed" is a real window.
-  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "5000" });
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "5000", FOCUS_NOTES_BACKUP_MIN_CHARS: "10" });
   await typeAtEnd(l.page, " Then a pause.");
   // Written to disk, but not committed yet: neither in the workspace nor on the remote.
   await saved(dirs.docs, "Then a pause.");
