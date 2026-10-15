@@ -56,15 +56,20 @@ export const edge = style({
   visibility: "hidden",
   "@media": { "(forced-colors: active)": { display: "none" } },
 });
-// The top edge first hides the trigger's place entirely, `triggerClear` (80 px) in the canvas's
-// color, then fades over `scrollFade` below it, so scrolled text never meets the trigger (D-111).
+// The top edge (D-119, amended at the owner's request): one progressive blur and fade from the
+// window's very edge down `triggerClear + scrollFade` (130 px), strongest at the edge and crisp at
+// its inner end, with no solid band. Over the trigger's place the canvas color stays at least
+// `triggerVeil` (85%) opaque and the blur heavy, so text under the dot is unreadable and quiet.
 const topEdge = `calc(${t.triggerClear} + ${t.scrollFade})`;
 export const edgeSide = styleVariants({
   top: { top: 0, height: topEdge, selectors: { "[data-fade-top] ~ &": { visibility: "visible" } } },
   bottom: { bottom: 0, selectors: { "[data-fade-bottom] ~ &": { visibility: "visible" } } },
 });
-/** A depth into the fade as a length: 0 at its outer edge (the window's, or the top's solid part), 1 at its inner edge. */
-const at = (f: number) => `calc(${t.scrollFade} * ${Math.round(f * 10000) / 10000})`;
+const round = (f: number) => Math.round(f * 10000) / 10000;
+/** A depth into the bottom fade as a length: 0 at the window's edge, 1 at its inner edge. */
+const at = (f: number) => `calc(${t.scrollFade} * ${round(f)})`;
+/** A depth into the top edge as a length: 0 at the window's edge, 1 at its inner end. */
+const topAt = (f: number) => `calc(${topEdge} * ${round(f)})`;
 /**
  * Layer k (0 at the window's edge): opaque over its slice of the band, from k-1 to k eighths in
  * (for 8 layers), ramping in and out over one slice on either side, so neighbors overlap and no
@@ -74,25 +79,59 @@ const layerMask = (inward: "bottom" | "top", k: number) => {
   const n = EDGE_BANDS;
   return `linear-gradient(to ${inward}, transparent ${at((k - 2) / n)}, black ${at((k - 1) / n)}, black ${at(k / n)}, transparent ${at((k + 1) / n)})`;
 };
-const layer = (inward: "bottom" | "top", k: number) =>
-  style({
-    position: "absolute",
-    // The top edge's blur covers only its fade, below the solid part: a backdrop filter costs its
-    // whole box every frame, and under the solid canvas color a blur never shows. Over all 130 px
-    // at 400% zoom, a software-drawn window fell to a few frames a second (A11Y-01, D-119).
-    inset: inward === "bottom" ? `${t.triggerClear} 0 0 0` : 0,
-    pointerEvents: "none",
-    // Unprefixed only: with the -webkit- one as well, the build keeps just that, which Chromium ignores.
-    backdropFilter: `blur(calc(${t.edgeBlur} / ${2 ** k}))`,
-    maskImage: layerMask(inward, k),
-    // With reduced transparency, or in software compositing, where eight backdrop filters drop the
-    // window to a few frames a second (D-121): the canvas-colored fade alone.
-    selectors: { ':root[data-transparency="reduced"] &, :root[data-compositing="software"] &': { display: "none" } },
-  } as Parameters<typeof style>[0]);
-export const blurTop = Array.from({ length: EDGE_BANDS }, (_, k) => layer("bottom", k));
-export const blurBottom = Array.from({ length: EDGE_BANDS }, (_, k) => layer("top", k));
+const layerBase = (k: number) => ({
+  position: "absolute",
+  pointerEvents: "none",
+  // Unprefixed only: with the -webkit- one as well, the build keeps just that, which Chromium ignores.
+  backdropFilter: `blur(calc(${t.edgeBlur} / ${2 ** k}))`,
+  // With reduced transparency, or in software compositing, where eight backdrop filters drop the
+  // window to a few frames a second (D-121): the canvas-colored fade alone.
+  selectors: { ':root[data-transparency="reduced"] &, :root[data-compositing="software"] &': { display: "none" } },
+});
+const layer = (k: number) => style({ ...layerBase(k), inset: 0, maskImage: layerMask("top", k) } as Parameters<typeof style>[0]);
+/**
+ * The top edge's slices are eased out: the strong blurs hold over the trigger's place and the soft
+ * ones gather toward the crisp end (layer k's slice ends at `topSlice(k / n)` of the edge).
+ */
+const topSlice = (x: number) => 1 - (1 - Math.min(x, 1)) ** 2;
+const topLayer = (k: number) => {
+  const n = EDGE_BANDS;
+  const b = (j: number) => topSlice(j / n);
+  // Each layer's box is only where its mask shows: a backdrop filter costs its whole box every
+  // frame, and over all 130 px eight of them would cost more than the old edge did (PRF-01, D-121).
+  const start = Math.max(0, b(k - 2));
+  const end = b(k + 1);
+  const mask = `linear-gradient(to bottom, transparent ${topAt(b(k - 2) - start)}, black ${topAt(b(k - 1) - start)}, black ${topAt(b(k) - start)}, transparent ${topAt(end - start)})`;
+  return style({ ...layerBase(k), insetInline: 0, top: topAt(start), height: topAt(end - start), maskImage: mask } as Parameters<typeof style>[0]);
+};
+export const blurTop = Array.from({ length: EDGE_BANDS }, (_, k) => topLayer(k));
+export const blurBottom = Array.from({ length: EDGE_BANDS }, (_, k) => layer(k));
+/**
+ * The top's veil, eased: the canvas color's opacity at depth x (0 at the window's edge, 1 at the
+ * inner end) is `top · (1 − x^p)²`, `top` at the edge, `triggerVeil` at the trigger place's bottom
+ * (p solves for it), and leveling off to none at the inner end, so no seam shows at either end.
+ * With the blur, `top` is `veil`, so the most-blurred text still shows faintly up to the edge;
+ * without it (reduced transparency, software compositing), the same curve from fully opaque, as
+ * unblurred text under the dot would still read.
+ */
+const { veil, triggerVeil, clear, range } = scrollEdge;
+const VEIL_STOPS = 16;
+const veilGradient = (top: number) => {
+  const ease = Math.log(1 - Math.sqrt(triggerVeil / top)) / Math.log(clear / (clear + range));
+  const stops = Array.from({ length: VEIL_STOPS + 1 }, (_, i) => {
+    const x = i / VEIL_STOPS;
+    return `color-mix(in srgb, ${t.background} ${round(top * (1 - x ** ease) ** 2 * 100)}%, transparent) ${topAt(x)}`;
+  });
+  return `linear-gradient(to bottom, ${stops.join(", ")})`;
+};
 export const fade = styleVariants({
-  top: { position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: `linear-gradient(to bottom, ${t.background} ${t.triggerClear}, transparent)` },
+  top: {
+    position: "absolute",
+    inset: 0,
+    pointerEvents: "none",
+    backgroundImage: veilGradient(veil),
+    selectors: { ':root[data-transparency="reduced"] &, :root[data-compositing="software"] &': { backgroundImage: veilGradient(1) } },
+  },
   bottom: { position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: `linear-gradient(to top, ${t.background}, transparent)` },
 });
 
