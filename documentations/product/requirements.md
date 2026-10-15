@@ -192,14 +192,14 @@ Owner: *"We need a sign in and setup flow for the electron app… device sign in
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| FRE-01 | A guided first run (Welcome, Git, Sign in, Identity, Workspace, Make it yours, Ready) that can be done entirely by keyboard and resumed after quitting. | P0 |
+| FRE-01 | A guided first run of four screens (Welcome, Connect, Your notes, Ready) that can be done entirely by keyboard and resumed after quitting, in words anyone understands: the main path never says repository, Git, commit, token, credential, CLI, instance, or Pages, and Git is checked silently, showing only when it's missing or too old. *Just use this computer for now* skips the account (D-124). | P0 |
 | FRE-02 | Sign-in goes through Git's own sign-in helpers that the user owns, Git Credential Manager or GitHub CLI (both with a device code option), or a fine-grained token the user creates from a pre-filled GitHub link. There's no OAuth app and no registration (D-21). Declined, expired, and offline states recover. | P0 |
 | FRE-03 | The credential lives only in Git's credential helper, so commits and pushes work in the app and from the user's terminal with one sign-in. The app keeps no copy of its own and holds API tokens in memory only. | P0 |
 | FRE-04 | An existing working Git credential or GitHub CLI session is found and offered, skipping the device code. | P0 |
-| FRE-05 | Git identity (name and email) is checked and, if missing, filled in from GitHub with the private noreply address. | P0 |
-| FRE-06 | Workspace: create a new one (FRE-08), clone an existing one from GitHub (with the private submodule when the account can reach it), or open a local clone. | P0 |
+| FRE-05 | The name and email on the notes' commits come from the GitHub account, with its private noreply address, set for the notes workspace only and without a step; Git's global settings are never changed (D-124). | P0 |
+| FRE-06 | Your notes: the Focus Notes workspaces the account already has are offered first (*We found your notes*, each with *Open*), or a new one is created (FRE-08); under *More options*, clone any repository from GitHub (with the private submodule when the account can reach it) or open a local clone. Signed in, Settings → Workspace opens another workspace from GitHub the same way (D-124). | P0 |
 | FRE-07 | Settings → Account: switch account, sign out (optionally removing Git's saved credential), and run setup again. | P0 |
-| FRE-08 | *Set up my instance* (desktop): in the user's own GitHub account, make the repository from the Focus Notes template, the private repository, the submodule link, the read-only deploy key and Actions secret for sealing, the vault passphrase (only its derived key is stored, in `private/access.json`), and GitHub Pages, each step retryable on its own (D-84, D-90). | P0 |
+| FRE-08 | *Set up my instance* (desktop): in the user's own GitHub account, make the repository from the Focus Notes template, the private repository, the submodule link, the read-only deploy key and Actions secret for sealing, the vault passphrase when one is chosen under *More options* (only its derived key is stored, in `private/access.json`), and GitHub Pages, each step retryable on its own, with one button and sensible defaults (D-84, D-90, D-124). | P0 |
 | FRE-09 | Web first run: the app knows its instance from its own Pages address. A first visit opens the newest public note, if there is one, or a welcome note kept in this browser, which says that notes written here stay in this browser and that the desktop app saves to GitHub. There's nothing to sign in to (D-90). | P0 |
 | FRE-10 | Bring browser notes to the desktop: the first run, and *Import notes* later, add an exported bundle to the instance, private unless the user chooses public, as ordinary commits. The browser keeps its copies until the user deletes them (D-90). | P0 |
 
@@ -291,7 +291,7 @@ Cross-cutting requirements serving CP-SAFE-01 and CP-OWN-01 across every capabil
 | SEC-05 | Instances' workflows pin every action by commit SHA and verify the web app bundle by SHA-256 and attestation before deploying it. Updates arrive only as pull requests. | P0 |
 | SEC-06 | Every Pages deploy runs the leak check and fails if private text or file names appear in the output. | P0 |
 | SEC-07 | `SECURITY.md` and GitHub private vulnerability reporting, with acknowledgement within 7 days. Documented responses for leaked share secrets, keys, and tokens. | P0 |
-| SEC-08 | The vault passphrase is never stored or sent. Its key is derived with PBKDF2-SHA256 at 600,000 iterations, and the browser accepts no other parameters. Setup requires a strong passphrase and says that a forgotten one can't be recovered (the notes stay in the private repository). *Remember on this browser* warns that every site on the same `github.io` address shares the browser's storage, and recommends a custom domain (D-90). | P0 |
+| SEC-08 | The vault passphrase is never stored or sent. Its key is derived with PBKDF2-SHA256 at 600,000 iterations, and the browser accepts no other parameters. Setting it requires a strong passphrase and says that a forgotten one can't be recovered (the notes stay in the private repository). *Remember on this browser* warns that every site on the same `github.io` address shares the browser's storage, and recommends a custom domain (D-90). | P0 |
 
 ## Privacy (PRV)
 

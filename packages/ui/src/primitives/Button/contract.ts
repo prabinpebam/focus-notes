@@ -14,6 +14,7 @@ export const contract = defineContract({
     iconPosition: { kind: "enum", values: ["start", "end"], default: "start" },
     toggle: { kind: "boolean", default: false },
     pressed: { kind: "boolean", default: false },
+    expanded: { kind: "boolean", description: "A disclosure button (More options, Having trouble?): whether what it shows is open (aria-expanded)." },
     busy: { kind: "boolean", default: false },
     disabled: { kind: "boolean", default: false },
     disabledReason: { kind: "message", requiredWhen: "disabled" },

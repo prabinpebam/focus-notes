@@ -304,7 +304,7 @@ async function startFirstRun(mode: "light" | "dark", theme: string): Promise<Lau
   return l;
 }
 
-/** The first run's card by keyboard, through the steps a new install shows offline: Welcome, Git, and Sign in. */
+/** The first run's card by keyboard, through the steps a new install shows offline: Welcome, and Connect with Having trouble? open (D-124). */
 async function walkFirstRun(page: Page, check: (step: string) => Promise<void>) {
   const card = page.getByRole("main", { name: "Set up Focus Notes" });
   await settled(page);
@@ -312,16 +312,18 @@ async function walkFirstRun(page: Page, check: (step: string) => Promise<void>) 
   // The checks Tab away and back: the step's button has focus again before Enter.
   await expect(card.getByRole("button", { name: "Get started" })).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(card.getByRole("heading", { name: "Git" })).toBeVisible();
-  await expect(card.getByRole("button", { name: "Continue" })).toBeFocused();
+  await expect(card.getByRole("heading", { name: "Connect your GitHub account" })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Connect to GitHub" })).toBeFocused({ timeout: 15_000 });
   await settled(page);
-  await check("first run: Git");
-  await expect(card.getByRole("button", { name: "Continue" })).toBeFocused();
+  await check("first run: Connect");
+  // Having trouble? by keyboard: its other ways to connect.
+  const trouble = card.getByRole("button", { name: "Having trouble?" });
+  for (let i = 0; i < 10 && !(await trouble.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
+  await expect(trouble).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(card.getByRole("heading", { name: "Sign in to GitHub" })).toBeVisible();
-  await expect(card.getByRole("button", { name: "Sign in with GitHub" })).toBeFocused();
+  await expect(card.getByRole("button", { name: "Use a token instead" })).toBeVisible();
   await settled(page);
-  await check("first run: Sign in");
+  await check("first run: Connect, Having trouble? open");
 }
 
 for (const [mode, theme] of [["light", "paper"], ["dark", "ink"], ["light", "contrast-light"], ["dark", "contrast-dark"]] as const) {

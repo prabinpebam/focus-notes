@@ -21,6 +21,8 @@ export interface FakeRepo {
   actionsKey: nacl.BoxKeyPair;
   pages?: { build_type: "workflow" | "legacy"; html_url: string };
   canPush: boolean;
+  /** When it was last pushed to (ISO 8601), if known. */
+  pushedAt?: string;
 }
 
 export interface Call {
@@ -182,5 +184,6 @@ const json = (status: number, body: unknown) => new Response(JSON.stringify(body
 const toRepo = (r: FakeRepo) => ({
   name: r.name, owner: { login: r.owner }, default_branch: "main", private: r.private, is_template: r.isTemplate,
   permissions: { push: r.canPush, admin: r.canPush },
+  ...(r.pushedAt ? { pushed_at: r.pushedAt } : {}),
   ...(r.template ? { template_repository: { full_name: r.template } } : {}),
 });

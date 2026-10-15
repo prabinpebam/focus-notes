@@ -3941,10 +3941,25 @@
                                 "type": "Inline",
                                 "props": {
                                   "gap": "s",
-                                  "justify": "end",
+                                  "justify": "between",
                                   "wrap": true
                                 },
                                 "children": [
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "t": "firstRun.welcome.local"
+                                      },
+                                      "variant": "subtle",
+                                      "bleed": true
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "firstRun.local"
+                                      }
+                                    }
+                                  },
                                   {
                                     "type": "Button",
                                     "props": {
@@ -3964,7 +3979,7 @@
                               }
                             ]
                           },
-                          "git": {
+                          "connect": {
                             "type": "Stack",
                             "props": {
                               "gap": "m"
@@ -3974,207 +3989,7 @@
                                 "type": "Text",
                                 "props": {
                                   "value": {
-                                    "t": "firstRun.git.why"
-                                  },
-                                  "tone": "muted"
-                                }
-                              },
-                              {
-                                "switch": {
-                                  "get": "vm.firstRun.gitState"
-                                },
-                                "cases": {
-                                  "checking": {
-                                    "type": "Inline",
-                                    "props": {
-                                      "gap": "s",
-                                      "justify": "start",
-                                      "wrap": true
-                                    },
-                                    "children": [
-                                      {
-                                        "type": "Spinner",
-                                        "props": {
-                                          "label": {
-                                            "t": "firstRun.git.checking"
-                                          },
-                                          "size": "s"
-                                        }
-                                      },
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "value": {
-                                            "t": "firstRun.git.checking"
-                                          },
-                                          "tone": "muted"
-                                        }
-                                      }
-                                    ]
-                                  },
-                                  "ok": {
-                                    "type": "Text",
-                                    "props": {
-                                      "value": {
-                                        "get": "vm.firstRun.gitText"
-                                      },
-                                      "tone": "success",
-                                      "announce": true
-                                    }
-                                  },
-                                  "old": {
-                                    "type": "Stack",
-                                    "props": {
-                                      "gap": "s"
-                                    },
-                                    "children": [
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "value": {
-                                            "get": "vm.firstRun.gitText"
-                                          },
-                                          "tone": "warning",
-                                          "announce": true
-                                        }
-                                      },
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "value": {
-                                            "get": "vm.firstRun.installText"
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "value": {
-                                            "get": "vm.firstRun.installCommand"
-                                          },
-                                          "role": "emphasis"
-                                        }
-                                      },
-                                      {
-                                        "type": "Inline",
-                                        "props": {
-                                          "gap": "s",
-                                          "justify": "start",
-                                          "wrap": true
-                                        },
-                                        "children": [
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.git.download"
-                                              }
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.openPage",
-                                                "args": {
-                                                  "page": "git"
-                                                }
-                                              }
-                                            }
-                                          },
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.checkAgain"
-                                              },
-                                              "busy": {
-                                                "get": "vm.firstRun.busy"
-                                              }
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.checkGit"
-                                              }
-                                            }
-                                          }
-                                        ]
-                                      }
-                                    ]
-                                  },
-                                  "missing": {
-                                    "type": "Stack",
-                                    "props": {
-                                      "gap": "s"
-                                    },
-                                    "children": [
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "value": {
-                                            "t": "firstRun.git.missing"
-                                          },
-                                          "tone": "warning",
-                                          "announce": true
-                                        }
-                                      },
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "value": {
-                                            "get": "vm.firstRun.installText"
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "value": {
-                                            "get": "vm.firstRun.installCommand"
-                                          },
-                                          "role": "emphasis"
-                                        }
-                                      },
-                                      {
-                                        "type": "Inline",
-                                        "props": {
-                                          "gap": "s",
-                                          "justify": "start",
-                                          "wrap": true
-                                        },
-                                        "children": [
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.git.download"
-                                              }
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.openPage",
-                                                "args": {
-                                                  "page": "git"
-                                                }
-                                              }
-                                            }
-                                          },
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.checkAgain"
-                                              },
-                                              "busy": {
-                                                "get": "vm.firstRun.busy"
-                                              }
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.checkGit"
-                                              }
-                                            }
-                                          }
-                                        ]
-                                      }
-                                    ]
+                                    "t": "firstRun.connect.why"
                                   }
                                 }
                               },
@@ -4182,7 +3997,7 @@
                                 "type": "Inline",
                                 "props": {
                                   "gap": "s",
-                                  "justify": "between",
+                                  "justify": "start",
                                   "wrap": true
                                 },
                                 "children": [
@@ -4190,67 +4005,28 @@
                                     "type": "Button",
                                     "props": {
                                       "label": {
-                                        "t": "firstRun.back"
+                                        "t": "firstRun.connect.signup"
                                       },
                                       "variant": "subtle",
                                       "bleed": true
                                     },
                                     "on": {
                                       "press": {
-                                        "run": "firstRun.back"
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "type": "Button",
-                                    "props": {
-                                      "label": {
-                                        "t": "firstRun.continue"
-                                      },
-                                      "variant": "primary",
-                                      "autoFocus": true,
-                                      "busy": {
-                                        "get": "vm.firstRun.busy"
-                                      },
-                                      "disabled": {
-                                        "expr": {
-                                          "!": {
-                                            "get": "vm.firstRun.canContinue"
-                                          }
+                                        "run": "firstRun.openPage",
+                                        "args": {
+                                          "page": "signup"
                                         }
-                                      },
-                                      "disabledReason": {
-                                        "t": "firstRun.git.checking"
-                                      }
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "firstRun.next"
                                       }
                                     }
                                   }
-                                ]
-                              }
-                            ]
-                          },
-                          "signIn": {
-                            "type": "Stack",
-                            "props": {
-                              "gap": "m"
-                            },
-                            "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "t": "firstRun.signIn.why"
-                                  },
-                                  "tone": "muted"
+                                ],
+                                "when": {
+                                  "get": "vm.firstRun.isChoose"
                                 }
                               },
                               {
                                 "switch": {
-                                  "get": "vm.firstRun.signIn"
+                                  "get": "vm.firstRun.connect"
                                 },
                                 "cases": {
                                   "checking": {
@@ -4265,7 +4041,7 @@
                                         "type": "Spinner",
                                         "props": {
                                           "label": {
-                                            "t": "firstRun.signIn.checking"
+                                            "t": "firstRun.connect.checking"
                                           },
                                           "size": "s"
                                         }
@@ -4274,10 +4050,93 @@
                                         "type": "Text",
                                         "props": {
                                           "value": {
-                                            "t": "firstRun.signIn.checking"
+                                            "t": "firstRun.connect.checking"
                                           },
                                           "tone": "muted"
                                         }
+                                      }
+                                    ]
+                                  },
+                                  "git": {
+                                    "type": "Stack",
+                                    "props": {
+                                      "gap": "m"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "value": {
+                                            "t": "firstRun.connect.helper"
+                                          },
+                                          "announce": true
+                                        }
+                                      },
+                                      {
+                                        "type": "Inline",
+                                        "props": {
+                                          "gap": "s",
+                                          "justify": "between",
+                                          "wrap": true
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.back"
+                                              },
+                                              "variant": "subtle",
+                                              "bleed": true
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.back"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Inline",
+                                            "props": {
+                                              "gap": "s",
+                                              "justify": "end",
+                                              "wrap": true
+                                            },
+                                            "children": [
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.checkAgain"
+                                                  }
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.checkGit"
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.connect.install"
+                                                  },
+                                                  "variant": "primary",
+                                                  "autoFocus": true
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.openPage",
+                                                    "args": {
+                                                      "page": "git"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        ]
                                       }
                                     ]
                                   },
@@ -4291,15 +4150,7 @@
                                         "type": "Text",
                                         "props": {
                                           "value": {
-                                            "t": "firstRun.signIn.found",
-                                            "args": {
-                                              "login": {
-                                                "get": "vm.firstRun.login"
-                                              },
-                                              "name": {
-                                                "get": "vm.firstRun.accountName"
-                                              }
-                                            }
+                                            "get": "vm.firstRun.foundText"
                                           },
                                           "announce": true
                                         }
@@ -4316,13 +4167,14 @@
                                             "type": "Button",
                                             "props": {
                                               "label": {
-                                                "t": "command.firstRun.otherAccount"
+                                                "t": "firstRun.back"
                                               },
-                                              "variant": "subtle"
+                                              "variant": "subtle",
+                                              "bleed": true
                                             },
                                             "on": {
                                               "press": {
-                                                "run": "firstRun.otherAccount"
+                                                "run": "firstRun.back"
                                               }
                                             }
                                           },
@@ -4330,84 +4182,7 @@
                                             "type": "Button",
                                             "props": {
                                               "label": {
-                                                "t": "firstRun.signIn.continueAs",
-                                                "args": {
-                                                  "login": {
-                                                    "get": "vm.firstRun.login"
-                                                  }
-                                                }
-                                              },
-                                              "variant": "primary",
-                                              "autoFocus": true,
-                                              "busy": {
-                                                "get": "vm.firstRun.busy"
-                                              }
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.useExisting"
-                                              }
-                                            }
-                                          }
-                                        ]
-                                      }
-                                    ]
-                                  },
-                                  "cli": {
-                                    "type": "Stack",
-                                    "props": {
-                                      "gap": "m"
-                                    },
-                                    "children": [
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "value": {
-                                            "t": "firstRun.signIn.cli",
-                                            "args": {
-                                              "login": {
-                                                "get": "vm.firstRun.login"
-                                              },
-                                              "name": {
-                                                "get": "vm.firstRun.accountName"
-                                              }
-                                            }
-                                          },
-                                          "announce": true
-                                        }
-                                      },
-                                      {
-                                        "type": "Inline",
-                                        "props": {
-                                          "gap": "s",
-                                          "justify": "between",
-                                          "wrap": true
-                                        },
-                                        "children": [
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "command.firstRun.otherAccount"
-                                              },
-                                              "variant": "subtle"
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.otherAccount"
-                                              }
-                                            }
-                                          },
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.signIn.continueAs",
-                                                "args": {
-                                                  "login": {
-                                                    "get": "vm.firstRun.login"
-                                                  }
-                                                }
+                                                "get": "vm.firstRun.continueAs"
                                               },
                                               "variant": "primary",
                                               "autoFocus": true,
@@ -4448,65 +4223,7 @@
                                         "type": "Text",
                                         "props": {
                                           "value": {
-                                            "t": "firstRun.signIn.with",
-                                            "args": {
-                                              "helper": {
-                                                "get": "vm.firstRun.helperName"
-                                              }
-                                            }
-                                          }
-                                        },
-                                        "when": {
-                                          "get": "vm.firstRun.canHelper"
-                                        }
-                                      },
-                                      {
-                                        "type": "Inline",
-                                        "props": {
-                                          "gap": "s",
-                                          "justify": "end",
-                                          "wrap": true,
-                                          "grow": true
-                                        },
-                                        "children": [
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.signIn.device"
-                                              }
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.signInDevice"
-                                              }
-                                            }
-                                          },
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.signIn.browser"
-                                              },
-                                              "variant": "primary",
-                                              "autoFocus": true
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.signIn"
-                                              }
-                                            }
-                                          }
-                                        ],
-                                        "when": {
-                                          "get": "vm.firstRun.canHelper"
-                                        }
-                                      },
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "value": {
-                                            "t": "firstRun.signIn.noHelper"
+                                            "t": "firstRun.connect.noHelper"
                                           }
                                         },
                                         "when": {
@@ -4514,136 +4231,120 @@
                                         }
                                       },
                                       {
-                                        "type": "Inline",
-                                        "props": {
-                                          "gap": "s",
-                                          "justify": "start",
-                                          "wrap": true
-                                        },
-                                        "children": [
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.signIn.installGcm"
-                                              }
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.openPage",
-                                                "args": {
-                                                  "page": "gcm"
-                                                }
-                                              }
-                                            }
-                                          },
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.signIn.installGh"
-                                              }
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.openPage",
-                                                "args": {
-                                                  "page": "gh"
-                                                }
-                                              }
-                                            }
-                                          },
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.checkAgain"
-                                              },
-                                              "autoFocus": true
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.checkAccount"
-                                              }
-                                            }
-                                          }
-                                        ],
-                                        "when": {
+                                        "switch": {
                                           "get": "vm.firstRun.noHelper"
-                                        }
-                                      },
-                                      {
-                                        "type": "Inline",
-                                        "props": {
-                                          "gap": "s",
-                                          "justify": "start",
-                                          "wrap": true
                                         },
-                                        "children": [
-                                          {
-                                            "type": "Button",
+                                        "cases": {
+                                          "true": {
+                                            "type": "Inline",
                                             "props": {
-                                              "label": {
-                                                "t": "firstRun.back"
-                                              },
-                                              "variant": "subtle",
-                                              "bleed": true
+                                              "gap": "s",
+                                              "justify": "between",
+                                              "wrap": true
                                             },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.back"
+                                            "children": [
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.back"
+                                                  },
+                                                  "variant": "subtle",
+                                                  "bleed": true
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.back"
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "type": "Inline",
+                                                "props": {
+                                                  "gap": "s",
+                                                  "justify": "end",
+                                                  "wrap": true
+                                                },
+                                                "children": [
+                                                  {
+                                                    "type": "Button",
+                                                    "props": {
+                                                      "label": {
+                                                        "t": "firstRun.checkAgain"
+                                                      }
+                                                    },
+                                                    "on": {
+                                                      "press": {
+                                                        "run": "firstRun.checkAccount"
+                                                      }
+                                                    }
+                                                  },
+                                                  {
+                                                    "type": "Button",
+                                                    "props": {
+                                                      "label": {
+                                                        "t": "firstRun.connect.installHelper"
+                                                      },
+                                                      "variant": "primary",
+                                                      "autoFocus": true
+                                                    },
+                                                    "on": {
+                                                      "press": {
+                                                        "run": "firstRun.openPage",
+                                                        "args": {
+                                                          "page": "gcm"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                ]
                                               }
-                                            }
+                                            ]
                                           },
-                                          {
-                                            "type": "Button",
+                                          "false": {
+                                            "type": "Inline",
                                             "props": {
-                                              "label": {
-                                                "t": "firstRun.signIn.useToken"
+                                              "gap": "s",
+                                              "justify": "between",
+                                              "wrap": true
+                                            },
+                                            "children": [
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.back"
+                                                  },
+                                                  "variant": "subtle",
+                                                  "bleed": true
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.back"
+                                                  }
+                                                }
                                               },
-                                              "variant": "subtle"
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.useToken"
-                                              }
-                                            }
-                                          },
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.retry"
-                                              },
-                                              "variant": "subtle"
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.checkAccount"
-                                              }
-                                            },
-                                            "when": {
-                                              "get": "vm.firstRun.offline"
-                                            }
-                                          },
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.signIn.ssoLink"
-                                              },
-                                              "variant": "subtle"
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.openPage",
-                                                "args": {
-                                                  "page": "sso"
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.connect.button"
+                                                  },
+                                                  "variant": "primary",
+                                                  "autoFocus": true,
+                                                  "busy": {
+                                                    "get": "vm.firstRun.busy"
+                                                  }
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.signIn"
+                                                  }
                                                 }
                                               }
-                                            }
+                                            ]
                                           }
-                                        ]
+                                        }
                                       }
                                     ]
                                   },
@@ -4749,7 +4450,7 @@
                                         "type": "Text",
                                         "props": {
                                           "value": {
-                                            "t": "firstRun.signIn.window"
+                                            "t": "firstRun.connect.window"
                                           }
                                         }
                                       },
@@ -4989,280 +4690,455 @@
                                         ]
                                       }
                                     ]
-                                  }
-                                }
-                              }
-                            ]
-                          },
-                          "identity": {
-                            "type": "Stack",
-                            "props": {
-                              "gap": "m"
-                            },
-                            "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "t": "firstRun.identity.why"
                                   },
-                                  "tone": "muted"
-                                }
-                              },
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "get": "vm.firstRun.identityNote"
-                                  },
-                                  "tone": "muted",
-                                  "role": "caption"
-                                }
-                              },
-                              {
-                                "type": "TextField",
-                                "props": {
-                                  "label": {
-                                    "t": "firstRun.identity.name"
-                                  },
-                                  "value": {
-                                    "bind": "vm.firstRun.name"
-                                  },
-                                  "autoFocus": true,
-                                  "invalid": {
-                                    "get": "vm.firstRun.nameInvalid"
-                                  },
-                                  "focusRequest": {
-                                    "get": "vm.firstRun.focus"
-                                  }
-                                },
-                                "on": {
-                                  "submit": {
-                                    "run": "firstRun.next"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "TextField",
-                                "props": {
-                                  "label": {
-                                    "t": "firstRun.identity.email"
-                                  },
-                                  "value": {
-                                    "bind": "vm.firstRun.email"
-                                  },
-                                  "invalid": {
-                                    "get": "vm.firstRun.emailInvalid"
-                                  }
-                                },
-                                "on": {
-                                  "submit": {
-                                    "run": "firstRun.next"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "SegmentedControl",
-                                "props": {
-                                  "label": {
-                                    "t": "firstRun.identity.scope"
-                                  },
-                                  "value": {
-                                    "bind": "vm.firstRun.scope"
-                                  },
-                                  "options": {
-                                    "get": "vm.firstRun.scopeOptions"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "get": "vm.firstRun.identityError"
-                                  },
-                                  "tone": "danger",
-                                  "announce": true
-                                },
-                                "when": {
-                                  "expr": {
-                                    "!=": [
-                                      {
-                                        "get": "vm.firstRun.identityError"
-                                      },
-                                      ""
-                                    ]
-                                  }
-                                }
-                              },
-                              {
-                                "type": "Inline",
-                                "props": {
-                                  "gap": "s",
-                                  "justify": "between",
-                                  "wrap": true
-                                },
-                                "children": [
-                                  {
-                                    "type": "Button",
-                                    "props": {
-                                      "label": {
-                                        "t": "firstRun.back"
-                                      },
-                                      "variant": "subtle",
-                                      "bleed": true
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "firstRun.back"
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "type": "Button",
-                                    "props": {
-                                      "label": {
-                                        "t": "firstRun.continue"
-                                      },
-                                      "variant": "primary",
-                                      "busy": {
-                                        "get": "vm.firstRun.busy"
-                                      }
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "firstRun.next"
-                                      }
-                                    }
-                                  }
-                                ]
-                              }
-                            ]
-                          },
-                          "workspace": {
-                            "type": "Stack",
-                            "props": {
-                              "gap": "m"
-                            },
-                            "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "t": "firstRun.workspace.why"
-                                  },
-                                  "tone": "muted"
-                                }
-                              },
-                              {
-                                "type": "SegmentedControl",
-                                "when": {
-                                  "expr": {
-                                    "!": {
-                                      "get": "vm.firstRun.started"
-                                    }
-                                  }
-                                },
-                                "props": {
-                                  "label": {
-                                    "t": "firstRun.workspace.mode"
-                                  },
-                                  "value": {
-                                    "bind": "vm.firstRun.mode"
-                                  },
-                                  "options": {
-                                    "get": "vm.firstRun.modeOptions"
-                                  },
-                                  "orientation": "vertical"
-                                }
-                              },
-                              {
-                                "switch": {
-                                  "get": "vm.firstRun.panel"
-                                },
-                                "cases": {
-                                  "create": {
+                                  "cli": {
                                     "type": "Stack",
                                     "props": {
                                       "gap": "m"
                                     },
                                     "children": [
                                       {
-                                        "type": "TextField",
+                                        "type": "Text",
                                         "props": {
-                                          "label": {
-                                            "t": "firstRun.workspace.instance"
-                                          },
                                           "value": {
-                                            "bind": "vm.firstRun.instance"
+                                            "get": "vm.firstRun.foundText"
                                           },
-                                          "autoFocus": true,
-                                          "focusRequest": {
-                                            "get": "vm.firstRun.focus"
-                                          }
+                                          "announce": true
                                         }
                                       },
                                       {
-                                        "type": "TextField",
+                                        "type": "Inline",
                                         "props": {
-                                          "label": {
-                                            "t": "firstRun.workspace.private"
-                                          },
-                                          "value": {
-                                            "bind": "vm.firstRun.private"
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "SegmentedControl",
-                                        "props": {
-                                          "label": {
-                                            "t": "firstRun.workspace.publish"
-                                          },
-                                          "value": {
-                                            "bind": "vm.firstRun.publish"
-                                          },
-                                          "options": {
-                                            "get": "vm.firstRun.publishOptions"
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "Stack",
-                                        "props": {
-                                          "gap": "xs",
-                                          "align": "start"
+                                          "gap": "s",
+                                          "justify": "between",
+                                          "wrap": true
                                         },
                                         "children": [
                                           {
-                                            "type": "Text",
+                                            "type": "Button",
                                             "props": {
-                                              "value": {
-                                                "t": "firstRun.workspace.folder",
-                                                "args": {
-                                                  "folder": {
-                                                    "get": "vm.firstRun.folder"
-                                                  }
-                                                }
+                                              "label": {
+                                                "t": "firstRun.back"
                                               },
-                                              "tone": "muted",
-                                              "role": "caption"
+                                              "variant": "subtle",
+                                              "bleed": true
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.back"
+                                              }
                                             }
                                           },
                                           {
                                             "type": "Button",
                                             "props": {
                                               "label": {
-                                                "t": "firstRun.workspace.chooseFolder"
+                                                "get": "vm.firstRun.continueAs"
+                                              },
+                                              "variant": "primary",
+                                              "autoFocus": true,
+                                              "busy": {
+                                                "get": "vm.firstRun.busy"
+                                              }
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.useExisting"
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Stack",
+                                "props": {
+                                  "gap": "s"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Inline",
+                                    "props": {
+                                      "gap": "s",
+                                      "justify": "start",
+                                      "wrap": true
+                                    },
+                                    "children": [
+                                      {
+                                        "switch": {
+                                          "get": "vm.firstRun.trouble"
+                                        },
+                                        "cases": {
+                                          "true": {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.trouble"
                                               },
                                               "variant": "subtle",
-                                              "size": "s",
+                                              "icon": "chevronDown",
+                                              "expanded": true,
                                               "bleed": true
                                             },
                                             "on": {
                                               "press": {
-                                                "run": "firstRun.chooseFolder"
+                                                "run": "firstRun.toggleTrouble"
                                               }
+                                            }
+                                          },
+                                          "false": {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.trouble"
+                                              },
+                                              "variant": "subtle",
+                                              "icon": "chevronRight",
+                                              "expanded": false,
+                                              "bleed": true
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.toggleTrouble"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "type": "Stack",
+                                    "props": {
+                                      "gap": "m"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "s"
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "value": {
+                                                "t": "firstRun.trouble.gitWhy"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "value": {
+                                                "get": "vm.firstRun.gitText"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "value": {
+                                                "get": "vm.firstRun.installText"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "value": {
+                                                "get": "vm.firstRun.installCommand"
+                                              },
+                                              "role": "emphasis"
+                                            }
+                                          }
+                                        ],
+                                        "when": {
+                                          "get": "vm.firstRun.isGit"
+                                        }
+                                      },
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "s"
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "value": {
+                                                "t": "firstRun.trouble.other"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Inline",
+                                            "props": {
+                                              "gap": "s",
+                                              "justify": "start",
+                                              "wrap": true
+                                            },
+                                            "children": [
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "command.firstRun.otherAccount"
+                                                  }
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.otherAccount"
+                                                  }
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        ],
+                                        "when": {
+                                          "get": "vm.firstRun.canOther"
+                                        }
+                                      },
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "s"
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "value": {
+                                                "t": "firstRun.trouble.connect"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Inline",
+                                            "props": {
+                                              "gap": "s",
+                                              "justify": "start",
+                                              "wrap": true
+                                            },
+                                            "children": [
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.signIn.device"
+                                                  }
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.signInDevice"
+                                                  }
+                                                },
+                                                "when": {
+                                                  "get": "vm.firstRun.canHelper"
+                                                }
+                                              },
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.signIn.useToken"
+                                                  }
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.useToken"
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.signIn.installGh"
+                                                  }
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.openPage",
+                                                    "args": {
+                                                      "page": "gh"
+                                                    }
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.signIn.ssoLink"
+                                                  }
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.openPage",
+                                                    "args": {
+                                                      "page": "sso"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        ],
+                                        "when": {
+                                          "get": "vm.firstRun.isChoose"
+                                        }
+                                      }
+                                    ],
+                                    "when": {
+                                      "get": "vm.firstRun.trouble"
+                                    }
+                                  }
+                                ],
+                                "when": {
+                                  "get": "vm.firstRun.showTrouble"
+                                }
+                              }
+                            ]
+                          },
+                          "notes": {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "switch": {
+                                  "get": "vm.firstRun.panel"
+                                },
+                                "cases": {
+                                  "checking": {
+                                    "type": "Inline",
+                                    "props": {
+                                      "gap": "s",
+                                      "justify": "start",
+                                      "wrap": true
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Spinner",
+                                        "props": {
+                                          "label": {
+                                            "t": "firstRun.notes.checking"
+                                          },
+                                          "size": "s"
+                                        }
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "value": {
+                                            "t": "firstRun.notes.checking"
+                                          },
+                                          "tone": "muted"
+                                        }
+                                      }
+                                    ]
+                                  },
+                                  "found": {
+                                    "type": "Stack",
+                                    "props": {
+                                      "gap": "m"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "value": {
+                                            "t": "firstRun.notes.foundWhy"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "s"
+                                        },
+                                        "children": [
+                                          {
+                                            "each": {
+                                              "get": "vm.firstRun.found"
+                                            },
+                                            "as": "item",
+                                            "key": "item.id",
+                                            "empty": {
+                                              "type": "Text",
+                                              "props": {
+                                                "value": {
+                                                  "t": "firstRun.notes.none"
+                                                },
+                                                "tone": "muted"
+                                              }
+                                            },
+                                            "render": {
+                                              "type": "Inline",
+                                              "props": {
+                                                "gap": "s",
+                                                "justify": "between",
+                                                "wrap": true
+                                              },
+                                              "children": [
+                                                {
+                                                  "type": "Stack",
+                                                  "props": {
+                                                    "gap": "xs"
+                                                  },
+                                                  "children": [
+                                                    {
+                                                      "type": "Text",
+                                                      "props": {
+                                                        "value": {
+                                                          "get": "item.label"
+                                                        },
+                                                        "role": "label"
+                                                      }
+                                                    },
+                                                    {
+                                                      "type": "Text",
+                                                      "props": {
+                                                        "value": {
+                                                          "get": "item.description"
+                                                        },
+                                                        "tone": "muted",
+                                                        "role": "caption"
+                                                      }
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "Button",
+                                                  "props": {
+                                                    "label": {
+                                                      "t": "firstRun.notes.open"
+                                                    },
+                                                    "variant": "primary",
+                                                    "autoFocus": {
+                                                      "get": "item.first"
+                                                    },
+                                                    "busy": {
+                                                      "get": "vm.firstRun.busy"
+                                                    }
+                                                  },
+                                                  "on": {
+                                                    "press": {
+                                                      "run": "firstRun.clone",
+                                                      "args": {
+                                                        "id": {
+                                                          "get": "item.id"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              ]
                                             }
                                           }
                                         ]
@@ -5271,41 +5147,73 @@
                                         "type": "Text",
                                         "props": {
                                           "value": {
-                                            "t": "firstRun.workspace.vaultIntro"
-                                          }
+                                            "get": "vm.firstRun.error"
+                                          },
+                                          "tone": "danger",
+                                          "announce": true
+                                        },
+                                        "when": {
+                                          "get": "vm.firstRun.hasError"
                                         }
                                       },
                                       {
-                                        "type": "TextField",
+                                        "type": "Inline",
                                         "props": {
-                                          "label": {
-                                            "t": "firstRun.workspace.passphrase"
-                                          },
-                                          "value": {
-                                            "bind": "vm.firstRun.passphrase"
-                                          },
-                                          "type": "password"
+                                          "gap": "s",
+                                          "justify": "between",
+                                          "wrap": true
                                         },
-                                        "on": {
-                                          "submit": {
-                                            "run": "firstRun.create"
+                                        "children": [
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.back"
+                                              },
+                                              "variant": "subtle",
+                                              "bleed": true
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.back"
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.notes.createInstead"
+                                              },
+                                              "variant": "subtle"
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.setMode",
+                                                "args": {
+                                                  "value": "create"
+                                                }
+                                              }
+                                            },
+                                            "when": {
+                                              "get": "vm.firstRun.canCreate"
+                                            }
                                           }
-                                        }
-                                      },
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "create": {
+                                    "type": "Stack",
+                                    "props": {
+                                      "gap": "m"
+                                    },
+                                    "children": [
                                       {
-                                        "type": "TextField",
+                                        "type": "Text",
                                         "props": {
-                                          "label": {
-                                            "t": "firstRun.workspace.confirm"
-                                          },
                                           "value": {
-                                            "bind": "vm.firstRun.confirm"
-                                          },
-                                          "type": "password"
-                                        },
-                                        "on": {
-                                          "submit": {
-                                            "run": "firstRun.create"
+                                            "t": "firstRun.notes.createWhy"
                                           }
                                         }
                                       },
@@ -5350,34 +5258,33 @@
                                             "props": {
                                               "gap": "s",
                                               "justify": "end",
-                                              "wrap": true,
-                                              "grow": true
+                                              "wrap": true
                                             },
                                             "children": [
                                               {
                                                 "type": "Button",
                                                 "props": {
                                                   "label": {
-                                                    "t": "firstRun.workspace.skip"
-                                                  },
-                                                  "variant": "subtle",
-                                                  "busy": {
-                                                    "get": "vm.firstRun.busy"
+                                                    "t": "firstRun.notes.lookAgain"
                                                   }
                                                 },
                                                 "on": {
                                                   "press": {
-                                                    "run": "firstRun.createWithoutVault"
+                                                    "run": "firstRun.findNotes"
                                                   }
+                                                },
+                                                "when": {
+                                                  "get": "vm.firstRun.hasError"
                                                 }
                                               },
                                               {
                                                 "type": "Button",
                                                 "props": {
                                                   "label": {
-                                                    "t": "firstRun.workspace.create"
+                                                    "t": "firstRun.notes.create"
                                                   },
                                                   "variant": "primary",
+                                                  "autoFocus": true,
                                                   "busy": {
                                                     "get": "vm.firstRun.busy"
                                                   }
@@ -5599,153 +5506,39 @@
                                   "progress": {
                                     "type": "Stack",
                                     "props": {
-                                      "gap": "s"
+                                      "gap": "m"
                                     },
                                     "children": [
                                       {
-                                        "type": "Text",
+                                        "type": "Inline",
                                         "props": {
-                                          "value": {
-                                            "t": "firstRun.workspace.progress"
-                                          },
-                                          "role": "label"
-                                        }
-                                      },
-                                      {
-                                        "each": {
-                                          "get": "vm.setup.steps"
+                                          "gap": "s",
+                                          "justify": "start",
+                                          "wrap": true
                                         },
-                                        "as": "step",
-                                        "key": "step.id",
-                                        "render": {
-                                          "type": "Inline",
-                                          "props": {
-                                            "gap": "s",
-                                            "wrap": true
-                                          },
-                                          "children": [
-                                            {
-                                              "switch": {
-                                                "get": "step.state"
+                                        "children": [
+                                          {
+                                            "type": "Spinner",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.notes.creating"
                                               },
-                                              "cases": {
-                                                "done": {
-                                                  "type": "Icon",
-                                                  "props": {
-                                                    "name": "check",
-                                                    "size": "s",
-                                                    "label": {
-                                                      "t": "firstRun.workspace.state.done"
-                                                    }
-                                                  }
-                                                },
-                                                "skipped": {
-                                                  "type": "Icon",
-                                                  "props": {
-                                                    "name": "dismiss",
-                                                    "size": "s",
-                                                    "label": {
-                                                      "t": "firstRun.workspace.state.skipped"
-                                                    }
-                                                  }
-                                                },
-                                                "running": {
-                                                  "type": "Spinner",
-                                                  "props": {
-                                                    "size": "s",
-                                                    "label": {
-                                                      "t": "firstRun.workspace.state.running"
-                                                    }
-                                                  }
-                                                },
-                                                "failed": {
-                                                  "type": "Icon",
-                                                  "props": {
-                                                    "name": "error",
-                                                    "size": "s",
-                                                    "label": {
-                                                      "t": "firstRun.workspace.state.failed"
-                                                    }
-                                                  }
-                                                },
-                                                "pending": {
-                                                  "type": "Icon",
-                                                  "props": {
-                                                    "name": "chevronRight",
-                                                    "size": "s",
-                                                    "label": {
-                                                      "t": "firstRun.workspace.state.pending"
-                                                    }
-                                                  }
-                                                }
-                                              }
+                                              "size": "s"
                                             },
-                                            {
-                                              "type": "Text",
-                                              "props": {
-                                                "value": {
-                                                  "get": "step.label"
-                                                }
-                                              }
-                                            },
-                                            {
-                                              "type": "Text",
-                                              "props": {
-                                                "value": {
-                                                  "get": "step.problem"
-                                                },
-                                                "tone": "danger"
-                                              },
-                                              "when": {
-                                                "get": "step.failed"
-                                              }
-                                            },
-                                            {
-                                              "type": "Button",
-                                              "props": {
-                                                "label": {
-                                                  "t": "firstRun.retry"
-                                                },
-                                                "size": "s"
-                                              },
-                                              "on": {
-                                                "press": {
-                                                  "run": "setup.retry",
-                                                  "args": {
-                                                    "id": {
-                                                      "get": "step.id"
-                                                    }
-                                                  }
-                                                }
-                                              },
-                                              "when": {
-                                                "get": "step.failed"
-                                              }
+                                            "when": {
+                                              "get": "vm.firstRun.working"
                                             }
-                                          ]
-                                        },
-                                        "empty": {
-                                          "type": "Text",
-                                          "props": {
-                                            "value": {
-                                              "t": "firstRun.workspace.state.pending"
-                                            },
-                                            "tone": "muted"
-                                          }
-                                        }
-                                      },
-                                      {
-                                        "type": "Text",
-                                        "props": {
-                                          "value": {
-                                            "t": "firstRun.workspace.made"
                                           },
-                                          "tone": "success",
-                                          "announce": true
-                                        },
-                                        "when": {
-                                          "get": "vm.firstRun.made"
-                                        }
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "value": {
+                                                "get": "vm.firstRun.progressText"
+                                              },
+                                              "announce": true
+                                            }
+                                          }
+                                        ]
                                       },
                                       {
                                         "type": "Text",
@@ -5757,8 +5550,7 @@
                                                 "get": "vm.setup.site"
                                               }
                                             }
-                                          },
-                                          "tone": "muted"
+                                          }
                                         },
                                         "when": {
                                           "get": "vm.setup.hasSite"
@@ -5775,6 +5567,191 @@
                                         },
                                         "when": {
                                           "get": "vm.firstRun.hasError"
+                                        }
+                                      },
+                                      {
+                                        "type": "Inline",
+                                        "props": {
+                                          "gap": "s",
+                                          "justify": "start",
+                                          "wrap": true
+                                        },
+                                        "children": [
+                                          {
+                                            "switch": {
+                                              "get": "vm.firstRun.details"
+                                            },
+                                            "cases": {
+                                              "true": {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.notes.details"
+                                                  },
+                                                  "variant": "subtle",
+                                                  "icon": "chevronDown",
+                                                  "expanded": true,
+                                                  "bleed": true
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.toggleDetails"
+                                                  }
+                                                }
+                                              },
+                                              "false": {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.notes.details"
+                                                  },
+                                                  "variant": "subtle",
+                                                  "icon": "chevronRight",
+                                                  "expanded": false,
+                                                  "bleed": true
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.toggleDetails"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "s"
+                                        },
+                                        "children": [
+                                          {
+                                            "each": {
+                                              "get": "vm.setup.steps"
+                                            },
+                                            "as": "step",
+                                            "key": "step.id",
+                                            "render": {
+                                              "type": "Inline",
+                                              "props": {
+                                                "gap": "s",
+                                                "wrap": true
+                                              },
+                                              "children": [
+                                                {
+                                                  "switch": {
+                                                    "get": "step.state"
+                                                  },
+                                                  "cases": {
+                                                    "done": {
+                                                      "type": "Icon",
+                                                      "props": {
+                                                        "name": "check",
+                                                        "size": "s",
+                                                        "label": {
+                                                          "t": "firstRun.workspace.state.done"
+                                                        }
+                                                      }
+                                                    },
+                                                    "skipped": {
+                                                      "type": "Icon",
+                                                      "props": {
+                                                        "name": "dismiss",
+                                                        "size": "s",
+                                                        "label": {
+                                                          "t": "firstRun.workspace.state.skipped"
+                                                        }
+                                                      }
+                                                    },
+                                                    "running": {
+                                                      "type": "Spinner",
+                                                      "props": {
+                                                        "size": "s",
+                                                        "label": {
+                                                          "t": "firstRun.workspace.state.running"
+                                                        }
+                                                      }
+                                                    },
+                                                    "failed": {
+                                                      "type": "Icon",
+                                                      "props": {
+                                                        "name": "error",
+                                                        "size": "s",
+                                                        "label": {
+                                                          "t": "firstRun.workspace.state.failed"
+                                                        }
+                                                      }
+                                                    },
+                                                    "pending": {
+                                                      "type": "Icon",
+                                                      "props": {
+                                                        "name": "chevronRight",
+                                                        "size": "s",
+                                                        "label": {
+                                                          "t": "firstRun.workspace.state.pending"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "value": {
+                                                      "get": "step.label"
+                                                    }
+                                                  }
+                                                },
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "value": {
+                                                      "get": "step.problem"
+                                                    },
+                                                    "tone": "danger"
+                                                  },
+                                                  "when": {
+                                                    "get": "step.failed"
+                                                  }
+                                                },
+                                                {
+                                                  "type": "Button",
+                                                  "props": {
+                                                    "label": {
+                                                      "t": "firstRun.retry"
+                                                    },
+                                                    "size": "s"
+                                                  },
+                                                  "on": {
+                                                    "press": {
+                                                      "run": "setup.retry",
+                                                      "args": {
+                                                        "id": {
+                                                          "get": "step.id"
+                                                        }
+                                                      }
+                                                    }
+                                                  },
+                                                  "when": {
+                                                    "get": "step.failed"
+                                                  }
+                                                }
+                                              ]
+                                            },
+                                            "empty": {
+                                              "type": "Text",
+                                              "props": {
+                                                "value": {
+                                                  "t": "firstRun.workspace.state.pending"
+                                                },
+                                                "tone": "muted"
+                                              }
+                                            }
+                                          }
+                                        ],
+                                        "when": {
+                                          "get": "vm.firstRun.details"
                                         }
                                       },
                                       {
@@ -5804,7 +5781,7 @@
                                                 }
                                               },
                                               "disabledReason": {
-                                                "t": "firstRun.workspace.progress"
+                                                "t": "firstRun.notes.creating"
                                               }
                                             },
                                             "on": {
@@ -5818,140 +5795,296 @@
                                     ]
                                   }
                                 }
-                              }
-                            ]
-                          },
-                          "personalize": {
-                            "type": "Stack",
-                            "props": {
-                              "gap": "m"
-                            },
-                            "children": [
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "t": "firstRun.personalize.why"
-                                  },
-                                  "tone": "muted"
-                                }
                               },
                               {
-                                "type": "SegmentedControl",
+                                "type": "Stack",
                                 "props": {
-                                  "label": {
-                                    "t": "firstRun.personalize.theme"
-                                  },
-                                  "value": {
-                                    "bind": "vm.firstRun.theme"
-                                  },
-                                  "options": {
-                                    "get": "vm.firstRun.themeOptions"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "SegmentedControl",
-                                "props": {
-                                  "label": {
-                                    "t": "firstRun.personalize.fontLabel"
-                                  },
-                                  "value": {
-                                    "bind": "vm.firstRun.font"
-                                  },
-                                  "options": {
-                                    "get": "vm.firstRun.fontOptions"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "Inline",
-                                "props": {
-                                  "gap": "s",
-                                  "justify": "start",
-                                  "wrap": true
+                                  "gap": "s"
                                 },
                                 "children": [
                                   {
-                                    "type": "Text",
+                                    "type": "Inline",
                                     "props": {
-                                      "value": {
-                                        "t": "firstRun.personalize.size"
-                                      },
-                                      "role": "label"
-                                    }
+                                      "gap": "s",
+                                      "justify": "start",
+                                      "wrap": true
+                                    },
+                                    "children": [
+                                      {
+                                        "switch": {
+                                          "get": "vm.firstRun.more"
+                                        },
+                                        "cases": {
+                                          "true": {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.notes.more"
+                                              },
+                                              "variant": "subtle",
+                                              "icon": "chevronDown",
+                                              "expanded": true,
+                                              "bleed": true
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.toggleMore"
+                                              }
+                                            }
+                                          },
+                                          "false": {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.notes.more"
+                                              },
+                                              "variant": "subtle",
+                                              "icon": "chevronRight",
+                                              "expanded": false,
+                                              "bleed": true
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.toggleMore"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ]
                                   },
                                   {
-                                    "type": "Button",
+                                    "type": "Stack",
                                     "props": {
-                                      "label": {
-                                        "t": "command.font.smaller"
-                                      },
-                                      "size": "s"
+                                      "gap": "l"
                                     },
-                                    "on": {
-                                      "press": {
-                                        "run": "font.smaller"
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "type": "Button",
-                                    "props": {
-                                      "label": {
-                                        "t": "command.font.larger"
+                                    "children": [
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "l"
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Stack",
+                                            "props": {
+                                              "gap": "s"
+                                            },
+                                            "children": [
+                                              {
+                                                "type": "Text",
+                                                "props": {
+                                                  "value": {
+                                                    "t": "firstRun.notes.namesWhy"
+                                                  },
+                                                  "tone": "muted"
+                                                }
+                                              },
+                                              {
+                                                "type": "TextField",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.workspace.instance"
+                                                  },
+                                                  "value": {
+                                                    "bind": "vm.firstRun.instance"
+                                                  },
+                                                  "autoFocus": true,
+                                                  "focusRequest": {
+                                                    "get": "vm.firstRun.focus"
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "type": "TextField",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.workspace.private"
+                                                  },
+                                                  "value": {
+                                                    "bind": "vm.firstRun.private"
+                                                  }
+                                                }
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "Stack",
+                                            "props": {
+                                              "gap": "s"
+                                            },
+                                            "children": [
+                                              {
+                                                "type": "Text",
+                                                "props": {
+                                                  "value": {
+                                                    "get": "vm.firstRun.folderText"
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "type": "Inline",
+                                                "props": {
+                                                  "gap": "s",
+                                                  "justify": "start",
+                                                  "wrap": true
+                                                },
+                                                "children": [
+                                                  {
+                                                    "type": "Button",
+                                                    "props": {
+                                                      "label": {
+                                                        "t": "firstRun.workspace.chooseFolder"
+                                                      }
+                                                    },
+                                                    "on": {
+                                                      "press": {
+                                                        "run": "firstRun.chooseFolder"
+                                                      }
+                                                    }
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "Stack",
+                                            "props": {
+                                              "gap": "s"
+                                            },
+                                            "children": [
+                                              {
+                                                "type": "SegmentedControl",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.workspace.publish"
+                                                  },
+                                                  "value": {
+                                                    "bind": "vm.firstRun.publish"
+                                                  },
+                                                  "options": {
+                                                    "get": "vm.firstRun.publishOptions"
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "type": "Text",
+                                                "props": {
+                                                  "value": {
+                                                    "t": "firstRun.notes.publishWhy"
+                                                  },
+                                                  "tone": "muted"
+                                                }
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "type": "Stack",
+                                            "props": {
+                                              "gap": "s"
+                                            },
+                                            "children": [
+                                              {
+                                                "type": "Text",
+                                                "props": {
+                                                  "value": {
+                                                    "t": "firstRun.notes.vaultWhy"
+                                                  },
+                                                  "tone": "muted"
+                                                }
+                                              },
+                                              {
+                                                "type": "TextField",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.workspace.passphrase"
+                                                  },
+                                                  "value": {
+                                                    "bind": "vm.firstRun.passphrase"
+                                                  },
+                                                  "type": "password"
+                                                },
+                                                "on": {
+                                                  "submit": {
+                                                    "run": "firstRun.create"
+                                                  }
+                                                }
+                                              },
+                                              {
+                                                "type": "TextField",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.workspace.confirm"
+                                                  },
+                                                  "value": {
+                                                    "bind": "vm.firstRun.confirm"
+                                                  },
+                                                  "type": "password"
+                                                },
+                                                "on": {
+                                                  "submit": {
+                                                    "run": "firstRun.create"
+                                                  }
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        ],
+                                        "when": {
+                                          "get": "vm.firstRun.isCreate"
+                                        }
                                       },
-                                      "size": "s"
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "font.larger"
+                                      {
+                                        "type": "Inline",
+                                        "props": {
+                                          "gap": "s",
+                                          "justify": "start",
+                                          "wrap": true
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.notes.openOther"
+                                              }
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.setMode",
+                                                "args": {
+                                                  "value": "clone"
+                                                }
+                                              }
+                                            }
+                                          },
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.notes.openFolder"
+                                              }
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.setMode",
+                                                "args": {
+                                                  "value": "local"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
                                       }
+                                    ],
+                                    "when": {
+                                      "get": "vm.firstRun.more"
                                     }
                                   }
-                                ]
-                              },
-                              {
-                                "type": "SegmentedControl",
-                                "props": {
-                                  "label": {
-                                    "t": "firstRun.personalize.focus"
-                                  },
-                                  "value": {
-                                    "bind": "vm.firstRun.focusMode"
-                                  },
-                                  "options": {
-                                    "get": "vm.firstRun.focusOptions"
-                                  }
+                                ],
+                                "when": {
+                                  "get": "vm.firstRun.showMore"
                                 }
-                              },
-                              {
-                                "type": "Inline",
-                                "props": {
-                                  "gap": "s",
-                                  "justify": "end",
-                                  "wrap": true
-                                },
-                                "children": [
-                                  {
-                                    "type": "Button",
-                                    "props": {
-                                      "label": {
-                                        "t": "firstRun.continue"
-                                      },
-                                      "variant": "primary",
-                                      "autoFocus": true,
-                                      "busy": {
-                                        "get": "vm.firstRun.busy"
-                                      }
-                                    },
-                                    "on": {
-                                      "press": {
-                                        "run": "firstRun.next"
-                                      }
-                                    }
-                                  }
-                                ]
                               }
                             ]
                           },
@@ -5978,6 +6111,20 @@
                                 }
                               },
                               {
+                                "type": "SegmentedControl",
+                                "props": {
+                                  "label": {
+                                    "t": "firstRun.ready.theme"
+                                  },
+                                  "value": {
+                                    "bind": "vm.firstRun.theme"
+                                  },
+                                  "options": {
+                                    "get": "vm.firstRun.themeOptions"
+                                  }
+                                }
+                              },
+                              {
                                 "type": "Inline",
                                 "props": {
                                   "gap": "s",
@@ -5991,7 +6138,8 @@
                                       "label": {
                                         "t": "firstRun.ready.import"
                                       },
-                                      "variant": "subtle"
+                                      "variant": "subtle",
+                                      "bleed": true
                                     },
                                     "on": {
                                       "press": {

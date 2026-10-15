@@ -15,6 +15,8 @@ export interface ButtonProps {
   /** A toggle button: `pressed` is its state (aria-pressed). */
   toggle?: boolean;
   pressed?: boolean;
+  /** A disclosure button: whether what it shows is open (aria-expanded). */
+  expanded?: boolean;
   busy?: boolean;
   disabled?: boolean;
   /** Required with `disabled`: a disabled button stays focusable and says why (Foundations → States). */
@@ -27,7 +29,7 @@ export interface ButtonProps {
   onPress?: () => void;
 }
 
-export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, busy, disabled, disabledReason, autoFocus, bleed, id, onPress }: ButtonProps) {
+export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, expanded, busy, disabled, disabledReason, autoFocus, bleed, id, onPress }: ButtonProps) {
   const inert = disabled || busy;
   const keepNoteFocus = useContext(CompanionContext);
   const common = {
@@ -36,6 +38,7 @@ export function Button({ label, variant = "secondary", size = "m", icon, iconPos
     "data-bleed": bleed ? "" : undefined,
     "aria-disabled": inert ? ("true" as const) : undefined,
     "aria-busy": busy ? ("true" as const) : undefined,
+    ...(expanded !== undefined ? { "aria-expanded": expanded } : {}),
     ...(autoFocus ? { autoFocus: true } : {}),
     preventFocusOnPress: keepNoteFocus,
   };

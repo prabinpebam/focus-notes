@@ -78,8 +78,11 @@ export function scopedPaths(scope: GrantScope, paths: readonly string[]): Map<st
 
 // ---- finding a passcode keyring by name ----
 
-/** An audience name as it's looked up: Unicode NFKC, trimmed, case-folded (upper then lower, as ECMAScript defines both). */
-export const normalizeName = (name: string) => name.normalize("NFKC").trim().toUpperCase().toLowerCase().normalize("NFKC");
+/**
+ * An audience name as it's looked up: Unicode NFKC, every run of white space as one space, trimmed,
+ * case-folded (upper then lower, as ECMAScript defines both), so "SAM  lee " finds Sam Lee (D-125).
+ */
+export const normalizeName = (name: string) => name.normalize("NFKC").replace(/\s+/gu, " ").trim().toUpperCase().toLowerCase().normalize("NFKC");
 
 const hex = (bytes: Uint8Array) => [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
 
@@ -144,4 +147,26 @@ export async function deriveLinkKey(secret: Bytes, salt: Bytes, id: string): Pro
 }
 
 export const linkKeyringPath = (build: string, id: string) => `_access/${build}/l/${id}.json`;
+
+// ---- magic link addresses (WP-5.4, D-125) ----
+
+/** A link's secret as it appears in the address: 32 bytes, base64url without padding. */
+const LINK_SECRET = /^[A-Za-z0-9_-]{43}$/;
+
+/**
+ * A magic link: the site's one share reader page, `s/`, with the grant and its secret in the fragment
+ * (`#<grant id>.<secret>`). Browsers never send a fragment to the server, and the page removes it from
+ * the address bar at once, so the secret stays out of server logs, the history, and referrers.
+ */
+export function shareLink(siteUrl: string, id: string, secret: string): string {
+  return `${new URL("s/", siteUrl.endsWith("/") ? siteUrl : `${siteUrl}/`).href}#${id}.${secret}`;
+}
+
+/** The grant and secret in a magic link's fragment, or undefined if it isn't exactly one. */
+export function parseShareFragment(hash: string): { id: string; secret: string } | undefined {
+  const parts = hash.replace(/^#/, "").split(".");
+  if (parts.length !== 2) return undefined;
+  const [id, secret] = parts as [string, string];
+  return GRANT_ID.test(id) && LINK_SECRET.test(secret) && fromB64url(secret).length === LINK_SECRET_BYTES ? { id, secret } : undefined;
+}
 export const passcodeKeyringPath = (build: string, lookup: string) => `_access/${build}/p/${lookup}.json`;

@@ -61,8 +61,8 @@ interface Ctx<St extends S> {
   appState: () => AppStateFile;
   /** Writes pending edits. False if the note couldn't be saved. */
   flush: () => Promise<boolean>;
-  /** Shows the first run's card again: Run setup again, or the Sign in step alone. */
-  again: (scope: "setup" | "account", opts?: { other?: boolean }) => Promise<boolean>;
+  /** Shows the first run's card again: Run setup again, the Connect step alone, or Your notes alone (D-124). */
+  again: (scope: "setup" | "account" | "workspace", opts?: { other?: boolean }) => Promise<boolean>;
 }
 
 export function registerSettings<St extends S>({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState, flush, again }: Ctx<St>) {
@@ -154,6 +154,11 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     // Forgets setup's progress: new names, a new folder, or publishing turned on later (D-98).
     await bridge.setup.reset().then((report) => store.update((s) => ({ ...s, setup: { available: true, report } })), () => {});
   }, () => Boolean(bridge.setup));
+  /** Open another workspace from GitHub: the first run's Your notes step alone, for a signed-in person (D-124). */
+  reg("workspace.openFromGitHub", async () => {
+    set({ open: false });
+    await again("workspace");
+  }, (s) => available() && Boolean(s.account.login));
   const check = async () => {
     if (!ws?.removal) return;
     setRemove({ busy: true });
@@ -176,9 +181,9 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     const r = state().remove;
     if (!ws?.remove || r.busy || r.check?.state !== "ready") return;
     setRemove({ busy: true });
-    // The app's own part first: the recent note, and the first run at Your workspace when the window starts again.
+    // The app's own part first: the recent note, and the first run at Your notes when the window starts again.
     const before = appState();
-    await persistAppState({ firstRun: "workspace", ...(Object.fromEntries(RECENT_STATE_KEYS.map((k) => [k, undefined])) as Partial<AppStateFile>) });
+    await persistAppState({ firstRun: "notes", ...(Object.fromEntries(RECENT_STATE_KEYS.map((k) => [k, undefined])) as Partial<AppStateFile>) });
     const done = await ws.remove().catch((): RemovalCheck => ({ ...r.check!, state: "failed" }));
     if (done.state === "removed") return; // The window starts again.
     await persistAppState({ firstRun: before.firstRun, ...Object.fromEntries(RECENT_STATE_KEYS.map((k) => [k, before[k]])) });
@@ -202,7 +207,10 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
         },
         workspace: {
           type: "object",
-          properties: { folder: { type: "string" }, folderText: { type: "string" }, git: { type: "boolean" }, canRemove: { type: "boolean" }, canRunSetup: { type: "boolean" }, gitNote: { type: "string" } },
+          properties: {
+            folder: { type: "string" }, folderText: { type: "string" }, git: { type: "boolean" }, canRemove: { type: "boolean" }, canRunSetup: { type: "boolean" }, gitNote: { type: "string" },
+            setupLabel: { type: "string" }, canOpenOther: { type: "boolean" },
+          },
         },
         appearance: {
           type: "object",
@@ -233,6 +241,9 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
           folder, folderText: catalog.format("settings.workspace.folder", { folder }), git: s.sync.git,
           canRemove: s.sync.git && Boolean(ws?.remove), canRunSetup: Boolean(bridge.setup),
           gitNote: catalog.format(s.sync.git ? "settings.workspace.git" : "settings.workspace.local"),
+          // A folder used on this computer only connects to GitHub through the same setup (D-124).
+          setupLabel: catalog.format(s.sync.git ? "command.setup.runAgain" : "settings.workspace.connect"),
+          canOpenOther: available() && Boolean(s.account.login),
         },
         // A summary that opens the theme manager: theme choice has one home (DD-SET-02).
         appearance: {

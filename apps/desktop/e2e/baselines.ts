@@ -69,8 +69,8 @@ export const EXTRA_BASELINES = {
 /** Keyed by the step's name in `flows.ts`. */
 export const FLOW_BASELINES: Record<string, Baseline> = {
   "first-run-welcome": b("first-run-welcome", "WP-3.2", "First run: welcome"),
-  "first-run-git": b("first-run-git", "WP-3.2", "First run: Git"),
-  "first-run-sign-in": b("first-run-sign-in", "WP-3.2", "First run: sign in"),
+  "first-run-connect": b("first-run-connect", "WP-3.2", "First run: Connect (D-124)"),
+  "first-run-connect-trouble": b("first-run-connect-trouble", "WP-3.2", "First run: Connect, Having trouble? open (D-124)"),
   "sync-conflict-toast": b("sync-conflict-toast", "WP-3.5", "Sync conflict toast"),
   "conflict-resolver": b("conflict-resolver", "WP-3.5", "Conflict resolver"),
   "recently-deleted": b("recently-deleted", "WP-3.5", "Recently deleted"),

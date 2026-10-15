@@ -144,6 +144,10 @@ Standard easing is `cubic-bezier(0.2, 0, 0, 1)`, decelerate is `cubic-bezier(0, 
 - **Name the thing.** "Delete “On focus”?" says which note. Dialogs never ask "Are you sure?" on their own.
 - **Plain and short.** No "please", no exclamation marks, no blame ("Couldn't reach GitHub", not "You are offline").
 - **Numbers as digits** ("3 notes"), with correct plurals.
+- **Setup speaks to anyone** (D-124). The first run and the account and workspace parts of Settings are written for someone who has never heard of GitHub:
+  - The main path never says *repository*, *Git*, *commit*, *token*, *credential*, *CLI*, *instance*, or *Pages*. It says *your GitHub account*, *your notes*, *connect*, *save*, and *back up*.
+  - Short sentences. Every problem says what happened and the one thing to do ("Can't reach GitHub. Check your internet connection, then try again.").
+  - Technical detail lives only under *More options* or *Having trouble?*, where each technical word comes with a one-line plain explanation.
 - **Tooltips** appear after 500 ms of hovering, show the name and shortcut ("Bold ⌘B"), and never hold information you can't get another way.
 
 <h2 id="visual-quality" data-reader-personas="design engineering">Visual quality</h2>

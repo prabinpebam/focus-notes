@@ -71,7 +71,8 @@ export async function world(opts: { gcm?: boolean; gh?: boolean; helper?: boolea
 
 /** An instance on GitHub already, as WP-3.1 leaves it: the notes repository with `private/` linked. */
 export function existingInstance(w: World, withPrivate = true) {
-  w.gh.add({ owner: "ada", name: "notes", template: "prabinpebam/focus-notes-workspace", files: [".focus-notes/workspace.json", "notes/.gitkeep"] });
+  // Last pushed three days ago, for "Updated 3 days ago" (D-124).
+  w.gh.add({ owner: "ada", name: "notes", template: "prabinpebam/focus-notes-workspace", files: [".focus-notes/workspace.json", "notes/.gitkeep"] }).pushedAt = new Date(Date.now() - 3 * 86_400_000 - 3_600_000).toISOString();
   w.gh.add({ owner: "ada", name: "recipes", files: ["README.md"] });
   w.gh.add({ owner: "ada", name: "notes-private", private: true, files: ["notes/secret.md"] });
   const priv = join(w.remotes, "ada", "notes-private.git"), notes = join(w.remotes, "ada", "notes.git");

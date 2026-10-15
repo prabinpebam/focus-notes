@@ -329,10 +329,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store.update((s) => ({ ...s, note: { ...s.note, ...patch } }));
   const sync = registerSync({ store, bridge, catalog, toast });
   const setup = registerSetup({ store, bridge, catalog, commands, viewModels });
-  /** The note put away while the first run's card shows again (Run setup again, Sign in, Switch account). */
+  /** The note put away while the first run's card shows again (Run setup again, Sign in, Switch account, Open another workspace). */
   let held: string | undefined;
   const firstRun = registerFirstRun({
-    store, bridge, catalog, commands, viewModels, toast, persistAppState,
+    store, bridge, catalog, commands, viewModels, toast, persistAppState, now: clock.now,
     hold: async () => {
       editorAction(FLUSH_EDITOR);
       if (!(await flush())) return false;

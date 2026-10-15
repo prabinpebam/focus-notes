@@ -1,5 +1,6 @@
 /**
- * The visual quality checklist (D-111) on the surfaces a flow reaches: the first run's card, and,
+ * The visual quality checklist (D-111) on the surfaces a flow reaches: the first run's card (its four
+ * steps, D-124), and,
  * with a workspace in Git, the conflict resolver and Recently deleted. Light and dark, at the
  * default window size and at the minimum (480 × 360), each captured for review
  * (`test-results/screens/vq-*.png`). The flows themselves are in `flows.ts`.
@@ -7,7 +8,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { quit } from "./helpers.ts";
 import { hoverTooltips, settled, visualProblems } from "./visual-quality.ts";
-import { conflictFlow, firstRunFlow, workspaceFlow, type FlowHooks } from "./flows.ts";
+import { conflictFlow, firstRunFlow, notesFlow, type FlowHooks } from "./flows.ts";
 
 const SIZES = [{ name: "default", size: undefined }, { name: "small", size: { width: 480, height: 360 } }] as const;
 const shot = (name: string) => `../../test-results/screens/vq-${name}.png`;
@@ -33,10 +34,10 @@ for (const { name: sizeName, size } of SIZES) {
       await quit(l);
     });
 
-    test(`D-111, D-123: the first run's Your workspace step keeps the dialog inset, scrolls inside, and lists its choices in rows, ${mode}, ${sizeName} window`, async () => {
-      test.setTimeout(120_000);
+    test(`D-111, D-123, D-124: the first run's Connect, Your notes (found, Create my notes, More options), and Ready keep the dialog inset and scroll inside, ${mode}, ${sizeName} window`, async () => {
+      test.setTimeout(150_000);
       const problems: string[] = [];
-      const { l, w } = await workspaceFlow(mode, size, checks(`${sizeName}-${mode}`, problems));
+      const { l, w } = await notesFlow(mode, size, checks(`${sizeName}-${mode}`, problems));
       try {
         expect(problems).toEqual([]);
       } finally {
