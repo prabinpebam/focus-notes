@@ -195,6 +195,10 @@ contextBridge.exposeInMainWorld("focusNotes", {
     openPage: (page: string) => ipcRenderer.send("firstRun:openPage", page),
   },
   setWindowScheme: (s: "light" | "dark", canvas?: string, accent?: string) => ipcRenderer.send("window:scheme", s, canvas, accent),
+  // DSK-09, D-148: the page's first themed frame is drawn (the window shows then), and the workspace
+  // changed, so the app starts again in place, never by reloading the page.
+  firstFrame: () => ipcRenderer.send("window:firstFrame"),
+  onWorkspaceSwitched: listen("workspace:switched"),
   // The window the app draws and manages on Windows and Linux (DSK-03, DSK-08): intent-level only.
   window: initialWindow
     ? {
