@@ -8,6 +8,7 @@
   "scripts": {
     "build": "node scripts/entry.mjs && vite build --config vite.config.ts && vite build --config vite.reader.config.ts",
     "dev": "node scripts/entry.mjs && vite --config vite.config.ts",
+    "build:publish": "vite build --config vite.publish.config.ts",
     "preview": "vite preview --config vite.config.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test:e2e": "playwright test"

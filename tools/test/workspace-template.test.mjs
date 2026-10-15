@@ -138,6 +138,10 @@ describe("the template's Deploy app workflow (D-48, SEC-05)", () => {
     expect(steps()[sha].run).toMatch(/sha256sum --check --strict/);
     expect(steps()[attest].run).toMatch(/gh attestation verify .* --repo "\$FOCUS_NOTES_SOURCE"/);
     expect(steps()[publish].run).toContain('node "$RUNNER_TEMP/bundle/publish/cli.mjs" publish');
+    // The bundle's own page renderer renders the public pages (WP-5.5), at the site's address.
+    expect(steps()[publish].run).toContain("--reader $RUNNER_TEMP/bundle/publish --site-url $SITE_URL/");
+    expect(steps()[publish].env.SITE_URL).toBe("${{ steps.pages.outputs.base_url }}");
+    expect(steps().find((s) => s.id === "pages").uses).toMatch(/^actions\/configure-pages@/);
     expect(steps()[publish].run).not.toMatch(/packages\/seal|pnpm|npm /);
     expect(steps()[publish].run).toMatch(/rm -rf private\s*$/);
   });

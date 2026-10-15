@@ -109,7 +109,7 @@ The CodeQL alerts: #3 `packages/seal/src/format.ts:207`; #4 `packages/core/src/f
 
 | Demo step | Evidence | Status |
 | --- | --- | --- |
-| 1. Install the preview on clean Windows 11 | Preview build from `preview-release.yml` | Owner |
+| 1. Install the preview on clean Windows 11 | Preview build: the `v0.0.x` tag's draft pre-release from `release.yml` (D-126), or the rolling `preview` pre-release (D-127) | Owner |
 | 2. Canvas with only the trigger, caret ready in 2.5 s | `m0-walking-skeleton.spec.ts`; `PRF-02.coldReadyMs` in `pnpm bench --check` | Met |
 | 3 to 5. Heading and paragraphs, clean CommonMark, back on relaunch | `m0-walking-skeleton.spec.ts` | Met |
 | 6. The gallery shows every M0 primitive in light and dark | `vq-surfaces.spec.ts`, `screens.spec.ts`; the gallery build (`pnpm gallery`) | Owner |

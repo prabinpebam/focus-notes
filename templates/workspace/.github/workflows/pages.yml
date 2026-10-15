@@ -51,8 +51,10 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
-      # A third-party step, so it runs before private/ is checked out.
-      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      # A third-party step, so it runs before private/ is checked out. Its base_url is the site's
+      # address, for public pages' canonical links.
+      - id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Download the web app bundle
         run: |
           curl -fsSL --retry 3 -o "$RUNNER_TEMP/bundle.tgz" \
@@ -88,11 +90,13 @@ jobs:
             git submodule update --init --depth 1 private
           # Without the vault's grant (setup skipped it), the site has public notes only.
           test -f private/access.json || echo "::notice::private/access.json isn't there yet, so this deploy has no vault."
-      - name: Publish the notes, seal the vault, and run the leak check
+      - name: Publish the notes and their pages, seal the vault, and run the leak check
         env:
           OWNER: ${{ github.repository_owner }}
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
         run: |
-          args="--site _site --notes notes --owner $OWNER --git"
+          # The bundle's publish/ holds the publisher and the page renderer it renders public pages with.
+          args="--site _site --notes notes --owner $OWNER --git --reader $RUNNER_TEMP/bundle/publish --site-url $SITE_URL/"
           if [ -d private ]; then args="$args --private private"; fi
           node "$RUNNER_TEMP/bundle/publish/cli.mjs" publish $args
           rm -rf private
