@@ -283,20 +283,33 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     if (code) await bridge.copyText?.(code);
     fr?.openPage("device");
   });
+  // The code card's own Copy: the code alone, nothing opened.
+  reg("firstRun.copyCodeOnly", async () => {
+    const code = state().signIn.code;
+    if (code) await bridge.copyText?.(code);
+  });
   reg("firstRun.useToken", () => {
     setSignIn({ phase: "token" });
     set({ token: "", tokenError: false, focus: state().focus + 1 });
   });
-  reg<{ value: string }>("firstRun.setToken", (a) => set({ token: value(a), tokenError: false }));
+  reg<{ value: string }>("firstRun.setToken", (a) => {
+    // Typing again clears what GitHub said about the last token.
+    const { problem: _said, ...rest } = state().account ?? { gcm: false, gh: false };
+    set({ token: value(a), tokenError: false, ...(state().account?.problem ? { account: rest } : {}) });
+  });
   reg("firstRun.submitToken", async () => {
     const token = state().token.trim();
-    // The token leaves the app's state at once, whatever happens next.
+    // The token leaves the app's state at once, whatever happens next; the form says so (D-135).
     set({ token: "" });
     if (!looksLikeToken(token)) return set({ tokenError: true, focus: state().focus + 1 });
     const r = await busy(() => fr!.useToken(token));
     applyAccount(r);
-    if (r?.account) setSignIn({ phase: "idle" });
-    set({ other: false, trouble: false, focus: state().focus + 1 });
+    if (signedInAs(r)) {
+      setSignIn({ phase: "idle" });
+      set({ other: false, trouble: false });
+    }
+    // Rejected: the form stays, its field says why and takes focus.
+    set({ focus: state().focus + 1 });
   });
   reg<{ page: FirstRunPage }>("firstRun.openPage", ({ page }) => fr?.openPage(page));
 
@@ -434,6 +447,11 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         repos: { type: "array", items: ITEM },
         theme: { type: "string" }, themeOptions: { type: "array", items: OPTION },
         canImport: { type: "boolean" }, searchHint: { type: "string" },
+        // D-135: the step's hero mark, the token form's problem, a failed setup step, a lookup that couldn't reach GitHub.
+        hasMark: { type: "boolean" }, mark: { type: "string" }, markTone: { type: "string", enum: ["neutral", "accent", "danger", "success"] }, markBusy: { type: "boolean" },
+        tokenMessage: { type: "string" }, hasTokenMessage: { type: "boolean" },
+        failed: { type: "boolean" }, failedId: { type: "string" }, lookupFailed: { type: "boolean" }, canCreateNow: { type: "boolean" }, createDetail: { type: "string" },
+        folderShort: { type: "string" },
       },
     },
     setters: {
@@ -463,6 +481,26 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const made = workspaceMade(s.setup.report);
       const list = matches(w.repos, w.query);
       const login = shown?.login ?? "";
+      const failedStep = s.setup.report?.steps.find((x) => x.state === "failed");
+      const lookupFailed = w.error === "firstRun.notes.error.offline";
+      // The token form says what GitHub (or the helper) said about the token it just cleared.
+      const tokenKey = f.tokenError ? "firstRun.signIn.tokenInvalid"
+        : connect === "token" && a?.problem ? (catalog.has(`firstRun.signIn.tokenProblem.${a.problem}`) ? `firstRun.signIn.tokenProblem.${a.problem}` : "firstRun.signIn.tokenProblem.failed") : "";
+      // The step's hero mark (D-135), where nothing else on it is a visual anchor: waits ring it.
+      const mark: [string, "neutral" | "accent" | "danger" | "success", boolean] | undefined =
+        f.step === "connect"
+          ? connect === "checking" ? ["github", "neutral", true]
+          : connect === "waiting" || connect === "window" ? ["github", "accent", true]
+          : connect === "token" ? ["lock", tokenKey ? "danger" : "neutral", false]
+          : undefined
+        : f.step === "notes"
+          ? panel === "checking" ? ["search", "neutral", true]
+          : panel === "clone" ? ["github", "neutral", false]
+          : panel === "local" ? ["folder", "neutral", false]
+          : panel === "create" && lookupFailed ? ["cloudOff", "danger", false]
+          : panel === "progress" ? (made ? ["cloudCheck", "success", false] : failed || w.error ? ["warning", "danger", false] : ["cloudUp", "accent", true])
+          : undefined
+        : undefined;
       return {
         // Welcome is the hero, centred; the steps after it read from the start (D-126).
         open: f.active, step: f.step, align: f.step === "welcome" ? "center" : "start",
@@ -482,7 +520,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         canHelper: Boolean(a?.gcm || a?.gh), noHelper: Boolean(a && !a.gcm && !a.gh), problem, hasProblem: Boolean(problem), offline: a?.problem === "offline",
         canOther: connect === "found" || connect === "cli",
         token: f.token, tokenError: f.tokenError,
-        panel, more: w.more, details: w.details || failed, canCreate: f.scope !== "workspace",
+        panel, more: w.more, details: w.details, canCreate: f.scope !== "workspace",
         isCreate: panel === "create", showMore: panel === "create" || panel === "found", working: started && !made && !w.error && !failed,
         found: w.repos.filter((r) => r.instance).slice(0, 5).map((r, n) => ({
           id: `${r.owner}/${r.name}`, first: n === 0, label: !s.account.login || r.owner === s.account.login ? r.name : `${r.owner}/${r.name}`,
@@ -491,7 +529,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         instance: w.instance, private: w.private, publish: w.publish ? "on" : "off", publishOptions: options("firstRun.workspace.publish", ["on", "off"]),
         passphrase: w.passphrase, confirm: w.confirm, folder: w.folder, folderText: catalog.format("firstRun.workspace.folder", { folder: w.folder }),
         error: w.error && catalog.has(w.error) ? catalog.format(w.error) : "", hasError: Boolean(w.error),
-        started, made, progressText: catalog.format(made ? "firstRun.workspace.made" : failed ? "firstRun.notes.failed" : "firstRun.notes.creating"),
+        started, made, progressText: made ? catalog.format("firstRun.workspace.made") : failedStep ? catalog.format(`setup.problem.${failedStep.problem ?? "failed"}`) : catalog.format("firstRun.notes.creating"),
         query: w.query, activeId: w.activeId,
         reposSummary: !w.reposLoaded ? "" : list.length ? catalog.format("firstRun.workspace.repos", { count: list.length }) : catalog.format("firstRun.workspace.noRepos"),
         repos: list.map((r) => ({
@@ -501,6 +539,11 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         theme: s.appearance.mode, themeOptions: options("firstRun.ready.theme", ["system", "light", "dark"]),
         canImport: commands.has("notes.import") && commands.describe("notes.import").enabled,
         searchHint: catalog.format("firstRun.ready.search", { mod: formatChord("Mod+/", bridge.platform) }),
+        hasMark: Boolean(mark), mark: mark?.[0] ?? "github", markTone: mark?.[1] ?? "neutral", markBusy: Boolean(mark?.[2]),
+        tokenMessage: tokenKey ? catalog.format(tokenKey) : "", hasTokenMessage: Boolean(tokenKey),
+        failed: Boolean(failedStep), failedId: failedStep?.id ?? "", lookupFailed, canCreateNow: !lookupFailed,
+        createDetail: catalog.format(lookupFailed ? "firstRun.notes.createOffline" : "firstRun.notes.createWhy"),
+        folderShort: shortPath(w.folder),
       };
     },
   });
@@ -553,4 +596,17 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
 function matches(repos: RepoChoice[], query: string): RepoChoice[] {
   const q = query.trim().toLowerCase();
   return repos.filter((r) => !q || `${r.owner}/${r.name}`.toLowerCase().includes(q)).slice(0, 100);
+}
+
+/**
+ * A long folder path shortened in the middle (D-135), so it never wraps mid-name: its root and first
+ * folder, an ellipsis, and its last two folders ("C:\Users\…\Documents\Focus Notes"). The full path
+ * is the tooltip.
+ */
+export function shortPath(path: string, max = 40): string {
+  if (path.length <= max) return path;
+  const sep = path.includes("\\") ? "\\" : "/";
+  const parts = path.split(sep);
+  if (parts.length <= 4) return path;
+  return [...parts.slice(0, 2), "…", ...parts.slice(-2)].join(sep);
 }

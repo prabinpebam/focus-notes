@@ -9,8 +9,8 @@ export interface AppMarkProps {
 
 /**
  * The app icon, the same drawing as the desktop's (apps/desktop/scripts/icon.mjs, a 256 unit
- * square): a paper tile, a soft shadow, the frosted ring and the red dot. The same in every theme,
- * like the icon on the desktop (D-126).
+ * square): a paper tile, a soft shadow, the frosted ring and the red dot. A dark theme draws it on a dark tile,
+ * so it reads as the icon without a bright square (D-135).
  */
 export function AppMark({ size = "l", label }: AppMarkProps) {
   const soft = `app-mark-soft-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;

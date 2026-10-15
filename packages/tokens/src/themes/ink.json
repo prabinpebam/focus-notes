@@ -47,5 +47,16 @@
     "1": { "$value": "{ref.shadow.dark1}" },
     "2": { "$value": "{ref.shadow.dark2}" },
     "3": { "$value": "{ref.shadow.dark3}" }
+  },
+  "brand": {
+    "$description": "The app icon in a dark theme (D-135): the same drawing on a dark tile, so it reads as the icon without a bright square.",
+    "tile": { "$type": "color", "$value": "{ref.color.ink.700}" },
+    "tileBorder": { "$type": "color", "$value": "{ref.color.ink.600}" },
+    "ring": { "$type": "color", "$value": "{ref.color.ink.600}" },
+    "ringOpacity": { "$type": "number", "$value": 0.7 },
+    "ringBorder": { "$type": "color", "$value": "{ref.color.ink.500}" },
+    "dot": { "$type": "color", "$value": "{ref.color.red.500}" },
+    "shadow": { "$type": "color", "$value": "{ref.color.black}" },
+    "shadowOpacity": { "$type": "number", "$value": 0.35 }
   }
 }

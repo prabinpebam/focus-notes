@@ -45,7 +45,7 @@
     "blur": { "$type": "dimension", "$value": "{ref.size.12}" }
   },
   "brand": {
-    "$description": "The app icon (apps/desktop/scripts/icon.mjs): Paper's trigger on Paper's canvas. The same in every theme, like the icon on the desktop (D-126).",
+    "$description": "The app icon (apps/desktop/scripts/icon.mjs): Paper's trigger on Paper's canvas. A dark theme draws it on a dark tile (D-135).",
     "tile": { "$type": "color", "$value": "{ref.color.paper.50}" },
     "tileBorder": { "$type": "color", "$value": "{ref.color.paper.200}" },
     "ring": { "$type": "color", "$value": "{ref.color.white}" },

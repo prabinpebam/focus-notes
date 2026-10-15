@@ -197,7 +197,13 @@ globalStyle(p("pre code"), { backgroundColor: "transparent", padding: 0, fontSiz
 globalStyle(p("pre[data-raw-markdown]"), { userSelect: "text" });
 globalStyle(p("a"), { color: t.link, textDecoration: "underline" });
 globalStyle(p("hr"), { borderStyle: "none", borderTopStyle: "solid", borderTopWidth: t.quoteBorderWidth, borderTopColor: t.quoteBorder, marginBlock: t.space.l });
-globalStyle(p("p.is-editor-empty:first-child::before"), { content: "attr(data-placeholder)", color: t.placeholder, pointerEvents: "none", float: "left", height: 0 });
+// One line, ending in an ellipsis in a narrow window: a wrapped hint ran below the empty line, outside
+// the caret's row, so the focus band drew its second line in another tone (D-135).
+globalStyle(p("p.is-editor-empty:first-child"), { position: "relative" });
+globalStyle(p("p.is-editor-empty:first-child::before"), {
+  content: "attr(data-placeholder)", color: t.placeholder, pointerEvents: "none",
+  position: "absolute", insetInline: 0, top: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+});
 globalStyle(p('ul[data-type="taskList"]'), { listStyle: "none", paddingInlineStart: 0 });
 globalStyle(p('ul[data-type="taskList"] li'), { display: "flex", alignItems: "flex-start", gap: t.space.s });
 globalStyle(p('ul[data-type="taskList"] li > label'), { flexShrink: 0, userSelect: "none", display: "inline-flex", alignItems: "center", height: `calc(${t.lineHeight} * 1em)` });

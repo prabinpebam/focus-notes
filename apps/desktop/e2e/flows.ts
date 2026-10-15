@@ -65,7 +65,7 @@ export async function notesFlow(mode: "light" | "dark", size: Size, hooks: FlowH
   await expect(card(page).getByRole("button", { name: "Open", exact: true })).toBeFocused({ timeout: 15_000 });
   await hooks.at(page, "first-run-notes-found");
   await card(page).getByRole("button", { name: "More options" }).click();
-  await expect(card(page).getByRole("button", { name: "Open another repository from GitHub…" })).toBeVisible();
+  await expect(card(page).getByRole("button", { name: "Open from GitHub…" })).toBeVisible();
   await hooks.at(page, "first-run-notes-found-more");
   await card(page).getByRole("button", { name: "Create new notes instead" }).click();
   await heading(page, "Your notes");

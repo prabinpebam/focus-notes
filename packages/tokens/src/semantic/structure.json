@@ -197,6 +197,14 @@
       "$value": "{ref.size.64}",
       "$description": "An account's picture on its profile card (D-126)."
     },
+    "stepMark": {
+      "$value": "{ref.size.64}",
+      "$description": "A setup step's hero icon tile (D-135)."
+    },
+    "stepMarkIcon": {
+      "$value": "{ref.size.32}",
+      "$description": "The icon inside a setup step's hero tile (D-135)."
+    },
     "controlL": {
       "$value": "{ref.size.40}"
     },

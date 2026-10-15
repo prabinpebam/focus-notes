@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Input, Label, Text, TextField as AriaTextField } from "react-aria-components";
+import { FieldError, Input, Label, Text, TextField as AriaTextField } from "react-aria-components";
 import * as s from "./TextField.css.ts";
 
 export interface TextFieldProps {
@@ -9,6 +9,8 @@ export interface TextFieldProps {
   description?: string;
   type?: "text" | "password" | "url";
   invalid?: boolean;
+  /** What's wrong, shown below the field while it's invalid and read with it (its description). */
+  error?: string;
   /** Read by screen readers, not shown. */
   labelHidden?: boolean;
   autoFocus?: boolean;
@@ -23,7 +25,7 @@ export interface TextFieldProps {
 }
 
 /** A labelled single-line field. Secrets use type "password" and are never spell-checked or autofilled. */
-export function TextField({ label, value, placeholder, description, type = "text", invalid, labelHidden, autoFocus, focusRequest, size = "l", id, onChange, onSubmit }: TextFieldProps) {
+export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", id, onChange, onSubmit }: TextFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     if (focusRequest) input.current?.focus();
@@ -55,6 +57,7 @@ export function TextField({ label, value, placeholder, description, type = "text
         {...(placeholder ? { placeholder } : {})}
       />
       {description ? <Text slot="description" className={s.description}>{description}</Text> : null}
+      {invalid && error ? <FieldError className={s.error}>{error}</FieldError> : null}
     </AriaTextField>
   );
 }

@@ -19,6 +19,8 @@ export interface ItemCardProps {
   label?: string;
   /** A pressable card's action is running: it stays focusable, says so, and doesn't run again. */
   busy?: boolean;
+  /** A pressable card that can't run now: it stays focusable and says why in its detail (D-135). */
+  disabled?: boolean;
   /** A pressable card takes focus when it appears (a first-run step's main action). */
   autoFocus?: boolean;
   id?: string;
@@ -30,7 +32,7 @@ export interface ItemCardProps {
 const PICTURE = /^data:image\/(png|jpeg|gif|webp);base64,/;
 
 /** One thing, shown rather than described (D-126, D-127): an account, a workspace, or an option. */
-export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, size = "m", personal = "none", label, busy, autoFocus, id, children, onPress }: ItemCardProps) {
+export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, size = "m", personal = "none", label, busy, disabled, autoFocus, id, children, onPress }: ItemCardProps) {
   const Glyph = icon ? ICONS[icon] : undefined;
   const GitHub = ICONS.github;
   const Chevron = ICONS.chevronRight;
@@ -64,10 +66,10 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
         className={`${s.base} ${s.pressable} ${size === "l" ? s.large : ""}`}
         data-item-card=""
         aria-label={label}
-        aria-disabled={busy ? "true" : undefined}
+        aria-disabled={busy || disabled ? "true" : undefined}
         aria-busy={busy ? "true" : undefined}
         {...(autoFocus ? { autoFocus: true } : {})}
-        onPress={busy ? undefined : onPress}
+        onPress={busy || disabled ? undefined : onPress}
       >
         {visual}
         {text}
