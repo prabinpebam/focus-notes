@@ -73,6 +73,8 @@ export interface ScrollAnimator {
   to(dest: number, how?: ScrollHow): void;
   /** Stops where the note is now (the person scrolled). */
   cancel(): void;
+  /** Ends at once on the target (focus left the note: whatever opens anchors to where the line will be). */
+  finish(): void;
   /** Where the running animation is heading, or null at rest. */
   readonly dest: number | null;
 }
@@ -127,6 +129,12 @@ export function createScrollAnimator(
     if (!seg) return;
     const now = clock.now();
     const actual = scroll.get();
+    if (now >= seg.t1) {
+      // Its time is up: end on the target (or where the browser clamps it), never a frame later.
+      write(seg.p1);
+      seg = null;
+      return;
+    }
     if (Math.abs(actual - last) > 1) {
       // Moved under it (the browser revealing the caret): carry on from there, never jump back. If it
       // was moved past the target, the scroll is done there.
@@ -137,7 +145,8 @@ export function createScrollAnimator(
         opts.onOvertaken?.();
         return;
       }
-      seg = hermite(actual, v0, seg.p1, now, Math.max(now + FRAME, seg.t1));
+      // Never past its own end: a target the browser clamps away can't keep it running.
+      seg = hermite(actual, v0, seg.p1, now, seg.t1);
     }
     write(at(now));
     if (now < seg.t1) frame = clock.request(step);
@@ -175,6 +184,12 @@ export function createScrollAnimator(
       if (!frame) frame = clock.request(step);
     },
     cancel,
+    finish() {
+      if (!seg) return;
+      const dest = seg.p1;
+      cancel();
+      write(dest);
+    },
     get dest() {
       return seg ? seg.p1 : null;
     },

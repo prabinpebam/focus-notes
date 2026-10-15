@@ -87,6 +87,33 @@ test("D-156: typing past the band's bottom scrolls smoothly over about 200 ms, n
   await quit(l);
 });
 
+test("D-156: a press in the note stops a running auto-scroll where it is, so the text stays under the pointer", async () => {
+  const dirs = tempDirs();
+  const lines = Array.from({ length: 60 }, (_, i) => `Line ${i + 1}.`).join("\n\n");
+  writeFileSync(join(dirs.docs, "Welcome.md"), `# Title\n\n${lines}\n`);
+  const l = await launch(dirs);
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  await editor.locator("p").first().click();
+  await page.waitForTimeout(300);
+  const s = page.locator("[data-editor-scroller]");
+  const box = (await s.boundingBox())!;
+  // Ctrl+End scrolls a long way (animated); a press lands while it runs.
+  await page.keyboard.press(caret.docEnd);
+  await page.waitForTimeout(60);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.4);
+  await page.mouse.down();
+  const at = await s.evaluate((el) => el.scrollTop);
+  await page.waitForTimeout(400);
+  const later = await s.evaluate((el) => el.scrollTop);
+  await page.mouse.up();
+  console.log(`D-156 press: stopped at ${at.toFixed(0)}, ${later.toFixed(0)} 400 ms later`);
+  // It had started, and it stopped within a frame or two of the press (not carried on to the end).
+  expect(at).toBeGreaterThan(0);
+  expect(Math.abs(later - at)).toBeLessThan(40);
+  await quit(l);
+});
 test("D-156: with reduced motion the auto-scroll is instant", async () => {
   const dirs = tempDirs();
   const lines = Array.from({ length: 60 }, (_, i) => `Line ${i + 1}.`).join("\n\n");

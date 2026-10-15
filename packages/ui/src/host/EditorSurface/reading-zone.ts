@@ -116,8 +116,10 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   const onDown = (e: PointerEvent) => {
     pointerDown = true;
     scrollPress = onScrollbar(e);
+    // A press stops a running auto-scroll where the note is: the person is pointing at what they see,
+    // and the text mustn't slide out from under the pointer (the release checks the band again).
+    animator.cancel();
     if (scrollPress) {
-      animator.cancel();
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
     }
@@ -146,6 +148,10 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   const onInput = () => {
     intent = true;
   };
+  // Focus leaving the note (into the link editor, the toolbar, find) ends a running scroll at once: what
+  // opens is anchored to the selection, and mid-scroll that can still be under the top band, where an
+  // anchored surface is hidden and would drop the focus it was just given.
+  const onBlur = () => animator.finish();
 
   measure();
   const dom = editor.view.dom;
@@ -154,6 +160,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   editor.on("selectionUpdate", schedule);
   editor.on("update", schedule);
   editor.on("focus", onFocus);
+  editor.on("blur", onBlur);
   scroller.addEventListener("pointerdown", onDown);
   scroller.addEventListener("wheel", onWheel, { passive: true });
   window.addEventListener("keydown", onKey, true);
@@ -168,6 +175,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
     editor.off("selectionUpdate", schedule);
     editor.off("update", schedule);
     editor.off("focus", onFocus);
+    editor.off("blur", onBlur);
     scroller.removeEventListener("pointerdown", onDown);
     scroller.removeEventListener("wheel", onWheel);
     window.removeEventListener("keydown", onKey, true);

@@ -181,6 +181,32 @@ describe("the auto-scroll (D-156)", () => {
     expect(s.pending()).toBe(0);
   });
 
+  it("a target the browser clamps away still ends on time: no frames after its end (PRF-04)", () => {
+    const s = setup();
+    let pos = 0;
+    const a = createScrollAnimator(
+      { get: () => pos, set: (v) => (pos = Math.min(v, 1000)) }, // the end of the note is at 1000
+      { duration: () => autoScroll.duration, easing: cubicBezier(autoScroll.easing), clock: s.clock },
+    );
+    a.to(1010);
+    for (let i = 0; i < 14; i++) s.tick(); // 224 ms
+    expect(pos).toBe(1000);
+    expect(a.dest).toBeNull();
+    expect(s.pending()).toBe(0);
+  });
+
+  it("finish() ends a running scroll at once on its target (focus left the note)", () => {
+    const s = setup();
+    s.a.to(300);
+    s.tick();
+    s.a.finish();
+    expect(s.pos()).toBe(300);
+    expect(s.a.dest).toBeNull();
+    expect(s.pending()).toBe(0);
+    s.a.finish(); // at rest: nothing
+    expect(s.pos()).toBe(300);
+  });
+
   it("the person's scroll cancels it where it is", () => {
     const s = setup();
     s.a.to(300);
