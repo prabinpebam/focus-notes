@@ -9,13 +9,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  derivePasscodeBits, fromB64url, ITERATIONS, parseKeyring, parseSiteManifest, randomBytes, SealError, SiteReader, toB64url, vaultPath,
+  derivePasscodeBits, fromB64url, ITERATIONS, parseKeyring, parseSiteManifest, randomBytes, SealError, sealKeyring, SiteReader, toB64url, vaultPath,
 } from "../src/index.ts";
 import {
   activeShareGrants, deriveLinkBits, inScope, isActive, keyringSaltFor, LINK_INFO, linkKeyringPath, NAME_ITERATIONS, nameLookup, normalizeName, noteId, passcodeKeyringPath, scopedPaths,
   type Grant,
 } from "../src/grants.ts";
-import { leakCheck, LeakError, publish, validateAccess } from "../src/publish.ts";
+import { leakCheck, LeakError, publish, secretForms, validateAccess } from "../src/publish.ts";
 
 const PASS = "correct horse battery staple";
 const NOW = Date.parse("2026-10-15T00:00:00Z");
@@ -311,16 +311,94 @@ describe("security review fixes (WP-5.2)", () => {
     expect(parseSiteManifest(await readFile(join(j.site, "focus-notes.json"), "utf8")).nameSalt).toMatch(/^[A-Za-z0-9_-]{22}$/);
   }, 30_000);
 
-  it("M4: refuses a custom passcode that's easy to guess, without quoting it; generated ones and withdrawn grants pass", () => {
+  it("M4: refuses a passcode that's easy to guess, without quoting it; only withdrawn grants are exempt", () => {
     const base = { version: 1 as const, grants: [] as Grant[] };
     const weak = grant({ passcode: { value: "aaaaaaaaaaaaaaa" }, scope: { notes: ["n-a"] } });
     const err = (() => { try { validateAccess({ ...base, grants: [weak] }); } catch (e) { return e as Error; } })();
     expect(err?.message).toMatch(/too easy to guess/);
     expect(err?.message).not.toContain("aaaa");
     expect(() => validateAccess({ ...base, grants: [{ ...weak, passcode: { value: "abcabcabcabc" } }] })).toThrow(/too easy to guess/);
-    expect(() => validateAccess({ ...base, grants: [{ ...weak, passcode: { value: "aaaaaaaaaaaaaaa", generated: true } }] })).not.toThrow();
     expect(() => validateAccess({ ...base, grants: [{ ...weak, revokedAt: "2026-10-02T00:00:00Z" }] })).not.toThrow();
     expect(() => validateAccess({ ...base, grants: [{ ...weak, passcode: { value: "orbit maple quiet river" } }] })).not.toThrow();
+  });
+
+  it("#2: `generated: true` doesn't skip the strength check, and generated four-word passcodes pass it", () => {
+    const base = { version: 1 as const, grants: [] as Grant[] };
+    const forged = grant({ passcode: { value: "aaaaaaaaaaaaaaa", generated: true }, scope: { notes: ["n-a"] } });
+    const err = (() => { try { validateAccess({ ...base, grants: [forged] }); } catch (e) { return e as Error; } })();
+    expect(err?.message).toMatch(/too easy to guess/);
+    expect(err?.message).not.toContain("aaaa");
+    expect(() => validateAccess({ ...base, grants: [{ ...forged, passcode: { value: "orbit maple quiet river", generated: true } }] })).not.toThrow();
+    expect(() => validateAccess({ ...base, grants: [{ ...forged, passcode: { value: "able-acid-zoom-yeti", generated: true } }] })).not.toThrow();
+  });
+
+  it("#4: every keyring's ciphertext is the same size, whatever the grant ID's length or its expiry", async () => {
+    const s = randomBytes(16), bits = randomBytes(32);
+    const payload = (grant: string, expiresAt: string | null) => ({ grant, expiresAt, manifest: { kid: "abcdefghijklmnop", key: toB64url(randomBytes(32)) } });
+    const sizes = await Promise.all([
+      payload("g1234567", null), payload("g".repeat(64), null), payload("g1234567", "2026-12-31T23:59:59.000Z"), payload("x".repeat(64), "2027-01-01T00:00:00Z"),
+    ].map(async (p) => {
+      const e = parseKeyring(await sealKeyring(bits, s, "b".repeat(16), p, "pbkdf2-sha256", "vault"));
+      return fromB64url(e.data).length;
+    }));
+    expect(new Set(sizes).size).toBe(1);
+  });
+
+  it("#4: a padded keyring still opens to its payload", async () => {
+    const nameSalt = salt();
+    const secret = toB64url(randomBytes(32));
+    const i = await instance(notes, [grant({ id: "gshort01", link: { secret }, expiresAt: "2099-01-01T00:00:00Z", scope: { notes: ["n-a"] } })], { vault: true, nameSalt });
+    await i.run();
+    const share = await i.reader().openLink("gshort01", secret);
+    expect(share.notes.map((n) => n.path)).toEqual(["A.md"]);
+    expect((await i.reader().unlock(PASS)).vault.notes).toHaveLength(2);
+  }, 30_000);
+
+  it("#10: keyrings are labelled focus-notes/keyring/v2 in their additional data, and the reader accepts no other label", async () => {
+    const i = await instance(notes, [], { vault: true });
+    const r = await i.run();
+    const file = join(i.site, ...vaultPath(r.build).split("/"));
+    const e = parseKeyring(await readFile(file, "utf8"));
+    const key = await crypto.subtle.importKey("raw", await derivePasscodeBits(PASS, fromB64url(e.salt)), "AES-GCM", false, ["encrypt", "decrypt"]);
+    const aad = (label: string) => new TextEncoder().encode(`${label}|${r.build}|pbkdf2-sha256|${ITERATIONS}|${e.salt}|vault`);
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromB64url(e.iv), additionalData: aad("focus-notes/keyring/v2") }, key, fromB64url(e.data));
+    const iv = randomBytes(12);
+    const v1 = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: aad("focus-notes/keyring/v1") }, key, plain));
+    await writeFile(file, JSON.stringify({ ...e, iv: toB64url(iv), data: toB64url(v1) }));
+    await expect(i.reader().unlock(PASS)).rejects.toMatchObject({ code: "key" });
+  }, 30_000);
+
+  it("#6: a name that turns up by chance inside ciphertext (data, iv, salt) isn't a leak; in any other field it is", async () => {
+    const root = await mkdtemp(join(tmpdir(), "fn-names-"));
+    dirs.push(root);
+    const files = {
+      "_sealed/b/chance.json": JSON.stringify({ v: 1, iv: "xxAlexanderx", data: "abcAlexanderdefAlexander" }),
+      "_access/b/p/chance.json": JSON.stringify({ v: 1, kdf: "pbkdf2-sha256", iterations: 600000, salt: "AlexanderAlexander1234", iv: "x", data: "Alexander" }),
+      "_access/b/l/plain.json": JSON.stringify({ v: 1, kdf: "hkdf-sha256", salt: "x", iv: "x", data: "x", note: "for Alexander" }),
+      "_sealed/b/key.json": JSON.stringify({ v: 1, Alexander: 1, iv: "x", data: "x" }),
+    };
+    for (const [file, body] of Object.entries(files)) {
+      await mkdir(join(root, ...file.split("/").slice(0, -1)), { recursive: true });
+      await writeFile(join(root, ...file.split("/")), body);
+    }
+    const found = await leakCheck(root, [], [], ["Alexander"]);
+    expect(found.sort((a, b) => a.file.localeCompare(b.file))).toEqual([{ file: "_access/b/l/plain.json", kind: "name" }, { file: "_sealed/b/key.json", kind: "name" }]);
+  });
+
+  it("#7: finds secrets URI-encoded and JSON-escaped, and names in their normalized form", async () => {
+    const root = await mkdtemp(join(tmpdir(), "fn-forms-"));
+    dirs.push(root);
+    const spaced = "orbit maple quiet river", quoted = 'say "open sesame" twice\\';
+    await writeFile(join(root, "a.js"), `fetch("/s?p=${encodeURIComponent(spaced)}")`);
+    await writeFile(join(root, "b.json"), JSON.stringify({ p: quoted }));
+    await writeFile(join(root, "focus-notes.json"), JSON.stringify({ who: "margarethe" }));
+    await writeFile(join(root, "c.txt"), "nothing here");
+    const found = await leakCheck(root, [], [spaced, quoted], ["Margarethe"]);
+    expect(found.sort((a, b) => a.file.localeCompare(b.file))).toEqual([
+      { file: "a.js", kind: "secret" }, { file: "b.json", kind: "secret" }, { file: "focus-notes.json", kind: "name" },
+    ]);
+    expect(secretForms(spaced)).toContain("orbit%20maple%20quiet%20river");
+    expect(secretForms(quoted)).toContain('say \\"open sesame\\" twice\\\\');
   });
 
   it("L3: checks nameSalt's size, grant IDs, and that a name isn't empty once normalized", () => {

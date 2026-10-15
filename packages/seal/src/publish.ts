@@ -82,8 +82,9 @@ export function validateAccess(a: unknown): AccessFile {
     if (g.passcode !== undefined && (typeof g.passcode.value !== "string" || g.passcode.value.trim().length < 12)) bad("has a passcode shorter than 12 characters");
     if (typeof g.scope !== "object" || g.scope === null) bad("has no scope");
     if (!normalizeName(g.name)) bad("has an empty name");
-    // A custom passcode must resist offline guessing; generated ones (four EFF words) do by construction (SHR-07).
-    if (g.passcode && !g.owner && !g.revokedAt && !g.passcode.generated && !passphraseStrength(g.passcode.value).ok) bad("has a custom passcode that's too easy to guess (use 12 or more characters, or generate one)");
+    // Every passcode in force must resist offline guessing, generated or not: `generated` is just a field
+    // in access.json, so it can't vouch for the value. Four EFF words score about 135 bits (SHR-07).
+    if (g.passcode && !g.owner && !g.revokedAt && !passphraseStrength(g.passcode.value).ok) bad("has a passcode that's too easy to guess (use 12 or more characters, or generate one)");
   }
   if (f.nameSalt !== undefined) {
     let ok = false;
@@ -186,7 +187,8 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
       for (const n of opens) manifest.notes.push({ ...(await sealNote(n)), path: shown.get(n.path)! });
       const kid = randomId(), key = randomBytes(KEY_BYTES);
       await put(join(o.site, ...sealedPath(build, kid).split("/")), await sealFile("manifest", key, build, kid, encodeText(JSON.stringify(manifest))));
-      return { grant: g.id, expiresAt: g.expiresAt ?? null, manifest: { kid, key: toB64url(key) } };
+      // A fixed-width expiry (only active grants get here, so it parses), and the payload is padded: every keyring is the same size.
+      return { grant: g.id, expiresAt: g.expiresAt ? new Date(g.expiresAt).toISOString() : null, manifest: { kid, key: toB64url(key) } };
     };
     const at = (path: string) => join(o.site, ...path.split("/"));
 
@@ -246,19 +248,43 @@ export const LEAK_MIN_NAME = 6;
  */
 const NAME_SCOPE = (file: string) => file.startsWith("_access/") || file.startsWith("_sealed/") || file === "focus-notes.json";
 
-/** A secret as it might be written: as stored, in Unicode NFC and NFD, and base64url as standard base64. */
+/** A secret as it might be written: as stored, in Unicode NFC and NFD, base64url as standard base64, URI-encoded, and JSON-escaped. */
 export function secretForms(secret: string): string[] {
   const s = secret.trim();
   if (!s) return [];
   const forms = [s, s.normalize("NFC"), s.normalize("NFD")];
   // Unpadded standard base64 is a prefix of the padded form, so it finds both.
   if (/^[A-Za-z0-9_-]+$/.test(s)) forms.push(s.replace(/-/g, "+").replace(/_/g, "/"));
-  return [...new Set(forms)];
+  return [...new Set(forms.flatMap(encodedForms))];
 }
+/** A string as it is, URI-encoded (`%20`), and as it reads inside a JSON string (`\"`, `\\`). */
+const encodedForms = (s: string) => [s, encodeURIComponent(s), JSON.stringify(s).slice(1, -1)];
+
+/** Fields that hold ciphertext or random bytes, where a name can turn up by chance: never searched for names. */
+const CIPHERTEXT_FIELDS = new Set(["data", "iv", "salt", "nameSalt"]);
+/**
+ * What a file in NAME_SCOPE says in its own words: a JSON file's keys and string values, apart from
+ * ciphertext fields; anything else, or JSON that doesn't parse, is searched whole.
+ */
+function plainText(file: string, body: string): string {
+  if (!file.endsWith(".json")) return body;
+  let value: unknown;
+  try { value = JSON.parse(body); } catch { return body; }
+  const out: string[] = [];
+  const walk = (v: unknown) => {
+    if (typeof v === "string") out.push(v);
+    else if (Array.isArray(v)) v.forEach(walk);
+    else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) { out.push(k); if (!CIPHERTEXT_FIELDS.has(k)) walk(x); }
+  };
+  walk(value);
+  return out.join("\n");
+}
+const mentions = (text: string, words: readonly string[]) => words.some((w) => text.includes(w));
 
 /**
  * Every text file in the site is searched for each private note's path, each long line of its text,
- * every grant secret in each of its forms, and (in NAME_SCOPE only) every audience name of LEAK_MIN_NAME characters or more (SEC-06).
+ * every grant secret in each of its forms, and (in NAME_SCOPE only, outside ciphertext) every audience
+ * name of LEAK_MIN_NAME characters or more, as written, in NFC, and normalized as the lookup does it (SEC-06).
  */
 export async function leakCheck(
   site: string, notes: { path: string; text: string }[], secrets: readonly string[] = [], names: readonly string[] = [],
@@ -268,7 +294,8 @@ export async function leakCheck(
   const lines = [...new Set(notes.flatMap((n) => n.text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length >= LEAK_MIN_LINE)))];
   // Secrets of any length: a passcode is at least 12 characters, links and keys 43.
   const keys = [...new Set(secrets.flatMap(secretForms))];
-  const audiences = [...new Set(names.map((n) => n.trim()).filter((n) => n.length >= LEAK_MIN_NAME).flatMap((n) => [n, n.normalize("NFC")]))];
+  const audiences = [...new Set(names.map((n) => n.trim()).filter((n) => n.length >= LEAK_MIN_NAME)
+    .flatMap((n) => [n, n.normalize("NFC"), normalizeName(n)]).filter((n) => n.length >= LEAK_MIN_NAME).flatMap(encodedForms))];
   const found: { file: string; kind: LeakKind }[] = [];
   const walk = async (d: string) => {
     for (const e of await readdir(d, { withFileTypes: true })) {
@@ -278,7 +305,7 @@ export async function leakCheck(
       const body = await readFile(p, "utf8");
       const file = relative(site, p).split(sep).join("/");
       if (keys.some((x) => body.includes(x))) found.push({ file, kind: "secret" });
-      else if (NAME_SCOPE(file) && audiences.some((x) => body.includes(x))) found.push({ file, kind: "name" });
+      else if (NAME_SCOPE(file) && mentions(plainText(file, body), audiences)) found.push({ file, kind: "name" });
       else if (paths.some((x) => body.includes(x))) found.push({ file, kind: "path" });
       else if (lines.some((x) => body.includes(x))) found.push({ file, kind: "text" });
     }
