@@ -98,7 +98,16 @@ function randomIndex(): number {
   }
 }
 
-/** A generated passcode: `count` EFF words joined by hyphens, for example `harbor-maple-river-cloud`. */
+/**
+ * A generated passcode: `count` EFF words joined by hyphens, for example `harbor-maple-river-cloud`.
+ * The four words with their own hyphen (drop-down, felt-tip, t-shirt, yo-yo) are drawn again, so the
+ * passcode always reads as exactly `count` words (7,772 words, 12.9 bits each).
+ */
 export function generatePasscode(count = 4): string {
-  return Array.from({ length: count }, () => LIST[randomIndex()]!).join("-");
+  return Array.from({ length: count }, () => {
+    for (;;) {
+      const w = LIST[randomIndex()]!;
+      if (!w.includes("-")) return w;
+    }
+  }).join("-");
 }

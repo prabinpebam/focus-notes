@@ -10,7 +10,7 @@
  */
 import { test, expect, type Page } from "./fixtures.ts";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { quit, windowBox, type Launched } from "./helpers.ts";
 import { card, existingInstance, heading, press, start, world } from "./github-world.ts";
@@ -106,7 +106,9 @@ test("DSK-09: dark, through setup's steps, finishing setup, Start writing, openi
     const open = card(page).getByRole("button", { name: "Open", exact: true });
     await expect(open).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
-    await expect.poll(() => (existsSync(join(w.dirs.userData, DATA_FILES.workspace)) ? readFileSync(join(w.dirs.userData, DATA_FILES.workspace), "utf8") : ""), { timeout: 30_000 }).toContain("Focus Notes 2");
+    // D-155: setup made Documents/notes, so opening the notes again goes in the first free folder beside it, "notes 2".
+    const folderNow = () => (existsSync(join(w.dirs.userData, DATA_FILES.workspace)) ? resolve((JSON.parse(readFileSync(join(w.dirs.userData, DATA_FILES.workspace), "utf8")) as { folder: string }).folder) : "");
+    await expect.poll(folderNow, { timeout: 30_000 }).toBe(resolve(join(dirname(w.dirs.docs), "notes 2")));
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible({ timeout: 20_000 });
     await expect(card(page)).toHaveCount(0);
     await settle(page);

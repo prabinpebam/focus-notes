@@ -116,6 +116,8 @@ describe("passcodes (SHR-07)", () => {
     expect(a.split("-")).toHaveLength(4);
     expect(a).not.toBe(b);
     for (const w of a.split("-")) expect(w).toMatch(/^[a-z]+$/);
+    // The list's own hyphenated words (drop-down, felt-tip, t-shirt, yo-yo) are never drawn: every passcode reads as four words.
+    for (let i = 0; i < 2000; i++) expect(generatePasscode().split("-")).toHaveLength(4);
     expect(passcodeProblem(a)).toBeUndefined();
   });
   it("the list is pinned: 7,776 different words, exactly as published (review L7)", () => {
