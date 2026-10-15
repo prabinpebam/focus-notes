@@ -380,6 +380,8 @@ const INTERNAL_IDS = new Set([
   "table.openMenu", "table.closeMenu", "toast.dismiss", "toast.action", "window.drag",
   // Steps inside a dialog, a card, or the link editor, which their own controls run.
   "link.openEditor", "link.apply", "link.cancel", "account.signOutNow", "workspace.removeSync", "workspace.removeConfirm",
+  // Settings → Workspace's own button (D-124): not listed, so the web's list, where it never applies, stays the same.
+  "workspace.openFromGitHub",
   "conflict.choose", "conflict.later", "files.confirm",
   // The Files panel's own selection and rows; Spotlight acts on a result through its quick actions instead.
   "files.select", "files.activate", "files.undo", "files.drop", "files.clearSelection", "files.hideDeleted", "files.toggleDeleted",
