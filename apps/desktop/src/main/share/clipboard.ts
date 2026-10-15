@@ -10,6 +10,12 @@ export const SECRET_CLIPBOARD_MS = 90_000;
 
 export interface TextClipboard { writeText(text: string): void; readText(): string; clear(): void }
 
+/** A clipboard in memory, for journeys (`FOCUS_NOTES_MEMORY_CLIPBOARD=1`, never packaged): read back as `globalThis.memoryClipboard`. */
+export function memoryClipboard(): TextClipboard {
+  const box = ((globalThis as { memoryClipboard?: { text: string } }).memoryClipboard = { text: "" });
+  return { writeText: (t) => void (box.text = t), readText: () => box.text, clear: () => void (box.text = "") };
+}
+
 export function secretClipboard(c: TextClipboard, o: { after?: (fn: () => void) => void; ms?: number } = {}) {
   const after = o.after ?? ((fn: () => void) => { setTimeout(fn, o.ms ?? SECRET_CLIPBOARD_MS).unref?.(); });
   return {

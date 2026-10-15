@@ -24,7 +24,8 @@ const mod = process.platform === "darwin" ? "Meta" : "Control";
 const SITE = "https://ada.github.io/notes/";
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
 const settledAxe = async (page: Page) => (await settled(page), axeViolations(page));
-const clipboard = (l: { app: import("@playwright/test").ElectronApplication }) => l.app.evaluate(({ clipboard: c }) => c.readText());
+/** What the app last copied: journeys copy into memory, never the computer's clipboard (FOCUS_NOTES_MEMORY_CLIPBOARD). */
+const clipboard = (l: { app: import("@playwright/test").ElectronApplication }) => l.app.evaluate(() => (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard?.text ?? "");
 const shot = process.env.FOCUS_NOTES_SHARE_SHOTS;
 async function capture(page: Page, name: string) {
   if (!shot) return;
@@ -42,7 +43,7 @@ test("SHR-05, SHR-07, SHR-08, SHR-09: share by link and by passcode, copy the in
   git(priv, "commit", "-q", "-m", "Add notes");
   // Setup found the Pages site (D-124): links are made for it.
   writeFileSync(join(dirs.userData, DATA_FILES.setup), JSON.stringify({ version: 1, site: SITE, steps: {} }));
-  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000", FOCUS_NOTES_POINTER_GAP_MS: "0" });
+  const l = await launch(dirs, { FOCUS_NOTES_IDLE_COMMIT_MS: "600000", FOCUS_NOTES_POINTER_GAP_MS: "0", FOCUS_NOTES_MEMORY_CLIPBOARD: "1" });
   const { page } = l;
   const settings = page.getByRole("dialog", { name: "Settings" });
   try {
