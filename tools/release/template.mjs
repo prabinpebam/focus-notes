@@ -4,12 +4,12 @@
  *
  *   node tools/release/template.mjs --version <x.y.z> --bundle dist/focus-notes-web-<x.y.z>.tgz --out dist
  *
- * writes focus-notes-workspace-<version>.tgz, a copy of templates/workspace/ whose Deploy app
- * workflow pins FOCUS_NOTES_VERSION and FOCUS_NOTES_SHA256 to that bundle, and whose
- * .focus-notes/workspace.json names the same templateVersion. The release attaches it, so an
- * instance finds its next pin on the latest release, checks it the same way its workflow checks the
- * bundle (SHA256SUMS and the attestation), and updates by taking its pages.yml. Pushing it to the
- * template repository and opening update pull requests in instances are WP-5.6.
+ * writes focus-notes-workspace-<version>.tgz, a copy of templates/workspace/ whose
+ * .focus-notes/app.json pins that bundle's version and SHA-256 for the Deploy app workflow, and whose
+ * .focus-notes/workspace.json names the same templateVersion. The release attaches it; an
+ * instance's Update app workflow finds it on the latest release, checks it (SHA256SUMS and the
+ * attestation) and proposes its template-managed files as a pull request, and
+ * tools/release/publish-template.mjs pushes it to the template repository (WP-5.6, D-135).
  */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -24,23 +24,16 @@ const template = join(root, "templates", "workspace");
 export const templateName = (version) => `focus-notes-workspace-${version}.tgz`;
 
 /**
- * The Deploy app workflow's text with the bundle's version and SHA-256 pinned, and the placeholder's
- * comment replaced by where the pin came from. Throws unless exactly one of each pin is there.
+ * The pin file `.focus-notes/app.json` that Deploy app reads, for the bundle's version and SHA-256.
+ * The pin is a file, not the workflow's text, so an instance's Update app workflow can move it with
+ * its own token, which may not edit workflows (D-135).
  */
-export function pinWorkflow(text, { version, sha256 }) {
+export function pinApp(text, { version, sha256 }) {
   if (!/^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(version)) throw new Error(`Not a version: ${version}`);
   if (!/^[0-9a-f]{64}$/.test(sha256)) throw new Error(`Not a SHA-256: ${sha256}`);
-  const pins = [
-    [/^( {2}FOCUS_NOTES_VERSION: )"[^"\n]*"$/m, `$1"${version}"`],
-    [/^( {2}FOCUS_NOTES_SHA256: )"[0-9a-f]{64}"$/m, `$1"${sha256}"`],
-    [/^ {2}# PLACEHOLDER PIN:[^\n]*\n(?: {2}#[^\n]*\n)*/m, `  # Pinned by the Focus Notes ${version} release (focus-notes-web-${version}.tgz). Updates arrive\n  # as pull requests that change both values together (DST-06).\n`],
-  ];
-  let out = text;
-  for (const [re, by] of pins) {
-    if ((out.match(new RegExp(re.source, "gm")) ?? []).length !== 1) throw new Error(`The template's workflow doesn't have exactly one ${re.source}`);
-    out = out.replace(re, by);
-  }
-  return out;
+  const pin = JSON.parse(text);
+  if (Object.keys(pin).sort().join() !== "sha256,version") throw new Error("app.json must hold exactly version and sha256");
+  return `${JSON.stringify({ version, sha256 })}\n`;
 }
 
 /** The workspace format file with the template version it came from. */
@@ -57,8 +50,8 @@ export function packTemplate({ version, bundle, out }) {
   const stage = mkdtempSync(join(tmpdir(), "fn-template-"));
   try {
     cpSync(template, stage, { recursive: true });
-    const wf = join(stage, ".github", "workflows", "pages.yml");
-    writeFileSync(wf, pinWorkflow(readFileSync(wf, "utf8"), { version, sha256 }));
+    const pin = join(stage, ".focus-notes", "app.json");
+    writeFileSync(pin, pinApp(readFileSync(pin, "utf8"), { version, sha256 }));
     const format = join(stage, ".focus-notes", "workspace.json");
     writeFileSync(format, pinFormat(readFileSync(format, "utf8"), version));
     mkdirSync(out, { recursive: true });
