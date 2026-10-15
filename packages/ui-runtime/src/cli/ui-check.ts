@@ -1,6 +1,7 @@
 /**
  * pnpm ui:check — validates every view and fragment, and checks fixture coverage.
  * --write writes the generated UI schema and contract catalog to schemas/ui/.
+ * --verify fails when the committed schemas/ui/ files differ from what --write would produce (D-138).
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -9,8 +10,8 @@ import { createApp, READER_VIEW_MODEL, SHARE_COMMANDS, SHARE_VIEW_MODEL, type Pl
 import { views, pages, fragments, messages } from "@focus-notes/views";
 import { tokenGroups } from "@focus-notes/tokens";
 import { checkUi, checkFixtureCoverage } from "../check.ts";
-import { buildUiSchema } from "../schema.ts";
-import { missingMigrations, UI_SCHEMA_MAJOR } from "../migrate.ts";
+import { staleFiles, staleMessage, uiSchemaFiles } from "../generated.ts";
+import { missingMigrations } from "../migrate.ts";
 import { galleryViews, registerGallery } from "../gallery.ts";
 
 const inertBridge: PlatformBridge = {
@@ -50,17 +51,20 @@ for (const m of missingMigrations()) problems.push({ doc: `UI schema v${m}`, sta
 for (const p of problems) console.error(`✗ ${p.doc} [${p.stage}] ${p.at}: ${p.message}`);
 for (const c of coverage) console.error(`✗ fixtures: ${c}`);
 
+const out = join(import.meta.dirname, "..", "..", "..", "..", "schemas", "ui");
+const files = uiSchemaFiles(inputs);
 if (process.argv.includes("--write")) {
-  const out = join(import.meta.dirname, "..", "..", "..", "..", "schemas", "ui");
   mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, `view.v${UI_SCHEMA_MAJOR}.json`), JSON.stringify(buildUiSchema(inputs), null, 2) + "\n");
-  writeFileSync(join(out, "contracts.v1.json"), JSON.stringify({ version: 1, contracts }, null, 2) + "\n");
+  for (const [name, text] of Object.entries(files)) writeFileSync(join(out, name), text);
   console.log(`Wrote ${out}`);
 }
+// --verify (pnpm check): the committed schemas must match what --write produces (D-138). Read-only.
+const stale = process.argv.includes("--verify") ? staleFiles(out, files) : [];
+if (stale.length) console.error(`✗ ${staleMessage(stale)}`);
 
 const count = Object.keys(inputs.views).length + Object.keys(fragments).length;
-if (problems.length || coverage.length) {
-  console.error(`ui:check failed: ${problems.length} view problems, ${coverage.length} fixture gaps.`);
+if (problems.length || coverage.length || stale.length) {
+  console.error(`ui:check failed: ${problems.length} view problems, ${coverage.length} fixture gaps, ${stale.length} stale schema files.`);
   process.exit(1);
 }
 console.log(`ui:check passed: ${count} documents, ${contracts.length} components, ${app.commands.ids().length} commands.`);

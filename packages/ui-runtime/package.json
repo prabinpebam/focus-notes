@@ -7,7 +7,7 @@
   "exports": { ".": "./src/index.ts", "./schema": "./src/schema.ts", "./gallery": "./src/gallery.ts", "./static": "./src/static.ts", "./page": "./src/page.ts" },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "ui:check": "node src/cli/ui-check.ts"
+    "ui:check": "node src/cli/ui-check.ts --verify"
   },
   "dependencies": {
     "@focus-notes/core": "workspace:*",
