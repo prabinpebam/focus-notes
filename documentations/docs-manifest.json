@@ -195,8 +195,18 @@
       "order": 303,
       "icon": "design_services",
       "status": "draft",
-      "updated": "2026-10-13",
+      "updated": "2026-10-15",
       "group": "Design/System"
+    },
+    {
+      "path": "design/visual-score.html",
+      "title": "Visual vs verbose score",
+      "order": 303.5,
+      "icon": "visibility",
+      "status": "draft",
+      "updated": "2026-10-15",
+      "group": "Design/System",
+      "searchText": "VVS visual vs verbose score threshold rubric visual anchor glanceable right element text economy word budget hierarchy"
     },
     {
       "path": "design/system/components.md",
@@ -402,7 +412,7 @@
       "order": 502,
       "icon": "fact_check",
       "status": "draft",
-      "updated": "2026-10-14",
+      "updated": "2026-10-15",
       "group": "Plan"
     },
     {
@@ -429,7 +439,7 @@
       "order": 510,
       "icon": "rule",
       "status": "stable",
-      "updated": "2026-10-14",
+      "updated": "2026-10-15",
       "group": "Plan"
     },
     {

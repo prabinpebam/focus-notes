@@ -3,7 +3,7 @@
 The shared building blocks every view and component uses: layout, spacing, shape, surfaces, type, icons, states, motion, and words. Every value here is a [token](system/tokens.md), and the [design system](system/overview.html) defines how components may use them. The values are proposals, tuned during M1.
 
 > [!NOTE]
-> **TL;DR.** A 4 px spacing grid, a 70-character reading column, and a 44 px top band. Radii step down with size: window 20, sheet and dialog 16, popover and menu 12, control 8. **Frosted** surfaces (blurred and translucent) are used only for things that float over text, and they turn solid when the OS asks for reduced transparency. Note text and interface text have separate type ramps. All icons come from **Fluent UI System Icons** (MIT). Motion is short (80–200 ms) and switches off with reduced motion. Words are plain, in sentence case, and buttons say what they do. Every value traces to a promise or user-can in the decisions at the end of the page.
+> **TL;DR.** A 4 px spacing grid, a 70-character reading column, and a 44 px top band. Radii step down with size: window 20, sheet and dialog 16, popover and menu 12, control 8. **Frosted** surfaces (blurred and translucent) are used only for things that float over text, and they turn solid when the OS asks for reduced transparency. Note text and interface text have separate type ramps. All icons come from **Fluent UI System Icons** (MIT). Motion is short (80–200 ms) and switches off with reduced motion. Words are plain, in sentence case, and buttons say what they do. Surfaces show rather than tell: each scores at least 70 of 100 on the [visual vs verbose score](visual-score.html) (80 for first-run steps and empty states), with no criterion below 10. Every value traces to a promise or user-can in the decisions at the end of the page.
 
 <h2 data-reader-personas="design">Layout</h2>
 
@@ -142,6 +142,7 @@ Standard easing is `cubic-bezier(0.2, 0, 0, 1)`, decelerate is `cubic-bezier(0, 
 - **Sentence case** everywhere ("Move to…", not "Move To…"). An ellipsis means the action opens something before acting.
 - **Buttons say what they do.** "Delete 3 notes", not "OK". "Make public", not "Confirm".
 - **Name the thing.** "Delete “On focus”?" says which note. Dialogs never ask "Are you sure?" on their own.
+- **Show, don't say.** Don't write a sentence for what an element can show: an account is a profile card, not "connected as @login"; progress is a stepper, not "Step 2 of 4" (see the [visual vs verbose score](visual-score.html#right-element)).
 - **Plain and short.** No "please", no exclamation marks, no blame ("Couldn't reach GitHub", not "You are offline").
 - **Numbers as digits** ("3 notes"), with correct plurals.
 - **Setup speaks to anyone** (D-124). The first run and the account and workspace parts of Settings are written for someone who has never heard of GitHub:
@@ -183,6 +184,20 @@ Every surface is checked against these rules before it's done (D-111, [Definitio
 - **Uniform padding**: interface headings trim their box to their letters (`text-box-trim`), so the padding above a title is the surface's padding alone; a close button or a text menu button at the content's edge bleeds (`bleed`), so its icon or text lines up with the edge while its hit area reaches into the padding.
 - **The journeys** (`apps/desktop/e2e/visual-quality.ts`, used by `vq-surfaces.spec.ts`, `vq-flows.spec.ts`, and the web's `visual-quality.spec.ts`) check every geometry rule on every surface (the theme manager's three tabs among them), light and dark, at the default size and at 480 × 360, and the focus ring at both ends of every list that holds focus. Surfaces mark themselves with `data-surface` and scrims with `data-scrim`.
 
+<h3 id="visual-score" data-reader-personas="design engineering product">Visual vs verbose score</h3>
+
+The checklist checks geometry; the **visual vs verbose score (VVS)** checks that a surface shows its information instead of describing it (D-127). The [full framework](visual-score.html) has the rubric, the budgets, and a worked example.
+
+| Criterion (0–20 each) | Scores 20 when | Measured by |
+| --- | --- | --- |
+| **Visual anchor** | One non-text element of 48 px or more says what the surface is for | Journeys |
+| **Glanceable** | A title of 6 words or fewer, at most one body sentence of 20 words or fewer | Reviewer |
+| **Right element** | Identity is a profile card, a choice is option cards, status is a badge or progress, steps are a stepper | Reviewer |
+| **Text economy** | Interface words within the surface's budget (first-run step 40, empty state 30, dialog or popover 60, panel or Settings section 80), no paragraph over 2 lines | Journeys |
+| **Hierarchy** | One focal point, distinct type steps, one dominant primary action | Reviewer |
+
+**Acceptable:** VVS ≥ 70 with no criterion below 10; first-run steps and empty states need ≥ 80. Menus, tooltips, toasts, toolbars, and the trigger aren't scored. The note canvas, help pages, and legal notices are exempt from text economy, and confirmations from the visual anchor.
+
 <h2 data-reader-personas="product design">Design decisions</h2>
 
 | ID | Decision | Serves | Rationale | Alternatives rejected |
@@ -194,3 +209,4 @@ Every surface is checked against these rules before it's done (D-111, [Definitio
 | DD-FND-05 | Hit targets of 32 px for pointers and 44 px for touch, regardless of visual size. | UC-CANVAS-02 | Lets visuals stay small and quiet (the 30 px trigger) without making them hard to hit. | Making every visual control 44 px, which clutters the canvas. |
 | DD-FND-07 | A measurable visual quality checklist that every surface passes (D-111). | UC-CANVAS-02 | Calm depends on precision: misaligned rows, uneven padding, and overlays that spill out of the window read as broken, not calm (CP-CALM-01). Rules a journey can check keep them from coming back. | Leaving it to judgment in review, which let these slip. |
 | DD-FND-06 | Bundle a highly legible font (Atkinson Hyperlegible) and a dyslexia-friendly option (OpenDyslexic). | UC-THEME-08 | Comfort-sensitive writers (SC-THEME-06) shouldn't have to install fonts system-wide. | Only offering system fonts. |
+| DD-FND-08 | Score every surface that presents a task or a state for visual vs verbose: at least 70, 80 for first impressions, and no criterion below 10 (D-127). | UC-SETUP-02, UC-CANVAS-02 | Showing state with the right element is understood faster than a sentence describing it, by people who've never heard of GitHub (UC-SETUP-02), and keeps the interface quiet around the writing (CP-CALM-01). A floor per criterion stops one strong criterion from hiding a missing anchor. | Judgment in review alone, which let a text-only Connect step through. A word limit alone, which the old Connect step already met. |
