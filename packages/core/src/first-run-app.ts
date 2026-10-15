@@ -188,8 +188,14 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
    */
   let repoAsk: Promise<RepoChoice[] | undefined> | undefined;
   let repoLogin = "";
+  /** When the list was last asked: a prefetch from Settings (on intent) is used if it's this fresh. */
+  let repoAskedAt = -Infinity;
+  const PREFETCH_FRESH_MS = 30_000;
   const askRepos = () => {
-    if (!repoAsk) set({ progress: { ...NO_PROGRESS, op: "findNotes" } });
+    if (!repoAsk) {
+      repoAskedAt = now();
+      set({ progress: { ...NO_PROGRESS, op: "findNotes" } });
+    }
     return (repoAsk ??= fr!.repositories().catch(() => {
       repoAsk = undefined;
       return undefined;
@@ -589,6 +595,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         waitText: { type: "string" }, hasWait: { type: "boolean" }, approvalText: { type: "string" }, partText: { type: "string" }, hasPart: { type: "boolean" },
         parts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, state: { type: "string", enum: ["pending", "running", "done", "failed", "skipped"] }, label: { type: "string" } } } },
         accountSkeleton: { type: "boolean" }, notesSkeleton: { type: "boolean" },
+        openParts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, state: { type: "string", enum: ["pending", "running", "done"] }, label: { type: "string" } } } },
+        hasOpenParts: { type: "boolean" }, openPercent: { type: "number" }, hasOpenPercent: { type: "boolean" },
+        setupPercent: { type: "number" }, hasSetupPercent: { type: "boolean" }, percentLabel: { type: "string" },
       },
     },
     setters: {
@@ -623,7 +632,15 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       // Creating: the part it's on, its number, and the elapsed time ("Copying the template · 2 of 9 · 14 s").
       const setupSteps = s.setup.report?.running ? s.setup.report.steps : [];
       const at = setupSteps.findIndex((x) => x.state === "running");
-      const partText = at < 0 ? "" : withElapsed(catalog.format("firstRun.wait.setupPart", { part: catalog.format(`firstRun.wait.step.${setupSteps[at]!.id}`), n: at + 1, total: setupSteps.length }), "create");
+      const cur = at < 0 ? undefined : setupSteps[at]!;
+      const partText = !cur ? "" : withElapsed(catalog.format(typeof cur.percent === "number" ? "firstRun.wait.setupPartPercent" : "firstRun.wait.setupPart", { part: catalog.format(`firstRun.wait.step.${cur.id}`), n: at + 1, total: setupSteps.length, percent: cur.percent ?? 0 }), "create");
+      const setupPercent = typeof cur?.percent === "number" ? cur.percent : -1;
+      // Opening (after Open): its three parts, the one it's on, and Git's percentage for the download (PRF-13).
+      const opening = f.wait === "clone" && hasWait;
+      const OPEN_PARTS = ["download", "private", "link"] as const;
+      const openAt = Math.max(0, OPEN_PARTS.indexOf((pr.op === "clone" && pr.part ? pr.part : "download") as (typeof OPEN_PARTS)[number]));
+      const openParts = opening ? OPEN_PARTS.map((id, n) => ({ id, state: n < openAt ? "done" : n === openAt ? "running" : "pending", label: catalog.format(`firstRun.openPart.${id}`) })) : [];
+      const openPercent = opening && openAt === 0 && pr.op === "clone" && pr.percent >= 0 ? pr.percent : -1;
       // The parts, always shown while creating (PRF-13), named in the main path's plain words (D-124).
       const parts = (s.setup.report?.steps ?? []).map((x) => ({ id: x.id, state: x.state, label: catalog.format(`firstRun.part.${x.id}`) }));
       const i = FIRST_RUN_STEPS.indexOf(f.step);
@@ -749,6 +766,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         createDetail: catalog.format(lookupFailed ? "firstRun.notes.createOffline" : "firstRun.notes.createWhy"),
         folderShort: shortPath(w.folder),
         waitText, hasWait, approvalText, partText, hasPart: Boolean(partText), parts,
+        openParts, hasOpenParts: openParts.length > 0, openPercent: Math.max(0, openPercent), hasOpenPercent: openPercent >= 0,
+        setupPercent: Math.max(0, setupPercent), hasSetupPercent: setupPercent >= 0, percentLabel: catalog.format("firstRun.wait.clone"),
         // The skeletons while their content is on its way (PRF-13): the profile card, and three rows of notes.
         accountSkeleton: hasWait && f.wait === "account" && connect === "checking",
         notesSkeleton: hasWait && f.wait === "findNotes" && panel === "checking",
@@ -792,12 +811,22 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       set({ active: true, scope, step, other: Boolean(opts.other), trouble: false, busy: false, focus: state().focus + 1 });
       setSignIn({ phase: "idle", code: "", helper: "" });
       if (scope === "workspace") {
-        forgetRepos();
+        // A list asked on intent (Settings → Workspace, PRF-13) is used while it's fresh.
+        if (now() - repoAskedAt > PREFETCH_FRESH_MS) forgetRepos();
         setWs({ reposLoaded: false, repos: [], mode: "clone", error: "" });
       }
       if (scope === "setup") await persistAppState({ firstRun: step });
       void arrive[step]?.();
       return true;
+    },
+    /**
+     * Prefetch on intent (PRF-13): Settings → Workspace is open, so Open another workspace from
+     * GitHub… is likely; its list is asked now and used if it's opened within 30 s.
+     */
+    prefetchRepos(): void {
+      if (!fr || state().active || !store.state.account.login) return;
+      if (now() - repoAskedAt > PREFETCH_FRESH_MS) forgetRepos();
+      void askRepos();
     },
     /** Whether the card is showing. */
     get active() {

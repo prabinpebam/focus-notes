@@ -356,7 +356,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       return true;
     },
   });
-  registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o) });
+  registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),

@@ -4240,6 +4240,64 @@
       ]
     },
     {
+      "type": "ProgressBar",
+      "tier": "primitive",
+      "description": "How far long work has got, when the work reports it (PRF-13, D-149): a thin determinate bar, its value read out as a percentage. The words beside it say what the work is; the bar never stands alone.",
+      "props": {
+        "value": {
+          "kind": "number",
+          "min": 0,
+          "max": 100,
+          "default": 0,
+          "description": "Percent done, from the work's own report (Git's download percentage)."
+        },
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "What's progressing: Downloading your notes."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.progressBar.*",
+      "a11y": {
+        "pattern": "progressbar",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "value 0",
+          "props": {
+            "value": 0,
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "value 45",
+          "props": {
+            "value": 45,
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "value 100",
+          "props": {
+            "value": 100,
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        }
+      ]
+    },
+    {
       "type": "DatePicker",
       "tier": "primitive",
       "description": "A day, typed segment by segment or picked on a calendar that opens from its button (an audience's last day, D-143). Every part works from the keyboard and is named in the locale's words.",

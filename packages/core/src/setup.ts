@@ -38,6 +38,8 @@ export interface SetupStepReport {
   id: SetupStepId;
   state: SetupStepState;
   problem?: SetupProblem;
+  /** Download to this computer's percentage while it runs, from Git's progress (PRF-13). */
+  percent?: number;
 }
 
 /** Where setup stands. Holds no secret: no token, passphrase, or key (SEC-03). */

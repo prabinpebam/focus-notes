@@ -17,6 +17,7 @@ import { hasVault, withVaultGrant, WeakPassphrase } from "@focus-notes/seal/vaul
 import { isRepoName, SETUP_PROBLEMS, SETUP_STEPS, type SetupOptions, type SetupProblem, type SetupReport, type SetupStepId, type SetupStepState } from "@focus-notes/core/setup";
 import { commitProblem, networkProblem, Queue, type GitResult, type GitRunner } from "../git/run.ts";
 import { pointerMessage } from "../git/message.ts";
+import { clonePercent } from "../first-run/workspace.ts";
 import { knownTemplate, KNOWN_TEMPLATES, TEMPLATE } from "../git/template-guard.ts";
 import { DEPLOY_KEY_TITLE, deployKeyPair, type DeployKeyPair } from "./deploy-key.ts";
 
@@ -167,7 +168,7 @@ export class SetupEngine {
       ...(this.#p.site ? { site: this.#p.site } : {}),
       steps: SETUP_STEPS.map((id) => {
         const r = this.#p.steps[id];
-        return { id, state: r?.state ?? "pending", ...(r?.problem ? { problem: r.problem } : {}) };
+        return { id, state: r?.state ?? "pending", ...(r?.problem ? { problem: r.problem } : {}), ...(id === "clone" && r?.state === "running" && this.#percent !== undefined ? { percent: this.#percent } : {}) };
       }),
     };
   }
@@ -324,6 +325,8 @@ export class SetupEngine {
     throw new Failure("failed");
   }
 
+  /** Download to this computer's percentage from Git while it runs (PRF-13). */
+  #percent: number | undefined;
   #git(cwd: string, args: string[], input?: string, timeoutMs?: number): Promise<GitResult> {
     return this.#d.git({ cwd, args, ...(input !== undefined ? { input } : {}), ...(timeoutMs ? { timeoutMs } : {}) });
   }
@@ -447,7 +450,21 @@ export class SetupEngine {
       if (held === "taken") throw new Failure("folderTaken");
       if (held === "clone") return "done";
       await mkdir(dirname(folder), { recursive: true });
-      await this.#gitNet(dirname(folder), ["clone", "--quiet", "--", url, folder]);
+      // Git's percentage streams to the report while it downloads (PRF-13); it isn't kept in the progress file.
+      let seen = "";
+      const r = await this.#d.git({
+        cwd: dirname(folder), args: ["clone", "--progress", "--", url, folder], timeoutMs: NETWORK_MS,
+        onStderr: (chunk) => {
+          seen = (seen + chunk).slice(-512);
+          const p = clonePercent(seen);
+          if (p !== undefined && p !== this.#percent) {
+            this.#percent = p;
+            this.#emit();
+          }
+        },
+      });
+      this.#percent = undefined;
+      if (r.code !== 0) throw new Failure(networkProblem(r.stderr));
       return "done";
     },
 

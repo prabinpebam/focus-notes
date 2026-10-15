@@ -785,8 +785,12 @@ describe("PRF-13, D-149: no step waits in silence", () => {
     expect(t.vm().waitText).toBe("Downloading your notes · 1 of 3");
     t.pushProgress({ op: "clone", part: "download", percent: 45 });
     expect(t.vm().waitText).toBe("Downloading your notes · 45%");
+    expect(t.vm()).toMatchObject({ hasOpenPercent: true, openPercent: 45, hasOpenParts: true });
+    expect((t.vm().openParts as { label: string; state: string }[]).map((p) => `${p.label}:${p.state}`)).toEqual(["Download to this computer:running", "Get the private notes:pending", "Link them:pending"]);
     t.pushProgress({ op: "clone", part: "private" });
     expect(t.vm().waitText).toBe("Getting the private notes · 2 of 3");
+    expect(t.vm().hasOpenPercent).toBe(false);
+    expect((t.vm().openParts as { state: string }[]).map((p) => p.state)).toEqual(["done", "running", "pending"]);
     await clock.advance(3000);
     expect(t.vm().waitText).toBe("Getting the private notes · 2 of 3 · 3 s");
     slow.resolve();
@@ -799,6 +803,8 @@ describe("PRF-13, D-149: no step waits in silence", () => {
     expect(t.vm()).toMatchObject({ partText: "Making your notes on GitHub · 2 of 9", hasPart: true });
     const parts = t.vm().parts as { label: string; state: string }[];
     expect(parts.map((p) => p.label)).toEqual(["Sign in to GitHub", "Make your notes on GitHub", "Make a place for private notes", "Let your website read them", "Download to this computer", "Link them", "Save the browser key", "Turn on your website", "Save to GitHub"]);
+    t.app.store.update((s) => ({ ...s, setup: { available: true, report: { ...report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "running" }, true), steps: report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "running" }, true).steps.map((x) => (x.id === "clone" ? { ...x, percent: 45 } : x)) } } }));
+    expect(t.vm()).toMatchObject({ partText: "Downloading to this computer · 5 of 9 · 45%", hasSetupPercent: true, setupPercent: 45 });
     expect(parts.map((p) => p.label).join(" ")).not.toMatch(/\b(repositor(y|ies)|Git|commits?|tokens?|credentials?|CLI|instances?|Pages)\b/);
   });
 });

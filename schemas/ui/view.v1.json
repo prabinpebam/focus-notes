@@ -311,6 +311,9 @@
           "$ref": "#/$defs/c_StrengthMeter"
         },
         {
+          "$ref": "#/$defs/c_ProgressBar"
+        },
+        {
           "$ref": "#/$defs/c_DatePicker"
         },
         {
@@ -5393,6 +5396,76 @@
               ]
             },
             "valueText": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_ProgressBar": {
+      "type": "object",
+      "description": "How far long work has got, when the work reports it (PRF-13, D-149): a thin determinate bar, its value read out as a percentage. The words beside it say what the work is; the bar never stands alone.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ProgressBar"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "label": {
               "anyOf": [
                 {
                   "$ref": "#/$defs/message"
