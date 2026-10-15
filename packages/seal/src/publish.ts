@@ -44,7 +44,9 @@ export interface PublishResult { build: string; publicNotes: number; publicPages
 
 /** The page renderer's interface (apps/web/reader/render.ts), loaded from its built module. */
 interface PageRenderer {
-  renderNotePage(input: { markdown: string; path: string; updated: string; publicPaths: ReadonlySet<string>; siteUrl?: string; assets: { css: readonly string[]; fonts: readonly string[] } }): { file: string; html: string };
+  renderNotePage(input: { markdown: string; path: string; updated: string; publicPaths: ReadonlySet<string>; siteUrl?: string; assets: { css: readonly string[]; fonts: readonly string[] } }): { file: string; html: string; title: string; excerpt?: string };
+  /** The index of public notes (D-139); renderers before it have none. */
+  renderIndexPage?(input: { notes: readonly { path: string; title: string; updated: string; excerpt?: string }[]; siteUrl?: string; assets: { css: readonly string[]; fonts: readonly string[] } }): { file: string; html: string };
 }
 
 async function markdownFiles(dir: string): Promise<string[]> {
@@ -126,10 +128,17 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     await cp(join(o.reader, "assets"), join(o.site, "assets"), { recursive: true });
     const assets = { css: assetFiles.filter((f) => f.endsWith(".css")), fonts: assetFiles.filter((f) => /\.woff2?$/.test(f)) };
     const publicPaths = new Set(index.notes.map((n) => n.path));
+    const entries: { path: string; title: string; updated: string; excerpt?: string }[] = [];
     for (const n of index.notes) {
-      const { file, html } = renderer.renderNotePage({ markdown: texts.get(n.path)!, path: n.path, updated: n.updated, publicPaths, ...(o.siteUrl ? { siteUrl: o.siteUrl } : {}), assets });
+      const { file, html, title, excerpt } = renderer.renderNotePage({ markdown: texts.get(n.path)!, path: n.path, updated: n.updated, publicPaths, ...(o.siteUrl ? { siteUrl: o.siteUrl } : {}), assets });
       await put(join(o.site, ...file.split("/").map(decodeURIComponent)), html);
+      entries.push({ path: n.path, title, updated: n.updated, ...(excerpt ? { excerpt } : {}) });
       publicPages++;
+    }
+    // The index of public notes at /n/ (D-139), when there are any.
+    if (entries.length && renderer.renderIndexPage) {
+      const { file, html } = renderer.renderIndexPage({ notes: entries, ...(o.siteUrl ? { siteUrl: o.siteUrl } : {}), assets });
+      await put(join(o.site, ...file.split("/")), html);
     }
   }
 

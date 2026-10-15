@@ -5,7 +5,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { contracts, ICON_NAMES } from "@focus-notes/ui/contracts";
-import { createApp, READER_VIEW_MODEL, SHARE_COMMANDS, SHARE_VIEW_MODEL, type PlatformBridge } from "@focus-notes/core";
+import { createApp, PUBLIC_INDEX_VIEW_MODEL, READER_VIEW_MODEL, SHARE_COMMANDS, SHARE_VIEW_MODEL, type PlatformBridge } from "@focus-notes/core";
 import { views, pages, fragments, messages } from "@focus-notes/views";
 import { tokenGroups } from "@focus-notes/tokens";
 import { checkUi, checkFixtureCoverage } from "../check.ts";
@@ -38,6 +38,7 @@ const inputs = {
   viewModels: new Map([
     ...app.viewModels.list().map((v) => [v.id, { schema: v.schema, ...(v.setters ? { setters: v.setters } : {}) }] as const),
     [READER_VIEW_MODEL.id, { schema: READER_VIEW_MODEL.schema }] as const,
+    [PUBLIC_INDEX_VIEW_MODEL.id, { schema: PUBLIC_INDEX_VIEW_MODEL.schema }] as const,
     [SHARE_VIEW_MODEL.id, { schema: SHARE_VIEW_MODEL.schema }] as const,
   ]),
   messages: app.messages,

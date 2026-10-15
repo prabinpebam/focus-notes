@@ -43,6 +43,54 @@ export interface PublicPage {
   noindex: boolean;
   /** The font faces the first screen sets text in (PRF-12): "400-normal", "700-normal", "400-italic", "700-italic". */
   faces: string[];
+  /** Front matter `excerpt:`, shown under the note's row on the index page (D-139). */
+  excerpt?: string;
+}
+
+/** The public notes index's view model (`vm.publicIndex`, D-139): a heading, the count, and a row per note. */
+export interface PublicIndexModel extends Record<string, unknown> {
+  title: PMNode[];
+  count: number;
+  rows: { key: string; title: PMNode[]; updated: number; hasExcerpt: boolean; excerpt: PMNode[] }[];
+}
+export const PUBLIC_INDEX_VIEW_MODEL: { id: string; schema: JsonSchema & { type: "object"; properties: Record<string, JsonSchema> } } = {
+  id: "vm.publicIndex",
+  schema: {
+    type: "object",
+    properties: {
+      title: { type: "array", items: { type: "object" }, description: "The page's heading as a level-1 heading block." },
+      count: { type: "number", description: "How many public notes there are." },
+      rows: {
+        type: "array",
+        description: "Each public note, newest first.",
+        items: {
+          type: "object",
+          properties: {
+            key: { type: "string", description: "The note's path in notes/." },
+            title: { type: "array", items: { type: "object" }, description: "Its title as a level-2 heading linking to its page." },
+            updated: { type: "number", description: "When it last changed (ms since the epoch)." },
+            hasExcerpt: { type: "boolean", description: "Whether its front matter gives an excerpt." },
+            excerpt: { type: "array", items: { type: "object" }, description: "The excerpt as a paragraph block, or nothing." },
+          },
+        },
+      },
+    },
+  },
+};
+export interface PublicIndexEntry { path: string; title: string; updated: string; excerpt?: string }
+
+/** The index of public notes at `n/` (D-139): newest first, each title linking to its page beside it. */
+export function publicIndexModel(heading: string, notes: readonly PublicIndexEntry[]): PublicIndexModel {
+  const text = (t: string, href?: string): PMNode => ({ type: "text", text: t, ...(href ? { marks: [{ type: "link", attrs: { href } }] } : {}) });
+  const time = (n: PublicIndexEntry) => Date.parse(n.updated) || 0;
+  const rows = [...notes].sort((a, b) => time(b) - time(a) || a.title.localeCompare(b.title)).map((n) => ({
+    key: n.path,
+    title: [{ type: "heading", attrs: { level: 2 }, content: [text(n.title || n.path, publicPagePath(n.path).slice("n/".length))] }],
+    updated: time(n),
+    hasExcerpt: Boolean(n.excerpt),
+    excerpt: n.excerpt ? [{ type: "paragraph", content: [text(n.excerpt)] }] : [],
+  }));
+  return { title: [{ type: "heading", attrs: { level: 1 }, content: [text(heading)] }], count: rows.length, rows };
 }
 
 const SAFE_ABSOLUTE = /^(https?:|mailto:)/i;
@@ -105,9 +153,15 @@ type LinkResolver = (resolved: string, hash: string | undefined) => string | nul
 function readerPage(markdown: string, notePath: string, updated: string, resolve: LinkResolver, fragment: (href: string) => string | null = (h) => h): PublicPage {
   const blocks = [...(parseMarkdown(markdown).doc.content ?? [])];
   let noindex = false;
+  let excerpt: string | undefined;
   const first = blocks[0];
   if (first?.type === "rawMarkdown" && /^---\r?\n/.test(String(first.attrs?.source ?? ""))) {
-    noindex = /^noindex:\s*(true|yes)\s*$/im.test(String(first.attrs?.source));
+    const source = String(first.attrs?.source);
+    noindex = /^noindex:\s*(true|yes)\s*$/im.test(source);
+    // A one-line excerpt for the index (D-139), quoted or not.
+    const raw = /^excerpt:[ \t]*(.+?)[ \t]*$/m.exec(source)?.[1];
+    const value = raw?.replace(/^(["'])(.*)\1$/, "$2").trim();
+    if (value && !/^[|>][-+]?$/.test(value)) excerpt = value.slice(0, 300);
     blocks.shift();
   }
   const dir = notePath.split("/").slice(0, -1);
@@ -136,7 +190,7 @@ function readerPage(markdown: string, notePath: string, updated: string, resolve
     for (const c of n.content ?? []) walk(c, strong);
   };
   for (const b of content) walk(b, false);
-  return { model: { title: [titleBlock], updated: Date.parse(updated) || 0, body: content }, title, description, noindex, faces: [...faces] };
+  return { model: { title: [titleBlock], updated: Date.parse(updated) || 0, body: content }, title, description, noindex, faces: [...faces], ...(excerpt ? { excerpt } : {}) };
 }
 
 function linkTarget(href: string, dir: string[], resolve: LinkResolver, fragment: (href: string) => string | null): string | null {
