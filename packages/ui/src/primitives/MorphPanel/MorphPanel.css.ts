@@ -38,8 +38,10 @@ export const root = style({
       overflow: "clip",
     },
     // One floating thing at a time in the title bar: while the Snap Layouts picker is open (reached
-    // by Tab from the toolbar), the open toolbar steps back rather than sit under it (D-119).
-    ":root:has([data-picker-open]) &[data-open]": { visibility: "hidden" },
+    // by Tab from the toolbar), the open toolbar steps back rather than sit under it (D-119). Never
+    // while it holds focus: the picker opened by the pointer resting on maximize would hide the
+    // focused button, and focus would fall to the page instead of staying where the person is.
+    ":root:has([data-picker-open]) &[data-open]:not(:focus-within)": { visibility: "hidden" },
   },
 });
 
@@ -80,6 +82,6 @@ export const content = style({
   selectors: {
     [`${root}[data-open] > &`]: { opacity: t.visible, visibility: "visible", transform: "translateX(-50%) scale(1)", transitionDelay: `${t.contentDelay}, ${t.contentDelay}, 0s` },
     // Its content steps back with it while the Snap Layouts picker is open (D-119).
-    [`:root:has([data-picker-open]) ${root}[data-open] > &`]: { visibility: "hidden" },
+    [`:root:has([data-picker-open]) ${root}[data-open]:not(:focus-within) > &`]: { visibility: "hidden" },
   },
 });
