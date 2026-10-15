@@ -153,6 +153,10 @@
         "$type": "dimension",
         "$value": "{border.scrollbarInset}"
       },
+      "scrollbarEnds": {
+        "$type": "dimension",
+        "$value": "{layout.scrollbarEnds}"
+      },
       "scrollbarThumb": {
         "$type": "color",
         "$value": "{color.scrollbar}"
@@ -316,6 +320,10 @@
       "scrollFade": {
         "$type": "dimension",
         "$value": "{layout.scrollFade}"
+      },
+      "triggerClear": {
+        "$type": "dimension",
+        "$value": "{layout.triggerClear}"
       },
       "edgeBlur": {
         "$type": "dimension",

@@ -110,7 +110,8 @@ describe("find in all notes: scope, limits, and what isn't read yet", () => {
     expect(r.notes.length).toBeGreaterThan(100);
     expect(r.truncated).toBe(true);
     expect(r.ms).toBeLessThan(3000);
-  });
+    // Indexing 5,000 notes is setup, not the measure; a slow CI runner needs more than vitest's 5 s for it.
+  }, 20_000);
 });
 
 describe("a match's line", () => {

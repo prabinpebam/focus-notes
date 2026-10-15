@@ -37,6 +37,9 @@ export const root = style({
       // would otherwise scroll it, shifting the buttons and closing their tooltip.
       overflow: "clip",
     },
+    // One floating thing at a time in the title bar: while the Snap Layouts picker is open (reached
+    // by Tab from the toolbar), the open toolbar steps back rather than sit under it (D-119).
+    ":root:has([data-picker-open]) &[data-open]": { visibility: "hidden" },
   },
 });
 
@@ -76,5 +79,7 @@ export const content = style({
   transitionTimingFunction: t.easing,
   selectors: {
     [`${root}[data-open] > &`]: { opacity: t.visible, visibility: "visible", transform: "translateX(-50%) scale(1)", transitionDelay: `${t.contentDelay}, ${t.contentDelay}, 0s` },
+    // Its content steps back with it while the Snap Layouts picker is open (D-119).
+    [`:root:has([data-picker-open]) ${root}[data-open] > &`]: { visibility: "hidden" },
   },
 });
