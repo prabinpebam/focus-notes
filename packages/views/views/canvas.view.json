@@ -3995,6 +3995,7 @@
                         "switch": {
                           "get": "vm.firstRun.step"
                         },
+                        "remount": true,
                         "cases": {
                           "welcome": {
                             "type": "Stack",
@@ -4081,6 +4082,7 @@
                                 "switch": {
                                   "get": "vm.firstRun.connect"
                                 },
+                                "remount": true,
                                 "cases": {
                                   "checking": {
                                     "type": "Inline",
@@ -5106,6 +5108,7 @@
                                 "switch": {
                                   "get": "vm.firstRun.panel"
                                 },
+                                "remount": true,
                                 "cases": {
                                   "checking": {
                                     "type": "Inline",
