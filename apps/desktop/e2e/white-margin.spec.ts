@@ -100,8 +100,21 @@ test.describe("D-153: the shadow margin at the screen level", () => {
             }
           }
           report.captures++;
-          const share = ring ? bad / ring : 0;
+          // The window itself must be drawn: its inside is the dark canvas, never the backdrop showing through.
+          let inside = 0, through = 0;
+          for (let y = b.y + margin + 50; y < b.y + b.height - margin - 20; y += 9) {
+            for (let x = b.x + margin + 20; x < b.x + b.width - margin - 20; x += 9) {
+              inside++;
+              const [r, gg, bl] = px(x, y);
+              if (r > 200 && bl > 200 && gg < 60) through++;
+            }
+          }
+          const share = Math.max(ring ? bad / ring : 0, inside && through / inside > 0.3 ? 1 : 0);
           report.worst = Math.max(report.worst, share);
+          // A sample of a good frame too, the first of each phase, to see what was measured.
+          if (share < 0.01 && report.captures === 1 && (label === "rest" || label.startsWith("pass-through"))) {
+            fs.writeFileSync(path.join(out, `${tag}-ok-${label.replace(/[^a-z0-9]+/gi, "-")}.png`), img.crop({ x: Math.max(0, Math.round((b.x - 30) * scale)), y: Math.max(0, Math.round((b.y - 30) * scale)), width: Math.round((b.width + 60) * scale), height: Math.round((b.height + 60) * scale) }).toPNG());
+          }
           if (share >= 0.01) {
             report.bad++;
             if (report.samples.length < 3) {
@@ -206,6 +219,20 @@ test.describe("D-153: the shadow margin at the screen level", () => {
           await page.waitForTimeout(150);
         }
       });
+      // A probe for the fix, not part of the check: Electron keeps WS_EX_LAYERED on a window once
+      // its opacity is set (`layered_`), so the pass-through then toggles only WS_EX_TRANSPARENT.
+      await phase("probe: setOpacity(1), then pass-through toggles", async () => {
+        await inMain(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!.setOpacity(1));
+        await page.waitForTimeout(400);
+        await page.keyboard.type(" typed while probing");
+        for (let i = 0; i < 8; i++) {
+          await inMain(({ BrowserWindow }, on: boolean) => {
+            const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
+            w.setIgnoreMouseEvents(on, on ? { forward: true } : undefined);
+          }, i % 2 === 0);
+          await page.waitForTimeout(150);
+        }
+      });
 
       const reports = await app.evaluate(async () => {
         const g = globalThis as unknown as { wm: { stop: boolean; done: Promise<void>; reports: Record<string, Report> } };
@@ -218,7 +245,7 @@ test.describe("D-153: the shadow margin at the screen level", () => {
       for (const r of reports) process.stdout.write(`[white-margin] ${r.label}: ${r.captures} captures, ${r.bad} with ≥1% of the margin not magenta (worst ${(r.worst * 100).toFixed(1)}%), ${r.invalid} blank captures skipped ${r.samples.join(", ")}\n`);
       writeFileSync(join(OUT, `report-${mode.name.split(" ")[0]}.json`), JSON.stringify({ compositing, reports }, null, 2));
       expect(reports.find((r) => r.label === "rest")?.captures ?? 0, "the window at rest was captured").toBeGreaterThan(0);
-      expect(reports.filter((r) => r.bad > 0).map((r) => `${r.label}: ${r.bad} of ${r.captures} captures (worst ${(r.worst * 100).toFixed(1)}%)`)).toEqual([]);
+      expect(reports.filter((r) => r.bad > 0 && !r.label.startsWith("probe")).map((r) => `${r.label}: ${r.bad} of ${r.captures} captures (worst ${(r.worst * 100).toFixed(1)}%)`)).toEqual([]);
     } finally {
       await quit(l).catch(() => {});
     }
