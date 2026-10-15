@@ -45,6 +45,11 @@
         "$type": "dimension",
         "$value": "{space.s}"
       },
+      "groupGap": {
+        "$type": "dimension",
+        "$value": "{space.l}",
+        "$description": "Between the header and the body, separate groups (Foundations → Visual quality → Grouped and spaced, D-111)."
+      },
       "background": {
         "$type": "color",
         "$value": "{color.surface}"
