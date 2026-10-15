@@ -136,6 +136,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     preview: () => ipcRenderer.invoke("diagnostics:preview"),
     copy: (timings: unknown) => ipcRenderer.invoke("diagnostics:copy", timings),
     save: (timings: unknown) => ipcRenderer.invoke("diagnostics:save", timings),
+    reportProblem: (timings: unknown) => ipcRenderer.invoke("diagnostics:reportProblem", timings),
   },
   // Save and sync with the user's own Git (WP-3.3): intent-level only, never a Git command.
   sync: {

@@ -70,6 +70,14 @@ export interface DiagnosticFacts {
 
 /** What the report never includes: shown beside the preview and written at the top of the report. */
 export const NEVER_INCLUDED = "No note text, note or folder names, paths, email addresses, passwords, keys, or tokens.";
+/**
+ * Report a problem: the project's new-issue form with a fixed template. The report itself goes on
+ * the clipboard for the person to paste and read, never in the address, so opening the form sends
+ * GitHub nothing of it (D-55, D-140).
+ */
+export const REPORT_PROBLEM_URL = `https://github.com/prabinpebam/focus-notes/issues/new?labels=bug&body=${encodeURIComponent(
+  "**What happened?**\n\n\n**What did you expect?**\n\n\n<!-- Focus Notes put its diagnostic report on your clipboard. Paste it below and read it before you submit. -->\n",
+)}`;
 /** At most this many of the latest problems and timings go in a report. */
 export const REPORT_PROBLEMS = 50;
 export const REPORT_TIMINGS = 40;

@@ -925,6 +925,23 @@
                                 "run": "diagnostics.save"
                               }
                             }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.diagnostics.reportProblem"
+                              },
+                              "icon": "github",
+                              "busy": {
+                                "get": "vm.diagnostics.busy"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "diagnostics.reportProblem"
+                              }
+                            }
                           }
                         ]
                       }

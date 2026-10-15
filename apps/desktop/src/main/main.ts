@@ -22,7 +22,7 @@ import { createRunner, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
 import { accessStore, siteFromGitConfig } from "./share/access.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
-import { ProblemLog, type RedactOptions } from "@focus-notes/core/diagnostics";
+import { ProblemLog, REPORT_PROBLEM_URL, type RedactOptions } from "@focus-notes/core/diagnostics";
 import { diagnostics, reportFileName } from "./diagnostics.ts";
 import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
@@ -916,6 +916,11 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (r.canceled || !r.filePath) return false;
     await writeFile(r.filePath, await diag.report(timings), "utf8");
     return true;
+  });
+  // Report a problem: the report on the clipboard, then a fixed address (never one from the window, never with the report in it).
+  handle("diagnostics:reportProblem", async (timings) => {
+    appClipboard().writeText(await diag.report(timings));
+    await shell.openExternal(REPORT_PROBLEM_URL);
   });
   handle("sync:now", async (reason) => {
     const g = await gitOpening;

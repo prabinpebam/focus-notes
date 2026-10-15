@@ -1333,5 +1333,8 @@
   "command.diagnostics.copy.keywords": "diagnostics report problem bug support logs",
   "command.diagnostics.save": "Save diagnostic report…",
   "command.diagnostics.save.keywords": "diagnostics report problem bug support logs export",
+  "diagnostics.reported": "Report copied. Paste it into the issue on GitHub.",
+  "command.diagnostics.reportProblem": "Report a problem…",
+  "command.diagnostics.reportProblem.keywords": "bug issue feedback github diagnostics support",
   "command.diagnostics.reason": "Diagnostics are in the desktop app"
 }

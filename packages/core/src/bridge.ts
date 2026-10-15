@@ -98,6 +98,8 @@ export interface DiagnosticsBridge {
   copy(timings: TimingSummary[]): Promise<void>;
   /** Saves the report where the person chooses. False when they cancel. */
   save(timings: TimingSummary[]): Promise<boolean>;
+  /** Report a problem: puts the report on the clipboard and opens the project's new-issue form, which never carries it. */
+  reportProblem(timings: TimingSummary[]): Promise<void>;
 }
 
 /** GPU or software compositing (D-121). */

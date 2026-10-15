@@ -104,7 +104,7 @@ The verifier checked the 31 *verifying* work packages in M1, MW, M3, M2, and M4 
 | WP-4.4 | M4 | Verifying | 1 of 1 (KEY-03) | code, design-system, accessibility | Reviews, Audit, Installs, Baselines, Screenshots |
 | WP-4.5 | M4 | Verifying | 2 of 2 (THM-07, THM-13) | code, design-system, accessibility | Reviews, Audit, Installs, Baselines, Screenshots |
 | WP-5.5 | M5 | Verifying | 1 of 1 (DST-03) | code, security | Reviews (code; security re-check of the fixes), Installs, the owner's release environment and tag ruleset (D-128) |
-| WP-5.7 | M5 | Building | QLT-04 in part (diagnostics; Report a problem to build); QLT-02 specified, not run | code, design-system, accessibility, security | Reviews (security first: it handles data), Windows CI run, Report a problem, the release qualification run |
+| WP-5.7 | M5 | Building | QLT-04 (locally: `diagnostics.test.ts` in core and desktop, `m5-diagnostics.spec.ts`); QLT-02 specified, not run | code, design-system, accessibility, security | Reviews (security first: it handles data), Windows CI run, the owner's decision on a log file (D-140 (4)), the release qualification run |
 
 The CodeQL alerts: #3 `packages/seal/src/format.ts:207`; #4 `packages/core/src/format.ts:68`; #5 and #6 `packages/core/src/workspace.ts:129` and `:177`; #7 `packages/editor/src/format.ts:40`; #8 `packages/core/src/bridge.ts:236`; #10 `packages/core/src/history.ts:35`; #11 `packages/core/src/notes.ts:52`; #12 to #14 `packages/core/src/search/extract.ts:24`, `:66`, `:86`; #15 `packages/core/src/spotlight.ts:50`. Each is attributed to the package whose commit added the line. #1 (high, `documentations/shell/slate.js:63`) belongs to the docs site, and #9 (medium, `packages/editor/src/table-commands.ts:173`, WP-1.5) is below the bar.
 

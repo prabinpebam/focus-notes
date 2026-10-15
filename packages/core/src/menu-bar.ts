@@ -86,7 +86,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
     items: ["spotlight.open", "spotlight.commands", "spotlight.headings", "-", "note.back", "note.forward", "-", "files.open", "files.reveal", "files.showDeleted", "-", "edit.docStart", "edit.docEnd", "-", "conflict.open", "toast.focus"],
   },
   { id: "window", label: "menu.window", kind: "window", items: [{ role: "minimize" }, { role: "zoom" }, "-", { role: "front" }] },
-  { id: "help", label: "menu.help", kind: "help", items: ["shortcuts.open", "help.open", "-", "diagnostics.copy", "diagnostics.save"] },
+  { id: "help", label: "menu.help", kind: "help", items: ["shortcuts.open", "help.open", "-", "diagnostics.copy", "diagnostics.save", "diagnostics.reportProblem"] },
 ];
 
 /**

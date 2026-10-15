@@ -79,6 +79,17 @@ export function registerDiagnostics<St extends S>({ store, bridge, catalog, comm
       else if (saved) toast(catalog.format("diagnostics.saved"));
     },
   });
+  commands.register({
+    id: "diagnostics.reportProblem", title: "command.diagnostics.reportProblem", icon: "github", group: "app", enabled: available,
+    disabledReason: "command.diagnostics.reason",
+    run: async () => {
+      if (!d || state().busy) return;
+      set({ busy: true });
+      const ok = await d.reportProblem(windowTimings()).then(() => true, () => false);
+      set({ busy: false });
+      toast(catalog.format(ok ? "diagnostics.reported" : "diagnostics.failed"), ok ? {} : { tone: "error" });
+    },
+  });
 
   const CARD = { type: "object" as const, properties: { title: { type: "string" as const }, detail: { type: "string" as const } } };
   viewModels.register({

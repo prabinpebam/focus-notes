@@ -70,6 +70,20 @@ test("QLT-04: Settings → About previews the diagnostic report; Copy and Save (
     expect(copied).toContain("### Recent problems");
     expectPrivate(copied, dirs, [notesRemote, privateRemote]);
 
+    // Report a problem: the report on the clipboard, and the issue form opened at a fixed address without it.
+    await l.app.evaluate(({ shell }) => {
+      (globalThis as { opened?: string[] }).opened = [];
+      shell.openExternal = (async (u: string) => void (globalThis as { opened?: string[] }).opened!.push(u)) as typeof shell.openExternal;
+      (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard!.text = "";
+    });
+    await settings.getByRole("button", { name: "Report a problem…" }).click();
+    await expect(page.getByText("Report copied. Paste it into the issue on GitHub.")).toBeVisible();
+    const opened = await l.app.evaluate(() => (globalThis as { opened?: string[] }).opened ?? []);
+    expect(opened).toHaveLength(1);
+    expect(opened[0]).toMatch(/^https:\/\/github\.com\/prabinpebam\/focus-notes\/issues\/new\?/);
+    expect(decodeURIComponent(opened[0]!)).not.toContain("diagnostic report\n\nMade");
+    expect(await clipboard(l)).toContain("## Focus Notes diagnostic report");
+
     // Save, from Spotlight: the system's dialog is answered with a file in a temporary folder.
     await page.keyboard.press("Escape");
     await expect(settings).toHaveCount(0);
