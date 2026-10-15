@@ -13,6 +13,7 @@ import {
 } from "@focus-notes/core/window-geometry";
 import type { WindowReport } from "@focus-notes/core";
 import { MIN_SIZE, type Placement, type PlacedZone, type WindowMemory, type WindowMode } from "./placement.ts";
+import { everyFrame } from "./drag-loop.ts";
 
 /** The parts of a BrowserWindow this uses. */
 export interface WinLike {
@@ -58,6 +59,31 @@ interface Options {
   forwardsMoves: boolean;
   /** Tells the page the window lets clicks through, or no longer does, so it reports every forwarded move meanwhile (D-150). */
   passthrough?: (on: boolean) => void;
+  /**
+   * Where a drag's pointer is (D-151): the system's cursor, read once a frame ("cursor", the app), or
+   * the positions the page reports ("page": journeys, whose pointer is the page's own). Default "page".
+   */
+  dragPointer?: "cursor" | "page";
+  /** Milliseconds per frame of the display the window is on: the drag loop's interval. Default 60 Hz. */
+  frameMs?: () => number;
+  /** Runs `fn` every `ms` until the returned function is called. Tests give a clock of their own. */
+  every?: (ms: number, fn: () => void) => () => void;
+}
+
+/** The drag loop's timer: only while a drag lasts (PRF-04). */
+const every = everyFrame;
+interface Drag {
+  kind: "move" | ResizeEdge;
+  start: Point;
+  from: Rect;
+  moved: boolean;
+  /** The pointer's latest position, and the one last applied: only the latest is ever applied, once. */
+  at: Point;
+  applied?: Point;
+  shift: boolean;
+  stop: () => void;
+  snap?: { zone: SnapZone; display: DisplayInfo };
+  vertical?: DisplayInfo;
 }
 
 const ARROWS: Record<string, ArrowKey> = { ArrowLeft: "Left", ArrowRight: "Right", ArrowUp: "Up", ArrowDown: "Down" };
@@ -74,13 +100,15 @@ export class CustomWindow {
   /** A snap zone, or "vertical": the work area's full height at the window's own x and width (D-141). */
   #zone: PlacedZone | undefined;
   #restore: Rect;
-  #drag: { kind: "move" | ResizeEdge; start: Point; from: Rect; moved: boolean; snap?: { zone: SnapZone; display: DisplayInfo }; vertical?: DisplayInfo } | undefined;
+  #drag: Drag | undefined;
   #keys: { mode: "move" | "size"; edge?: ResizeEdge; original: Rect; current: Rect } | undefined;
   #ignoring = false;
   /** Full screen is the app's own too: Electron doesn't track it for transparent windows. */
   #full = false;
   #beforeFull: Rect | undefined;
   #previewing = false;
+  /** The rectangle the preview shows, so it's shown again only when its zone changes (D-151). */
+  #previewRect: Rect | undefined;
   #tracking = false;
   /** Linux only, while the pointer is in the margin of an ignoring window. */
   #watch: ReturnType<typeof setInterval> | undefined;
@@ -235,21 +263,56 @@ export class CustomWindow {
   /**
    * A move (by the band) or a resize (by a handle), in screen DIP. Moving a maximized or snapped
    * window restores it under the pointer; moving to a screen edge previews a zone, and releasing there snaps.
+   *
+   * The main process owns the drag (D-151): "start" starts a loop at the display's frame rate, only
+   * while the drag lasts, that applies the pointer's latest position once a frame, never a queue of
+   * them; "move" only updates the pointer (or Shift); "end" applies where it was released, at once.
    */
   drag(phase: "start" | "move" | "end", kind: "move" | ResizeEdge, x: number, y: number, shift: boolean): void {
     const p = { x, y };
     if (phase === "start") {
       if (this.#full || this.#keys || (kind !== "move" && !this.resizable())) return;
-      this.#drag = { kind, start: p, from: this.content(), moved: false };
+      this.#stopDrag();
+      const start = this.#followsCursor ? this.#o.screen.getCursorScreenPoint() : p;
+      const d: Drag = { kind, start, from: this.content(), moved: false, at: start, shift, stop: () => {} };
+      this.#drag = d;
+      d.stop = (this.#o.every ?? every)(this.#o.frameMs?.() ?? 1000 / 60, () => this.#follow());
       this.#setIgnore(false);
       return;
     }
     const d = this.#drag;
     if (!d || (kind !== d.kind && phase !== "end")) return;
-    if (!d.moved && Math.hypot(x - d.start.x, y - d.start.y) < DRAG_THRESHOLD) {
-      if (phase === "end") this.#drag = undefined;
-      return;
-    }
+    d.shift = shift;
+    if (!this.#followsCursor) d.at = p;
+    if (phase === "move") return;
+    this.endDrag();
+  }
+
+  get #followsCursor(): boolean {
+    return this.#o.dragPointer === "cursor";
+  }
+  /** Whether a drag's loop is running: only while a drag lasts (PRF-04). */
+  get dragging(): boolean {
+    return this.#drag !== undefined;
+  }
+  /** Once a frame while dragging: the pointer's latest position, applied if it moved. */
+  #follow(): void {
+    const d = this.#drag;
+    if (!d) return;
+    if (this.#win.isDestroyed()) return this.#stopDrag();
+    if (this.#followsCursor) d.at = this.#o.screen.getCursorScreenPoint();
+    if (d.applied && d.applied.x === d.at.x && d.applied.y === d.at.y) return;
+    this.#step(d);
+  }
+  #stopDrag(): void {
+    this.#drag?.stop();
+    this.#drag = undefined;
+  }
+  /** Places the window for the pointer's latest position. False while the pointer is still within the click threshold. */
+  #step(d: Drag): boolean {
+    const p = d.at;
+    d.applied = p;
+    if (!d.moved && Math.hypot(p.x - d.start.x, p.y - d.start.y) < DRAG_THRESHOLD) return false;
     if (!d.moved) {
       d.moved = true;
       if (this.#mode !== "normal") {
@@ -259,17 +322,17 @@ export class CustomWindow {
         if (d.kind === "move") this.#apply(d.from);
       }
     }
-    const delta = { x: x - d.start.x, y: y - d.start.y };
+    const delta = { x: p.x - d.start.x, y: p.y - d.start.y };
     if (d.kind === "move") {
       const outer = outerBounds({ ...d.from, x: d.from.x + delta.x, y: d.from.y + delta.y }, this.margin());
-      // Only the position: the system keeps the size right on a display with another scale.
+      // Only the position: the system keeps the size right on a display with another scale, and the page doesn't repaint.
       this.#win.setPosition(outer.x, outer.y);
       const snap = snapZoneAt(p, this.#displays());
       if (snap) d.snap = snap;
       else delete d.snap;
       this.#showPreview(snap ? zoneRect(snap.zone, snap.display.workArea) : undefined);
     } else {
-      const next = resizeBounds(d.from, d.kind, delta, MIN_SIZE, shift);
+      const next = resizeBounds(d.from, d.kind, delta, MIN_SIZE, d.shift);
       this.#apply(next);
       // The top or bottom edge reaching the work area's edge previews a vertical maximize (D-141).
       const display = displayFor(d.from, this.#displays());
@@ -277,8 +340,20 @@ export class CustomWindow {
       else delete d.vertical;
       this.#showPreview(d.vertical ? verticalRect(d.from, d.vertical.workArea) : undefined);
     }
-    if (phase !== "end") return;
-    this.#drag = undefined;
+    return true;
+  }
+  /**
+   * Ends the drag where the pointer is now: on release, and when the page loses the pointer, the
+   * window hides, or it stops being active. The loop stops first, so nothing moves after it.
+   */
+  endDrag(): void {
+    const d = this.#drag;
+    if (!d) return;
+    this.#stopDrag();
+    if (this.#followsCursor) d.at = this.#o.screen.getCursorScreenPoint();
+    // The release's position, unless the last frame already put it there.
+    if (!d.applied || d.applied.x !== d.at.x || d.applied.y !== d.at.y) this.#step(d);
+    if (!d.moved) return;
     this.#showPreview(undefined);
     if (d.kind === "move" && d.snap) return this.snap(d.snap.zone, d.snap.display);
     if (d.vertical) return this.maximizeVertically(d.vertical, d.from);
@@ -300,11 +375,16 @@ export class CustomWindow {
     if (!r) {
       if (this.#previewing) this.#o.preview().hide();
       this.#previewing = false;
+      this.#previewRect = undefined;
       return;
     }
+    // Shown, and the window raised over it, only when its zone changes: never on every move (D-151).
+    const was = this.#previewRect;
+    if (this.#previewing && was && was.x === r.x && was.y === r.y && was.width === r.width && was.height === r.height) return;
     this.#o.preview().show(r, this.#o.previewColor());
     if (!this.#previewing) this.#win.moveTop();
     this.#previewing = true;
+    this.#previewRect = r;
   }
 
   /** The system menu's Move and Size: the arrow keys until Enter keeps it or Esc puts it back. */
@@ -379,7 +459,10 @@ export class CustomWindow {
   stop(): void {
     this.#tracking = false;
     this.#stopWatch();
+    this.#stopDrag();
     if (this.#previewing) this.#o.preview().hide();
+    this.#previewing = false;
+    this.#previewRect = undefined;
   }
   pointerCheck(): void {
     const w = this.#win;

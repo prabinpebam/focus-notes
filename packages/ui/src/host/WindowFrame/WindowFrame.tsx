@@ -92,13 +92,15 @@ export function WindowFrame({ frame = "native", resizable, fullScreen = false, m
       }
       emit("start");
     };
-    // At most one move per frame reaches the shell (Window management → Move).
+    // At most one move per frame goes to the shell, which follows the system's cursor itself and
+    // takes from these only Shift (Window management → Move, D-151).
     const move = (e: PointerEvent) => {
       if (!drag || e.pointerId !== drag.id) return;
       track(e);
       if (!frameId) frameId = requestAnimationFrame(() => ((frameId = 0), emit("move")));
     };
-    // It ends where the last move was: a release always comes after the move that took the pointer there.
+    // It ends where the last move was: a release always comes after the move that took the pointer
+    // there. Losing the pointer ends it too, so the shell's drag loop never outlives it (D-151).
     const end = (e: PointerEvent) => {
       if (!drag || e.pointerId !== drag.id) return;
       cancelAnimationFrame(frameId);
@@ -141,6 +143,7 @@ export function WindowFrame({ frame = "native", resizable, fullScreen = false, m
     document.addEventListener("pointermove", move);
     document.addEventListener("pointerup", end);
     document.addEventListener("pointercancel", end);
+    document.addEventListener("lostpointercapture", end);
     document.addEventListener("dblclick", dblclick);
     document.addEventListener("contextmenu", contextmenu);
     document.addEventListener("pointerover", over);
@@ -153,6 +156,7 @@ export function WindowFrame({ frame = "native", resizable, fullScreen = false, m
       document.removeEventListener("pointermove", move);
       document.removeEventListener("pointerup", end);
       document.removeEventListener("pointercancel", end);
+      document.removeEventListener("lostpointercapture", end);
       document.removeEventListener("dblclick", dblclick);
       document.removeEventListener("contextmenu", contextmenu);
       document.removeEventListener("pointerover", over);

@@ -63,10 +63,13 @@ export class AppWindowFrame {
   #custom: CustomWindow | undefined;
   #mac: MacTitleBar | undefined;
   #accent = "#2f6fed";
+  /** Journeys (`FOCUS_NOTES_E2E=1`): a drag follows the page's pointer, which is the journey's, not the computer's (D-104, D-151). */
+  readonly #journey: boolean;
 
-  constructor(kind: FrameKind | undefined, memoryFile: string) {
+  constructor(kind: FrameKind | undefined, memoryFile: string, journey = false) {
     this.kind = kind;
     this.#file = memoryFile;
+    this.#journey = journey;
     this.#placement = initialPlacement(readWindowMemory(memoryFile), displays(), primary());
   }
 
@@ -93,6 +96,8 @@ export class AppWindowFrame {
     return {
       ...(this.#custom ? { window: JSON.stringify(this.#custom.report()) } : {}),
       ...(this.kind === "custom" ? { pointer: `edge:${POINTER_EDGE_PX}` } : {}),
+      // Where a drag's pointer comes from: the page reports its moves only when it's the journey's (D-151).
+      ...(this.#journey ? { dragPointer: "page" } : {}),
     };
   }
 
@@ -138,6 +143,10 @@ export class AppWindowFrame {
       passthrough: (on) => {
         if (!win.isDestroyed()) win.webContents.send("window:passthrough", on);
       },
+      // The main process follows the system's cursor itself during a drag, once a frame of the
+      // window's display (D-151); journeys' pointer is the page's.
+      dragPointer: this.#journey ? "page" : "cursor",
+      frameMs: () => 1000 / (screen.getDisplayMatching(win.getBounds()).displayFrequency || 60),
     }, p);
     this.#custom = custom;
     if (p.fullScreen) win.once("ready-to-show", () => custom.toggleFullScreen());
@@ -153,7 +162,11 @@ export class AppWindowFrame {
     });
     const notify = () => custom.notify();
     // A hidden or minimized window stops letting clicks through, and stops any pointer watch.
-    const check = () => custom.pointerCheck();
+    const check = () => {
+      // A drag ends with the window hidden or minimized: its loop never outlives it (PRF-04).
+      custom.endDrag();
+      custom.pointerCheck();
+    };
     win.on("hide", check);
     win.on("minimize", check);
     // Shown, restored, activated, or moved or resized by the system (Win+arrow, Aero Snap): the window
@@ -168,6 +181,7 @@ export class AppWindowFrame {
       notify();
     });
     win.on("blur", () => {
+      custom.endDrag();
       custom.endKeyboard(true);
       notify();
     });
