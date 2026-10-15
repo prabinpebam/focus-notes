@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./contracts": "./src/contracts.ts",
     "./reader": "./src/reader.ts",
+    "./share": "./src/share.ts",
     "./files": "./src/host/files.ts"
   },
   "scripts": {

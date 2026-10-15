@@ -1,6 +1,6 @@
 /** WP-5.1: public pages' URLs, links, front matter, and first-screen fonts (SHR-03, PRV-04, PRF-12). */
 import { describe, expect, it } from "vitest";
-import { publicNoteUrl, publicPage, publicPagePath } from "../src/public-page.ts";
+import { publicNoteUrl, publicPage, publicPagePath, sharedListModel, sharedNoteFromHash, sharedNoteHash, sharedPage } from "../src/public-page.ts";
 
 const PUBLIC = new Set(["ideas.md", "essays/on-focus.md", "Plans/Launch plan.md"]);
 const hrefs = (md: string, path = "essays/on-focus.md") => {
@@ -47,5 +47,38 @@ describe("public pages", () => {
     expect(publicPage("# T\n\nPlain.\n", "ideas.md", "", PUBLIC).faces.sort()).toEqual(["400-normal", "700-normal"]);
     expect(publicPage("# T\n\nSome *em* and ***both***.\n", "ideas.md", "", PUBLIC).faces.sort()).toEqual(["400-italic", "400-normal", "700-italic", "700-normal"]);
     expect(publicPage(`# T\n\n${"word ".repeat(400)}\n\nLate *italic*.\n`, "ideas.md", "", PUBLIC).faces).not.toContain("400-italic");
+  });
+});
+
+describe("shared notes on the share reader (WP-5.4, SHR-10)", () => {
+  const SHARED = new Set(["drafts/Plan.md", "drafts/sub/Detail.md"]);
+  const links = (md: string, path = "drafts/Plan.md") => {
+    const out: (string | null)[] = [];
+    const walk = (n: { marks?: { type: string; attrs?: Record<string, unknown> }[]; content?: unknown[] }) => {
+      for (const m of n.marks ?? []) if (m.type === "link") out.push(m.attrs?.href as string | null);
+      for (const c of (n.content ?? []) as typeof n[]) walk(c);
+    };
+    for (const b of sharedPage(md, path, "2026-10-01T00:00:00Z", SHARED).model.body) walk(b);
+    return out;
+  };
+
+  it("links only to notes the same share opens, on the reader's own page; anything else is plain text", () => {
+    expect(links("[d](sub/Detail.md) [x](../Diary.md) [p](/etc/passwd) [w](https://example.com/) [j](javascript:alert(1)) [s](sub/Detail.md#part)")).toEqual([
+      "#note=drafts%2Fsub%2FDetail.md", null, null, "https://example.com/", null, null,
+    ]);
+  });
+
+  it("reads the note a fragment names, and nothing malformed", () => {
+    expect(sharedNoteFromHash(sharedNoteHash("drafts/Plan (2).md"))).toBe("drafts/Plan (2).md");
+    expect(sharedNoteFromHash("#gshare001.abc")).toBeUndefined();
+    expect(sharedNoteFromHash("#note=%E0%A4%A")).toBeUndefined();
+    expect(sharedNoteFromHash("")).toBeUndefined();
+  });
+
+  it("lists what a share opens by title, each a link on the reader's page", () => {
+    const m = sharedListModel("Shared with you", [{ path: "drafts/Plan.md", title: "The plan" }, { path: "x.md", title: "" }]);
+    expect(m.title).toEqual([{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Shared with you" }] }]);
+    expect(JSON.stringify(m.body)).toContain('"text":"The plan","marks":[{"type":"link","attrs":{"href":"#note=drafts%2FPlan.md"}}]');
+    expect(JSON.stringify(m.body)).toContain('"text":"x.md"');
   });
 });
