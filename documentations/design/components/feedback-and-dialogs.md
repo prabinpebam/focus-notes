@@ -35,6 +35,19 @@ While there's a problem, opening the toolbar adds a status row at its top: "3 ch
 
 **As built (WP-3.3, D-97):** the desktop shows sync problems with the trigger's existing problem dot (its name says "Couldn't sync") and one toast when a problem first appears, with [Retry], which saves and syncs again. The toast says the cause in one sentence: offline, GitHub not accepting the sign-in, changes that don't fit (both versions are kept), another program changing the workspace, Git not knowing the person's name and email, a commit that couldn't be signed, or a hook that refused it. <kbd>Mod</kbd>+<kbd>S</kbd> says "Saved and synced" through the task tracker, or the reason. A conflict's toast offers [Resolve] instead of [Retry] (WP-3.5, D-102), and so does <kbd>Mod</kbd>+<kbd>S</kbd>'s when it finds one. The arcs, the toolbar's status row, the last-sync tooltip, [Details], and [Sign in again] (WP-3.2) come later.
 
+**The save state (D-132, in place of the arcs above):** the desktop shows where saving stands as one muted icon at the leading edge of the bottom-left pill (UI-12, [Main UI](../../experience/main-ui.html)), a `SaveState` component: an icon-only quiet button with a tooltip. It never pops up and never takes focus.
+
+| State | Icon | Tooltip and name |
+| --- | --- | --- |
+| Saved on this computer | check | "Saved on this computer" |
+| Not backed up yet | cloud with a dot | "Saved here · not backed up yet" |
+| Backing up | cloud with an arrow, rising gently; still with reduced motion | "Backing up…" |
+| Backed up | cloud with a check | "Backed up at 2:41 PM" (the time of day: a relative time would need a timer at rest, PRF-04) |
+| Offline | cloud with a slash | "Offline · will back up when you're back" |
+| Problem | warning, in the danger color | "Couldn't back up · Try again" |
+
+Pressing it backs up now (the retry, on a problem). After *Save to cloud* the label opens beside the icon, "Backing up…" then "Backed up", for about 2 s, and a polite live region says the result; problems are announced by their toast, and nothing else is.
+
 **Restored after a crash (QLT-03, WP-2.6, D-105):** when the app starts after a crash, the text the recovery journal kept is already back in its note, and one information toast says so, with nothing to decide: "Restored what you were writing in “⟨title⟩” before Focus Notes closed." (or "in ⟨n⟩ notes"). If the note changed while the app was closed, nothing is written over it: the text is kept beside it, and the toast says "“⟨title⟩” changed while Focus Notes was closed, so what you were writing is kept beside it, in “⟨name⟩ (recovered)”."
 
 <h2 id="waits" data-reader-personas="design engineering">Waits</h2>

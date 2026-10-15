@@ -16,7 +16,7 @@ import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
 import { joinPath, newNoteFolder } from "./workspace.ts";
 import { registerImport, IMPORT_CLOSED, type ImportState } from "./import-app.ts";
 import { appStateOfSettings, parseSettings, settingsFileOf, splitAppState, type SettingsFile } from "./settings.ts";
-import { registerSync, NO_SYNC, SyncFailed, type SyncState } from "./sync-app.ts";
+import { registerSync, NO_SYNC, SyncFailed, saveStateOf, type SyncState } from "./sync-app.ts";
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
@@ -327,7 +327,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
 
   const setNote = (patch: Partial<AppState["note"]>) =>
     store.update((s) => ({ ...s, note: { ...s.note, ...patch } }));
-  const sync = registerSync({ store, bridge, catalog, toast });
+  const sync = registerSync({ store, bridge, catalog, toast, announce });
   const setup = registerSetup({ store, bridge, catalog, commands, viewModels });
   /** The note put away while the first run's card shows again (Run setup again, Sign in, Switch account, Open another workspace). */
   let held: string | undefined;
@@ -519,6 +519,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       toast(e instanceof SyncFailed ? e.message : catalog.format("toast.saveFailed"), { tone: "error", action });
     }),
   });
+  // Save to cloud (D-132): Mod+Shift+S, and Mod+S for muscle memory, back up now; the pill's menu offers it.
+  commands.register({
+    id: "sync.now", title: "command.sync.now", icon: "cloudUp",
+    shortcut: { default: "Mod+Shift+S" },
+    layer: "basic", group: "app",
+    enabled: (s) => s.sync.git,
+    run: (_a, c) => c.run("note.save"),
+  });
   commands.register<{ value: string }>({
     id: "note.setContent",
     title: "command.note.setContent",
@@ -530,6 +538,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       warmUp.typed();
       unsavedSince ??= Date.now();
       setNote({ markdown: value, saveState: "unsaved" });
+      sync.edited();
       schedule();
       journalSoon();
     },
@@ -1187,6 +1196,32 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         : s.ui.conflict.held && catalog.has("trigger.conflict") ? catalog.format("trigger.conflict")
           : s.sync.problem && catalog.has("trigger.syncProblem") ? catalog.format("trigger.syncProblem") : "",
     }),
+  });
+
+  // ---- the save state: the bottom-left pill's icon (EDT-11, UI-12, D-132) ----
+  // The time of day, not "2 min ago": nothing repeats on a timer at rest to keep a relative time true (PRF-04).
+  const timeOfDay = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
+  const when = (at: number) => timeOfDay.format(at);
+  viewModels.register({
+    id: "vm.saveState",
+    schema: {
+      type: "object",
+      properties: {
+        visible: { type: "boolean" },
+        state: { type: "string", enum: ["savedLocal", "pending", "syncing", "synced", "offline", "error"] },
+        label: { type: "string" }, text: { type: "string" },
+      },
+    },
+    reads: ["sync", "note.saveState", "note.path", "note.status"],
+    select: (s) => {
+      const state = saveStateOf(s.sync, s.note.saveState === "unsaved" || s.note.saveState === "saving");
+      const label = !catalog.has("save.state.savedLocal") ? ""
+        : state === "synced" ? (s.sync.backedUpAt !== undefined ? catalog.format("save.state.synced", { time: when(s.sync.backedUpAt) }) : catalog.format("save.state.syncedNow"))
+          : catalog.format(`save.state.${state}`);
+      const text = !s.sync.asked || !catalog.has("save.label.done") ? "" : catalog.format(s.sync.asked === "done" ? "save.label.done" : "save.label.syncing");
+      // On the desktop, wherever a note is open; the browser keeps its notes itself (D-90).
+      return { visible: Boolean(bridge.sync) && Boolean(s.note.path) && s.note.status === "ready", state, label, text };
+    },
   });
 
   return {

@@ -298,9 +298,10 @@ export function registerBrowserFeatures(ctx: BrowserContext): { start(): Promise
       const why = isReadOnlyPath(s.note.path) ? "account.readOnly" : s.workspace.access === "migrate" ? "account.readOnlyOlder"
         : s.workspace.access === "newer" ? "account.readOnlyNewer" : "account.readOnlyUnreadable";
       const base = { about, readOnly, readOnlyText: readOnly ? catalog.format(why) : "" };
-      // The desktop: the GitHub login Git is signed in as, with the sync status, Sync now, and Sign out (UI-12, D-89).
+      // The desktop: the GitHub login Git is signed in as, with the save state, Save to cloud, and Sign out (UI-12, D-89, D-132).
       if (s.account.login) {
-        const status = catalog.format(s.sync.problem ? "account.syncProblem" : "account.synced");
+        const save = viewModels.select("vm.saveState", s) as { label?: string } | undefined;
+        const status = save?.label || catalog.format(s.sync.problem ? "account.syncProblem" : "account.synced");
         return {
           ...base, visible: true, mode: "owner", text: catalog.format(s.sync.problem ? "account.loginProblem" : "account.login", { login: s.account.login }),
           label: catalog.format("account.signedIn", { login: s.account.login, status }),

@@ -482,13 +482,13 @@ describe("FRE-01: Ready", () => {
 });
 
 describe("UI-12: the desktop's account pill", () => {
-  it("shows the GitHub login with the sync status, Sync now, and Sign out", async () => {
+  it("shows the GitHub login with the save state, Save to cloud, and Sign out (D-132)", async () => {
     const t = shell({ state: { version: 1, firstRun: "done" }, account: { account: ADA, gcm: true, gh: false } });
     await t.app.start();
     await settle();
     await settle();
     const pill = () => t.app.viewModels.select("vm.account", t.app.store.state) as { visible: boolean; mode: string; text: string; label: string; sections: { label: string; items: { id: string }[] }[] };
-    expect(pill()).toMatchObject({ visible: true, mode: "owner", text: "@ada", label: "Signed in to GitHub as @ada. Saved to GitHub" });
+    expect(pill()).toMatchObject({ visible: true, mode: "owner", text: "@ada", label: "Signed in to GitHub as @ada. Backed up" });
     expect(pill().sections[0]!.items.map((i) => i.id)).toEqual(["sync.now", "account.signOut"]);
     t.pushSync({ git: true, state: "problem", problem: "offline", waiting: 1 });
     expect(pill().text).toBe("@ada · Not synced");

@@ -65,7 +65,7 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 | Open… (Files panel) | <kbd>⌘O</kbd> | <kbd>Ctrl+O</kbd> |  | Basic | Universal |
 | New note | <kbd>⌘N</kbd> | <kbd>Ctrl+N</kbd> | <kbd>⌃⌥N</kbd> / <kbd>Ctrl+Alt+N</kbd> | Basic | Universal |
 | New window (desktop) | <kbd>⇧⌘N</kbd> | <kbd>Ctrl+Shift+N</kbd> | Not available | Power | VS Code |
-| Save now (write, commit, push) | <kbd>⌘S</kbd> | <kbd>Ctrl+S</kbd> |  | Basic | Universal |
+| Save to cloud (write, commit, push) | <kbd>⇧⌘S</kbd> or <kbd>⌘S</kbd> | <kbd>Ctrl+Shift+S</kbd> or <kbd>Ctrl+S</kbd> |  | Basic | Universal (<kbd>⌘S</kbd>); <kbd>⇧⌘S</kbd> is free, as there's no Save As (D-132) |
 | Close note / window | <kbd>⌘W</kbd> | <kbd>Ctrl+W</kbd> | Not available | Basic | Universal |
 | Reopen closed note | <kbd>⇧⌘T</kbd> | <kbd>Ctrl+Shift+T</kbd> | Spotlight | Power | Browsers, VS Code |
 | Back / forward between notes | <kbd>⌘[</kbd> / <kbd>⌘]</kbd> | <kbd>Alt+←</kbd> / <kbd>Alt+→</kbd> |  | Power | Notion, browsers, Finder |

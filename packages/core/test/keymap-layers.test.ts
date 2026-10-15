@@ -19,7 +19,7 @@ const COVERAGE: Record<string, Cover> = {
   "Open… (Files panel)": ["note.open"],
   "New note": ["note.new"],
   "New window (desktop)": { planned: "WP-8.5 (multiple windows)" },
-  "Save now (write, commit, push)": ["note.save"],
+  "Save to cloud (write, commit, push)": ["sync.now", "note.save"],
   "Close note / window": { planned: "WP-8.5 (notes in their own windows); Alt+F4 and the macOS menu bar's Close until then" },
   "Reopen closed note": { planned: "WP-8.5 (closing a note)" },
   "Back / forward between notes": ["note.back", "note.forward"],

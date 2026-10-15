@@ -171,10 +171,11 @@ export class GitSync {
     this.#generation++;
   }
 
-  /** The app wrote a note: it's committed on the cadence (D-23). */
+  /** The app wrote a note: it's committed on the cadence (D-23), and the app hears at once that changes wait (D-132). */
   written(abs: string): void {
     this.#touch(abs);
     this.#cadence.edited();
+    this.#emit({ waiting: this.#waiting([this.notes.last, this.privateRepo?.last]) });
   }
 
   /** The app renamed a note (a file name following its title): committed with the next save, as a rename. */
@@ -192,7 +193,7 @@ export class GitSync {
     if (at) at.repo.pending.set(at.rel, this.#generation);
   }
 
-  /** Commit and push now: Mod+S, switching or closing a note, quitting (D-23). The idle commit isn't needed then. */
+  /** Commit and push now: Save to cloud, switching or closing a note, quitting (D-23, D-132). The idle commit isn't needed then. */
   request(reason: SyncReason): Promise<SyncReport> {
     this.#cadence.cancel();
     return this.sync(reason);
@@ -627,14 +628,16 @@ export class GitSync {
     const push = () => this.#git(repo, ["-c", "push.default=upstream", "push", "--quiet"], undefined, timeout);
     let r = await push();
     repo.cache.clear();
-    if (r.code === 0) return { moved };
+    // Pushed: nothing of this repository waits any more, which the save state shows at once (D-132).
+    const pushed = () => void (repo.last &&= { ...repo.last, ahead: 0 });
+    if (r.code === 0) return (pushed(), { moved });
     const problem = networkProblem(r.stderr);
     if (problem !== "conflict") return { problem, moved };
     const p = await pull();
     if (p) return { problem: p, moved };
     r = await push();
     repo.cache.clear();
-    return r.code === 0 ? { moved } : { problem: networkProblem(r.stderr), moved };
+    return r.code === 0 ? (pushed(), { moved }) : { problem: networkProblem(r.stderr), moved };
   }
 
   async #rebase(repo: Repo): Promise<SyncProblem | undefined> {

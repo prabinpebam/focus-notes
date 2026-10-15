@@ -83,7 +83,7 @@ export const NATIVE_KEYS: readonly EditorCommandSpec[] = [
 
 /** Rows follow the order of the tables in Keyboard shortcuts; anything unlisted keeps registry order. */
 const ROW_ORDER = [
-  "note.open", "note.new", "note.save", "toolbar.toggle", "shortcuts.open", "focus.toggle", "appearance.toggle",
+  "note.open", "note.new", "note.save", "sync.now", "toolbar.toggle", "shortcuts.open", "focus.toggle", "appearance.toggle",
   "font.larger", "font.smaller", "font.reset", "window.fullScreen",
 ];
 const rank = (id: string) => {
