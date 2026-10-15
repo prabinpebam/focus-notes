@@ -69,6 +69,10 @@
     "FND-04.findAllP95Ms": {
       "budget": 300,
       "unit": "ms"
+    },
+    "PRF-06.publishMs": {
+      "budget": 300000,
+      "unit": "ms"
     }
   },
   "baselinePlatform": "win32",
