@@ -102,8 +102,8 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
       >
         {/* The header and the body: the body scrolls, or in a short sheet both do (Sheet.css.ts). */}
         <div className={s.main} ref={mainRef}>
-          {header ? <div className={s.header} data-sheet-header="">{header}</div> : null}
-          <div className={s.body} ref={bodyRef} data-sheet-body="">{children}</div>
+          {header ? <div className={s.header}>{header}</div> : null}
+          <div className={s.body} ref={bodyRef}>{children}</div>
         </div>
         {footer ? <div className={s.footer}>{footer}</div> : null}
       </aside>

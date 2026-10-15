@@ -1552,8 +1552,7 @@
                       },
                       "role": "secondary",
                       "tone": "default",
-                      "lines": "one",
-                      "inset": "control"
+                      "lines": "one"
                     }
                   },
                   {

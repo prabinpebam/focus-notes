@@ -79,8 +79,6 @@ export function WindowControls({ label, minimizeLabel, maximizeLabel, restoreLab
       data-window-controls=""
       data-trigger-band=""
       data-reveal={reveal || open ? "" : undefined}
-      // The trigger toolbar steps back while the picker is open (MorphPanel.css.ts, D-119).
-      data-picker-open={open ? "" : undefined}
       onKeyDown={(e) => {
         // The picker handles its own Esc (back to maximize); on a button, Esc leaves the chrome.
         if (e.key !== "Escape" || open || !(e.target instanceof HTMLButtonElement) || flyRef.current?.contains(e.target)) return;
