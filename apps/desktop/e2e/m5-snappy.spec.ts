@@ -255,9 +255,10 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     const long = await page.evaluate(() => (globalThis as unknown as { long: { duration: number }[] }).long.map((e) => Math.round(e.duration)));
     console.log(`[D-151] input to next paint (ms, the worst input of each use, under 16 ms shown as 0): ${JSON.stringify(results)}; p95 ${p95} ms, max ${all.at(-1)} ms; long tasks ${JSON.stringify(long)}`);
     for (const [name, r] of Object.entries(results)) console.log(`[D-151] ${name}: first use ${r[0]} ms, fifth ${r[4]} ms`);
-    // Reported, not gated yet: on CI (software compositing) Spotlight measured 56 to 88 ms, over the
-    // budget, and the others 16 to 40 ms; D-151 (12) tracks it. Every use must still be measured.
+    // Gated (D-151 (12)): Spotlight's opening frame measured 56 to 88 ms on CI's software compositing
+    // until its first frame drew only the rows it shows and its frost went opaque there (D-121).
     expect(all.length).toBe(ACTIONS.length * 5);
+    expect(p95, "input to next paint p95 (budget 50 ms)").toBeLessThanOrEqual(50);
     await quit(l);
   });
   // The same real-cursor drag on three paths, so CI tells the loop from the runner (D-151):

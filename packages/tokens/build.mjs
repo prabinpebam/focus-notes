@@ -23,6 +23,9 @@ const MODES = {
   ...Object.fromEntries(["compact", "airy"].map((p) => [`[data-paragraph-spacing="${p}"]`, join(src, "modes", `paragraph-${p}.json`)])),
   '[data-motion="reduced"]': join(src, "modes", "reduced-motion.json"),
   '[data-transparency="reduced"]': join(src, "modes", "reduced-transparency.json"),
+  // Software compositing (D-121, D-151): the frosted surfaces as with reduced transparency, opaque and
+  // unblurred, as a backdrop blur drawn without a GPU costs a frame of its own.
+  '[data-compositing="software"]': join(src, "modes", "reduced-transparency.json"),
   '[data-pointer="coarse"]': join(src, "modes", "coarse-pointer.json"),
   '[data-platform="macos"]': join(src, "modes", "platform-macos.json"),
   // The app-built window (D-14) is drawn inside the page, inset by its shadow margin: heights that
