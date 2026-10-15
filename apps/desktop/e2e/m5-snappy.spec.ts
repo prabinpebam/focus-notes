@@ -185,8 +185,11 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
       await app.evaluate(({ BrowserWindow, screen }, pr) => {
         const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
         const off = { x: pr.cursor.x - pr.win.x, y: pr.cursor.y - pr.win.y };
-        const g = globalThis as unknown as { samples: number[][]; lagTimer: ReturnType<typeof setInterval>; t0: number };
+        const g = globalThis as unknown as { samples: number[][]; lagTimer: ReturnType<typeof setInterval>; t0: number; loop: import("node:perf_hooks").ELDHistogram };
         g.samples = [];
+        // The main process's loop delay during the drag: a stall there is a window left behind.
+        g.loop = process.getBuiltinModule("node:perf_hooks").monitorEventLoopDelay({ resolution: 2 });
+        g.loop.enable();
         g.t0 = performance.now();
         g.lagTimer = setInterval(() => {
           const c = screen.getCursorScreenPoint();
@@ -197,9 +200,10 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
       mover.stdin.write("go\n");
       await done;
       const run = await app.evaluate(() => {
-        const g = globalThis as unknown as { samples: number[][]; lagTimer: ReturnType<typeof setInterval>; moves: number[] };
+        const g = globalThis as unknown as { samples: number[][]; lagTimer: ReturnType<typeof setInterval>; moves: number[]; loop: import("node:perf_hooks").ELDHistogram };
         clearInterval(g.lagTimer);
-        return { samples: g.samples, moves: g.moves };
+        g.loop.disable();
+        return { samples: g.samples, moves: g.moves, loopMax: g.loop.max / 1e6, loopP99: g.loop.percentile(99) / 1e6 };
       });
       const final = await app.evaluate(({ screen }) => screen.getCursorScreenPoint());
       const released = Date.now();
@@ -228,7 +232,7 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
       const budget = (3000 * frame) / 1000;
       const settle = Math.max(0, settledAt - released);
       console.log(`[D-151] ${path.name}: display ${JSON.stringify(box.display)} work ${JSON.stringify(box.work)} scale ${box.scale} ${box.hz} Hz; window ${JSON.stringify(box.win)} frame "${state}"; press ${JSON.stringify(press)}; span ${span}; mover ${out.trim().split(/\s+/).join(" ")}`);
-      console.log(`[D-151] ${path.name}: cursor travelled ${travel} px in ${span0} ms (${Math.round((travel / span0) * 1000)} px/s), moving in ${moving.length} of ${run.samples.length} samples; window given ${run.moves.length} positions, setPosition p50 ${pct(costs, 0.5)?.toFixed(2)} ms p95 ${pct(costs, 0.95)?.toFixed(2)} ms; lag p50 ${pct(lag, 0.5)?.toFixed(1)} p95 ${p95.toFixed(1)} max ${lag.at(-1)?.toFixed(1)} px; after release ${JSON.stringify(after)}`);
+      console.log(`[D-151] ${path.name}: cursor travelled ${travel} px in ${span0} ms (${Math.round((travel / span0) * 1000)} px/s), moving in ${moving.length} of ${run.samples.length} samples; window given ${run.moves.length} positions, setPosition p50 ${pct(costs, 0.5)?.toFixed(2)} ms p95 ${pct(costs, 0.95)?.toFixed(2)} ms; lag p50 ${pct(lag, 0.5)?.toFixed(1)} p95 ${p95.toFixed(1)} max ${lag.at(-1)?.toFixed(1)} px (at ${run.samples.find((s) => s[5] === lag.at(-1))?.[0]} ms); main loop delay p99 ${run.loopP99.toFixed(1)} max ${run.loopMax.toFixed(1)} ms; after release ${JSON.stringify(after)}`);
       console.log(`[D-151] ${path.name}: samples (ms, cursor x, y, window x, y, lag) ${JSON.stringify(run.samples.filter((_, i) => i % 40 === 0).map((s) => s.map((v) => Math.round(v))))}`);
       console.log(`fn:window.dragLag (${path.name}) p95=${p95.toFixed(1)}px (budget ${budget.toFixed(1)} px at ${box.hz} Hz, ${lag.length} samples); fn:window.settle=${settle}ms (budget ${frame.toFixed(1)} ms)`);
       await quit(l);

@@ -69,9 +69,9 @@ export class Account {
   }
   async #gcmProgram(): Promise<string | undefined> {
     const exec = await this.#git(["--exec-path"]);
-    return findProgram("git-credential-manager", this.#d.env, exec.code === 0 ? gitProgramDirs(exec.stdout) : []);
+    return await findProgram("git-credential-manager", this.#d.env, exec.code === 0 ? gitProgramDirs(exec.stdout) : []);
   }
-  #ghProgram(): string | undefined {
+  #ghProgram(): Promise<string | undefined> {
     return findProgram("gh", this.#d.env);
   }
 
@@ -81,7 +81,7 @@ export class Account {
     const v = r.code === 0 ? parseGitVersion(r.stdout) : undefined;
     if (!v) return { installed: false, ok: false, gcm: false, gh: false };
     const helpers = await this.#helpers();
-    return { installed: true, version: v.join("."), ok: gitIsNewEnough(v), gcm: helpers.some(isGcmHelper), gh: Boolean(this.#ghProgram()) };
+    return { installed: true, version: v.join("."), ok: gitIsNewEnough(v), gcm: helpers.some(isGcmHelper), gh: Boolean(await this.#ghProgram()) };
   }
 
   /** Checks a token with the API: its account, or why not. The token stays in memory. */
@@ -111,7 +111,7 @@ export class Account {
   /** Where signing in stands: Git's credential first (FRE-04), then a GitHub CLI session Git doesn't use yet. */
   async status(): Promise<AccountStatus> {
     const helpers = await this.#helpers();
-    const ghProgram = this.#ghProgram();
+    const ghProgram = await this.#ghProgram();
     const via = helpers.some(isGcmHelper) ? "gcm" as const : helpers.some(isGhHelper) ? "gh" as const : "helper" as const;
     const base = { gcm: helpers.some(isGcmHelper) && Boolean(await this.#gcmProgram()), gh: Boolean(ghProgram), via };
     let problem: SignInProblem | undefined;
@@ -169,7 +169,7 @@ export class Account {
       const s = await this.status();
       if (s.account) return s;
     }
-    const gh = this.#ghProgram();
+    const gh = await this.#ghProgram();
     if (gh) await this.#d.tools(gh, { args: ["auth", "setup-git", "--hostname", "github.com"], cwd: this.#d.home, env: this.#d.env, timeoutMs: 30_000 }).done;
     return this.status();
   }
@@ -182,7 +182,7 @@ export class Account {
     this.cancel();
     const helpers = await this.#helpers();
     const gcm = helpers.some(isGcmHelper) ? await this.#gcmProgram() : undefined;
-    const gh = gcm ? undefined : this.#ghProgram();
+    const gh = gcm ? undefined : await this.#ghProgram();
     if (!gcm && !gh) return { gcm: false, gh: false, problem: "noHelper" };
     const helper = gcm ? "gcm" : "gh";
     const program = (gcm ?? gh)!;
@@ -201,12 +201,12 @@ export class Account {
     });
     this.#signIn = p;
     const r = await p.done;
-    if (this.#signIn !== p) return { gcm: Boolean(gcm), gh: Boolean(this.#ghProgram()) };
+    if (this.#signIn !== p) return { gcm: Boolean(gcm), gh: Boolean(await this.#ghProgram()) };
     this.#signIn = undefined;
     if (r.code !== 0) {
       const problem = r.killed ? "expired" : signInProblem(`${r.stdout}\n${r.stderr}`);
       this.#d.log?.(`sign-in helper=${helper} problem=${problem}`);
-      return { gcm: Boolean(gcm), gh: Boolean(this.#ghProgram()), problem };
+      return { gcm: Boolean(gcm), gh: Boolean(await this.#ghProgram()), problem };
     }
     if (gh) await this.#d.tools(gh, { args: ["auth", "setup-git", "--hostname", "github.com"], cwd: this.#d.home, env: this.#d.env, timeoutMs: 30_000 }).done;
     // Signing in is signing Focus Notes in too.
@@ -229,7 +229,7 @@ export class Account {
   async useToken(token: string): Promise<AccountStatus> {
     const t = token.trim();
     const helpers = await this.#helpers();
-    const base = { gcm: helpers.some(isGcmHelper), gh: Boolean(this.#ghProgram()) };
+    const base = { gcm: helpers.some(isGcmHelper), gh: Boolean(await this.#ghProgram()) };
     if (!/^[A-Za-z0-9_]{20,255}$/.test(t)) return { ...base, problem: "invalid" };
     const a = await this.#verify(t);
     if (typeof a === "string") return { ...base, problem: a };
@@ -265,7 +265,7 @@ export class Account {
     const helpers = await this.#helpers();
     const login = this.#session?.account.login;
     await this.#reject(login);
-    const gh = this.#ghProgram();
+    const gh = await this.#ghProgram();
     if (gh && helpers.some(isGhHelper)) await this.#d.tools(gh, { args: ["auth", "logout", "--hostname", "github.com"], cwd: this.#d.home, env: this.#d.env, timeoutMs: 30_000 }).done;
     this.#session = undefined;
     // Nothing for the mark to hold back now.
