@@ -37,6 +37,7 @@ The loop optimizes validated progress toward the definition of done per hour. Se
 - **Unattended** (the owner is away): do deeper, systematic work on the critical path in 45-minute time-boxes, push the work branch so CI runs the full Windows suite before merging, and leave a handoff summary for the owner's return. At most two builders, on areas that don't overlap.
 - **The merge gate has no exceptions** in either mode, apart from the attended fast loop above. A work branch merges only when its Windows CI is green. A failure that's "the same as main" or "a flake" isn't green: either fix it first, or quarantine it explicitly, by marking the check skipped with a recorded scope, owner and expiry in `documentations/plan/gate-evidence.md`. Two ad hoc exceptions on 15 October let a regression into main (D-113).
 - **Merge exactly what was tested.** Main only fast-forwards to a commit whose own Windows CI run is green. When several branches are ready, combine them on one merge-candidate branch (`fix-merge-candidate`, main plus the branches in landing order), run CI once, and fast-forward main to that head. Don't re-run each branch one after another.
+- **Decision numbers are assigned by the orchestrator.** Each builder brief names the D- numbers that builder may use. Builders never pick the next free number themselves, because parallel branches collided four times on 15 October (D-113).
 - **Watch CI for anomalies, not just completion.** A watcher flags any step that runs more than twice its usual time (the Windows journey shards take about 5–8 minutes, the unit tests about 2), so a hang is investigated in minutes, not after an hour.
 - **Don't widen a branch whose Windows CI is green.** It lands at its time-box. Problems that only show on macOS or Linux, and don't block (D-112), get a separate follow-up, unless they touch data safety, security or what the owner sees in Preview.
 - **The owner tests through Preview, any time.** The "Focus Notes Preview" desktop shortcut opens the newest green `main`, built by `E:\Projects\side-projects\focus-notes-preview\update.ps1` every 10 minutes (a scheduled task). Never kill, replace or build into the Preview's folder. Getting changes to the owner means merging them green; there's no separate restart step (D-122).
@@ -64,7 +65,7 @@ Then check in a browser that every changed page renders with one H1, that its li
 ```powershell
 pnpm install
 pnpm tokens          # build the design tokens
-pnpm check           # boundaries, chain, plan, licenses, ui:check
+pnpm check           # boundaries, chain, plan, licenses, generated files, ui:check
 pnpm typecheck
 pnpm test            # unit tests, including the Markdown round-trip corpus
 pnpm --filter @focus-notes/desktop run build
@@ -72,6 +73,8 @@ pnpm test:e2e        # journey tests against the real Electron app
 pnpm bench --check   # budgets (QLT-05)
 pnpm dev             # run the app; pnpm gallery for the component gallery
 ```
+
+A changed contract or view means regenerating the UI schemas (`pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`) in the same commit; `pnpm check` fails while `schemas/ui/` or any other committed generated file is stale (D-138).
 
 ## Notes in this repository (AGT-07)
 

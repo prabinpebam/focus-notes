@@ -38,7 +38,7 @@ jobs:
         working-directory: apps/desktop
         run: node -e "console.log(require('electron'))"
       - run: node packages/tokens/build.mjs
-      - name: Repository checks (boundaries, chain, plan, licenses, ui:check)
+      - name: Repository checks (boundaries, chain, plan, licenses, generated files, ui:check)
         run: pnpm check
       # No high or critical advisories in production dependencies, asked of the registry the
       # repository's .npmrc names (tools/audit-deps.mjs).
