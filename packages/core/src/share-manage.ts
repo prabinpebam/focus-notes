@@ -16,6 +16,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { findNode, rootOf, stemOf, type TreeNode, type WorkspaceTree } from "./workspace.ts";
+import { inScope, noteId } from "@focus-notes/seal/grants";
 
 /** What the shell reports: whether there's a private repository, the site, and the share audiences, without their secrets. */
 export interface AccessListing {
@@ -131,7 +132,7 @@ export const SHARE_MANAGE_CLOSED: ShareManageState = {
 interface S {
   ui: { share: ShareManageState; settings: { open: boolean; section: string } };
   workspace: { tree: WorkspaceTree; site?: string };
-  note: { path?: string };
+  note: { path?: string; markdown: string; initialMarkdown: string };
 }
 interface Ctx<St extends S> {
   store: Store<St>;
@@ -142,6 +143,8 @@ interface Ctx<St extends S> {
   now?: () => Date;
 }
 
+/** A day as `YYYY-MM-DD`, where the owner is. */
+const dayOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const problemOf = (e: unknown): AccessProblem | "failed" => (/access:([a-zA-Z.]+)/.exec(String((e as Error)?.message ?? e))?.[1] as AccessProblem | undefined) ?? "failed";
 const DAY = 86_400_000;
 
@@ -230,13 +233,16 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
     if (!e.link && !e.passcode) return "waysIn.none";
     if (e.passcode && e.mode === "own") { const bad = passcodeProblem(e.own); if (bad) return bad; }
     if (!e.notes.length && !e.folders.length) return "scope.empty";
+    if (e.expiry === "date" && expiryUntil(e.until) && e.until > latestDay()) return "expiry.far";
     if (e.expiry === "date" && !untilOf(e)) return "expiry.past";
     return undefined;
   };
-  /** When a picked day ends, if it's still to come. */
+  /** The last day that can be picked: a year from today (D-143; the main process allows no more). */
+  const latestDay = () => { const d = new Date(now().getTime()); d.setFullYear(d.getFullYear() + 1); return dayOf(d); };
+  /** When a picked day ends, if it's still to come and within a year. */
   const untilOf = (e: ShareEditor) => {
     const at = expiryUntil(e.until);
-    return at && Date.parse(at) > now().getTime() ? at : undefined;
+    return at && Date.parse(at) > now().getTime() && e.until <= latestDay() ? at : undefined;
   };
   const expiresAtOf = (e: ShareEditor): string | null | undefined =>
     e.expiry === "date" ? untilOf(e) : e.expiry ? expiryFrom(e.expiry, now()) : undefined;
@@ -245,6 +251,9 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
     if (!access || e.busy) return;
     const bad = editorProblem(e);
     if (bad) return void setEditor({ problem: bad });
+    // Worked out once, after the checks: a picked day that has passed by now stops here, never 30 days instead.
+    const expiresAt = expiresAtOf(e);
+    if (e.expiry === "date" && !expiresAt) return void setEditor({ problem: "expiry.past" });
     // Words are made by the shell (review L5); an edited audience keeps its passcode unless asked for new words.
     const passcode = e.passcode ? (e.mode === "own" ? { value: e.own } : { generate: true as const }) : undefined;
     const scope = { notes: e.notes, folders: e.folders };
@@ -253,10 +262,10 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
     const change: AccessChange = e.id
       ? {
         op: "update", id: e.id, link: e.link, scope,
-        ...(expiresAtOf(e) !== undefined ? { expiresAt: expiresAtOf(e)! } : {}),
+        ...(expiresAt !== undefined ? { expiresAt } : {}),
         ...(!passcode ? (before?.passcode ? { passcode: null } : {}) : keep ? {} : { passcode }),
       }
-      : { op: "create", audience: { name: e.name, link: e.link, ...(passcode ? { passcode } : {}), scope, expiresAt: expiresAtOf(e) ?? expiryFrom(DEFAULT_EXPIRY, now()) } };
+      : { op: "create", audience: { name: e.name, link: e.link, ...(passcode ? { passcode } : {}), scope, expiresAt: expiresAt === undefined ? expiryFrom(DEFAULT_EXPIRY, now()) : expiresAt } };
     setEditor({ busy: true, problem: undefined });
     try {
       const { id, ...listing } = await access.apply(change);
@@ -381,11 +390,18 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
     const root = path ? rootOf(s.workspace.tree, path) : undefined;
     return root?.id === "private" ? path!.slice(root.path.length).split(/[\\/]/).filter(Boolean).join("/") : undefined;
   };
-  /** How an audience opens a note: by name, through one of its folders, or not at all. */
-  const opens = (g: Audience, rel: string): { via?: string } | undefined => {
-    if ((g.scope.notes ?? []).includes(rel)) return {};
-    const folder = (g.scope.folders ?? []).find((f) => rel.startsWith(`${f.replace(/\/+$/, "")}/`));
-    return folder ? { via: folder.replace(/\/+$/, "") } : undefined;
+  /**
+   * How an audience opens a note, decided by the publisher's own `inScope` (review of 8a6627c): by its
+   * path or front-matter id, or under a folder (a leading or trailing slash doesn't matter). `all`
+   * counts only on the owner's grant (D-117 (2)), so it's off here; the folder it came through is
+   * said as "via trips/".
+   */
+  const opens = (g: Audience, note: { path: string; id: string | undefined }): { via?: string } | undefined => {
+    const scope = { ...g.scope, all: false };
+    if (!inScope(scope, note)) return undefined;
+    if (inScope({ notes: g.scope.notes ?? [] }, note)) return {};
+    const folder = (g.scope.folders ?? []).find((f) => inScope({ folders: [f] }, note));
+    return { via: (folder ?? "").replace(/^\/+/, "").replace(/\/+$/, "") };
   };
   reg("share.manage.noteOpen", async () => {
     if (!access) return;
@@ -481,7 +497,7 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
         generate: BOOL, own: BOOL, generated: STR, canRenew: BOOL, renew: BOOL, ownValue: STR, ownInvalid: BOOL, ownNote: STR,
         filter: STR, items: { type: "array", items: { type: "object", properties: { id: STR, label: STR, icon: STR, pressed: BOOL } } },
         picked: STR, expiry: STR, expiries: { type: "array", items: OPTION }, problem: STR, hasProblem: BOOL, nameInvalid: BOOL, busy: BOOL, submitLabel: STR, noItems: BOOL,
-        until: STR, today: STR, cardTitle: STR, cardInitials: STR, hasInitials: BOOL, cardDetail: STR, cardBadge: STR,
+        until: STR, today: STR, latest: STR, cardTitle: STR, cardInitials: STR, hasInitials: BOOL, cardDetail: STR, cardBadge: STR,
       },
     },
     setters: { name: "share.manage.setName", mode: "share.manage.setMode", ownValue: "share.manage.setOwn", filter: "share.manage.setFilter", expiry: "share.manage.setExpiry", until: "share.manage.setUntil" },
@@ -510,7 +526,7 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
         open: e.open, creating: !e.id, busy: e.busy,
         cardTitle: e.name.trim() || catalog.format("share.manage.editor.someone"), cardInitials: initials(e.name), hasInitials: Boolean(e.name.trim()),
         cardDetail: catalog.format("share.manage.row.detail", { scope: scopeNow, ways: waysNow }), cardBadge,
-        until: e.expiry === "date" ? e.until : "", today: iso(today),
+        until: e.expiry === "date" ? e.until : "", today: iso(today), latest: latestDay(),
         title: e.id ? catalog.format("share.manage.editor.editTitle", { name: e.name }) : catalog.format("share.manage.editor.title"),
         name: e.name, link: e.link, passcode: e.passcode, mode: e.mode,
         modes: ["generate", "own"].map((id) => ({ id, label: catalog.format(`share.manage.passcode.${id}`) })),
@@ -630,7 +646,7 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
         },
       },
     },
-    reads: ["ui.share.note", "ui.share.listing", "note.path", "workspace.tree", "workspace.site"],
+    reads: ["ui.share.note", "ui.share.listing", "note.path", "note.markdown", "note.initialMarkdown", "workspace.tree", "workspace.site"],
     select: (s) => {
       const n = s.ui.share.note;
       const path = s.note.path ?? "";
@@ -639,8 +655,10 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
       const node = path ? findNode(s.workspace.tree, path)?.node : undefined;
       const noteTitle = (node?.kind === "note" && node.title) || stemOf(path.split(/[\\/]/).at(-1) ?? "");
       const listing = s.ui.share.listing;
-      const people = rel ? (listing?.grants ?? []).flatMap((g) => {
-        const how = opens(g, rel);
+      // The note's id as the publisher reads it (noteId), only while the dialog is open.
+      const id = n.open && rel ? noteId(s.note.markdown) ?? noteId(s.note.initialMarkdown) : undefined;
+      const people = rel && n.open ? (listing?.grants ?? []).flatMap((g) => {
+        const how = opens(g, { path: rel, id });
         const state = audienceState(g, now());
         return how && (state === "active" || state === "soon") ? [{ g, via: how.via }] : [];
       }) : [];

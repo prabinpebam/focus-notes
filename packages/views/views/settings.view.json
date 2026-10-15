@@ -1603,6 +1603,9 @@
                   },
                   "min": {
                     "get": "vm.shareEditor.today"
+                  },
+                  "max": {
+                    "get": "vm.shareEditor.latest"
                   }
                 }
               },

@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AccessEditError, applyAccessChange, audienceState, DEFAULT_EXPIRY, expiryFrom, expiryUntil, inviteText, nameProblem, parseAccessChange, parseAccessMessage, passcodeProblem, shareGrants,
-  TEMPLATE_LINES, TEMPLATE_MAX, templateProblem, type AccessChange,
+  hasHiddenText, TEMPLATE_LINES, TEMPLATE_MAX, templateProblem, type AccessChange,
 } from "../src/access.ts";
 import { generatePasscode, EFF_WORD_COUNT, effWord, effWords } from "../src/words.ts";
 import { createHash } from "node:crypto";
@@ -305,5 +305,20 @@ describe("a date for the expiry (D-143)", () => {
   it("can't be in the past when it's applied", () => {
     expect(problem(() => apply(base(), create("Asha", { expiresAt: expiryUntil("2026-10-14")! })))).toBe("expiry.past");
     expect(problem(() => apply(base(), create("Asha", { expiresAt: expiryUntil("2026-10-16")! })))).toBeUndefined();
+  });
+});
+
+describe("after the security review of 8a6627c (D-143)", () => {
+  it("counts CRLF as one line break, and refuses a lone CR and Unicode line and paragraph separators", () => {
+    expect(templateProblem(`{link}${"\r\n".repeat(TEMPLATE_LINES - 1)}`)).toBeUndefined();
+    expect(templateProblem(`{link}${"\r\n".repeat(TEMPLATE_LINES)}`)).toEqual({ problem: "template.long" });
+    for (const sep of ["\r", "\u2028", "\u2029"]) expect(templateProblem(`Hi {name}${sep}{link}`)).toEqual({ problem: "template.invalid" });
+    expect(hasHiddenText("Rome\u2028")).toBe(true);
+    expect(hasHiddenText("Rome trip")).toBe(false);
+  });
+  it("refuses an expiry more than a year away (the main process's check)", () => {
+    expect(problem(() => apply(base(), create("Asha", { expiresAt: new Date(NOW.getTime() + 400 * DAY).toISOString() })))).toBe("expiry.far");
+    expect(problem(() => apply(base(), create("Asha", { expiresAt: new Date(NOW.getTime() + 366 * DAY).toISOString() })))).toBeUndefined();
+    expect(problem(() => apply(base(), create("Asha", { expiresAt: null })))).toBeUndefined();
   });
 });

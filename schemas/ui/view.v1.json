@@ -5467,6 +5467,13 @@
                 }
               ]
             },
+            "max": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
             "description": {
               "anyOf": [
                 {

@@ -8,6 +8,7 @@ export const contract = defineContract({
     label: { kind: "message", required: true },
     value: { kind: "text", bindable: true, description: "The day picked, YYYY-MM-DD, or empty." },
     min: { kind: "text", description: "The first day that can be picked, YYYY-MM-DD." },
+    max: { kind: "text", description: "The last day that can be picked, YYYY-MM-DD (an audience's: a year from today)." },
     description: { kind: "message" },
     invalid: { kind: "boolean", default: false },
   },

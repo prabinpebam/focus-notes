@@ -4233,6 +4233,10 @@
           "kind": "text",
           "description": "The first day that can be picked, YYYY-MM-DD."
         },
+        "max": {
+          "kind": "text",
+          "description": "The last day that can be picked, YYYY-MM-DD (an audience's: a year from today)."
+        },
         "description": {
           "kind": "message"
         },

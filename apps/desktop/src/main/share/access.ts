@@ -9,7 +9,7 @@
 import { readFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { applyAccessChange, audienceOf, inviteText, parseAccessChange, parseAccessMessage, shareGrants, templateProblem, type InviteValues } from "@focus-notes/seal/access";
+import { applyAccessChange, audienceOf, hasHiddenText, inviteText, parseAccessChange, parseAccessMessage, shareGrants, templateProblem, type InviteValues } from "@focus-notes/seal/access";
 import { shareLink } from "@focus-notes/seal";
 import { validateAccess, type AccessFile, type Grant } from "@focus-notes/seal/publish";
 import { hasVault } from "@focus-notes/seal/vault";
@@ -44,7 +44,8 @@ function parseInvite(v: unknown): { template: string; values: InviteValues } {
   if (!o || typeof o.template !== "string" || templateProblem(o.template) || typeof o.values !== "object" || o.values === null) throw NOT();
   const values: InviteValues = {};
   for (const [k, x] of Object.entries(o.values)) {
-    if (!["name", "title", "expires"].includes(k) || typeof x !== "string" || x.length > 500) throw NOT();
+    // One line each, nothing hidden: a value can't add a line of its own to the invite (review of 8a6627c).
+    if (!["name", "title", "expires"].includes(k) || typeof x !== "string" || x.length > 500 || /[\r\n]/.test(x) || hasHiddenText(x)) throw NOT();
     values[k as "name" | "title" | "expires"] = x;
   }
   return { template: o.template, values };
@@ -137,7 +138,9 @@ export function accessStore(o: AccessStoreOptions) {
       if (what === "passcode" && s.passcode) return s.passcode;
       if (what !== "invite") throw NOT();
       const { template, values } = parseInvite(invite);
-      return inviteText(template, { ...values, ...s });
+      const g = await grant(id);
+      // The name is the grant's own, never the window's.
+      return inviteText(template, { ...values, name: g.name, ...s });
     },
   };
 }

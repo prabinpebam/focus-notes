@@ -130,7 +130,7 @@ function shell() {
   const app = createApp(bridge, en);
   const vm = (id: string) => app.viewModels.select(id, app.store.state) as Record<string, any>;
   const run = (id: string, args?: Record<string, unknown>) => app.commands.run(id, args);
-  return { app, bridge, vm, run, copied, revealed, access: () => access, template: () => template };
+  return { app, bridge, vm, run, copied, revealed, access: () => access, setAccess: (a: AccessFile) => void (access = a), template: () => template };
 }
 
 describe("Settings → Sharing (SHR-05, SHR-08)", () => {
@@ -378,3 +378,53 @@ describe("the Share popover for the open note (IA-VIEW-SHARE, D-143)", () => {
   });
 });
 
+
+describe("after the security review of 8a6627c (D-143)", () => {
+  const grant = (id: string, name: string, scope: { notes?: string[]; folders?: string[]; all?: boolean }) =>
+    ({ id, name, salt: "AAAAAAAAAAAAAAAAAAAAAA", link: { secret: "B".repeat(43) }, scope, createdAt: "2026-10-01T00:00:00.000Z", expiresAt: null });
+  it("the note's Share dialog finds who can read it as the publisher does: by front-matter id, and by a folder written with a leading slash", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    // The open note's front matter names its id (the publisher's noteId).
+    t.app.store.update((s) => ({ ...s, note: { ...s.note, markdown: "---\nid: rome-7f3a\n---\n# Rome\n" } }));
+    const base = t.access();
+    t.setAccess({
+      ...base,
+      grants: [
+        ...base.grants,
+        grant("sbyidaaaaaaaaaaaaaaaa", "By id", { notes: ["rome-7f3a"] }),
+        grant("sslashaaaaaaaaaaaaaaa", "By slash", { folders: ["/trips"] }),
+        grant("sotheraaaaaaaaaaaaaaa", "Other", { notes: ["diary.md"], folders: ["/trip"] }),
+        // `all` counts only on the owner's grant (D-117 (2)).
+        grant("sallaaaaaaaaaaaaaaaaa", "All", { all: true }),
+      ],
+    } as AccessFile);
+    await t.run("share.manage.noteOpen");
+    const p = t.vm("vm.shareNote");
+    expect(p).toMatchObject({ onlyYou: false, hasPeople: true, level: "Shared" });
+    expect(p.rows.map((r: { name: string; detail: string }) => `${r.name}: ${r.detail}`)).toEqual(["By id: Link", "By slash: Link · via trips/"]);
+  });
+  it("refuses a day more than a year away, and never falls back to 30 days for a picked day", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("settings.setSection", { value: "sharing" });
+    await t.run("share.manage.add");
+    await t.run("share.manage.setName", { value: "Asha" });
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const e = t.vm("vm.shareEditor");
+    const latest = new Date();
+    latest.setFullYear(latest.getFullYear() + 1);
+    expect(e.latest).toBe(iso(latest));
+    const far = new Date(latest.getTime() + 2 * 86_400_000);
+    await t.run("share.manage.setUntil", { value: iso(far) });
+    await t.run("share.manage.submit");
+    expect(t.vm("vm.shareEditor")).toMatchObject({ open: true, problem: "Choose a day within a year." });
+    expect(shareGrants(t.access())).toHaveLength(0);
+    await t.run("share.manage.setUntil", { value: iso(latest) });
+    await t.run("share.manage.submit");
+    const at = new Date(shareGrants(t.access())[0]!.expiresAt!);
+    expect([at.getFullYear(), at.getMonth(), at.getDate()]).toEqual([latest.getFullYear(), latest.getMonth(), latest.getDate()]);
+  });
+});

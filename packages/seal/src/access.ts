@@ -15,6 +15,8 @@ export const EXPIRY_CHOICES = ["1d", "7d", "30d", "90d", "never"] as const;
 export type ExpiryChoice = (typeof EXPIRY_CHOICES)[number];
 export const DEFAULT_EXPIRY: ExpiryChoice = "30d";
 const DAY = 86_400_000;
+/** The furthest an expiry may be: a year from today, to the end of that day (D-143; a leap day and time zones allowed for). */
+export const EXPIRY_MAX_MS = 367 * DAY;
 /** "Expires soon": 3 days or less left. */
 export const SOON_MS = 3 * DAY;
 
@@ -39,7 +41,7 @@ export function expiryUntil(day: string): string | undefined {
 
 export type AccessProblem =
   | "name.empty" | "name.long" | "name.taken" | "name.reserved" | "name.invalid"
-  | "waysIn.none" | "passcode.short" | "passcode.weak" | "scope.empty" | "expiry.past"
+  | "waysIn.none" | "passcode.short" | "passcode.weak" | "scope.empty" | "expiry.past" | "expiry.far"
   | "notFound" | "owner" | "withdrawn";
 /** A change that can't be made. Its message is the problem's code, never a name or a secret. */
 export class AccessEditError extends Error {
@@ -131,6 +133,7 @@ function checkExpiry(at: string | null, now: Date): string | null {
   if (at === null) return null;
   const t = Date.parse(at);
   if (!Number.isFinite(t) || t <= now.getTime()) throw new AccessEditError("expiry.past");
+  if (t - now.getTime() > EXPIRY_MAX_MS) throw new AccessEditError("expiry.far");
   return new Date(t).toISOString();
 }
 function checkPasscode(p: PasscodeInput, o: ApplyOptions): { value: string; generated: boolean } {
@@ -268,17 +271,25 @@ export const TEMPLATE_LINES = 20;
 export type TemplateProblem = "template.empty" | "template.long" | "template.invalid" | "template.unknown" | "template.noWayIn";
 /** Anything in braces that looks like a placeholder: a word of letters. */
 const PLACEHOLDER = /\{([A-Za-z]+)\}/g;
-/** Hidden characters, apart from line breaks and tabs. */
-const HIDDEN_TEXT = /[\p{Cf}\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/u;
+/**
+ * Hidden characters, apart from a line feed and a tab: format characters, every other control
+ * character (a lone carriage return included), and Unicode's line and paragraph separators, which
+ * some apps show as a new line (review of 8a6627c). Templates turn CRLF into LF before this check.
+ */
+export const HIDDEN_TEXT = /[\p{Cf}\u0000-\u0008\u000B-\u001F\u007F-\u009F\u2028\u2029]/u;
+/** Whether text has a hidden character (above). */
+export const hasHiddenText = (s: string) => HIDDEN_TEXT.test(s);
 
 /**
  * Why a template can't be used, if it can't: empty, too long, hidden characters, a placeholder the
  * app doesn't know (`unknown` names it, so the owner can fix a typo such as `{pascode}`), or no way
  * in at all (neither `{link}` nor `{passcode}`).
  */
-export function templateProblem(template: string): { problem: TemplateProblem; placeholder?: string } | undefined {
+export function templateProblem(raw: string): { problem: TemplateProblem; placeholder?: string } | undefined {
+  // CRLF is one line break; a lone CR, U+2028, and U+2029 are refused as hidden.
+  const template = raw.replace(/\r\n/g, "\n");
   if (!template.trim()) return { problem: "template.empty" };
-  if (template.length > TEMPLATE_MAX || template.split(/\r?\n/).length > TEMPLATE_LINES) return { problem: "template.long" };
+  if (template.length > TEMPLATE_MAX || template.split("\n").length > TEMPLATE_LINES) return { problem: "template.long" };
   if (HIDDEN_TEXT.test(template)) return { problem: "template.invalid" };
   for (const [, p] of template.matchAll(PLACEHOLDER)) {
     if (!(INVITE_PLACEHOLDERS as readonly string[]).includes(p!)) return { problem: "template.unknown", placeholder: p! };

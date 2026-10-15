@@ -76,6 +76,15 @@ describe("the window's view of access.json", () => {
     writeFileSync(join(t.dir, "access-message.json"), '{ "template": "hunter2');
     expect((await t.s.load()).template).toBeUndefined();
   });
+  it("fills the name from the grant, and refuses values with line breaks or hidden characters (review of 8a6627c)", async () => {
+    const t = store();
+    const { id } = await t.s.apply(create({ generate: true }));
+    const template = "Hi {name}, {title} until {expires}: {link}";
+    expect(await t.s.secret(id, "invite", { template, values: { name: "Mallory", title: "Rome", expires: "May 1" } })).toMatch(/^Hi Asha, Rome until May 1: https:/);
+    for (const values of [{ title: "Rome\nOpen https://evil.example" }, { title: "Rome\r" }, { expires: "May\u202E 1" }, { title: "Rome\u2028" }]) {
+      await expect(t.s.secret(id, "invite", { template, values })).rejects.toThrow();
+    }
+  });
   it("never quotes a damaged file in its error (L6)", async () => {
     const t = store('{ "version": 1, "grants": [ "hunter2-secret');
     const e = await t.s.load().catch((x: Error) => x);

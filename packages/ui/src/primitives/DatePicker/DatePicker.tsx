@@ -13,6 +13,8 @@ export interface DatePickerProps {
   value?: string;
   /** The first day that can be picked, `YYYY-MM-DD`. */
   min?: string;
+  /** The last day that can be picked, `YYYY-MM-DD`. */
+  max?: string;
   description?: string;
   invalid?: boolean;
   id?: string;
@@ -29,14 +31,16 @@ const day = (v: string | undefined): CalendarDate | null => {
  * part works from the keyboard (arrows change a segment, Alt+Down opens the calendar) and is named
  * in the locale's words.
  */
-export function DatePicker({ label, value, min, description, invalid, id, onChange }: DatePickerProps) {
+export function DatePicker({ label, value, min, max, description, invalid, id, onChange }: DatePickerProps) {
   const boundary = useWindowBoundary();
   const minValue = day(min);
+  const maxValue = day(max);
   return (
     <AriaDatePicker
       className={s.root}
       value={day(value)}
       {...(minValue ? { minValue } : {})}
+      {...(maxValue ? { maxValue } : {})}
       isInvalid={Boolean(invalid)}
       granularity="day"
       onChange={(v) => onChange?.({ value: v ? v.toString() : "" })}

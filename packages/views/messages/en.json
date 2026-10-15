@@ -88,6 +88,7 @@
   "share.manage.problem.passcode.weak": "That passcode is too easy to guess. Use a few unrelated words, or generate one.",
   "share.manage.problem.scope.empty": "Pick at least one note or folder.",
   "share.manage.problem.expiry.past": "Choose how long it works.",
+  "share.manage.problem.expiry.far": "Choose a day within a year.",
   "share.manage.problem.notFound": "Couldn't save that. Try again.",
   "share.manage.problem.owner": "Couldn't save that. Try again.",
   "share.manage.problem.withdrawn": "Couldn't save that. Try again.",
