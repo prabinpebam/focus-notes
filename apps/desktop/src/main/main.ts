@@ -837,9 +837,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       if (!existsSync(p)) return p;
     }
   });
+  // The Pages site the public root publishes to (SHR-03, D-139): setup's, or the notes repository's origin on github.com.
+  const pagesSite = async () => (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8"));
   handle("workspace:info", async () => {
     const format = await readFormat();
-    return { folder: notesHome(), ...(format !== undefined ? { format } : {}) };
+    const site = await pagesSite().catch(() => undefined);
+    return { folder: notesHome(), ...(format !== undefined ? { format } : {}), ...(site ? { site } : {}) };
   });
   handle("workspace:scan", async () => {
     const rs = roots();
@@ -900,7 +903,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // Share audiences (WP-5.3, D-134): only this process writes access.json and makes its secrets.
   const access = accessStore({
     dir: privateDir,
-    site: async () => (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8")),
+    site: pagesSite,
     write: atomicWrite,
     written: (file) => withGit((g) => g.written(file)),
   });

@@ -1,5 +1,6 @@
 ---
 id: 01JAAAAAAAAAAAAAAAAAAAAAAA
+excerpt: Why attention grows what you water.
 ---
 # On focus
 

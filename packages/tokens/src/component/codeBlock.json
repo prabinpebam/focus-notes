@@ -1,0 +1,17 @@
+{ "cmp": { "codeBlock": {
+  "background": { "$type": "color", "$value": "{color.surfaceRaised}" },
+  "border": { "$type": "color", "$value": "{color.border}" },
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "radius": { "$type": "dimension", "$value": "{radius.popover}" },
+  "gap": { "$type": "dimension", "$value": "{space.s}" },
+  "padding": { "$type": "dimension", "m": { "$value": "{space.s}" }, "l": { "$value": "{space.l}" } },
+  "paddingInlineStart": { "$type": "dimension", "m": { "$value": "{space.m}" }, "l": { "$value": "{space.l}" } },
+  "font": { "$type": "fontFamily", "$value": "{font.mono}" },
+  "size": { "$type": "dimension", "m": { "$value": "{font.uiBody}" }, "l": { "$value": "{font.uiCode}" } },
+  "weight": { "$type": "fontWeight", "l": { "$value": "{font.weightSemibold}" } },
+  "color": { "$type": "color", "$value": "{color.text}" },
+  "labelFont": { "$type": "fontFamily", "$value": "{font.ui}" },
+  "labelSize": { "$type": "dimension", "$value": "{font.uiSecondary}" },
+  "labelColor": { "$type": "color", "$value": "{color.textMuted}" },
+  "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" }
+} } }

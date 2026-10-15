@@ -32,6 +32,9 @@
   "markSize": { "$type": "dimension", "$value": "{size.iconS}" },
   "action": {
     "border": { "$type": "color", "$value": "{color.accent}", "$description": "A card that is the step's main action (D-131)." },
+    "tileBackground": { "$type": "color", "$value": "{color.accentMuted}", "$description": "Its tile in the accent: stronger than the step's title around it (D-142)." },
+    "tileColor": { "$type": "color", "$value": "{color.accent}" },
+    "title": { "$type": "dimension", "$value": "{font.uiTitle}" },
     "hover": { "$type": "color", "$value": "{color.hover}" },
     "pressed": { "$type": "color", "$value": "{color.pressed}" },
     "focusRing": { "$type": "color", "$value": "{color.focusRing}" },

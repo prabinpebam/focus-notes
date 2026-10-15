@@ -68,14 +68,14 @@ export async function notesFlow(mode: "light" | "dark", size: Size, hooks: FlowH
   await expect(card(page).getByRole("button", { name: "Open from GitHub…" })).toBeVisible();
   await hooks.at(page, "first-run-notes-found-more");
   await card(page).getByRole("button", { name: "Create new notes instead" }).click();
-  await heading(page, "Your notes");
+  await heading(page, "Create your notes");
   await expect(card(page).getByRole("button", { name: "Create my notes" })).toBeFocused();
   await hooks.at(page, "first-run-notes-create");
   await card(page).getByRole("button", { name: "More options" }).click();
   await expect(card(page).getByRole("textbox", { name: "Public repository" })).toBeVisible();
   await hooks.at(page, "first-run-notes-create-more");
   // The setup is the whole window (D-126), and what it holds scrolls inside it.
-  const dialog = page.locator('[data-key-scope="firstRun"]').filter({ has: page.getByRole("heading", { name: "Your notes" }) });
+  const dialog = page.locator('[data-key-scope="firstRun"]').filter({ has: page.getByRole("heading", { name: "Create your notes" }) });
   await expect(dialog).toHaveCount(1);
   await dialog.locator(":scope > div").evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
   await hooks.at(page, "first-run-notes-create-more-end");

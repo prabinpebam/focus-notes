@@ -12,7 +12,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { CHROMIUM_FOLDERS, DATA_FILES, LOCK_FILES, filesRemovedBy } from "../../../packages/core/src/inventory.ts";
-import { quit, type Launched } from "./helpers.ts";
+import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { card, existingInstance, GRACE, heading, noTokenInArgs, press, start, world, type World } from "./github-world.ts";
 
@@ -75,6 +75,36 @@ const toast = (page: Page, text: string) => expect(page.getByText(text, { exact:
 
 test.describe.configure({ mode: "serial" });
 
+test("A11Y-01, DEF-12: Tab while Settings checks the account rests on the panel, then on Sign in once it appears; focus never falls to the page", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Welcome\n\nText.\n");
+  const l = await launch(dirs);
+  const { page } = l;
+  await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+  // The check answers after 1.5 s, as a busy runner's credential helpers do: Tab lands while it runs.
+  await l.app.evaluate(({ ipcMain }) => {
+    ipcMain.removeHandler("firstRun:account");
+    ipcMain.handle("firstRun:account", () => new Promise((r) => setTimeout(() => r({ gcm: false, gh: false, via: "helper" }), 1_500)));
+  });
+  // Every moment focus rests on the page itself, checked after each task.
+  await page.evaluate(() => {
+    const w = window as unknown as { __onBody: string[] };
+    w.__onBody = [];
+    document.addEventListener("focusout", (e) => setTimeout(() => {
+      if (!document.activeElement || document.activeElement === document.body) w.__onBody.push(`after ${(e.target as Element).tagName} ${(e.target as Element).getAttribute("role") ?? ""}`);
+    }), true);
+  });
+  await press(page, `${mod}+,`);
+  await expect(settings(page).getByRole("tab", { name: "Account" })).toBeFocused();
+  await expect(settings(page).getByText(/^Checking/)).toBeVisible();
+  await press(page, "Tab");
+  await expect(settings(page).getByRole("tabpanel")).toBeFocused();
+  await expect(settings(page).getByRole("button", { name: /^Sign in/ })).toBeFocused({ timeout: 10_000 });
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => (window as unknown as { __onBody: string[] }).__onBody)).toEqual([]);
+  await quit(l);
+});
+
 test("IA-VIEW-SETTINGS, FRE-07: Settings opens with Mod+, and from ⋯; signing out of Focus Notes alone keeps Git's sign-in, and Sign in offers it again", async () => {
   test.setTimeout(120_000);
   const { w, l } = await setUp();
@@ -128,8 +158,8 @@ test("IA-VIEW-SETTINGS, FRE-07: Settings opens with Mod+, and from ⋯; signing 
     await openSettings(page);
     await expect(settings(page).getByText("Git on this computer is still signed in as @ada.")).toBeVisible({ timeout: 15_000 });
     await settings(page).getByRole("button", { name: "Sign in…" }).click();
-    await heading(page, "Connect your GitHub account");
-    await expect(card(page).getByText(/^Step \d of 4$/)).toHaveCount(0);
+    await heading(page, "You're connected");
+    await expect(card(page).getByRole("img", { name: /^Step \d of 4$/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });
     expect(await settledAxe(page)).toEqual([]);
     await press(page, "Enter");
@@ -221,8 +251,8 @@ test("FRE-07: Run setup again walks the first run from Connect; Esc goes back to
   try {
     await openSettings(page, "Workspace");
     await settings(page).getByRole("button", { name: "Run setup again" }).click();
-    await heading(page, "Connect your GitHub account");
-    await expect(card(page).getByText("Step 2 of 4")).toBeVisible();
+    await heading(page, "You're connected");
+    await expect(card(page).getByRole("img", { name: "Step 2 of 4" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Note" })).toHaveCount(0);
     expect(top(w.dirs.userData)).not.toContain(DATA_FILES.setup);
     await expect(card(page).getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 15_000 });

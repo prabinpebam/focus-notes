@@ -78,8 +78,8 @@ export interface CommandDef<S, A extends Record<string, unknown> = Record<string
   icon?: string;
   shortcut?: Shortcut;
   enabled?: (state: S) => boolean;
-  /** Message key saying why the command is unavailable, shown with it (Foundations → States). */
-  disabledReason?: string;
+  /** Message key saying why the command is unavailable, shown with it (Foundations → States); or one per state. */
+  disabledReason?: string | ((state: S) => string);
   checked?: (state: S) => boolean;
   /** Where its shortcut appears in the cheat sheet. Commands with a shortcut need both. */
   layer?: KeyLayer;
@@ -171,7 +171,7 @@ export class CommandRegistry<S> {
     if (chord) d.shortcut = chord;
     if (def.checked) d.checked = def.checked(state);
     if (held) d.disabledReason = held;
-    else if (!d.enabled && def.disabledReason) d.disabledReason = def.disabledReason;
+    else if (!d.enabled && def.disabledReason) d.disabledReason = typeof def.disabledReason === "function" ? def.disabledReason(state) : def.disabledReason;
     if (def.shortcut?.handledBy) d.handledBy = def.shortcut.handledBy;
     return d;
   }

@@ -56,6 +56,36 @@ const overflowProblems = (page: Page) => page.evaluate(() => {
   }
   return out;
 });
+/**
+ * Diagnostics for a lost focus (DEF-12): every focusin and focusout from now on, with where focus
+ * went and whether the element was still in the document, read back by `focusHistory` on failure.
+ */
+const recordFocus = (page: Page) => page.evaluate(() => {
+  const w = window as unknown as { __focusLog?: string[]; __focusOff?: () => void };
+  w.__focusOff?.();
+  const log: string[] = (w.__focusLog = []);
+  const t0 = performance.now();
+  const name = (n: EventTarget | null) => n instanceof Element
+    ? `${n.tagName}${n.getAttribute("role") ? `[${n.getAttribute("role")}]` : ""}${n.getAttribute("aria-label") ? `"${n.getAttribute("aria-label")}"` : n.textContent ? `"${n.textContent.trim().slice(0, 20)}"` : ""}${n.isConnected ? "" : "(removed)"}${n.getAttribute("tabindex") !== null ? `@${n.getAttribute("tabindex")}` : ""}`
+    : String(n);
+  const on = (e: FocusEvent) => log.push(`${Math.round(performance.now() - t0)}ms ${e.type} ${name(e.target)} → ${name(e.relatedTarget)}`);
+  const mo = new MutationObserver((records) => {
+    const a = document.activeElement;
+    for (const r of records) {
+      for (const n of r.removedNodes) if (n instanceof Element && (n === a || n.contains(a))) log.push(`${Math.round(performance.now() - t0)}ms removed ${name(n)} holding focus`);
+      if (r.type === "attributes" && r.target === a) log.push(`${Math.round(performance.now() - t0)}ms ${r.attributeName} on ${name(a)}`);
+    }
+  });
+  mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["tabindex", "hidden", "inert", "aria-hidden", "disabled"] });
+  document.addEventListener("focusin", on, true);
+  document.addEventListener("focusout", on, true);
+  w.__focusOff = () => { mo.disconnect(); document.removeEventListener("focusin", on, true); document.removeEventListener("focusout", on, true); };
+});
+const focusHistory = (page: Page) => page.evaluate(() => {
+  const w = window as unknown as { __focusLog?: string[]; __focusOff?: () => void };
+  w.__focusOff?.();
+  return `[${(w.__focusLog ?? []).join("; ")}] now ${document.activeElement?.tagName}`;
+});
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
 
 async function start(): Promise<Launched> {
@@ -278,9 +308,10 @@ for (const [mode, theme] of [["light", "Paper"], ["dark", "Ink"], ["light", "Hig
       // A keyboard step inside the surface keeps a visible, uncovered focus.
       // (Tab leaves a toolbar, by design: arrows move inside it.)
       if (!["canvas", "toast", "slash menu", "link card", "trigger toolbar", "tooltip from keyboard focus", "formatting toolbar"].includes(s.name)) {
+        await recordFocus(page);
         await page.keyboard.press("Tab");
         const g = await focusProblem(page);
-        if (g) problems.push(`${s.name}, after Tab: ${g}`);
+        if (g) problems.push(`${s.name}, after Tab: ${g}; focus history: ${await focusHistory(page)}`);
         // And back, so Esc closes the surface from inside it.
         await page.keyboard.press("Shift+Tab");
       }

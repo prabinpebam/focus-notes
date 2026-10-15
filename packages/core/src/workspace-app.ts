@@ -23,6 +23,8 @@ export interface WorkspaceState {
   access: WorkspaceAccess;
   /** The newer format version found, for the message. */
   found?: number;
+  /** The Pages site the public root publishes to, once known: public links need it (SHR-03, D-139). */
+  site?: string;
   tree: WorkspaceTree;
 }
 export const NO_WORKSPACE: WorkspaceState = { access: "write", tree: EMPTY_TREE };
@@ -78,9 +80,11 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     pending = f.access === "migrate" ? f.file : undefined;
     const before = store.state.workspace;
     const found = f.access === "newer" ? f.found : undefined;
-    if (before.access === f.access && before.found === found && before.folder === info?.folder) return;
-    setWorkspace({ access: f.access, found, ...(info ? { folder: info.folder } : {}) });
-    explain();
+    const site = info?.site;
+    if (before.access === f.access && before.found === found && before.folder === info?.folder && before.site === site) return;
+    const explainNow = before.access !== f.access || before.found !== found;
+    setWorkspace({ access: f.access, found, site, ...(info ? { folder: info.folder } : {}) });
+    if (explainNow || before.folder !== info?.folder) explain();
   }
   commands.register({
     id: "workspace.migrate", title: "command.workspace.migrate",
