@@ -4928,6 +4928,25 @@
                                                 "t": "firstRun.git.name"
                                               },
                                               "tone": "muted"
+                                            },
+                                            "when": {
+                                              "get": "vm.firstRun.isGitOld"
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "when": {
+                                              "expr": {
+                                                "!": {
+                                                  "get": "vm.firstRun.isGitOld"
+                                                }
+                                              }
+                                            },
+                                            "props": {
+                                              "value": {
+                                                "get": "vm.firstRun.gitText"
+                                              },
+                                              "tone": "muted"
                                             }
                                           },
                                           {
