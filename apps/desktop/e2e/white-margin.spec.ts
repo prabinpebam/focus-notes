@@ -1,0 +1,202 @@
+/**
+ * D-153, DSK-09: the app-built window's shadow margin is never white or opaque at the screen level.
+ * The page screencast (dsk09-frames) can't see this: it's the system's composition of the
+ * transparent window. A solid magenta window sits behind the app, and the screen is captured again
+ * and again (desktopCapturer) while the window lets clicks through and takes them back
+ * (setIgnoreMouseEvents, the margin's pass-through path), settles on focus and blur, hides and
+ * shows, minimizes and restores, resizes, maximizes, snaps (with its preview), and after the GPU
+ * process crashes (software compositing, D-121). In every capture the margin must be magenta, or
+ * magenta darkened by the shadow: never white, grey or any opaque fill.
+ *
+ * Screen-level: it captures the screen and moves the real window, so it runs on CI only (D-141).
+ */
+import { test, expect, screenAllowed, SCREEN_SKIP } from "./fixtures.ts";
+import { launch, quit, tempDirs } from "./helpers.ts";
+import { writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+
+const OUT = join(import.meta.dirname, "..", "..", "..", "test-results", "white-margin");
+
+interface Report { label: string; captures: number; bad: number; worst: number; samples: string[] }
+
+test.describe("D-153: the shadow margin at the screen level", () => {
+  test.skip(process.platform === "darwin", "macOS uses the native window (D-14)");
+  test.skip(!screenAllowed(), SCREEN_SKIP);
+
+  test("the margin is never white or opaque: pass-through toggles, focus, show, minimize, resize, maximize, snap, GPU crash", async () => {
+    test.setTimeout(240_000);
+    mkdirSync(OUT, { recursive: true });
+    const dirs = tempDirs();
+    writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", appearance: "dark" }));
+    writeFileSync(join(dirs.userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 140, y: 120, width: 640, height: 440 } }));
+    const l = await launch(dirs);
+    const { app, page } = l;
+    try {
+      await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
+      // The backdrop, and the capture loop, in the main process.
+      await app.evaluate(async ({ BrowserWindow, desktopCapturer, screen }, out) => {
+        const fs = process.getBuiltinModule("node:fs") as typeof import("node:fs");
+        const path = process.getBuiltinModule("node:path") as typeof import("node:path");
+        const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
+        const d = screen.getPrimaryDisplay();
+        const backdrop = new BrowserWindow({ ...d.workArea, frame: false, backgroundColor: "#ff00ff", show: false, focusable: false, skipTaskbar: true, resizable: false, hasShadow: false });
+        backdrop.showInactive();
+        win.moveTop();
+        const g = globalThis as unknown as { wm: { label: string; stop: boolean; reports: Record<string, { label: string; captures: number; bad: number; worst: number; samples: string[] }>; done?: Promise<void> } };
+        g.wm = { label: "rest", stop: false, reports: {} };
+        const scale = d.scaleFactor;
+        const size = { width: Math.round(d.size.width * scale), height: Math.round(d.size.height * scale) };
+        const margin = 16;
+        const once = async () => {
+          const label = g.wm.label;
+          const b = win.getBounds();
+          const report = (g.wm.reports[label] ??= { label, captures: 0, bad: 0, worst: 0, samples: [] });
+          // Only a rounded window at rest has a margin; maximized, snapped and minimized have none.
+          const inset = win.isMinimized() || !win.isVisible() ? 0 : await win.webContents.executeJavaScript("document.documentElement.dataset.windowFrame === 'rounded' ? 1 : 0").catch(() => 0);
+          const [src] = await desktopCapturer.getSources({ types: ["screen"], thumbnailSize: size });
+          if (!src || !inset) return;
+          const img = src.thumbnail;
+          const bmp = img.toBitmap();
+          const W = img.getSize().width;
+          const px = (x: number, y: number) => {
+            const o = (Math.round(y * scale) * W + Math.round(x * scale)) * 4;
+            return [bmp[o + 2]!, bmp[o + 1]!, bmp[o]!] as const; // BGRA
+          };
+          let ring = 0, bad = 0;
+          // The margin's ring, clear of the drawn window's 1 px border and its corners' curve.
+          for (let y = b.y; y < b.y + b.height; y++) {
+            for (let x = b.x; x < b.x + b.width; x++) {
+              const inX = x >= b.x + margin - 2 && x < b.x + b.width - margin + 2;
+              const inY = y >= b.y + margin - 2 && y < b.y + b.height - margin + 2;
+              if (inX && inY) continue;
+              ring++;
+              const [r, gg, bl] = px(x, y);
+              // Magenta under a dark shadow keeps green near 0 and red near blue; white or grey doesn't.
+              if (gg > 70 || Math.abs(r - bl) > 70) bad++;
+            }
+          }
+          report.captures++;
+          const share = ring ? bad / ring : 0;
+          report.worst = Math.max(report.worst, share);
+          if (share >= 0.01) {
+            report.bad++;
+            if (report.samples.length < 3) {
+              const file = path.join(out, `${label.replace(/[^a-z0-9]+/gi, "-")}-${report.captures}.png`);
+              fs.writeFileSync(file, img.crop({ x: Math.max(0, Math.round((b.x - 30) * scale)), y: Math.max(0, Math.round((b.y - 30) * scale)), width: Math.round((b.width + 60) * scale), height: Math.round((b.height + 60) * scale) }).toPNG());
+              report.samples.push(`${(share * 100).toFixed(1)}% → ${path.basename(file)}`);
+            }
+          }
+        };
+        g.wm.done = (async () => {
+          while (!g.wm.stop) await once().catch((e) => void (g.wm.reports.error ??= { label: `error ${String(e)}`, captures: 0, bad: 1, worst: 1, samples: [] }));
+        })();
+      }, OUT);
+      const phase = async (label: string, fn: () => Promise<unknown>, settleMs = 600) => {
+        await app.evaluate((_e, l) => void ((globalThis as unknown as { wm: { label: string } }).wm.label = l), label);
+        await fn();
+        await page.waitForTimeout(settleMs);
+      };
+      const inMain = <A,>(fn: (e: typeof import("electron"), a: A) => unknown, a?: A) => app.evaluate(fn as never, a as never);
+
+      await phase("rest", () => page.waitForTimeout(1500));
+      await phase("pass-through toggles (setIgnoreMouseEvents)", async () => {
+        for (let i = 0; i < 12; i++) {
+          await inMain(({ BrowserWindow }, on: boolean) => {
+            const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
+            w.setIgnoreMouseEvents(on, on ? { forward: true } : undefined);
+          }, i % 2 === 0);
+          await page.waitForTimeout(150);
+        }
+      });
+      await phase("focus and blur (settle)", async () => {
+        for (let i = 0; i < 4; i++) {
+          await inMain(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!.focus());
+          await page.waitForTimeout(250);
+          await inMain(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!.blur());
+          await page.waitForTimeout(250);
+        }
+      });
+      await phase("hide and show", async () => {
+        for (let i = 0; i < 3; i++) {
+          await inMain(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!.hide());
+          await page.waitForTimeout(300);
+          await inMain(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!.showInactive());
+          await page.waitForTimeout(400);
+        }
+      });
+      await phase("minimize and restore", async () => {
+        for (let i = 0; i < 2; i++) {
+          await page.evaluate(() => (window as unknown as { focusNotes: { window: { minimize(): void } } }).focusNotes.window.minimize());
+          await page.waitForTimeout(500);
+          await inMain(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!.restore());
+          await page.waitForTimeout(600);
+        }
+      });
+      await phase("resize", async () => {
+        for (const width of [720, 600, 680]) {
+          await inMain(({ BrowserWindow }, w: number) => {
+            const win = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
+            win.setBounds({ ...win.getBounds(), width: w });
+          }, width + 32);
+          await page.waitForTimeout(400);
+        }
+      });
+      await phase("maximize and restore", async () => {
+        await page.evaluate(() => (window as unknown as { focusNotes: { window: { maximize(): void } } }).focusNotes.window.maximize());
+        await page.waitForTimeout(700);
+        await page.evaluate(() => (window as unknown as { focusNotes: { window: { restore(): void } } }).focusNotes.window.restore());
+      }, 900);
+      await phase("vertical maximize and back", async () => {
+        await page.evaluate(() => (window as unknown as { focusNotes: { window: { toggleVertical(): void } } }).focusNotes.window.toggleVertical());
+        await page.waitForTimeout(700);
+        await page.evaluate(() => (window as unknown as { focusNotes: { window: { toggleVertical(): void } } }).focusNotes.window.toggleVertical());
+      }, 900);
+      await phase("snap and restore", async () => {
+        await page.evaluate(() => (window as unknown as { focusNotes: { window: { snap(z: string): void } } }).focusNotes.window.snap("left"));
+        await page.waitForTimeout(700);
+        await page.evaluate(() => (window as unknown as { focusNotes: { window: { restore(): void } } }).focusNotes.window.restore());
+      }, 900);
+      await phase("pass-through toggles after the window changed", async () => {
+        for (let i = 0; i < 8; i++) {
+          await inMain(({ BrowserWindow }, on: boolean) => {
+            const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
+            w.setIgnoreMouseEvents(on, on ? { forward: true } : undefined);
+          }, i % 2 === 0);
+          await page.waitForTimeout(150);
+        }
+      });
+      await phase("GPU process crash", async () => {
+        await inMain(({ BrowserWindow }) => {
+          const crash = new BrowserWindow({ show: false, webPreferences: { partition: "gpucrash" } });
+          void crash.loadURL("chrome://gpucrash").catch(() => {});
+          setTimeout(() => crash.destroy(), 1500);
+        });
+        await page.waitForTimeout(2500);
+      }, 1500);
+      await phase("pass-through toggles after a GPU crash", async () => {
+        for (let i = 0; i < 8; i++) {
+          await inMain(({ BrowserWindow }, on: boolean) => {
+            const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
+            w.setIgnoreMouseEvents(on, on ? { forward: true } : undefined);
+          }, i % 2 === 0);
+          await page.waitForTimeout(150);
+        }
+      });
+
+      const reports = await app.evaluate(async () => {
+        const g = globalThis as unknown as { wm: { stop: boolean; done: Promise<void>; reports: Record<string, Report> } };
+        g.wm.stop = true;
+        await g.wm.done;
+        return Object.values(g.wm.reports);
+      });
+      const compositing = l.log.filter((x) => x.includes("compositing")).join(" | ");
+      process.stdout.write(`[white-margin] ${compositing}\n`);
+      for (const r of reports) process.stdout.write(`[white-margin] ${r.label}: ${r.captures} captures, ${r.bad} with ≥1% of the margin not magenta (worst ${(r.worst * 100).toFixed(1)}%) ${r.samples.join(", ")}\n`);
+      writeFileSync(join(OUT, "report.json"), JSON.stringify({ compositing, reports }, null, 2));
+      expect(reports.find((r) => r.label === "rest")?.captures ?? 0, "the window at rest was captured").toBeGreaterThan(0);
+      expect(reports.filter((r) => r.bad > 0).map((r) => `${r.label}: ${r.bad} of ${r.captures} captures (worst ${(r.worst * 100).toFixed(1)}%)`)).toEqual([]);
+    } finally {
+      await quit(l).catch(() => {});
+    }
+  });
+});
