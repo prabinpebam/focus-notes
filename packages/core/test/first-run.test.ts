@@ -457,7 +457,7 @@ describe("FRE-06, FRE-08: Your notes", () => {
     // The meter follows the typing.
     expect(t.vm()).toMatchObject({ hasStrength: true, strength: 1, strengthText: "Weak" });
     await t.run("firstRun.create");
-    expect(t.vm().error).toMatch(/too easy to guess/i);
+    expect(t.vm().error).toBe("Use four or more random words.");
     expect(t.vm()).toMatchObject({ passphraseInvalid: true, passphraseError: "", confirmInvalid: false });
     await t.run("firstRun.setPassphrase", { value: "quiet maple lantern orbit" });
     await t.run("firstRun.setConfirm", { value: "quiet maple lantern" });

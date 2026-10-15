@@ -420,7 +420,7 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     await pass.fill("abc");
     await confirm.fill("abc");
     await create.click();
-    const weak = /Too easy to guess/;
+    const weak = /four or more random words/;
     await expect(text(page, weak)).toBeVisible();
     await shot(l, "notes-create-error-weak", () => text(page, weak).scrollIntoViewIfNeeded());
     await pass.fill("");
