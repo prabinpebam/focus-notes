@@ -39,6 +39,30 @@ const record = (app: ElectronApplication, stallMs: number) =>
   }, stallMs);
 const recorded = (app: ElectronApplication) => app.evaluate(() => (globalThis as unknown as { snappy: Recorded }).snappy);
 
+/** The parts of a frame a trace sees while `act` runs (D-151): each thread's count, total and longest, in ms. */
+const PARTS = ["View::Layout(bounds_changed)", "EventDispatch", "UpdateLayoutTree", "Layout", "Paint", "ProxyMain::BeginMainFrame", "DisplayItemList::Raster", "DirectRenderer::DrawFrame", "DirectRenderer::DrawRenderPass"];
+async function traceParts(page: Page, act: () => Promise<void>): Promise<string> {
+  const cdp = await page.context().newCDPSession(page);
+  const traced: { name: string; dur?: number; ph: string; pid: number; tid: number; args?: { name?: string } }[] = [];
+  cdp.on("Tracing.dataCollected", (d) => traced.push(...(d.value as unknown as typeof traced)));
+  const complete = new Promise((r) => cdp.once("Tracing.tracingComplete", r));
+  await cdp.send("Tracing.start", { categories: "cc,viz,blink,devtools.timeline,toplevel,views", transferMode: "ReportEvents" });
+  await act();
+  await cdp.send("Tracing.end");
+  await complete;
+  await cdp.detach();
+  const threads = new Map(traced.filter((e) => e.ph === "M" && e.name === "thread_name").map((e) => [`${e.pid}:${e.tid}`, e.args?.name ?? ""]));
+  const parts = new Map<string, [number, number, number]>();
+  for (const e of traced) {
+    if (e.ph !== "X" || !e.dur || !PARTS.includes(e.name)) continue;
+    const k = `${threads.get(`${e.pid}:${e.tid}`)?.replace(/\d+$/, "")} ${e.name}`;
+    const p = parts.get(k) ?? [0, 0, 0];
+    parts.set(k, [p[0] + 1, p[1] + e.dur / 1000, Math.max(p[2], e.dur / 1000)]);
+  }
+  const surfaces = traced.find((e) => e.name === "RenderSurfaceReasonCount" && "total" in (e.args ?? {}))?.args;
+  return `${[...parts].map(([k, [n, total, max]]) => `${k} ${n}x total ${total.toFixed(1)} max ${max.toFixed(1)}`).join("; ")}; render surfaces ${JSON.stringify(surfaces)}`;
+}
+
 async function start(env: Record<string, string> = {}): Promise<Launched> {
   const l = await launch(tempDirs(), env);
   await expect(l.page.getByRole("textbox", { name: "Note" })).toBeVisible();
@@ -185,32 +209,16 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     // no script in them (the window's surface, not the page), which D-151 (11) tracks; the rest stay under 16 ms.
     expect.soft(p95, "fn:window.resizeFrame p95 (reported)").toBeGreaterThanOrEqual(0);
     // Where a size's time goes (D-151 (11)): the same steps again, traced (not measured, as tracing
-    // slows them): each process's and thread's time in the parts of a frame, per size.
-    const cdp = await page.context().newCDPSession(page);
-    const traced: { name: string; dur?: number; ph: string; pid: number; tid: number; args?: { name?: string } }[] = [];
-    cdp.on("Tracing.dataCollected", (d) => traced.push(...(d.value as typeof traced)));
-    const complete = new Promise((r) => cdp.once("Tracing.tracingComplete", r));
-    await cdp.send("Tracing.start", { categories: "cc,viz,blink,devtools.timeline,toplevel,views", transferMode: "ReportEvents" });
-    await fire("pointerdown", 0);
-    for (let i = 1; i <= 20; i++) {
-      await fire("pointermove", -8 * (i <= 10 ? i : 20 - i));
-      await page.waitForTimeout(40);
-    }
-    await fire("pointerup", 0);
-    await page.waitForTimeout(200);
-    await cdp.send("Tracing.end");
-    await complete;
-    const threads = new Map(traced.filter((e) => e.ph === "M" && e.name === "thread_name").map((e) => [`${e.pid}:${e.tid}`, e.args?.name ?? ""]));
-    const PARTS = ["View::Layout(bounds_changed)", "ProxyMain::BeginMainFrame", "DisplayItemList::Raster", "DirectRenderer::DrawFrame", "SoftwareRenderer::SwapBuffers", "DirectRenderer::DrawRenderPass"];
-    const parts = new Map<string, [number, number, number]>();
-    for (const e of traced) {
-      if (e.ph !== "X" || !e.dur || !PARTS.includes(e.name)) continue;
-      const k = `${threads.get(`${e.pid}:${e.tid}`)?.replace(/\d+$/, "")} ${e.name}`;
-      const p = parts.get(k) ?? [0, 0, 0];
-      parts.set(k, [p[0] + 1, p[1] + e.dur / 1000, Math.max(p[2], e.dur / 1000)]);
-    }
-    const surfaces = traced.find((e) => e.name === "RenderSurfaceReasonCount" && "total" in (e.args ?? {}))?.args;
-    console.log(`[D-151] resize, traced (20 sizes, ms): ${[...parts].map(([k, [n, total, max]]) => `${k} ${n}x total ${total.toFixed(1)} max ${max.toFixed(1)}`).join("; ")}; render surfaces ${JSON.stringify(surfaces)}`);
+    // slows them).
+    console.log(`[D-151] resize, traced (20 sizes, ms): ${await traceParts(page, async () => {
+      await fire("pointerdown", 0);
+      for (let i = 1; i <= 20; i++) {
+        await fire("pointermove", -8 * (i <= 10 ? i : 20 - i));
+        await page.waitForTimeout(40);
+      }
+      await fire("pointerup", 0);
+      await page.waitForTimeout(200);
+    })}`);
     await quit(l);
   });
   test("PRF-14: every control answers in the next frame: input to next paint for the toolbar, Files, Spotlight and Settings, p95 at most 50 ms", async () => {
@@ -223,11 +231,12 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     // The Event Timing API: each input's time to the next paint (entries from 16 ms; under that, none),
     // and long tasks.
     await page.evaluate(() => {
-      const g = globalThis as unknown as { inp: { start: number; duration: number; name: string }[]; long: { start: number; duration: number }[] };
+      const g = globalThis as unknown as { inp: { start: number; duration: number; name: string; at: string }[]; long: { start: number; duration: number }[] };
       g.inp = [];
       g.long = [];
       new PerformanceObserver((list) => {
-        for (const e of list.getEntries()) g.inp.push({ start: e.startTime, duration: e.duration, name: e.name });
+        // With where its time went: waiting to run, its handlers, and from them to the paint.
+        for (const e of list.getEntries() as PerformanceEventTiming[]) g.inp.push({ start: e.startTime, duration: e.duration, name: e.name, at: `${e.name} ${Math.round(e.processingStart - e.startTime)}/${Math.round(e.processingEnd - e.processingStart)}/${Math.round(e.startTime + e.duration - e.processingEnd)}` });
       }).observe({ type: "event", durationThreshold: 16, buffered: false } as PerformanceObserverInit);
       new PerformanceObserver((list) => {
         for (const e of list.getEntries()) g.long.push({ start: e.startTime, duration: e.duration });
@@ -263,6 +272,7 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
       }],
     ];
     const results: Record<string, number[]> = {};
+    const worstOf: Record<string, string[]> = {};
     for (let round = 0; round < 5; round++) {
       for (const [name, act] of ACTIONS) {
         await editor.focus();
@@ -271,17 +281,26 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
         await page.waitForTimeout(150);
         const to = await page.evaluate(() => performance.now());
         const worst = await page.evaluate(([a, b]) => {
-          const g = globalThis as unknown as { inp: { start: number; duration: number }[] };
-          return Math.max(0, ...g.inp.filter((e) => e.start >= a! && e.start <= b!).map((e) => e.duration));
+          const g = globalThis as unknown as { inp: { start: number; duration: number; at: string }[] };
+          const inUse = g.inp.filter((e) => e.start >= a! && e.start <= b!).sort((x, y) => y.duration - x.duration);
+          return { duration: inUse[0]?.duration ?? 0, at: inUse[0]?.at ?? "" };
         }, [from, to]);
-        (results[name] ??= []).push(worst);
+        (results[name] ??= []).push(worst.duration);
+        (worstOf[name] ??= []).push(worst.at);
       }
     }
     const all = Object.values(results).flat().sort((a, b) => a - b);
     const p95 = all[Math.min(all.length - 1, Math.floor(all.length * 0.95))]!;
     const long = await page.evaluate(() => (globalThis as unknown as { long: { duration: number }[] }).long.map((e) => Math.round(e.duration)));
     console.log(`[D-151] input to next paint (ms, the worst input of each use, under 16 ms shown as 0): ${JSON.stringify(results)}; p95 ${p95} ms, max ${all.at(-1)} ms; long tasks ${JSON.stringify(long)}`);
-    for (const [name, r] of Object.entries(results)) console.log(`[D-151] ${name}: first use ${r[0]} ms, fifth ${r[4]} ms`);
+    for (const [name, r] of Object.entries(results)) console.log(`[D-151] ${name}: first use ${r[0]} ms, fifth ${r[4]} ms; worst input of each (name wait/handlers/to paint, ms) ${JSON.stringify(worstOf[name])}`);
+    // Where Spotlight's opening goes (D-151 (12)): one more opening, traced (not measured).
+    await editor.focus();
+    console.log(`[D-151] Spotlight opening, traced (ms): ${await traceParts(page, async () => {
+      await page.keyboard.press(`${mod}+/`);
+      await page.getByRole("dialog", { name: "Spotlight" }).waitFor();
+      await page.waitForTimeout(100);
+    })}`);
     // Gated (D-151 (12)): Spotlight's opening frame measured 56 to 88 ms on CI's software compositing
     // until its first frame drew only the rows it shows and its frost went opaque there (D-121).
     expect(all.length).toBe(ACTIONS.length * 5);

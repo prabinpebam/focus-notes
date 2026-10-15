@@ -19,8 +19,8 @@ export interface ResultListProps {
   onActiveChange?: (payload: { id: string }) => void;
 }
 
-/** The rows a long list shows in its first frame, about two screens of the tallest list (Spotlight); the rest follow a frame later. */
-const FIRST_ROWS = 40;
+/** The rows a long list shows in its first frame, about what Spotlight shows on a 1080p screen; the rest follow a frame later. */
+const FIRST_ROWS = 24;
 
 /** The DOM ID of an item, for aria-activedescendant on the element that keeps focus. Distinct IDs stay distinct. */
 export const resultItemId = (listId: string, itemId: string) => `${listId}-opt-${itemId.replace(/[^\w-]|_/g, (c) => `_${c.charCodeAt(0).toString(16)}_`)}`;
