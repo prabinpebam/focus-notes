@@ -5669,6 +5669,20 @@
                                                 },
                                                 "as": "item",
                                                 "key": "item.id",
+                                                "empty": {
+                                                  "type": "Button",
+                                                  "props": {
+                                                    "label": {
+                                                      "t": "firstRun.back"
+                                                    },
+                                                    "variant": "subtle"
+                                                  },
+                                                  "on": {
+                                                    "press": {
+                                                      "run": "firstRun.back"
+                                                    }
+                                                  }
+                                                },
                                                 "render": {
                                                   "type": "Button",
                                                   "props": {
