@@ -115,7 +115,7 @@
   <dt>Band</dt>
   <dd>The top 44 px of the window (<code>layout.titleBar</code>). It's invisible: the same color as the canvas, with no line under it. When the note scrolls, its text passes under the band and the frosted trigger.</dd>
   <dt>Drag</dt>
-  <dd>The whole band moves the window, except the trigger, the window controls, and any open panel. On macOS this is the system's drag region. On Windows and Linux it's the app's own move handling (above).</dd>
+  <dd>The whole band moves the window, except the trigger, the window controls, and any open panel. On macOS this is the system's drag region. On Windows and Linux it's the app's own move handling (above). <strong>In every state (D-147):</strong> the band is the window's own (<code>AppRoot</code>), so the full-window setup, its errors, dialogs (Settings, Spotlight, sharing) and open menus never cover or disable it; a dialog carries the band over its scrim, and a press there moves the window and leaves the dialog open. Only a control in the band takes the press.</dd>
   <dt>Trigger</dt>
   <dd>Centered horizontally across the band, 40 px below the window's top edge (owner decision D-78, see <a href="main-ui.html#the-trigger">Main UI</a>), so it sits just under the band rather than inside it (D-106). It's never part of the drag region. This is its only position, and it doesn't move when the window is resized.</dd>
   <dt>macOS controls</dt>

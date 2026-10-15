@@ -21,6 +21,16 @@ import { DEPLOY_KEY_TITLE, deployKeyPair, type DeployKeyPair } from "./deploy-ke
 
 /** The template repository instances are made from (D-88). */
 export const TEMPLATE = { owner: "prabinpebam", name: "focus-notes-workspace" } as const;
+
+/**
+ * The repositories that can hold someone's notes (D-147): never a template repository (GitHub's
+ * `is_template`), nor the template instances are made from, though both have a workspace file.
+ * "We found your notes" and Open from GitHub list only these.
+ */
+export function notesRepos<R extends { owner: string; name: string; template?: boolean }>(repos: R[], template: { owner: string; name: string } = TEMPLATE): R[] {
+  const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+  return repos.filter((r) => !r.template && !(same(r.owner, template.owner) && same(r.name, template.name)));
+}
 export const SECRET_NAME = "PRIVATE_CONTENT_KEY";
 const NETWORK_MS = 10 * 60_000;
 

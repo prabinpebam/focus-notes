@@ -25,6 +25,11 @@ export const overlay = style({
 /** The tallest the dialog has been since it opened (DialogPanel.tsx): it never shrinks while open. */
 export const grownVar = createVar();
 
+// The window's title bar band (DSK-02, D-147) over the scrim, held by the modal so the rest of the
+// app going inert doesn't take it: a dialog never takes the window's dragging, and a press there
+// moves the window and leaves the dialog open. Fixed: the window's top, wherever the dialog is.
+export const band = style({ position: "fixed", top: 0, left: 0, right: 0, height: t.band, pointerEvents: "none" });
+
 export const modal = style({
   display: "flex",
   width: "100%",
@@ -64,6 +69,8 @@ export const placement = {
 
 export const dialog = style({
   display: "flex",
+  // Positioned, so it sits above the window's title bar band where it reaches into it.
+  position: "relative",
   flexDirection: "column",
   gap: t.gap,
   width: "100%",
