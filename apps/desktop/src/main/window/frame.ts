@@ -145,7 +145,9 @@ export class AppWindowFrame {
     // changed under the compositor. Setting the opacity once makes Electron keep the window layered
     // (its `layered_`), so the pass-through only turns WS_EX_TRANSPARENT on and off. Measured on CI
     // in software and on DirectComposition (WARP): the margin stays clear and the content updates.
-    if (process.platform === "win32" && this.kind === "custom") win.setOpacity(1);
+    // Journeys can measure the window without it (FOCUS_NOTES_WINDOW_LAYERED=0), to compare.
+    const unlayered = process.env.FOCUS_NOTES_E2E === "1" && process.env.FOCUS_NOTES_WINDOW_LAYERED === "0";
+    if (process.platform === "win32" && this.kind === "custom" && !unlayered) win.setOpacity(1);
     if (p.fullScreen) win.once("ready-to-show", () => custom.toggleFullScreen());
     win.webContents.on("before-input-event", (e, input) => {
       if (custom.key(input)) return e.preventDefault();

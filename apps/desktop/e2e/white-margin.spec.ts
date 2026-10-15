@@ -23,9 +23,13 @@ interface Report { label: string; captures: number; bad: number; worst: number; 
  * the GPU went away), and on the GPU (DirectComposition), reached on a runner with no GPU through
  * Direct3D 11 on WARP, Windows' own software rasterizer (FOCUS_NOTES_CHROMIUM_SWITCHES, never packaged).
  */
+const WARP = { FOCUS_NOTES_CHROMIUM_SWITCHES: "use-angle=d3d11-warp,ignore-gpu-blocklist,enable-gpu-rasterization" };
 const MODES = [
   { name: "software", env: {} },
-  { name: "gpu (DirectComposition on WARP)", env: { FOCUS_NOTES_CHROMIUM_SWITCHES: "use-angle=d3d11-warp,ignore-gpu-blocklist,enable-gpu-rasterization" } },
+  { name: "gpu (DirectComposition on WARP)", env: WARP },
+  // The same without the window kept layered (D-153), to compare.
+  { name: "software-unlayered", env: { FOCUS_NOTES_WINDOW_LAYERED: "0" } },
+  { name: "gpu-unlayered (DirectComposition on WARP)", env: { ...WARP, FOCUS_NOTES_WINDOW_LAYERED: "0" } },
 ] as const;
 
 test.describe("D-153: the shadow margin at the screen level", () => {
@@ -152,8 +156,26 @@ test.describe("D-153: the shadow margin at the screen level", () => {
         await page.waitForTimeout(settleMs);
       };
       const inMain = <A,>(fn: (e: typeof import("electron"), a: A) => unknown, a?: A) => app.evaluate(fn as never, a as never);
+      // The window still shows what changes: typing reaches the screen (a window whose content stopped
+      // updating would pass every margin check). Checked at the start and at the end.
+      const interior = () => app.evaluate(() => (globalThis as unknown as { wm: { interior: () => Promise<number> } }).wm.interior());
+      const editor = page.getByRole("textbox", { name: "Note" });
+      const updates: string[] = [];
+      const typingShows = async (when: string, words: string) => {
+        await editor.click();
+        const before = await interior();
+        await page.keyboard.type(words);
+        await expect(editor).toContainText(words.trim());
+        let changed = false;
+        for (let i = 0; i < 20 && !changed; i++) {
+          await page.waitForTimeout(250);
+          changed = (await interior()) !== before;
+        }
+        updates.push(`${when}: typed text ${changed ? "reached" : "did NOT reach"} the screen`);
+      };
 
       await phase("rest", () => page.waitForTimeout(1500));
+      await typingShows("at the start", " Typed at the start.");
       await phase("pass-through toggles (setIgnoreMouseEvents)", async () => {
         for (let i = 0; i < 12; i++) {
           await inMain(({ BrowserWindow }, on: boolean) => {
@@ -220,6 +242,7 @@ test.describe("D-153: the shadow margin at the screen level", () => {
           await page.waitForTimeout(150);
         }
       });
+      await typingShows("after the window changed, before the GPU crash", " Typed after the changes.");
       await phase("GPU process crash", async () => {
         await inMain(({ BrowserWindow }) => {
           const crash = new BrowserWindow({ show: false, webPreferences: { partition: "gpucrash" } });
@@ -237,13 +260,8 @@ test.describe("D-153: the shadow margin at the screen level", () => {
           await page.waitForTimeout(150);
         }
       });
-      // The window still shows what changes: typing reaches the screen through the whole sequence
-      // (a layered window whose content stopped updating would pass every margin check).
-      const interior = () => app.evaluate(() => (globalThis as unknown as { wm: { interior: () => Promise<number> } }).wm.interior());
-      await page.getByRole("textbox", { name: "Note" }).click();
-      const before = await interior();
-      await page.keyboard.type("\n\nThe margin stays clear while this is typed.");
-      await expect.poll(interior, { timeout: 5_000 }).not.toBe(before);
+      await typingShows("at the end", "\n\nTyped at the end.");
+
       const reports = await app.evaluate(async () => {
         const g = globalThis as unknown as { wm: { stop: boolean; done: Promise<void>; reports: Record<string, Report> } };
         g.wm.stop = true;
@@ -254,7 +272,9 @@ test.describe("D-153: the shadow margin at the screen level", () => {
       process.stdout.write(`[white-margin] ${mode.name}: ${compositing}\n`);
       for (const r of reports) process.stdout.write(`[white-margin] ${r.label}: ${r.captures} captures, ${r.bad} with ≥1% of the margin not magenta (worst ${(r.worst * 100).toFixed(1)}%), ${r.notDrawn} with the window not drawn, ${r.invalid} blank captures skipped ${r.samples.join(", ")}\n`);
       writeFileSync(join(OUT, `report-${mode.name.split(" ")[0]}.json`), JSON.stringify({ compositing, reports }, null, 2));
+      for (const u of updates) process.stdout.write(`[white-margin] ${u}\n`);
       expect(reports.find((r) => r.label === "rest")?.captures ?? 0, "the window at rest was captured").toBeGreaterThan(0);
+      expect(updates.filter((u) => u.includes("NOT")), "what the window shows keeps updating").toEqual([]);
       expect(reports.filter((r) => r.notDrawn > 0 && !["GPU process crash", "minimize and restore", "hide and show"].includes(r.label)).map((r) => `${r.label}: the window wasn't drawn in ${r.notDrawn} of ${r.captures} captures`), "the window is drawn (but while it appears, is restored, or the GPU process restarts)").toEqual([]);
       expect(reports.filter((r) => r.bad > 0).map((r) => `${r.label}: ${r.bad} of ${r.captures} captures (worst ${(r.worst * 100).toFixed(1)}%)`)).toEqual([]);
     } finally {
