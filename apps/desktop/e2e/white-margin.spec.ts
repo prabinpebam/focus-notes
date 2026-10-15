@@ -9,6 +9,8 @@
  * magenta darkened by the shadow: never white, grey or any opaque fill.
  *
  * Screen-level: it captures the screen and moves the real window, so it runs on CI only (D-141).
+ * A diagnostic, not a merge gate (D-153): CI's WARP and software paths never reproduced the owner's
+ * white margin, so it runs only when asked, with FOCUS_NOTES_DIAGNOSTIC=white-margin.
  */
 import { test, expect, screenAllowed, SCREEN_SKIP } from "./fixtures.ts";
 import { launch, quit, tempDirs } from "./helpers.ts";
@@ -35,6 +37,7 @@ const MODES = [
 test.describe("D-153: the shadow margin at the screen level", () => {
   test.skip(process.platform === "darwin", "macOS uses the native window (D-14)");
   test.skip(!screenAllowed(), SCREEN_SKIP);
+  test.skip(process.env.FOCUS_NOTES_DIAGNOSTIC !== "white-margin", "Diagnostic only: set FOCUS_NOTES_DIAGNOSTIC=white-margin (D-153)");
 
   for (const mode of MODES) test(`the margin is never white or opaque, ${mode.name}: pass-through toggles, focus, show, minimize, resize, maximize, snap, GPU crash`, async () => {
     test.setTimeout(240_000);
@@ -155,7 +158,15 @@ test.describe("D-153: the shadow margin at the screen level", () => {
         await fn();
         await page.waitForTimeout(settleMs);
       };
-      const inMain = <A,>(fn: (e: typeof import("electron"), a: A) => unknown, a?: A) => app.evaluate(fn as never, a as never);
+      // Playwright can lose an evaluate's promise while the main process is busy with a window change; that's the harness, so it's tried once more.
+      const inMain = async <A,>(fn: (e: typeof import("electron"), a: A) => unknown, a?: A) => {
+        try {
+          return await app.evaluate(fn as never, a as never);
+        } catch (e) {
+          if (!String(e).includes("garbage collected")) throw e;
+          return app.evaluate(fn as never, a as never);
+        }
+      };
       // The window still shows what changes: typing reaches the screen (a window whose content stopped
       // updating would pass every margin check). Checked at the start and at the end.
       const interior = () => app.evaluate(() => (globalThis as unknown as { wm: { interior: () => Promise<number> } }).wm.interior());
