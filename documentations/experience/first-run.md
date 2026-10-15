@@ -131,7 +131,7 @@ Notes written in a browser stay there until they're moved (FRE-10). In the brows
 
 ## Account settings
 
-The account pill's menu has *Sync now* and *Sign out of GitHub* ([Main UI](main-ui.html), D-101). **Settings → Account** and **→ Workspace** (desktop, [Secondary views → Settings](../design/views/secondary-views.md#settings), D-103) show the signed-in account, which helper holds the credential, and the workspace, with:
+The account pill's menu has the save state, *Save to cloud* (D-132), and *Sign out of GitHub* ([Main UI](main-ui.html), D-101). **Settings → Account** and **→ Workspace** (desktop, [Secondary views → Settings](../design/views/secondary-views.md#settings), D-103) show the signed-in account, which helper holds the credential, and the workspace, with:
 
 - **Switch account:** signs in again through the same helper, on this first run's *Connect* card shown alone. The current credential leaves Git's helper first, and comes back if no one signs in.
 - **Sign out:** asks first. By default it removes the GitHub credential from Git's helper (`git credential reject`, or `gh auth logout`), which signs out the terminal too; *Keep it for the terminal* signs out only Focus Notes, and *Sign in…* then offers *Continue as @login*. Either way the recent note and setup's progress are deleted ([Data inventory](../architecture/security-and-privacy.md#data-inventory)). The screen links to GitHub's settings to fully revoke a token or authorization.
