@@ -95,10 +95,10 @@ describe("M2: verification names the signing workflow and the ref, not just the 
     expect(run).toContain("--signer-workflow $GITHUB_REPOSITORY/.github/workflows/preview-channel.yml --source-ref refs/heads/main");
   });
 
-  it("the template's Deploy app workflow checks the bundle came from release.yml at its tag", () => {
+  it("the template's Deploy app workflow checks the bundle came from release.yml at its tag, on a hosted runner (D-137)", () => {
     const tpl = yaml.load(readFileSync(join(root, "templates", "workspace", ".github", "workflows", "pages.yml"), "utf8"));
     const step = tpl.jobs.build.steps.find((s) => /attestation/.test(s.name ?? ""));
-    expect(step.run).toBe('gh attestation verify "$RUNNER_TEMP/bundle.tgz" --repo "$FOCUS_NOTES_SOURCE" --signer-workflow "$FOCUS_NOTES_SOURCE/.github/workflows/release.yml" --source-ref "refs/tags/v$FOCUS_NOTES_VERSION"');
+    expect(step.run).toBe('gh attestation verify "$RUNNER_TEMP/bundle.tgz" --repo "$FOCUS_NOTES_SOURCE" --cert-identity "https://github.com/$FOCUS_NOTES_SOURCE/.github/workflows/release.yml@refs/tags/v$FOCUS_NOTES_VERSION" --source-ref "refs/tags/v$FOCUS_NOTES_VERSION" --deny-self-hosted-runners');
   });
 });
 

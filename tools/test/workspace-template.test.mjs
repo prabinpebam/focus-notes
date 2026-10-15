@@ -15,13 +15,15 @@ const tpl = join(root, "templates", "workspace");
 const read = (p) => readFileSync(join(tpl, p), "utf8");
 const walk = (d) => readdirSync(d).flatMap((f) => (statSync(join(d, f)).isDirectory() ? walk(join(d, f)) : [relative(tpl, join(d, f)).split(sep).join("/")]));
 const workflow = () => yaml.load(read(".github/workflows/pages.yml"));
+const pin = () => JSON.parse(read(".focus-notes/app.json"));
 const steps = () => workflow().jobs.build.steps;
 const named = (re) => steps().findIndex((s) => re.test(s.name ?? ""));
 
 describe("the workspace template's content", () => {
   it("holds exactly the instance's files: notes/, the format, the workflow, AGENTS.md, a README", () => {
     expect(walk(tpl).sort()).toEqual([
-      ".focus-notes/workspace.json", ".gitattributes", ".github/workflows/pages.yml", "AGENTS.md", "README.md", "notes/.gitkeep",
+      ".focus-notes/app.json", ".focus-notes/managed.json", ".focus-notes/workspace.json", ".gitattributes",
+      ".github/focus-notes/update.mjs", ".github/workflows/pages.yml", ".github/workflows/update.yml", "AGENTS.md", "README.md", "notes/.gitkeep",
     ]);
   });
 
@@ -36,7 +38,7 @@ describe("the workspace template's content", () => {
     const schema = JSON.parse(readFileSync(join(root, "schemas", "workspace.schema.json"), "utf8"));
     expect(new Ajv2020({ strict: false }).validate(schema, format)).toBe(true);
     expect(format.formatVersion).toBe(WORKSPACE_FORMAT);
-    expect(format.templateVersion).toBe(workflow().env.FOCUS_NOTES_VERSION);
+    expect(format.templateVersion).toBe(pin().version);
   });
 
   it("AGT-07: AGENTS.md covers the layout, front matter, links, private/ rules, and commit style", () => {
@@ -119,15 +121,23 @@ describe("the template's Deploy app workflow (D-48, SEC-05)", () => {
     expect([...steps(), ...workflow().jobs.deploy.steps, ...workflow().jobs["after-deploy"].steps].filter((s) => s.uses)).toHaveLength(uses.length);
   });
 
-  it("pins a version and a SHA-256 for the bundle, clearly marked as a placeholder until a release has one", () => {
+  it("pins a version and a SHA-256 for the bundle in .focus-notes/app.json, a placeholder the deploy refuses until a release has one", () => {
     const { env } = workflow();
-    expect(env.FOCUS_NOTES_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(env.FOCUS_NOTES_SHA256).toMatch(/^[0-9a-f]{64}$/);
-    expect(env.FOCUS_NOTES_SOURCE).toBe("prabinpebam/focus-notes");
-    expect(read(".github/workflows/pages.yml")).toMatch(/PLACEHOLDER PIN/);
-    // The placeholder never downloads anything: the first step refuses it.
-    expect(steps()[0].run).toContain(`"$FOCUS_NOTES_VERSION" = "${env.FOCUS_NOTES_VERSION}"`);
-    expect(steps()[0].run).toContain("exit 1");
+    expect(pin()).toEqual({ version: "0.0.0", sha256: "0".repeat(64) });
+    expect(env).toEqual({ FOCUS_NOTES_SOURCE: "prabinpebam/focus-notes", FOCUS_NOTES_MIN_VERSION: "0.0.1" });
+    // Read straight after the checkout and before anything is downloaded; the placeholder stops the run.
+    expect(steps()[0].uses).toMatch(/^actions\/checkout@/);
+    const step = steps()[1];
+    expect(step.name).toMatch(/Read the pinned release/);
+    expect(step.run).toContain("jq -er '.version | strings' .focus-notes/app.json");
+    expect(step.run).toContain("jq -er '.sha256 | strings' .focus-notes/app.json");
+    // Whole-string matches ([[ =~ ]]), so a value with a newline can't add lines to GITHUB_ENV.
+    expect(step.run).toContain("re_version='^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$'");
+    expect(step.run).toContain("re_sha256='^[0-9a-f]{64}$'");
+    expect(step.run).toMatch(/\[\[ \$version =~ \$re_version && \$sha256 =~ \$re_sha256 \]\]/);
+    expect(step.run).toContain(`[ "$version" = "${pin().version}" ]`);
+    expect(step.run.indexOf('>> "$GITHUB_ENV"')).toBeGreaterThan(step.run.lastIndexOf("exit 1"));
+    expect(named(/Download the web app bundle/)).toBeGreaterThan(1);
   });
 
   it("checks the SHA-256 and the attestation before unpacking, and runs the bundle's publisher, never source", () => {

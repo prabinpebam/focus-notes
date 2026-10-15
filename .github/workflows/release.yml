@@ -180,7 +180,8 @@ jobs:
           if-no-files-found: error
 
   # Attestations only for a real release, so no dry run's files can ever pass a check (M2), in a job
-  # that builds nothing and alone holds id-token. Check one with
+  # that builds nothing and alone holds id-token. It runs in the release environment, so nothing is
+  # attested until the owner approves the release (D-137). Check one with
   #   gh attestation verify <file> --repo prabinpebam/focus-notes \
   #     --signer-workflow prabinpebam/focus-notes/.github/workflows/release.yml --source-ref refs/tags/v<x.y.z>
   attest:
@@ -188,6 +189,7 @@ jobs:
     if: needs.version.outputs.dry-run == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: release
     permissions:
       contents: read
       id-token: write

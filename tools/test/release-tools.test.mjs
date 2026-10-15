@@ -8,15 +8,15 @@ import { execFileSync, execSync } from "node:child_process";
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import yaml from "js-yaml";
 import { releaseVersion } from "../release/version.mjs";
 import { commitsSince, previousTag, releaseNotes } from "../release/notes.mjs";
 import { cyclonedx, purl } from "../release/sbom.mjs";
-import { packTemplate, pinFormat, pinWorkflow, sha256Of, templateName } from "../release/template.mjs";
+import { packTemplate, pinApp, pinFormat, sha256Of, templateName } from "../release/template.mjs";
 import { bundleName, LAYOUT, pack, smoke } from "../release/web-bundle.mjs";
+import { readTgz } from "../../templates/workspace/.github/focus-notes/update.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
-const tplWorkflow = readFileSync(join(root, "templates", "workspace", ".github", "workflows", "pages.yml"), "utf8");
+const tplPin = readFileSync(join(root, "templates", "workspace", ".focus-notes", "app.json"), "utf8");
 const SHA = "ab".repeat(32);
 
 describe("DST-03: the version a release run builds", () => {
@@ -91,16 +91,16 @@ describe("DST-03: the SBOM", () => {
 });
 
 describe("DST-06 groundwork: the workspace template pinned to a release's bundle", () => {
-  it("pins FOCUS_NOTES_VERSION and FOCUS_NOTES_SHA256 together, drops the placeholder, and changes nothing else", () => {
-    const pinned = pinWorkflow(tplWorkflow, { version: "1.2.3", sha256: SHA });
-    const wf = yaml.load(pinned), before = yaml.load(tplWorkflow);
-    expect(wf.env).toEqual({ ...before.env, FOCUS_NOTES_VERSION: "1.2.3", FOCUS_NOTES_SHA256: SHA });
-    expect(wf.jobs).toEqual(before.jobs);
-    expect(pinned).not.toMatch(/PLACEHOLDER PIN/);
-    expect(pinned).toMatch(/Pinned by the Focus Notes 1\.2\.3 release/);
-    expect(() => pinWorkflow(tplWorkflow, { version: "1.2.3", sha256: "nope" })).toThrow(/SHA-256/);
-    expect(() => pinWorkflow(tplWorkflow, { version: "1.2", sha256: SHA })).toThrow(/version/);
-    expect(() => pinWorkflow("env: {}\n", { version: "1.2.3", sha256: SHA })).toThrow(/exactly one/);
+  it("pins the version and the SHA-256 together in .focus-notes/app.json, replacing the placeholder, and nothing else", () => {
+    expect(JSON.parse(tplPin)).toEqual({ version: "0.0.0", sha256: "0".repeat(64) });
+    expect(JSON.parse(pinApp(tplPin, { version: "1.2.3", sha256: SHA }))).toEqual({ version: "1.2.3", sha256: SHA });
+    // The workflows' hashes, so a copy can tell when its workflows weren't copied by hand (D-137).
+    const workflows = { ".github/workflows/pages.yml": SHA };
+    expect(JSON.parse(pinApp(tplPin, { version: "1.2.3", sha256: SHA, workflows }))).toEqual({ version: "1.2.3", sha256: SHA, workflows });
+    expect(() => pinApp(tplPin, { version: "1.2.3", sha256: SHA, workflows: { "README.md": SHA } })).toThrow(/workflow/);
+    expect(() => pinApp(tplPin, { version: "1.2.3", sha256: "nope" })).toThrow(/SHA-256/);
+    expect(() => pinApp(tplPin, { version: "1.2", sha256: SHA })).toThrow(/version/);
+    expect(() => pinApp('{ "version": "0.0.0", "sha256": "", "source": "x/y" }', { version: "1.2.3", sha256: SHA })).toThrow(/exactly/);
   });
 
   it("names the same version as templateVersion in .focus-notes/workspace.json", () => {
@@ -117,9 +117,14 @@ describe("DST-06 groundwork: the workspace template pinned to a release's bundle
       expect(sha256).toBe(sha256Of(bundle));
       const x = join(dir, "x"); mkdirSync(x);
       execFileSync("tar", ["-xzf", join("..", templateName("1.2.3"))], { cwd: x });
-      expect(yaml.load(readFileSync(join(x, ".github", "workflows", "pages.yml"), "utf8")).env).toMatchObject({ FOCUS_NOTES_VERSION: "1.2.3", FOCUS_NOTES_SHA256: sha256 });
+      const workflows = Object.fromEntries(["pages.yml", "update.yml"].map((w) => [`.github/workflows/${w}`, sha256Of(join(x, ".github", "workflows", w))]));
+      expect(JSON.parse(readFileSync(join(x, ".focus-notes", "app.json"), "utf8"))).toEqual({ version: "1.2.3", sha256, workflows });
+      // The update script reads the same archive in memory, with no links and nothing unpacked.
+      const files = readTgz(readFileSync(file));
+      expect(files.get(".focus-notes/app.json").toString()).toBe(readFileSync(join(x, ".focus-notes", "app.json"), "utf8"));
+      expect(files.has("notes/.gitkeep")).toBe(true);
       expect(JSON.parse(readFileSync(join(x, ".focus-notes", "workspace.json"), "utf8")).templateVersion).toBe("1.2.3");
-      for (const f of ["AGENTS.md", "README.md", ".gitattributes", "notes/.gitkeep"]) expect(readFileSync(join(x, f))).toBeTruthy();
+      for (const f of ["AGENTS.md", "README.md", ".gitattributes", "notes/.gitkeep", ".focus-notes/managed.json", ".github/workflows/update.yml", ".github/focus-notes/update.mjs"]) expect(readFileSync(join(x, f))).toBeTruthy();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
