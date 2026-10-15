@@ -99,7 +99,7 @@ describe("SPT-02: one ranked list across kinds", () => {
 });
 
 describe("SPT-03: quick actions for the selected result", () => {
-  const desktop: ActionContext = { writable: true, visibility: "private", otherRoot: true, files: true, clipboard: true, copyToLocal: false, publicLink: "spotlight.reason.publicLink" };
+  const desktop: ActionContext = { writable: true, visibility: "private", otherRoot: true, files: true, clipboard: true, copyToLocal: false, publicLink: "command.note.copyPublicLink.noSite" };
   const ids = (ctx: ActionContext, kind: Parameters<typeof actionsFor>[0]["kind"] = "note") => actionsFor({ kind }, ctx).map((a) => `${a.id}${a.available ? "" : "!"}`);
 
   it("a private note: open, a new window (not yet), copy link, rename, move, make public, show in Files, delete", () => {

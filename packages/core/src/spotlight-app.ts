@@ -12,6 +12,7 @@ import type { Store } from "./store.ts";
 import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, UI_SCALES } from "./themes.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { dirOf, findNode, rootOf, titleOfMarkdown, visibilityOf, walk } from "./workspace.ts";
+import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
 import { extractNote } from "./search/extract.ts";
 import type { IndexStatus, SearchHit, SearchItem, SearchKind, SearchQuery, SearchResults } from "./search/types.ts";
 import {
@@ -488,6 +489,8 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     // A public note never links to a private one (Files and sharing).
     const linkRefused = !current ? "spotlight.reason.noNote" : rootOf(t, current)?.id === "public" && root?.id === "private" ? "spotlight.reason.privateLink" : undefined;
     const setting = row.kind === "setting" ? settingById(row.key) : undefined;
+    // A public note's page address needs the site's (SHR-03, D-139).
+    const publicLink = visibility === "public" ? publicLinkReason(s, path) : undefined;
     return {
       writable: Boolean(root && !root.readOnly) && s.workspace.access === "write",
       ...(visibility ? { visibility } : {}),
@@ -496,8 +499,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       clipboard: Boolean(bridge.copyText),
       copyToLocal: Boolean(path) && isReadOnlyPath(path) && commands.has("note.copyToLocal"),
       ...(linkRefused ? { linkRefused } : {}),
-      // A note's public address arrives with publishing (M5).
-      publicLink: "spotlight.reason.publicLink",
+      ...(publicLink ? { publicLink } : {}),
       resettable: setting ? !setting.atDefault(s) : false,
     };
   }
@@ -558,6 +560,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     close();
     if (id === "copyId") return copy(row.key, msg("spotlight.copiedId", { id: row.key }));
     if (id === "copyLink") return copy(linkTo(row), msg("spotlight.copiedLink", { name: row.label }));
+    if (id === "copyPublicLink") return void (await copyPublicLink(ctx, path));
     switch (id) {
       case "open":
         return row.kind === "text" ? openAt(path, { find: parseFilters(sp().query).text }) : openAt(path, {});

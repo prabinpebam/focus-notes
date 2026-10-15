@@ -174,8 +174,11 @@ export interface ConflictChoice {
  * `readNote`. The desktop reads a folder and watches it; the browser reads IndexedDB and its site.
  */
 export interface WorkspaceBridge {
-  /** Where the workspace is, and the text of its format file if it has one (DST-05). Quick: read before the first note opens. */
-  info(): Promise<{ folder: string; format?: string }>;
+  /**
+   * Where the workspace is, and the text of its format file if it has one (DST-05). Quick: read before the first note opens.
+   * `site` is the GitHub Pages address the public root publishes to, once it's known (SHR-03, D-139).
+   */
+  info(): Promise<{ folder: string; format?: string; site?: string }>;
   /** Every note and folder in the workspace's roots. */
   scan(): Promise<WorkspaceScan>;
   /** Writes the format file, after a migration the person agreed to. */
