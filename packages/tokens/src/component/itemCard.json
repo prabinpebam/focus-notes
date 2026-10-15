@@ -29,5 +29,16 @@
   "badgeSize": { "$type": "dimension", "$value": "{font.uiCaption}" },
   "badgePaddingInline": { "$type": "dimension", "$value": "{space.s}" },
   "badgeRadius": { "$type": "dimension", "$value": "{radius.round}" },
-  "markSize": { "$type": "dimension", "$value": "{size.iconS}" }
+  "markSize": { "$type": "dimension", "$value": "{size.iconS}" },
+  "action": {
+    "border": { "$type": "color", "$value": "{color.accent}", "$description": "A card that is the step's main action (D-131)." },
+    "hover": { "$type": "color", "$value": "{color.hover}" },
+    "pressed": { "$type": "color", "$value": "{color.pressed}" },
+    "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
+    "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
+    "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" },
+    "disabledOpacity": { "$type": "number", "$value": "{opacity.disabled}" },
+    "duration": { "$type": "duration", "$value": "{motion.micro}" },
+    "easing": { "$type": "cubicBezier", "$value": "{easing.standard}" }
+  }
 } } }

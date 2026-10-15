@@ -171,7 +171,7 @@ const groups = {
   shadow: groupNames("shadow"), layer: groupNames("layer"), motion: groupNames("motion"),
 };
 const px = (name) => { let v = all.get(name).value; while (aliasOf(v)) v = all.get(aliasOf(v)).value; return parseFloat(v); };
-const breakpoints = { medium: px("breakpoint.medium"), wide: px("breakpoint.wide") };
+const breakpoints = { medium: px("breakpoint.medium"), wide: px("breakpoint.wide"), short: px("breakpoint.short") };
 // Wait timings in ms, for the task tracker and toasts in packages/core (PRF-08). They're delays, so
 // no mode changes them (reduced motion only stills the moving parts of a sign).
 const waits = Object.fromEntries([...all.keys()].filter((k) => k.startsWith("wait.")).map((k) => [k.slice(5), px(k)]));

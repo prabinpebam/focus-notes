@@ -80,7 +80,7 @@ export async function notesFlow(mode: "light" | "dark", size: Size, hooks: FlowH
   await dialog.locator(":scope > div").evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
   await hooks.at(page, "first-run-notes-create-more-end");
   await card(page).getByRole("button", { name: "More options" }).click();
-  await card(page).getByRole("button", { name: "Back" }).click();
+  await card(page).getByRole("button", { name: "Back", exact: true }).click();
   await heading(page, "We found your notes");
   await card(page).getByRole("button", { name: "Open", exact: true }).click();
   await heading(page, "Ready");

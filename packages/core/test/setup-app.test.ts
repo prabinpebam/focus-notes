@@ -70,6 +70,19 @@ describe("FRE-08: setup in the app", () => {
     expect(t.vm().steps[0]!.problem).toBe("");
   });
 
+  it("says the starter notes are missing for a missing template, and keeps the permissions text for a real 403", async () => {
+    const t = setup();
+    await t.app.start();
+    await settle();
+    t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "templateMissing" } }, { running: false }));
+    expect(t.vm().steps[1]!.problem).toBe("Focus Notes couldn't find its starter notes on GitHub. Try again in a minute, or tell us if it keeps happening.");
+    t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "notFound" } }, { running: false }));
+    expect(t.vm().steps[1]!.problem).toMatch(/couldn't find/);
+    expect(t.vm().steps[1]!.problem).not.toMatch(/permission/i);
+    t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "permission" } }, { running: false }));
+    expect(t.vm().steps[1]!.problem).toMatch(/Administration, Contents, Pages, Secrets, and Workflows permissions/);
+  });
+
   it("is finished when every step is done or skipped, and shows the site's address", async () => {
     const t = setup();
     await t.app.start();
