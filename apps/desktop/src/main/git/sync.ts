@@ -15,6 +15,7 @@ import { Cadence, FETCH_EVERY_MS, type BackupPolicy, POINTER_GAP_MS, pointerDela
 import { releaseLock, takeLock } from "./lock.ts";
 import { batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, type BatchOp, type Change } from "./message.ts";
 import type { ConflictChoice, NoteConflict, SyncProblem, SyncReport } from "@focus-notes/core";
+import type { RepoHealth } from "@focus-notes/core/diagnostics";
 import { bothChanged, changedAt, divergence, GitFailed, readBlobs, settle, treeNames, type Exec, type Settle } from "./resolve.ts";
 import { Queue, commitProblem, createRunner, networkProblem, type GitRunner } from "./run.ts";
 import { STATUS_ARGS, covers, parseStatus, pointerMoved, trackedChanges, type RepoStatus } from "./status.ts";
@@ -318,6 +319,23 @@ export class GitSync {
   }
 
   /** Notes changed both here and elsewhere, private first, with both versions (FIL-12). */
+  /** The repositories' health for the diagnostic report (QLT-04): counts only, never names, paths, or addresses. */
+  async health(): Promise<RepoHealth[]> {
+    const out: RepoHealth[] = [];
+    for (const repo of [this.notes, this.privateRepo]) {
+      if (!repo) continue;
+      const st = await repo.cache.get().catch(() => undefined);
+      const origin = await this.#run({ cwd: repo.dir, args: ["config", "--get", "remote.origin.url"], read: true }).catch(() => undefined);
+      const url = origin?.code === 0 ? origin.stdout.trim() : "";
+      out.push({
+        role: repo.name, remote: !url ? "none" : /(^|[@/.])github\.com[:/]/i.test(url) ? "github" : "other",
+        branch: Boolean(st?.branch), upstream: Boolean(st?.upstream), ahead: st?.ahead ?? 0, behind: st?.behind ?? 0,
+        changed: st?.entries.filter((e) => e.kind !== "ignored").length ?? 0, unmerged: st?.entries.filter((e) => e.kind === "unmerged").length ?? 0,
+      });
+    }
+    return out;
+  }
+
   conflicts(): Promise<NoteConflict[]> {
     return this.#ops.run(async () => {
       const out: NoteConflict[] = [];

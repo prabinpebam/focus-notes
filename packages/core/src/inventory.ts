@@ -8,7 +8,9 @@
  * Not stored at all, so there's nothing to delete: the search index (Spotlight's, in its Web
  * Worker's memory, rebuilt each start and dropped on quit, D-107; the Files list and Recently
  * deleted are built in memory too), and logs (the main process writes counts and problem codes to
- * standard output only, never to a file). The GitHub token stays in Git's credential helper.
+ * standard output, and keeps its last lines in memory, redacted, for the diagnostic report, D-140;
+ * never to a file). The GitHub token stays in Git's credential helper. A diagnostic report the
+ * person saves goes where they choose, never in the data folder.
  */
 
 /**

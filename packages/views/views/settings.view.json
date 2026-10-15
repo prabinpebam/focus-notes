@@ -10,6 +10,7 @@
     "vm.shareEditor",
     "vm.shareInvite",
     "vm.shareConfirm",
+    "vm.diagnostics",
     "vm.shareTemplate",
     "vm.shareNote"
   ],
@@ -798,6 +799,188 @@
                                 "t": "settings.appearance.syncNote"
                               },
                               "tone": "muted"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "about": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "diagnostics.heading"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "diagnostics.loading"
+                          },
+                          "announce": true
+                        },
+                        "when": {
+                          "get": "vm.diagnostics.loading"
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "when": {
+                          "get": "vm.diagnostics.ready"
+                        },
+                        "children": [
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.app.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.app.detail"
+                              },
+                              "icon": "info"
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.git.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.git.detail"
+                              },
+                              "icon": "sync"
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.workspace.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.workspace.detail"
+                              },
+                              "icon": "folder"
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.journal.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.journal.detail"
+                              },
+                              "icon": "history"
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.compositing.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.compositing.detail"
+                              },
+                              "icon": "color"
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.problems.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.problems.detail"
+                              },
+                              "icon": "warning"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "diagnostics.never"
+                          },
+                          "tone": "muted"
+                        }
+                      },
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "gap": "s",
+                          "wrap": true
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.diagnostics.copy"
+                              },
+                              "variant": "primary",
+                              "icon": "copy",
+                              "busy": {
+                                "get": "vm.diagnostics.busy"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "diagnostics.copy"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.diagnostics.save"
+                              },
+                              "icon": "save",
+                              "busy": {
+                                "get": "vm.diagnostics.busy"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "diagnostics.save"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.diagnostics.reportProblem"
+                              },
+                              "icon": "github",
+                              "busy": {
+                                "get": "vm.diagnostics.busy"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "diagnostics.reportProblem"
+                              }
                             }
                           }
                         ]

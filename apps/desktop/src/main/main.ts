@@ -10,6 +10,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
+import { release as osRelease } from "node:os";
 import { readWorkspaceFormat } from "@focus-notes/core/workspace-format";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
 import { BUNDLE_MAX_BYTES, parseBundle, planImport, safeWorkspacePath, type Bundle } from "@focus-notes/core/notes";
@@ -20,7 +21,9 @@ import { changedChars, type BackupPolicy } from "./git/cadence.ts";
 import { createRunner, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
 import { accessStore, siteFromGitConfig } from "./share/access.ts";
-import { memoryClipboard, secretClipboard } from "./share/clipboard.ts";
+import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
+import { ProblemLog, REPORT_PROBLEM_URL, type RedactOptions } from "@focus-notes/core/diagnostics";
+import { diagnostics, knownStrings, reportFileName, reportPathAllowed } from "./diagnostics.ts";
 import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
 import { checkOptions, SetupEngine } from "./setup/engine.ts";
@@ -88,6 +91,28 @@ if (devEnv("FOCUS_NOTES_DISABLE_GPU") === "1") app.disableHardwareAcceleration()
  */
 let compositingWatch: ReturnType<typeof watchCompositing> | undefined;
 const compositing = () => (compositingWatch ??= watchCompositing(app, process.env.FOCUS_NOTES_GPU_COMPOSITING, journey ? (line) => process.stdout.write(`[focus-notes] ${line}\n`) : undefined));
+/**
+ * The app's own log (QLT-04, D-140): counts, states, and problem codes, written to standard output
+ * and kept in memory for the diagnostic report, redacted as each line arrives. Never a file.
+ */
+const redaction = (): RedactOptions => ({ home: app.getPath("home"), workspace: notesHome(), known: knownCache });
+/** The login, names, emails, and repository names the report must never hold (D-140), refreshed before each report. */
+let knownCache: string[] = [];
+const problemLog = new ProblemLog(200, redaction);
+const logLine = (line: string) => {
+  process.stdout.write(`[focus-notes] ${line}\n`);
+  problemLog.add(line);
+};
+/** The clipboard: in memory for journeys (`FOCUS_NOTES_MEMORY_CLIPBOARD`, never packaged), so they never touch the computer's. */
+let memClipboard: TextClipboard | undefined;
+const appClipboard = (): TextClipboard => (devEnv("FOCUS_NOTES_MEMORY_CLIPBOARD") === "1" ? (memClipboard ??= memoryClipboard()) : clipboard);
+const devVersion = () => {
+  try {
+    return String((JSON.parse(readFileSync(join(import.meta.dirname, "..", "..", "package.json"), "utf8")) as { version?: unknown }).version ?? "unknown");
+  } catch {
+    return "unknown";
+  }
+};
 const onSpawn = logSpawns ? (program: string, args: string[]) => process.stdout.write(`[focus-notes] spawn ${JSON.stringify([program, ...args])}\n`) : undefined;
 const apiFetch = githubFetch(fakeApi && /^http:\/\/127\.0\.0\.1:\d+$/.test(fakeApi)
   ? (i, init) => fetch(fakeApi + i.slice("https://api.github.com".length), init)
@@ -143,9 +168,11 @@ const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], g
         if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("sync:status", r);
       },
       // Counts and problems only: note names are private.
-      log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
+      log: logLine,
     }).then((g) => {
       gitSync = g;
+      // The log's lines are redacted as they arrive: with the names known from here on.
+      void refreshKnown().catch(() => {});
       gitOpened = true;
       for (const fn of gitWaiting.splice(0)) if (g) fn(g);
       return g;
@@ -178,7 +205,7 @@ const setup = () => (setupEngine ??= SetupEngine.open({
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("setup:report", r);
   },
   // Step names, states, and problem codes only.
-  log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
+  log: logLine,
 }));
 /** A vault passphrase from the renderer: text, or none (Skip for now). Never logged or stored. */
 const passphraseArg = (p: unknown) => (typeof p === "string" && p.length > 0 && p.length <= 1024 ? p : undefined);
@@ -195,7 +222,7 @@ const account = new Account({
   onProgress: (p) => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("firstRun:signIn", p);
   },
-  log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
+  log: logLine,
   signedOutFile: dataFile(DATA_FILES.account),
   // The picture comes only from GitHub's avatar host, never in journeys (their fake GitHub has none).
   avatar: avatarLoader({ fetch: fakeApi ? () => Promise.reject(new Error("No pictures in journeys")) : (i, init) => fetch(i, init), file: dataFile(DATA_FILES.avatar) }),
@@ -734,6 +761,30 @@ function fromApp(e: IpcMainInvokeEvent | IpcMainEvent): boolean {
   const url = e.senderFrame?.url ?? "";
   return url.split("?")[0]!.split("#")[0] === appPageUrl();
 }
+/**
+ * The strings no diagnostic report may hold (D-140): Git's user.name and user.email and each
+ * repository's remote owner and name (local `git config`, no network), the signed-in login and name,
+ * setup's login and repository names, and a workspace-only identity.
+ */
+async function refreshKnown(): Promise<void> {
+  const values: (string | undefined)[] = [];
+  const remotes: string[] = [];
+  const cfg = async (dir: string, key: string) => {
+    const r = await setupRunner({ cwd: dir, args: ["config", "--get", key], read: true }).catch(() => undefined);
+    return r?.code === 0 ? r.stdout.trim() : undefined;
+  };
+  for (const dir of [notesHome(), join(notesHome(), "private")]) {
+    if (!existsSync(dir)) continue;
+    values.push(await cfg(dir, "user.name"), await cfg(dir, "user.email"));
+    const url = await cfg(dir, "remote.origin.url");
+    if (url) remotes.push(url);
+  }
+  values.push(account.account?.login, account.account?.name, workspaceIdentity?.name, workspaceIdentity?.email);
+  const s = setupEngine ? (await setupEngine.catch(() => undefined))?.report() : undefined;
+  values.push(s?.login, s?.options?.instance, s?.options?.private);
+  knownCache = knownStrings(values, remotes);
+}
+
 function handle(channel: string, fn: (...args: any[]) => unknown): void {
   ipcMain.handle(channel, (e, ...args) => {
     if (!fromApp(e)) throw new Error("Refused: request didn't come from the app");
@@ -863,13 +914,67 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   // A secret goes to the window only for an open invite, and to the clipboard only from here, cleared after 90 s (review L1, L2).
   // Journeys copy into memory, so they never overwrite (or depend on) the computer's clipboard.
-  const secretCopy = secretClipboard(devEnv("FOCUS_NOTES_MEMORY_CLIPBOARD") === "1" ? memoryClipboard() : clipboard);
+  const secretCopy = secretClipboard(appClipboard());
   handle("access:reveal", async (id) => access.reveal(id));
   handle("access:template", async (template) => {
     if (!settingsAvailable()) throw new Error("access:failed");
     return access.setTemplate(template);
   });
   handle("access:copy", async (id, what, invite) => secretCopy.write(await access.secret(id, what, invite)));
+  // Local diagnostics (QLT-04, D-140): built and redacted here; copied or saved only when the person asks.
+  const diag = diagnostics({
+    // Started from its built script (journeys, `pnpm dev`), Electron would report its own version: read the app's.
+    app: { version: app.isPackaged ? app.getVersion() : devVersion(), packaged: app.isPackaged },
+    os: { platform: process.platform, release: osRelease(), arch: process.arch },
+    runtime: { electron: process.versions.electron ?? "", chrome: process.versions.chrome ?? "", node: process.versions.node },
+    git: () => account.gitCheck(),
+    sync: async () => {
+      const g = await gitOpening;
+      if (!g) return undefined;
+      const report = await g.status();
+      // Conflicts are counted only when the report says there are some: never waits behind a sync otherwise.
+      const conflicts = report.problem === "conflict" ? await Promise.race([g.conflicts().then((c) => c.length), new Promise<number>((r) => setTimeout(() => r(-1), 5000))]) : 0;
+      return { report, repositories: await g.health(), conflicts };
+    },
+    journal: () => journal?.entries() ?? [],
+    compositing: () => compositing().current(),
+    state: async () => JSON.parse(await readFile(stateFile(), "utf8")) as Record<string, unknown>,
+    log: problemLog,
+    redaction,
+    refresh: refreshKnown,
+  });
+  handle("diagnostics:preview", () => diag.preview());
+  handle("diagnostics:copy", async (timings) => appClipboard().writeText(await diag.report(timings)));
+  handle("diagnostics:save", async (timings) => {
+    const w = win();
+    // Never into the workspace (it would be committed, maybe published) or the app's data folder: ask again.
+    const forbidden = [notesHome(), app.getPath("userData")];
+    const real = (p: string) => {
+      try {
+        return realpathSync.native(p);
+      } catch {
+        return undefined;
+      }
+    };
+    let title = "Save diagnostic report";
+    for (let ask = 0; ask < 3; ask++) {
+      const opts: Electron.SaveDialogOptions = { title, defaultPath: join(app.getPath("documents"), reportFileName(Date.now())), filters: [{ name: "Markdown", extensions: ["md"] }], properties: ["showOverwriteConfirmation", "createDirectory"] };
+      const r = w ? await dialog.showSaveDialog(w, opts) : await dialog.showSaveDialog(opts);
+      if (r.canceled || !r.filePath) return false;
+      if (!reportPathAllowed(r.filePath, forbidden, { real })) {
+        title = "Choose a folder outside your notes";
+        continue;
+      }
+      await writeFile(r.filePath, await diag.report(timings), "utf8");
+      return true;
+    }
+    return false;
+  });
+  // Report a problem: the report on the clipboard, then a fixed address (never one from the window, never with the report in it).
+  handle("diagnostics:reportProblem", async (timings) => {
+    appClipboard().writeText(await diag.report(timings));
+    await shell.openExternal(REPORT_PROBLEM_URL);
+  });
   handle("sync:now", async (reason) => {
     const g = await gitOpening;
     return g ? g.request(reason === "switch" ? "switch" : "save") : NO_GIT;
@@ -1198,7 +1303,7 @@ app.whenReady().then(async () => {
       await (writeQueues.get(p) ?? Promise.resolve()).catch(() => {});
       return readParsed(p).then((n) => n.hash, () => undefined);
     },
-    log: (line) => process.stdout.write(`[focus-notes] ${line}\n`),
+    log: logLine,
   });
   if (journal) restored = await restoreJournal(journal, {
     read: (p) => readFile(p, "utf8").catch(() => undefined),

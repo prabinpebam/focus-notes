@@ -106,6 +106,24 @@ CI installs from lockfiles with frozen versions.
 </li>
 </ol>
 
+## Release qualification
+
+Every release is tested on the [support matrix](../architecture/performance-and-quality.md#support-matrix-tested-each-release) before it's published (QLT-02). The checklist below is the release checklist issue's body: the owner opens it from the draft release, each row is ticked with its evidence, and the release is published only when every row for the platforms it ships is ticked. It's specified and ready, and runs first with the first real release; until then it's open in [Gate evidence](gate-evidence.md#open-gaps-across-stages) (WP-5.7, D-140). Windows comes first; macOS and Linux rows apply only after the platform parity pass (D-112).
+
+| # | Check | How | Evidence in the issue |
+| --- | --- | --- | --- |
+| 1 | The draft's files verify | `gh attestation verify` for every file (the command in *Build* above), and `SHA256SUMS` matches | The command's output |
+| 2 | The release build passes the whole suite | **Hook:** the journeys against the draft's installed app, `FOCUS_NOTES_E2E_EXE=<installed exe> pnpm test:e2e` (the packaged harness `packaged.spec.ts` already uses), on the release workflow's Windows runner | The run's link |
+| 3 | Budgets hold on reference hardware | `pnpm bench --check` on the release build, three runs in a row (Release definition of done → Fast) | The three reports |
+| 4 | Clean install on each desktop OS in the matrix | Install from the draft on a clean virtual machine (Windows 11, Windows 10 22H2; macOS and Ubuntu after D-112), run the first run against the test account, write and back up a note, then **Settings → About → Save diagnostic report…** | The diagnostic report from each machine: it names the version, the OS, Git, and the workspace's health, and nothing private |
+| 5 | Update keeps everything | Install the previous release, write notes and change settings, update to the draft, check every note and setting; then uninstall and check only what the [data inventory](../architecture/security-and-privacy.md#data-inventory) says is left | A checked list, and the diagnostic report after the update |
+| 6 | The web app in each browser in the matrix | **Hook:** the web journeys with `--project` per browser (Chromium, Edge, Firefox, WebKit) against the draft's web bundle published by its own publisher; Safari on iPadOS by hand | The run's link; a note for iPadOS |
+| 7 | Screen readers | The scripted passes in [Accessibility](../architecture/performance-and-quality.md#accessibility) with NVDA and Narrator (and VoiceOver after D-112) | A recorded pass per reader |
+| 8 | Keyboard layouts and input methods | **Hook:** the keyboard journeys with each layout's key map (`m1-keys.spec.ts`, `m4-power-keys.spec.ts`); the IME rows (Japanese, Chinese Pinyin, Korean) by hand on Windows | The run's link; a recorded IME pass |
+| 9 | The template and an instance update | Publish the template from the draft with `--dry-run`, then an instance's *Update app* pull request (DST-06) | The dry run's output and the pull request |
+| 10 | Nothing is sent | With a network monitor on the clean machine, the app makes only the requests [Security and privacy](../architecture/security-and-privacy.md#privacy-commitments) lists | The monitor's list of hosts |
+
+The hooks marked above are to build with the first release: the journeys today run against the development build and the packaged smoke test, and the release workflow doesn't yet install the draft on a clean runner or run the web journeys in more than Chromium.
 ## Versions and compatibility
 
 - **App:** SemVer. A major version may change behavior, but never the user's files without a migration.
