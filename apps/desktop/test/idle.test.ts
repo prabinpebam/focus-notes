@@ -32,6 +32,8 @@ const sources = [
 ].filter((f) => /\.(ts|tsx|mjs)$/.test(f));
 /** The pointer watches: the only places allowed an interval, each checked below to run only when it must. */
 const WATCHES = ["apps/desktop/src/main/window/custom-window.ts", "apps/desktop/src/main/window/mac-title-bar.ts"];
+/** The drag loop (D-151): the other interval allowed, running only while the window is dragged. */
+const DRAG_LOOP = "apps/desktop/src/main/window/drag-loop.ts";
 
 class FakeWin implements WinLike {
   bounds: Rect = { x: 84, y: 84, width: 1032, height: 732 };
@@ -61,6 +63,7 @@ function customWindow(forwardsMoves: boolean) {
     notify: () => {},
     save: () => {},
     forwardsMoves,
+    dragPointer: () => "cursor",
   }, { content, mode: "normal", restore: content, fullScreen: false });
   /** The pointer moves, and the page reports it (`window:pointer`) if it can see it. */
   const move = (x: number, y: number, seen = true) => {
@@ -88,7 +91,7 @@ describe("PRF-04: no polling", () => {
   it("has no setInterval in the app's code but the window's pointer watches", () => {
     expect(sources.length).toBeGreaterThan(50);
     const polling = sources.filter((f) => /\bsetInterval\s*\(/.test(readFileSync(f, "utf8"))).map((f) => relative(root, f).split(sep).join("/"));
-    expect(polling.sort()).toEqual(WATCHES);
+    expect(polling.sort()).toEqual([...WATCHES, DRAG_LOOP].sort());
     // Each has one, started only if none runs, and cleared.
     for (const f of WATCHES) {
       const text = readFileSync(join(root, f), "utf8");
@@ -96,6 +99,27 @@ describe("PRF-04: no polling", () => {
       expect(text, f).toMatch(/this\.#watch \?\?= setInterval\(/);
       expect(text, f).toMatch(/clearInterval\(this\.#watch\)/);
     }
+    const loop = readFileSync(join(root, DRAG_LOOP), "utf8");
+    expect(loop.match(/\bsetInterval\s*\(/g)).toHaveLength(1);
+    expect(loop).toMatch(/clearInterval\(loop\)/);
+  });
+
+  it("D-151: the drag loop runs only while a drag lasts, and no timer is left after it", () => {
+    const { w, move } = customWindow(true);
+    expect(vi.getTimerCount()).toBe(0);
+    move(600, 110, false);
+    w.drag("start", "move", 600, 110, false);
+    expect(vi.getTimerCount()).toBe(1);
+    move(700, 160, false);
+    vi.advanceTimersByTime(100);
+    w.drag("end", "move", 700, 160, false);
+    expect(vi.getTimerCount()).toBe(0);
+    // A drag the window lost (hidden, inactive) or closed stops too.
+    w.drag("start", "move", 700, 160, false);
+    w.endDrag();
+    w.drag("start", "move", 700, 160, false);
+    w.stop();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("Windows: the click-through margin never runs a timer, since the system forwards the pointer's moves", () => {

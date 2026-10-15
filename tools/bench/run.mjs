@@ -121,6 +121,14 @@ async function noteTimes() {
     const editor = page.getByRole("textbox", { name: "Note" });
     await editor.waitFor();
     await page.waitForFunction(() => document.activeElement?.hasAttribute("data-editor"));
+    // PRF-14 (fn:main.loopLag): the main process's event-loop delay while notes open, are typed in
+    // and saved. It moves the window and answers every bridge call, so it must never stall (D-151).
+    // Reported only until the stalls it found are removed; then its budget (16 ms p99, 50 ms max) gates.
+    await app.evaluate(() => {
+      const { monitorEventLoopDelay } = process.getBuiltinModule("node:perf_hooks");
+      globalThis.__loopLag = monitorEventLoopDelay({ resolution: 2 });
+      globalThis.__loopLag.enable();
+    });
     const opens = () => page.evaluate(() => performance.getEntriesByName("fn:note.open", "measure").map((e) => e.duration));
     const open = [];
     for (let i = 0; i < 2 * Math.max(runs, 3); i++) {
@@ -143,7 +151,17 @@ async function noteTimes() {
       await page.waitForFunction((t) => performance.getEntriesByName("fn:note.saved", "mark").some((m) => m.startTime > t), last, { timeout: 5000 });
       saves.push(await page.evaluate((t) => performance.getEntriesByName("fn:note.saved", "mark").find((m) => m.startTime > t).startTime - t, last));
     }
-    return { "PRF-03.openNoteMs": Math.round(median(open)), "PRF-03.saveAfterTypingMs": Math.round(median(saves)) };
+    const lag = await app.evaluate(() => {
+      const h = globalThis.__loopLag;
+      h.disable();
+      return { p99: h.percentile(99) / 1e6, max: h.max / 1e6 };
+    });
+    return {
+      "PRF-03.openNoteMs": Math.round(median(open)),
+      "PRF-03.saveAfterTypingMs": Math.round(median(saves)),
+      "PRF-14.mainLoopLagP99Ms": Math.round(lag.p99 * 10) / 10,
+      "PRF-14.mainLoopLagMaxMs": Math.round(lag.max * 10) / 10,
+    };
   } finally {
     await app.close();
   }

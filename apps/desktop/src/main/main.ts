@@ -1401,7 +1401,7 @@ app.whenReady().then(async () => {
   chosenHome = readChosenHome();
   readFirstRun();
   hardenSession();
-  windowFrame = new AppWindowFrame(frameKind, join(app.getPath("userData"), DATA_FILES.window));
+  windowFrame = new AppWindowFrame(frameKind, join(app.getPath("userData"), DATA_FILES.window), journey);
   registerIpc(() => mainWindow);
   await stat(notesHome()).catch(() => mkdir(notesHome(), { recursive: true }));
   // What a crash left unsaved goes back into its notes before the window reads any (QLT-03).

@@ -17,12 +17,17 @@ class FakeWin implements WinLike {
   bounds: Rect;
   ignore: boolean | undefined;
   calls: string[] = [];
+  /** Every position the window was given, in order. */
+  positions: { x: number; y: number }[] = [];
   constructor(b: Rect) {
     this.bounds = b;
   }
   getBounds = () => ({ ...this.bounds });
   setBounds = (r: Rect) => void (this.bounds = { ...r });
-  setPosition = (x: number, y: number) => void (this.bounds = { ...this.bounds, x, y });
+  setPosition = (x: number, y: number) => {
+    this.positions.push({ x, y });
+    this.bounds = { ...this.bounds, x, y };
+  };
   minimize = () => void this.calls.push("minimize");
   close = () => void this.calls.push("close");
   isMinimized = () => false;
@@ -33,25 +38,47 @@ class FakeWin implements WinLike {
   moveTop = () => void this.calls.push("moveTop");
 }
 
-function setup(content: Rect = { x: 100, y: 100, width: 1000, height: 700 }, displays = [main], mode: Placement["mode"] = "normal", forwardsMoves = true) {
+/** The drag loop's clock: `tick()` is one display frame. Counts how many loops run, so none outlives its drag (PRF-04). */
+function fakeClock() {
+  const loops = new Set<() => void>();
+  const intervals: number[] = [];
+  return {
+    every: (ms: number, fn: () => void) => {
+      intervals.push(ms);
+      loops.add(fn);
+      return () => void loops.delete(fn);
+    },
+    tick: () => [...loops].forEach((fn) => fn()),
+    get running() {
+      return loops.size;
+    },
+    intervals,
+  };
+}
+
+function setup(content: Rect = { x: 100, y: 100, width: 1000, height: 700 }, displays = [main], mode: Placement["mode"] = "normal", forwardsMoves = true, dragPointer: "cursor" | "page" = "page") {
   const placement: Placement = { content, mode, restore: content, fullScreen: false };
   const win = new FakeWin(CustomWindow.outer(placement, "custom"));
   const reports: WindowReport[] = [];
   const saved: WindowMemory[] = [];
-  const preview: { shown?: Rect; visible: boolean } = { visible: false };
+  const preview: { shown?: Rect; visible: boolean; shows: number } = { visible: false, shows: 0 };
   const passes: boolean[] = [];
+  const clock = fakeClock();
   let cursor = { x: 0, y: 0 };
   const w = new CustomWindow(win, {
     frame: "custom",
     screen: { getAllDisplays: () => displays, getCursorScreenPoint: () => cursor },
-    preview: () => ({ show: (r) => Object.assign(preview, { shown: r, visible: true }), hide: () => void (preview.visible = false) }),
+    preview: () => ({ show: (r) => Object.assign(preview, { shown: r, visible: true, shows: preview.shows + 1 }), hide: () => void (preview.visible = false) }),
     previewColor: () => "#4d2f6fed",
     notify: (r) => reports.push(r),
     save: (m) => saved.push(m),
     forwardsMoves,
     passthrough: (on) => passes.push(on),
+    dragPointer: () => dragPointer,
+    frameMs: () => 1000 / 144,
+    every: clock.every,
   }, placement);
-  return { w, win, reports, saved, preview, passes, point: (x: number, y: number) => (cursor = { x, y }) };
+  return { w, win, reports, saved, preview, passes, clock, point: (x: number, y: number) => (cursor = { x, y }) };
 }
 const drag = (w: CustomWindow, kind: Parameters<CustomWindow["drag"]>[1], from: [number, number], to: [number, number], shift = false) => {
   w.drag("start", kind, ...from, shift);
@@ -124,9 +151,10 @@ describe("DSK-03: moving, resizing, maximizing, restoring", () => {
     expect(w.content()).toEqual({ x: 690 + 20, y: 0 + 40, width: 1000, height: 700 });
   });
   it("maximizes by dragging to the top of the screen, with a preview first", () => {
-    const { w, preview, win } = setup();
+    const { w, preview, win, clock } = setup();
     w.drag("start", "move", 500, 110, false);
     w.drag("move", "move", 700, 2, false);
+    clock.tick();
     expect(preview).toMatchObject({ visible: true, shown: main.workArea });
     expect(win.calls).toContain("moveTop");
     w.drag("end", "move", 700, 2, false);
@@ -231,9 +259,10 @@ describe("DSK-08: snapping, the system menu, and monitors", () => {
     expect(w.report().layouts).not.toContain("thirds");
   });
   it("keeps its size on a display with another scale, re-measuring if the system changed it", () => {
-    const { w, win } = setup({ x: 100, y: 100, width: 1000, height: 700 }, [main, laptop]);
+    const { w, win, clock } = setup({ x: 100, y: 100, width: 1000, height: 700 }, [main, laptop]);
     w.drag("start", "move", 500, 110, false);
     w.drag("move", "move", 2500, 110, false);
+    clock.tick();
     // The system resized it as it crossed to the 150% display.
     win.bounds = { ...win.bounds, width: 1532, height: 1082 };
     w.drag("end", "move", 2500, 110, false);
@@ -285,9 +314,10 @@ describe("D-141: vertical maximize, as Windows does it", () => {
   const start = { x: 300, y: 200, width: 1000, height: 600 };
   const full = { x: 300, y: 0, width: 1000, height: 1040 };
   it("dragging the top edge to the screen's top previews, then fills the work area's height at the same x and width", () => {
-    const { w, preview, reports, win } = setup(start);
+    const { w, preview, reports, win, clock } = setup(start);
     w.drag("start", "n", 800, 195, false);
     w.drag("move", "n", 800, 3, false);
+    clock.tick();
     expect(preview).toMatchObject({ visible: true, shown: full });
     w.drag("end", "n", 800, 3, false);
     expect(preview.visible).toBe(false);
@@ -468,5 +498,126 @@ describe("D-150: a window that let clicks through takes the mouse again", () => 
     expect(win.ignore).toBe(false);
     expect(w.watching).toBe(false);
     w.stop();
+  });
+});
+
+describe("PRF-14, D-151: the window follows the hand", () => {
+  it("follows the system's cursor once a frame, applying only its latest position", () => {
+    const { w, win, clock, point } = setup(undefined, undefined, undefined, true, "cursor");
+    point(500, 110);
+    w.drag("start", "move", 500, 110, false);
+    // The cursor goes on moving between two frames: only where it is at the frame counts.
+    point(530, 120);
+    point(560, 130);
+    point(620, 170);
+    clock.tick();
+    expect(win.positions).toEqual([{ x: 204, y: 144 }]);
+    expect(w.content()).toEqual({ x: 220, y: 160, width: 1000, height: 700 });
+    // The pointer held still: nothing is applied.
+    clock.tick();
+    clock.tick();
+    expect(win.positions).toHaveLength(1);
+    w.drag("end", "move", 0, 0, false);
+    expect(w.content()).toEqual({ x: 220, y: 160, width: 1000, height: 700 });
+  });
+  it("reads the cursor at each frame the page saw the pointer move, and moves that queue apply no stale position", () => {
+    const { w, win, point } = setup(undefined, undefined, undefined, true, "cursor");
+    point(500, 110);
+    w.drag("start", "move", 500, 110, false);
+    point(620, 170);
+    // Twenty of the page's frames arrive together, carrying old positions: the cursor's is applied, once.
+    for (let i = 1; i <= 20; i++) w.drag("move", "move", 500 + i, 110, false);
+    expect(win.positions).toEqual([{ x: 204, y: 144 }]);
+    w.drag("end", "move", 501, 110, false);
+    expect(win.positions).toHaveLength(1);
+    expect(w.content()).toEqual({ x: 220, y: 160, width: 1000, height: 700 });
+  });
+  it("takes only Shift from the page's moves while it follows the cursor", () => {
+    const { w, clock, point } = setup(undefined, undefined, undefined, true, "cursor");
+    point(1095, 795);
+    w.drag("start", "se", 1095, 795, false);
+    point(1145, 795);
+    w.drag("move", "se", 9999, 9999, true);
+    clock.tick();
+    // Shift keeps the proportions (1000 × 700 grows by 50 px wide): the page's position was ignored.
+    expect(w.content()).toEqual({ x: 100, y: 100, width: 1050, height: 735 });
+    w.drag("end", "se", 0, 0, true);
+  });
+  it("never plays a queue: moves that arrive between frames replace each other, and nothing moves after the release", () => {
+    const { w, win, clock } = setup();
+    w.drag("start", "move", 500, 110, false);
+    for (let i = 1; i <= 20; i++) w.drag("move", "move", 500 + i * 10, 110 + i, false);
+    w.drag("end", "move", 700, 130, false);
+    // One position, the release's, applied at the release.
+    expect(win.positions).toEqual([{ x: 284, y: 104 }]);
+    for (let i = 0; i < 5; i++) clock.tick();
+    expect(win.positions).toHaveLength(1);
+  });
+  it("runs its loop at the display's frame rate, only while a drag lasts (PRF-04)", () => {
+    const { w, clock, point } = setup(undefined, undefined, undefined, true, "cursor");
+    expect(clock.running).toBe(0);
+    point(500, 110);
+    w.drag("start", "move", 500, 110, false);
+    expect(clock.running).toBe(1);
+    expect(clock.intervals).toEqual([1000 / 144]);
+    expect(w.dragging).toBe(true);
+    w.drag("end", "move", 500, 110, false);
+    expect(clock.running).toBe(0);
+    // Hidden, minimized or no longer active mid-drag (the shell calls endDrag), or closed: the loop stops.
+    w.drag("start", "move", 500, 110, false);
+    point(600, 160);
+    w.endDrag();
+    expect(clock.running).toBe(0);
+    expect(w.content()).toMatchObject({ x: 200, y: 150 });
+    w.drag("start", "move", 600, 160, false);
+    w.stop();
+    expect(clock.running).toBe(0);
+    expect(w.dragging).toBe(false);
+  });
+  it("shows the snap preview and raises the window only when the zone changes, not on every move", () => {
+    const { w, win, clock, preview, point } = setup(undefined, undefined, undefined, true, "cursor");
+    point(500, 110);
+    w.drag("start", "move", 500, 110, false);
+    for (let x = 600; x <= 900; x += 30) {
+      point(x, 2);
+      clock.tick();
+    }
+    expect(preview).toMatchObject({ visible: true, shown: main.workArea, shows: 1 });
+    expect(win.calls.filter((c) => c === "moveTop")).toHaveLength(1);
+    point(1, 500);
+    clock.tick();
+    point(1, 520);
+    clock.tick();
+    expect(preview).toMatchObject({ shown: { x: 0, y: 0, width: 960, height: 1040 }, shows: 2 });
+    w.drag("end", "move", 0, 0, false);
+    expect(w.report().snapped).toBe(true);
+  });
+  it("restores a maximized window under the cursor and snaps on release, following the cursor", () => {
+    const { w, clock, point } = setup(undefined, undefined, undefined, true, "cursor");
+    w.maximize();
+    point(1440, 20);
+    w.drag("start", "move", 1440, 20, false);
+    point(1460, 60);
+    clock.tick();
+    expect(w.content()).toEqual({ x: 710, y: 40, width: 1000, height: 700 });
+    w.drag("end", "move", 0, 0, false);
+    expect(w.report().maximized).toBe(false);
+  });
+  it("costs the main process well under a millisecond a frame (unit-level timing of the drag path)", () => {
+    const { w, clock, point } = setup(undefined, [main, laptop], undefined, true, "cursor");
+    point(500, 110);
+    w.drag("start", "move", 500, 110, false);
+    const times: number[] = [];
+    for (let i = 0; i < 5000; i++) {
+      point(500 + (i % 1500), 110 + (i % 300));
+      const t = performance.now();
+      clock.tick();
+      times.push(performance.now() - t);
+    }
+    w.drag("end", "move", 0, 0, false);
+    times.sort((a, b) => a - b);
+    const p99 = times[Math.floor(times.length * 0.99)]!;
+    console.log(`[D-151] main-process drag frame: p50 ${times[Math.floor(times.length / 2)]!.toFixed(4)} ms, p99 ${p99.toFixed(4)} ms`);
+    expect(p99).toBeLessThan(1);
   });
 });
