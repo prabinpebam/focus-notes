@@ -35,14 +35,16 @@ const same = (a: string, b: string) => real(a) === real(b);
  * Fetches `private/` if the workspace lists it and it's missing, then checks it out on `main`.
  * Resolves to whether the private notes are here: false when this account can't reach them.
  */
-async function privateNotes(git: GitRunner, folder: string): Promise<boolean | undefined> {
+async function privateNotes(git: GitRunner, folder: string, progress?: CloneProgress): Promise<boolean | undefined> {
   const listed = await git({ cwd: folder, args: ["config", "--file", ".gitmodules", "--get", "submodule.private.url"], read: true });
   if (listed.code !== 0) return undefined;
+  progress?.({ part: "private" });
   if (!existsSync(join(folder, "private", ".git"))) {
     const r = await git({ cwd: folder, args: ["submodule", "update", "--init", "--", "private"], timeoutMs: NETWORK_MS });
     if (r.code !== 0) return false;
   }
   // On main, not a detached HEAD, so saving private notes commits to the branch that's pushed.
+  progress?.({ part: "link" });
   const head = await git({ cwd: join(folder, "private"), args: ["symbolic-ref", "--quiet", "HEAD"], read: true });
   if (head.code !== 0) await git({ cwd: join(folder, "private"), args: ["checkout", "--quiet", "main"] });
   await git({ cwd: folder, args: ["config", "push.recurseSubmodules", "check"] });
@@ -71,15 +73,58 @@ export async function checkWorkspace(git: GitRunner, folder: string, isTemplate?
   return { ok: true, folder, ...(priv !== undefined ? { privateNotes: priv } : {}) };
 }
 
+/** Opening's parts as it goes (PRF-13): download (with Git's percentage), the private notes, linking them. */
+export type CloneProgress = (p: { part: "download" | "private" | "link"; percent?: number }) => void;
+
+/**
+ * Git's own download percentage from `git clone --progress` (LC_ALL=C): receiving the objects is
+ * most of the time, so it's the percentage; the last one in the text wins. Undefined when it hasn't said one.
+ */
+export function clonePercent(stderr: string): number | undefined {
+  const all = [...stderr.matchAll(/Receiving objects:\s+(\d{1,3})%/g)];
+  const n = all.length ? Number(all[all.length - 1]![1]) : NaN;
+  return Number.isFinite(n) && n >= 0 && n <= 100 ? n : undefined;
+}
+
+/**
+ * Runs `work` for each item, at most `cap` at once, in order of the items, and says how many are
+ * done after each (Finding your notes' count, PRF-13). Resolves to the results in the items' order.
+ */
+export async function mapLimit<T, R>(items: readonly T[], cap: number, work: (item: T, i: number) => Promise<R>, done?: (n: number, total: number) => void): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0, finished = 0;
+  const lane = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await work(items[i]!, i);
+      done?.(++finished, items.length);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(Math.max(1, cap), items.length) }, lane));
+  return out;
+}
+
 /**
  * Clones a workspace into a folder that's missing or empty. A repository that isn't a workspace is
  * removed again, since the folder was empty before. A template repository is never cloned (D-157).
+ * Its parts stream to `progress`, the download with Git's percentage (PRF-13).
  */
-export async function cloneWorkspace(git: GitRunner, url: string, folder: string, isTemplate?: TemplateRemote): Promise<WorkspaceResult> {
+export async function cloneWorkspace(git: GitRunner, url: string, folder: string, isTemplate?: TemplateRemote, progress?: CloneProgress): Promise<WorkspaceResult> {
   if (await isTemplate?.(url).catch(() => false)) return { ok: false, problem: "template" };
   if (!(await folderFree(folder))) return { ok: false, problem: "folderTaken" };
   await mkdir(dirname(folder), { recursive: true });
-  const r = await git({ cwd: dirname(folder), args: ["clone", "--quiet", "--", url, folder], timeoutMs: NETWORK_MS });
+  progress?.({ part: "download" });
+  let said = -1, seen = "";
+  const r = await git({
+    cwd: dirname(folder), args: ["clone", "--progress", "--", url, folder], timeoutMs: NETWORK_MS,
+    ...(progress ? {
+      onStderr: (chunk: string) => {
+        seen = (seen + chunk).slice(-512);
+        const p = clonePercent(seen);
+        if (p !== undefined && p !== said) progress({ part: "download", percent: (said = p) });
+      },
+    } : {}),
+  });
   if (r.code !== 0) {
     await rm(folder, { recursive: true, force: true }).catch(() => {});
     const p = networkProblem(r.stderr);
@@ -89,7 +134,7 @@ export async function cloneWorkspace(git: GitRunner, url: string, folder: string
     await rm(folder, { recursive: true, force: true }).catch(() => {});
     return { ok: false, problem: "notWorkspace" };
   }
-  const priv = await privateNotes(git, folder);
+  const priv = await privateNotes(git, folder, progress);
   return { ok: true, folder, ...(priv !== undefined ? { privateNotes: priv } : {}) };
 }
 

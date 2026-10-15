@@ -339,7 +339,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   /** The note put away while the first run's card shows again (Run setup again, Sign in, Switch account, Open another workspace). */
   let held: string | undefined;
   const firstRun = registerFirstRun({
-    store, bridge, catalog, commands, viewModels, toast, persistAppState, now: clock.now,
+    store, bridge, catalog, commands, viewModels, tracker, toast, persistAppState, now: clock.now,
     hold: async () => {
       editorAction(FLUSH_EDITOR);
       if (!(await flush())) return false;
@@ -356,7 +356,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       return true;
     },
   });
-  registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o) });
+  registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),

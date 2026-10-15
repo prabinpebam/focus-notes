@@ -48,3 +48,10 @@ export const chevron = style({ width: t.markSize, height: t.markSize, flexShrink
 // The step's main action (D-142): its tile in the accent and its title large, so it outweighs the step's title.
 export const tileAction = style({ backgroundColor: t.action.tileBackground, color: t.action.tileColor });
 export const titleAction = style({ fontSize: t.action.title });
+
+// A skeleton (PRF-13): the card's own shape, its picture and words as quiet placeholders, never a spinner.
+export const skeletonBar = style({ display: "block", height: t.skeleton.barHeight, borderRadius: t.skeleton.barRadius, backgroundColor: t.skeleton.bar });
+export const skeletonTitle = style({ width: t.skeleton.titleWidth, maxWidth: "100%" });
+export const skeletonDetail = style({ width: t.skeleton.detailWidth, maxWidth: "100%" });
+export const skeletonTile = style({ flexShrink: 0, width: t.tile, height: t.tile, borderRadius: t.tileRadius, backgroundColor: t.skeleton.bar });
+export const skeletonAvatar = style({ flexShrink: 0, width: t.avatar, height: t.avatar, borderRadius: t.avatarRadius, backgroundColor: t.skeleton.bar });

@@ -17,6 +17,7 @@ export const contract = defineContract({
     label: { kind: "message", description: "The card's accessible name, when its title alone doesn't say it (This computer is connected to GitHub as …)." },
     busy: { kind: "boolean", default: false, description: "A pressable card's action is running." },
     disabled: { kind: "boolean", default: false, description: "A pressable card that can't run now (offline): it stays focusable, and its detail says why (D-135)." },
+    skeleton: { kind: "boolean", default: false, description: "Its content is on its way (PRF-13): the card's shape with placeholders where its picture and words will be, named by its title (what it waits for). A profile card (size l) shows a round picture; a row, a tile." },
     autoFocus: { kind: "boolean", default: false, description: "A pressable card takes focus when it appears: a first-run step's main action, so Enter continues." },
   },
   // press: with an action, the whole card is one button: one tab stop, its title the name, no slot actions (D-131).
@@ -31,6 +32,8 @@ export const contract = defineContract({
     { name: "github", props: { title: { t: "gallery.sample" }, detail: { t: "gallery.long" }, icon: "github" } },
     { name: "option", props: { title: { t: "gallery.action" }, detail: { t: "gallery.sample" }, icon: "newNote" } },
     { name: "option busy", props: { title: { t: "gallery.action" }, detail: { t: "gallery.sample" }, icon: "newNote", busy: true } },
+    { name: "skeleton", props: { title: { t: "gallery.sample" }, skeleton: true } },
+    { name: "skeleton profile", props: { title: { t: "gallery.sample" }, size: "l", skeleton: true } },
     { name: "option disabled", props: { title: { t: "gallery.action" }, detail: { t: "gallery.reason" }, icon: "newNote", disabled: true } },
   ],
 });

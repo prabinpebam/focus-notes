@@ -4066,6 +4066,148 @@
                               },
                               "level": "display"
                             }
+                          },
+                          {
+                            "type": "Inline",
+                            "when": {
+                              "get": "vm.firstRun.hasWait"
+                            },
+                            "props": {
+                              "gap": "s",
+                              "align": "center",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Spinner",
+                                "props": {
+                                  "size": "s"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.firstRun.waitText"
+                                  },
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "ProgressBar",
+                            "when": {
+                              "get": "vm.firstRun.hasOpenPercent"
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.firstRun.openPercent"
+                              },
+                              "label": {
+                                "get": "vm.firstRun.percentLabel"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Stack",
+                            "when": {
+                              "get": "vm.firstRun.hasOpenParts"
+                            },
+                            "props": {
+                              "gap": "s"
+                            },
+                            "children": [
+                              {
+                                "each": {
+                                  "get": "vm.firstRun.openParts"
+                                },
+                                "as": "step",
+                                "key": "step.id",
+                                "render": {
+                                  "type": "Inline",
+                                  "props": {
+                                    "gap": "s",
+                                    "wrap": true
+                                  },
+                                  "children": [
+                                    {
+                                      "switch": {
+                                        "get": "step.state"
+                                      },
+                                      "cases": {
+                                        "done": {
+                                          "type": "Icon",
+                                          "props": {
+                                            "name": "check",
+                                            "size": "s",
+                                            "label": {
+                                              "t": "firstRun.workspace.state.done"
+                                            }
+                                          }
+                                        },
+                                        "skipped": {
+                                          "type": "Icon",
+                                          "props": {
+                                            "name": "divider",
+                                            "size": "s",
+                                            "label": {
+                                              "t": "firstRun.workspace.state.skipped"
+                                            }
+                                          }
+                                        },
+                                        "running": {
+                                          "type": "Spinner",
+                                          "props": {
+                                            "size": "s",
+                                            "label": {
+                                              "t": "firstRun.workspace.state.running"
+                                            }
+                                          }
+                                        },
+                                        "failed": {
+                                          "type": "Icon",
+                                          "props": {
+                                            "name": "error",
+                                            "size": "s",
+                                            "label": {
+                                              "t": "firstRun.workspace.state.failed"
+                                            }
+                                          }
+                                        },
+                                        "pending": {
+                                          "type": "Icon",
+                                          "props": {
+                                            "name": "circle",
+                                            "size": "s",
+                                            "label": {
+                                              "t": "firstRun.workspace.state.pending"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "value": {
+                                          "get": "step.label"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                "empty": {
+                                  "type": "Text",
+                                  "props": {
+                                    "value": {
+                                      "t": "firstRun.workspace.state.pending"
+                                    },
+                                    "tone": "muted"
+                                  }
+                                }
+                              }
+                            ]
                           }
                         ]
                       },
@@ -4166,7 +4308,22 @@
                                     "type": "Stack",
                                     "props": {
                                       "gap": "none"
-                                    }
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "ItemCard",
+                                        "when": {
+                                          "get": "vm.firstRun.accountSkeleton"
+                                        },
+                                        "props": {
+                                          "title": {
+                                            "get": "vm.firstRun.waitText"
+                                          },
+                                          "size": "l",
+                                          "skeleton": true
+                                        }
+                                      }
+                                    ]
                                   },
                                   "git": {
                                     "type": "Stack",
@@ -4584,7 +4741,7 @@
                                         "type": "Text",
                                         "props": {
                                           "value": {
-                                            "t": "firstRun.signIn.waiting"
+                                            "get": "vm.firstRun.approvalText"
                                           },
                                           "tone": "muted",
                                           "announce": true
@@ -4653,7 +4810,7 @@
                                             "type": "Text",
                                             "props": {
                                               "value": {
-                                                "t": "firstRun.signIn.waiting"
+                                                "get": "vm.firstRun.approvalText"
                                               },
                                               "tone": "muted",
                                               "announce": true
@@ -5152,8 +5309,62 @@
                                   "checking": {
                                     "type": "Stack",
                                     "props": {
-                                      "gap": "none"
-                                    }
+                                      "gap": "m"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "ItemCard",
+                                        "when": {
+                                          "get": "vm.firstRun.notesSkeleton"
+                                        },
+                                        "props": {
+                                          "title": {
+                                            "get": "vm.firstRun.waitText"
+                                          },
+                                          "skeleton": true
+                                        }
+                                      },
+                                      {
+                                        "type": "ItemCard",
+                                        "when": {
+                                          "get": "vm.firstRun.notesSkeleton"
+                                        },
+                                        "props": {
+                                          "title": {
+                                            "get": "vm.firstRun.waitText"
+                                          },
+                                          "skeleton": true
+                                        }
+                                      },
+                                      {
+                                        "type": "ItemCard",
+                                        "when": {
+                                          "get": "vm.firstRun.notesSkeleton"
+                                        },
+                                        "props": {
+                                          "title": {
+                                            "get": "vm.firstRun.waitText"
+                                          },
+                                          "skeleton": true
+                                        }
+                                      },
+                                      {
+                                        "type": "Button",
+                                        "props": {
+                                          "label": {
+                                            "t": "firstRun.back"
+                                          },
+                                          "variant": "subtle",
+                                          "bleed": true,
+                                          "autoFocus": true
+                                        },
+                                        "on": {
+                                          "press": {
+                                            "run": "firstRun.back"
+                                          }
+                                        }
+                                      }
+                                    ]
                                   },
                                   "found": {
                                     "type": "Stack",
@@ -5704,6 +5915,32 @@
                                         }
                                       },
                                       {
+                                        "type": "Text",
+                                        "when": {
+                                          "get": "vm.firstRun.hasPart"
+                                        },
+                                        "props": {
+                                          "value": {
+                                            "get": "vm.firstRun.partText"
+                                          },
+                                          "tone": "muted"
+                                        }
+                                      },
+                                      {
+                                        "type": "ProgressBar",
+                                        "when": {
+                                          "get": "vm.firstRun.hasSetupPercent"
+                                        },
+                                        "props": {
+                                          "value": {
+                                            "get": "vm.firstRun.setupPercent"
+                                          },
+                                          "label": {
+                                            "get": "vm.firstRun.percentLabel"
+                                          }
+                                        }
+                                      },
+                                      {
                                         "type": "StatusRow",
                                         "when": {
                                           "get": "vm.firstRun.failed"
@@ -5864,57 +6101,6 @@
                                         }
                                       },
                                       {
-                                        "type": "Inline",
-                                        "props": {
-                                          "gap": "s",
-                                          "justify": "start",
-                                          "wrap": true
-                                        },
-                                        "children": [
-                                          {
-                                            "switch": {
-                                              "get": "vm.firstRun.details"
-                                            },
-                                            "cases": {
-                                              "true": {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.notes.details"
-                                                  },
-                                                  "variant": "subtle",
-                                                  "icon": "chevronDown",
-                                                  "expanded": true,
-                                                  "bleed": true
-                                                },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "firstRun.toggleDetails"
-                                                  }
-                                                }
-                                              },
-                                              "false": {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.notes.details"
-                                                  },
-                                                  "variant": "subtle",
-                                                  "icon": "chevronRight",
-                                                  "expanded": false,
-                                                  "bleed": true
-                                                },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "firstRun.toggleDetails"
-                                                  }
-                                                }
-                                              }
-                                            }
-                                          }
-                                        ]
-                                      },
-                                      {
                                         "type": "Stack",
                                         "props": {
                                           "gap": "s"
@@ -5922,7 +6108,7 @@
                                         "children": [
                                           {
                                             "each": {
-                                              "get": "vm.setup.steps"
+                                              "get": "vm.firstRun.parts"
                                             },
                                             "as": "step",
                                             "key": "step.id",
@@ -6009,10 +6195,7 @@
                                               }
                                             }
                                           }
-                                        ],
-                                        "when": {
-                                          "get": "vm.firstRun.details"
-                                        }
+                                        ]
                                       }
                                     ]
                                   }

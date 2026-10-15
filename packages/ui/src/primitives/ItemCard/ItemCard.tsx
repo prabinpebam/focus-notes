@@ -23,6 +23,8 @@ export interface ItemCardProps {
   disabled?: boolean;
   /** A pressable card takes focus when it appears (a first-run step's main action). */
   autoFocus?: boolean;
+  /** Its content is on its way (PRF-13): the card's shape with placeholders, named by its title for screen readers. */
+  skeleton?: boolean;
   id?: string;
   children?: ReactNode;
   /** With an action, the whole card is one button, named by what it shows: its title, then its detail (D-131). */
@@ -32,7 +34,18 @@ export interface ItemCardProps {
 const PICTURE = /^data:image\/(png|jpeg|gif|webp);base64,/;
 
 /** One thing, shown rather than described (D-126, D-127): an account, a workspace, or an option. */
-export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, size = "m", personal = "none", label, busy, disabled, autoFocus, id, children, onPress }: ItemCardProps) {
+export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, size = "m", personal = "none", label, busy, disabled, autoFocus, skeleton, id, children, onPress }: ItemCardProps) {
+  if (skeleton) {
+    return (
+      <div id={id} className={`${s.base} ${size === "l" ? s.large : ""}`} role="status" aria-busy="true" aria-label={label ?? title} data-item-card="" data-skeleton="">
+        <span className={size === "l" ? s.skeletonAvatar : s.skeletonTile} aria-hidden="true" />
+        <span className={s.text} aria-hidden="true">
+          <span className={`${s.skeletonBar} ${s.skeletonTitle}`} />
+          <span className={`${s.skeletonBar} ${s.skeletonDetail}`} />
+        </span>
+      </div>
+    );
+  }
   const Glyph = icon ? ICONS[icon] : undefined;
   const pressable = Boolean(onPress);
   const GitHub = ICONS.github;

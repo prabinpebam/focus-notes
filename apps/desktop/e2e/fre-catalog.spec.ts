@@ -64,7 +64,7 @@ const CATALOG: [string, string, string, boolean?][] = [
   ["connect-git-missing-trouble", "Connect, Git missing, Having trouble? open", "Git missing, with the technical details and the install command shown."],
   ["connect-git-old", "Connect, Git too old", "Git is older than 2.31: the same install button, then Check again."],
   ["connect-git-old-trouble", "Connect, Git too old, Having trouble? open", "Git too old, with its version and the install command shown."],
-  ["notes-checking", "Your notes, looking for notes", "Right after Continue as, while the account's repositories are listed."],
+  ["notes-checking", "Your notes, looking for notes", "Right after Continue as, while the account's repositories are listed: three skeleton rows and \"Looking for your notes on GitHub…\" (PRF-13)."],
   ["notes-found-one", "We found your notes, one workspace", "The account has one Focus Notes workspace: Open it with one press.", true],
   ["notes-found-several", "We found your notes, several workspaces", "The account has several workspaces, public and private."],
   ["notes-found-more", "We found your notes, More options open", "More options under the found notes: create new ones, another repository, a folder."],
@@ -79,14 +79,13 @@ const CATALOG: [string, string, string, boolean?][] = [
   ["notes-clone-nomatch", "Open from GitHub, nothing matches", "The repository search with a query that matches nothing."],
   ["notes-local", "Open a folder", "More options → Open a folder on this computer."],
   ["notes-local-error", "Open a folder, not a Git repository", "A folder was chosen that isn't a clone of a workspace."],
-  ["creating-progress", "Creating your notes, in progress", "Create my notes is running (here at its fourth step, the deploy key).", true],
-  ["creating-progress-details", "Creating your notes, Show details open", "Show details opened mid-way: each step and where it stands."],
+  ["creating-progress", "Creating your notes, in progress", "Create my notes is running (here at its fourth step, the deploy key): the part it's on in words with its number, and every part, always shown (PRF-13).", true],
   ["creating-success", "Creating your notes, done", "Every step that matters is done: Continue, and the site's address.", true],
   ["creating-failed-template", "Creating your notes, starter notes missing", "GitHub can't find the template repository (a 404 on copying it)."],
   ["creating-failed-notfound", "Creating your notes, something not found", "GitHub answers 404 on a later step (the deploy key)."],
   ["creating-failed-permission", "Creating your notes, permission refused", "GitHub answers 403 on a step: the sign-in doesn't allow it."],
   ["creating-failed-offline", "Creating your notes, GitHub unreachable", "GitHub can't be reached in the middle of setup."],
-  ["creating-retried", "Creating your notes, after Try again", "Try again on the failed step (starter notes missing), once GitHub has them: the rest of setup runs to the end, details open."],
+  ["creating-retried", "Creating your notes, after Try again", "Try again on the failed step (starter notes missing), once GitHub has them: the rest of setup runs to the end, its parts shown."],
   ["ready-ready", "Ready", "After Continue: the window starts again in the new notes, at the last step.", true],
   ["ready-canvas", "The app after Start writing", "Writing, with the account pill and the save state.", true],
   ["ready-canvas-account", "The app, account pill menu", "The account pill opened: Save to cloud and Sign out."],
@@ -398,6 +397,8 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     w.fakes.store(w.gh.token);
     cachePicture(w);
     await button(page, "Back").click();
+    // Your notes' list is asked as soon as Connect has the account (prefetch, PRF-13): held from here.
+    const repos = net.hold("GET /user/repos");
     await getStarted(page);
     await expect(button(page, "Continue as Ada")).toBeFocused({ timeout: 20_000 });
     await shot(l, "connect-found-picture");
@@ -406,9 +407,10 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     await shot(l, "connect-found-trouble");
     await button(page, "Having trouble?").click();
 
-    const repos = net.hold("GET /user/repos");
     await button(page, "Continue as Ada").click();
     await heading(page, "Looking for your notes");
+    await expect(card(page).locator("[data-skeleton]")).toHaveCount(3);
+    await expect(text(page, /^Looking for your notes on GitHub…/)).toBeVisible();
     await shot(l, "notes-checking");
     repos.release();
     const create = button(page, /^Create my notes/);
@@ -452,11 +454,9 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     await create.click();
     await heading(page, "Creating your notes");
     await keys.reached;
+    await expect(text(page, "Letting your website read them · 4 of 9")).toBeVisible();
+    await expect(text(page, "Turn on your website")).toBeVisible();
     await shot(l, "creating-progress");
-    await button(page, "Show details").click();
-    await expect(button(page, "Show details")).toHaveAttribute("aria-expanded", "true");
-    await shot(l, "creating-progress-details");
-    await button(page, "Show details").click();
     keys.release();
     await expect(text(page, "Backing up carries on in the background.")).toBeVisible({ timeout: 90_000 });
     await expect(text(page, /^Your site:/)).toBeVisible({ timeout: 30_000 });
@@ -746,8 +746,7 @@ for (const [id, what, says, breakIt] of FAILURES) {
       await expect(text(page, says)).toHaveCount(0, { timeout: 30_000 });
       await expect(text(page, "Backing up carries on in the background.")).toBeVisible({ timeout: 90_000 });
       await expect(button(page, "Continue")).toBeEnabled();
-      await button(page, "Show details").click();
-      for (const step of ["Copy the template", "Create private repository", "Download to this computer", "Link them"]) await expect(card(page).getByText(step)).toBeVisible();
+      for (const step of ["Make your notes on GitHub", "Make a place for private notes", "Download to this computer", "Link them"]) await expect(card(page).getByText(step, { exact: true })).toBeVisible();
       await expect(card(page).getByRole("img", { name: "Not started yet" })).toHaveCount(0);
       await shot(l, "creating-retried");
       await button(page, "Continue").click();

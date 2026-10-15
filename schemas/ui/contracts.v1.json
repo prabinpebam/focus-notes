@@ -3615,6 +3615,11 @@
           "default": false,
           "description": "A pressable card that can't run now (offline): it stays focusable, and its detail says why (D-135)."
         },
+        "skeleton": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Its content is on its way (PRF-13): the card's shape with placeholders where its picture and words will be, named by its title (what it waits for). A profile card (size l) shows a round picture; a row, a tile."
+        },
         "autoFocus": {
           "kind": "boolean",
           "default": false,
@@ -3714,6 +3719,25 @@
             },
             "icon": "newNote",
             "busy": true
+          }
+        },
+        {
+          "name": "skeleton",
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "skeleton": true
+          }
+        },
+        {
+          "name": "skeleton profile",
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "size": "l",
+            "skeleton": true
           }
         },
         {
@@ -4209,6 +4233,64 @@
               "t": "gallery.sample"
             },
             "valueText": {
+              "t": "gallery.sample"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "ProgressBar",
+      "tier": "primitive",
+      "description": "How far long work has got, when the work reports it (PRF-13, D-149): a thin determinate bar, its value read out as a percentage. The words beside it say what the work is; the bar never stands alone.",
+      "props": {
+        "value": {
+          "kind": "number",
+          "min": 0,
+          "max": 100,
+          "default": 0,
+          "description": "Percent done, from the work's own report (Git's download percentage)."
+        },
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "What's progressing: Downloading your notes."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.progressBar.*",
+      "a11y": {
+        "pattern": "progressbar",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "value 0",
+          "props": {
+            "value": 0,
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "value 45",
+          "props": {
+            "value": 45,
+            "label": {
+              "t": "gallery.sample"
+            }
+          }
+        },
+        {
+          "name": "value 100",
+          "props": {
+            "value": 100,
+            "label": {
               "t": "gallery.sample"
             }
           }

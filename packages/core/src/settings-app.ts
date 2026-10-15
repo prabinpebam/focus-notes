@@ -16,6 +16,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { SyncState } from "./sync-app.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
+import type { TaskTracker, TaskView } from "./tasks.ts";
 import { UI_SCALES, themeById } from "./themes.ts";
 import { DIAGNOSTICS_IDLE, registerDiagnostics, type DiagnosticsState } from "./diagnostics-app.ts";
 
@@ -52,6 +53,7 @@ interface S {
   firstRun: { active: boolean };
   appearance: { mode: "system" | "light" | "dark"; lightTheme: string; darkTheme: string; fontSize: number; contentFont: string; uiScale: number };
   settingsSync: "unavailable" | "off" | "on";
+  tasks: TaskView[];
 }
 
 interface Ctx<St extends S> {
@@ -68,9 +70,14 @@ interface Ctx<St extends S> {
   flush: () => Promise<boolean>;
   /** Shows the first run's card again: Run setup again, the Connect step alone, or Your notes alone (D-124). */
   again: (scope: "setup" | "account" | "workspace", opts?: { other?: boolean }) => Promise<boolean>;
+  /** Signing out and removing the workspace are named waits (PRF-13, D-149). */
+  tracker?: TaskTracker;
+  /** Prefetch on intent: Workspace is open, so Open another workspace from GitHub… is likely (PRF-13). */
+  prefetchRepos?: () => void;
 }
 
-export function registerSettings<St extends S>({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState, flush, again }: Ctx<St>) {
+export function registerSettings<St extends S>({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState, flush, again, tracker, prefetchRepos }: Ctx<St>) {
+
   const fr = bridge.firstRun;
   const ws = bridge.workspace;
   const state = () => store.state.ui.settings;
@@ -121,6 +128,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     set({ section: v as SettingsSection });
     if (v === "sharing") await commands.run("share.manage.load");
     if (v === "about") await commands.run("diagnostics.load");
+    if (v === "workspace") prefetchRepos?.();
   });
   registerDiagnostics({ store, bridge, catalog, commands, viewModels, toast });
 
@@ -139,7 +147,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     if (!fr || busy) return;
     setSignOut({ busy: true });
     const before = store.state.account.login || state().account?.account?.login || "";
-    const r = await fr.signOut({ git }).catch(() => undefined);
+    const r = await (tracker ? tracker.run("account.signOut", "task.signingOut", () => fr.signOut({ git })) : fr.signOut({ git })).catch(() => undefined);
     setSignOut({ busy: false });
     if (!r || (r.account && !r.signedOut)) return void toast(catalog.format("toast.signOutFailed"), { tone: "error" });
     setSignOut({ open: false });
@@ -203,7 +211,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     // The app's own part first: the recent note, and the first run at Your notes when the window starts again.
     const before = appState();
     await persistAppState({ firstRun: "notes", ...(Object.fromEntries(RECENT_STATE_KEYS.map((k) => [k, undefined])) as Partial<AppStateFile>) });
-    const done = await ws.remove().catch((): RemovalCheck => ({ ...r.check!, state: "failed" }));
+    const done = await (tracker ? tracker.run("workspace.remove", "task.removing", () => ws.remove!()) : ws.remove()).catch((): RemovalCheck => ({ ...r.check!, state: "failed" }));
     if (done.state === "removed") return; // The window starts again.
     await persistAppState({ firstRun: before.firstRun, ...Object.fromEntries(RECENT_STATE_KEYS.map((k) => [k, before[k]])) });
     setRemove({ busy: false, check: done });
@@ -279,18 +287,25 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
       };
     },
   });
+  /** A button's words while its wait shows (PRF-13): "Signing out…", then the seconds past wait.elapsedDelay; otherwise its own label. */
+  const waitLabel = (s: St, target: string, label: string) => {
+    const t = s.tasks.find((x) => x.target === target && x.phase === "on");
+    if (!t) return catalog.format(label);
+    const words = catalog.format(t.message);
+    return t.elapsed ? catalog.format("task.elapsed", { words, seconds: t.elapsed }) : words;
+  };
   viewModels.register({
     id: "vm.signOut",
     schema: {
       type: "object",
-      properties: { open: { type: "boolean" }, git: { type: "string", enum: ["remove", "keep"] }, gitOptions: { type: "array", items: OPTION }, busy: { type: "boolean" }, gitNote: { type: "string" } },
+      properties: { open: { type: "boolean" }, git: { type: "string", enum: ["remove", "keep"] }, gitOptions: { type: "array", items: OPTION }, busy: { type: "boolean" }, gitNote: { type: "string" }, label: { type: "string" } },
     },
     setters: { git: "account.setSignOutGit" },
-    reads: ["ui.settings.signOut"],
+    reads: ["ui.settings.signOut", "tasks"],
     select: (s) => {
       const o = s.ui.settings.signOut;
       return {
-        open: o.open, git: o.git ? "remove" : "keep", busy: o.busy,
+        open: o.open, git: o.git ? "remove" : "keep", busy: o.busy, label: waitLabel(s, "account.signOut", "command.account.signOutNow"),
         gitOptions: ["remove", "keep"].map((id) => ({ id, label: catalog.format(`signOut.git.${id}`) })),
         gitNote: catalog.format(o.git ? "signOut.git.removeNote" : "signOut.git.keepNote"),
       };
@@ -302,10 +317,10 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
       type: "object",
       properties: {
         open: { type: "boolean" }, busy: { type: "boolean" }, state: { type: "string", enum: ["checking", "ready", "unpushed", "notGit", "notWorkspace", "failed", "removed"] },
-        message: { type: "string" }, canRemove: { type: "boolean" }, canSync: { type: "boolean" }, checking: { type: "boolean" },
+        message: { type: "string" }, canRemove: { type: "boolean" }, canSync: { type: "boolean" }, checking: { type: "boolean" }, label: { type: "string" },
       },
     },
-    reads: ["ui.settings.remove"],
+    reads: ["ui.settings.remove", "tasks"],
     select: (s) => {
       const r = s.ui.settings.remove;
       const c = r.check;
@@ -315,7 +330,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
         : st === "unpushed" ? catalog.format("remove.unpushed", { count: c!.waiting })
           : st === "ready" ? catalog.format("remove.ready", { repos: repos.length > 1 ? catalog.format("remove.repos", { first: repos[0]!, second: repos[1]! }) : repos[0] ?? "", folder: c!.folder })
             : catalog.format(`remove.${st}`);
-      return { open: r.open, busy: r.busy, state: st, message, canRemove: st === "ready", canSync: st === "unpushed", checking: st === "checking" };
+      return { open: r.open, busy: r.busy, state: st, message, canRemove: st === "ready", canSync: st === "unpushed", checking: st === "checking", label: waitLabel(s, "workspace.remove", "command.workspace.removeConfirm") };
     },
   });
 }

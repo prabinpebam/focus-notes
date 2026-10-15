@@ -1089,7 +1089,7 @@
                     "type": "Button",
                     "props": {
                       "label": {
-                        "t": "command.account.signOutNow"
+                        "get": "vm.signOut.label"
                       },
                       "variant": "danger",
                       "busy": {
@@ -1201,7 +1201,7 @@
                     "type": "Button",
                     "props": {
                       "label": {
-                        "t": "command.workspace.removeConfirm"
+                        "get": "vm.removeWorkspace.label"
                       },
                       "variant": "danger",
                       "busy": {

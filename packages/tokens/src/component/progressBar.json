@@ -1,0 +1,7 @@
+{ "cmp": { "progressBar": {
+  "height": { "$type": "dimension", "$value": "{size.meter}" },
+  "radius": { "$type": "dimension", "$value": "{radius.round}" },
+  "track": { "$type": "color", "$value": "{color.border}" },
+  "fill": { "$type": "color", "$value": "{color.accent}" },
+  "duration": { "$type": "duration", "$value": "{motion.micro}" }
+} } }

@@ -193,27 +193,27 @@ Each pattern says when to use it, how it shows, and the measure that holds it. T
 
 <h2 id="the-wait-inventory">The wait inventory</h2>
 
-Every operation that can take longer than 100 ms, with its class, pattern and words. **Status** is what's built today (15 October 2026). Rows marked *gap* are WP-5.8's to close (PRF-13). The "no silent wait" journey slows each operation through the test bridge and checks its sign and words.
+Every operation that can take longer than 100 ms, with its class, pattern and words. **Status** is what's built today (16 October 2026). Rows marked *gap* are WP-5.8's to close (PRF-13). The "no silent wait" journey (`e2e/prf13-no-silent-wait.spec.ts`) slows each operation through the journeys' slow-down and checks its sign, words and elapsed time, and that the title bar band still drags; setup's rows are in it.
 
 | Operation | Class | Pattern and place | Words on the main path | Measure | Status |
 | --- | --- | --- | --- | --- | --- |
 | Start-up | Waiting at worst | First-start notice: themed canvas, then the note | none under 1 s; the note's skeleton past 1 s | PRF-02, `fn:window.firstFrame` | Partial: the window shows on ready-to-show; no first-frame report |
 | Checking Git (Connect) | Responsive | Silent; shows only when missing or too old | none | `fn:setup.git` | Built |
-| Getting a sign-in code | Waiting | Named wait on *Connect to GitHub* (busy button) | "Getting a code from GitHub…" | `fn:setup.code` | Gap: one `busy` |
-| Waiting for approval | Long, user-driven | The code card with GitHub's ringed mark, elapsed time, [Cancel] | "Waiting for you to approve on GitHub…" | none (the person's time) | Built, without elapsed time or Cancel |
-| Reading the account | Responsive | The profile card's skeleton | "Connecting to your account…" | `fn:setup.account` | Gap: one `busy` |
-| Finding your notes | Waiting | Prefetched at Connect; skeleton rows; count | "Looking for your notes on GitHub… 12 of 30" | `fn:setup.findNotes` | Gap: one `busy`, started on arrival, a request per repository |
-| Creating your notes | Long | Steps, always shown, current one named, elapsed time | "Copying the template · 2 of 9" | `fn:setup.create` and each part | Partial: parts under *Show details* only |
-| Downloading your notes (clone) | Long | Steps with determinate progress from `git clone --progress` | "Downloading your notes · 45%" | `fn:clone` | Gap: one `busy` |
-| Opening a folder | Responsive | Named wait if past 1 s | "Checking this folder…" | `fn:setup.folder` | Gap: one `busy` |
-| Finishing setup, opening another workspace | Responsive to waiting | Double-buffered swap, in place | "Opening your notes…" past 1 s | `fn:workspace.switch` (≤ 500 ms typical) | Gap: reloads the page (the white flash) |
-| Removing the workspace, signing out | Responsive | In place, then *Your notes* or *Connect* | "Removing…", "Signing out…" | `fn:workspace.remove`, `fn:auth.signOut` | Gap: removing reloads the page |
+| Getting a sign-in code | Waiting | Named wait on *Connect to GitHub* (busy button) | "Getting a code from GitHub…" | `fn:setup.code` | Built (D-149): `firstRun.signIn` through the tracker |
+| Waiting for approval | Long, user-driven | The code card with GitHub's ringed mark, elapsed time, [Cancel] | "Waiting for you to approve on GitHub…" | none (the person's time) | Built: elapsed time and [Cancel] (D-149) |
+| Reading the account | Responsive | The profile card's skeleton | "Connecting to your account…" | `fn:setup.account` | Built (D-149): the profile card's skeleton, `firstRun.account` |
+| Finding your notes | Waiting | Prefetched at Connect; skeleton rows; count | "Looking for your notes on GitHub… 12 of 30" | `fn:setup.findNotes` | Built (D-149): prefetched at Connect, three skeleton rows, the 30 most recent checked six at a time and counted |
+| Creating your notes | Long | Steps, always shown, current one named, elapsed time | "Copying the template · 2 of 9" | `fn:setup.create` and each part | Built (D-149): parts always shown in plain words, the current one with its number and elapsed time; *Download to this computer* with Git's percentage and a `ProgressBar` |
+| Downloading your notes (clone) | Long | Steps with determinate progress from `git clone --progress` | "Downloading your notes · 45%" | `fn:clone` | Built (D-149): the parts (Download · Get the private notes · Link them) shown and ticked, the current one in words, Git's percentage on a `ProgressBar` |
+| Opening a folder | Responsive | Named wait if past 1 s | "Checking this folder…" | `fn:setup.folder` | Built (D-149): `firstRun.folder`, in the journey (the system's dialog stubbed) |
+| Finishing setup, opening another workspace | Responsive to waiting | Double-buffered swap, in place | "Opening your notes…" past 1 s | `fn:workspace.switch` (≤ 500 ms typical) | Built: in place (D-148), "Opening your notes…" through the tracker (D-149) |
+| Removing the workspace, signing out | Responsive | In place, then *Your notes* or *Connect* | "Removing…", "Signing out…" | `fn:workspace.remove`, `fn:auth.signOut` | Built (D-149): in place (D-148); each button says "Removing…" or "Signing out…" with its seconds, through the tracker (`workspace.remove`, `account.signOut`) |
 | Opening a note | Instant to responsive | Direct, the region-updating line past 300 ms | none | PRF-03, PRF-10 | Built |
 | Writing to disk | Responsive, background | Save state: *Saved on this computer* | none | PRF-03 | Built (D-132) |
 | Backing up to GitHub (*Save to cloud*, <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>, and automatic backups) | Waiting to long when asked, background otherwise | Save state on the account pill; past 3 s, the open label adds the elapsed time | "Backing up…", then "Backed up" | `fn:sync.commit`, `fn:sync.push` | Built (D-132, D-133); elapsed time to add |
 | Fetch and pull | Background | Silent; open notes reload in place | none, unless a problem | `fn:sync.pull` | Built |
 | Structural changes in Files | Responsive | Optimistic change with pending rows | none | PRF-09 | Built |
-| Opening from GitHub (the picker) | Waiting, then long | Skeleton list prefetched on hover, then steps to download | "Looking for your repositories…", then as cloning | `fn:view.open.repoPicker`, `fn:clone` | Gap |
+| Opening from GitHub (the picker) | Waiting, then long | Skeleton list prefetched on hover, then steps to download | "Looking for your repositories…", then as cloning | `fn:view.open.repoPicker`, `fn:clone` | Built (D-149): asked when Settings → Workspace opens (on intent, used within 30 s), three skeleton rows with Back and Esc, then Open's parts. Prefetch on hover waits for hover events in view documents |
 | Spotlight before the index is ready | Waiting | Results from titles at once; a quiet count while the rest is indexed | "Still reading 1,200 of 5,000 notes" | SPT-07, PRF-10 | Partial: no count |
 | Find in all notes | Responsive | Results stream in, first within 300 ms | none | FND-04 | Built |
 | Unlocking, exporting, importing, resolving a conflict | Waiting | Named wait through the tracker | "Unlocking…", "Exporting…", "Importing…" | the tracker's marks | Built (D-77) |

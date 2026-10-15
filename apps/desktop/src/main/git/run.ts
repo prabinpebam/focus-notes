@@ -16,6 +16,8 @@ export interface GitCall {
   read?: boolean;
   /** Variables set for this call only, after the scrubbing: a temporary index while resolving (FIL-12). */
   env?: Record<string, string>;
+  /** Git's messages as they arrive (`--progress`), for a long call that shows its progress (PRF-13). */
+  onStderr?: (chunk: string) => void;
 }
 export interface GitResult {
   /** The exit code; -1 when Git couldn't start or was stopped by its timeout. */
@@ -48,6 +50,7 @@ export function createRunner(options: { git?: string; env?: NodeJS.ProcessEnv; o
       const e = error as NodeJS.ErrnoException & { code?: number | string; killed?: boolean };
       resolve({ code: typeof e.code === "number" && !e.killed ? e.code : -1, stdout: stdout ?? "", stderr: `${stderr ?? ""}${e.killed ? "\n(timed out)" : typeof e.code === "string" ? `\n${e.code}` : ""}` });
     });
+    if (call.onStderr) child.stderr?.on("data", (d: string | Buffer) => call.onStderr!(String(d)));
     child.stdin?.on("error", () => {});
     child.stdin?.end(call.input ?? "");
   });

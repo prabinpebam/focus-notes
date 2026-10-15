@@ -187,8 +187,20 @@ describe("QLT-04: timings, settings, the preview, and the log", () => {
     const src = join(import.meta.dirname, "..", "src");
     const targets: string[] = [];
     for (const f of readdirSync(src).filter((f) => f.endsWith(".ts"))) {
-      for (const m of readFileSync(join(src, f), "utf8").matchAll(/tracker\.run\(\s*([^,]+),/g)) {
-        const arg = m[1]!.trim();
+      const text = readFileSync(join(src, f), "utf8");
+      for (const m of text.matchAll(/tracker\.run\(\s*([^,]+),/g)) {
+        let arg = m[1]!.trim();
+        // A table of fixed targets (the first run's waits, PRF-13): every value a string literal, each checked below.
+        const table = /^(FIRST_RUN_WAITS)\[\w+\]$/.exec(arg)?.[1];
+        if (table) {
+          const body = new RegExp(`export const ${table} = \\{([^}]*)\\}`).exec(text)?.[1] ?? "";
+          const values = [...body.matchAll(/\w+:\s*([^,]+)/g)].map((x) => x[1]!.trim());
+          expect(values.length, `${f}: ${table}`).toBeGreaterThan(0);
+          for (const v of values) expect(v, `${f}: ${table}`).toMatch(/^"[\w.]+"$/);
+          arg = values.join(" ");
+          targets.push(...[...arg.matchAll(/"([\w.]+)"/g)].map((x) => x[1]!));
+          continue;
+        }
         // A string literal, or a choice between two (Remember on this browser).
         expect(arg, `${f}: ${arg}`).toMatch(/^("[\w.]+"|\w+ \? "[\w.]+" : "[\w.]+")$/);
         targets.push(...[...arg.matchAll(/"([\w.]+)"/g)].map((x) => x[1]!));
