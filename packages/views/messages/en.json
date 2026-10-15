@@ -196,6 +196,7 @@
   "command.window.maximize": "Maximize window",
   "command.window.restore": "Restore window",
   "command.window.toggleMaximize": "Maximize or restore window",
+  "command.window.toggleVertical": "Maximize or restore window height",
   "command.window.close": "Close window",
   "command.window.move": "Move window",
   "command.window.size": "Resize window",

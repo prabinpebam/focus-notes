@@ -1,5 +1,7 @@
-import { test, expect, type ElectronApplication, type Page } from "./fixtures.ts";
+import { test, expect, screenAllowed, SCREEN_SKIP, type ElectronApplication, type Page } from "./fixtures.ts";
 import { launch, placed, quit, setWindowActive, tempDirs, type Launched } from "./helpers.ts";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { axeViolations } from "./axe.ts";
 
 // M2 window journeys (WP-2.1): the Windows and Linux window the app draws and manages itself
@@ -42,6 +44,8 @@ async function start(dirs = tempDirs()): Promise<Launched & { dirs: ReturnType<t
 
 test.describe("Windows and Linux: the app-built window", () => {
   test.skip(!custom, "macOS uses the native window (D-14)");
+  // Every journey here maximizes, snaps, moves or resizes the real window (D-141).
+  test.skip(!screenAllowed(), SCREEN_SKIP);
 
   test("DSK-01: 20 px corners and a shadow margin at rest, square when maximized, snapped, or full screen", async () => {
     const l = await start();
@@ -169,6 +173,46 @@ test.describe("Windows and Linux: the app-built window", () => {
     expect(restored.x).toBeLessThan(px + 10);
     expect(restored.x + restored.width).toBeGreaterThan(px + 10);
     await expect.poll(() => frame(page)).toMatchObject({ radius: "20px" });
+    await quit(l);
+  });
+
+  test("D-141: resizing the top edge to the work area's top maximizes vertically; double-clicking the border toggles it; dragging away restores the height", async () => {
+    const l = await start();
+    const { app, page } = l;
+    await expect.poll(() => frame(page)).toMatchObject({ radius: "20px" });
+    const wa = await workArea(app);
+    const outer = await bounds(app);
+    const normal = { x: outer.x + 16, y: outer.y + 16, width: outer.width - 32, height: outer.height - 32 };
+    const handle = (edge: "n" | "s", type: string, x: number, y: number) =>
+      page.locator(`[data-window-handle="${edge}"]`).dispatchEvent(type, { screenX: x, screenY: y, pointerId: 32, isPrimary: true, button: 0, buttons: type === "pointerup" ? 0 : 1 });
+    const cx = normal.x + Math.round(normal.width / 2);
+
+    // The top edge, dragged up to the work area's top: the same x and width, the work area's full height.
+    await handle("n", "pointerdown", cx, normal.y - 3);
+    // Down first, so it's a resize even where the window already starts at the work area's top (a CI runner's small display).
+    await handle("n", "pointermove", cx, normal.y + 60);
+    await nextFrame(page);
+    await handle("n", "pointermove", cx, wa.y + 1);
+    await nextFrame(page);
+    await handle("n", "pointerup", cx, wa.y + 1);
+    const tall = { x: normal.x, y: wa.y, width: normal.width, height: wa.height };
+    await expect.poll(() => bounds(app)).toEqual(tall);
+    await expect.poll(() => frame(page)).toMatchObject({ radius: "0px", left: 0 });
+
+    // Dragging it away by the band puts back its height (and width).
+    await bandPointer(page, "pointerdown", cx, wa.y + 20);
+    await bandPointer(page, "pointermove", cx + 10, wa.y + 80);
+    await nextFrame(page);
+    await bandPointer(page, "pointerup", cx + 10, wa.y + 80);
+    await expect.poll(async () => { const b = await bounds(app); return { width: b.width, height: b.height }; }).toEqual({ width: outer.width, height: outer.height });
+    await expect.poll(() => frame(page)).toMatchObject({ radius: "20px" });
+
+    // Double-clicking the bottom border maximizes vertically, and again restores.
+    const before = await bounds(app);
+    await page.locator('[data-window-handle="s"]').dispatchEvent("dblclick");
+    await expect.poll(async () => { const b = await bounds(app); return { x: b.x, y: b.y, width: b.width, height: b.height }; }).toEqual({ x: before.x + 16, y: wa.y, width: before.width - 32, height: wa.height });
+    await page.locator('[data-window-handle="s"]').dispatchEvent("dblclick");
+    await expect.poll(() => bounds(app)).toEqual(before);
     await quit(l);
   });
 
@@ -332,6 +376,38 @@ test.describe("Windows and Linux: the app-built window", () => {
     await expect.poll(() => bounds(third.app)).toEqual(kept);
     await quit(third);
   });
+});
+
+test.describe("Windows and Linux: the drawn shadow", () => {
+  test.skip(!custom, "macOS uses the native window and its shadow (D-14)");
+
+  // Only the app's own window is captured (webContents.capturePage), never the screen (D-141).
+  for (const [name, state] of [["light", {}], ["dark", { appearance: "dark", darkTheme: "ink" }]] as const) {
+    test(`DSK-01, D-141: the shadow fades out inside the margin, never cut by the native window's edge (${name})`, async () => {
+      const dirs = tempDirs();
+      writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", ...state }));
+      const l = await start(dirs);
+      await expect.poll(() => frame(l.page)).toMatchObject({ radius: "20px", left: 16 });
+      await l.page.waitForTimeout(300);
+      const px = await l.app.evaluate(async ({ BrowserWindow }) => {
+        const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
+        const img = await w.webContents.capturePage();
+        const { width, height } = img.getSize();
+        const scale = width / w.getBounds().width;
+        const bmp = img.toBitmap();
+        const alpha = (x: number, y: number) => bmp[(y * width + x) * 4 + 3]!;
+        let edge = 0;
+        for (let x = 0; x < width; x++) edge = Math.max(edge, alpha(x, 0), alpha(x, height - 1));
+        for (let y = 0; y < height; y++) edge = Math.max(edge, alpha(0, y), alpha(width - 1, y));
+        // Just below the visible window's bottom edge, at the middle: the shadow is drawn there.
+        const below = alpha(Math.round(width / 2), height - Math.round(14 * scale));
+        return { edge, below };
+      });
+      expect(px.edge).toBe(0);
+      expect(px.below).toBeGreaterThan(0);
+      await quit(l);
+    });
+  }
 });
 
 test("DSK-01: macOS keeps the system's own window, with no drawn frame or window controls", async () => {

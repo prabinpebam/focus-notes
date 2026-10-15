@@ -139,6 +139,8 @@ export class AppWindowFrame {
     if (p.fullScreen) win.once("ready-to-show", () => custom.toggleFullScreen());
     win.webContents.on("before-input-event", (e, input) => {
       if (custom.key(input)) return e.preventDefault();
+      // Win+Shift+Up and Down, if the shell lets them through: vertical maximize and back (D-141).
+      if (custom.snapKey(input)) return e.preventDefault();
       // Alt+Space opens the app's system menu; the system's can't maximize a transparent window (DSK-08).
       if (input.type === "keyDown" && input.alt && !input.control && !input.meta && !input.shift && (input.code === "Space" || input.key === " ")) {
         e.preventDefault();
@@ -207,6 +209,8 @@ export class AppWindowFrame {
     on("window:minimize", () => this.#custom?.minimize());
     on("window:maximize", () => this.#custom?.maximize());
     on("window:restore", () => this.#custom?.restore());
+    // Double-clicking the top or bottom border (D-141).
+    on("window:vertical", () => this.#custom?.toggleVertical());
     on("window:close", () => win()?.close());
     on("window:snap", (zone) => {
       if ((SNAP_ZONES as readonly unknown[]).includes(zone)) this.#custom?.snap(zone as SnapZone);

@@ -135,6 +135,9 @@
           "toggleMaximize": {
             "run": "window.toggleMaximize"
           },
+          "toggleVertical": {
+            "run": "window.toggleVertical"
+          },
           "menu": {
             "run": "window.systemMenu",
             "args": {

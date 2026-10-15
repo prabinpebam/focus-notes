@@ -106,7 +106,7 @@ export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
   // The old note list, which Spotlight's quick open replaced (D-109): File's Quick open is Spotlight's.
   { why: "replaced", ids: /^picker\.open$/ },
   // The app-built window of Windows and Linux; on macOS, the Window menu's own items.
-  { why: "app-built window", ids: /^window\.(minimize|maximize|restore|toggleMaximize|close|move|size|systemMenu|snap\..+)$/ },
+  { why: "app-built window", ids: /^window\.(minimize|maximize|restore|toggleMaximize|toggleVertical|close|move|size|systemMenu|snap\..+)$/ },
 ];
 
 /** A menu bar item as the shell builds it. `chord` is the registry's chord for the platform ("Mod+Shift+L"). */
