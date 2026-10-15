@@ -91,7 +91,7 @@
 <ul>
   <li><strong>No persistent chrome.</strong> No sidebar, tab strip, visible title bar, status bar, or word count. On the desktop, the top 44 px are an invisible title bar for dragging the window, and the window controls appear only on hover (see <a href="desktop-app.html#title-bar">Desktop app</a>).</li>
   <li><strong>Reading column.</strong> Text sits in a centered column. Its width is a theme token (<code>layout.measure</code>, default 70 characters) so line length stays comfortable on wide screens.</li>
-  <li><strong>Top clearance.</strong> The column starts below the trigger's 110 px band, so the trigger never covers text at scroll position zero. Scrolled text passes under the trigger hidden: the note's top scroll edge covers the trigger's place (80 px) in the canvas's color before its 50 px blur and fade, so the dot never sits on text (D-119). The trigger is still frosted, for what floats under it.</li>
+  <li><strong>Top clearance.</strong> The column starts below the trigger's 110 px band, so the trigger never covers text at scroll position zero. Scrolled text passes under the trigger and is blurred by it, which is why it's frosted rather than opaque.</li>
   <li><strong>Empty note.</strong> A new note shows one placeholder line in the subdued text color: "Start writing, type / for blocks, or press ⌘/ or Ctrl+/". Nothing else appears.</li>
   <li><strong>Account pill</strong> (UI-12, D-89, D-90). In the bottom-left corner, a small pill in muted caption text with no fill, barely there until pointed at.
     <ul>
