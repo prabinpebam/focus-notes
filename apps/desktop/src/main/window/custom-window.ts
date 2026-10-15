@@ -62,8 +62,10 @@ interface Options {
   /**
    * Where a drag's pointer is (D-151): the system's cursor, read once a frame ("cursor", the app), or
    * the positions the page reports ("page": journeys, whose pointer is the page's own). Default "page".
+   * "relay" is the path before D-151, each position the page reports applied as it arrives, with no
+   * loop: only for the screen-level journey to compare against (never a packaged app).
    */
-  dragPointer?: () => "cursor" | "page";
+  dragPointer?: () => "cursor" | "page" | "relay";
   /** Milliseconds per frame of the display the window is on: the drag loop's interval. Default 60 Hz. */
   frameMs?: () => number;
   /** Runs `fn` every `ms` until the returned function is called. Tests give a clock of their own. */
@@ -276,7 +278,7 @@ export class CustomWindow {
       const start = this.#followsCursor ? this.#o.screen.getCursorScreenPoint() : p;
       const d: Drag = { kind, start, from: this.content(), moved: false, at: start, shift, stop: () => {} };
       this.#drag = d;
-      d.stop = (this.#o.every ?? every)(this.#o.frameMs?.() ?? 1000 / 60, () => this.#follow());
+      if (!this.#relays) d.stop = (this.#o.every ?? every)(this.#o.frameMs?.() ?? 1000 / 60, () => this.#follow());
       this.#setIgnore(false);
       return;
     }
@@ -284,6 +286,11 @@ export class CustomWindow {
     if (!d || (kind !== d.kind && phase !== "end")) return;
     d.shift = shift;
     if (!this.#followsCursor) d.at = p;
+    if (phase === "move" && this.#relays) {
+      d.applied = undefined;
+      this.#step(d);
+      return;
+    }
     if (phase === "move") {
       // A move the page saw is a display frame with the pointer moving: the cursor is read now, which
       // keeps pace with the display where the main process's timers can't (Windows' 15.6 ms), and
@@ -297,6 +304,9 @@ export class CustomWindow {
 
   get #followsCursor(): boolean {
     return this.#o.dragPointer?.() === "cursor";
+  }
+  get #relays(): boolean {
+    return this.#o.dragPointer?.() === "relay";
   }
   /** Whether a drag's loop is running: only while a drag lasts (PRF-04). */
   get dragging(): boolean {

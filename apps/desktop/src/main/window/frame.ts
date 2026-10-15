@@ -144,7 +144,8 @@ export class AppWindowFrame {
       // The main process follows the system's cursor itself during a drag, once a frame of the
       // window's display (D-151); journeys' pointer is the page's.
       // The screen-level journey (CI only) follows a real cursor: `globalThis.focusNotesDragPointer = "cursor"`.
-      dragPointer: () => (!this.#journey ? "cursor" : (globalThis as { focusNotesDragPointer?: "cursor" | "page" }).focusNotesDragPointer ?? "page"),
+      // It can also compare the path before D-151 ("relay"). Neither is read outside journeys, nor in a packaged app.
+      dragPointer: () => (!this.#journey ? "cursor" : (globalThis as { focusNotesDragPointer?: "cursor" | "page" | "relay" }).focusNotesDragPointer ?? "page"),
       frameMs: () => 1000 / (screen.getDisplayMatching(win.getBounds()).displayFrequency || 60),
     }, p);
     this.#custom = custom;
