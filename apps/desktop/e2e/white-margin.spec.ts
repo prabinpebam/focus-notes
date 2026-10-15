@@ -17,7 +17,7 @@ import { join } from "node:path";
 
 const OUT = join(import.meta.dirname, "..", "..", "..", "test-results", "white-margin");
 
-interface Report { label: string; captures: number; bad: number; worst: number; invalid: number; samples: string[] }
+interface Report { label: string; captures: number; bad: number; worst: number; invalid: number; notDrawn: number; samples: string[] }
 /**
  * The compositing paths a Windows window can be on: in software (a runner, a remote desktop, after
  * the GPU went away), and on the GPU (DirectComposition), reached on a runner with no GPU through
@@ -50,8 +50,14 @@ test.describe("D-153: the shadow margin at the screen level", () => {
         const d = screen.getPrimaryDisplay();
         const backdrop = new BrowserWindow({ ...d.workArea, frame: false, backgroundColor: "#ff00ff", show: false, focusable: false, skipTaskbar: true, resizable: false, hasShadow: false });
         backdrop.showInactive();
+        // Above the backdrop: moveTop alone doesn't raise a window that isn't the foreground one on a
+        // runner (the first runs measured the backdrop); restoring it does.
         win.moveTop();
-        const g = globalThis as unknown as { wm: { label: string; stop: boolean; reports: Record<string, { label: string; captures: number; bad: number; worst: number; invalid: number; samples: string[] }>; done?: Promise<void> } };
+        win.minimize();
+        await new Promise((r) => setTimeout(r, 400));
+        win.restore();
+        await new Promise((r) => setTimeout(r, 1200));
+        const g = globalThis as unknown as { wm: { label: string; stop: boolean; reports: Record<string, { label: string; captures: number; bad: number; worst: number; invalid: number; notDrawn: number; samples: string[] }>; done?: Promise<void>; interior?: () => Promise<number> } };
         g.wm = { label: "rest", stop: false, reports: {} };
         const scale = d.scaleFactor;
         const size = { width: Math.round(d.size.width * scale), height: Math.round(d.size.height * scale) };
@@ -59,7 +65,7 @@ test.describe("D-153: the shadow margin at the screen level", () => {
         const once = async () => {
           const label = g.wm.label;
           const b = win.getBounds();
-          const report = (g.wm.reports[label] ??= { label, captures: 0, bad: 0, worst: 0, invalid: 0, samples: [] });
+          const report = (g.wm.reports[label] ??= { label, captures: 0, bad: 0, worst: 0, invalid: 0, notDrawn: 0, samples: [] });
           // Only a rounded window at rest has a margin; maximized, snapped and minimized have none.
           const inset = win.isMinimized() || !win.isVisible() ? 0 : await win.webContents.executeJavaScript("document.documentElement.dataset.windowFrame === 'rounded' ? 1 : 0").catch(() => 0);
           const [src] = await desktopCapturer.getSources({ types: ["screen"], thumbnailSize: size });
@@ -109,7 +115,9 @@ test.describe("D-153: the shadow margin at the screen level", () => {
               if (r > 200 && bl > 200 && gg < 60) through++;
             }
           }
-          const share = Math.max(ring ? bad / ring : 0, inside && through / inside > 0.3 ? 1 : 0);
+          // The window not drawn at all (the backdrop through it) is counted on its own: it's not a white margin.
+          if (inside && through / inside > 0.3) report.notDrawn++;
+          const share = ring ? bad / ring : 0;
           report.worst = Math.max(report.worst, share);
           // A sample of a good frame too, the first of each phase, to see what was measured.
           if (share < 0.01 && report.captures === 1 && (label === "rest" || label.startsWith("pass-through"))) {
@@ -125,8 +133,18 @@ test.describe("D-153: the shadow margin at the screen level", () => {
           }
         };
         g.wm.done = (async () => {
-          while (!g.wm.stop) await once().catch((e) => void (g.wm.reports.error ??= { label: `error ${String(e)}`, captures: 0, bad: 1, worst: 1, invalid: 0, samples: [] }));
+          while (!g.wm.stop) await once().catch((e) => void (g.wm.reports.error ??= { label: `error ${String(e)}`, captures: 0, bad: 1, worst: 1, invalid: 0, notDrawn: 0, samples: [] }));
         })();
+        // The drawn window's inside, summed: it changes when what the window shows changes (content still updates).
+        g.wm.interior = async () => {
+          const b = win.getBounds();
+          const [src] = await desktopCapturer.getSources({ types: ["screen"], thumbnailSize: size });
+          const bmp = src!.thumbnail.toBitmap();
+          const W = src!.thumbnail.getSize().width;
+          let sum = 0;
+          for (let y = b.y + margin + 4; y < b.y + b.height - margin - 4; y += 2) for (let x = b.x + margin + 4; x < b.x + b.width - margin - 4; x += 2) sum += bmp[(Math.round(y * scale) * W + Math.round(x * scale)) * 4 + 1]! * ((x * 31 + y) % 7 + 1);
+          return sum;
+        };
       }, { out: OUT, tag: mode.name.split(" ")[0]! });
       const phase = async (label: string, fn: () => Promise<unknown>, settleMs = 600) => {
         await app.evaluate((_e, l) => void ((globalThis as unknown as { wm: { label: string } }).wm.label = l), label);
@@ -219,21 +237,13 @@ test.describe("D-153: the shadow margin at the screen level", () => {
           await page.waitForTimeout(150);
         }
       });
-      // A probe for the fix, not part of the check: Electron keeps WS_EX_LAYERED on a window once
-      // its opacity is set (`layered_`), so the pass-through then toggles only WS_EX_TRANSPARENT.
-      await phase("probe: setOpacity(1), then pass-through toggles", async () => {
-        await inMain(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!.setOpacity(1));
-        await page.waitForTimeout(400);
-        await page.keyboard.type(" typed while probing");
-        for (let i = 0; i < 8; i++) {
-          await inMain(({ BrowserWindow }, on: boolean) => {
-            const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
-            w.setIgnoreMouseEvents(on, on ? { forward: true } : undefined);
-          }, i % 2 === 0);
-          await page.waitForTimeout(150);
-        }
-      });
-
+      // The window still shows what changes: typing reaches the screen through the whole sequence
+      // (a layered window whose content stopped updating would pass every margin check).
+      const interior = () => app.evaluate(() => (globalThis as unknown as { wm: { interior: () => Promise<number> } }).wm.interior());
+      await page.getByRole("textbox", { name: "Note" }).click();
+      const before = await interior();
+      await page.keyboard.type("\n\nThe margin stays clear while this is typed.");
+      await expect.poll(interior, { timeout: 5_000 }).not.toBe(before);
       const reports = await app.evaluate(async () => {
         const g = globalThis as unknown as { wm: { stop: boolean; done: Promise<void>; reports: Record<string, Report> } };
         g.wm.stop = true;
@@ -242,10 +252,11 @@ test.describe("D-153: the shadow margin at the screen level", () => {
       });
       const compositing = l.log.filter((x) => x.includes("compositing")).join(" | ");
       process.stdout.write(`[white-margin] ${mode.name}: ${compositing}\n`);
-      for (const r of reports) process.stdout.write(`[white-margin] ${r.label}: ${r.captures} captures, ${r.bad} with ≥1% of the margin not magenta (worst ${(r.worst * 100).toFixed(1)}%), ${r.invalid} blank captures skipped ${r.samples.join(", ")}\n`);
+      for (const r of reports) process.stdout.write(`[white-margin] ${r.label}: ${r.captures} captures, ${r.bad} with ≥1% of the margin not magenta (worst ${(r.worst * 100).toFixed(1)}%), ${r.notDrawn} with the window not drawn, ${r.invalid} blank captures skipped ${r.samples.join(", ")}\n`);
       writeFileSync(join(OUT, `report-${mode.name.split(" ")[0]}.json`), JSON.stringify({ compositing, reports }, null, 2));
       expect(reports.find((r) => r.label === "rest")?.captures ?? 0, "the window at rest was captured").toBeGreaterThan(0);
-      expect(reports.filter((r) => r.bad > 0 && !r.label.startsWith("probe")).map((r) => `${r.label}: ${r.bad} of ${r.captures} captures (worst ${(r.worst * 100).toFixed(1)}%)`)).toEqual([]);
+      expect(reports.filter((r) => r.notDrawn > 0 && !["GPU process crash", "minimize and restore", "hide and show"].includes(r.label)).map((r) => `${r.label}: the window wasn't drawn in ${r.notDrawn} of ${r.captures} captures`), "the window is drawn (but while it appears, is restored, or the GPU process restarts)").toEqual([]);
+      expect(reports.filter((r) => r.bad > 0).map((r) => `${r.label}: ${r.bad} of ${r.captures} captures (worst ${(r.worst * 100).toFixed(1)}%)`)).toEqual([]);
     } finally {
       await quit(l).catch(() => {});
     }

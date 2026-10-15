@@ -140,6 +140,12 @@ export class AppWindowFrame {
       },
     }, p);
     this.#custom = custom;
+    // D-153: on Windows, Electron's setIgnoreMouseEvents(false) takes WS_EX_LAYERED off the window
+    // unless it's layered already, so every time the margin's pass-through ended the window's style
+    // changed under the compositor. Setting the opacity once makes Electron keep the window layered
+    // (its `layered_`), so the pass-through only turns WS_EX_TRANSPARENT on and off. Measured on CI
+    // in software and on DirectComposition (WARP): the margin stays clear and the content updates.
+    if (process.platform === "win32" && this.kind === "custom") win.setOpacity(1);
     if (p.fullScreen) win.once("ready-to-show", () => custom.toggleFullScreen());
     win.webContents.on("before-input-event", (e, input) => {
       if (custom.key(input)) return e.preventDefault();
