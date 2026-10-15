@@ -39,6 +39,10 @@ export const DATA_FILES = {
   avatar: "avatar.json",
   /** What agents may do on this computer (AGT-03, D-145): switches and folder limits, never note text. */
   agents: "agents.json",
+  /** This computer's agent rate limit (AGT-09): two token counts and times, while agents are used. */
+  agentLimits: "agent-limits.json",
+  /** Held for a moment while one process takes from the rate limit. */
+  agentLimitsLock: "agent-limits.lock",
 } as const;
 export type DataFile = (typeof DATA_FILES)[keyof typeof DATA_FILES];
 
@@ -77,6 +81,8 @@ export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "windowPlace", path: DATA_FILES.window, removedBy: ["deleteDataFolder"] },
   { id: "accountPicture", path: DATA_FILES.avatar, removedBy: ["deleteDataFolder"] },
   { id: "agentPermissions", path: DATA_FILES.agents, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
+  { id: "agentLimits", path: DATA_FILES.agentLimits, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
+  { id: "agentLimitsLock", path: DATA_FILES.agentLimitsLock, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "recoveryJournal", path: DATA_FILES.journal, removedBy: ["quit", "signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "chromium", path: `${CHROMIUM_FOLDERS.session}/`, removedBy: ["deleteDataFolder"] },
   { id: "codeCache", path: `${CHROMIUM_FOLDERS.codeCache}/`, removedBy: ["deleteDataFolder"] },

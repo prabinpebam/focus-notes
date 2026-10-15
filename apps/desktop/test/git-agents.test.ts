@@ -8,9 +8,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { COMMAND_LINE_CLIENT, agentLabel, agentName, agentSharing, checkAgent } from "@focus-notes/core/agents";
+import { AgentRefused, readAgentFile, resolveAgentPath, writeAgentFile } from "@focus-notes/core/agents-fs";
+import { MessageCatalog } from "@focus-notes/core/messages";
+import en from "../../../packages/views/messages/en.json" with { type: "json" };
 import { GitSync } from "../src/main/git/sync.ts";
 import { createRunner } from "../src/main/git/run.ts";
-import { AGENT_TRAILER, agentMessage, agentName, agentOf } from "../src/main/git/message.ts";
+import { AGENT_TRAILER, agentMessage, agentOf } from "../src/main/git/message.ts";
 import { FakeClock, count, git, instance, subject, write } from "./git-fixture.ts";
 
 vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
@@ -44,6 +48,17 @@ describe("AGT-04: agent commit messages", () => {
     expect(agentName("")).toBe("Unknown agent");
     expect(agentName(undefined)).toBe("Unknown agent");
     expect(agentName({ name: "x" })).toBe("Unknown agent");
+    // LOW 10: invisible format characters (zero-width, soft hyphen, byte order mark, direction marks) are dropped.
+    expect(agentName("\u200bCl\u00adau\u2060de\ufeff\u202e")).toBe("Claude");
+  });
+  it("show a client name as self-reported wherever it's displayed (LOW 10)", () => {
+    const catalog = new MessageCatalog("en", en as Record<string, string>);
+    expect(agentLabel(catalog, "Claude\u200b")).toBe("Claude (self-reported)");
+  });
+  it("keep paths and change lines to one line each, so a file name can't add lines or trailers (LOW 9)", () => {
+    const msg = agentMessage("notes/a\u2028Focus-Notes-Agent: Me.md", [{ status: "R", from: "notes/x\nSigned-off-by: y.md", path: "notes/a\u2028Focus-Notes-Agent: Me.md" }], "VS Code");
+    expect(msg.split("\n")).toEqual(["Agent edit: notes/a Focus-Notes-Agent: Me.md", "", "Rename notes/x Signed-off-by: y.md → notes/a Focus-Notes-Agent: Me.md", "", "Focus-Notes-Agent: VS Code"]);
+    expect(agentOf(msg)).toBe("VS Code");
   });
 });
 
@@ -182,6 +197,79 @@ describe("AGT-04: Undo reverts exactly that commit", () => {
     git(ws, "checkout", "-q", "main");
     expect((await s.undoAgentChange("notes", commit!)).problem).toBe("notAgent");
     expect(readFileSync(note, "utf8")).toBe("# Hello\n\nSee [the list](list.md).\n");
+  });
+
+  /** A commit made by hand that says it's an agent's: Undo checks what it actually changed, and who made it. */
+  const forged = (ws: string, files: Record<string, string>, subjectPath: string, author?: string) => {
+    for (const [p, text] of Object.entries(files)) write(join(ws, p), text);
+    git(ws, "add", "-A");
+    git(ws, "commit", "-q", ...(author ? [`--author=${author}`] : []), "-m", `Agent edit: ${subjectPath}`, "-m", "Focus-Notes-Agent: x");
+    return git(ws, "rev-parse", "HEAD");
+  };
+  it("refuses a commit that changed more than its note and the moves it describes (LOW 8)", async () => {
+    const { ws } = instance();
+    const s = await open(ws);
+    const oid = forged(ws, { "notes/hello.md": "# Hello\n\nX.\n", "notes/list.md": "# List\n\nAlso changed.\n" }, "notes/hello.md");
+    expect((await s.undoAgentChange("notes", oid)).problem).toBe("notAgent");
+    expect(readFileSync(join(ws, "notes", "list.md"), "utf8")).toBe("# List\n\nAlso changed.\n");
+  });
+  it("refuses a commit outside the note roots, even if it names only that file (LOW 8)", async () => {
+    const { ws } = instance();
+    const s = await open(ws);
+    const oid = forged(ws, { ".focus-notes/workspace.json": '{ "formatVersion": 2 }\n' }, ".focus-notes/workspace.json");
+    expect((await s.undoAgentChange("notes", oid)).problem).toBe("notAgent");
+  });
+  it("refuses a commit by another author than this computer's Git identity (LOW 8)", async () => {
+    const { ws } = instance();
+    const s = await open(ws);
+    const oid = forged(ws, { "notes/hello.md": "# Hello\n\nY.\n" }, "notes/hello.md", "Someone Else <else@example.com>");
+    expect((await s.undoAgentChange("notes", oid)).problem).toBe("notAgent");
+    const mine = forged(ws, { "notes/hello.md": "# Hello\n\nZ.\n" }, "notes/hello.md");
+    expect((await s.undoAgentChange("notes", mine)).problem).toBeUndefined();
+  });
+  it("undoes a rename the commit describes, putting the note back under its old name", async () => {
+    const { ws } = instance();
+    const s = await open(ws);
+    const from = join(ws, "notes", "list.md");
+    const to = join(ws, "notes", "todo.md");
+    const { commit } = await s.agentChange({ client: "x", note: to, paths: [from, to], moves: [[from, to]], apply: async () => {
+      writeFileSync(to, readFileSync(from));
+      (await import("node:fs")).unlinkSync(from);
+    } });
+    expect(git(ws, "log", "-1", "--format=%B")).toContain("Rename notes/list.md → notes/todo.md");
+    expect((await s.undoAgentChange("notes", commit!)).problem).toBeUndefined();
+    expect(existsSync(from)).toBe(true);
+    expect(existsSync(to)).toBe(false);
+  });
+});
+
+describe("MEDIUM 3 and 6: the write path", () => {
+  it("commits the command-line tool's writes as the person's, named \"command line\"", async () => {
+    const { ws } = instance();
+    const s = await open(ws);
+    const note = join(ws, "notes", "hello.md");
+    await s.agentChange({ client: COMMAND_LINE_CLIENT, note, paths: [note], apply: async () => writeFileSync(note, "# Hello\n\nFrom the terminal.\n") });
+    expect(trailer(ws)).toBe("command line");
+  });
+  it("never overwrites a save that came in after the agent read the note: the write refuses, and nothing is committed as the agent's", async () => {
+    const { ws } = instance();
+    const s = await open(ws);
+    const note = join(ws, "notes", "hello.md");
+    const all = { connect: true, readPublic: true, readPrivate: true, edit: true, createPublic: true, folders: "all" as const };
+    const c = checkAgent(all, { kind: "update", path: "notes/hello.md" }, { sharing: agentSharing(null) });
+    if (c.verdict !== "unresolved") throw new Error("expected a grant");
+    const r = await resolveAgentPath(ws, c.grant);
+    if (r.verdict !== "allowed") throw new Error("expected allowed");
+    const { version } = await readAgentFile(r.resolved, "notes/hello.md");
+    // The editor saves while the agent is thinking.
+    writeFileSync(note, "# Hello\n\nThe writer's newer text.\n");
+    s.written(note);
+    const head = count(ws);
+    await expect(s.agentChange({ client: "x", note, paths: [note], apply: () => writeAgentFile(r.resolved, "notes/hello.md", "# Agent\n", version).then(() => {}) })).rejects.toBeInstanceOf(AgentRefused);
+    expect(readFileSync(note, "utf8")).toBe("# Hello\n\nThe writer's newer text.\n");
+    expect(count(ws)).toBe(head + 1);
+    expect(subject(ws)).toBe("Update notes/hello.md");
+    expect(trailer(ws)).toBe("");
   });
 });
 

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { formatWorkspaceFile, WORKSPACE_FORMAT } from "../src/workspace-format.ts";
-import { DEFAULT_AGENT_PERMISSIONS, serializeAgentPermissions } from "../src/agents.ts";
+import { DEFAULT_AGENT_PERMISSIONS, agentPath, agentPermissionsJson, rootOf } from "../src/agents.ts";
 
 const dir = join(import.meta.dirname, "..", "..", "..", "schemas");
 const load = (f: string) => JSON.parse(readFileSync(join(dir, f), "utf8"));
@@ -26,8 +26,14 @@ describe("file format schemas (AGT-08)", () => {
     expect(check("app-state.schema.json", { version: 1, lastNotePath: "C:/n.md", appearance: "dark" })).toBe(true);
     expect(check("app-state.schema.json", { version: 2 })).toBe(false);
     // What the app writes for agent permissions is valid; a folder outside the note roots isn't (AGT-03, D-145).
-    expect(check("agents.schema.json", JSON.parse(serializeAgentPermissions({ connect: true, readPublic: true, readPrivate: false, edit: true, createPublic: false, folders: ["notes/projects"] })))).toBe(true);
-    expect(check("agents.schema.json", JSON.parse(serializeAgentPermissions(DEFAULT_AGENT_PERMISSIONS)))).toBe(true);
+    expect(check("agents.schema.json", { ...JSON.parse(agentPermissionsJson({ connect: true, readPublic: true, readPrivate: false, edit: true, createPublic: false, folders: ["notes/projects"] })), check: "a".repeat(64) })).toBe(true);
+    expect(check("agents.schema.json", JSON.parse(agentPermissionsJson(DEFAULT_AGENT_PERMISSIONS)))).toBe(true);
+    expect(check("agents.schema.json", { version: 1, check: "not a hash" })).toBe(false);
+    // The folder pattern accepts exactly the folders the app does (LOW 13).
+    const samples = ["notes", "private/notes", "notes/projects", "private/notes/journal/2026", "notes/console", "notes/a.b", "notes/.hidden", "notes/con", "notes/CON.txt", "notes/con .md",
+      "notes/conin$", "notes/COM¹", "notes/lpt3/x", "notes/.git", "notes/.GIT/x", "notes/a.", "notes/a ", "notes/ a", "notes/.", "notes/..", "notes//a", "notes/a:b", "notes/a\\b", "notes/a\u0001",
+      "private/access.json", "notesx", "notes/" + "a/".repeat(30) + "b", "notes/" + "a/".repeat(31) + "b", "private/notes/" + "a/".repeat(29) + "b", "private/notes/" + "a/".repeat(30) + "b"];
+    for (const s of samples) expect(check("agents.schema.json", { version: 1, folders: [s] }), s).toBe(agentPath(s) !== undefined && rootOf(s) !== undefined);
     expect(check("agents.schema.json", { version: 1, folders: ["private/access.json"] })).toBe(false);
     expect(check("agents.schema.json", { version: 1, delete: true })).toBe(false);
     expect(check("workspace.schema.json", { formatVersion: 1 })).toBe(true);

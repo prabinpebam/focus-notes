@@ -13,7 +13,7 @@ import { conflictCopy, deletedId, DELETED_LOG_ARGS, parseDeletedId, parseDeleted
 import { StatusCache, filesKey, gitFiles } from "./cache.ts";
 import { Cadence, FETCH_EVERY_MS, type BackupPolicy, POINTER_GAP_MS, pointerDelay, retryDelay, systemClock, type Clock, type SyncReason } from "./cadence.ts";
 import { releaseLock, takeLock } from "./lock.ts";
-import { AGENT_TRAILER, agentMessage, agentNoteOf, agentOf, batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, undoAgentMessage, type BatchOp, type Change } from "./message.ts";
+import { AGENT_TRAILER, agentMessage, agentMovesOf, agentNoteOf, agentOf, batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, undoAgentMessage, type BatchOp, type Change } from "./message.ts";
 import type { ConflictChoice, NoteConflict, SyncProblem, SyncReport } from "@focus-notes/core";
 import type { RepoHealth } from "@focus-notes/core/diagnostics";
 import { bothChanged, changedAt, divergence, GitFailed, readBlobs, settle, treeNames, type Exec, type Settle } from "./resolve.ts";
@@ -342,17 +342,24 @@ export class GitSync {
       const repo = which === "private" ? this.privateRepo : this.notes;
       if (!repo || !/^([0-9a-f]{40}|[0-9a-f]{64})$/.test(oid)) return { problem: "notAgent" };
       if (!(await this.#lock())) return { problem: this.#fail("locked") };
-      const msg = await this.#git(repo, ["log", "-1", "--format=%B", oid, "--"]);
-      const note = agentNoteOf(msg.stdout);
-      if (msg.code !== 0 || !agentOf(msg.stdout) || !note) return { problem: "notAgent" };
+      const msg = await this.#git(repo, ["log", "-1", "--format=%ae%x00%B", oid, "--"]);
+      const [author, body = ""] = msg.stdout.split("\0");
+      const note = agentNoteOf(body);
+      if (msg.code !== 0 || !agentOf(body) || !note) return { problem: "notAgent" };
       // Only a commit in this branch's history: another branch's change isn't in these notes to undo.
       if ((await this.#git(repo, ["merge-base", "--is-ancestor", oid, "HEAD"])).code !== 0) return { problem: "notAgent" };
+      // Made on this computer, by the identity the app commits as: a trailer alone proves nothing.
+      const me = (await this.#git(repo, ["config", "user.email"])).stdout.trim();
+      if (!me || author?.trim().toLowerCase() !== me.toLowerCase()) return { problem: "notAgent" };
       const names = async (args: string[]) => {
         const r = await this.#git(repo, ["diff-tree", "-r", "-z", "--name-only", "--no-renames", ...args]);
         return r.code === 0 ? r.stdout.split("\0").filter(Boolean) : undefined;
       };
       const paths = await names(["--no-commit-id", oid]);
       const since = await names([oid, "HEAD"]);
+      // Exactly its note and the moves it describes, all under the notes folder: nothing else is undone in its name.
+      const expected = new Set([note, ...agentMovesOf(body).flat()]);
+      if (!paths || paths.length !== expected.size || !paths.every((p) => expected.has(p) && p.startsWith("notes/"))) return { problem: "notAgent" };
       repo.cache.clear();
       const st = await repo.cache.fresh().catch(() => undefined);
       if (!paths?.length || !since || !st) return { problem: this.#fail("failed") };
