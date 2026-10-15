@@ -4,7 +4,7 @@
  * report has the workspace's health and the journal's size, and never the token, the note text,
  * the notes' names, the remote's address, or the workspace's folder.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,7 +13,9 @@ import { GitSync } from "../src/main/git/sync.ts";
 import { createRunner } from "../src/main/git/run.ts";
 import { RecoveryJournal } from "../src/main/journal.ts";
 import { diagnostics, knownStrings, reportFileName, reportPathAllowed } from "../src/main/diagnostics.ts";
-import { FakeClock, git, instance, write } from "./git-fixture.ts";
+import { FakeClock, SETUP_TIMEOUT_MS, git, instance, prepareTemplate, write } from "./git-fixture.ts";
+// One-time setup outside any test's time: a cold runner takes long over its first Git starts (DEF-13).
+beforeAll(prepareTemplate, SETUP_TIMEOUT_MS);
 
 const TOKEN = "ghp_" + "Z9y8X7w6V5u4T3s2R1q0P9o8N7m6L5k4J3i2";
 const UNSAVED = "Meeting notes about the surprise party for Grace";

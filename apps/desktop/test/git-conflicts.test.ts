@@ -5,12 +5,14 @@
  * Recently deleted for 30 days and can be read back and restored in a commit (FIL-10). No note
  * name ever appears in a process argument (SEC-03).
  */
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { GitSync, type GitSyncOptions } from "../src/main/git/sync.ts";
 import { createRunner } from "../src/main/git/run.ts";
-import { FakeClock, configure, count, git, instance, subject, write } from "./git-fixture.ts";
+import { FakeClock, SETUP_TIMEOUT_MS, configure, count, git, instance, prepareTemplate, subject, write } from "./git-fixture.ts";
+// One-time setup outside any test's time: a cold runner takes long over its first Git starts (DEF-13).
+beforeAll(prepareTemplate, SETUP_TIMEOUT_MS);
 
 vi.setConfig({ testTimeout: 90_000, hookTimeout: 90_000 });
 const opened: GitSync[] = [];

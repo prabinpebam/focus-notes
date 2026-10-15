@@ -13,6 +13,11 @@ globalStyle("::selection", { backgroundColor: t.selection });
 globalStyle("[data-drag-band]", { WebkitAppRegion: "drag" } as Record<string, string>);
 globalStyle("[data-no-drag]", { WebkitAppRegion: "no-drag" } as Record<string, string>);
 
+// The window's own title bar band (DSK-02, D-147): the top layout.titleBar (44 px), always there,
+// whatever the window shows (the full-window setup, its errors, the app locked while it runs). Layers
+// on the same layer that come later (the trigger, the window controls) sit above it.
+export const band = style({ position: "fixed", top: 0, left: 0, right: 0, height: tokens.layout.titleBar, zIndex: tokens.layer.trigger, pointerEvents: "none" });
+
 /** How far popovers keep from the window's edges, in pixels for React Aria (in-window.tsx). */
 export const popoverEdgeVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 

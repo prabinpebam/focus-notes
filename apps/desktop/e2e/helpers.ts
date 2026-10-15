@@ -200,6 +200,72 @@ export const windowBox = (page: Page): Promise<{ left: number; top: number; widt
     return r ? { left: r.left, top: r.top, width: r.width, height: r.height } : { left: 0, top: 0, width: innerWidth, height: innerHeight };
   });
 
+/** Points on the title bar band, as parts of the window's width, clear of the trigger and the window controls. */
+const BAND_POINTS = [0.08, 0.3, 0.7];
+/** What takes a press on the band rather than the window (WindowFrame.tsx CONTROLS). */
+const BAND_CONTROLS = "[data-no-drag], [data-window-controls], [data-window-handle], button, a[href], input, textarea, select, [contenteditable]:not([contenteditable='false']), [role=menu], [role=listbox], [role=dialog], [role=toolbar]";
+
+/**
+ * D-147: the title bar band (DSK-02, the window's top 44 px) drags the window in every state. Each
+ * point 12 px down the band must be a drag region: on macOS the system's (a band with
+ * `-webkit-app-region: drag`, nothing over it that's `no-drag`); elsewhere the band the app moves the
+ * window from (the element there is a band, not in anything `data-no-drag`: WindowFrame's own hit
+ * test). Returns what isn't, named by `where`.
+ */
+export const bandProblems = (page: Page, where: string): Promise<string[]> =>
+  page.evaluate(({ where, points, controls }) => {
+    const r = document.querySelector("[data-app-root]")!.getBoundingClientRect();
+    const custom = "windowFrame" in document.documentElement.dataset;
+    const region = (el: Element) => getComputedStyle(el).getPropertyValue("-webkit-app-region");
+    const out: string[] = [];
+    for (const f of points) {
+      const x = r.left + r.width * f;
+      const y = r.top + 12;
+      const el = document.elementFromPoint(x, y);
+      // WindowFrame's hit test: the band, or (the rest of the app inert under a menu) the band's place with no control there.
+      const t = document.querySelector("[data-title-band]")?.getBoundingClientRect();
+      const ok = custom
+        ? Boolean(el && (el.closest("[data-drag-band]") ? !el.closest("[data-no-drag]") : !el.closest(controls) && t && x >= t.left && x < t.right && y >= t.top && y < t.bottom))
+        : [...document.querySelectorAll("[data-drag-band]")].some((b) => {
+            const q = b.getBoundingClientRect();
+            return x >= q.left && x < q.right && y >= q.top && y < q.bottom && region(b) === "drag";
+          }) && !document.elementsFromPoint(x, y).some((e) => region(e) === "no-drag");
+      if (!ok) {
+        const what = (e: Element | null) => (e ? `${e.tagName.toLowerCase()}${[...e.attributes].filter((a) => a.name !== "class" && a.name !== "style").map((a) => `[${a.name}${a.value ? `=${a.value.slice(0, 30)}` : ""}]`).join("")}` : "nothing");
+        out.push(`${where}: the title bar band at ${Math.round(f * 100)}% of the width doesn't drag the window (${what(el)} in ${what(el?.parentElement ?? null)} is there)`);
+      }
+    }
+    return out;
+  }, { where, points: BAND_POINTS, controls: BAND_CONTROLS });
+
+/**
+ * D-147, Windows and Linux: a press on the title bar band starts the app's own move (the shell gets
+ * `window:drag` start, then end where it started, so the window never moves). Synthetic pointer
+ * events on whatever is at the band's left, as WindowFrame sees a real one.
+ */
+export async function bandStartsMove(app: ElectronApplication, page: Page): Promise<string[]> {
+  await app.evaluate(({ ipcMain }) => {
+    const g = globalThis as unknown as { bandMoves?: string[] };
+    if (!g.bandMoves) {
+      g.bandMoves = [];
+      ipcMain.on("window:drag", (_e, phase: string, kind: string) => void g.bandMoves!.push(`${phase}:${kind}`));
+    }
+    g.bandMoves.length = 0;
+  });
+  await page.evaluate((f) => {
+    const r = document.querySelector("[data-app-root]")!.getBoundingClientRect();
+    const x = r.left + r.width * f;
+    const y = r.top + 12;
+    const el = document.elementFromPoint(x, y)!;
+    const o = { clientX: x, clientY: y, screenX: Math.round(screenX + x), screenY: Math.round(screenY + y), pointerId: 47, isPrimary: true, button: 0, bubbles: true, cancelable: true, composed: true };
+    el.dispatchEvent(new PointerEvent("pointerdown", { ...o, buttons: 1 }));
+    el.dispatchEvent(new PointerEvent("pointerup", { ...o, buttons: 0 }));
+  }, BAND_POINTS[0]!);
+  const seen = () => app.evaluate(() => (globalThis as unknown as { bandMoves: string[] }).bandMoves.slice());
+  await expect.poll(seen, { timeout: 5_000 }).toContain("end:move");
+  return seen();
+}
+
 /** Closes through the window's close path so pending saves are flushed (QLT-03). */
 export async function quit(l: Launched): Promise<void> {
   const closed = l.app.waitForEvent("close", { timeout: 10_000 }).then(() => true, () => false);

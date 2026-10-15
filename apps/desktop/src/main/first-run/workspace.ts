@@ -49,10 +49,20 @@ async function privateNotes(git: GitRunner, folder: string): Promise<boolean | u
   return true;
 }
 
-/** Checks that a folder is the top of a Git clone with a workspace's layout, and fetches a missing `private/`. */
-export async function checkWorkspace(git: GitRunner, folder: string): Promise<WorkspaceResult> {
+/** Whether a remote's URL is a template repository (D-157, the shell's `TemplateGuard`). */
+export type TemplateRemote = (url: string) => Promise<boolean>;
+
+/**
+ * Checks that a folder is the top of a Git clone with a workspace's layout, and fetches a missing
+ * `private/`. A clone of a template repository (its `origin`) is never opened (D-157).
+ */
+export async function checkWorkspace(git: GitRunner, folder: string, isTemplate?: TemplateRemote): Promise<WorkspaceResult> {
   const top = await git({ cwd: folder, args: ["rev-parse", "--path-format=absolute", "--show-toplevel"], read: true });
   if (top.code !== 0 || !same(top.stdout.trim(), folder)) return { ok: false, problem: "notGit" };
+  if (isTemplate) {
+    const origin = await git({ cwd: folder, args: ["remote", "get-url", "--push", "origin"], read: true });
+    if (origin.code === 0 && (await isTemplate(origin.stdout.trim()).catch(() => false))) return { ok: false, problem: "template" };
+  }
   if (!existsSync(join(folder, FORMAT))) return { ok: false, problem: "notWorkspace" };
   const priv = await privateNotes(git, folder);
   return { ok: true, folder, ...(priv !== undefined ? { privateNotes: priv } : {}) };
@@ -60,9 +70,10 @@ export async function checkWorkspace(git: GitRunner, folder: string): Promise<Wo
 
 /**
  * Clones a workspace into a folder that's missing or empty. A repository that isn't a workspace is
- * removed again, since the folder was empty before.
+ * removed again, since the folder was empty before. A template repository is never cloned (D-157).
  */
-export async function cloneWorkspace(git: GitRunner, url: string, folder: string): Promise<WorkspaceResult> {
+export async function cloneWorkspace(git: GitRunner, url: string, folder: string, isTemplate?: TemplateRemote): Promise<WorkspaceResult> {
+  if (await isTemplate?.(url).catch(() => false)) return { ok: false, problem: "template" };
   if (!(await folderFree(folder))) return { ok: false, problem: "folderTaken" };
   await mkdir(dirname(folder), { recursive: true });
   const r = await git({ cwd: dirname(folder), args: ["clone", "--quiet", "--", url, folder], timeoutMs: NETWORK_MS });
@@ -77,6 +88,51 @@ export async function cloneWorkspace(git: GitRunner, url: string, folder: string
   }
   const priv = await privateNotes(git, folder);
   return { ok: true, folder, ...(priv !== undefined ? { privateNotes: priv } : {}) };
+}
+
+/** Windows' device names, which no file or folder can have (before any extension). */
+const RESERVED = /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]|conin\$|conout\$)$/i;
+/**
+ * The folder for a repository's notes (D-155): its name, which GitHub already limits to letters,
+ * digits, `.`, `_` and `-`. Windows drops trailing dots and refuses device names, so those change:
+ * "notes." → "notes", "con" → "con-notes"; nothing but dots → "notes".
+ */
+export function folderName(repo: string): string {
+  const n = repo.replace(/[. ]+$/, "");
+  if (!n) return "notes";
+  const dot = n.indexOf(".");
+  const stem = dot < 0 ? n : n.slice(0, dot);
+  return RESERVED.test(stem) ? `${stem}-notes${n.slice(stem.length)}` : n;
+}
+/** The folders a repository's notes can go in, in order: `<documents>/<name>`, then "<name> 2" to "<name> 99" (D-155). */
+export function homesFor(documents: string, repo: string): string[] {
+  const base = join(documents, folderName(repo));
+  return Array.from({ length: 99 }, (_, i) => (i === 0 ? base : `${base} ${i + 1}`));
+}
+
+/** An absolute folder, for setup: the person's choice, the open clone's, or the one setup started with. */
+export interface SetupTarget {
+  /** Undefined: the app picks a free folder (D-154). */
+  folder?: string;
+  chosen: boolean;
+}
+/**
+ * Where setup makes the workspace (D-124, D-154). The folder it started with stays; then a folder the
+ * person chose; then the open workspace only when it's saved to GitHub. A folder used on this
+ * computer only stays where it is and is never the clone's target: the app picks a free folder.
+ */
+export function setupTarget(s: { started?: { folder: string; chosen?: boolean }; picked?: string; open?: { folder: string; savedToGitHub: boolean } }): SetupTarget {
+  if (s.started) return { folder: s.started.folder, chosen: s.started.chosen === true };
+  if (s.picked) return { folder: s.picked, chosen: true };
+  if (s.open?.savedToGitHub) return { folder: s.open.folder, chosen: true };
+  return { chosen: false };
+}
+
+/** Whether a folder is the top of a Git clone with a remote to save to (not a folder used on this computer only). */
+export async function savedToGitHub(git: GitRunner, folder: string): Promise<boolean> {
+  if (!existsSync(join(folder, ".git"))) return false;
+  const r = await git({ cwd: folder, args: ["remote", "get-url", "origin"], read: true });
+  return r.code === 0 && r.stdout.trim().length > 0;
 }
 
 /** The identity for only this workspace (FRE-05): in the workspace's and `private/`'s own settings. */

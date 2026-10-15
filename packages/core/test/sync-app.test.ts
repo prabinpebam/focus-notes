@@ -10,6 +10,7 @@ const messages = {
   "task.saving": "Saving…", "task.saved": "Saved", "task.synced": "Saved and synced",
   "toast.retry": "Retry", "toast.saveFailed": "Couldn't save.", "trigger.saveProblem": "Couldn't save", "trigger.syncProblem": "Couldn't sync",
   "sync.problem.offline": "Couldn't sync: you're offline.", "sync.problem.conflict": "Couldn't sync: changes don't fit.", "sync.problem.failed": "Couldn't sync.",
+  "sync.problem.template": "This is a template repository. Your notes weren't saved to it.", "command.setup.runAgain": "Run setup again",
   "conflict.resolve": "Resolve",
   "save.state.savedLocal": "Saved on this computer", "save.state.pending": "Saved here · not backed up yet", "save.state.syncing": "Backing up…",
   "save.state.synced": "Backed up at {time}", "save.state.syncedNow": "Backed up", "save.state.offline": "Offline", "save.state.error": "Couldn't back up",
@@ -84,6 +85,19 @@ describe("EDT-11: save and sync", () => {
     expect(t.toasts()).toEqual(["Couldn't sync: you're offline."]);
     expect(t.app.store.state.ui.toasts[0]!.action).toEqual({ command: "note.save", label: "Retry" });
     expect(t.canvas()).toMatchObject({ problem: true, problemLabel: "Couldn't sync" });
+  });
+
+  it("D-157: a template remote says the notes weren't saved to it, and offers Run setup again, in the background and on Mod+S", async () => {
+    const t = setup();
+    await t.app.start();
+    await settle();
+    t.report({ git: true, state: "problem", problem: "template", waiting: 1 });
+    expect(t.toasts()).toEqual(["This is a template repository. Your notes weren't saved to it."]);
+    expect(t.app.store.state.ui.toasts[0]!.action).toEqual({ command: "setup.runAgain", label: "Run setup again" });
+    expect(t.save().state).toBe("error");
+    t.willReturn({ git: true, state: "problem", problem: "template", waiting: 1 });
+    await t.app.commands.run("note.save");
+    expect(t.app.store.state.ui.toasts.at(-1)).toMatchObject({ message: "This is a template repository. Your notes weren't saved to it.", action: { command: "setup.runAgain", label: "Run setup again" } });
   });
 
   it("shows a background problem once, as a toast and the trigger's dot, and clears it when a sync works", async () => {

@@ -33,9 +33,10 @@ const win = process.platform === "win32";
 
 /** The folders of the real programs the fakes need (Git, Node, the system's). */
 function realDirs(): string[] {
+  // Timed out rather than left to hold the worker if the lookup hangs (DEF-13).
   const git = win
-    ? execFileSync("where", ["git"], { encoding: "utf8" }).split(/\r?\n/).find((l) => l.toLowerCase().endsWith("git.exe"))
-    : execFileSync("which", ["git"], { encoding: "utf8" }).trim();
+    ? execFileSync("where", ["git"], { encoding: "utf8", timeout: 60_000 }).split(/\r?\n/).find((l) => l.toLowerCase().endsWith("git.exe"))
+    : execFileSync("which", ["git"], { encoding: "utf8", timeout: 60_000 }).trim();
   const dirs = [dirname(process.execPath), git ? dirname(git) : ""];
   if (win) dirs.push(join(process.env.SystemRoot ?? "C:\\Windows", "System32"));
   else dirs.push("/usr/bin", "/bin");
@@ -78,6 +79,20 @@ function hermeticSystemDirs(): string[] {
     }
   }
   return (systemDirs = [mirror]);
+}
+
+/**
+ * The fakes' one-time setup, and a first start of Git and of a fake through Node, all of which a cold
+ * runner can take long over: call it from `beforeAll` with a long timeout, so a test's time is its own
+ * (DEF-13). Says how long it took when that was long, so a slow runner shows in the log.
+ */
+export function prepareFakes(): void {
+  const t0 = Date.now();
+  hermeticSystemDirs();
+  execFileSync("git", ["--version"], { stdio: "ignore", timeout: 60_000, windowsHide: true });
+  execFileSync(process.execPath, ["--version"], { stdio: "ignore", timeout: 60_000, windowsHide: true });
+  const ms = Date.now() - t0;
+  if (ms > 10_000) console.warn(`[fakes] the first Git and Node starts took ${ms} ms`);
 }
 
 export function makeFakes(opts: { token: string; login?: string; gcm?: boolean; gh?: boolean; helper?: boolean; delayMs?: number }): Fakes {

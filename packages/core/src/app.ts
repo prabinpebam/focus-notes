@@ -17,7 +17,7 @@ import { joinPath, newNoteFolder } from "./workspace.ts";
 import { registerImport, IMPORT_CLOSED, type ImportState } from "./import-app.ts";
 import { registerPublicLink } from "./public-link-app.ts";
 import { appStateOfSettings, parseSettings, settingsFileOf, splitAppState, type SettingsFile } from "./settings.ts";
-import { registerSync, NO_SYNC, SyncFailed, saveStateOf, type SyncState } from "./sync-app.ts";
+import { registerSync, NO_SYNC, SyncFailed, saveStateOf, syncProblemAction, type SyncState } from "./sync-app.ts";
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
@@ -168,13 +168,18 @@ const afterPaint = (fn: () => void) => {
   else fn();
 };
 /**
- * The longest the text the editor hands over waits to be kept (QLT-03): in the recovery journal
- * where there is one (the desktop), or by saving the note itself (the browser). The editor hands
- * text over at most 0.5 s after it changed, so a key typed is kept within 0.75 s and a crash loses at
- * most about a second of typing. The wait is from the text's arrival, never from the last write, so
- * a handover just after one isn't held back a whole interval.
+ * The longest the text the editor hands over waits to be kept (QLT-03) in the recovery journal (the
+ * desktop). The editor hands text over at most 0.25 s after it changed, so a key typed is kept within
+ * 0.4 s and a crash loses at most about a second of typing even on a busy computer (DEF-14, D-152).
+ * The wait is from the text's arrival, never from the last write, so a handover just after one isn't
+ * held back a whole interval.
  */
-export const JOURNAL_INTERVAL_MS = 250;
+export const JOURNAL_INTERVAL_MS = 150;
+/**
+ * Without a journal (the browser), typing that never pauses saves the note itself at most this long
+ * after the text arrives, so it's kept within half a second there.
+ */
+export const UNJOURNALED_SAVE_MS = 250;
 /** The editor action that asks the editor to hand over text it hasn't sent yet (the runtime's flush). */
 export const FLUSH_EDITOR = "note.flush";
 /** Note text sizes in px (THM-06). */
@@ -391,8 +396,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
   const schedule = () => {
     clearTimeout(saveTimer);
-    // Without a journal, typing that never pauses is still saved every JOURNAL_INTERVAL_MS (QLT-03).
-    const wait = bridge.journal || unsavedSince === undefined ? SAVE_DELAY_MS : Math.min(SAVE_DELAY_MS, Math.max(0, unsavedSince + JOURNAL_INTERVAL_MS - Date.now()));
+    // Without a journal, typing that never pauses is still saved every UNJOURNALED_SAVE_MS (QLT-03).
+    const wait = bridge.journal || unsavedSince === undefined ? SAVE_DELAY_MS : Math.min(SAVE_DELAY_MS, Math.max(0, unsavedSince + UNJOURNALED_SAVE_MS - Date.now()));
     saveTimer = setTimeout(() => {
       saving = saving.then(writeNow);
     }, wait);
@@ -526,7 +531,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       await sync.saveNow();
     }, store.state.sync.git ? "task.synced" : "task.saved")).catch((e: unknown) => {
       const conflict = e instanceof SyncFailed && e.problem === "conflict";
-      const action = conflict ? { command: "conflict.open", label: catalog.format("conflict.resolve") } : { command: "note.save", label: catalog.format("toast.retry") };
+      const special = e instanceof SyncFailed ? syncProblemAction(e.problem, catalog) : undefined;
+      const action = conflict ? { command: "conflict.open", label: catalog.format("conflict.resolve") } : special ?? { command: "note.save", label: catalog.format("toast.retry") };
       toast(e instanceof SyncFailed ? e.message : catalog.format("toast.saveFailed"), { tone: "error", action });
     }),
   });

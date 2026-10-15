@@ -64,7 +64,7 @@ function world() {
     sleep: async () => {},
     log: (l: string) => logs.push(l),
   };
-  return { root, gh, remote, spawned, logs, progressFile, folder, open: () => SetupEngine.open(deps) };
+  return { root, gh, remote, spawned, logs, progressFile, folder, open: (more: { folders?: (instance: string) => string[] } = {}) => SetupEngine.open({ ...deps, ...more }) };
 }
 
 describe("FRE-08: Create my workspace, with real Git", () => {
@@ -176,12 +176,63 @@ describe("FRE-08: Create my workspace, with real Git", () => {
     expect(git(w.remote("ada", "notes"), "rev-parse", "main")).toBe(git(w.folder, "rev-parse", "HEAD"));
   });
 
-  it("never clones into a folder that has other files, or a clone of something else", { timeout: 60_000 }, async () => {
+  it("never clones into a folder the person chose that has other files, or a clone of something else", { timeout: 60_000 }, async () => {
     const w = world();
     mkdirSync(w.folder, { recursive: true });
     writeFileSync(join(w.folder, "Welcome.md"), "# Welcome\n");
-    const r = await (await w.open()).start({ instance: "notes", private: "notes-private", folder: w.folder, publish: false });
+    const r = await (await w.open({ folders: () => [`${w.folder} 2`] })).start({ instance: "notes", private: "notes-private", folder: w.folder, chosen: true, publish: false });
     expect(r.steps.find((s) => s.id === "clone")).toMatchObject({ state: "failed", problem: "folderTaken" });
     expect(readdirSync(w.folder)).toEqual(["Welcome.md"]);
+    expect(existsSync(`${w.folder} 2`)).toBe(false);
+  });
+
+  // D-154, D-155: a folder the app chooses is decided when Download runs, from the repository's name:
+  // Documents/<name>, or the next free "<name> 2" beside it. The folder setup started with doesn't hold it.
+  it("a folder the app chose: Documents/<instance name> when Download runs, the next free one when taken, recorded", { timeout: 60_000 }, async () => {
+    const w = world();
+    const docs = join(w.root, "Documents");
+    const named = join(docs, "prabins-notes");
+    mkdirSync(named, { recursive: true });
+    writeFileSync(join(named, "Welcome.md"), "# Welcome\n");
+    const asked: string[] = [];
+    const engine = await w.open({ folders: (name: string) => (asked.push(name), [join(docs, name), join(docs, `${name} 2`)]) });
+    const r = await engine.start({ instance: "prabins-notes", private: "prabins-notes-private", folder: w.folder, publish: false });
+    expect(r.steps.every((s) => s.state === "done" || s.state === "skipped")).toBe(true);
+    expect(asked).toEqual(["prabins-notes"]);
+    const next = `${named} 2`;
+    expect(r.options?.folder).toBe(next);
+    expect(JSON.parse(readFileSync(w.progressFile, "utf8")).options.folder).toBe(next);
+    expect(readdirSync(named)).toEqual(["Welcome.md"]);
+    expect(existsSync(w.folder)).toBe(false);
+    expect(existsSync(join(next, ".focus-notes", "workspace.json"))).toBe(true);
+  });
+  it("a folder that's already this clone is resumed, never swapped for another", { timeout: 60_000 }, async () => {
+    const w = world();
+    const first = await (await w.open()).start({ instance: "notes", private: "notes-private", folder: w.folder, publish: false });
+    expect(first.steps.find((s) => s.id === "clone")?.state).toBe("done");
+    const engine = await w.open({ folders: () => { throw new Error("not asked"); } });
+    await engine.reset();
+    const again = await engine.start({ instance: "notes", private: "notes-private", folder: w.folder, publish: false });
+    expect(again.steps.find((s) => s.id === "clone")?.state).toBe("done");
+    expect(again.options?.folder).toBe(w.folder);
+  });
+
+  // D-154: a folder the person chose that's taken: Choose another folder… or Use a new folder, then Download runs there.
+  it("useFolder moves a failed Download to another folder, and only before Download is done", { timeout: 60_000 }, async () => {
+    const w = world();
+    mkdirSync(w.folder, { recursive: true });
+    writeFileSync(join(w.folder, "Welcome.md"), "# Welcome\n");
+    const engine = await w.open();
+    const failed = await engine.start({ instance: "notes", private: "notes-private", folder: w.folder, chosen: true, publish: false });
+    expect(failed.steps.find((s) => s.id === "clone")).toMatchObject({ state: "failed", problem: "folderTaken" });
+    const other = join(w.root, "Elsewhere", "Notes");
+    const moved = await engine.useFolder(other, true);
+    expect(moved.options).toMatchObject({ folder: other, chosen: true });
+    expect(moved.steps.find((s) => s.id === "clone")?.state).toBe("pending");
+    await expect(engine.useFolder("relative/path", true)).rejects.toThrow();
+    const r = await engine.retry("clone");
+    expect(r.steps.find((s) => s.id === "clone")?.state).toBe("done");
+    expect(existsSync(join(other, ".git"))).toBe(true);
+    await expect(engine.useFolder(join(w.root, "Third"), false)).rejects.toThrow(/already/);
   });
 });

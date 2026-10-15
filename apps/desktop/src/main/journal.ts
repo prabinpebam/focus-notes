@@ -1,7 +1,8 @@
 /**
  * The recovery journal on disk (QLT-03, Performance and quality → Reliability): the renderer hands
- * over each note's unsaved text at least every second, and it's appended here, in the app's data
- * folder, off the typing path. Saves, renames, and deletes are appended too, so the journal always
+ * over each note's unsaved text within 0.4 s of typing (D-152), and it's appended here, in the app's data
+ * folder, off the typing path; a text that arrives while the disk is still busy with the last one
+ * replaces any of its note's still waiting, so the journal never lags behind. Saves, renames, and deletes are appended too, so the journal always
  * knows what isn't on disk yet. After a crash, the next launch puts that text back into its note
  * before anything reads it, or beside the note when the note changed since; then the journal is
  * empty. It's emptied whenever nothing is unsaved, rewritten smaller once it grows, and deleted on
@@ -40,6 +41,8 @@ export class RecoveryJournal {
   /** Texts asked for so far, and the number of each note's latest: a save sent after it supersedes it. */
   #asked = 0;
   readonly #askedFor = new Map<string, number>();
+  /** The last thing queued, when it's a text not yet being written: a newer text of its note replaces it. */
+  #waiting: { path: string; text: string; n: number } | undefined;
 
   private constructor(file: string, live: Map<string, JournalEntry>, bytes: number, torn: boolean, opts: JournalOptions) {
     this.#torn = torn;
@@ -67,12 +70,24 @@ export class RecoveryJournal {
   /** A note's unsaved text. The first since its last save records what's on disk under it. */
   text(path: string, text: string): Promise<void> {
     const n = ++this.#asked;
-    return this.#run(async () => {
-      this.#askedFor.set(path, n);
+    // A text for the same note still waiting behind a slow write takes this one's place (DEF-14):
+    // the latest is all that's kept, so a busy disk never builds a queue the journal lags behind.
+    const waiting = this.#waiting;
+    if (waiting?.path === path) {
+      waiting.text = text;
+      waiting.n = n;
+      return this.#queue;
+    }
+    const job = { path, text, n };
+    const run = this.#run(async () => {
+      if (this.#waiting === job) this.#waiting = undefined;
+      this.#askedFor.set(path, job.n);
       const known = this.#live.get(path);
       const base = known ? known.base : await this.#opts.baseOf?.(path).catch(() => undefined);
-      return [{ v: 1, op: "text", path, at: this.#now(), hash: textHash(text), ...(base !== undefined ? { base } : {}), text }];
+      return [{ v: 1, op: "text", path, at: this.#now(), hash: textHash(job.text), ...(base !== undefined ? { base } : {}), text: job.text }];
     });
+    this.#waiting = job;
+    return run;
   }
 
   /**
@@ -142,6 +157,8 @@ export class RecoveryJournal {
 
   /** One change at a time, in the order asked: the file is only ever appended to by one writer. */
   #run(make: () => JournalRecord[] | Promise<JournalRecord[]>): Promise<void> {
+    // Anything asked after this keeps its place behind it: no later text joins one queued before.
+    this.#waiting = undefined;
     const next = this.#queue.then(async () => {
       const records = await make();
       if (!records.length) return;

@@ -10,7 +10,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { CHROMIUM_FOLDERS, DATA_FILES, LOCK_FILES, filesRemovedBy } from "../../../packages/core/src/inventory.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
@@ -293,9 +293,10 @@ test("FRE-06: Settings → Open another workspace from GitHub shows the notes th
     await settings(page).getByRole("button", { name: "Open another workspace from GitHub…" }).click();
     await expect(open).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
-    // The open workspace's folder is taken, so it goes in the first free one beside it, and writing starts there.
-    const second = `${w.dirs.docs} 2`;
-    await expect.poll(() => (existsSync(join(w.dirs.userData, DATA_FILES.workspace)) ? readFileSync(join(w.dirs.userData, DATA_FILES.workspace), "utf8") : ""), { timeout: 30_000 }).toContain("Focus Notes 2");
+    // D-155: the notes go in a folder named after their repository, Documents/notes, beside the open workspace, and writing starts there.
+    const second = join(dirname(w.dirs.docs), "notes");
+    const folderNow = () => (existsSync(join(w.dirs.userData, DATA_FILES.workspace)) ? resolve((JSON.parse(readFileSync(join(w.dirs.userData, DATA_FILES.workspace), "utf8")) as { folder: string }).folder) : "");
+    await expect.poll(folderNow, { timeout: 30_000 }).toBe(resolve(second));
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible({ timeout: 20_000 });
     await expect(card(page)).toHaveCount(0);
     expect(existsSync(join(second, "private", "notes", "secret.md"))).toBe(true);

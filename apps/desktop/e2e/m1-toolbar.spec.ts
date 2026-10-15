@@ -9,6 +9,8 @@ import { launch, quit, tempDirs } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
+/** Every animation and transition has finished: a panel has opened or closed all the way. */
+const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
 
 test("UI-04, UI-05: the trigger opens the toolbar: six actions, then ⋯, one tab stop", async () => {
   const l = await launch(tempDirs());
@@ -43,13 +45,18 @@ test("UI-07: toolbar actions run their commands and show their state", async () 
   const theme = () => page.evaluate(() => document.documentElement.dataset.theme);
   const before = await theme();
 
-  // Theme from the toolbar: it closes the toolbar and switches.
+  // Theme from the toolbar: it closes the toolbar and switches. Clicked once the panel has finished
+  // opening, as a person sees it: a press that lands while the shape still morphs open can be
+  // cancelled by the button moving under the pointer (DEF-15).
   await page.keyboard.press(`${mod}+.`);
   const toolbar = page.getByRole("toolbar", { name: "Toolbar" });
   await expect(toolbar).toBeVisible();
+  await expect(toolbar.locator(":focus")).toHaveCount(1);
+  await settled(page);
   await toolbar.getByRole("button", { name: "Switch light and dark" }).click();
+  // The switch first: if this ever fails again, it says whether the press ran at all (DEF-15).
+  await expect.poll(theme, "the press on Switch light and dark ran its command").not.toBe(before);
   await expect(toolbar).toBeHidden();
-  await expect.poll(theme).not.toBe(before);
   await expect(editor).toBeFocused();
 
   // Focus mode (on for new installs, D-04) toggles off, and the button shows its state.
@@ -115,8 +122,6 @@ test("New note creates an untitled note next to the current one and puts the car
   await expect.poll(() => readdirSync(dirs.docs).sort()).toEqual(["Untitled.md", "Welcome.md"]);
   await quit(l);
 });
-
-const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
 
 test("UI-03: click, Enter, Space, Mod+. and F10 open the toolbar; Esc and a click outside close it", async () => {
   const l = await launch(tempDirs());

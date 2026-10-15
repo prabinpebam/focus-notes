@@ -4,7 +4,7 @@
  * transparent, app-built window (`CustomWindow`), with its snap preview, its keys (Alt+Space and the
  * system menu's Move and Size), and its IPC.
  */
-import { BrowserWindow, ipcMain, screen, type BrowserWindowConstructorOptions, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, ipcMain, screen, type BrowserWindowConstructorOptions, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { SNAP_ZONES, WINDOW_METRICS, type DisplayInfo, type Rect, type SnapZone } from "@focus-notes/core/window-geometry";
 import { CustomWindow, POINTER_EDGE_PX, type PreviewLike } from "./custom-window.ts";
 import { BAND_APPROACH_PX, MacTitleBar } from "./mac-title-bar.ts";
@@ -148,6 +148,14 @@ export class AppWindowFrame {
       frameMs: () => 1000 / (screen.getDisplayMatching(win.getBounds()).displayFrequency || 60),
     }, p);
     this.#custom = custom;
+    // D-153: on Windows, Electron's setIgnoreMouseEvents(false) takes WS_EX_LAYERED off the window
+    // unless it's layered already, so every time the margin's pass-through ended the window's style
+    // changed under the compositor. Setting the opacity once makes Electron keep the window layered
+    // (its `layered_`), so the pass-through only turns WS_EX_TRANSPARENT on and off. Measured on CI
+    // in software and on DirectComposition (WARP): the margin stays clear and the content updates.
+    // Journeys can measure the window without it (FOCUS_NOTES_WINDOW_LAYERED=0), to compare; never a packaged app.
+    const unlayered = !app.isPackaged && process.env.FOCUS_NOTES_E2E === "1" && process.env.FOCUS_NOTES_WINDOW_LAYERED === "0";
+    if (process.platform === "win32" && this.kind === "custom" && !unlayered) win.setOpacity(1);
     if (p.fullScreen) win.once("ready-to-show", () => custom.toggleFullScreen());
     win.webContents.on("before-input-event", (e, input) => {
       if (custom.key(input)) return e.preventDefault();

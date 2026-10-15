@@ -11,8 +11,8 @@
 import { describe, expect, it } from "vitest";
 import {
   canContinue, createApp, deviceCode, FIRST_RUN_STEPS, gitIsNewEnough, identityProblem, looksLikeToken, nextStep, noreplyEmail, notesIdentity, parseGitVersion, prevStep,
-  resumeStep, signInProblem, suggestIdentity, SETUP_STEPS, TOKEN_PAGE,
-  type AccountStatus, type AppStateFile, type FirstRunBridge, type GitCheck, type PlatformBridge, type RepoChoice, type SetupReport, type SignInProgress, type SyncReport,
+  resumeStep, signInProblem, suggestIdentity, SETUP_PROBLEMS, SETUP_STEPS, TOKEN_PAGE,
+  type AccountStatus, type AppStateFile, type FirstRunBridge, type GitCheck, type PlatformBridge, type RepoChoice, type SetupReport, type SignInProgress, type SyncReport, type WorkspaceResult,
 } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
@@ -103,7 +103,7 @@ const report = (states: Partial<Record<string, SetupReport["steps"][number]["sta
   steps: SETUP_STEPS.map((id) => ({ id, state: states[id] ?? "pending" })),
 });
 
-function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus>; useToken?: () => AccountStatus; repos?: RepoChoice[]; platform?: PlatformBridge["platform"] } = {}) {
+function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus>; useToken?: () => AccountStatus; repos?: RepoChoice[]; reposOffline?: boolean; clone?: (owner: string, name: string, where?: "new") => WorkspaceResult; platform?: PlatformBridge["platform"] } = {}) {
   const saved: AppStateFile[] = [];
   const calls: string[] = [];
   const tokens: string[] = [];
@@ -126,10 +126,10 @@ function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountSt
     signOut: async () => (calls.push("signOut"), (account = { gcm: true, gh: false })),
     identity: async () => suggestIdentity({}, account.account),
     setIdentity: async (i, scope) => (calls.push(`identity:${i.name}:${i.email}:${scope}`), true),
-    repositories: async () => (calls.push("repositories"), opts.repos ?? [{ owner: "ada", name: "notes", private: false, instance: true, pushedAt: "2026-10-12T09:00:00Z" }, { owner: "ada", name: "recipes", private: true, instance: false }]),
-    folder: async () => "/home/ada/Documents/Focus Notes",
-    chooseFolder: async () => "/home/ada/Elsewhere",
-    clone: async (owner, name) => (calls.push(`clone:${owner}/${name}`), { ok: true, folder: "/x", privateNotes: false }),
+    repositories: async () => { calls.push("repositories"); if (opts.reposOffline) throw new Error("offline"); return opts.repos ?? [{ owner: "ada", name: "notes", private: false, instance: true, pushedAt: "2026-10-12T09:00:00Z" }, { owner: "ada", name: "recipes", private: true, instance: false }]; },
+    folder: async (instance) => `/home/ada/Documents/${instance ?? "Focus Notes"}`,
+    chooseFolder: async () => (calls.push("chooseFolder"), "/home/ada/Elsewhere"),
+    clone: async (owner, name, where) => (calls.push(`clone:${owner}/${name}${where ? `:${where}` : ""}`), opts.clone ? opts.clone(owner, name, where) : { ok: true, folder: "/x", privateNotes: false }),
     openFolder: async () => (calls.push("openFolder"), { ok: false, problem: "notWorkspace" }),
     openWorkspace: async () => (calls.push("openWorkspace"), { ok: true }),
     openPage: (p) => void calls.push(`page:${p}`),
@@ -400,7 +400,7 @@ describe("FRE-02, FRE-04, FRE-05: connecting", () => {
 });
 
 describe("FRE-06, FRE-08: Your notes", () => {
-  const atNotes = async (opts: { repos?: RepoChoice[] } = {}) => {
+  const atNotes = async (opts: Omit<Parameters<typeof shell>[0] & object, "state" | "account"> = {}) => {
     const t = shell({ state: { version: 1, firstRun: "notes" }, account: { account: ADA, gcm: true, gh: false }, ...opts });
     await t.app.start();
     await settle();
@@ -423,7 +423,7 @@ describe("FRE-06, FRE-08: Your notes", () => {
   });
   it("with no notes yet, Create my notes uses the defaults, needs no passphrase, and opens the notes once they're on this computer", async () => {
     const t = await atNotes({ repos: [{ owner: "ada", name: "recipes", private: true, instance: false }] });
-    expect(t.vm()).toMatchObject({ panel: "create", isCreate: true, instance: "notes", private: "notes-private", publish: "on", folder: "/home/ada/Documents/Focus Notes", made: false, canContinue: false });
+    expect(t.vm()).toMatchObject({ panel: "create", isCreate: true, instance: "notes", private: "notes-private", publish: "on", folder: "/home/ada/Documents/notes", made: false, canContinue: false });
     await t.run("firstRun.create");
     expect(t.passphrases).toEqual([undefined]);
     expect(t.vm()).toMatchObject({ panel: "progress", started: true, made: false, working: true, title: "Creating your notes" });
@@ -440,6 +440,117 @@ describe("FRE-06, FRE-08: Your notes", () => {
     expect(t.vm()).toMatchObject({ hasMark: true, mark: "cloudUp", markTone: "accent", markBusy: true, progressText: "This takes about a minute." });
     t.pushSetup(report({ account: "done", instance: "failed" }));
     expect(t.vm()).toMatchObject({ details: false, working: false, failed: true, failedId: "instance", mark: "warning", markTone: "danger", markBusy: false, progressText: "That didn't work. Retry, or check GitHub." });
+  });
+  // D-154: no dead ends. Every part's every failure offers something that changes what happens next
+  // (not only the same call again) and a way back; transient failures keep Try again first.
+  it("D-154: every setup failure offers an action that changes something, and Back", async () => {
+    for (const step of SETUP_STEPS) {
+      for (const problem of SETUP_PROBLEMS) {
+        const t = await atNotes({ repos: [] });
+        await t.run("firstRun.create");
+        const before = Object.fromEntries(SETUP_STEPS.slice(0, SETUP_STEPS.indexOf(step)).map((id) => [id, "done" as const]));
+        const r = report({ ...before, [step]: "failed" });
+        r.steps = r.steps.map((s) => (s.id === step ? { ...s, problem } : s));
+        t.pushSetup(r);
+        const actions = t.vm().failActions as { id: string; label: string; variant: string; first: boolean }[];
+        const where = `${step}/${problem}`;
+        expect(actions.length, where).toBeGreaterThan(1);
+        expect(actions[0], where).toMatchObject({ variant: "primary", first: true });
+        expect(actions.every((a) => a.label && !a.label.startsWith("firstRun.")), where).toBe(true);
+        expect(actions.some((a) => a.id !== "retry" && a.id !== "back"), `${where}: an action that changes something`).toBe(true);
+        expect(actions.at(-1)?.id, `${where}: a way back`).toBe("back");
+        if (["offline", "auth", "rateLimited"].includes(problem)) expect(actions[0]!.id, where).toBe("retry");
+        if (problem === "folderTaken") expect(actions.map((a) => a.id), where).toEqual(["chooseFolder", "newFolder", "back"]);
+        // Back leaves the failed part: to Connect, where the person can come back to it.
+        await t.run("firstRun.failAction", { id: "back" });
+        expect(t.vm().step, where).toBe("connect");
+      }
+    }
+  });
+  it("D-154: a folder that's taken: Choose another folder… downloads there and carries on; Use a new folder too; Start over brings back the form", async () => {
+    const t = await atNotes({ repos: [] });
+    const used: string[] = [];
+    const retried: string[] = [];
+    const setup = t.app.bridge.setup!;
+    const taken = () => {
+      const r = report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "failed" });
+      r.steps = r.steps.map((s) => (s.id === "clone" ? { ...s, problem: "folderTaken" as const } : s));
+      return r;
+    };
+    setup.useFolder = async (how) => (used.push(how), how === "choose" ? undefined : report({ account: "done", instance: "done", private: "done", deployKey: "done" }));
+    setup.retry = async (id) => (retried.push(id), report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "done" }));
+    await t.run("firstRun.create");
+    t.pushSetup(taken());
+    expect(t.vm()).toMatchObject({ failed: true, progressText: "That folder already has other files, so your notes can't go there." });
+    // Cancelled dialog: nothing changes, nothing runs.
+    await t.run("firstRun.failAction", { id: "chooseFolder" });
+    expect(used).toEqual(["choose"]);
+    expect(retried).toEqual([]);
+    await t.run("firstRun.failAction", { id: "newFolder" });
+    expect(used).toEqual(["choose", "new"]);
+    expect(retried).toEqual(["clone"]);
+    // Start over (names GitHub can't use): setup forgets its progress (nothing on GitHub or on disk goes) and the form is back.
+    const named = report({ account: "done", instance: "failed" });
+    named.steps = named.steps.map((s) => (s.id === "instance" ? { ...s, problem: "notInstance" as const } : s));
+    t.pushSetup(named);
+    expect((t.vm().failActions as { id: string }[]).map((a) => a.id)).toEqual(["startOver", "back"]);
+    setup.reset = async () => ({ running: false, steps: SETUP_STEPS.map((id) => ({ id, state: "pending" as const })) });
+    await t.run("firstRun.failAction", { id: "startOver" });
+    expect(t.vm()).toMatchObject({ step: "notes", panel: "create", started: false });
+    // An action the failure doesn't offer does nothing.
+    t.pushSetup(taken());
+    await t.run("firstRun.failAction", { id: "retry" });
+    expect(retried).toEqual(["clone"]);
+  });
+  // Errors belong to what produced them (the owner's report: "Your notes are ready" under "Can't reach
+  // GitHub to look for your notes."): a lookup's error is the lookup panels' only, and goes when the step changes.
+  it("D-154: a stale lookup error never shows once setup is under way or done, and goes when the step changes", async () => {
+    const t = await atNotes({ reposOffline: true });
+    expect(t.vm()).toMatchObject({ panel: "create", hasError: true, error: "Can't reach GitHub to look for your notes." });
+    t.pushSetup(report({ account: "done", instance: "running" }, true));
+    expect(t.vm()).toMatchObject({ panel: "progress", hasError: false, error: "", working: true, mark: "cloudUp" });
+    t.pushSetup(report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "done", link: "done", vault: "skipped", pages: "done", push: "done" }));
+    expect(t.vm()).toMatchObject({ made: true, title: "Your notes are ready", hasError: false, error: "", mark: "cloudCheck", markTone: "success" });
+    // Back to Connect and on again: the old error went with the step.
+    const u = await atNotes({ reposOffline: true });
+    await u.run("firstRun.back");
+    expect(u.app.store.state.firstRun.workspace.error).toBe("");
+  });
+  // D-154: Open from GitHub into a folder the person chose that's taken: the same real actions as setup.
+  it("D-154: Open from GitHub into a taken folder offers Choose another folder…, Use a new folder, and Back", async () => {
+    let taken = true;
+    const t = await atNotes({ clone: (_o, _n, where) => (taken && where !== "new" ? { ok: false, problem: "folderTaken" } : { ok: true, folder: "/x", privateNotes: false }) });
+    await t.run("firstRun.clone", { id: "ada/notes" });
+    expect(t.vm()).toMatchObject({ hasError: true, error: "That folder already has other files, so your notes can't go there." });
+    const ids = () => (t.vm().errorActions as { id: string }[]).map((a) => a.id);
+    expect(ids()).toEqual(["chooseFolder", "newFolder", "back"]);
+    expect((t.vm().errorActions as { variant: string; first: boolean }[])[0]).toMatchObject({ variant: "primary", first: true });
+    // Choose another folder…: the dialog, then Open again there.
+    await t.run("firstRun.errorAction", { id: "chooseFolder" });
+    expect(t.calls.filter((c) => c.startsWith("clone") || c === "chooseFolder")).toEqual(["clone:ada/notes", "chooseFolder", "clone:ada/notes"]);
+    expect(ids()).toEqual(["chooseFolder", "newFolder", "back"]);
+    // Use a new folder: the next free folder beside the default; it opens.
+    await t.run("firstRun.errorAction", { id: "newFolder" });
+    expect(t.calls).toContain("clone:ada/notes:new");
+    expect(t.calls).toContain("openWorkspace");
+    // Back: the error goes, and so do its actions.
+    const u = await atNotes({ clone: () => ({ ok: false, problem: "folderTaken" }) });
+    await u.run("firstRun.clone", { id: "ada/notes" });
+    await u.run("firstRun.errorAction", { id: "back" });
+    expect(u.vm()).toMatchObject({ hasError: false, errorActions: [] });
+    taken = false;
+  });
+  // D-155: the folder is named after the notes' repository, and follows the name as it's typed.
+  it("D-155: Saved on this computer in Documents/<the name typed>", async () => {
+    const t = await atNotes({ repos: [] });
+    expect(t.vm().folder).toBe("/home/ada/Documents/notes");
+    await t.run("firstRun.setInstance", { value: "prabins-notes" });
+    await settle();
+    expect(t.vm().folder).toBe("/home/ada/Documents/prabins-notes");
+    // A name GitHub can't use leaves the folder as it was.
+    await t.run("firstRun.setInstance", { value: "no spaces" });
+    await settle();
+    expect(t.vm().folder).toBe("/home/ada/Documents/prabins-notes");
   });
   it("More options: names, the folder, publishing, and the browser passphrase, checked and sent once only when typed", async () => {
     const t = await atNotes({ repos: [] });

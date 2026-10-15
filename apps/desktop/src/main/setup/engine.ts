@@ -17,10 +17,20 @@ import { hasVault, withVaultGrant, WeakPassphrase } from "@focus-notes/seal/vaul
 import { isRepoName, SETUP_PROBLEMS, SETUP_STEPS, type SetupOptions, type SetupProblem, type SetupReport, type SetupStepId, type SetupStepState } from "@focus-notes/core/setup";
 import { commitProblem, networkProblem, Queue, type GitResult, type GitRunner } from "../git/run.ts";
 import { pointerMessage } from "../git/message.ts";
+import { knownTemplate, KNOWN_TEMPLATES, TEMPLATE } from "../git/template-guard.ts";
 import { DEPLOY_KEY_TITLE, deployKeyPair, type DeployKeyPair } from "./deploy-key.ts";
 
-/** The template repository instances are made from (D-88). */
-export const TEMPLATE = { owner: "prabinpebam", name: "focus-notes-workspace" } as const;
+export { TEMPLATE };
+
+/**
+ * The repositories that can hold someone's notes (D-147): never a template repository (GitHub's
+ * `is_template`), nor the template instances are made from, though both have a workspace file.
+ * "We found your notes" and Open from GitHub list only these.
+ */
+export function notesRepos<R extends { owner: string; name: string; template?: boolean }>(repos: R[], template: { owner: string; name: string } = TEMPLATE): R[] {
+  const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+  return repos.filter((r) => !r.template && !(same(r.owner, template.owner) && same(r.name, template.name)));
+}
 export const SECRET_NAME = "PRIVATE_CONTENT_KEY";
 const NETWORK_MS = 10 * 60_000;
 
@@ -35,6 +45,11 @@ export interface SetupDeps {
   /** The Git remote for a repository. Default: `https://github.com/<owner>/<repo>.git`. */
   remoteUrl?: (owner: string, repo: string) => string;
   template?: { owner: string; name: string };
+  /**
+   * Whether a repository is a template (D-157, the shell's `TemplateGuard`): setup never makes,
+   * downloads, or pushes to one. Known templates are refused without it.
+   */
+  isTemplate?: (owner: string, name: string) => Promise<boolean>;
   /** Waiting for GitHub to finish making a repository: tries, a second apart. */
   waitTries?: number;
   sleep?: (ms: number) => Promise<void>;
@@ -43,6 +58,12 @@ export interface SetupDeps {
   onReport?: (report: SetupReport) => void;
   /** Step names, states, and problem codes only. */
   log?: (line: string) => void;
+  /**
+   * The folders, in order, a download into a folder the app chose can use for an instance's name
+   * (D-154, D-155): Documents/<name>, "<name> 2", and so on. Decided when Download runs. Without it,
+   * the folder setup started with is used, and a taken one is a problem the person resolves.
+   */
+  folders?: (instance: string) => string[];
 }
 
 interface StepRecord { state: SetupStepState; problem?: SetupProblem }
@@ -89,7 +110,7 @@ export function checkOptions(o: unknown): SetupOptions {
   if (!v || typeof v.instance !== "string" || typeof v.private !== "string" || typeof v.folder !== "string" || typeof v.publish !== "boolean") throw new Error("Setup options are incomplete");
   if (!isRepoName(v.instance) || !isRepoName(v.private) || v.instance.toLowerCase() === v.private.toLowerCase()) throw new Error("Setup needs two different repository names");
   if (!isAbsolute(v.folder) || resolve(v.folder) !== v.folder) throw new Error("Setup needs an absolute folder");
-  return { instance: v.instance, private: v.private, folder: v.folder, publish: v.publish };
+  return { instance: v.instance, private: v.private, folder: v.folder, ...(v.chosen === true ? { chosen: true } : {}), publish: v.publish };
 }
 
 /** Progress as read back: anything unexpected is dropped, and a step that was running when the app quit runs again. */
@@ -182,6 +203,23 @@ export class SetupEngine {
   }
 
   /**
+   * Download somewhere else (D-154): Choose another folder… (`chosen`) or Use a new folder. Only
+   * before Download is done; the step is left to run again (`retry("clone")`).
+   */
+  useFolder(folder: string, chosen: boolean): Promise<SetupReport> {
+    return this.#queue.run(async () => {
+      if (!this.#p.options) throw new Error("Setup hasn't started");
+      if (this.#p.steps.clone?.state === "done") throw new Error("The notes are already downloaded");
+      const { chosen: _was, ...rest } = this.#p.options;
+      this.#p.options = checkOptions({ ...rest, folder, chosen });
+      this.#p.steps.clone = { state: "pending" };
+      await this.#save();
+      this.#emit();
+      return this.report();
+    });
+  }
+
+  /**
    * Forgets every step and deletes `setup.json` (Run setup again, signing out, and removing the
    * workspace: PRV-02), and drops the token it was given. Nothing on GitHub or in the workspace is
    * removed; the next start writes the file again.
@@ -266,6 +304,12 @@ export class SetupEngine {
     return (this.#api = new GitHubApi(token, this.#d.fetch));
   }
 
+  /** Refuses a template repository (D-157): known by name, GitHub's `is_template`, or the shell's guard. */
+  async #notTemplate(name: string, flagged?: boolean): Promise<void> {
+    const t = this.#d.template ?? TEMPLATE;
+    if (flagged || knownTemplate(this.#login, name, [...KNOWN_TEMPLATES, t]) || (await this.#d.isTemplate?.(this.#login, name).catch(() => false))) throw new Failure("template");
+  }
+
   /** Polls until GitHub has finished making something (a repository from a template is made in the background). */
   async #waitFor<T>(fn: () => Promise<T | undefined | false>): Promise<T> {
     const tries = this.#d.waitTries ?? 30;
@@ -314,6 +358,7 @@ export class SetupEngine {
       const api = await this.#gh();
       const { instance } = this.#o;
       let repo = await api.findRepo(this.#login, instance);
+      await this.#notTemplate(instance, repo?.template);
       if (!repo) {
         const t = this.#d.template ?? TEMPLATE;
         try {
@@ -326,6 +371,7 @@ export class SetupEngine {
         repo = await this.#waitFor(() => api.findRepo(this.#login, instance));
         await this.#waitFor(() => api.head(this.#login, instance, repo!.defaultBranch));
       }
+      await this.#notTemplate(instance, repo.template);
       if (!repo.canPush) throw new Failure("permission");
       if (!(await api.hasFile(this.#login, instance, ".focus-notes/workspace.json"))) throw new Failure("notInstance");
       return "done";
@@ -336,6 +382,7 @@ export class SetupEngine {
       const api = await this.#gh();
       const name = this.#o.private;
       let repo = await api.findRepo(this.#login, name);
+      await this.#notTemplate(name, repo?.template);
       if (!repo) {
         await api.createRepo(name, "Private notes for Focus Notes", true);
         repo = await this.#waitFor(() => api.findRepo(this.#login, name));
@@ -365,14 +412,37 @@ export class SetupEngine {
 
     /** Download to this computer: clone the instance into the chosen folder. */
     clone: async () => {
-      const { folder, instance } = this.#o;
+      const { instance, chosen } = this.#o;
+      let { folder } = this.#o;
+      await this.#notTemplate(instance);
       const url = this.#url(instance);
-      if (existsSync(join(folder, ".git"))) {
-        const origin = await this.#git(folder, ["remote", "get-url", "origin"]);
-        if (origin.code !== 0 || origin.stdout.trim() !== url) throw new Failure("folderTaken");
-        return "done";
+      // Already this clone: resumed. Missing or empty: cloned into. Anything else is taken.
+      const holds = async (f: string): Promise<"clone" | "free" | "taken"> => {
+        if (existsSync(join(f, ".git"))) {
+          const origin = await this.#git(f, ["remote", "get-url", "origin"]);
+          return origin.code === 0 && origin.stdout.trim() === url ? "clone" : "taken";
+        }
+        return existsSync(f) && (await readdir(f)).length > 0 ? "taken" : "free";
+      };
+      let held = await holds(folder);
+      // A folder the app chose (D-154, D-155): already these notes, it's resumed; otherwise the first
+      // of the name's folders that's these notes or free, now.
+      if (held !== "clone" && !chosen && this.#d.folders) {
+        for (const f of this.#d.folders(instance)) {
+          if (!isAbsolute(f) || resolve(f) !== f) continue;
+          const h = await holds(f);
+          if (h === "taken") continue;
+          if (f !== folder) {
+            this.#p.options = { ...this.#o, folder: f };
+            await this.#save();
+          }
+          folder = f;
+          held = h;
+          break;
+        }
       }
-      if (existsSync(folder) && (await readdir(folder)).length > 0) throw new Failure("folderTaken");
+      if (held === "taken") throw new Failure("folderTaken");
+      if (held === "clone") return "done";
       await mkdir(dirname(folder), { recursive: true });
       await this.#gitNet(dirname(folder), ["clone", "--quiet", "--", url, folder]);
       return "done";
@@ -451,6 +521,8 @@ export class SetupEngine {
     /** Save to GitHub: push the private repository, then move the pointer to it and push the instance. */
     push: async () => {
       const ws = this.#o.folder;
+      await this.#notTemplate(this.#o.private);
+      await this.#notTemplate(this.#o.instance);
       await this.#gitNet(this.#private, ["push", "--quiet", "--set-upstream", "origin", "main"]);
       const moved = await this.#git(ws, ["status", "--porcelain", "--", "private"]);
       if (moved.stdout.trim()) {

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prabinpebam.github.io/focus-notes/schemas/agents.v1.json",
+  "title": "Agent permissions on one computer (agents.json in the app data folder)",
+  "description": "What agents may do (AGT-03, D-145). Missing, invalid, or changed outside the app: nothing is allowed. Deleting, visibility changes, and sharing are never available to agents, so they have no setting. Not a boundary against programs running as the same user.",
+  "type": "object",
+  "required": [
+    "version"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "connect": {
+      "description": "Agents can connect. Off: the server refuses to start",
+      "type": "boolean"
+    },
+    "readPublic": {
+      "description": "Read public notes (notes/). On by default, once agents can connect",
+      "type": "boolean"
+    },
+    "readPrivate": {
+      "description": "Read private and shared notes (private/notes/)",
+      "type": "boolean"
+    },
+    "edit": {
+      "description": "Create and edit notes. Editing a note also needs reading its root",
+      "type": "boolean"
+    },
+    "createPublic": {
+      "description": "Create public notes; otherwise new notes are private",
+      "type": "boolean"
+    },
+    "folders": {
+      "description": "Limit to folders: \"all\", or workspace-relative folders under notes/ or private/notes/, spelled as the app accepts them (agentPath). An empty list allows nothing",
+      "oneOf": [
+        {
+          "const": "all"
+        },
+        {
+          "type": "array",
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "maxLength": 512,
+            "pattern": "^(?:notes(?:/(?! )(?!\\.[Gg][Ii][Tt](?:/|$))(?!(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Nn][Ii][Nn]\\$|[Cc][Oo][Nn][Oo][Uu][Tt]\\$|[Cc][Oo][Mm][0-9¹²³]|[Ll][Pp][Tt][0-9¹²³])(?:\\s*\\.[^/]*)?(?:/|$))[^/\\\\:<>|?*\"\\u0000-\\u001f\\u007f]*[^/\\\\:<>|?*\"\\u0000-\\u001f\\u007f. ]){0,31}|private/notes(?:/(?! )(?!\\.[Gg][Ii][Tt](?:/|$))(?!(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Nn][Ii][Nn]\\$|[Cc][Oo][Nn][Oo][Uu][Tt]\\$|[Cc][Oo][Mm][0-9¹²³]|[Ll][Pp][Tt][0-9¹²³])(?:\\s*\\.[^/]*)?(?:/|$))[^/\\\\:<>|?*\"\\u0000-\\u001f\\u007f]*[^/\\\\:<>|?*\"\\u0000-\\u001f\\u007f. ]){0,30})$"
+          }
+        }
+      ]
+    },
+    "check": {
+      "description": "SHA-256 of the permissions as the app wrote them. A file whose check doesn't match was changed outside the app, and the defaults apply",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

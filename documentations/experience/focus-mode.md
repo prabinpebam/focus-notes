@@ -142,7 +142,7 @@ While the [find bar](find-and-replace.md#highlights-and-focus-mode) is open, the
 ## Acceptance checks
 
 - **FOC-01:** With the caret on the 2nd visual row of a three-row paragraph, only that row's band is at full strength.
-- **FOC-02:** The band follows the caret after typing at the end of a row (wrap), arrow keys, clicks, paste, undo, window resize, and a web-font swap.
+- **FOC-02:** The band follows the caret after typing at the end of a row (wrap), arrow keys, clicks, paste, undo, a web-font swap, and **window resize in real time**. While the window is being resized, the band is re-measured every frame, so it stays on the caret's row as lines rewrap. It never waits for the resize to end or for the next caret move (D-156).
 - **FOC-03:** The shortcut and toolbar both toggle it, and the state survives a reload.
 - **FOC-04:** With reduced motion set, band changes are instant.
 - **FOC-05:** Typing in a 10,000-word note holds 60 fps on a mid-range laptop, and each update does at most one layout read.

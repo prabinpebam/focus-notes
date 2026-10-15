@@ -47,6 +47,9 @@ describe("FRE-08: the setup's REST calls", () => {
     const api = new GitHubApi(gh.token, gh.fetch);
     expect(await api.findRepo("ada", "missing")).toBeUndefined();
     expect((await api.findRepo("ada", "notes"))?.canPush).toBe(true);
+    // D-157: a template repository says so, wherever it's looked up.
+    expect((await api.findRepo("ada", "notes"))?.template).toBeUndefined();
+    expect(await api.findRepo("prabinpebam", "focus-notes-workspace")).toMatchObject({ template: true });
     expect(await api.hasFile("ada", "notes", ".focus-notes/workspace.json")).toBe(true);
     expect(await api.hasFile("ada", "notes", "nope.md")).toBe(false);
     expect(await api.pages("ada", "notes")).toBeUndefined();

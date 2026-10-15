@@ -13,7 +13,7 @@ import { conflictCopy, deletedId, DELETED_LOG_ARGS, parseDeletedId, parseDeleted
 import { StatusCache, filesKey, gitFiles } from "./cache.ts";
 import { Cadence, FETCH_EVERY_MS, type BackupPolicy, POINTER_GAP_MS, pointerDelay, retryDelay, systemClock, type Clock, type SyncReason } from "./cadence.ts";
 import { releaseLock, takeLock } from "./lock.ts";
-import { batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, type BatchOp, type Change } from "./message.ts";
+import { AGENT_TRAILER, agentMessage, agentMovesOf, agentNoteOf, agentOf, batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, undoAgentMessage, type BatchOp, type Change } from "./message.ts";
 import type { ConflictChoice, NoteConflict, SyncProblem, SyncReport } from "@focus-notes/core";
 import type { RepoHealth } from "@focus-notes/core/diagnostics";
 import { bothChanged, changedAt, divergence, GitFailed, readBlobs, settle, treeNames, type Exec, type Settle } from "./resolve.ts";
@@ -49,6 +49,11 @@ export interface GitSyncOptions {
   pointerGapMs?: number;
   fetchEveryMs?: number;
   onReport?: (r: SyncReport) => void;
+  /**
+   * Whether a remote's URL is a template repository (D-157): a push to one is refused, the commits
+   * stay here, and the problem is `template`. Unknown answers are false, so saving isn't blocked.
+   */
+  templateRemote?: (url: string) => Promise<boolean>;
   /** Logs counts and problems, never paths or note text. */
   log?: (line: string) => void;
 }
@@ -289,6 +294,112 @@ export class GitSync {
     return done;
   }
 
+  // ---- agents (AGT-04, D-145) ----
+
+  /**
+   * One agent write as its own commit, `Agent edit: <note>` with the `Focus-Notes-Agent` trailer.
+   * The writer's own uncommitted changes to these paths are committed first, so the agent's commit
+   * holds only the agent's change and Undo restores the note exactly. All paths must be in one
+   * repository; otherwise nothing is applied. Pushing follows in the background.
+   */
+  agentChange(c: { client: string; note: string; paths: string[]; moves?: [string, string][]; apply: () => Promise<void> }): Promise<{ problem?: SyncProblem; commit?: string }> {
+    const done = this.#ops.run(async (): Promise<{ problem?: SyncProblem; commit?: string }> => {
+      if (!(await this.#lock())) return { problem: this.#fail("locked") };
+      const at = [c.note, ...c.paths].map((p) => this.#locate(p));
+      const repo = at[0]?.repo;
+      if (!repo || at.some((a) => a?.repo !== repo)) return { problem: this.#fail("failed") };
+      const rel = at.slice(1).map((a) => a!.rel);
+      const moves = (c.moves ?? []).map(([f, t]): [string, string] => [this.#locate(f)?.rel ?? "", this.#locate(t)?.rel ?? ""]);
+      const head = async () => (await this.#git(repo, ["rev-parse", "--verify", "-q", "HEAD"])).stdout.trim();
+      const st = await repo.cache.fresh().catch(() => undefined);
+      if (!st) return { problem: this.#fail("failed") };
+      const mine = await this.#commit(repo, st, rel, saveMessage, repo.moves);
+      if (mine) return { problem: this.#fail(mine) };
+      const before = await head();
+      // A write that fails partway is still the agent's: what it changed is committed as the agent's, then the failure is reported.
+      let failure: { error: unknown } | undefined;
+      try {
+        await c.apply();
+      } catch (error) {
+        failure = { error };
+      }
+      for (const p of c.paths) this.#touch(p);
+      repo.cache.clear();
+      const after = await repo.cache.fresh().catch(() => undefined);
+      if (!after) return { problem: this.#fail("failed") };
+      const problem = await this.#commit(repo, after, rel, (changes) => agentMessage(at[0]!.rel, changes, c.client), moves);
+      if (failure) throw failure.error;
+      if (problem) return { problem: this.#fail(problem) };
+      const commit = await head();
+      return commit && commit !== before ? { commit } : {};
+    });
+    void done.then(() => this.sync("batch"), () => this.sync("batch"));
+    return done;
+  }
+
+  /**
+   * Undo an agent's commit (AGT-04): its notes go back to how they were before it, as a new commit
+   * by the writer. Refused when it isn't an agent commit named by its full ID, or when any of its
+   * notes changed since, committed or not, so Undo never overwrites later writing.
+   */
+  undoAgentChange(which: "notes" | "private", oid: string): Promise<{ problem?: SyncProblem | "changed" | "notAgent" }> {
+    const done = this.#ops.run(async (): Promise<{ problem?: SyncProblem | "changed" | "notAgent" }> => {
+      const repo = which === "private" ? this.privateRepo : this.notes;
+      if (!repo || !/^([0-9a-f]{40}|[0-9a-f]{64})$/.test(oid)) return { problem: "notAgent" };
+      if (!(await this.#lock())) return { problem: this.#fail("locked") };
+      const msg = await this.#git(repo, ["log", "-1", "--format=%ae%x00%B", oid, "--"]);
+      const [author, body = ""] = msg.stdout.split("\0");
+      const note = agentNoteOf(body);
+      if (msg.code !== 0 || !agentOf(body) || !note) return { problem: "notAgent" };
+      // Only a commit in this branch's history: another branch's change isn't in these notes to undo.
+      if ((await this.#git(repo, ["merge-base", "--is-ancestor", oid, "HEAD"])).code !== 0) return { problem: "notAgent" };
+      // Made on this computer, by the identity the app commits as: a trailer alone proves nothing.
+      const me = (await this.#git(repo, ["config", "user.email"])).stdout.trim();
+      if (!me || author?.trim().toLowerCase() !== me.toLowerCase()) return { problem: "notAgent" };
+      const names = async (args: string[]) => {
+        const r = await this.#git(repo, ["diff-tree", "-r", "-z", "--name-only", "--no-renames", ...args]);
+        return r.code === 0 ? r.stdout.split("\0").filter(Boolean) : undefined;
+      };
+      const paths = await names(["--no-commit-id", oid]);
+      const since = await names([oid, "HEAD"]);
+      // Exactly its note and the moves it describes, all under the notes folder: nothing else is undone in its name.
+      const expected = new Set([note, ...agentMovesOf(body).flat()]);
+      if (!paths || paths.length !== expected.size || !paths.every((p) => expected.has(p) && p.startsWith("notes/"))) return { problem: "notAgent" };
+      repo.cache.clear();
+      const st = await repo.cache.fresh().catch(() => undefined);
+      if (!paths?.length || !since || !st) return { problem: this.#fail("failed") };
+      const touched = (p: string) => since.includes(p) || repo.pending.has(p) || st.entries.some((e) => e.kind !== "ignored" && (e.path === p || e.from === p));
+      if (paths.some(touched)) return { problem: "changed" };
+      const restore = await this.#git(repo, ["restore", `--source=${oid}^`, "--worktree", "--pathspec-from-file=-", "--pathspec-file-nul"], paths.join("\0"));
+      if (restore.code !== 0) return { problem: this.#fail("failed") };
+      for (const p of paths) this.#touch(join(repo.dir, p));
+      repo.cache.clear();
+      const now = await repo.cache.fresh().catch(() => undefined);
+      if (!now) return { problem: this.#fail("failed") };
+      const problem = await this.#commit(repo, now, paths, () => undoAgentMessage(note), []);
+      return problem ? { problem: this.#fail(problem) } : {};
+    });
+    void done.then(() => this.sync("batch"), () => this.sync("batch"));
+    return done;
+  }
+
+  /** Recent agent changes (AGT-04): agent commits in both repositories, newest first. */
+  async agentChanges(limit = 50): Promise<{ repo: "notes" | "private"; commit: string; at: number; agent: string; path: string }[]> {
+    const out: { repo: "notes" | "private"; commit: string; at: number; agent: string; path: string }[] = [];
+    for (const repo of [this.notes, this.privateRepo]) {
+      if (!repo) continue;
+      const r = await repo.queue.run(() => this.#run({ cwd: repo.dir, args: ["log", `-n${Math.max(1, Math.floor(limit))}`, `--grep=^${AGENT_TRAILER}: `, "--format=%H%x1f%ct%x1f%B%x1e", "HEAD", "--"], read: true }));
+      if (r.code !== 0) continue;
+      for (const rec of r.stdout.split("\x1e")) {
+        const [commit, ct, body] = rec.replace(/^\s+/, "").split("\x1f");
+        const agent = body ? agentOf(body) : undefined;
+        const path = body ? agentNoteOf(body) : undefined;
+        if (commit && agent && path) out.push({ repo: repo.name, commit, at: Number(ct) * 1000, agent, path });
+      }
+    }
+    return out.sort((a, b) => b.at - a.at).slice(0, limit);
+  }
+
   // ---- conflicts (FIL-12) ----
 
   #exec(repo: Repo): Exec {
@@ -506,8 +617,12 @@ export class GitSync {
       this.#emit({ state: "problem", problem: this.#fail("locked") });
       return this.#report;
     }
-    this.#emit({ state: "syncing" });
     const commitSaves = ["save", "switch", "idle", "quit"].some((r) => reasons.has(r as SyncReason));
+    // It says it's backing up only when it sends something: saves it commits, commits not pushed
+    // yet, a Files batch, or the pointer. A fetch with saves waiting sends none of them (DEF-16).
+    const repos = [this.notes, this.privateRepo].filter((r): r is Repo => !!r);
+    const sends = reasons.has("batch") || reasons.has("pointer") || repos.some((r) => (commitSaves && r.pending.size > 0) || (r.last?.upstream ? r.last.ahead > 0 : false));
+    if (sends) this.#emit({ state: "syncing" });
     const fetch = reasons.has("fetch");
     if (fetch) this.#lastFetchAt = this.#clock.now();
     const problems: SyncProblem[] = [];
@@ -651,6 +766,8 @@ export class GitSync {
       if (p && (p !== "offline" || st.ahead > 0)) return { problem: p, moved };
     }
     if (st.ahead === 0) return { moved };
+    // Never to a template repository (D-157), whatever route the workspace came by.
+    if (await this.#toTemplate(repo, st.upstream)) return { problem: "template", moved };
     const push = () => this.#git(repo, ["-c", "push.default=upstream", "push", "--quiet"], undefined, timeout);
     let r = await push();
     repo.cache.clear();
@@ -664,6 +781,20 @@ export class GitSync {
     r = await push();
     repo.cache.clear();
     return r.code === 0 ? (pushed(), { moved }) : { problem: networkProblem(r.stderr), moved };
+  }
+
+  /** Whether the remote the branch pushes to (its upstream's) is a template repository (D-157). */
+  async #toTemplate(repo: Repo, upstream: string): Promise<boolean> {
+    const check = this.#o.templateRemote;
+    if (!check) return false;
+    const names = (await this.#git(repo, ["remote"])).stdout.split(/\r?\n/).filter(Boolean);
+    const remote = names.filter((n) => upstream.startsWith(`${n}/`)).sort((a, b) => b.length - a.length)[0];
+    if (!remote) return false;
+    const url = await this.#git(repo, ["remote", "get-url", "--push", remote]);
+    if (url.code !== 0) return false;
+    const template = await check(url.stdout.trim()).catch(() => false);
+    if (template) this.#o.log?.(`git-template repo=${repo.name}`);
+    return template;
   }
 
   async #rebase(repo: Repo): Promise<SyncProblem | undefined> {

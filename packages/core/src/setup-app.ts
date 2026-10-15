@@ -46,6 +46,27 @@ export function registerSetup<S extends { setup: SetupState }>({ store, bridge, 
     },
   });
 
+  // Download somewhere else after the folder was taken (D-154), then on from there like Try again.
+  commands.register<{ how: "choose" | "new" }>({
+    id: "setup.useFolder", title: "command.setup.useFolder",
+    enabled: (s) => Boolean(s.setup.report && !s.setup.report.running),
+    run: async ({ how }) => {
+      if (!bridge.setup?.useFolder || (how !== "choose" && how !== "new")) return;
+      const r = await bridge.setup.useFolder(how);
+      if (!r) return;
+      apply(r);
+      await commands.run("setup.retry", { id: "clone" });
+    },
+  });
+  // Start over (D-154): setup forgets its progress; nothing on GitHub or on disk is removed.
+  commands.register({
+    id: "setup.startOver", title: "command.setup.startOver",
+    enabled: (s) => Boolean(s.setup.report && !s.setup.report.running),
+    run: async () => {
+      if (bridge.setup) apply(await bridge.setup.reset());
+    },
+  });
+
   const STEP = {
     type: "object" as const,
     properties: {

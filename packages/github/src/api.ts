@@ -29,6 +29,8 @@ export interface Repo {
   canPush: boolean;
   /** When it was last pushed to (ISO 8601), if GitHub says. */
   pushedAt?: string;
+  /** A template repository (GitHub's `is_template`): something to copy, never someone's notes (D-147). */
+  template?: boolean;
 }
 
 /** A repository's deploy key, as GitHub lists it. */
@@ -114,13 +116,13 @@ export class GitHubApi {
 
   /** The signed-in account's own repositories, most recently pushed first (the first run's Open from GitHub). */
   async ownRepos(): Promise<Repo[]> {
-    const r = await this.request<{ name: string; owner: { login: string }; default_branch: string; private: boolean; permissions?: { push?: boolean }; pushed_at?: string | null }[]>("GET", "/user/repos?affiliation=owner&sort=pushed&per_page=100");
-    return r.map((x) => ({ owner: x.owner.login, name: x.name, defaultBranch: x.default_branch, private: x.private, canPush: Boolean(x.permissions?.push), ...(x.pushed_at ? { pushedAt: x.pushed_at } : {}) }));
+    const r = await this.request<{ name: string; owner: { login: string }; default_branch: string; private: boolean; permissions?: { push?: boolean }; pushed_at?: string | null; is_template?: boolean }[]>("GET", "/user/repos?affiliation=owner&sort=pushed&per_page=100");
+    return r.map((x) => ({ owner: x.owner.login, name: x.name, defaultBranch: x.default_branch, private: x.private, canPush: Boolean(x.permissions?.push), ...(x.pushed_at ? { pushedAt: x.pushed_at } : {}), ...(x.is_template ? { template: true } : {}) }));
   }
 
   async repo(owner: string, name: string): Promise<Repo> {
-    const r = await this.request<{ name: string; owner: { login: string }; default_branch: string; private: boolean; permissions?: { push?: boolean } }>("GET", `/repos/${owner}/${name}`);
-    return { owner: r.owner.login, name: r.name, defaultBranch: r.default_branch, private: r.private, canPush: Boolean(r.permissions?.push) };
+    const r = await this.request<{ name: string; owner: { login: string }; default_branch: string; private: boolean; permissions?: { push?: boolean }; is_template?: boolean }>("GET", `/repos/${owner}/${name}`);
+    return { owner: r.owner.login, name: r.name, defaultBranch: r.default_branch, private: r.private, canPush: Boolean(r.permissions?.push), ...(r.is_template ? { template: true } : {}) };
   }
 
   /** A repository, or undefined if there's none by that name (or it isn't visible to this token). */

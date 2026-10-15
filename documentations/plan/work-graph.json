@@ -1547,7 +1547,7 @@
       "id": "WP-7.1",
       "stage": "M7",
       "title": "Agent permissions and attribution",
-      "summary": "Permission checks in the command layer, agent trailers, the Agent badge, undo, and safety rules.",
+      "summary": "Permission checks in the command layer, agent trailers, undo, and safety rules. The Agent badge and the toast land with WP-8.4 and WP-7.2 (D-145).",
       "requirements": [
         "AGT-03",
         "AGT-04",
@@ -1568,7 +1568,7 @@
         "architecture/agents.md#permissions"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-7.2",

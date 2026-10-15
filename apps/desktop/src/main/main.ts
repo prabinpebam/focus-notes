@@ -17,6 +17,7 @@ import { BUNDLE_MAX_BYTES, parseBundle, planImport, safeWorkspacePath, type Bund
 import { parseSettings } from "@focus-notes/core/settings";
 import { restorePlace, titleOrName } from "@focus-notes/core/history";
 import { GitSync, NO_GIT } from "./git/sync.ts";
+import { TemplateGuard } from "./git/template-guard.ts";
 import { changedChars, type BackupPolicy } from "./git/cadence.ts";
 import { createRunner, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
@@ -24,15 +25,15 @@ import { accessStore, siteFromGitConfig } from "./share/access.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
 import { ProblemLog, REPORT_PROBLEM_URL, type RedactOptions } from "@focus-notes/core/diagnostics";
 import { diagnostics, knownStrings, reportFileName, reportPathAllowed } from "./diagnostics.ts";
-import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
+import { DEFAULT_SETUP, isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
-import { checkOptions, SetupEngine } from "./setup/engine.ts";
+import { checkOptions, notesRepos, SetupEngine } from "./setup/engine.ts";
 import { githubFetch } from "./setup/credential.ts";
 import { avatarLoader } from "./first-run/avatar.ts";
 import type { BatchOp } from "./git/message.ts";
 import { Account } from "./first-run/account.ts";
 import { createToolRunner } from "./first-run/tools.ts";
-import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree } from "./first-run/workspace.ts";
+import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree, homesFor, savedToGitHub, setupTarget } from "./first-run/workspace.ts";
 import type { ConflictChoice, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
@@ -85,6 +86,15 @@ const logSpawns = devEnv("FOCUS_NOTES_LOG_SPAWNS") === "1";
 const journey = devEnv("FOCUS_NOTES_E2E") === "1";
 // Software rendering, as on a CI runner with no GPU, to reproduce it on any computer (D-121).
 if (devEnv("FOCUS_NOTES_DISABLE_GPU") === "1") app.disableHardwareAcceleration();
+// Chromium switches for journeys on CI, to reach a compositing path the runner has no hardware for:
+// the GPU's (DirectComposition) through Direct3D 11 on WARP (D-153). Never in a packaged app.
+for (const s of (devEnv("FOCUS_NOTES_CHROMIUM_SWITCHES") ?? "").split(",").filter(Boolean)) {
+  const [name, value] = s.split("=");
+  if (name && /^[a-z0-9-]+$/.test(name)) {
+    if (value) app.commandLine.appendSwitch(name, value);
+    else app.commandLine.appendSwitch(name);
+  }
+}
 /**
  * The window's compositing, followed from the first window on (D-121). The override is read in a
  * packaged app too, to diagnose; journeys print the status once, so CI's log shows which path ran.
@@ -163,6 +173,8 @@ const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], g
       ...(onSpawn ? { run: createRunner({ onSpawn: (args) => onSpawn("git", args) }) } : {}),
       policy,
       ...(pointerGapMs !== undefined ? { pointerGapMs } : {}),
+      // Never pushed to a template repository (D-157).
+      templateRemote: isTemplateRemote,
       // After the window closes, the final sync on quit still runs; there's just no one to tell.
       onReport: (r) => {
         if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("sync:status", r);
@@ -201,11 +213,14 @@ const setup = () => (setupEngine ??= SetupEngine.open({
   token: () => account.token(),
   fetch: apiFetch,
   remoteUrl,
+  isTemplate: (owner, name) => templateGuard.isTemplateRepo(owner, name),
   onReport: (r) => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("setup:report", r);
   },
   // Step names, states, and problem codes only.
   log: logLine,
+  // A folder the app chose that's taken when Download runs: the next free one beside the default (D-154).
+  folders: (instance) => homesFor(documentsDir(), instance),
 }));
 /** A vault passphrase from the renderer: text, or none (Skip for now). Never logged or stored. */
 const passphraseArg = (p: unknown) => (typeof p === "string" && p.length > 0 && p.length <= 1024 ? p : undefined);
@@ -227,6 +242,24 @@ const account = new Account({
   // The picture comes only from GitHub's avatar host, never in journeys (their fake GitHub has none).
   avatar: avatarLoader({ fetch: fakeApi ? () => Promise.reject(new Error("No pictures in journeys")) : (i, init) => fetch(i, init), file: dataFile(DATA_FILES.avatar) }),
 });
+/**
+ * A template repository is never someone's notes (D-157): asked before cloning or opening a
+ * workspace, by setup's steps, and before every push. GitHub's answer is kept for the session; when
+ * it can't answer, a repository not known as a template isn't blocked. Journeys without the fake
+ * GitHub never ask the real one.
+ */
+const templateGuard = new TemplateGuard({
+  lookup: async (owner, name) => {
+    if (journey && !fakeApi) return undefined;
+    const s = await account.api();
+    const r = s ? await s.api.findRepo(owner, name) : undefined;
+    return r ? r.template === true : undefined;
+  },
+  ...(localRemotes ? { localBase: localRemotes } : {}),
+});
+function isTemplateRemote(url: string): Promise<boolean> {
+  return templateGuard.isTemplateRemote(url);
+}
 const firstRunFile = () => dataFile(DATA_FILES.firstRun);
 /** A name and email for only the notes workspace, kept until the workspace has them (not secret). */
 let workspaceIdentity: { name: string; email: string } | undefined;
@@ -244,21 +277,33 @@ function readFirstRun(): void {
     // Nothing chosen yet.
   }
 }
+/** The folder the notes folders go in: Documents (beside Documents/Focus Notes, D-155). */
+const documentsDir = () => dirname(defaultHome());
 /**
- * A folder a new or cloned workspace can go in: Documents/Focus Notes, or, when that already holds
- * notes (a folder used on this computer only, or another workspace), the first free one beside it:
- * "Focus Notes 2", "Focus Notes 3" (D-124).
+ * A folder a new or cloned workspace can go in (D-155): Documents/<repository name>, or, when that
+ * already holds files (a folder used on this computer only, or another workspace), the first free
+ * one beside it: "<name> 2", "<name> 3" (D-124). Nothing existing is renamed or moved.
  */
-async function freeHome(): Promise<string> {
-  const base = defaultHome();
-  for (let n = 1; n < 100; n++) {
-    const folder = n === 1 ? base : `${base} ${n}`;
-    if (await folderFree(folder)) return folder;
-  }
-  return base;
+async function freeFor(repo: string): Promise<string> {
+  const all = homesFor(documentsDir(), repo);
+  for (const folder of all) if (await folderFree(folder)) return folder;
+  return all[0]!;
 }
-/** The folder setup makes the workspace in: the one it started with, the chosen one, or the open workspace (Run setup again). */
-const setupFolder = async () => (await setup()).report().options?.folder ?? targetFolder ?? (isWorkspace() ? notesHome() : await freeHome());
+/** Where setup makes the workspace (D-124, D-154): never a folder used on this computer only. */
+async function setupWhere(instance?: string): Promise<{ folder: string; chosen: boolean }> {
+  const engine = await setup();
+  const local = isWorkspace() && !(await savedToGitHub(setupRunner, notesHome()));
+  // A setup started (by an earlier version) with the folder used on this computer only moves off it (D-154).
+  const r0 = engine.report();
+  if (local && r0.options && resolve(r0.options.folder) === resolve(notesHome()) && r0.steps.find((s) => s.id === "clone")?.state !== "done") await engine.useFolder(await freeFor(r0.options.instance), false);
+  const o = engine.report().options;
+  const t = setupTarget({
+    ...(o ? { started: o } : {}),
+    ...(targetFolder ? { picked: targetFolder } : {}),
+    ...(isWorkspace() ? { open: { folder: notesHome(), savedToGitHub: !local } } : {}),
+  });
+  return { folder: t.folder ?? (await freeFor(instance && isRepoName(instance) ? instance : DEFAULT_SETUP.instance)), chosen: t.chosen };
+}
 /**
  * Deletes what the data inventory lists for signing out or removing the workspace (PRV-02): setup's
  * progress (through the engine, so it forgets too), the first run's workspace identity, and, for
@@ -301,8 +346,18 @@ async function removeLocalWorkspace(): Promise<RemovalCheck> {
   chosenHome = undefined;
   await forgetLocal("removeWorkspace");
   process.stdout.write("[focus-notes] workspace-removed\n");
-  setTimeout(() => mainWindow?.webContents.reload(), 0);
+  restartInPlace();
   return r;
+}
+/**
+ * The renderer starts again in place, never by reloading the page (DSK-09, D-148): a reload shows the
+ * unpainted page, white or see-through in the transparent window. It builds its stores and views off
+ * screen and swaps them in one frame (apps/desktop/src/renderer/main.ts).
+ */
+function restartInPlace(): void {
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("workspace:switched");
+  }, 0);
 }
 async function chooseFolder(title: string): Promise<string | undefined> {
   const w = mainWindow;
@@ -314,14 +369,14 @@ async function chooseFolder(title: string): Promise<string | undefined> {
 async function repositories(): Promise<RepoChoice[]> {
   const s = await account.api();
   if (!s) throw new Error("Signed out");
-  const repos = await s.api.ownRepos();
+  const repos = notesRepos(await s.api.ownRepos());
   const checked = await Promise.all(repos.map((r, i) => (i < 10 ? s.api.hasFile(r.owner, r.name, ".focus-notes/workspace.json").catch(() => false) : Promise.resolve(false))));
   const list = repos.map((r, i) => ({ owner: r.owner, name: r.name, private: r.private, instance: checked[i]!, ...(r.pushedAt ? { pushedAt: r.pushedAt } : {}) }));
   return [...list.filter((r) => r.instance), ...list.filter((r) => !r.instance)];
 }
 /**
  * Opens a workspace in this window (D-98): the main process keeps the folder, the watcher and Git
- * move to it, and the renderer starts again in it.
+ * move to it, and the renderer starts again in it, in place (D-148).
  */
 async function switchWorkspace(folder: string): Promise<void> {
   if (workspaceIdentity) {
@@ -338,7 +393,7 @@ async function switchWorkspace(folder: string): Promise<void> {
   await old?.dispose();
   watcher = watchWorkspace(() => mainWindow);
   setTimeout(() => startGit(), 3000);
-  setTimeout(() => mainWindow?.webContents.reload(), 0);
+  restartInPlace();
 }
 
 // ---- the workspace (WP-2.3) ----
@@ -985,9 +1040,17 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("setup:status", async () => (await setup()).report());
   // The folder is the main process's own: the one setup started with, or the one chosen with the dialog (D-98).
-  handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), folder: await setupFolder() }), passphraseArg(passphrase)));
+  handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), ...(await setupWhere((options as { instance?: unknown } | undefined)?.instance as string | undefined)) }), passphraseArg(passphrase)));
+  // Download somewhere else (D-154): the system's dialog, or the next free folder beside the default. Undefined: cancelled.
+  handle("setup:useFolder", async (how) => {
+    const folder = how === "choose" ? await chooseFolder("Choose a folder for your notes") : how === "new" ? await freeFor((await setup()).report().options?.instance ?? DEFAULT_SETUP.instance) : undefined;
+    if (!folder) return undefined;
+    if (how === "choose") targetFolder = folder;
+    return (await setup()).useFolder(folder, how === "choose");
+  });
   handle("setup:retry", async (id, passphrase) => {
     if (!(SETUP_STEPS as readonly unknown[]).includes(id)) throw new Error("Unknown setup step");
+    await setupWhere();
     return (await setup()).retry(id as SetupStepId, passphraseArg(passphrase));
   });
   handle("setup:reset", async () => (await setup()).reset());
@@ -1021,22 +1084,25 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return true;
   });
   handle("firstRun:repositories", () => repositories());
-  handle("firstRun:folder", () => setupFolder());
+  // Where Create my notes will put them, for the name typed (D-155).
+  handle("firstRun:folder", async (instance) => (await setupWhere(typeof instance === "string" ? instance : undefined)).folder);
   handle("firstRun:chooseFolder", async () => {
     const folder = await chooseFolder("Choose a folder for your workspace");
     if (folder) targetFolder = folder;
     return folder;
   });
-  handle("firstRun:clone", async (owner, name): Promise<WorkspaceResult> => {
+  handle("firstRun:clone", async (owner, name, where): Promise<WorkspaceResult> => {
     if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
-    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? (await freeHome()));
+    // Use a new folder (D-154): the next free one beside the default, not the chosen one.
+    if (where === "new") targetFolder = undefined;
+    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), targetFolder ?? (await freeFor(name)), isTemplateRemote);
     if (r.ok) pendingWorkspace = r.folder;
     return r;
   });
   handle("firstRun:openFolder", async (): Promise<WorkspaceResult | undefined> => {
     const folder = await chooseFolder("Open a workspace folder");
     if (!folder) return undefined;
-    const r = await checkWorkspace(setupRunner, folder);
+    const r = await checkWorkspace(setupRunner, folder, isTemplateRemote);
     if (r.ok) pendingWorkspace = folder;
     return r;
   });
@@ -1045,7 +1111,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const made = ["clone", "link"].every((id) => report.steps.find((x) => x.id === id)?.state === "done");
     const folder = pendingWorkspace ?? (made ? report.options?.folder : undefined);
     if (!folder) return { ok: false, problem: "failed" };
-    const r = await checkWorkspace(setupRunner, folder);
+    const r = await checkWorkspace(setupRunner, folder, isTemplateRemote);
     if (r.ok) await switchWorkspace(folder);
     return r;
   });
@@ -1123,14 +1189,35 @@ function hardenSession(): void {
   session.defaultSession.setPermissionCheckHandler(() => false);
 }
 
+/** Paper's and Ink's canvas (`color.canvas`): the native window's background until the page says its theme's. */
+const CANVAS = { light: "#fbfaf7", dark: "#1a1a1c" } as const;
+/**
+ * The theme the page's first frame is drawn in (DSK-09, D-148), resolved before the page loads from
+ * this device's appearance (state.json) and the system's scheme, and passed in the page's address so
+ * the boot styles paint its canvas from the first frame.
+ */
+function bootTheme(): { scheme: "light" | "dark"; theme: string } {
+  let s: { appearance?: unknown; lightTheme?: unknown; darkTheme?: unknown } = {};
+  try {
+    s = JSON.parse(readFileSync(stateFile(), "utf8")) as typeof s;
+  } catch {
+    // A new install: the system's scheme, the default themes.
+  }
+  const scheme = s.appearance === "light" || s.appearance === "dark" ? s.appearance : nativeTheme.shouldUseDarkColors ? "dark" : "light";
+  const chosen = scheme === "dark" ? s.darkTheme : s.lightTheme;
+  return { scheme, theme: typeof chosen === "string" && /^[a-z][a-z0-9-]{0,40}$/.test(chosen) ? chosen : scheme === "dark" ? "ink" : "paper" };
+}
+/** How long the window waits for the page's first themed frame before it shows anyway. */
+const FIRST_FRAME_TIMEOUT_MS = 4000;
+
 function createWindow(frame: AppWindowFrame): BrowserWindow {
-  const dark = nativeTheme.shouldUseDarkColors;
+  const boot = bootTheme();
   const win = new BrowserWindow({
     minWidth: 360,
     minHeight: 320,
     show: false,
     title: "Focus Notes",
-    backgroundColor: dark ? "#1a1a1c" : "#fbfaf7",
+    backgroundColor: CANVAS[boot.scheme],
     // The app icon (build/icon.svg) for the window and the taskbar; macOS takes the bundle's.
     ...(platform === "macos" ? {} : { icon: join(import.meta.dirname, "icon.png") }),
     // Where it was last time, and how it's drawn on this platform.
@@ -1144,7 +1231,28 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
     },
   });
   if (journey) keepOutOfTheWay(win);
-  win.once("ready-to-show", () => (journey ? win.showInactive() : win.show()));
+  // Shown once the page has drawn its first themed frame with the app's layout (`fn:window.firstFrame`),
+  // never on DOM ready alone: a transparent window shows an unpainted page as white or see-through.
+  let shown = false;
+  const show = (on: "first-frame" | "timeout") => {
+    if (shown || win.isDestroyed()) return;
+    shown = true;
+    clearTimeout(fallback);
+    ipcMain.removeListener("window:firstFrame", onFirstFrame);
+    process.stdout.write(`[focus-notes] window-shown on=${on}\n`);
+    if (journey) win.showInactive();
+    else win.show();
+  };
+  const onFirstFrame = (e: IpcMainEvent) => {
+    if (e.sender === win.webContents && fromApp(e)) show("first-frame");
+  };
+  ipcMain.on("window:firstFrame", onFirstFrame);
+  let fallback: ReturnType<typeof setTimeout> | undefined;
+  win.once("ready-to-show", () => (fallback = setTimeout(() => show("timeout"), FIRST_FRAME_TIMEOUT_MS)));
+  win.on("closed", () => {
+    clearTimeout(fallback);
+    ipcMain.removeListener("window:firstFrame", onFirstFrame);
+  });
   frame.attach(win);
   // ⇧⌘V pastes plain text on macOS too (Keyboard shortcuts → Everyday editing), where Chromium binds
   // only ⌥⇧⌘V. The renderer still sees Shift held, so the editor pastes the text as it is (EDT-09).
@@ -1156,7 +1264,7 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
   // End-to-end tests turn the warm-up after start off, so their timing stays the same (PRF-10).
   // GPU or software compositing (D-121): in software the note's edges fade without the blur.
   const gpu = compositing();
-  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), ...frame.query(), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
+  void win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: boot.theme, scheme: boot.scheme, ...frame.query(), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
   const offCompositing = gpu.onChange((c) => win.webContents.send("compositing:changed", c));
   // Again once loaded: a change while the page loaded would be missed (the app ignores the same value).
   win.webContents.on("did-finish-load", () => win.webContents.send("compositing:changed", gpu.current()));
@@ -1211,7 +1319,7 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
   });
   ipcMain.on("window:scheme", (e, scheme: unknown, canvas: unknown, accent: unknown) => {
     if (!fromApp(e) || (scheme !== "light" && scheme !== "dark")) return;
-    const color = typeof canvas === "string" && /^#[0-9a-f]{6}$/i.test(canvas) ? canvas : scheme === "dark" ? "#1a1a1c" : "#fbfaf7";
+    const color = typeof canvas === "string" && /^#[0-9a-f]{6}$/i.test(canvas) ? canvas : CANVAS[scheme];
     // The transparent window stays transparent: the page draws the window's canvas inside its shadow margin.
     win.setBackgroundColor(frame.kind === "custom" ? "#00000000" : color);
     frame.setAccent(accent);
