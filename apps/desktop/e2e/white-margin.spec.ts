@@ -185,11 +185,13 @@ test.describe("D-153: the shadow margin at the screen level", () => {
           await page.waitForTimeout(150);
         }
       });
+      // The window's own focus and blur, which run settle() (D-150), without the system's activation:
+      // on a runner, blur() activates another window over the screen (an earlier run measured that).
       await phase("focus and blur (settle)", async () => {
         for (let i = 0; i < 4; i++) {
-          await inMain(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!.focus());
+          await inMain(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!.emit("focus", "journey"));
           await page.waitForTimeout(250);
-          await inMain(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!.blur());
+          await inMain(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!.emit("blur", "journey"));
           await page.waitForTimeout(250);
         }
       });
