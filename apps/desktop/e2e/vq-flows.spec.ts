@@ -11,6 +11,7 @@ import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { configure, git, instance } from "./instance.ts";
 import { makeFakes } from "../test/fakes/fakes.ts";
 import { hoverTooltips, settled, visualProblems } from "./visual-quality.ts";
+import { card, heading, start, tabTo, world } from "./github-world.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const SIZES = [{ name: "default", size: undefined }, { name: "small", size: { width: 480, height: 360 } }] as const;
@@ -43,6 +44,59 @@ for (const { name: sizeName, size } of SIZES) {
       await check(page, `${sizeName}-${mode}-first-run-sign-in`, problems);
       expect(problems).toEqual([]);
       await quit(l);
+    });
+
+    test(`D-111, D-123: the first run's Your workspace step keeps the dialog inset, scrolls inside, and lists its choices in rows, ${mode}, ${sizeName} window`, async () => {
+      test.setTimeout(120_000);
+      const w = await world({ gcm: true });
+      w.fakes.store(w.gh.token);
+      if (mode === "dark") writeFileSync(join(w.dirs.userData, "state.json"), JSON.stringify({ version: 1, appearance: mode }));
+      if (size) writeFileSync(join(w.dirs.userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 40, y: 40, ...size } }));
+      const l = await start(w);
+      const { page } = l;
+      try {
+        const problems: string[] = [];
+        await heading(page, "A quiet place to write");
+        await page.keyboard.press("Enter");
+        await heading(page, "Git");
+        await expect(card(page).getByText(/is ready\./)).toBeVisible();
+        await page.keyboard.press("Enter");
+        await expect(page.getByRole("button", { name: "Continue as @ada" })).toBeFocused({ timeout: 20_000 });
+        await page.keyboard.press("Enter");
+        await heading(page, "Your name on commits");
+        await expect(page.getByRole("textbox", { name: "Email" })).toHaveValue(/noreply/);
+        await expect(page.getByRole("textbox", { name: "Name" })).toBeFocused();
+        await page.keyboard.press("Enter");
+        await heading(page, "Your workspace");
+        await expect(page.getByRole("textbox", { name: "Instance repository (public)" })).toBeFocused();
+        await check(page, `${sizeName}-${mode}-first-run-workspace`, problems);
+        // The card is a dialog: 24 px from every window edge, at most the window less that inset.
+        const dialog = page.locator("[data-surface=dialog]").filter({ has: page.getByRole("heading", { name: "Your workspace" }) });
+        await expect(dialog).toHaveCount(1);
+        // The Workspace choices: one full-width row each, none cut off, arrow keys move between them.
+        const group = page.getByRole("radiogroup", { name: "Workspace" });
+        const rows = await group.getByRole("radio").evaluateAll((els) => els.map((el) => {
+          const option = el.closest("label") ?? el;
+          const r = option.getBoundingClientRect();
+          return { left: r.left, top: r.top, width: r.width, clipped: option.scrollWidth > option.clientWidth + 1 };
+        }));
+        expect(rows).toHaveLength(3);
+        for (const r of rows) expect(r.clipped).toBe(false);
+        expect(new Set(rows.map((r) => Math.round(r.left))).size).toBe(1);
+        expect(rows[1]!.top).toBeGreaterThan(rows[0]!.top);
+        expect(rows[2]!.top).toBeGreaterThan(rows[1]!.top);
+        // Scrolled to its end, the card still passes, its last buttons inside its padding.
+        await dialog.locator(":scope > div").evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
+        await check(page, `${sizeName}-${mode}-first-run-workspace-end`, problems);
+        // The arrow keys move down the rows (the choice opens its panel, as before).
+        await tabTo(page, page.getByRole("radio", { name: "Create my workspace" }), true);
+        await page.keyboard.press("ArrowDown");
+        await expect(page.getByRole("radio", { name: "Open from GitHub" })).toBeChecked();
+        expect(problems).toEqual([]);
+      } finally {
+        await quit(l);
+        w.server.close();
+      }
     });
 
     test(`D-111: the conflict resolver and Recently deleted pass the visual quality checklist, ${mode}, ${sizeName} window`, async () => {

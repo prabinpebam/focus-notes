@@ -221,6 +221,16 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
       if (h < least - tol) out.push(`dialog height: ${name} is ${px(h)} px tall (at least ${px(least)})`);
       const body = m.querySelector("[data-dialog-body]");
       if (body && body.scrollHeight > body.clientHeight + 1 && h < room - tol) out.push(`dialog height: ${name} scrolls at ${px(h)} px with ${px(room)} px of room`);
+      // Side navigation (vertical tabs, Settings) runs the full height of the body, its divider from
+      // the top of the body to the bottom (D-123).
+      if (body) {
+        const bc = getComputedStyle(body);
+        const full = body.scrollHeight - parseFloat(bc.paddingTop) - parseFloat(bc.paddingBottom);
+        for (const nav of body.querySelectorAll('[role="tablist"][aria-orientation="vertical"]')) {
+          const nh = nav.getBoundingClientRect().height;
+          if (nh < full - tol) out.push(`side navigation: ${nameOf(nav)} in ${name} is ${px(nh)} px tall, short of its body's ${px(full)} px`);
+        }
+      }
     }
   }
 

@@ -6,12 +6,17 @@ const t = tokens.cmp.segmentedControl;
 // Wraps the segments under the label where they don't fit beside it (the theme manager's 380 px sheet).
 // Never wider than its container (D-111): in the narrowest, its segments share the room and their
 // labels end in an ellipsis rather than reach past a dialog's or a sheet's edge.
-export const root = style({ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: t.gap, maxWidth: "100%", minWidth: 0, fontFamily: t.font, fontSize: t.fontSize });
+const rootBase = style({ display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: t.gap, maxWidth: "100%", minWidth: 0, fontFamily: t.font, fontSize: t.fontSize });
+export const root = {
+  horizontal: rootBase,
+  // Vertical (D-123): the label above, then one full-width row per choice.
+  vertical: style([rootBase, { display: "flex", flexDirection: "column", flexWrap: "nowrap", alignItems: "stretch" }]),
+};
 
 // Like every form label: body size, semibold (D-111).
 export const label = style({ color: t.text, whiteSpace: "nowrap", fontSize: t.labelSize, fontWeight: t.labelWeight });
 
-export const track = style({
+const trackBase = style({
   display: "inline-flex",
   alignItems: "stretch",
   gap: t.padding,
@@ -26,8 +31,12 @@ export const track = style({
   maxWidth: "100%",
   minWidth: 0,
 });
+export const track = {
+  horizontal: trackBase,
+  vertical: style([trackBase, { display: "flex", flexDirection: "column", height: "auto" }]),
+};
 
-export const segment = style({
+const segmentBase = style({
   display: "inline-flex",
   alignItems: "center",
   paddingInline: t.paddingInline,
@@ -52,3 +61,15 @@ export const segment = style({
     "&[data-focus-visible]": { outlineStyle: "solid", outlineWidth: t.focusWidth, outlineColor: t.focusRing, outlineOffset: `calc(-1 * ${t.focusWidth})` },
   },
 });
+export const segment = {
+  horizontal: segmentBase,
+  // A row: its label from the start, wrapping rather than ever cut off, at least a control tall.
+  vertical: style([segmentBase, {
+    justifyContent: "flex-start",
+    minHeight: t.height,
+    paddingBlock: t.padding,
+    boxSizing: "border-box",
+    whiteSpace: "normal",
+    overflow: "visible",
+  }]),
+};

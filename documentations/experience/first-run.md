@@ -50,7 +50,7 @@ The first run shows on a new install of the desktop app: when the app's state ha
 </li>
 <li class="slate-step">
 <p class="slate-step__title">5. Workspace</p>
-<p><strong>Create my workspace</strong> (the default for new users), open an existing workspace from GitHub, or open a folder already on this computer. It asks for the <strong>vault passphrase</strong> on the same screen, shows progress for each part, and explains if private notes can't be reached.</p>
+<p><strong>Create my workspace</strong> (the default for new users), open an existing workspace from GitHub, or open a folder already on this computer: three choices listed one per row (a vertical segmented control, so no label is cut off in the card's narrow width, D-123). It asks for the <strong>vault passphrase</strong> on the same screen, shows progress for each part, and explains if private notes can't be reached.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">6. Make it yours</p>

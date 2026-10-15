@@ -161,12 +161,7 @@ const SURFACES: Surface[] = [
     await expect(page.getByRole("searchbox", { name: "Search shortcuts" })).toBeFocused();
     await page.locator("[data-dialog-body]").evaluate((el) => el.scrollTo({ top: (el.scrollHeight - el.clientHeight) / 2 }));
   } },
-  { name: "files", open: files },
-  { name: "files new menu", open: async (page) => {
-    await files(page);
-    await page.getByRole("complementary", { name: "Files" }).getByRole("button", { name: "New" }).click();
-    await expect(page.getByRole("menuitem", { name: /^New folder/ })).toBeVisible();
-  } },
+  { name: "files", open: files, tooltips: (page) => page.getByRole("complementary", { name: "Files" }).getByRole("button", { name: /^New (note|folder)$/ }) },
   { name: "files selection", open: async (page) => {
     await files(page);
     await page.keyboard.press("Shift+ArrowUp");

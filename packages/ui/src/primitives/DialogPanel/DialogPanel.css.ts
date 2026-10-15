@@ -84,6 +84,9 @@ export const dialog = style({
 export const region = style({ paddingInline: t.padding, flexShrink: 0 });
 
 export const body = style({
+  // A column, so what it holds can fill its height (vertical tabs: their divider runs to the bottom, D-123).
+  display: "flex",
+  flexDirection: "column",
   flexGrow: 1,
   minHeight: 0,
   overflowY: "auto",

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { FloatingContext } from "./floating.ts";
+import { FloatingContext, LayerContext } from "./floating.ts";
 import * as s from "./Layer.css.ts";
 
 export interface LayerProps {
@@ -21,11 +21,13 @@ const ROLE = { none: undefined, banner: "banner", main: "main", complementary: "
 export function Layer({ layer = "panel", position = "center", dragBand, landmark = "none", label, id, children }: LayerProps) {
   return (
     <FloatingContext.Provider value={true}>
+      <LayerContext.Provider value={layer}>
       <div id={id} className={`${s.base} ${s.layer[layer]} ${s.position[position]}`} role={ROLE[landmark]} aria-label={label}>
         {/* The band is the window's top 44 px, whatever the layer's height; the content above it is never dragged. */}
         {dragBand ? <div className={s.band} data-drag-band="" /> : null}
         <div className={s.content} data-no-drag="">{children}</div>
       </div>
+      </LayerContext.Provider>
     </FloatingContext.Provider>
   );
 }
