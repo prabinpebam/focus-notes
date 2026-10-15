@@ -1,0 +1,308 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Design</p>
+  <h1 class="slate-hero__title">Visual vs verbose score</h1>
+  <p class="slate-hero__summary">A 0–100 score that tells whether a surface shows its information or describes it, and the minimum a surface needs before it's done.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>Every surface that presents a task or a state gets a <strong>visual vs verbose score (VVS)</strong> from five criteria worth 20 points each: a <strong>visual anchor</strong>, <strong>glanceable</strong> in 3 seconds, the <strong>right element</strong> for each piece of information, <strong>text economy</strong> against a word budget, and clear <strong>hierarchy</strong>. A surface is acceptable at <strong>VVS ≥ 70 with no criterion below 10</strong>; first-run steps and empty states need <strong>≥ 80</strong>. The journeys measure the anchor and the words; the design-system-reviewer scores the rest from light and dark screenshots, and the scores go into the gate evidence. Prefer the right element over a sentence: a profile card, not "connected as @login". (D-127)</p>
+</aside>
+
+<div class="slate-metrics">
+  <div class="slate-metric">
+    <p class="slate-metric__value">≥ 70</p>
+    <p class="slate-metric__label">To be acceptable</p>
+  </div>
+  <div class="slate-metric">
+    <p class="slate-metric__value">≥ 80</p>
+    <p class="slate-metric__label">First-run steps and empty states</p>
+  </div>
+  <div class="slate-metric">
+    <p class="slate-metric__value">≥ 10</p>
+    <p class="slate-metric__label">Every criterion, out of 20</p>
+  </div>
+</div>
+
+<h2 id="why" data-reader-personas="product design">Why</h2>
+
+<div class="slate-card-grid" data-cols="3">
+  <article class="slate-card">
+    <h3 class="slate-card__title">The words belong to the writer</h3>
+    <p class="slate-card__body">Focus Notes is a calm, Markdown-native writing app. The note is the text; everything around it should be seen, not read (CP-CALM-01).</p>
+  </article>
+  <article class="slate-card">
+    <h3 class="slate-card__title">First impressions</h3>
+    <p class="slate-card__body">The first run and empty states decide whether the app feels calm. They carry the highest bar.</p>
+  </article>
+  <article class="slate-card">
+    <h3 class="slate-card__title">Anyone can follow it</h3>
+    <p class="slate-card__body">Setup is for people who've never heard of GitHub (D-124). A face and a button say "this is you" faster than a sentence.</p>
+  </article>
+</div>
+
+<p>The <a href="foundations.md#visual-quality">visual quality checklist</a> checks geometry; <a href="foundations.md#words">Words</a> checks phrasing. The VVS checks the step between them: whether the information is shown with the right element at all.</p>
+
+<h2 id="criteria" data-reader-personas="design engineering">The five criteria</h2>
+
+<p>Each criterion scores 0–20. The anchors below fix what 0, 10, and 20 look like; scores in between are allowed.</p>
+
+<table>
+  <thead>
+    <tr><th>Criterion</th><th>0 looks like</th><th>10 looks like</th><th>20 looks like</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>1. Visual anchor</strong><br>A dominant non-text element tells the purpose at a glance.</td>
+      <td>Words and buttons only.</td>
+      <td>A non-text element 24–47 px, or a large one that's decorative rather than about the purpose.</td>
+      <td>One non-text element of 48 px or more, in view, that says what the surface is for: an avatar, app icon, illustration, preview, or status graphic.</td>
+    </tr>
+    <tr>
+      <td><strong>2. Glanceable</strong><br>The purpose is clear within 3 seconds.</td>
+      <td>No title, or a generic one ("Setup"); the purpose is found only by reading several sentences.</td>
+      <td>The title names the purpose but runs 7–10 words, or the key fact sits in a second or third sentence.</td>
+      <td>A title of 6 words or fewer and at most one body sentence of 20 words or fewer on the primary path.</td>
+    </tr>
+    <tr>
+      <td><strong>3. Right element</strong><br>Each piece of information uses the element made for it (<a href="#right-element">mapping</a>).</td>
+      <td>The surface's main information is prose describing state the UI could show.</td>
+      <td>Some information uses the right element; at least one piece is still a sentence or a generic list.</td>
+      <td>Every piece uses its element. No sentence restates what an element already shows.</td>
+    </tr>
+    <tr>
+      <td><strong>4. Text economy</strong><br>Interface words stay within the surface's <a href="#thresholds">budget</a>.</td>
+      <td>Twice the budget or more.</td>
+      <td>1.5 times the budget, or any paragraph over 2 lines.</td>
+      <td>Within the budget, no paragraph over 2 lines, details behind disclosure (<em>More options</em>, <em>Having trouble?</em>).</td>
+    </tr>
+    <tr>
+      <td><strong>5. Hierarchy</strong><br>One focal point and a dominant primary action.</td>
+      <td>Everything the same size and weight, or two primary-looking actions.</td>
+      <td>A focal point that competes with another (title and anchor at similar weight), or ramp steps used inconsistently.</td>
+      <td>One focal point, distinct steps of the <a href="foundations.md#type">interface type ramp</a> (title, emphasis, body, secondary or caption), and exactly one primary action that stands out.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="right-element" data-reader-personas="design engineering">The right element for the information</h3>
+
+<table>
+  <thead>
+    <tr><th>The information is…</th><th>Show it as</th><th>Not as</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Identity (who's signed in, an audience member)</td><td>A profile card with an avatar, name, and handle</td><td>"Connected as @login (Name)."</td></tr>
+    <tr><td>A choice</td><td>Option cards or tiles with icons</td><td>A paragraph per option</td></tr>
+    <tr><td>Status or progress</td><td>Progress, badges, and check marks</td><td>"Your notes are being saved…" as body text</td></tr>
+    <tr><td>A collection</td><td>Rows with icons and metadata</td><td>A sentence listing the items</td></tr>
+    <tr><td>A comparison</td><td>A table</td><td>Side-by-side paragraphs</td></tr>
+    <tr><td>Steps</td><td>A stepper</td><td>"Step 2 of 4" in a sentence</td></tr>
+  </tbody>
+</table>
+
+<h2 id="thresholds" data-reader-personas="design engineering">Budgets and thresholds</h2>
+
+<p>Budgets count the interface's own visible words on the primary path. Every surface also needs every criterion at 10 or more.</p>
+
+<table>
+  <thead>
+    <tr><th>Surface type</th><th>Examples</th><th>Word budget</th><th>Minimum VVS</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>First-run (onboarding) step</td><td>Welcome, Connect, Your notes, Ready</td><td>40</td><td><strong>80</strong></td></tr>
+    <tr><td>Empty state</td><td>An empty folder in Files, no search results, a new workspace</td><td>30</td><td><strong>80</strong></td></tr>
+    <tr><td>Dialog or popover</td><td>Shortcuts, Use this app for yourself, Share, confirmations</td><td>60</td><td>70</td></tr>
+    <tr><td>Panel or side sheet</td><td>Files, the theme manager, Spotlight</td><td>80</td><td>70</td></tr>
+    <tr><td>Settings section</td><td>One section of Settings</td><td>80</td><td>70</td></tr>
+  </tbody>
+</table>
+
+<h2 id="measurement" data-reader-personas="engineering design">How it's measured</h2>
+
+<ol class="slate-steps">
+  <li class="slate-step">
+    <p class="slate-step__title">Journeys measure criteria 1 and 4</p>
+    <p>In the <a href="foundations.md#visual-quality">visual-quality journeys</a>, at the default window size, light and dark, on each surface's primary path.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">The reviewer scores criteria 2, 3, and 5</p>
+    <p>The design-system-reviewer scores them from light and dark screenshots against the anchors above, and may lower criterion 1 with a reason.</p>
+  </li>
+  <li class="slate-step">
+    <p class="slate-step__title">The evidence records all five</p>
+    <p>One row per surface in the work package's evidence record and the <a href="../plan/gate-evidence.md">gate evidence</a>.</p>
+  </li>
+</ol>
+
+<table>
+  <thead>
+    <tr><th>Criterion</th><th>Measured by</th><th>Rule</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1. Visual anchor</td><td>Journey, reviewer may lower</td><td>The largest non-text element fully in view (avatar, icon, illustration, preview, progress graphic), by its rendered box's shorter side: 48 px or more scores 20, 24–47 px scores 10, otherwise 0. The reviewer lowers it, with a reason, when the anchor doesn't express the purpose.</td></tr>
+    <tr><td>2. Glanceable</td><td>Reviewer</td><td>Title words, body sentences, and a 3-second read of the light screenshot.</td></tr>
+    <tr><td>3. Right element</td><td>Reviewer</td><td>Each piece of information checked against the <a href="#right-element">mapping</a>.</td></tr>
+    <tr><td>4. Text economy</td><td>Journey</td><td>Words <em>W</em> against budget <em>B</em>: 20 × (2<em>B</em> − <em>W</em>) / <em>B</em>, clamped to 0–20 and rounded, so 20 within the budget and 0 at twice it. Capped at 10 if any paragraph wraps to more than 2 lines.</td></tr>
+    <tr><td>5. Hierarchy</td><td>Reviewer</td><td>The light and the dark screenshot; when they differ, the lower score counts.</td></tr>
+  </tbody>
+</table>
+
+<details>
+  <summary>What counts as a word</summary>
+  <ul>
+    <li><strong>Counted:</strong> visible interface text on the primary path, the state a person sees first without opening anything: titles, body, labels, buttons, links, and step labels. Numbers count as words.</li>
+    <li><strong>Not counted:</strong> text under a closed disclosure, tooltips, text only for assistive technology, the title bar, and the person's own content and data (note text, file and note names, search results, a name and @login from GitHub).</li>
+  </ul>
+</details>
+
+<h2 id="scope" data-reader-personas="product design engineering">Where it applies</h2>
+
+<div class="slate-compare">
+  <div class="slate-compare__col">
+    <p class="slate-compare__head">Scored</p>
+    <ul>
+      <li>Every new or changed surface that presents a task or a state, at its work package's definition of done</li>
+      <li>Existing surfaces, at the next stage gate; anything below the threshold goes into the <a href="../plan/agentic-loop.html#throughput">feedback queue</a></li>
+    </ul>
+  </div>
+  <div class="slate-compare__col">
+    <p class="slate-compare__head">Exempt</p>
+    <ul>
+      <li><strong>Not scored:</strong> menus, tooltips, toasts, toolbars, and the trigger. Their job is a command or a word; the checklist and Words cover them.</li>
+      <li><strong>Criterion 4:</strong> surfaces whose purpose is text: the note canvas, help pages, and legal notices. Their anchor may be the content's own display heading.</li>
+      <li><strong>Criterion 1:</strong> confirmations, short alerts whose question is their anchor.</li>
+    </ul>
+  </div>
+</div>
+
+<p>With a criterion exempt, the VVS is the other four scaled to 100 (their sum × 1.25, rounded), and the thresholds stay the same.</p>
+
+<h2 id="worked-example" data-reader-personas="product design">Worked example: Connect</h2>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 556" role="img"
+       aria-labelledby="vvs-title vvs-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="vvs-title">The Connect step before and after: plain sentences score 40, a profile card scores 86</title>
+    <desc id="vvs-desc">On the left, the old Connect step: a title, three sentences, a link, and a button, with the account named only in the sentence "This computer is connected to GitHub as @login (Name)". Its scores: visual anchor 0, glanceable 10, right element 0, text economy 20, hierarchy 10, for a VVS of 40. On the right, the target: the same title and a profile card with an avatar, the name, the @login, a GitHub label, and one primary button, Continue as Name. Its scores: visual anchor 20, glanceable 15, right element 16, text economy 20, hierarchy 15, for a VVS of 86. A dashed line at 10 marks the minimum for every criterion; the left side falls below it twice.</desc>
+    <g id="vvs-cards" data-slate-svg-step="0" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)">
+      <g id="vvs-before-card">
+        <rect id="vvs-before-box" x="10" y="64" width="330" height="276" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+        <circle cx="36" cy="90" r="5" fill="var(--color-neutral-fg-3)"/>
+        <circle cx="54" cy="90" r="5" fill="var(--color-brand-bg)"/>
+        <circle cx="72" cy="90" r="5" fill="var(--color-neutral-stroke-1)"/>
+        <circle cx="90" cy="90" r="5" fill="var(--color-neutral-stroke-1)"/>
+        <text x="28" y="128" font-size="18" font-weight="700" fill="var(--color-neutral-fg-1)">Connect your GitHub account</text>
+        <text x="28" y="156" font-size="15" fill="var(--color-neutral-fg-2)">GitHub is where your notes are kept</text>
+        <text x="28" y="177" font-size="15" fill="var(--color-neutral-fg-2)">and backed up. It's free.</text>
+        <text x="28" y="205" font-size="15" fill="var(--color-brand-fg-1)" text-decoration="underline">Create a free GitHub account</text>
+        <text x="28" y="235" font-size="15" fill="var(--color-neutral-fg-2)">This computer is connected to GitHub</text>
+        <text x="28" y="256" font-size="15" fill="var(--color-neutral-fg-2)">as @login (Name).</text>
+        <rect id="vvs-before-button" x="28" y="276" width="170" height="40" rx="8" fill="var(--color-brand-bg)"/>
+        <text x="113" y="301" font-size="15" font-weight="600" text-anchor="middle" fill="var(--color-on-brand)" data-slate-fit-target="vvs-before-button" data-slate-fit-padding="8">Continue as @login</text>
+        <text x="322" y="301" font-size="15" text-anchor="end" fill="var(--color-neutral-fg-2)">Having trouble?</text>
+      </g>
+      <g id="vvs-after-card">
+        <rect id="vvs-after-box" x="360" y="64" width="330" height="276" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+        <circle cx="386" cy="90" r="5" fill="var(--color-neutral-fg-3)"/>
+        <circle cx="404" cy="90" r="5" fill="var(--color-brand-bg)"/>
+        <circle cx="422" cy="90" r="5" fill="var(--color-neutral-stroke-1)"/>
+        <circle cx="440" cy="90" r="5" fill="var(--color-neutral-stroke-1)"/>
+        <text x="378" y="128" font-size="18" font-weight="700" fill="var(--color-neutral-fg-1)">Connect your GitHub account</text>
+        <rect id="vvs-profile" x="378" y="146" width="294" height="88" rx="12" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+        <circle id="vvs-avatar" cx="420" cy="190" r="30" fill="var(--color-brand-bg)"/>
+        <text x="420" y="199" font-size="24" font-weight="700" text-anchor="middle" fill="var(--color-on-brand)">N</text>
+        <text x="462" y="184" font-size="17" font-weight="600" fill="var(--color-neutral-fg-1)">Name</text>
+        <text x="462" y="207" font-size="15" fill="var(--color-neutral-fg-2)">@login</text>
+        <rect id="vvs-github" x="588" y="175" width="72" height="30" rx="15" fill="var(--color-neutral-bg-3)"/>
+        <text x="624" y="195" font-size="14" font-weight="600" text-anchor="middle" fill="var(--color-neutral-fg-1)" data-slate-fit-target="vvs-github" data-slate-fit-padding="6">GitHub</text>
+        <rect id="vvs-after-button" x="378" y="248" width="294" height="40" rx="8" fill="var(--color-brand-bg)"/>
+        <text x="525" y="273" font-size="16" font-weight="600" text-anchor="middle" fill="var(--color-on-brand)" data-slate-fit-target="vvs-after-button" data-slate-fit-padding="8">Continue as Name</text>
+        <text x="378" y="314" font-size="15" fill="var(--color-brand-fg-1)">Use a different account</text>
+        <text x="672" y="314" font-size="15" text-anchor="end" fill="var(--color-neutral-fg-2)">Having trouble?</text>
+      </g>
+    </g>
+    <g id="vvs-bars" data-slate-svg-step="1" data-slate-svg-effect="fade" font-family="var(--font-family-base)">
+      <g id="vvs-labels" font-size="15" fill="var(--color-neutral-fg-1)">
+        <text x="10" y="393">Visual anchor</text>
+        <text x="10" y="423">Glanceable</text>
+        <text x="10" y="453">Right element</text>
+        <text x="10" y="483">Text economy</text>
+        <text x="10" y="513">Hierarchy</text>
+        <text x="360" y="393">Visual anchor</text>
+        <text x="360" y="423">Glanceable</text>
+        <text x="360" y="453">Right element</text>
+        <text x="360" y="483">Text economy</text>
+        <text x="360" y="513">Hierarchy</text>
+      </g>
+      <g id="vvs-tracks" fill="var(--color-neutral-bg-3)">
+        <rect x="120" y="382" width="180" height="12" rx="6"/>
+        <rect x="120" y="412" width="180" height="12" rx="6"/>
+        <rect x="120" y="442" width="180" height="12" rx="6"/>
+        <rect x="120" y="472" width="180" height="12" rx="6"/>
+        <rect x="120" y="502" width="180" height="12" rx="6"/>
+        <rect x="470" y="382" width="180" height="12" rx="6"/>
+        <rect x="470" y="412" width="180" height="12" rx="6"/>
+        <rect x="470" y="442" width="180" height="12" rx="6"/>
+        <rect x="470" y="472" width="180" height="12" rx="6"/>
+        <rect x="470" y="502" width="180" height="12" rx="6"/>
+      </g>
+      <g id="vvs-before-values" fill="var(--color-neutral-fg-3)">
+        <rect x="120" y="412" width="90" height="12" rx="6"/>
+        <rect x="120" y="472" width="180" height="12" rx="6"/>
+        <rect x="120" y="502" width="90" height="12" rx="6"/>
+      </g>
+      <g id="vvs-after-values" fill="var(--color-status-success-fg)">
+        <rect x="470" y="382" width="180" height="12" rx="6"/>
+        <rect x="470" y="412" width="135" height="12" rx="6"/>
+        <rect x="470" y="442" width="144" height="12" rx="6"/>
+        <rect x="470" y="472" width="180" height="12" rx="6"/>
+        <rect x="470" y="502" width="135" height="12" rx="6"/>
+      </g>
+      <g id="vvs-floor" stroke="var(--color-neutral-fg-2)" stroke-width="2" stroke-dasharray="4 4">
+        <path d="M210 372 V524"/>
+        <path d="M560 372 V524"/>
+      </g>
+      <g id="vvs-numbers" font-size="16" font-weight="700" text-anchor="end">
+        <text x="340" y="394" fill="var(--color-status-danger-fg)">0</text>
+        <text x="340" y="424" fill="var(--color-neutral-fg-1)">10</text>
+        <text x="340" y="454" fill="var(--color-status-danger-fg)">0</text>
+        <text x="340" y="484" fill="var(--color-neutral-fg-1)">20</text>
+        <text x="340" y="514" fill="var(--color-neutral-fg-1)">10</text>
+        <text x="690" y="394" fill="var(--color-neutral-fg-1)">20</text>
+        <text x="690" y="424" fill="var(--color-neutral-fg-1)">15</text>
+        <text x="690" y="454" fill="var(--color-neutral-fg-1)">16</text>
+        <text x="690" y="484" fill="var(--color-neutral-fg-1)">20</text>
+        <text x="690" y="514" fill="var(--color-neutral-fg-1)">15</text>
+      </g>
+      <text x="210" y="544" font-size="14" text-anchor="middle" fill="var(--color-neutral-fg-2)">minimum 10</text>
+      <text x="560" y="544" font-size="14" text-anchor="middle" fill="var(--color-neutral-fg-2)">minimum 10</text>
+    </g>
+    <g id="vvs-heads" data-slate-svg-step="2" data-slate-svg-effect="scale-in" font-family="var(--font-family-base)">
+      <text x="10" y="36" font-size="18" font-weight="700" fill="var(--color-neutral-fg-1)">Before: sentences</text>
+      <rect id="vvs-before-pill" x="250" y="12" width="90" height="36" rx="18" fill="var(--color-status-danger-bg)" stroke="var(--color-status-danger-stroke)" stroke-width="1.5"/>
+      <text x="295" y="36" font-size="17" font-weight="700" text-anchor="middle" fill="var(--color-status-danger-fg)" data-slate-fit-target="vvs-before-pill" data-slate-fit-padding="8">VVS 40</text>
+      <text x="360" y="36" font-size="18" font-weight="700" fill="var(--color-neutral-fg-1)">After: a profile card</text>
+      <rect id="vvs-after-pill" x="600" y="12" width="90" height="36" rx="18" fill="var(--color-status-success-bg)" stroke="var(--color-status-success-stroke)" stroke-width="1.5"/>
+      <text x="645" y="36" font-size="17" font-weight="700" text-anchor="middle" fill="var(--color-status-success-fg)" data-slate-fit-target="vvs-after-pill" data-slate-fit-padding="8">VVS 86</text>
+    </g>
+  </svg>
+  <figcaption>Both versions fit the 40-word budget. The difference is all in the anchor, the element, and the hierarchy: the old step names the account in a sentence; the target shows it.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>Criterion</th><th>Before</th><th>Why</th><th>After</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>1. Visual anchor</td><td>0</td><td>Nothing but words, step dots, and a button.</td><td>20</td><td>A 64 px avatar, the largest thing on the step, says "this is you".</td></tr>
+      <tr><td>2. Glanceable</td><td>10</td><td>The title is 4 words, but who's connected is in the third sentence.</td><td>15</td><td>The card reads in a glance, but the title asks to connect when this computer already is.</td></tr>
+      <tr><td>3. Right element</td><td>0</td><td>Identity, the one thing the step shows, is a sentence; the button repeats @login.</td><td>16</td><td>Identity is a profile card and progress a stepper; the other account is a text link, not an option row.</td></tr>
+      <tr><td>4. Text economy</td><td>20</td><td>32 interface words of 40, no paragraph over 2 lines.</td><td>20</td><td>12 interface words of 40.</td></tr>
+      <tr><td>5. Hierarchy</td><td>10</td><td>The button stands out, but the title and three sentences have no focal point.</td><td>15</td><td>One focal card and one primary button; the bold title and the name compete a little.</td></tr>
+      <tr><td><strong>VVS</strong></td><td><strong>40</strong></td><td>Fails: below 80, and two criteria below 10.</td><td><strong>86</strong></td><td>Passes the first-run bar of 80.</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<p>Word counts, as defined in <a href="#measurement">How it's measured</a>: before, the title (4), the body (12), the link (5), "This computer is connected to GitHub as" (7), "Continue as" (2), and "Having trouble?" (2) make 32; the name and @login are the person's data. After, the title (4), "Continue as" (2), "Use a different account" (4), and "Having trouble?" (2) make 12. To reach 90 or more, the title would match the state ("Your GitHub account") and the other account would become an option row.</p>
