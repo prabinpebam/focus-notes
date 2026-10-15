@@ -117,6 +117,22 @@ describe("EDT-11 and D-07: save, commit, and push, private first", () => {
     expect(count(privateRemote)).toBe(2);
   });
 
+  it("DEF-16: a fetch with saves waiting, but nothing to send, never says it's backing up; a save does", async () => {
+    const { ws } = instance();
+    const states: string[] = [];
+    const s = await open(ws, { onReport: (r) => states.push(r.state) });
+    const note = join(ws, "private", "notes", "welcome.md");
+    writeFileSync(note, "# Welcome\n\nSmall.\n");
+    s.written(note, 8);
+    // A fetch (the window became active, or the timer) doesn't commit the saves, so it sends nothing.
+    await s.sync("fetch");
+    expect(states).not.toContain("syncing");
+    expect(s.report).toMatchObject({ state: "idle", waiting: 1 });
+    await s.request("save");
+    expect(states).toContain("syncing");
+    expect(s.report).toMatchObject({ state: "idle", waiting: 0 });
+  });
+
   it("commits a renamed note as a rename (FIL-07)", async () => {
     const { ws, privateRemote } = instance();
     const s = await open(ws);

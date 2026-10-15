@@ -612,8 +612,12 @@ export class GitSync {
       this.#emit({ state: "problem", problem: this.#fail("locked") });
       return this.#report;
     }
-    this.#emit({ state: "syncing" });
     const commitSaves = ["save", "switch", "idle", "quit"].some((r) => reasons.has(r as SyncReason));
+    // It says it's backing up only when it sends something: saves it commits, commits not pushed
+    // yet, a Files batch, or the pointer. A fetch with saves waiting sends none of them (DEF-16).
+    const repos = [this.notes, this.privateRepo].filter((r): r is Repo => !!r);
+    const sends = reasons.has("batch") || reasons.has("pointer") || repos.some((r) => (commitSaves && r.pending.size > 0) || (r.last?.upstream ? r.last.ahead > 0 : false));
+    if (sends) this.#emit({ state: "syncing" });
     const fetch = reasons.has("fetch");
     if (fetch) this.#lastFetchAt = this.#clock.now();
     const problems: SyncProblem[] = [];
