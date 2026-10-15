@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   clampToDisplays, contentBounds, displayAt, displayFor, fitToDisplay, hitZone, keyboardStep, layoutsFor, needsRemeasure, outerBounds,
-  resizeBounds, restoreUnderPointer, snapZoneAt, toDip, toPhysical, zoneRect, SNAP_LAYOUTS, type DisplayInfo,
+  resizeBounds, restoreUnderPointer, shadowExtent, snapZoneAt, toDip, toPhysical, verticalRect, verticalSnapAt, zoneRect, SNAP_LAYOUTS, WINDOW_METRICS, type DisplayInfo,
 } from "../src/window-geometry.ts";
 
 // The window geometry of the app-built window on Windows and Linux (DSK-03, DSK-08, D-14).
@@ -202,5 +204,60 @@ describe("DSK-01: the shadow margin around the visible window", () => {
     expect(outerBounds(c, 16)).toEqual({ x: 84, y: 84, width: 832, height: 632 });
     expect(contentBounds(outerBounds(c, 16), 16)).toEqual(c);
     expect(outerBounds(c, 0)).toEqual(c);
+  });
+});
+
+describe("DSK-01, D-141: the drawn shadow fits inside the shadow margin, in every theme", () => {
+  it("measures a box shadow's reach past the window on each side: offset, spread, and 1.5 × blur (Skia's 3σ)", () => {
+    expect(shadowExtent("0px 2px 8px 0px #00000066")).toEqual({ top: 10, right: 12, bottom: 14, left: 12 });
+    expect(shadowExtent("0px 1px 2px 0px #0000000f, 0px 2px 8px 0px #00000014")).toEqual({ top: 10, right: 12, bottom: 14, left: 12 });
+    expect(shadowExtent("none")).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    expect(shadowExtent("inset 0 0 40px red")).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+  });
+  it("cmp.appRoot.windowShadow resolves, in the base and in every theme and mode, to a shadow that fades out before the native window's edge", () => {
+    const css = readFileSync(fileURLToPath(new URL("../../tokens/dist/tokens.css", import.meta.url)), "utf8");
+    const vars = new Map<string, string>();
+    for (const m of css.matchAll(/(--fn-[\w-]+):\s*([^;]+);/g)) vars.set(`${m[1]}@${vars.size}`, m[2]!.trim());
+    const value = (name: string) => [...vars].filter(([k]) => k.startsWith(`${name}@`)).map(([, v]) => v);
+    const resolve = (v: string, depth = 0): string[] => {
+      const ref = /^var\((--fn-[\w-]+)\)$/.exec(v);
+      if (!ref || depth > 8) return [v];
+      return value(ref[1]!).flatMap((x) => resolve(x, depth + 1));
+    };
+    const shadows = value("--fn-cmp-app-root-window-shadow").flatMap((v) => resolve(v));
+    expect(shadows.length).toBeGreaterThan(2);
+    for (const s of shadows) {
+      const e = shadowExtent(s);
+      expect(Math.max(e.top, e.right, e.bottom, e.left), s).toBeLessThanOrEqual(WINDOW_METRICS.margin);
+    }
+  });
+});
+
+describe("D-141: vertical maximize, as Windows does it", () => {
+  const top: DisplayInfo = { id: 3, bounds: { x: 0, y: -1080, width: 1920, height: 1080 }, workArea: { x: 0, y: -1080, width: 1920, height: 1080 }, scaleFactor: 1 };
+  it("starts when a top or bottom edge being resized reaches the work area's top, or its bottom (the taskbar)", () => {
+    expect(verticalSnapAt("n", { x: 500, y: 0 }, full)).toBe(true);
+    expect(verticalSnapAt("n", { x: 500, y: 7 }, full)).toBe(true);
+    expect(verticalSnapAt("n", { x: 500, y: 8 }, full)).toBe(false);
+    expect(verticalSnapAt("s", { x: 500, y: 1039 }, full)).toBe(true);
+    expect(verticalSnapAt("s", { x: 500, y: 1060 }, full)).toBe(true); // on the taskbar
+    expect(verticalSnapAt("s", { x: 500, y: 1031 }, full)).toBe(false);
+  });
+  it("only for the top and bottom edges, and only while the pointer is still on the window's display", () => {
+    for (const edge of ["e", "w", "ne", "nw", "se", "sw"] as const) expect(verticalSnapAt(edge, { x: 500, y: 0 }, full), edge).toBe(false);
+    // Past the top onto a display above: that's crossing to it, not the screen's edge.
+    expect(verticalSnapAt("n", { x: 500, y: -5 }, full)).toBe(false);
+    expect(verticalSnapAt("n", { x: 500, y: -1080 }, top)).toBe(true);
+    expect(verticalSnapAt("s", { x: 500, y: 1080 }, full)).toBe(false);
+  });
+  it("respects a taskbar at the top", () => {
+    const tb: DisplayInfo = { ...full, workArea: { x: 0, y: 48, width: 1920, height: 1032 } };
+    expect(verticalSnapAt("n", { x: 500, y: 20 }, tb)).toBe(true);
+    expect(verticalSnapAt("n", { x: 500, y: 54 }, tb)).toBe(true);
+    expect(verticalSnapAt("n", { x: 500, y: 56 }, tb)).toBe(false);
+  });
+  it("fills the work area's height at the same x and width", () => {
+    expect(verticalRect({ x: 300, y: 200, width: 900, height: 500 }, full.workArea)).toEqual({ x: 300, y: 0, width: 900, height: 1040 });
+    expect(verticalRect({ x: 2000, y: 100, width: 800, height: 400 }, laptop.workArea)).toEqual({ x: 2000, y: 0, width: 800, height: 1019 });
   });
 });

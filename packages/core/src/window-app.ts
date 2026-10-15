@@ -40,6 +40,8 @@ export interface WindowBridge {
   minimize(): void;
   maximize(): void;
   restore(): void;
+  /** Maximizes the window vertically, or restores a vertically maximized one (D-141): double-clicking the top or bottom border. */
+  toggleVertical(): void;
   close(): void;
   snap(zone: SnapZone): void;
   /** A move (the title bar band) or a resize (an edge or corner) the window frame is handling. Shift keeps the proportions. */
@@ -108,6 +110,7 @@ export function registerWindow({ store, commands, viewModels, catalog, bridge }:
   cmd("window.maximize", (s) => free(s) && !s.window.maximized, () => win?.maximize());
   cmd("window.restore", (s) => free(s) && (s.window.maximized || s.window.snapped), () => win?.restore());
   cmd("window.toggleMaximize", free, () => (store.state.window.maximized ? win?.restore() : win?.maximize()));
+  cmd("window.toggleVertical", (s) => free(s) && !s.window.maximized, () => win?.toggleVertical());
   cmd("window.close", custom, () => win?.close());
   cmd("window.move", (s) => free(s) && !s.window.maximized, () => win?.keyboard("move"));
   cmd("window.size", (s) => free(s) && !s.window.maximized, () => win?.keyboard("size"));

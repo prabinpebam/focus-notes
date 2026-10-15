@@ -26,6 +26,8 @@ export interface WindowFrameProps {
   keyboard?: "none" | "move" | "size";
   onDrag?: (p: DragPayload) => void;
   onToggleMaximize?: () => void;
+  /** Double-click on the top or bottom resize border: vertical maximize, as on Windows (D-141). */
+  onToggleVertical?: () => void;
   onMenu?: (p: { x: number; y: number }) => void;
   onAction?: (p: { id: string }) => void;
   onKey?: (p: { key: string; fine: boolean }) => void;
@@ -43,11 +45,11 @@ const band = (t: EventTarget | null) => {
  * edge and corner. Positions are screen coordinates in DIP; the shell does the rest. Draws nothing
  * where the system owns the window.
  */
-export function WindowFrame({ frame = "native", resizable, fullScreen = false, menu, menuLabel, menuRequest = 0, menuX = -1, menuY = -1, keyboard = "none", onDrag, onToggleMaximize, onMenu, onAction, onKey }: WindowFrameProps) {
+export function WindowFrame({ frame = "native", resizable, fullScreen = false, menu, menuLabel, menuRequest = 0, menuX = -1, menuY = -1, keyboard = "none", onDrag, onToggleMaximize, onToggleVertical, onMenu, onAction, onKey }: WindowFrameProps) {
   const custom = frame !== "native";
   const boundary = useWindowBoundary();
-  const events = useRef({ onDrag, onToggleMaximize, onMenu, onKey });
-  events.current = { onDrag, onToggleMaximize, onMenu, onKey };
+  const events = useRef({ onDrag, onToggleMaximize, onToggleVertical, onMenu, onKey });
+  events.current = { onDrag, onToggleMaximize, onToggleVertical, onMenu, onKey };
   const full = useRef(fullScreen);
   full.current = fullScreen;
 
@@ -105,7 +107,9 @@ export function WindowFrame({ frame = "native", resizable, fullScreen = false, m
       drag = undefined;
     };
     const dblclick = (e: MouseEvent) => {
-      if (band(e.target)) events.current.onToggleMaximize?.();
+      if (band(e.target)) return events.current.onToggleMaximize?.();
+      const handle = e.target instanceof Element ? e.target.closest("[data-window-handle]")?.getAttribute("data-window-handle") : null;
+      if (handle === "n" || handle === "s") events.current.onToggleVertical?.();
     };
     const contextmenu = (e: MouseEvent) => {
       if (!band(e.target)) return;

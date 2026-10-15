@@ -8,11 +8,11 @@
  */
 import {
   clampToDisplays, contentBounds, displayFor, DRAG_THRESHOLD, fitToDisplay, hitZone, keyboardStep, layoutsFor, needsRemeasure, outerBounds,
-  resizeBounds, restoreUnderPointer, snapZoneAt, WINDOW_METRICS, zoneRect,
+  resizeBounds, restoreUnderPointer, snapZoneAt, verticalRect, verticalSnapAt, WINDOW_METRICS, zoneRect,
   type ArrowKey, type DisplayInfo, type Point, type Rect, type ResizeEdge, type SnapZone,
 } from "@focus-notes/core/window-geometry";
 import type { WindowReport } from "@focus-notes/core";
-import { MIN_SIZE, type Placement, type WindowMemory, type WindowMode } from "./placement.ts";
+import { MIN_SIZE, type Placement, type PlacedZone, type WindowMemory, type WindowMode } from "./placement.ts";
 
 /** The parts of a BrowserWindow this uses. */
 export interface WinLike {
@@ -69,9 +69,10 @@ export class CustomWindow {
   readonly #win: WinLike;
   readonly #o: Options;
   #mode: WindowMode;
-  #zone: SnapZone | undefined;
+  /** A snap zone, or "vertical": the work area's full height at the window's own x and width (D-141). */
+  #zone: PlacedZone | undefined;
   #restore: Rect;
-  #drag: { kind: "move" | ResizeEdge; start: Point; from: Rect; moved: boolean; snap?: { zone: SnapZone; display: DisplayInfo } } | undefined;
+  #drag: { kind: "move" | ResizeEdge; start: Point; from: Rect; moved: boolean; snap?: { zone: SnapZone; display: DisplayInfo }; vertical?: DisplayInfo } | undefined;
   #keys: { mode: "move" | "size"; edge?: ResizeEdge; original: Rect; current: Rect } | undefined;
   #ignoring = false;
   /** Full screen is the app's own too: Electron doesn't track it for transparent windows. */
@@ -133,7 +134,8 @@ export class CustomWindow {
       version: 1,
       bounds,
       ...(this.#mode === "maximized" ? { maximized: true } : {}),
-      ...(this.#mode === "snapped" && this.#zone ? { zone: this.#zone } : {}),
+      ...(this.#mode === "snapped" && this.#zone === "vertical" ? { vertical: true } : {}),
+      ...(this.#mode === "snapped" && this.#zone && this.#zone !== "vertical" ? { zone: this.#zone } : {}),
       ...(this.#full ? { fullScreen: true } : {}),
     };
   }
@@ -141,7 +143,7 @@ export class CustomWindow {
     this.#o.save(this.memory());
   }
 
-  #setMode(mode: WindowMode, zone?: SnapZone): void {
+  #setMode(mode: WindowMode, zone?: PlacedZone): void {
     this.#mode = mode;
     this.#zone = zone;
     // The renderer redraws the frame (corners, margin) as the window changes shape.
@@ -171,6 +173,37 @@ export class CustomWindow {
   toggleMaximize(): void {
     if (this.#mode === "maximized") this.restore();
     else this.maximize();
+  }
+
+  /**
+   * Windows' vertical maximize (D-141): the work area's full height at the same x and width, square
+   * and without the margin, as a snapped window is. Restore, or dragging it away, puts back its height.
+   * `display` is where a resize reached the screen's edge; otherwise the window's own display.
+   */
+  maximizeVertically(display: DisplayInfo = this.#display(), from?: Rect): void {
+    if (this.#full || this.#mode === "maximized" || this.#zone === "vertical") return;
+    const r = from ?? this.content();
+    if (this.#mode === "normal") this.#restore = r;
+    this.#setMode("snapped", "vertical");
+    this.#apply(verticalRect(r, display.workArea));
+    this.save();
+  }
+  /** Double-clicking the top or bottom border: maximizes vertically, or restores a vertically maximized window. */
+  toggleVertical(): void {
+    if (this.#mode === "snapped" && this.#zone === "vertical") this.restore();
+    else this.maximizeVertically();
+  }
+  /**
+   * Win+Shift+Up and Win+Shift+Down, when the shell lets them reach the window (it handles them
+   * itself for windows with a native frame). True when the key was one of them.
+   */
+  snapKey(input: KeyInput): boolean {
+    if (input.type !== "keyDown" || !input.meta || !input.shift || input.alt || input.control) return false;
+    if (input.key === "ArrowUp") this.maximizeVertically();
+    else if (input.key === "ArrowDown") {
+      if (this.#zone === "vertical") this.restore();
+    } else return false;
+    return true;
   }
   minimize(): void {
     this.#win.minimize();
@@ -230,12 +263,19 @@ export class CustomWindow {
       else delete d.snap;
       this.#showPreview(snap ? zoneRect(snap.zone, snap.display.workArea) : undefined);
     } else {
-      this.#apply(resizeBounds(d.from, d.kind, delta, MIN_SIZE, shift));
+      const next = resizeBounds(d.from, d.kind, delta, MIN_SIZE, shift);
+      this.#apply(next);
+      // The top or bottom edge reaching the work area's edge previews a vertical maximize (D-141).
+      const display = displayFor(d.from, this.#displays());
+      if (verticalSnapAt(d.kind, p, display)) d.vertical = display;
+      else delete d.vertical;
+      this.#showPreview(d.vertical ? verticalRect(d.from, d.vertical.workArea) : undefined);
     }
     if (phase !== "end") return;
     this.#drag = undefined;
     this.#showPreview(undefined);
     if (d.kind === "move" && d.snap) return this.snap(d.snap.zone, d.snap.display);
+    if (d.vertical) return this.maximizeVertically(d.vertical, d.from);
     if (d.kind === "move") this.#remeasure({ width: d.from.width, height: d.from.height });
     this.#restore = this.content();
     this.notify();
@@ -308,7 +348,8 @@ export class CustomWindow {
       const now = this.content();
       const fit = clampToDisplays(now, displays, MIN_SIZE);
       if (fit.x !== now.x || fit.y !== now.y || fit.width !== now.width || fit.height !== now.height) this.#apply(fit);
-    } else this.#apply(zoneRect(this.#mode === "maximized" ? "maximize" : this.#zone ?? "maximize", this.#display().workArea));
+    } else if (this.#zone === "vertical") this.#apply(verticalRect(this.content(), this.#display().workArea));
+    else this.#apply(zoneRect(this.#mode === "maximized" ? "maximize" : this.#zone ?? "maximize", this.#display().workArea));
     this.notify();
   }
 
