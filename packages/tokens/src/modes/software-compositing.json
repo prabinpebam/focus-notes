@@ -1,0 +1,4 @@
+{
+  "frost": { "opacity": { "$type": "number", "$value": 1 }, "blur": { "$type": "dimension", "$value": "{ref.size.0}" } },
+  "motion": { "$type": "duration", "enter": { "$value": "{ref.duration.0}" }, "exit": { "$value": "{ref.duration.0}" } }
+}
