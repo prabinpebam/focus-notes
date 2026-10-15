@@ -23,7 +23,7 @@ import { passphraseStrength } from "@focus-notes/seal";
 import { accessStore, siteFromGitConfig } from "./share/access.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
 import { ProblemLog, REPORT_PROBLEM_URL, type RedactOptions } from "@focus-notes/core/diagnostics";
-import { diagnostics, reportFileName } from "./diagnostics.ts";
+import { diagnostics, knownStrings, reportFileName, reportPathAllowed } from "./diagnostics.ts";
 import { isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
 import { checkOptions, SetupEngine } from "./setup/engine.ts";
@@ -95,7 +95,9 @@ const compositing = () => (compositingWatch ??= watchCompositing(app, process.en
  * The app's own log (QLT-04, D-140): counts, states, and problem codes, written to standard output
  * and kept in memory for the diagnostic report, redacted as each line arrives. Never a file.
  */
-const redaction = (): RedactOptions => ({ home: app.getPath("home"), workspace: notesHome() });
+const redaction = (): RedactOptions => ({ home: app.getPath("home"), workspace: notesHome(), known: knownCache });
+/** The login, names, emails, and repository names the report must never hold (D-140), refreshed before each report. */
+let knownCache: string[] = [];
 const problemLog = new ProblemLog(200, redaction);
 const logLine = (line: string) => {
   process.stdout.write(`[focus-notes] ${line}\n`);
@@ -169,6 +171,8 @@ const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], g
       log: logLine,
     }).then((g) => {
       gitSync = g;
+      // The log's lines are redacted as they arrive: with the names known from here on.
+      void refreshKnown().catch(() => {});
       gitOpened = true;
       for (const fn of gitWaiting.splice(0)) if (g) fn(g);
       return g;
@@ -757,6 +761,30 @@ function fromApp(e: IpcMainInvokeEvent | IpcMainEvent): boolean {
   const url = e.senderFrame?.url ?? "";
   return url.split("?")[0]!.split("#")[0] === appPageUrl();
 }
+/**
+ * The strings no diagnostic report may hold (D-140): Git's user.name and user.email and each
+ * repository's remote owner and name (local `git config`, no network), the signed-in login and name,
+ * setup's login and repository names, and a workspace-only identity.
+ */
+async function refreshKnown(): Promise<void> {
+  const values: (string | undefined)[] = [];
+  const remotes: string[] = [];
+  const cfg = async (dir: string, key: string) => {
+    const r = await setupRunner({ cwd: dir, args: ["config", "--get", key], read: true }).catch(() => undefined);
+    return r?.code === 0 ? r.stdout.trim() : undefined;
+  };
+  for (const dir of [notesHome(), join(notesHome(), "private")]) {
+    if (!existsSync(dir)) continue;
+    values.push(await cfg(dir, "user.name"), await cfg(dir, "user.email"));
+    const url = await cfg(dir, "remote.origin.url");
+    if (url) remotes.push(url);
+  }
+  values.push(account.account?.login, account.account?.name, workspaceIdentity?.name, workspaceIdentity?.email);
+  const s = setupEngine ? (await setupEngine.catch(() => undefined))?.report() : undefined;
+  values.push(s?.login, s?.options?.instance, s?.options?.private);
+  knownCache = knownStrings(values, remotes);
+}
+
 function handle(channel: string, fn: (...args: any[]) => unknown): void {
   ipcMain.handle(channel, (e, ...args) => {
     if (!fromApp(e)) throw new Error("Refused: request didn't come from the app");
@@ -906,16 +934,34 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     state: async () => JSON.parse(await readFile(stateFile(), "utf8")) as Record<string, unknown>,
     log: problemLog,
     redaction,
+    refresh: refreshKnown,
   });
   handle("diagnostics:preview", () => diag.preview());
   handle("diagnostics:copy", async (timings) => appClipboard().writeText(await diag.report(timings)));
   handle("diagnostics:save", async (timings) => {
     const w = win();
-    const opts = { title: "Save diagnostic report", defaultPath: join(app.getPath("documents"), reportFileName(Date.now())), filters: [{ name: "Markdown", extensions: ["md"] }] };
-    const r = w ? await dialog.showSaveDialog(w, opts) : await dialog.showSaveDialog(opts);
-    if (r.canceled || !r.filePath) return false;
-    await writeFile(r.filePath, await diag.report(timings), "utf8");
-    return true;
+    // Never into the workspace (it would be committed, maybe published) or the app's data folder: ask again.
+    const forbidden = [notesHome(), app.getPath("userData")];
+    const real = (p: string) => {
+      try {
+        return realpathSync.native(p);
+      } catch {
+        return undefined;
+      }
+    };
+    let title = "Save diagnostic report";
+    for (let ask = 0; ask < 3; ask++) {
+      const opts: Electron.SaveDialogOptions = { title, defaultPath: join(app.getPath("documents"), reportFileName(Date.now())), filters: [{ name: "Markdown", extensions: ["md"] }], properties: ["showOverwriteConfirmation", "createDirectory"] };
+      const r = w ? await dialog.showSaveDialog(w, opts) : await dialog.showSaveDialog(opts);
+      if (r.canceled || !r.filePath) return false;
+      if (!reportPathAllowed(r.filePath, forbidden, { real })) {
+        title = "Choose a folder outside your notes";
+        continue;
+      }
+      await writeFile(r.filePath, await diag.report(timings), "utf8");
+      return true;
+    }
+    return false;
   });
   // Report a problem: the report on the clipboard, then a fixed address (never one from the window, never with the report in it).
   handle("diagnostics:reportProblem", async (timings) => {

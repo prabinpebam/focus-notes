@@ -7,9 +7,9 @@
  * or the identity's email. Local bare remotes only: nothing touches the network.
  */
 import { test, expect, type Page } from "./fixtures.ts";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, renameSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { launch, quit } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { git, instance, write } from "./instance.ts";
@@ -20,18 +20,26 @@ const settled = (page: Page) => page.waitForFunction(() => document.getAnimation
 const clipboard = (l: { app: import("@playwright/test").ElectronApplication }) => l.app.evaluate(() => (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard?.text ?? "");
 const SECRET_LINE = "The surprise party for Grace is on Friday";
 const TYPED = "Unsaved words about the garden gate";
+/** The private repository's name and the identity: never in a report (D-140). */
+const PRIVATE_REPO = "ada-secret-journal";
+const IDENTITY = "Ada Lovelace";
 
 /** What a report must never hold: note text and names, the folders, the remotes, the identity. */
 function expectPrivate(report: string, dirs: { docs: string; userData: string }, remotes: string[]) {
-  for (const bad of [SECRET_LINE, "surprise", TYPED, "garden", "party.md", "hello.md", "welcome.md", dirs.docs, dirs.userData, ...remotes, "test@example.com", "access.json"]) {
+  for (const bad of [SECRET_LINE, "surprise", TYPED, "garden", "party.md", "hello.md", "welcome.md", dirs.docs, dirs.userData, ...remotes, "test@example.com", "access.json", PRIVATE_REPO, IDENTITY, "Lovelace"]) {
     expect(report, bad).not.toContain(bad);
   }
 }
 
 test("QLT-04: Settings → About previews the diagnostic report; Copy and Save (from Spotlight) give it with no note text, names, paths, or addresses", async () => {
   test.setTimeout(120_000);
-  const { dirs, notesRemote, privateRemote } = instance();
+  const { dirs, notesRemote, privateRemote: oldPrivate } = instance();
   const priv = join(dirs.docs, "private");
+  // The private repository has a name of the person's own, and so does the identity.
+  const privateRemote = join(dirname(oldPrivate), `${PRIVATE_REPO}.git`);
+  renameSync(oldPrivate, privateRemote);
+  git(priv, "remote", "set-url", "origin", privateRemote);
+  git(priv, "config", "user.name", IDENTITY);
   write(join(priv, "notes", "party.md"), `# Party\n\n${SECRET_LINE}\n`);
   git(priv, "add", "-A");
   git(priv, "commit", "-q", "-m", "Add a note");
@@ -87,16 +95,27 @@ test("QLT-04: Settings → About previews the diagnostic report; Copy and Save (
     // Save, from Spotlight: the system's dialog is answered with a file in a temporary folder.
     await page.keyboard.press("Escape");
     await expect(settings).toHaveCount(0);
+    // The first answer is inside the workspace: refused, and the dialog asks again.
     const file = join(mkdtempSync(join(tmpdir(), "fn-diag-")), "report.md");
-    await l.app.evaluate(({ dialog }, f) => {
-      dialog.showSaveDialog = (async () => ({ canceled: false, filePath: f })) as typeof dialog.showSaveDialog;
-    }, file);
+    const inside = join(dirs.docs, "notes", "report.md");
+    await l.app.evaluate(({ dialog }, [first, second]) => {
+      const answers = [first, second];
+      (globalThis as { saveAsked?: unknown[] }).saveAsked = [];
+      dialog.showSaveDialog = (async (...args: unknown[]) => {
+        (globalThis as { saveAsked?: unknown[] }).saveAsked!.push(args.at(-1));
+        return { canceled: false, filePath: answers.shift() };
+      }) as typeof dialog.showSaveDialog;
+    }, [inside, file] as const);
     await page.keyboard.press(`${mod}+/`);
     const spotlight = page.getByRole("dialog", { name: "Spotlight" });
     await spotlight.getByRole("combobox").fill("Save diagnostic report");
     await expect(spotlight.locator("[role=option][aria-selected=true]")).toContainText("Save diagnostic report");
     await page.keyboard.press("Enter");
     await expect(page.getByText("Diagnostic report saved")).toBeVisible();
+    expect(existsSync(inside)).toBe(false);
+    const asked = await l.app.evaluate(() => (globalThis as { saveAsked?: { properties?: string[] }[] }).saveAsked ?? []);
+    expect(asked).toHaveLength(2);
+    expect(asked[0]!.properties).toContain("showOverwriteConfirmation");
     const saved = readFileSync(file, "utf8");
     expect(saved).toContain("## Focus Notes diagnostic report");
     expectPrivate(saved, dirs, [notesRemote, privateRemote]);

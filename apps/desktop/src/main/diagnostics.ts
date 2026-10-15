@@ -6,6 +6,7 @@
  */
 import { buildReport, parseTimings, previewOf, settingsSummary, type DiagnosticFacts, type DiagnosticsPreview, type ProblemLog, type RedactOptions, type RepoHealth } from "@focus-notes/core/diagnostics";
 import type { SyncReport } from "@focus-notes/core";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 export interface DiagnosticsDeps {
   app: { version: string; packaged: boolean };
@@ -22,11 +23,14 @@ export interface DiagnosticsDeps {
   state: () => Promise<Record<string, unknown>>;
   log: ProblemLog;
   redaction: () => RedactOptions;
+  /** Brings the known strings up to date before a report is built. */
+  refresh?: () => Promise<void>;
   now?: () => number;
 }
 
 export function diagnostics(d: DiagnosticsDeps) {
   const facts = async (timings: unknown): Promise<DiagnosticFacts> => {
+    await d.refresh?.().catch(() => {});
     const [git, sync, state] = await Promise.all([
       d.git().catch(() => ({ installed: false, ok: false, gcm: false, gh: false })),
       d.sync().catch(() => undefined),
@@ -55,3 +59,43 @@ export function diagnostics(d: DiagnosticsDeps) {
 
 /** The report's file name: the date only, never a note's or the person's name. */
 export const reportFileName = (now: number) => `focus-notes-diagnostics-${new Date(now).toISOString().slice(0, 10)}.md`;
+
+/**
+ * The strings a report must never hold, whatever the facts say (D-140): the GitHub login and name,
+ * Git's user.name and user.email, the setup's repository names, and each remote's owner and
+ * repository name (from `https://github.com/owner/repo.git`, `git@github.com:owner/repo.git`, or a
+ * local path). Three characters or more, each once.
+ */
+export function knownStrings(values: readonly (string | undefined)[], remotes: readonly string[]): string[] {
+  const out = new Set<string>();
+  const add = (v: string | undefined) => {
+    const s = v?.trim();
+    if (s && s.length >= 3 && s.length <= 200) out.add(s);
+  };
+  values.forEach(add);
+  for (const url of remotes) {
+    const parts = url.trim().replace(/\.git\/?$/i, "").split(/[\\/:]+/).filter(Boolean);
+    add(parts.at(-1));
+    if (parts.length >= 2) add(parts.at(-2));
+  }
+  return [...out];
+}
+
+/**
+ * Where a saved report may go: never inside the workspace (it would be committed, and published if
+ * public) or the app's data folder. Compared case-insensitively where the file system is, and
+ * through the real folder when it exists (a junction or link into the workspace counts as inside).
+ */
+export function reportPathAllowed(file: string, forbidden: readonly string[], o: { caseInsensitive?: boolean; real?: (p: string) => string | undefined } = {}): boolean {
+  const ci = o.caseInsensitive ?? (process.platform === "win32" || process.platform === "darwin");
+  const norm = (p: string) => {
+    const r = resolve(p);
+    return ci ? r.toLowerCase() : r;
+  };
+  const real = (p: string) => o.real?.(p) ?? p;
+  const target = [norm(file), norm(join(real(dirname(file)), basename(file)))];
+  return forbidden.every((base) => [norm(base), norm(real(base))].every((b) => target.every((t) => {
+    const rel = relative(b, t);
+    return rel.startsWith("..") || isAbsolute(rel);
+  })));
+}
