@@ -5,7 +5,7 @@
   "description": "The sealing format, the publisher, and the browser reader for an instance's public notes and vault (D-41, D-90)",
   "license": "MIT",
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./publish": "./src/publish.ts", "./vault": "./src/vault.ts" },
+  "exports": { ".": "./src/index.ts", "./publish": "./src/publish.ts", "./vault": "./src/vault.ts", "./access": "./src/access.ts", "./words": "./src/words.ts" },
   "bin": { "focus-notes-seal": "./src/cli.ts" },
   "scripts": { "typecheck": "tsc -p tsconfig.json" }
 }

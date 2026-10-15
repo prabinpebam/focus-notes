@@ -23,7 +23,7 @@ An **audience** is one grant: a name, the ways in, what it opens, and when it en
 | --- | --- |
 | **Name** | The only detail recorded about who it's for (owner decision). A person ("Asha") or a group ("Book club"). Unique among audiences that still work. It isn't secret: the reader types it next to the passcode. |
 | **Ways in** | Magic link, passcode, or both. Both open exactly the same notes. |
-| **Passcode** | **Generated** (default): four random words from the EFF large wordlist, about 52 bits, for example `harbor-maple-river-cloud`. **Your own**: any passcode that passes the strength check (at least 12 characters, and rated "strong" by the zxcvbn-ts estimator, MIT). Weak passcodes can't be saved, because a published file can be attacked offline with unlimited guesses. |
+| **Passcode** | **Generated** (default): four random words from the EFF large wordlist, about 52 bits, for example `harbor-maple-river-cloud`. **Your own**: 16 or more characters, or 3 or more different words, and then rated strong by the strength estimate (as built, D-134; a zxcvbn-style dictionary isn't bundled, so the length or word rule keeps common passwords such as "Password1234" out). Weak passcodes can't be saved, because a published file can be attacked offline with unlimited guesses. |
 | **Opens** | Any mix of notes and folders. A folder includes notes added to it later. |
 | **Expires** | 1 day, 7 days, 30 days (default), 90 days, a date, or never (with a warning). |
 | **State** | Active · Expires soon (3 days or less) · Expired · Withdrawn · Waiting to publish |
@@ -66,16 +66,19 @@ On a shared computer, use your name and the passcode: browsers remember links.
 It works until {expires}.
 ```
 
-Lines for a way in that the audience doesn't have are left out. [Copy invite], [Copy link], and [Copy passcode] each copy one thing. The link and passcode can be shown and copied again later, because the secret is kept in the private repository (never published).
+Lines for a way in that the audience doesn't have are left out, and the shared-computer line appears only when the audience has both a link and a passcode (D-134). A shared folder is named in the invite by its own name, never the private path above it. Copying goes through the desktop's main process, which clears the clipboard after 90 seconds if it still holds what was copied; Windows clipboard history and its cloud sync may keep a copy, which the app can't prevent, so on a shared computer turn clipboard history off or send the passcode another way. [Copy invite], [Copy link], and [Copy passcode] each copy one thing. The link and passcode can be shown and copied again later, because the secret is kept in the private repository (never published).
 
 ### Withdraw and extend
 
-- **Withdraw:** "Withdraw access for Asha? The link and passcode stop working within about 15 minutes. Anything already read can't be taken back." [Cancel] [Withdraw]. It opens on [Cancel].
-- **Extend:** choose a new date. It works right away, including links already sent.
+- **Withdraw:** "Withdraw access for Asha? The link and passcode stop working after your next backup and publish. Anything already read can't be taken back." [Cancel] [Withdraw]. It opens on [Cancel].
+- **Extend:** choose a new date (as built, *Extend 30 days* in the ⋯ menu, or a new *Works for* in *Change…*). It works after the next publish, including links already sent.
+
+Every change is committed to `private/access.json` like a note, so it's live after the next backup and publish; the app says so plainly beside the list and in the invite (D-134).
 
 <h2 id="settings-sharing" data-reader-personas="design product">Settings → Sharing</h2>
 
 - **All people with access:** *You* (the vault) first, then every audience with its name, ways in, what it opens, expiry, and state. Filter by Active, Expired, or Withdrawn, search by name, and act on any row.
+- **As built (WP-5.3, D-134):** each audience is a card with its initials, what it opens and how, and an expiry badge, with [Invite] and ⋯ (Change…, Extend 30 days, Withdraw…, Delete…); [Share with someone] opens *Add people* as a dialog, whose *Opens* is a set of toggle chips for every private folder and note with a filter, and whose *Expires* is *Works for* (1, 7, 30, 90 days, Always). The filter and search by name, the date picker, and the template editor aren't built yet. Only the desktop's main process writes `access.json` and makes its secrets.
 - **Invite template:** edit the message, with the placeholders listed.
 - **Share links on this workspace:** whether share-link publishing is set up (the deploy key and secret from [Creating a workspace](../../architecture/desktop-and-git.md#creating-a-workspace)), with [Set up] if it was skipped.
 

@@ -124,6 +124,13 @@ contextBridge.exposeInMainWorld("focusNotes", {
     save: (text: string) => ipcRenderer.invoke("settings:save", text),
     remove: () => ipcRenderer.invoke("settings:remove"),
   },
+  // Share audiences (WP-5.3, D-134): changes as data; the main process makes the secrets and writes access.json.
+  access: {
+    load: () => ipcRenderer.invoke("access:load"),
+    apply: (change: unknown) => ipcRenderer.invoke("access:apply", change),
+    reveal: (id: string) => ipcRenderer.invoke("access:reveal", id),
+    copy: (id: string, what: string, invite?: unknown) => ipcRenderer.invoke("access:copy", id, what, invite),
+  },
   // Save and sync with the user's own Git (WP-3.3): intent-level only, never a Git command.
   sync: {
     now: (reason: "save" | "switch") => ipcRenderer.invoke("sync:now", reason),
