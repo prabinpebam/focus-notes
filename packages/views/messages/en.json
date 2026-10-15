@@ -490,6 +490,7 @@
   "sync.problem.signing": "Couldn't save to Git: the commit couldn't be signed.",
   "sync.problem.hook": "Couldn't save to Git: one of the repository's hooks refused the commit.",
   "sync.problem.template": "This is a template repository. Your notes weren't saved to it.",
+  "sync.problem.unreadableRemote": "Focus Notes can't tell which repository this workspace saves to, so your notes weren't sent. They're safe on this computer.",
   "sync.problem.failed": "Couldn't sync. Your changes are safe on this computer.",
   "command.setup.retry": "Retry",
   "command.setup.useFolder": "Download your notes to another folder",

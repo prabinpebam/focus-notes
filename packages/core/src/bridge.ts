@@ -138,7 +138,7 @@ export interface SettingsBridge {
 }
 
 /** Why saving to Git or syncing failed (Feedback → Save and sync status). */
-export type SyncProblem = "offline" | "auth" | "conflict" | "locked" | "identity" | "signing" | "hook" | "template" | "failed";
+export type SyncProblem = "offline" | "auth" | "conflict" | "locked" | "identity" | "signing" | "hook" | "template" | "unreadableRemote" | "failed";
 /** Where Git saving stands. Only problems are shown (EDT-11). */
 export interface SyncReport {
   /** False when the workspace isn't a Git repository: saving stays local, with no Git UI. */

@@ -50,10 +50,11 @@ export interface GitSyncOptions {
   fetchEveryMs?: number;
   onReport?: (r: SyncReport) => void;
   /**
-   * Whether a remote's URL is a template repository (D-157): a push to one is refused, the commits
-   * stay here, and the problem is `template`. Unknown answers are false, so saving isn't blocked.
+   * Whether a push may go to a remote's URL (D-157): to a template it's refused with `template`, and
+   * to a URL that can't be read as owner/name with `unreadableRemote`; the commits stay here. Every
+   * push URL of the remote is checked, before the push and again before a retry.
    */
-  templateRemote?: (url: string) => Promise<boolean>;
+  checkRemote?: (url: string) => Promise<"ok" | "template" | "unreadable">;
   /** Logs counts and problems, never paths or note text. */
   log?: (line: string) => void;
 }
@@ -767,7 +768,8 @@ export class GitSync {
     }
     if (st.ahead === 0) return { moved };
     // Never to a template repository (D-157), whatever route the workspace came by.
-    if (await this.#toTemplate(repo, st.upstream)) return { problem: "template", moved };
+    const refused = await this.#refusePush(repo, st.upstream);
+    if (refused) return { problem: refused, moved };
     const push = () => this.#git(repo, ["-c", "push.default=upstream", "push", "--quiet"], undefined, timeout);
     let r = await push();
     repo.cache.clear();
@@ -778,23 +780,32 @@ export class GitSync {
     if (problem !== "conflict") return { problem, moved };
     const p = await pull();
     if (p) return { problem: p, moved };
+    // The remote is asked about again before the retry (LOW-6).
+    const again = st.upstream ? await this.#refusePush(repo, st.upstream) : undefined;
+    if (again) return { problem: again, moved };
     r = await push();
     repo.cache.clear();
     return r.code === 0 ? (pushed(), { moved }) : { problem: networkProblem(r.stderr), moved };
   }
 
-  /** Whether the remote the branch pushes to (its upstream's) is a template repository (D-157). */
-  async #toTemplate(repo: Repo, upstream: string): Promise<boolean> {
-    const check = this.#o.templateRemote;
-    if (!check) return false;
+  /**
+   * Why a push to the branch's upstream remote must not go (D-157): any of its push URLs a template
+   * (`template`), or one it can't read (`unreadableRemote`, MEDIUM-3, HIGH-2). Undefined when it may.
+   */
+  async #refusePush(repo: Repo, upstream: string): Promise<SyncProblem | undefined> {
+    const check = this.#o.checkRemote;
+    if (!check) return undefined;
     const names = (await this.#git(repo, ["remote"])).stdout.split(/\r?\n/).filter(Boolean);
     const remote = names.filter((n) => upstream.startsWith(`${n}/`)).sort((a, b) => b.length - a.length)[0];
-    if (!remote) return false;
-    const url = await this.#git(repo, ["remote", "get-url", "--push", remote]);
-    if (url.code !== 0) return false;
-    const template = await check(url.stdout.trim()).catch(() => false);
-    if (template) this.#o.log?.(`git-template repo=${repo.name}`);
-    return template;
+    // A branch tracking another branch here pushes nowhere off this computer.
+    if (!remote) return undefined;
+    const got = await this.#git(repo, ["remote", "get-url", "--push", "--all", remote]);
+    const urls = got.stdout.split(/\r?\n/).map((u) => u.trim()).filter(Boolean);
+    if (got.code !== 0 || !urls.length) return "unreadableRemote";
+    const verdicts = await Promise.all(urls.map((u) => check(u).catch(() => "unreadable" as const)));
+    const problem = verdicts.includes("template") ? "template" : verdicts.includes("unreadable") ? "unreadableRemote" : undefined;
+    if (problem) this.#o.log?.(`git-refused repo=${repo.name} problem=${problem}`);
+    return problem;
   }
 
   async #rebase(repo: Repo): Promise<SyncProblem | undefined> {

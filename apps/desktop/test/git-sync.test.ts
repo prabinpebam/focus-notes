@@ -264,7 +264,7 @@ describe("D-157: never pushes notes to a template repository", () => {
   it("refuses the push to a template remote, keeps the commits here, and says so; other remotes still push", async () => {
     const { ws, notesRemote, privateRemote } = instance();
     const asked: string[] = [];
-    const s = await open(ws, { templateRemote: async (url) => (asked.push(url), url === notesRemote) });
+    const s = await open(ws, { checkRemote: async (url) => (asked.push(url), url === notesRemote ? "template" : "ok") });
     const before = git(notesRemote, "rev-parse", "main");
     const pub = join(ws, "notes", "hello.md");
     writeFileSync(pub, "# Hello\n\nNot for a template.\n");
@@ -286,12 +286,66 @@ describe("D-157: never pushes notes to a template repository", () => {
 
   it("saves as normal when the remote isn't a template (an unknown answer is not a template)", async () => {
     const { ws, notesRemote } = instance();
-    const s = await open(ws, { templateRemote: async () => false });
+    const s = await open(ws, { checkRemote: async () => "ok" });
     const pub = join(ws, "notes", "hello.md");
     writeFileSync(pub, "# Hello\n\nFine.\n");
     s.written(pub);
     expect((await s.request("save")).problem).toBeUndefined();
     expect(git(notesRemote, "show", "main:notes/hello.md")).toBe("# Hello\n\nFine.");
+  });
+
+  it("HIGH-2: refuses to push to a remote it can't read as owner/name, keeping the commit here", async () => {
+    const { ws, notesRemote } = instance();
+    const s = await open(ws, { checkRemote: async () => "unreadable" });
+    const before = git(notesRemote, "rev-parse", "main");
+    const pub = join(ws, "notes", "hello.md");
+    writeFileSync(pub, "# Hello\n\nWhere to?\n");
+    s.written(pub);
+    const r = await s.request("save");
+    expect(r).toMatchObject({ state: "problem", problem: "unreadableRemote" });
+    expect(git(notesRemote, "rev-parse", "main")).toBe(before);
+    expect(subject(ws, "HEAD")).toMatch(/^Update notes\/hello\.md/);
+  });
+
+  it("MEDIUM-3: checks every push URL of the remote, and refuses if any is a template", async () => {
+    const { root, ws, notesRemote } = instance();
+    const template = join(root, "template.git");
+    git(root, "clone", "-q", "--bare", notesRemote, template);
+    git(ws, "remote", "set-url", "--add", "--push", "origin", notesRemote);
+    git(ws, "remote", "set-url", "--add", "--push", "origin", template);
+    const asked: string[] = [];
+    const s = await open(ws, { checkRemote: async (url) => (asked.push(url), url === template ? "template" : "ok") });
+    const before = git(notesRemote, "rev-parse", "main");
+    const pub = join(ws, "notes", "hello.md");
+    writeFileSync(pub, "# Hello\n\nTwo places.\n");
+    s.written(pub);
+    expect((await s.request("save")).problem).toBe("template");
+    expect(asked).toEqual([notesRemote, template]);
+    expect(git(notesRemote, "rev-parse", "main"), "not even the first push URL").toBe(before);
+    expect(git(template, "rev-parse", "main")).toBe(before);
+  });
+
+  it("LOW-6: checks again before the retry push after a rejected push", async () => {
+    const { root, ws, notesRemote } = instance();
+    // Someone else pushed first, so the app's push is rejected, pulled, and retried.
+    const other = join(root, "other");
+    git(root, "clone", "-q", notesRemote, other);
+    configure(other);
+    write(join(other, "notes", "elsewhere.md"), "# Elsewhere\n");
+    git(other, "add", "-A");
+    git(other, "commit", "-q", "-m", "Elsewhere");
+    git(other, "push", "-q");
+    const theirs = git(notesRemote, "rev-parse", "main");
+    let checks = 0;
+    // The remote turns into a template between the first push and the retry.
+    const s = await open(ws, { checkRemote: async () => (++checks > 1 ? "template" : "ok") });
+    const pub = join(ws, "notes", "hello.md");
+    writeFileSync(pub, "# Hello\n\nRetried.\n");
+    s.written(pub);
+    const r = await s.request("save");
+    expect(checks).toBe(2);
+    expect(r.problem).toBe("template");
+    expect(git(notesRemote, "rev-parse", "main"), "the retry never pushed").toBe(theirs);
   });
 });
 

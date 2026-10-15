@@ -291,5 +291,13 @@ describe("FRE-06: opening a workspace from GitHub or this computer", () => {
     expect(await checkWorkspace(runner(w), join(r.root, "seed-n"), isTemplate)).toEqual({ ok: false, problem: "template" });
     // Not a template: both go on as before.
     expect(await checkWorkspace(runner(w), join(r.root, "seed-n"), async () => false)).toMatchObject({ ok: true });
+    // MEDIUM-3: any of origin's push URLs, not only the first.
+    const seed = join(r.root, "seed-n");
+    const elsewhere = join(r.root, "elsewhere.git");
+    w.git(seed, "remote", "set-url", "--add", "--push", "origin", elsewhere);
+    w.git(seed, "remote", "set-url", "--add", "--push", "origin", r.notes);
+    const asked: string[] = [];
+    expect(await checkWorkspace(runner(w), seed, async (url) => (asked.push(url), isTemplate(url)))).toEqual({ ok: false, problem: "template" });
+    expect(asked).toHaveLength(2);
   });
 });

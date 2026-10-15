@@ -60,8 +60,11 @@ export async function checkWorkspace(git: GitRunner, folder: string, isTemplate?
   const top = await git({ cwd: folder, args: ["rev-parse", "--path-format=absolute", "--show-toplevel"], read: true });
   if (top.code !== 0 || !same(top.stdout.trim(), folder)) return { ok: false, problem: "notGit" };
   if (isTemplate) {
-    const origin = await git({ cwd: folder, args: ["remote", "get-url", "--push", "origin"], read: true });
-    if (origin.code === 0 && (await isTemplate(origin.stdout.trim()).catch(() => false))) return { ok: false, problem: "template" };
+    // Every push URL of origin, not only the first (MEDIUM-3).
+    const origin = await git({ cwd: folder, args: ["remote", "get-url", "--push", "--all", "origin"], read: true });
+    const urls = origin.code === 0 ? origin.stdout.split(/\r?\n/).map((u) => u.trim()).filter(Boolean) : [];
+    const templates = await Promise.all(urls.map((u) => isTemplate(u).catch(() => false)));
+    if (templates.includes(true)) return { ok: false, problem: "template" };
   }
   if (!existsSync(join(folder, FORMAT))) return { ok: false, problem: "notWorkspace" };
   const priv = await privateNotes(git, folder);

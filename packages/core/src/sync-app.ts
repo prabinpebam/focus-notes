@@ -25,7 +25,7 @@ export interface SyncState {
 }
 export const NO_SYNC: SyncState = { git: false };
 
-export const SYNC_PROBLEMS: readonly SyncProblem[] = ["offline", "auth", "conflict", "locked", "identity", "signing", "hook", "template", "failed"];
+export const SYNC_PROBLEMS: readonly SyncProblem[] = ["offline", "auth", "conflict", "locked", "identity", "signing", "hook", "template", "unreadableRemote", "failed"];
 
 /** The save state's six looks (D-132). */
 export type SaveStateKind = "savedLocal" | "pending" | "syncing" | "synced" | "offline" | "error";
@@ -136,10 +136,11 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
 
 /**
  * A problem whose toast offers something other than Retry: a template repository (D-157) is never
- * your notes, so the way on is choosing or creating your own (Run setup again), not trying again.
+ * your notes, and a remote the app can't read might be one, so the way on is choosing or creating
+ * your own (Run setup again), not trying again.
  */
 export function syncProblemAction(p: SyncProblem, catalog: MessageCatalog): { command: string; label: string } | undefined {
-  return p === "template" ? { command: "setup.runAgain", label: catalog.format("command.setup.runAgain") } : undefined;
+  return p === "template" || p === "unreadableRemote" ? { command: "setup.runAgain", label: catalog.format("command.setup.runAgain") } : undefined;
 }
 
 /** A sync that failed when the person asked for it: the toast says why, and offers Retry. */

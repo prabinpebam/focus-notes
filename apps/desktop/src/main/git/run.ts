@@ -4,7 +4,6 @@
  * helper and never appear in arguments (SEC-03).
  */
 import { execFile } from "node:child_process";
-import type { SyncProblem } from "@focus-notes/core";
 
 export interface GitCall {
   /** The repository's folder, passed as `-C`. */
@@ -66,7 +65,7 @@ export class Queue {
 
 
 /** Why a push, pull, or fetch failed, from Git's own words (LC_ALL=C). */
-export function networkProblem(stderr: string): SyncProblem {
+export function networkProblem(stderr: string): "auth" | "locked" | "conflict" | "offline" | "failed" {
   if (/Authentication failed|could not read (Username|Password)|terminal prompts disabled|Permission denied \(publickey|returned error: 40[13]|Invalid username or password|HTTP 40[13]/i.test(stderr)) return "auth";
   if (/index\.lock|Unable to create '.*\.lock'|another git process/i.test(stderr)) return "locked";
   if (/\[rejected\]|non-fast-forward|fetch first|\(conflict\)|CONFLICT/i.test(stderr)) return "conflict";
@@ -75,7 +74,7 @@ export function networkProblem(stderr: string): SyncProblem {
 }
 
 /** Why a commit failed: hooks are never skipped, so a refused commit says so (Desktop and Git → Running git). */
-export function commitProblem(stderr: string): SyncProblem {
+export function commitProblem(stderr: string): "identity" | "locked" | "signing" | "hook" {
   if (/Please tell me who you are|unable to auto-detect email|empty ident/i.test(stderr)) return "identity";
   if (/index\.lock|Unable to create '.*\.lock'|another git process/i.test(stderr)) return "locked";
   if (/gpg failed|failed to sign|signing failed|cannot run gpg|ssh-keygen/i.test(stderr)) return "signing";

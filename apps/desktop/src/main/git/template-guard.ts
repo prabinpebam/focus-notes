@@ -27,26 +27,63 @@ const ref = (owner: string | undefined, name: string | undefined): RepoRef | und
 const slashes = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "");
 
 /**
- * The GitHub repository a remote points to: `https://github.com/o/n(.git)`, `git@github.com:o/n.git`,
- * `ssh://git@github.com/o/n.git`. With `localBase` (the journeys' bare remotes, never packaged), a
- * remote at `<localBase>/o/n.git` too. Anything else is undefined: not GitHub, so not a template.
+ * What a remote's URL points to, as far as the app can tell (HIGH-2):
+ * - `repo`: owner and name. `github` when the host is GitHub (`github.com`, `www.`, `ssh.` on any
+ *   port) or could be an SSH alias for it (`git@alias:o/n.git`, `github-personal:o/n`,
+ *   `ssh://alias/o/n`), so GitHub is asked; credentials and a trailing `/` or `.git` are ignored.
+ * - `other`: an HTTP(S) or Git host that isn't GitHub. `local`: a folder on this computer.
+ * - `unreadable`: anything else, including a GitHub (or alias) path that isn't exactly owner/name.
+ * With `localBase` (the journeys' bare remotes, never packaged), `<localBase>/o/n.git` is a repo too.
  */
-export function remoteRepo(url: string, localBase?: string): RepoRef | undefined {
+export type RemoteKind = { kind: "repo"; owner: string; name: string; github: boolean } | { kind: "other" } | { kind: "local" } | { kind: "unreadable" };
+const GITHUB_HOST = /^(?:www\.|ssh\.)?github\.com$/i;
+const repoOf = (path: string, github: boolean): RemoteKind => {
+  const parts = path.replace(/\/+$/, "").replace(/^\/+/, "").split("/");
+  const r = parts.length === 2 ? ref(parts[0], parts[1]) : undefined;
+  return r ? { kind: "repo", ...r, github } : { kind: "unreadable" };
+};
+export function readRemote(url: string, localBase?: string): RemoteKind {
   const u = url.trim();
-  const scp = /^[^@/\s]+@github\.com:\/?([^/]+)\/([^/]+?)\/?$/i.exec(u);
-  if (scp) return ref(scp[1], scp[2]);
-  const web = /^(?:https?|ssh|git):\/\/(?:[^@/]+@)?github\.com(?::\d+)?\/([^/]+)\/([^/]+?)\/?$/i.exec(u);
-  if (web) return ref(web[1], web[2]);
-  if (localBase) {
-    const base = slashes(localBase).toLowerCase();
-    const p = slashes(u.replace(/^file:\/\//i, ""));
-    if (p.toLowerCase().startsWith(`${base}/`)) {
-      const parts = p.slice(base.length + 1).split("/");
-      if (parts.length === 2) return ref(parts[0], parts[1]);
+  if (!u) return { kind: "unreadable" };
+  const local = /^file:\/\//i.test(u) || /^[A-Za-z]:[\\/]/.test(u) || /^(?:[\\/]|\.\.?[\\/])/.test(u) || !/[:@]/.test(u);
+  if (local) {
+    if (localBase) {
+      const base = slashes(localBase).toLowerCase();
+      const p = slashes(u.replace(/^file:\/\//i, ""));
+      if (p.toLowerCase().startsWith(`${base}/`)) return repoOf(p.slice(base.length + 1), true);
     }
+    return { kind: "local" };
   }
-  return undefined;
+  const withScheme = /^([a-z][a-z0-9+.-]*):\/\/(?:[^/]*@)?([^/:]*)(?::\d*)?(\/.*)?$/i.exec(u);
+  if (withScheme) {
+    const [, scheme, host, path] = withScheme;
+    if (!host) return { kind: "unreadable" };
+    if (GITHUB_HOST.test(host)) return repoOf(path ?? "", true);
+    // An SSH host may be an alias for GitHub (~/.ssh/config); a web host that isn't GitHub isn't.
+    return /^(?:ssh|git\+ssh|ssh\+git)$/i.test(scheme!) ? repoOf(path ?? "", true) : { kind: "other" };
+  }
+  // scp-like `[user@]host:path`: GitHub, or an SSH alias for it.
+  const scp = /^(?:[^@/]+@)?([^/:]+):(.*)$/.exec(u);
+  return scp ? repoOf(scp[2]!, true) : { kind: "unreadable" };
 }
+
+/** A GitHub repository a remote points to (`readRemote`'s `repo` on GitHub or an alias), or undefined. */
+export function remoteRepo(url: string, localBase?: string): RepoRef | undefined {
+  const r = readRemote(url, localBase);
+  return r.kind === "repo" && r.github ? { owner: r.owner, name: r.name } : undefined;
+}
+
+/** Whether a known template's name is anywhere in a URL as a whole name (any case, any owner or host). */
+export function namesKnownTemplate(url: string, known: readonly RepoRef[] = KNOWN_TEMPLATES): boolean {
+  const u = url.replace(/\\/g, "/").toLowerCase();
+  return known.some((k) => {
+    const n = k.name.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?:^|[/:])${n}(?:\\.git)?(?:/|$)`).test(u);
+  });
+}
+
+/** Whether a push may go to a remote (D-157): `template` and `unreadable` are refused. */
+export type RemoteVerdict = "ok" | "template" | "unreadable";
 
 export type TemplateAnswer = "template" | "notTemplate" | "unknown";
 
@@ -100,9 +137,22 @@ export class TemplateGuard {
     return (await this.check(owner, name)) === "template";
   }
 
-  /** Whether a remote's URL is a template repository on GitHub. */
+  /**
+   * Whether a push may go to a remote's URL: a known template's name anywhere in it, or GitHub's
+   * `is_template` for a repository on GitHub (or an SSH alias for it), is `template`; a URL it
+   * can't read as owner/name is `unreadable` (HIGH-2). Another host, or a folder here, is `ok`.
+   */
+  async checkRemote(url: string): Promise<RemoteVerdict> {
+    if (namesKnownTemplate(url, this.#o.known)) return "template";
+    const r = readRemote(url, this.#o.localBase);
+    if (r.kind === "unreadable") return "unreadable";
+    if (r.kind !== "repo") return "ok";
+    if (knownTemplate(r.owner, r.name, this.#o.known)) return "template";
+    return r.github && (await this.isTemplateRepo(r.owner, r.name)) ? "template" : "ok";
+  }
+
+  /** Whether a remote's URL is a template repository (an unreadable one isn't; `checkRemote` refuses it). */
   async isTemplateRemote(url: string): Promise<boolean> {
-    const r = remoteRepo(url, this.#o.localBase);
-    return r ? this.isTemplateRepo(r.owner, r.name) : false;
+    return (await this.checkRemote(url)) === "template";
   }
 }

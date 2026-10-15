@@ -11,6 +11,7 @@ const messages = {
   "toast.retry": "Retry", "toast.saveFailed": "Couldn't save.", "trigger.saveProblem": "Couldn't save", "trigger.syncProblem": "Couldn't sync",
   "sync.problem.offline": "Couldn't sync: you're offline.", "sync.problem.conflict": "Couldn't sync: changes don't fit.", "sync.problem.failed": "Couldn't sync.",
   "sync.problem.template": "This is a template repository. Your notes weren't saved to it.", "command.setup.runAgain": "Run setup again",
+  "sync.problem.unreadableRemote": "Couldn't tell where this workspace saves to.",
   "conflict.resolve": "Resolve",
   "save.state.savedLocal": "Saved on this computer", "save.state.pending": "Saved here · not backed up yet", "save.state.syncing": "Backing up…",
   "save.state.synced": "Backed up at {time}", "save.state.syncedNow": "Backed up", "save.state.offline": "Offline", "save.state.error": "Couldn't back up",
@@ -98,6 +99,15 @@ describe("EDT-11: save and sync", () => {
     t.willReturn({ git: true, state: "problem", problem: "template", waiting: 1 });
     await t.app.commands.run("note.save");
     expect(t.app.store.state.ui.toasts.at(-1)).toMatchObject({ message: "This is a template repository. Your notes weren't saved to it.", action: { command: "setup.runAgain", label: "Run setup again" } });
+  });
+
+  it("HIGH-2: a remote it can't read says so, and offers Run setup again rather than Retry", async () => {
+    const t = setup();
+    await t.app.start();
+    await settle();
+    t.report({ git: true, state: "problem", problem: "unreadableRemote", waiting: 1 });
+    expect(t.toasts()).toEqual(["Couldn't tell where this workspace saves to."]);
+    expect(t.app.store.state.ui.toasts[0]!.action).toEqual({ command: "setup.runAgain", label: "Run setup again" });
   });
 
   it("shows a background problem once, as a toast and the trigger's dot, and clears it when a sync works", async () => {

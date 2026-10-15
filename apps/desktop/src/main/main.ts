@@ -174,7 +174,7 @@ const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], g
       policy,
       ...(pointerGapMs !== undefined ? { pointerGapMs } : {}),
       // Never pushed to a template repository (D-157).
-      templateRemote: isTemplateRemote,
+      checkRemote: (url) => templateGuard.checkRemote(url),
       // After the window closes, the final sync on quit still runs; there's just no one to tell.
       onReport: (r) => {
         if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("sync:status", r);
