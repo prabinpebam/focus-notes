@@ -46,7 +46,7 @@ export interface WebBridgeOptions {
   fetchSite?: SiteFetch;
 }
 
-/** The site's root from the app's page (vite.config.ts): "./", or "../" where the app is at /app/ (D-167). */
+/** The site's root from the app's page (vite.config.ts): "./", or "../" in dist-app/, the app at /app/ (D-167). */
 const SITE_ROOT: string = import.meta.env.FOCUS_NOTES_SITE_ROOT ?? "./";
 
 const siteFetch: SiteFetch = async (path) => {

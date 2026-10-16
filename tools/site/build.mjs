@@ -9,10 +9,10 @@
  *   /s/          the share reader, where share links have always pointed
  *
  * The publisher (packages/seal) then adds /n/, the notes and the sealed files at the root, where the
- * share reader and /app/ read them (the web app built with FOCUS_NOTES_SITE_ROOT=../).
+ * share reader and /app/ read them (the web app's dist-app/, built with `--mode app`).
  *
  *   node tools/site/build.mjs --out _site [--content site] [--renderer apps/web/dist-site]
- *     [--app apps/web/dist] [--site-url https://…/] [--assume documentations/ …]
+ *     [--app apps/web/dist-app] [--site-url https://…/] [--assume documentations/ …]
  *
  * It fails when a page links to an address the site doesn't have, or loads anything from another origin.
  */
@@ -162,7 +162,7 @@ function parseArgs(argv) {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const o = parseArgs(process.argv.slice(2));
   if (!o.out) {
-    console.error("Usage: node tools/site/build.mjs --out <folder> [--clean] [--content site] [--renderer apps/web/dist-site] [--app apps/web/dist] [--site-url <url>] [--assume <path>]…");
+    console.error("Usage: node tools/site/build.mjs --out <folder> [--clean] [--content site] [--renderer apps/web/dist-site] [--app apps/web/dist-app] [--site-url <url>] [--assume <path>]…");
     process.exit(2);
   }
   if (o.clean) await rm(o.out, { recursive: true, force: true });

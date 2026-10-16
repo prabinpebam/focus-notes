@@ -1,0 +1,8 @@
+{ "cmp": { "siteSection": {
+  "$description": "A section of a product site page (WP-10.1): the gap between its parts, and a band's raised background, corners and padding.",
+  "gap": { "$type": "dimension", "$value": "{space.m}" },
+  "scrollMargin": { "$type": "dimension", "$value": "{space.xl}", "$description": "Room above a section a link jumps to." },
+  "band": { "$type": "color", "$value": "{color.surface}" },
+  "bandRadius": { "$type": "dimension", "$value": "{radius.sheet}" },
+  "bandPadding": { "$type": "dimension", "$value": "{space.xl}" }
+} } }

@@ -19,7 +19,7 @@ const column = (max: string) => ({
   "@media": { [compact]: { paddingInline: t.gutterCompact } },
 }) as const;
 
-export const root = style({ display: "flex", flexDirection: "column", minHeight: "100vh" });
+export const root = style({ display: "flex", flexDirection: "column" });
 
 export const skip = style({
   position: "absolute",

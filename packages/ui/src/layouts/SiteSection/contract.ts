@@ -11,7 +11,7 @@ export const contract = defineContract({
   events: {},
   slots: { default: { accepts: "any" } },
   states: ["rest"],
-  tokens: "cmp.sitePage.*",
+  tokens: "cmp.siteSection.*",
   a11y: { pattern: "region", name: "Its heading, the first child's." },
   fixtures: [
     ...["plain", "band"].map((tone) => ({

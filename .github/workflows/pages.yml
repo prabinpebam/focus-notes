@@ -42,11 +42,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: node packages/tokens/build.mjs
+      # The owner's app goes to /app/ (D-167), built to read the notes from the site's root (dist-app/),
+      # where the share reader (/s/) and the public pages (/n/) have always found them.
       - name: Build the web app
-        # The owner's app is at /app/ (D-167) and reads the notes from the site's root, where the share
-        # reader (/s/) and the public pages (/n/) have always found them.
-        env:
-          FOCUS_NOTES_SITE_ROOT: "../"
         run: pnpm --filter @focus-notes/web run build
       # The site's address, for canonical links (WP-5.1, WP-10.1). A third-party step, so it runs before
       # private/ is checked out.
@@ -60,7 +58,7 @@ jobs:
           cp -r documentations _site/documentations
           if [ -d slate ]; then cp -r slate _site/slate; fi
           touch _site/.nojekyll
-          node tools/site/build.mjs --out _site --app apps/web/dist --renderer apps/web/dist-site --site-url "$SITE_URL/"
+          node tools/site/build.mjs --out _site --app apps/web/dist-app --renderer apps/web/dist-site --site-url "$SITE_URL/"
       # Only now, after every third-party build step, is private plaintext on the runner.
       - name: Check out the private repository with the read-only deploy key
         if: env.HAS_PRIVATE_KEY == 'true' && (github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch))

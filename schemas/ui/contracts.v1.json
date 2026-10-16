@@ -8123,7 +8123,7 @@
       "states": [
         "rest"
       ],
-      "tokens": "cmp.sitePage.*",
+      "tokens": "cmp.siteSection.*",
       "a11y": {
         "pattern": "region",
         "name": "Its heading, the first child's."

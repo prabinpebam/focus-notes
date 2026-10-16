@@ -1,8 +1,6 @@
 { "cmp": { "sitePage": {
   "$description": "A page of the product site (IA-VIEW-SITE, IA-VIEW-HELP, WP-10.1): the page, its header with the site's links, the content column, sections, and the footer.",
-  "background": { "$type": "color", "$value": "{color.canvas}" },
-  "band": { "$type": "color", "$value": "{color.surface}", "$description": "A raised section's background (the landing page's alternating bands)." },
-  "text": { "$type": "color", "$value": "{color.text}" },
+  "background": { "$type": "color", "$value": "{color.canvas}" },  "text": { "$type": "color", "$value": "{color.text}" },
   "muted": { "$type": "color", "$value": "{color.textMuted}" },
   "border": { "$type": "color", "$value": "{color.border}" },
   "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
@@ -24,6 +22,5 @@
   "top": { "$type": "dimension", "$value": "{space.xxl}" },
   "gap": { "$type": "dimension", "$value": "{space.xl}" },
   "sectionGap": { "$type": "dimension", "$value": "{space.xxl}" },
-  "sectionRadius": { "$type": "dimension", "$value": "{radius.sheet}" },
   "edge": { "$type": "dimension", "$value": "{space.m}" }
 } } }

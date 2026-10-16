@@ -125,10 +125,11 @@ describe("D-167: the owner's app moves to /app/, and share links keep working at
     const wf = yaml.load(readFileSync(join(root, ".github", "workflows", "pages.yml"), "utf8"));
     const steps = wf.jobs.build.steps;
     const at = (re) => steps.findIndex((s) => re.test(s.name ?? ""));
-    const web = steps[at(/Build the web app/)];
-    expect(web.env.FOCUS_NOTES_SITE_ROOT).toBe("../");
+    expect(steps[at(/Build the web app/)].run).toBe("pnpm --filter @focus-notes/web run build");
+    // The web app's build includes dist-app/: the app built to read the notes from the folder above it.
+    expect(JSON.parse(readFileSync(join(root, "apps", "web", "package.json"), "utf8")).scripts.build).toMatch(/vite build --config vite\.config\.ts --mode app/);
     const site = steps[at(/Build the product site/)];
-    expect(site.run).toMatch(/node tools\/site\/build\.mjs --out _site --app apps\/web\/dist/);
+    expect(site.run).toMatch(/node tools\/site\/build\.mjs --out _site --app apps\/web\/dist-app /);
     expect(site.run).toMatch(/--site-url "\$SITE_URL\/"/);
     expect(at(/Build the product site/)).toBeGreaterThan(at(/Build the web app/));
     expect(at(/Build the product site/)).toBeGreaterThan(steps.findIndex((s) => s.id === "pages"));
