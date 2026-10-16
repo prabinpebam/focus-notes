@@ -3445,7 +3445,7 @@
                     "false": {
                       "type": "Inline",
                       "props": {
-                        "gap": "m"
+                        "gap": "xs"
                       },
                       "children": [
                         {
