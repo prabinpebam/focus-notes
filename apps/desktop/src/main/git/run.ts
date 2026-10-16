@@ -4,6 +4,7 @@
  * helper and never appear in arguments (SEC-03).
  */
 import { execFile } from "node:child_process";
+import { Worker } from "node:worker_threads";
 
 export interface GitCall {
   /** The repository's folder, passed as `-C`. */
@@ -38,24 +39,99 @@ export function gitEnv(base: NodeJS.ProcessEnv, read: boolean): NodeJS.ProcessEn
   return env;
 }
 
-/** A runner for the `git` on PATH. `onSpawn` sees every argument list and environment (tests check them). */
-export function createRunner(options: { git?: string; env?: NodeJS.ProcessEnv; onSpawn?: (args: string[], env: NodeJS.ProcessEnv) => void } = {}): GitRunner {
-  const git = options.git ?? "git";
-  return (call) => new Promise((resolve) => {
-    const args = ["-C", call.cwd, ...call.args];
-    const env = { ...gitEnv(options.env ?? process.env, call.read === true), ...call.env };
-    options.onSpawn?.(args, env);
-    const child = execFile(git, args, { env, timeout: call.timeoutMs ?? DEFAULT_TIMEOUT_MS, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
+/**
+ * Starting a process blocks the thread that starts it: on Windows, 10 to 30 ms for each Git command
+ * (measured in the main process's profile, D-151 (5)). So Git starts on a worker thread of its own,
+ * and the main process, which moves the window and answers the page, only posts the call and gets
+ * the result. Where a worker can't start, Git starts here as before.
+ */
+const WORKER_SOURCE = `
+const { parentPort } = require("node:worker_threads");
+const { execFile } = require("node:child_process");
+parentPort.on("message", ({ id, git, args, env, timeout, input }) => {
+  const child = execFile(git, args, { env, timeout, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
+    if (!error) return parentPort.postMessage({ id, code: 0, stdout, stderr });
+    const code = typeof error.code === "number" && !error.killed ? error.code : -1;
+    parentPort.postMessage({ id, code, stdout: stdout || "", stderr: (stderr || "") + (error.killed ? "\\n(timed out)" : typeof error.code === "string" ? "\\n" + error.code : "") });
+  });
+  if (child.stdin) {
+    child.stdin.on("error", () => {});
+    child.stdin.end(input || "");
+  }
+});
+`;
+interface Spawn { git: string; args: string[]; env: NodeJS.ProcessEnv; timeout: number; input?: string; onStderr?: (chunk: string) => void }
+
+/** Runs Git on this thread: where a worker isn't available. */
+function runHere(s: Spawn): Promise<GitResult> {
+  return new Promise((resolve) => {
+    const child = execFile(s.git, s.args, { env: s.env, timeout: s.timeout, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
       if (!error) return resolve({ code: 0, stdout, stderr });
       const e = error as NodeJS.ErrnoException & { code?: number | string; killed?: boolean };
       resolve({ code: typeof e.code === "number" && !e.killed ? e.code : -1, stdout: stdout ?? "", stderr: `${stderr ?? ""}${e.killed ? "\n(timed out)" : typeof e.code === "string" ? `\n${e.code}` : ""}` });
     });
-    if (call.onStderr) child.stderr?.on("data", (d: string | Buffer) => call.onStderr!(String(d)));
+    if (s.onStderr) child.stderr?.on("data", (d: string | Buffer) => s.onStderr!(String(d)));
     child.stdin?.on("error", () => {});
-    child.stdin?.end(call.input ?? "");
+    child.stdin?.end(s.input ?? "");
   });
 }
 
+/**
+ * One worker for every Git command, started on the first. It keeps the process running only while a
+ * command is under way, as a process started on this thread would: ref'd from a post until the last
+ * answer, unref'd when idle. (Ref'd for good, a Node process that ran Git never exited, the bench's
+ * hang on CI, QLT-05; unref'd for good, it exited with a command still running.)
+ */
+let spawner: { post(s: Spawn): Promise<GitResult> } | undefined | null;
+function gitSpawner(): { post(s: Spawn): Promise<GitResult> } | undefined {
+  if (spawner !== undefined) return spawner ?? undefined;
+  try {
+    const worker = new Worker(WORKER_SOURCE, { eval: true });
+    const waiting = new Map<number, { s: Spawn; resolve: (r: GitResult) => void }>();
+    let next = 0;
+    worker.on("message", (m: GitResult & { id: number }) => {
+      const w = waiting.get(m.id);
+      waiting.delete(m.id);
+      if (!waiting.size) worker.unref();
+      w?.resolve({ code: m.code, stdout: m.stdout, stderr: m.stderr });
+    });
+    // A worker that fails hands its calls back to this thread, and isn't used again.
+    const fail = () => {
+      spawner = null;
+      for (const w of waiting.values()) void runHere(w.s).then(w.resolve);
+      waiting.clear();
+    };
+    worker.on("error", fail);
+    worker.on("exit", fail);
+    // Idle from the start. (After the listeners: adding a 'message' listener refs the worker's port.)
+    worker.unref();
+    spawner = {
+      post: (s) => new Promise((resolve) => {
+        const id = next++;
+        if (!waiting.size) worker.ref();
+        waiting.set(id, { s, resolve });
+        worker.postMessage({ id, ...s });
+      }),
+    };
+  } catch {
+    spawner = null;
+  }
+  return spawner ?? undefined;
+}
+
+/** A runner for the `git` on PATH. `onSpawn` sees every argument list and environment (tests check them). */
+export function createRunner(options: { git?: string; env?: NodeJS.ProcessEnv; onSpawn?: (args: string[], env: NodeJS.ProcessEnv) => void; here?: boolean } = {}): GitRunner {
+  const git = options.git ?? "git";
+  return (call) => {
+    const args = ["-C", call.cwd, ...call.args];
+    const env = { ...gitEnv(options.env ?? process.env, call.read === true), ...call.env };
+    options.onSpawn?.(args, env);
+    const s: Spawn = { git, args, env, timeout: call.timeoutMs ?? DEFAULT_TIMEOUT_MS, ...(call.input !== undefined ? { input: call.input } : {}), ...(call.onStderr ? { onStderr: call.onStderr } : {}) };
+    // A call that streams Git's progress (a clone's percentage) runs here: a function can't be posted to the worker.
+    const worker = options.here || call.onStderr ? undefined : gitSpawner();
+    return worker ? worker.post(s) : runHere(s);
+  };
+}
 /** Commands for one repository run one at a time (Desktop and Git → One at a time). */
 export class Queue {
   #tail: Promise<unknown> = Promise.resolve();

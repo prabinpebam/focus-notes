@@ -35,6 +35,10 @@ export const root = style({
 // 20 px corners and the shadow in the margin around it. The window is the containing block for fixed
 // layers, so they're placed and clipped inside it; square when maximized, snapped, or full screen.
 globalStyle(":root[data-window-frame], :root[data-window-frame] body", { backgroundColor: t.windowOutside });
+// Software compositing (D-121, D-151): no backdrop filter anywhere. Its frosted surfaces are opaque
+// there (the tokens' software mode), and a backdrop filter, even of no blur, still costs every frame
+// a surface of its own and a copy of what's behind it. (Above any component's own selectors.)
+globalStyle('html:root[data-compositing="software"] *, html:root[data-compositing="software"] *::before, html:root[data-compositing="software"] *::after', { backdropFilter: "none" });
 const drawn = {
   position: "absolute",
   height: "auto",

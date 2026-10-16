@@ -333,9 +333,9 @@ test.describe("Windows and Linux: the app-built window", () => {
     await expect(controls).toHaveCSS("opacity", "0");
     await close.hover();
     await expect(controls).toHaveCSS("opacity", "1");
-    const red = await close.evaluate((el) => getComputedStyle(el).backgroundColor);
+    // Red once its hover transition has run (on software compositing the controls appear at once, D-151 (13)).
+    await expect.poll(() => close.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
     const danger = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--fn-color-danger").trim());
-    expect(red).not.toBe("rgba(0, 0, 0, 0)");
     expect(danger).not.toBe("");
     await page.waitForTimeout(200);
     await page.screenshot({ path: `${shots}/window-controls.png` });

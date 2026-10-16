@@ -47,11 +47,11 @@ function world(opts: { gcm?: boolean; gh?: boolean; helper?: boolean } = {}) {
 }
 
 describe("finding Git's sign-in helpers", () => {
-  it("finds programs as the system does, and starts batch shims only with plain words", () => {
+  it("finds programs as the system does, and starts batch shims only with plain words", async () => {
     const dir = mkdtempSync(join(tmpdir(), "fn-find-"));
     writeFileSync(join(dir, win ? "gh.cmd" : "gh"), "");
-    expect(findProgram("gh", { PATH: dir, PATHEXT: ".EXE;.CMD" })).toBe(join(dir, win ? "gh.cmd" : "gh"));
-    expect(findProgram("missing", { PATH: dir })).toBeUndefined();
+    expect(await findProgram("gh", { PATH: dir, PATHEXT: ".EXE;.CMD" })).toBe(join(dir, win ? "gh.cmd" : "gh"));
+    expect(await findProgram("missing", { PATH: dir })).toBeUndefined();
     expect(commandFor("C:\\Tools\\gh.cmd", ["auth", "login"], { ComSpec: "cmd.exe" }, true)).toEqual({ file: "cmd.exe", args: ["/d", "/s", "/c", '""C:\\Tools\\gh.cmd" auth login"'], verbatim: true });
     expect(commandFor("/usr/bin/gh", ["auth", "login"], {}, false)).toEqual({ file: "/usr/bin/gh", args: ["auth", "login"], verbatim: false });
     expect(() => commandFor("gh.cmd", ["a&b"], {}, true)).toThrow(/plain word/);

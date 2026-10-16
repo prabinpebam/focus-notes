@@ -1,4 +1,4 @@
-import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import { Icon } from "../Icon/Icon.tsx";
 import type { ResultItem } from "../../data.ts";
@@ -18,6 +18,9 @@ export interface ResultListProps {
   onAction?: (payload: { id: string }) => void;
   onActiveChange?: (payload: { id: string }) => void;
 }
+
+/** The rows a long list shows in its first frame, about what Spotlight shows on a 1080p screen; the rest follow a frame later. */
+const FIRST_ROWS = 24;
 
 /** The DOM ID of an item, for aria-activedescendant on the element that keeps focus. Distinct IDs stay distinct. */
 export const resultItemId = (listId: string, itemId: string) => `${listId}-opt-${itemId.replace(/[^\w-]|_/g, (c) => `_${c.charCodeAt(0).toString(16)}_`)}`;
@@ -52,6 +55,24 @@ function marked(text: string, ranges: ResultItem["highlights"]): ReactNode {
 export function ResultList({ label, items, activeId, width = "fill", height = "content", id, onAction, onActiveChange }: ResultListProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   useAutoHideScrollbar(ref);
+  // A long list appears in two frames (PRF-14, D-151 (12)): the rows the first frame can show, then
+  // the rest once that frame is drawn. Spotlight opens on every action the app has (about 180 rows,
+  // over 1,200 elements), and making, styling and laying them all out before its first frame put
+  // its opening over 50 ms on a slower computer; the rows past the first screen can't be seen yet.
+  const [whole, setWhole] = useState(() => items.length <= FIRST_ROWS);
+  useEffect(() => {
+    if (whole) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // After the next frame is drawn: a frame callback runs before it, a task after it.
+    const frame = requestAnimationFrame(() => (timer = setTimeout(() => setWhole(true))));
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
+  }, [whole]);
+  // Never short of the active row (End, or a row chosen before the rest came).
+  const activeAt = whole ? -1 : items.findIndex((i) => i.id === activeId);
+  const shown = whole ? items : items.slice(0, Math.max(FIRST_ROWS, activeAt + 1));
   useEffect(() => {
     if (!activeId) return;
     ref.current?.querySelector(`#${CSS.escape(resultItemId(id, activeId))}`)?.scrollIntoView({ block: "nearest" });
@@ -84,7 +105,7 @@ export function ResultList({ label, items, activeId, width = "fill", height = "c
   };
   // Items before the first header stand alone; each header heads the group of items after it.
   const groups: { header?: ResultItem; items: ResultItem[] }[] = [{ items: [] }];
-  for (const item of items) {
+  for (const item of shown) {
     if (item.header) groups.push({ header: item, items: [] });
     else groups.at(-1)!.items.push(item);
   }

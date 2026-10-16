@@ -4,7 +4,8 @@
  * Their arguments are fixed words: no token, name, or path is ever passed to them (SEC-03).
  */
 import { spawn } from "node:child_process";
-import { existsSync, statSync } from "node:fs";
+import { existsSync } from "node:fs";
+import { stat } from "node:fs/promises";
 import { delimiter, extname, join } from "node:path";
 
 export interface ToolCall {
@@ -30,9 +31,9 @@ export interface ToolProcess {
 }
 export type ToolRunner = (program: string, call: ToolCall) => ToolProcess;
 
-const isFile = (p: string) => {
+const isFile = async (p: string) => {
   try {
-    return statSync(p).isFile();
+    return (await stat(p)).isFile();
   } catch {
     return false;
   }
@@ -40,19 +41,17 @@ const isFile = (p: string) => {
 
 /**
  * A program on PATH (then in `extraDirs`), as the system would find it: on Windows with PATHEXT's
- * extensions (gh.exe, or a gh.cmd shim from a package manager).
+ * extensions (gh.exe, or a gh.cmd shim from a package manager). Every place is checked at once, off
+ * the main thread: one at a time, synchronously, a long PATH took the main process 40 ms (D-151 (5)).
  */
-export function findProgram(name: string, env: NodeJS.ProcessEnv, extraDirs: string[] = [], win = process.platform === "win32"): string | undefined {
+export async function findProgram(name: string, env: NodeJS.ProcessEnv, extraDirs: string[] = [], win = process.platform === "win32"): Promise<string | undefined> {
   const path = env.PATH ?? env.Path ?? "";
   const dirs = [...path.split(delimiter), ...extraDirs].filter(Boolean);
   const exts = win ? (env.PATHEXT ?? ".COM;.EXE;.BAT;.CMD").split(";").filter(Boolean).map((e) => e.toLowerCase()) : [""];
-  for (const dir of dirs) {
-    for (const ext of exts) {
-      const p = join(dir.replace(/^"|"$/g, ""), name + ext);
-      if (isFile(p)) return p;
-    }
-  }
-  return undefined;
+  const places = dirs.flatMap((dir) => exts.map((ext) => join(dir.replace(/^"|"$/g, ""), name + ext)));
+  const found = await Promise.all(places.map(isFile));
+  // The first in PATH's order, as the system would pick.
+  return places[found.indexOf(true)];
 }
 
 /** Words a helper may be given: letters, digits, and URL-ish punctuation. Never spaces, quotes, or shell characters. */
