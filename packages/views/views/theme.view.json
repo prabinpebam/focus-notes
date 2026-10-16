@@ -518,6 +518,36 @@
                           },
                           "announce": true
                         }
+                      },
+                      {
+                        "type": "Text",
+                        "when": {
+                          "get": "vm.themeManager.colors.asking"
+                        },
+                        "props": {
+                          "value": {
+                            "get": "vm.themeManager.colors.warning"
+                          },
+                          "tone": "danger",
+                          "announce": true
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "when": {
+                          "get": "vm.themeManager.colors.canSave"
+                        },
+                        "props": {
+                          "label": {
+                            "get": "vm.themeManager.colors.saveLabel"
+                          },
+                          "variant": "secondary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "theme.saveDraft"
+                          }
+                        }
                       }
                     ]
                   }

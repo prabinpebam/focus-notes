@@ -33,7 +33,11 @@ export interface PlatformBridge {
   toggleFullScreen?(): void;
   /** The default note for a first launch, created if missing. */
   /** The workspace's custom theme files (THM-04, D-173): `private/.focus-notes/themes/*.json`, or `.focus-notes/themes/` without a private repository. */
-  themes?: { list(): Promise<{ file: string; text: string }[]> };
+  themes?: {
+    list(): Promise<{ file: string; text: string }[]>;
+    /** Writes a new theme file (`<slug>.json`) there, never over another. Resolves to its file name. */
+    save?(file: string, text: string): Promise<string>;
+  };
   defaultNotePath(): Promise<string>;
   loadAppState(): Promise<AppStateFile>;
   saveAppState(state: AppStateFile): Promise<void>;

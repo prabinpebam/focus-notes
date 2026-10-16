@@ -94,7 +94,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
   openLink: (url: string) => ipcRenderer.send("link:open", url),
   copyText: (text: string) => ipcRenderer.invoke("clipboard:write", text),
   // Custom themes (THM-04, D-173): the workspace's theme files, read only.
-  themes: { list: () => ipcRenderer.invoke("themes:list") },
+  themes: { list: () => ipcRenderer.invoke("themes:list"), save: (file: string, text: string) => ipcRenderer.invoke("themes:save", file, text) },
   // The workspace (WP-2.3): its tree, its format, renames that follow titles, and outside changes.
   workspace: {
     info: () => ipcRenderer.invoke("workspace:info"),

@@ -111,3 +111,58 @@ describe("custom themes in the app (THM-04, THM-13)", () => {
     expect(JSON.stringify(vm)).toContain("Sepia evening");
   });
 });
+
+describe("saving edited colors as a theme (THM-04, THM-13)", () => {
+  function saving(files: { file: string; text: string }[] = []) {
+    const written: { name: string; text: string }[] = [];
+    let saved: AppStateFile = { version: 1, firstRun: "done", appearance: "light" };
+    const bridge: PlatformBridge = {
+      platform: "windows", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/n/Untitled.md",
+      defaultNotePath: async () => "/n/a.md", loadAppState: async () => saved, saveAppState: async (s) => { saved = s; },
+      systemScheme: () => "light", onSystemSchemeChange: () => () => {},
+      themes: { list: async () => files, save: async (name, text) => { written.push({ name, text }); return name; } },
+    };
+    const app = createApp(bridge, messages);
+    const colors = () => app.viewModels.select("vm.themeManager", app.store.state) as { colors: { canSave: boolean; saveLabel: string; warning: string } };
+    return { app, written, colors, saved: () => saved };
+  }
+  it("offers saving once a color is edited; saves the copy as a file, adds it to Yours, and chooses it", async () => {
+    const s = saving();
+    await s.app.start();
+    await s.app.commands.run("theme.manager.open");
+    expect(s.colors().colors.canSave).toBe(false);
+    await s.app.commands.run("theme.color.set", { key: "accent", value: "#7a3e9d" });
+    expect(s.colors().colors).toMatchObject({ canSave: true, saveLabel: "Save as a theme", warning: "" });
+    await s.app.commands.run("theme.saveDraft");
+    expect(s.written).toHaveLength(1);
+    expect(s.written[0]!.name).toBe("paper-custom.json");
+    expect(JSON.parse(s.written[0]!.text)).toMatchObject({ name: "Paper (custom)", kind: "light", base: "paper", tokens: { "color.accent": "#7a3e9d", "color.link": "#7a3e9d" } });
+    expect(s.app.store.state.appearance.lightTheme).toBe("custom:paper-custom");
+    expect(s.app.store.state.ui.theme.draft).toBeUndefined();
+    expect(s.saved().lightTheme).toBe("custom:paper-custom");
+    expect(s.app.store.state.announcement.text).toBe("Saved as Paper (custom)");
+  });
+  it("asks before saving a theme that fails the guard, then saves it anyway (UNSUP-THEME-02)", async () => {
+    const s = saving();
+    await s.app.start();
+    await s.app.commands.run("theme.manager.open");
+    await s.app.commands.run("theme.color.set", { key: "text", value: "#eeeeee" });
+    await s.app.commands.run("theme.saveDraft");
+    expect(s.written).toHaveLength(0);
+    expect(s.colors().colors.warning).toMatch(/hard-to-read pairs?\. Save anyway\?$/);
+    expect(s.colors().colors.saveLabel).toBe("Save anyway");
+    await s.app.commands.run("theme.saveDraft");
+    expect(s.written).toHaveLength(1);
+    expect((s.app.store.state.appearance.customThemes ?? [])[0]).toMatchObject({ readable: false });
+  });
+  it("names a second copy so it doesn't replace the first", async () => {
+    const s = saving([{ file: "paper-custom.json", text: JSON.stringify({ name: "Paper (custom)", kind: "light", base: "paper", tokens: { "color.accent": "#123456" } }) }]);
+    await s.app.start();
+    await s.app.commands.run("theme.manager.open");
+    await s.app.commands.run("theme.choose", { id: "paper" });
+    await s.app.commands.run("theme.color.set", { key: "accent", value: "#7a3e9d" });
+    await s.app.commands.run("theme.saveDraft");
+    expect(s.written[0]).toMatchObject({ name: "paper-custom-2.json" });
+    expect(JSON.parse(s.written[0]!.text).name).toBe("Paper (custom) 2");
+  });
+});

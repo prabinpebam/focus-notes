@@ -31,7 +31,7 @@ const COLOR_TOKEN = /^(color|trigger|code)\.[a-zA-Z]+$/;
 const HEX_VALUE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 export const CUSTOM_PREFIX = "custom:";
 export const isCustomId = (id: string | undefined): id is string => typeof id === "string" && id.startsWith(CUSTOM_PREFIX);
-const slug = (s: string) => s.normalize("NFKD").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "") || "theme";
+export const themeSlug = (s: string) => s.normalize("NFKD").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "") || "theme";
 
 /** Reads a theme file. Undefined when it isn't a theme at all (not JSON, no name or tokens). */
 export function parseThemeFile(file: string, text: string): CustomTheme | undefined {
@@ -66,7 +66,7 @@ export function parseThemeFile(file: string, text: string): CustomTheme | undefi
   }
   const colors = { ...own, ...tokens };
   return {
-    id: `${CUSTOM_PREFIX}${slug(name)}`, name, kind, base, tokens, ignored,
+    id: `${CUSTOM_PREFIX}${themeSlug(name)}`, name, kind, base, tokens, ignored,
     readable: checkBeforeSave(colors, themeById(base)?.contrast === "high").ok, file,
   };
 }

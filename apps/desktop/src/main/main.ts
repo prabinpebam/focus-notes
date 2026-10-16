@@ -1063,6 +1063,23 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       if (text !== undefined) out.push({ file: name, text });
     }
     return out;
+  });  // Saving edited colors as a theme (D-173): a new file in the themes folder, never over another.
+  handle("themes:save", async (file, text) => {
+    if (!isWorkspace() || typeof file !== "string" || typeof text !== "string" || text.length > THEME_FILE_BYTES) throw new Error("Not a theme file");
+    const m = /^([\p{Ll}\p{Lo}\p{N}][\p{Ll}\p{Lo}\p{N}-]{0,80})\.json$/u.exec(file);
+    if (!m) throw new Error("Not a theme file name");
+    JSON.parse(text);
+    const dir = hasPrivate() ? join(notesHome(), "private", ".focus-notes", "themes") : join(notesHome(), ".focus-notes", "themes");
+    await assertWritable(join(dir, file));
+    await mkdir(dir, { recursive: true });
+    for (let i = 1; i < 1000; i++) {
+      const name = i === 1 ? file : `${m[1]}-${i}.json`;
+      const p = join(dir, name);
+      if (existsSync(p)) continue;
+      await atomicWrite(p, text);
+      return name;
+    }
+    throw new Error("No free theme file name");
   });  handle("workspace:info", async () => {
     const format = await readFormat();
     const site = await pagesSite().catch(() => undefined);

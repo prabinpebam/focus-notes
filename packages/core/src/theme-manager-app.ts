@@ -22,7 +22,7 @@ import {
 } from "./themes.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { themeValues } from "@focus-notes/tokens";
-import { customColors, isCustomId, type CustomTheme } from "./custom-themes.ts";
+import { customColors, isCustomId, parseThemeFile, themeSlug, type CustomTheme } from "./custom-themes.ts";
 
 export const THEME_TABS = ["themes", "reading", "colors"] as const;
 export type ThemeTab = (typeof THEME_TABS)[number];
@@ -66,6 +66,8 @@ export interface ThemeManagerState {
   typing: Partial<Record<KeyColor, string>>;
   /** The key color Fix last changed, and a count that moves focus back to its field (the Fix button goes away). */
   fixed: { key?: KeyColor; n: number };
+  /** Saving a copy that fails the contrast guard was asked about once: the next press saves it (UNSUP-THEME-02). */
+  saveAsk?: boolean;
 }
 export const THEME_MANAGER_CLOSED: ThemeManagerState = { open: false, tab: "themes", focusRequest: 0, typing: {}, fixed: { n: 0 } };
 
@@ -81,6 +83,8 @@ interface Ctx<St extends S> {
   catalog: MessageCatalog;
   persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
   announce: (text: string) => void;
+  /** Writes a new theme file in the workspace (D-173); absent where themes can't be saved. */
+  saveTheme?: (file: string, text: string) => Promise<string>;
 }
 
 /** The scheme showing (System follows the OS). */
@@ -144,7 +148,7 @@ function fixFor(colors: Record<string, string>, key: KeyColor, high: boolean): s
   return fixes.get(k);
 }
 
-export function registerThemeManager<St extends S>({ store, commands, viewModels, catalog, persistAppState, announce }: Ctx<St>) {
+export function registerThemeManager<St extends S>({ store, commands, viewModels, catalog, persistAppState, announce, saveTheme }: Ctx<St>) {
   const state = () => store.state.ui.theme;
   const set = (patch: Partial<ThemeManagerState>) => store.update((s) => ({ ...s, ui: { ...s.ui, theme: { ...s.ui.theme, ...patch } } }));
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => unknown) =>
@@ -292,7 +296,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     const colors = { ...draft?.colors, [key]: hex };
     const { [key]: _t, ...typing } = state().typing;
     void _t;
-    set({ draft: { base, colors }, typing });
+    set({ draft: { base, colors }, typing, saveAsk: false });
   };
   reg<{ key: string; value: string }>("theme.color.set", ({ key, value }) => {
     if (!(KEYS as string[]).includes(String(key))) return;
@@ -310,6 +314,37 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     setColor(k, fixed);
     set({ fixed: { key: k, n: state().fixed.n + 1 } });
     announce(catalog.format("colors.fixed", { name: catalog.format(`colors.key.${k}`), value: fixed }));
+  });
+
+  /**
+   * Save as a theme (THM-04, D-173): the edited copy becomes a theme file in the workspace, joins
+   * Yours, and fills its slot. One that fails the guard is asked about first, then saved anyway.
+   */
+  reg("theme.saveDraft", async () => {
+    const { draft } = editing();
+    if (!draft || !saveTheme) return;
+    const a = store.state.appearance;
+    const custom = customOf(a, draft.base);
+    const base = custom?.base ?? draft.base;
+    const info = themeById(base);
+    if (!info) return;
+    const colors = colorsFor(draft.base, draft);
+    const failing = saveWarning(catalog, colors, info.contrast === "high");
+    if (failing && !state().saveAsk) return set({ saveAsk: true });
+    const stem = catalog.format("colors.copyName", { name: name(draft.base) });
+    const taken = (n: string) => (a.customThemes ?? []).some((t) => t.id === `custom:${themeSlug(n)}`);
+    let title = stem;
+    for (let i = 2; taken(title); i++) title = `${stem} ${i}`;
+    const tokens: Record<string, string> = { ...custom?.tokens };
+    for (const k of KEYS) if (draft.colors[k]) for (const t of KEY_COLORS[k]) tokens[t] = draft.colors[k]!;
+    const text = `${JSON.stringify({ name: title, kind: info.kind, base, tokens }, null, 2)}\n`;
+    const file = await saveTheme(`${themeSlug(title)}.json`, text);
+    const theme = parseThemeFile(file, text);
+    if (!theme) return;
+    store.update((s) => ({ ...s, appearance: { ...s.appearance, customThemes: [...(s.appearance.customThemes ?? []).filter((t) => t.id !== theme.id), theme].sort((x, y) => x.name.localeCompare(y.name)) } }));
+    set({ draft: undefined, saveAsk: false, typing: {} });
+    await commands.run("theme.choose", { id: theme.id });
+    announce(catalog.format("colors.saved", { name: title }));
   });
 
   // ---- view model ----
@@ -338,7 +373,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         colors: {
           type: "object",
           properties: {
-            note: STR, failing: BOOL, summary: STR,
+            note: STR, failing: BOOL, summary: STR, canSave: BOOL, saveLabel: STR, warning: STR, asking: BOOL,
             rows: { type: "array", items: { type: "object", properties: { id: STR, label: STR, value: STR, swatch: STR, focusRequest: NUM, invalid: BOOL, error: STR, status: STR, failing: BOOL, canFix: BOOL, fixLabel: STR } } },
           },
         },
@@ -411,6 +446,10 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         colors: {
           note: draft ? catalog.format("colors.copyNote", { name: name(draft.base) }) : catalog.format("colors.builtInNote", { name: name(showing) }),
           failing: failing > 0, summary: failing ? catalog.format("colors.summary", { count: failing }) : catalog.format("colors.allPass"),
+          canSave: Boolean(draft && saveTheme),
+          saveLabel: catalog.format(st.saveAsk ? "colors.saveAnyway" : "colors.save"),
+          warning: st.saveAsk ? saveWarning(catalog, colors, high) ?? "" : "",
+          asking: Boolean(st.saveAsk),
           rows,
         },
       };

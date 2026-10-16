@@ -5,7 +5,7 @@
  * and it's back at the next launch. No axe violations.
  */
 import { test, expect, type Page } from "./fixtures.ts";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
@@ -79,4 +79,36 @@ test("THM-04, THM-13: a theme file in the workspace is offered first, previewed 
   await expect(again.page.getByRole("textbox", { name: "Note" })).toBeFocused();
   await expect.poll(() => canvas(again.page)).toBe("rgb(244, 236, 216)");
   await quit(again);
+});
+
+test("THM-04, THM-13: edited colors are saved as a theme file, listed in the gallery, and chosen; a hard-to-read one is asked about first", async () => {
+  const dirs = tempDirs();
+  mkdirSync(join(dirs.docs, ".focus-notes"), { recursive: true });
+  writeFileSync(join(dirs.docs, ".focus-notes", "workspace.json"), '{ "formatVersion": 1 }\n');
+  mkdirSync(join(dirs.docs, "notes"), { recursive: true });
+  mkdirSync(join(dirs.docs, "private", "notes"), { recursive: true });
+  writeFileSync(join(dirs.docs, "private", "notes", "welcome.md"), "# Morning pages\n\nWritten in my own colors.\n");
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", appearance: "light", focusMode: false }));
+  const l = await launch(dirs);
+  const { page } = l;
+  await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+  await openThemeManager(page);
+  await sheet(page).getByRole("tab", { name: "Edit colors" }).click();
+  const text = sheet(page).getByRole("textbox", { name: "Text", exact: true });
+  await text.fill("#eeeeee");
+  await text.press("Enter");
+  const save = sheet(page).getByRole("button", { name: "Save as a theme" });
+  await save.click();
+  // Hard to read: asked first, then saved anyway.
+  await expect(sheet(page).getByText(/hard-to-read pairs?\. Save anyway\?/)).toBeVisible();
+  await settled(page);
+  expect(await axeViolations(page)).toEqual([]);
+  await sheet(page).getByRole("button", { name: "Save anyway" }).click();
+  const file = join(dirs.docs, "private", ".focus-notes", "themes", "paper-custom.json");
+  await expect.poll(() => existsSync(file)).toBe(true);
+  expect(JSON.parse(readFileSync(file, "utf8"))).toMatchObject({ name: "Paper (custom)", kind: "light", base: "paper", tokens: { "color.text": "#eeeeee" } });
+  await sheet(page).getByRole("tab", { name: "Themes" }).click();
+  await expect(gallery(page).getByRole("option").first()).toHaveAccessibleName(/^Paper \(custom\).*Light ✓/);
+  await expect(gallery(page).getByRole("option").first()).toContainText("Low contrast");
+  await quit(l);
 });

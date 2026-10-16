@@ -1032,7 +1032,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce });
   const deepLinks = registerDeepLinks({ bridge, openAt: (path, at) => spotlight.openAt(path, at), searchNotes: (q) => spotlight.searchNotes(q) });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
-  registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce });
+  registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce, ...(bridge.themes?.save ? { saveTheme: (file: string, text: string) => bridge.themes!.save!(file, text) } : {}) });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
   // keeps them on this device as they are now, and deletes the file.
   commands.register({
