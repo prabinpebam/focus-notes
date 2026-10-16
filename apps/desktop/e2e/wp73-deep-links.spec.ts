@@ -5,7 +5,7 @@
  * ignored: the usual note opens and nothing is written. Local files only.
  */
 import { test, expect } from "./fixtures.ts";
-import { existsSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit } from "./helpers.ts";
 import { instance } from "./instance.ts";
@@ -28,11 +28,20 @@ test("AGT-06: a deep link opens its note at its heading; a search link opens Spo
   await expect(field).toHaveValue("garden", { timeout: 10_000 });
   await quit(l);
 
+  // A junction from the public notes into the private ones: a link through it opens nothing.
+  symlinkSync(join(dirs.docs, "private", "notes"), join(dirs.docs, "notes", "j"), "junction");
   const before = readdirSync(join(dirs.docs, "notes")).sort();
-  for (const hostile of ["focus-notes://open?path=private%2Faccess.json", "focus-notes://open?path=..%2F..%2Fescape.md", "focus-notes://new?folder=notes&title=Injected"]) {
+  for (const hostile of [
+    "focus-notes://open?path=private%2Faccess.json", "focus-notes://open?path=..%2F..%2Fescape.md", "focus-notes://new?folder=notes&title=Injected",
+    "focus-notes://open?path=notes%2Fj%2Fwelcome.md", "focus-notes://search?q=%3Emake%20public",
+  ]) {
     l = await launch(dirs, {}, { args: [hostile] });
-    await expect(l.page.getByRole("textbox", { name: "Note" })).toBeVisible();
-    await expect(l.page.getByRole("dialog")).toHaveCount(0);
+    const editor = l.page.getByRole("textbox", { name: "Note" });
+    await expect(editor).toBeVisible();
+    await expect(editor).not.toContainText("First line.");
+    // A search link that looks like a command only searches notes: Spotlight's list holds no command.
+    if (hostile.includes("search")) await expect(l.page.getByRole("option", { name: /Make public/ })).toHaveCount(0);
+    else await expect(l.page.getByRole("dialog")).toHaveCount(0);
     await quit(l);
   }
   expect(readdirSync(join(dirs.docs, "notes")).sort()).toEqual(before);

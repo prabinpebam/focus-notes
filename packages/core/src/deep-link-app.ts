@@ -4,15 +4,14 @@
  * to the heading its anchor names; `search` opens Spotlight with the query. Nothing here writes.
  */
 import type { PlatformBridge } from "./bridge.ts";
-import type { CommandRegistry } from "./commands.ts";
-import type { AppState } from "./app.ts";
 import { headingAnchor } from "./deep-link.ts";
 import { parseAtx } from "./scan.ts";
 
 interface Ctx {
   bridge: PlatformBridge;
-  commands: CommandRegistry<AppState>;
   openAt: (path: string, at: { heading?: { index: number; text: string } }) => Promise<void>;
+  /** Spotlight in notes mode with the query as it is: never read for command or heading prefixes. */
+  searchNotes: (query: string) => void;
 }
 
 /** The note's headings as the editor counts them (top-level ATX headings outside fenced code), by anchor. */
@@ -41,15 +40,12 @@ export function headingByAnchor(markdown: string, anchor: string): { index: numb
 }
 
 export function registerDeepLinks(ctx: Ctx) {
-  const { bridge, commands } = ctx;
+  const { bridge } = ctx;
   async function take(): Promise<void> {
     const link = await bridge.deepLinks?.take().catch(() => undefined);
     if (!link) return;
-    if (link.kind === "search") {
-      await commands.run("spotlight.open");
-      await commands.run("spotlight.setQuery", { value: link.q });
-      return;
-    }
+    // A link's query only ever searches notes: `>make public` is text to find, not a command (D-165).
+    if (link.kind === "search") return ctx.searchNotes(link.q);
     const heading = link.heading ? headingByAnchor(await bridge.readNote(link.path).catch(() => ""), link.heading) : undefined;
     await ctx.openAt(link.path, heading ? { heading } : {});
   }

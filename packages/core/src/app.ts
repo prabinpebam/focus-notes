@@ -989,7 +989,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const menuBar = registerMenuBar({ store, commands, catalog, platform: bridge.platform, ...(bridge.nativeWindow ? { bridge: bridge.nativeWindow } : {}) });
   const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now });
-  const deepLinks = registerDeepLinks({ bridge, commands, openAt: (path, at) => spotlight.openAt(path, at) });
+  const deepLinks = registerDeepLinks({ bridge, openAt: (path, at) => spotlight.openAt(path, at), searchNotes: (q) => spotlight.searchNotes(q) });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
   registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off

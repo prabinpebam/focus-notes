@@ -3,7 +3,12 @@
  * accepted only in their one exact shape. Every hostile or malformed link is ignored.
  */
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { deepLinkFor, parseDeepLink } from "../src/deep-link.ts";
+import { createApp, type PlatformBridge, type ResolvedDeepLink } from "../src/index.ts";
+
+const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 
 describe("parseDeepLink", () => {
   it("reads open (with an optional heading) and search", () => {
@@ -42,5 +47,31 @@ describe("parseDeepLink", () => {
       `focus-notes://open?path=notes/${"a/".repeat(1100)}a.md`,
     ];
     for (const b of bad) expect(parseDeepLink(b), String(b).slice(0, 80)).toBeUndefined();
+  });
+});
+
+describe("a search link in the app (security review of d8cdb0c, #1)", () => {
+  it("only ever searches notes, with the query as it is: no command, heading or help mode, nothing run", async () => {
+    const links: ResolvedDeepLink[] = [];
+    let arrive: (() => void) | undefined;
+    const bridge: PlatformBridge = {
+      platform: "windows",
+      readNote: async () => "# Hello\n", writeNote: async () => {}, chooseNote: async () => undefined,
+      newNotePath: async () => "/w/notes/Untitled.md", defaultNotePath: async () => "/w/notes/hello.md",
+      loadAppState: async () => ({ version: 1 }), saveAppState: async () => {},
+      systemScheme: () => "light", onSystemSchemeChange: () => () => {},
+      deepLinks: { take: async () => links.shift(), onArrive: (l) => { arrive = l; return () => {}; } },
+    };
+    const app = createApp(bridge, messages);
+    await app.start();
+    const ran: string[] = [];
+    app.commands.onRun((id) => void ran.push(id));
+    for (const q of [">make public", "##secret", "#heading", "?help", ">note.delete", "type:command make public"]) {
+      links.push({ kind: "search", q });
+      arrive!();
+      for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
+      expect(app.store.state.ui.spotlight).toMatchObject({ open: true, mode: "notes", query: q });
+    }
+    expect(ran.filter((id) => !id.startsWith("spotlight.") && id !== "app.ready")).toEqual([]);
   });
 });

@@ -5,7 +5,7 @@
  * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
-import { mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
+import { lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
 import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
 import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
 import type { ResolvedDeepLink } from "@focus-notes/core";
@@ -1565,16 +1565,35 @@ app.on("open-url", (e, url) => {
   e.preventDefault();
   linkArrived(parseDeepLink(url));
 });
-/** A link's note, only if it's a note that's there in the open workspace's roots (never through a link out of them). */
+/**
+ * A link's note, only if it's there in the open workspace's roots, under the agents' rules
+ * (resolveAgentPath, D-145): every part of the path spelled exactly as on disk, none a symbolic
+ * link, a junction, or a short name (its real path is itself), and the note with no second hard
+ * link. The path it returns is the root's own path and those same checked names, so the note opened
+ * is the one checked; reading it goes through the app's own checks as any note does.
+ */
 async function resolveDeepLink(l: DeepLink): Promise<ResolvedDeepLink | undefined> {
   if (l.kind === "search") return l;
   const id = agentRootOf(l.path);
   const root = isWorkspace() ? roots().find((r) => r.id === id) : undefined;
   if (!id || !root) return undefined;
-  const abs = join(root.path, ...l.path.slice(agentRootDir(id).length + 1).split("/"));
-  const [real, rootReal] = await Promise.all([realpath(abs).catch(() => undefined), realpath(root.path).catch(() => undefined)]);
-  if (!real || !rootReal || !inside(rootReal, real) || real === rootReal || !(await stat(real).then((s) => s.isFile(), () => false))) return undefined;
-  return { kind: "open", path: abs, ...(l.heading ? { heading: l.heading } : {}) };
+  const fold = (p: string) => (process.platform === "win32" || process.platform === "darwin" ? p.toLowerCase() : p);
+  const segments = l.path.slice(agentRootDir(id).length + 1).split("/");
+  const rootReal = await realpath(root.path).catch(() => undefined);
+  if (!rootReal) return undefined;
+  let cur = rootReal;
+  for (const seg of segments) {
+    const next = join(cur, seg);
+    const st = await lstat(next).catch(() => undefined);
+    if (!st || st.isSymbolicLink()) return undefined;
+    if (!(await readdir(cur).catch(() => [] as string[])).includes(seg)) return undefined;
+    const real = await realpath(next).catch(() => undefined);
+    if (!real || fold(real) !== fold(next)) return undefined;
+    cur = next;
+  }
+  const st = await stat(cur).catch(() => undefined);
+  if (!st?.isFile() || st.nlink > 1) return undefined;
+  return { kind: "open", path: join(root.path, ...segments), ...(l.heading ? { heading: l.heading } : {}) };
 }
 app.whenReady().then(async () => {
   chosenHome = readChosenHome();

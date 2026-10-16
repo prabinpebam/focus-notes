@@ -88,7 +88,7 @@ interface SettingDef {
 const next = <T,>(list: readonly T[], at: T) => list[(list.indexOf(at) + 1) % list.length]!;
 const ICON_OF_GROUP: Partial<Record<GroupId, string>> = { recent: "history", help: "info" };
 
-export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): void; openAt(path: string, at: { heading?: { index: number; text: string } }): Promise<void> } {
+export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): void; openAt(path: string, at: { heading?: { index: number; text: string } }): Promise<void>; searchNotes(query: string): void } {
   const { store, commands, viewModels, catalog, bridge } = ctx;
   const sp = () => store.state.ui.spotlight;
   const set = (patch: Partial<SpotlightState>) => store.update((s) => ({ ...s, ui: { ...s.ui, spotlight: { ...s.ui.spotlight, ...patch } } }));
@@ -752,6 +752,20 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   return {
     /** Opens a note and then goes to a heading in it, once the editor is ready (deep links, D-165). */
     openAt,
+    /**
+     * Spotlight searching notes for a query that came from outside (a search link, D-165): in notes
+     * mode, with the query set as it is. Never read for prefixes (`>` commands, `#` headings, `?`
+     * help), so a link can't put a command one Enter away.
+     */
+    searchNotes(query: string): void {
+      if (!sp().open) {
+        opening = now();
+        dismissDialogs();
+      }
+      store.update((st) => ({ ...st, ui: { ...st.ui, toolbarOpen: false } }));
+      set({ open: true, mode: "notes", everywhere: false, query, actions: undefined, focus: sp().focus + 1, indexing: indexingOf() });
+      void refresh().then(() => measureOpen());
+    },
     attach(s: SpotlightSearch): void {
       search = s;
       s.setItems("command", commandItems());
