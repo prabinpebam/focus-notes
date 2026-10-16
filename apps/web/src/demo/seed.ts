@@ -8,6 +8,8 @@ import { DEMO_NOTES } from "./notes.ts";
 export const DEMO_DATABASE = "focus-notes-demo";
 /** Set once the sample notes are written, so a visitor's deletions stay deleted. */
 export const SEEDED = "demoSeeded";
+/** Set by Reset demo, so the next start opens like a first visit (at the welcome note's top). */
+export const FRESH = "demoFresh";
 
 /** What seeding needs of the store (the web app's WebDb). */
 export interface DemoStore {
@@ -30,4 +32,16 @@ export async function seedDemo(db: DemoStore, now = Date.now()): Promise<boolean
 export async function resetDemo(db: DemoStore, now = Date.now()): Promise<void> {
   await db.clear();
   await seedDemo(db, now);
+  await db.setMeta(FRESH, true);
+}
+
+/**
+ * Seeds on the first visit, and says whether this start is a fresh one: the first visit, or the
+ * first start after Reset demo (D-177).
+ */
+export async function startDemo(db: DemoStore, now = Date.now()): Promise<boolean> {
+  if (await seedDemo(db, now)) return true;
+  if (!(await db.getMeta<boolean>(FRESH))) return false;
+  await db.setMeta(FRESH, false);
+  return true;
 }

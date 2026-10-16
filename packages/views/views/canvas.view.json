@@ -3243,55 +3243,66 @@
             },
             "children": [
               {
-                "type": "PillButton",
-                "id": "demoAbout",
+                "type": "Inline",
+                "id": "demoBanner",
                 "when": {
                   "get": "vm.demo.on"
                 },
                 "props": {
-                  "label": {
-                    "t": "demo.label"
-                  }
+                  "gap": "xs",
+                  "wrap": true
                 },
-                "on": {
-                  "press": {
-                    "run": "demo.about"
+                "children": [
+                  {
+                    "type": "Button",
+                    "id": "demoDownload",
+                    "props": {
+                      "label": {
+                        "t": "command.demo.download"
+                      },
+                      "variant": "primary",
+                      "size": "s",
+                      "icon": "download"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "demo.download"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "id": "demoReset",
+                    "props": {
+                      "label": {
+                        "t": "command.demo.reset"
+                      },
+                      "variant": "secondary",
+                      "size": "s"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "demo.reset"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "id": "demoAbout",
+                    "props": {
+                      "label": {
+                        "t": "demo.label"
+                      },
+                      "variant": "subtle",
+                      "size": "s"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "demo.about"
+                      }
+                    }
                   }
-                }
-              },
-              {
-                "type": "PillButton",
-                "id": "demoDownload",
-                "when": {
-                  "get": "vm.demo.on"
-                },
-                "props": {
-                  "label": {
-                    "t": "command.demo.download"
-                  }
-                },
-                "on": {
-                  "press": {
-                    "run": "demo.download"
-                  }
-                }
-              },
-              {
-                "type": "PillButton",
-                "id": "demoReset",
-                "when": {
-                  "get": "vm.demo.on"
-                },
-                "props": {
-                  "label": {
-                    "t": "command.demo.reset"
-                  }
-                },
-                "on": {
-                  "press": {
-                    "run": "demo.reset"
-                  }
-                }
+                ]
               },
               {
                 "type": "SaveState",

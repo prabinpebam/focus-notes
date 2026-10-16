@@ -12,7 +12,7 @@ import { SealError, SiteReader, type OpenVault, type SiteFetch } from "@focus-no
 import { openTextFile, saveTextFile } from "@focus-notes/ui/files";
 import { WebDb } from "./idb.ts";
 import { WEB_META } from "@focus-notes/core/inventory";
-import { DEMO_DATABASE, resetDemo, seedDemo } from "./demo/seed.ts";
+import { DEMO_DATABASE, resetDemo, startDemo } from "./demo/seed.ts";
 import { DEMO_PRIVATE, DEMO_PUBLIC } from "./demo/notes.ts";
 
 const WELCOME = `# Welcome to Focus Notes
@@ -40,6 +40,8 @@ const titled = (title: string | undefined) => (title ? { title } : {});
 
 export interface WebBridge extends PlatformBridge {
   db: WebDb;
+  /** The demo was just seeded: its first visit, or the first after Reset demo (D-177). */
+  demoFirstVisit?: boolean;
   instance: InstanceBridge;
 }
 
@@ -67,7 +69,9 @@ const siteFetch: SiteFetch = async (path) => {
 export async function createWebBridge(options: WebBridgeOptions = {}): Promise<WebBridge> {
   const demo = options.demo === true;
   const db = await WebDb.open(demo ? DEMO_DATABASE : undefined);
-  if (demo) await seedDemo(db);
+  const demoFirstVisit = demo && (await startDemo(db));
+  /** Reset demo is under way: nothing the page still holds is written over the sample notes. */
+  let resetting = false;
   for (const k of RETIRED_META) await db.deleteMeta(k);
   void navigator.storage?.persist?.().catch(() => false);
   const dark = matchMedia("(prefers-color-scheme: dark)");
@@ -188,6 +192,7 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
     // The warm-up after start is off under test automation, so the journeys' timing stays the same (PRF-10).
     warmUp: !globalThis.navigator?.webdriver,
     db,
+    demoFirstVisit,
     instance,
     workspace,
     async readNote(path) {
@@ -205,6 +210,7 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
     async writeNote(path, text) {
       // The instance's notes are read-only here (D-90).
       if (isReadOnlyPath(path)) throw new Error("Read-only note");
+      if (resetting) return;
       await assertWritable();
       const old = await db.getNote(path);
       if (old && old.text === text && !old.deleted) return;
@@ -239,7 +245,7 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
     },
     // The demo opens light, as the owner prefers; the visitor can switch (D-177).
     loadAppState: async () => (await db.getMeta<AppStateFile>(WEB_META.appState)) ?? (demo ? { version: 1, appearance: "light" } : { version: 1 }),
-    saveAppState: (s) => db.setMeta(WEB_META.appState, s),
+    saveAppState: async (s) => { if (!resetting) await db.setMeta(WEB_META.appState, s); },
     systemScheme: () => (dark.matches ? "dark" : "light"),
     onSystemSchemeChange(listener) {
       const h = () => listener(dark.matches ? "dark" : "light");
@@ -269,6 +275,7 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
     ...(demo ? {
       demo: {
         async reset() {
+          resetting = true;
           await resetDemo(db);
           location.reload();
         },

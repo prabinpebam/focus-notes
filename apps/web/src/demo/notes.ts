@@ -18,7 +18,7 @@ export const DEMO_NOTES: readonly { path: string; text: string }[] = [
       "",
       "## Try these",
       "",
-      "- Press **Ctrl+.** (**⌘.** on a Mac) for the toolbar, or click the dot at the top left.",
+      "- Press **Ctrl+.** (**⌘.** on a Mac) for the toolbar, or click the dot at the top.",
       "- Press **Ctrl+O** for your notes and folders, and **Ctrl+/** to search and act.",
       "- Open [On writing slowly](../Public/On%20writing%20slowly.md) and write a line: focus mode keeps the line you're on clear and lets the rest fade.",
       "- See [the formatting tour](Formatting%20tour.md), or the table in [Spring planting](Garden/Spring%20planting.md).",

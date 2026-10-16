@@ -51,6 +51,14 @@ function watch(page: Page) {
   page.on("request", (r) => { if (!r.url().startsWith("data:") && new URL(r.url()).origin !== origin) others.push(r.url()); });
   return others;
 }
+/** The caret at the start of the note's title, focused, and the note scrolled to its top. */
+const atTop = (page: Page) => page.evaluate(() => {
+  const s = getSelection();
+  const node = s?.anchorNode;
+  const el = node ? (node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element)) : null;
+  const scroller = document.querySelector("[data-editor-scroller]");
+  return Boolean(el?.closest("h1")) && s?.anchorOffset === 0 && (scroller?.scrollTop ?? 0) === 0 && (document.activeElement as HTMLElement | null)?.isContentEditable === true;
+});
 async function openDemo(page: Page) {
   const started = Date.now();
   await page.goto(`${origin}/demo/`);
@@ -66,6 +74,8 @@ test("D-177: the demo opens light on the sample notes, keeps what's typed after 
   const opened = await openDemo(page);
   console.log(`[D-177] /demo/ open to first note: ${opened} ms`);
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme)).toBe("paper");
+  // The first visit opens at the welcome note's top, the caret at the start of its title.
+  await expect.poll(() => atTop(page)).toBe(true);
   // The quiet banner: it's a demo, with Download and Reset demo.
   await expect(corner(page).getByRole("button", { name: "Demo: notes stay in this browser" })).toBeVisible();
   await expect(corner(page).getByRole("button", { name: "Download" })).toBeVisible();
@@ -89,6 +99,7 @@ test("D-177: the demo opens light on the sample notes, keeps what's typed after 
   await corner(page).getByRole("button", { name: "Reset demo" }).click();
   await expect(editor(page)).toContainText("Welcome to the demo");
   await expect(editor(page)).not.toContainText("Typed in the demo.");
+  await expect.poll(() => atTop(page)).toBe(true);
   expect(others).toEqual([]);
   await context.close();
 });

@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { DEMO_NOTES, DEMO_PRIVATE, DEMO_PUBLIC } from "../src/demo/notes.ts";
-import { DEMO_DATABASE, resetDemo, seedDemo, SEEDED, type DemoStore } from "../src/demo/seed.ts";
+import { DEMO_DATABASE, resetDemo, seedDemo, SEEDED, startDemo, type DemoStore } from "../src/demo/seed.ts";
 import { WEB_DATABASE } from "@focus-notes/core/inventory";
 
 function memory(): DemoStore & { notes: Map<string, { path: string; text: string; updated: number }>; meta: Map<string, unknown> } {
@@ -72,5 +72,13 @@ describe("seeding and resetting the demo", () => {
     expect(db.notes.get(DEMO_NOTES[0]!.path)!.text).toBe(DEMO_NOTES[0]!.text);
     expect(db.notes.size).toBe(DEMO_NOTES.length);
     expect(db.meta.has("appState")).toBe(false);
+  });
+  it("a start is fresh on the first visit and the first start after Reset demo, and not otherwise", async () => {
+    const db = memory();
+    expect(await startDemo(db)).toBe(true);
+    expect(await startDemo(db)).toBe(false);
+    await resetDemo(db);
+    expect(await startDemo(db)).toBe(true);
+    expect(await startDemo(db)).toBe(false);
   });
 });
