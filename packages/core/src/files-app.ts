@@ -955,11 +955,11 @@ export function registerFiles(ctx: Ctx) {
   });
 
   return {
-    /** At launch: a panel pinned on this device opens, without taking the caret (D-161). */
     /** At launch: the order chosen on this device (D-175). */
     restoreSort(sort: unknown): void {
       if (sort === "changed") setFiles(() => ({ sort: "changed" }));
     },
+    /** At launch: a panel pinned on this device opens, without taking the caret (D-161). */
     restorePinned(pinned: boolean | undefined): void {
       if (!pinned || !ws) return;
       setFiles(() => ({ pinned: true }));

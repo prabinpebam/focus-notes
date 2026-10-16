@@ -101,6 +101,61 @@ export function groupByDay<T extends { deletedAt: number }>(notes: readonly T[])
   return [...groups.values()];
 }
 
+// ---- Note history (FIL-13, D-175) ----
+
+/** One saved version of a note, from `git log --follow`. `path` is repository-relative, as the file was named in that commit. */
+export interface VersionEntry {
+  commit: string;
+  /** When the commit was made, in ms. */
+  at: number;
+  author: string;
+  /** The whole commit message, for the agent trailer. */
+  message: string;
+  path: string;
+}
+
+/** How many versions Note history lists: the newest. */
+export const NOTE_HISTORY_LIMIT = 200;
+
+/** The log of one note's versions, following renames; the path comes last, after `--`, so it's never read as an option (SEC-03). */
+export const VERSION_LOG_ARGS = (rel: string, limit = NOTE_HISTORY_LIMIT) =>
+  ["log", "--follow", "-M", "--no-merges", "-z", "--name-only", `-n${limit}`, "--format=%x01%H%x1f%ct%x1f%an%x1f%B%x02", "--", rel] as const;
+
+/** Parses the output of {@link VERSION_LOG_ARGS}: one record per commit, newest first, with the note's path in that commit. */
+export function parseVersionLog(out: string): VersionEntry[] {
+  const entries: VersionEntry[] = [];
+  for (const record of out.split("\x01")) {
+    const end = record.indexOf("\x02");
+    if (end < 0) continue;
+    const [commit = "", ct = "", author = "", ...rest] = record.slice(0, end).split("\x1f");
+    const path = record.slice(end + 1).split("\0").map((n) => n.replace(/^\n+/, "")).find(Boolean);
+    if (!/^[0-9a-f]{7,64}$/.test(commit) || !/^\d+$/.test(ct) || !path) continue;
+    entries.push({ commit, at: Number(ct) * 1000, author, message: rest.join("\x1f").trim(), path });
+  }
+  return entries;
+}
+
+/** A version of a note as the app lists it (Note history): who made it, and the agent when one did. */
+export interface NoteVersion {
+  commit: string;
+  at: number;
+  author: string;
+  agent?: string;
+}
+
+/** Note history grouped by the day each version was saved (local time), newest first. */
+export function versionsByDay<T extends { at: number }>(versions: readonly T[]): { day: string; at: number; versions: T[] }[] {
+  const groups = new Map<string, { day: string; at: number; versions: T[] }>();
+  for (const v of [...versions].sort((a, b) => b.at - a.at)) {
+    const d = new Date(v.at);
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const g = groups.get(day) ?? { day, at: v.at, versions: [] };
+    g.versions.push(v);
+    groups.set(day, g);
+  }
+  return [...groups.values()];
+}
+
 /**
  * Where a restored note goes (Files → Deleting and restoring): back in its folder, or in its
  * root when that folder is gone, or in the chosen folder; a name that's taken there is numbered.

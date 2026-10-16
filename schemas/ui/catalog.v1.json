@@ -4101,6 +4101,13 @@
       ]
     },
     {
+      "id": "history",
+      "ia": "IA-VIEW-HISTORY",
+      "viewModels": [
+        "vm.history"
+      ]
+    },
+    {
       "id": "index",
       "ia": "IA-VIEW-PUBLIC",
       "viewModels": [

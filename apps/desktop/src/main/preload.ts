@@ -106,6 +106,9 @@ contextBridge.exposeInMainWorld("focusNotes", {
     // Recently deleted (FIL-10): found from Git history, put back by the main process.
     deleted: () => ipcRenderer.invoke("history:deleted"),
     restore: (ids: string[], folder?: string) => ipcRenderer.invoke("history:restore", ids, folder),
+    // Note history (FIL-13): a note's versions and their text, read from Git by the main process.
+    versions: (path: string) => ipcRenderer.invoke("history:versions", path),
+    version: (path: string, commit: string) => ipcRenderer.invoke("history:version", path, commit),
     // Remove this workspace from this computer (FRE-07): the main process checks everything is on GitHub, twice.
     removal: () => ipcRenderer.invoke("workspace:removal"),
     remove: () => ipcRenderer.invoke("workspace:remove"),

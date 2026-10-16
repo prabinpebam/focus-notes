@@ -3,7 +3,7 @@ import { lastWord } from "./scan.ts";
 import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
 import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
-import type { ConflictChoiceKind, DeletedNote } from "./history.ts";
+import type { ConflictChoiceKind, DeletedNote, NoteVersion } from "./history.ts";
 import type { HeldNotes } from "./held.ts";
 import type { AgentsBridge } from "./agents-app.ts";
 import type { NativeWindowBridge, WindowBridge } from "./window-app.ts";
@@ -245,6 +245,10 @@ export interface WorkspaceBridge {
    * Resolves to where each went. Rejects like `apply`.
    */
   restore?(ids: string[], folder?: string): Promise<{ path: string; title: string }[]>;
+  /** A note's saved versions from Git, newest first, following renames (FIL-13, D-175). Absent without Git. */
+  versions?(path: string): Promise<NoteVersion[]>;
+  /** A note's text in one of its versions (a commit `versions` listed), or undefined if it can't be read. */
+  version?(path: string, commit: string): Promise<string | undefined>;
   /** Changes made outside the app, in batches (the desktop's file watcher). */
   onChange?(listener: (changes: WorkspaceChange[]) => void): () => void;
   /**

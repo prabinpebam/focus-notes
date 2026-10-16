@@ -1302,6 +1302,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("history:deleted", async () => (isWorkspace() ? (await gitOpening)?.deleted() ?? [] : []));
   handle("history:restore", (ids, folder) => restoreNotes(ids, folder));
+  // Note history (FIL-13, D-175): a note in the workspace, its versions read from Git by the main process.
+  handle("history:versions", async (p) => (isWorkspace() ? (await gitOpening)?.versions(notePath(p)) ?? [] : []));
+  handle("history:version", async (p, commit) => (isWorkspace() && typeof commit === "string" ? (await gitOpening)?.readVersion(notePath(p), commit) : undefined));
   windowFrame?.registerIpc(fromApp, win);
   // macOS's menu bar (DSK-05): the renderer builds it from its commands; choosing an item runs the command there.
   if (platform === "macos") {
