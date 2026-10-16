@@ -238,22 +238,37 @@ test("DSK-09: after a renderer crash the window loads its page again behind its 
     // The crashed page's DevTools target is gone, so the new page's frames are taken in the main process,
     // every frame it paints from its first (beginFrameSubscription: the page's own frames, no screen capture).
     // Until the new page reports its first themed frame, the cover hides what it paints; every frame after that shows.
-    await l.app.evaluate(({ BrowserWindow, ipcMain }) => {
+    // How the renderer goes (DEF-22): on Linux, Electron's forcefullyCrashRenderer asks the renderer to
+    // crash itself, and on the CI runner it never did (no render-process-gone in 10 s). There the
+    // renderer is killed instead, as the system's out-of-memory killer would; recovery is the same for
+    // every reason but a clean exit. Windows and macOS keep the forced crash.
+    const how = process.platform === "linux" ? "kill" : "crash";
+    await l.app.evaluate(({ BrowserWindow, ipcMain }, how) => {
       const wc = BrowserWindow.getAllWindows()[0]!.webContents;
-      const g = globalThis as unknown as { __fnFrames: { covered: boolean; png: string }[] };
+      const g = globalThis as unknown as { __fnFrames: { covered: boolean; png: string }[]; __fnGone?: unknown };
       g.__fnFrames = [];
       let covered = true;
       ipcMain.once("window:firstFrame", () => (covered = false));
       // From the new page's start, before its first paint.
+      wc.once("render-process-gone", (_e, d) => (g.__fnGone = d));
       wc.once("render-process-gone", () => wc.once("did-start-loading", () => {
         wc.beginFrameSubscription((image) => {
           if (g.__fnFrames.length < 120) g.__fnFrames.push({ covered, png: image.toPNG().toString("base64") });
         });
       }));
-      wc.forcefullyCrashRenderer();
-    });
+      if (how === "kill") process.kill(wc.getOSProcessId(), "SIGKILL");
+      else wc.forcefullyCrashRenderer();
+    }, how);
     // The cover in the theme's canvas goes over the drawn window first, then the page loads again.
-    await expect.poll(() => l.log.find((x) => x.includes("renderer-gone")) ?? "", { timeout: 10_000 }).toContain(`cover=${canvas}`);
+    await expect.poll(() => l.log.find((x) => x.includes("renderer-gone")) ?? "", { timeout: 10_000 }).toContain(`cover=${canvas}`).catch(async (e: unknown) => {
+      // What the main process saw, so a failure on another platform says why (DEF-22).
+      const gone = await l.app.evaluate(({ BrowserWindow }) => JSON.stringify({
+        gone: (globalThis as { __fnGone?: unknown }).__fnGone ?? "never",
+        windows: BrowserWindow.getAllWindows().map((w) => ({ url: w.webContents.getURL().split("?")[0], pid: w.webContents.getOSProcessId(), crashed: w.webContents.isCrashed() })),
+      })).catch((x: unknown) => `main unreachable: ${String(x)}`);
+      process.stdout.write(`[crash] ${how}: ${gone}\n[crash] the app's last lines:\n${l.log.slice(-15).join("\n")}\n`);
+      throw e;
+    });
     await expect.poll(() => l.log.find((x) => x.includes("renderer-recovered")) ?? "", { timeout: 20_000 }).toContain("renderer-recovered on=first-frame");
     expect(l.log.findIndex((x) => x.includes("renderer-gone"))).toBeLessThan(l.log.findIndex((x) => x.includes("renderer-recovered")));
     const inPage = <T,>(js: string) => l.app.evaluate(({ BrowserWindow }, code) => BrowserWindow.getAllWindows()[0]!.webContents.executeJavaScript(code), js) as Promise<T>;
