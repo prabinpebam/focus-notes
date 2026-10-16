@@ -69,6 +69,78 @@ async function start(env: Record<string, string> = {}): Promise<Launched> {
   return l;
 }
 
+/**
+ * One launch's uses of the toolbar, Files, Spotlight and Settings, `rounds` times: each use's worst
+ * input to next paint (Event Timing), and the long tasks (PRF-14).
+ */
+async function useRounds(page: Page, rounds: number): Promise<{ results: Record<string, number[]>; worstOf: Record<string, string[]>; long: number[] }> {
+  await page.waitForTimeout(3000);
+  const mod = process.platform === "darwin" ? "Meta" : "Control";
+  // The Event Timing API: each input's time to the next paint (entries from 16 ms; under that, none),
+  // and long tasks.
+  await page.evaluate(() => {
+    const g = globalThis as unknown as { inp: { start: number; duration: number; name: string; at: string }[]; long: { start: number; duration: number }[] };
+    g.inp = [];
+    g.long = [];
+    new PerformanceObserver((list) => {
+      // With where its time went: waiting to run, its handlers, and from them to the paint.
+      for (const e of list.getEntries() as PerformanceEventTiming[]) g.inp.push({ start: e.startTime, duration: e.duration, name: e.name, at: `${e.name} ${Math.round(e.processingStart - e.startTime)}/${Math.round(e.processingEnd - e.processingStart)}/${Math.round(e.startTime + e.duration - e.processingEnd)}` });
+    }).observe({ type: "event", durationThreshold: 16, buffered: false } as PerformanceObserverInit);
+    new PerformanceObserver((list) => {
+      for (const e of list.getEntries()) g.long.push({ start: e.startTime, duration: e.duration });
+    }).observe({ type: "longtask" });
+  });
+  const editor = page.getByRole("textbox", { name: "Note" });
+  const ACTIONS: [string, () => Promise<void>][] = [
+    ["toolbar", async () => {
+      await page.keyboard.press(`${mod}+.`);
+      await page.waitForTimeout(150);
+      await page.keyboard.press("Escape");
+    }],
+    ["Files", async () => {
+      await page.keyboard.press(`${mod}+O`);
+      await page.waitForFunction(() => document.activeElement?.getAttribute("role") === "treeitem");
+      await page.keyboard.press("Escape");
+    }],
+    ["Spotlight", async () => {
+      await page.keyboard.press(`${mod}+/`);
+      await page.getByRole("dialog", { name: "Spotlight" }).waitFor();
+      await page.keyboard.type("note");
+      // The first Esc clears the query, the second closes it.
+      const panel = page.getByRole("dialog", { name: "Spotlight" });
+      for (let i = 0; i < 3 && (await panel.count()); i++) {
+        await page.keyboard.press("Escape");
+        await panel.waitFor({ state: "detached", timeout: 1000 }).catch(() => {});
+      }
+    }],
+    ["Settings", async () => {
+      await page.keyboard.press(`${mod}+,`);
+      await page.waitForTimeout(250);
+      await page.keyboard.press("Escape");
+    }],
+  ];
+  const results: Record<string, number[]> = {};
+  const worstOf: Record<string, string[]> = {};
+  for (let round = 0; round < rounds; round++) {
+    for (const [name, act] of ACTIONS) {
+      await editor.focus();
+      const from = await page.evaluate(() => performance.now());
+      await act();
+      await page.waitForTimeout(150);
+      const to = await page.evaluate(() => performance.now());
+      const worst = await page.evaluate(([a, b]) => {
+        const g = globalThis as unknown as { inp: { start: number; duration: number; at: string }[] };
+        const inUse = g.inp.filter((e) => e.start >= a! && e.start <= b!).sort((x, y) => y.duration - x.duration);
+        return { duration: inUse[0]?.duration ?? 0, at: inUse[0]?.at ?? "" };
+      }, [from, to]);
+      (results[name] ??= []).push(worst.duration);
+      (worstOf[name] ??= []).push(worst.at);
+    }
+  }
+  const long = await page.evaluate(() => (globalThis as unknown as { long: { duration: number }[] }).long.map((e) => Math.round(e.duration)));
+  return { results, worstOf, long };
+}
+
 test.describe("PRF-14: the window follows the hand (D-151)", () => {
   test.skip(!custom, "macOS moves its own window (D-14)");
 
@@ -232,74 +304,22 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
   test("PRF-14: every control answers in the next frame: input to next paint for the toolbar, Files, Spotlight and Settings, p95 at most 50 ms", async () => {
     // With the warm-up after start on, as people have it (PRF-10): first uses are warmed there; and
     // drawn even when other windows cover the journey's (Windows' occlusion tracking off).
-    const l = await start({ FOCUS_NOTES_WARMUP: "1", FOCUS_NOTES_CHROMIUM_SWITCHES: "disable-features=CalculateNativeWinOcclusion,disable-backgrounding-occluded-windows" });
+    const env = { FOCUS_NOTES_WARMUP: "1", FOCUS_NOTES_CHROMIUM_SWITCHES: "disable-features=CalculateNativeWinOcclusion,disable-backgrounding-occluded-windows" };
+    // A throwaway launch and round of first uses first (D-178): on a fresh runner the very first app
+    // launches pay for cold OS disk and font caches (long frames with no script and almost no
+    // rendering, D-151), which made this test pass or fail by where the shard put it. Logged, not gated,
+    // so a real cold-start regression stays visible.
+    const cold = await start(env);
+    const c = await useRounds(cold.page, 1);
+    console.log(`[D-178] cold (not gated): input to next paint ${JSON.stringify(c.results)}; long tasks ${JSON.stringify(c.long)}; worst inputs ${JSON.stringify(c.worstOf)}`);
+    await quit(cold);
+    const l = await start(env);
     const { page } = l;
-    await page.waitForTimeout(3000);
     const mod = process.platform === "darwin" ? "Meta" : "Control";
-    // The Event Timing API: each input's time to the next paint (entries from 16 ms; under that, none),
-    // and long tasks.
-    await page.evaluate(() => {
-      const g = globalThis as unknown as { inp: { start: number; duration: number; name: string; at: string }[]; long: { start: number; duration: number }[] };
-      g.inp = [];
-      g.long = [];
-      new PerformanceObserver((list) => {
-        // With where its time went: waiting to run, its handlers, and from them to the paint.
-        for (const e of list.getEntries() as PerformanceEventTiming[]) g.inp.push({ start: e.startTime, duration: e.duration, name: e.name, at: `${e.name} ${Math.round(e.processingStart - e.startTime)}/${Math.round(e.processingEnd - e.processingStart)}/${Math.round(e.startTime + e.duration - e.processingEnd)}` });
-      }).observe({ type: "event", durationThreshold: 16, buffered: false } as PerformanceObserverInit);
-      new PerformanceObserver((list) => {
-        for (const e of list.getEntries()) g.long.push({ start: e.startTime, duration: e.duration });
-      }).observe({ type: "longtask" });
-    });
     const editor = page.getByRole("textbox", { name: "Note" });
-    const ACTIONS: [string, () => Promise<void>][] = [
-      ["toolbar", async () => {
-        await page.keyboard.press(`${mod}+.`);
-        await page.waitForTimeout(150);
-        await page.keyboard.press("Escape");
-      }],
-      ["Files", async () => {
-        await page.keyboard.press(`${mod}+O`);
-        await page.waitForFunction(() => document.activeElement?.getAttribute("role") === "treeitem");
-        await page.keyboard.press("Escape");
-      }],
-      ["Spotlight", async () => {
-        await page.keyboard.press(`${mod}+/`);
-        await page.getByRole("dialog", { name: "Spotlight" }).waitFor();
-        await page.keyboard.type("note");
-        // The first Esc clears the query, the second closes it.
-        const panel = page.getByRole("dialog", { name: "Spotlight" });
-        for (let i = 0; i < 3 && (await panel.count()); i++) {
-          await page.keyboard.press("Escape");
-          await panel.waitFor({ state: "detached", timeout: 1000 }).catch(() => {});
-        }
-      }],
-      ["Settings", async () => {
-        await page.keyboard.press(`${mod}+,`);
-        await page.waitForTimeout(250);
-        await page.keyboard.press("Escape");
-      }],
-    ];
-    const results: Record<string, number[]> = {};
-    const worstOf: Record<string, string[]> = {};
-    for (let round = 0; round < 5; round++) {
-      for (const [name, act] of ACTIONS) {
-        await editor.focus();
-        const from = await page.evaluate(() => performance.now());
-        await act();
-        await page.waitForTimeout(150);
-        const to = await page.evaluate(() => performance.now());
-        const worst = await page.evaluate(([a, b]) => {
-          const g = globalThis as unknown as { inp: { start: number; duration: number; at: string }[] };
-          const inUse = g.inp.filter((e) => e.start >= a! && e.start <= b!).sort((x, y) => y.duration - x.duration);
-          return { duration: inUse[0]?.duration ?? 0, at: inUse[0]?.at ?? "" };
-        }, [from, to]);
-        (results[name] ??= []).push(worst.duration);
-        (worstOf[name] ??= []).push(worst.at);
-      }
-    }
+    const { results, worstOf, long } = await useRounds(page, 5);
     const all = Object.values(results).flat().sort((a, b) => a - b);
     const p95 = all[Math.min(all.length - 1, Math.floor(all.length * 0.95))]!;
-    const long = await page.evaluate(() => (globalThis as unknown as { long: { duration: number }[] }).long.map((e) => Math.round(e.duration)));
     console.log(`[D-151] input to next paint (ms, the worst input of each use, under 16 ms shown as 0): ${JSON.stringify(results)}; p95 ${p95} ms, max ${all.at(-1)} ms; long tasks ${JSON.stringify(long)}`);
     for (const [name, r] of Object.entries(results)) console.log(`[D-151] ${name}: first use ${r[0]} ms, fifth ${r[4]} ms; worst input of each (name wait/handlers/to paint, ms) ${JSON.stringify(worstOf[name])}`);
     // Where Spotlight's opening goes (D-151 (12)): one more opening, traced (not measured).
@@ -312,7 +332,7 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     // Gated (D-151 (12), (13)): Spotlight measured 56 to 88 ms on CI's software compositing until its
     // list's first frame drew only the rows it shows and, without a GPU, its frost went opaque and it
     // appears without a fade (CI after: 32 to 40 ms).
-    expect(all.length).toBe(ACTIONS.length * 5);
+    expect(all.length).toBe(4 * 5);
     expect(p95, "input to next paint p95 (budget 50 ms)").toBeLessThanOrEqual(50);
     await quit(l);
   });
