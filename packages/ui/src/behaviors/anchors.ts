@@ -19,6 +19,7 @@ const rects: Record<AnchorName, AnchorRect | null> = { selection: null, link: nu
 const readers: Record<AnchorName, (() => AnchorRect | null) | null> = { selection: null, link: null, caret: null };
 const listeners = new Set<() => void>();
 const openers = new Set<() => void>();
+const followers = new Set<() => void>();
 let open = 0;
 
 export const anchors = {
@@ -66,6 +67,19 @@ export const anchors = {
   onOpen(listener: () => void): () => void {
     openers.add(listener);
     return () => openers.delete(listener);
+  },
+  /**
+   * The note was just scrolled from a frame's callback (the reading zone keeping the caret in its band,
+   * DEF-25): open surfaces are placed again now, in this frame. A scroll made there reaches its
+   * listeners only in the next frame, so the surface would sit a frame on where the anchor was.
+   */
+  moved(): void {
+    for (const f of followers) f();
+  },
+  /** Placed again at once whenever `moved` says the note scrolled. */
+  onMoved(follower: () => void): () => void {
+    followers.add(follower);
+    return () => followers.delete(follower);
   },
 };
 
