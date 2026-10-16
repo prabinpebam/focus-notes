@@ -32,7 +32,8 @@ import { WarmUp } from "./warmup.ts";
 import { registerSpotlight, SPOTLIGHT_CLOSED, type SpotlightState } from "./spotlight-app.ts";
 import { registerFindAll, FIND_ALL_CLOSED, type FindAllState, type FindJump } from "./find-all-app.ts";
 import type { SearchService } from "./search/feed.ts";
-import { registerThemeManager, THEME_MANAGER_CLOSED, draftTokens, shownTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
+import { registerThemeManager, THEME_MANAGER_CLOSED, kindOf, rootTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
+import { customThemesOf, isCustomId } from "./custom-themes.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -1031,7 +1032,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce });
   const deepLinks = registerDeepLinks({ bridge, openAt: (path, at) => spotlight.openAt(path, at), searchNotes: (q) => spotlight.searchNotes(q) });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
-  registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce });
+  registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce, ...(bridge.themes?.save ? { saveTheme: (file: string, text: string) => bridge.themes!.save!(file, text) } : {}), ...(bridge.themes ? { listThemes: () => bridge.themes!.list() } : {}), ...(bridge.themes?.remove ? { removeTheme: (file: string) => bridge.themes!.remove!(file) } : {}), ...(bridge.themes?.reveal ? { revealTheme: (file: string) => bridge.themes!.reveal!(file) } : {}), toast,
+    // A workspace (its Private or Public root) holds theme files; a plain folder of notes doesn't (D-173).
+    themesAvailable: () => { const roots = store.state.workspace.tree.roots; return !roots.length || roots.some((r) => r.id === "private" || r.id === "public"); } });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
   // keeps them on this device as they are now, and deletes the file.
   commands.register({
@@ -1177,14 +1180,16 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     reads: ["appearance", "focusMode", "compositing", "ui.theme.preview", "ui.theme.draft"],
     select: (s) => {
       // The theme manager's keyboard preview shows on the real note (THM-07), and so does an edited copy.
-      const theme = shownTheme(s);
+      // A custom theme shows through its base's styles with its own colors over them (D-173).
+      const root = rootTheme(s);
+      const theme = root.theme;
       const a = s.appearance;
       return {
-        scheme: themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode,
+        scheme: root.scheme ?? themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode,
         contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap, compositing: s.compositing,
         lineHeight: a.lineHeight === LINE_HEIGHT.default ? undefined : a.lineHeight,
         measure: a.measure === MEASURE.default ? undefined : a.measure,
-        paragraphSpacing: a.paragraphSpacing, focusDim: a.focusDim, themeColors: draftTokens(s),
+        paragraphSpacing: a.paragraphSpacing, focusDim: a.focusDim, themeColors: root.colors,
       };
     },
   });
@@ -1327,6 +1332,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // Synced settings, when they're on, are read over this device's own (PRV-03).
       settingsFile = synced?.available ? parseSettings(synced.text) : undefined;
       appState = { ...deviceState, ...appStateOfSettings(settingsFile) };
+      // Custom themes from the workspace (THM-04, D-173), read at launch only when a slot holds one,
+      // to put it back: otherwise nothing about them is read, parsed, or checked at start (PRF-14);
+      // the theme manager reads them when it opens.
+      const wantsCustom = isCustomId(appState.lightTheme) || isCustomId(appState.darkTheme);
+      const customThemes = wantsCustom ? customThemesOf((await bridge.themes?.list().catch(() => [])) ?? []) : [];
+      if (customThemes.length) store.update((s) => ({ ...s, appearance: { ...s.appearance, customThemes } }));
       store.update((s) => ({ ...s, settingsSync: !synced?.available ? "unavailable" : settingsFile ? "on" : "off" }));
       store.update((s) => ({
         ...s,
@@ -1335,8 +1346,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           ...(appState.appearance ? { mode: appState.appearance } : {}),
           ...(appState.fontSize ? { fontSize: appState.fontSize } : {}),
           // Unknown or removed themes fall back to the defaults rather than failing.
-          ...(themeById(appState.lightTheme)?.kind === "light" ? { lightTheme: appState.lightTheme! } : {}),
-          ...(themeById(appState.darkTheme)?.kind === "dark" ? { darkTheme: appState.darkTheme! } : {}),
+          ...(kindOf({ customThemes }, appState.lightTheme) === "light" ? { lightTheme: appState.lightTheme! } : {}),
+          ...(kindOf({ customThemes }, appState.darkTheme) === "dark" ? { darkTheme: appState.darkTheme! } : {}),
           ...((CONTENT_FONTS as readonly string[]).includes(appState.contentFont ?? "") ? { contentFont: appState.contentFont as ContentFont } : {}),
           ...((UI_SCALES as readonly number[]).includes(appState.uiScale ?? 0) ? { uiScale: appState.uiScale! } : {}),
           ...(onSteps(appState.lineHeight, LINE_HEIGHT) !== undefined ? { lineHeight: onSteps(appState.lineHeight, LINE_HEIGHT)! } : {}),

@@ -913,6 +913,10 @@ async function refreshKnown(): Promise<void> {
   knownCache = knownStrings(values, remotes);
 }
 
+/** Custom themes read at launch: at most this many files, each at most this big (D-173). */
+const THEMES_AT_MOST = 100;
+const THEME_FILE_BYTES = 64 * 1024;
+
 function handle(channel: string, fn: (...args: any[]) => unknown): void {
   ipcMain.handle(channel, async (e, ...args) => {
     if (!fromApp(e)) throw new Error("Refused: request didn't come from the app");
@@ -1044,7 +1048,53 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   // The Pages site the public root publishes to (SHR-03, D-139): setup's, or the notes repository's origin on github.com.
   const pagesSite = async () => (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8"));
-  handle("workspace:info", async () => {
+  // Custom themes (THM-04, D-173): the workspace's theme files, private when it has a private
+  // repository. Read only, small files only, never followed out of the folder.
+  handle("themes:list", async () => {
+    if (!isWorkspace()) return [];
+    const dir = hasPrivate() ? join(notesHome(), "private", ".focus-notes", "themes") : join(notesHome(), ".focus-notes", "themes");
+    const names = (await readdir(dir).catch(() => [] as string[])).filter((n) => /\.json$/i.test(n) && !n.startsWith(".")).sort().slice(0, THEMES_AT_MOST);
+    const out: { file: string; text: string }[] = [];
+    for (const name of names) {
+      const p = join(dir, name);
+      const info = await lstat(p).catch(() => undefined);
+      if (!info?.isFile() || info.size > THEME_FILE_BYTES) continue;
+      const text = await readFile(p, "utf8").catch(() => undefined);
+      if (text !== undefined) out.push({ file: name, text });
+    }
+    return out;
+  });  // Saving edited colors as a theme (D-173): a new file in the themes folder, never over another.
+  handle("themes:save", async (file, text) => {
+    if (!isWorkspace() || typeof file !== "string" || typeof text !== "string" || text.length > THEME_FILE_BYTES) throw new Error("Not a theme file");
+    const m = /^([\p{Ll}\p{Lo}\p{N}][\p{Ll}\p{Lo}\p{N}-]{0,80})\.json$/u.exec(file);
+    if (!m) throw new Error("Not a theme file name");
+    JSON.parse(text);
+    const dir = hasPrivate() ? join(notesHome(), "private", ".focus-notes", "themes") : join(notesHome(), ".focus-notes", "themes");
+    await assertWritable(join(dir, file));
+    await mkdir(dir, { recursive: true });
+    for (let i = 1; i < 1000; i++) {
+      const name = i === 1 ? file : `${m[1]}-${i}.json`;
+      const p = join(dir, name);
+      if (existsSync(p)) continue;
+      await atomicWrite(p, text);
+      return name;
+    }
+    throw new Error("No free theme file name");
+  });  // A theme file by its name in the themes folder (D-173): never a path, never outside it.
+  const themeFile = (file: unknown): string => {
+    if (!isWorkspace() || typeof file !== "string" || !/^[^\\/:*?"<>|]{1,120}\.json$/i.test(file) || file.startsWith(".")) throw new Error("Not a theme file");
+    const dir = hasPrivate() ? join(notesHome(), "private", ".focus-notes", "themes") : join(notesHome(), ".focus-notes", "themes");
+    return join(dir, file);
+  };
+  handle("themes:remove", async (file) => {
+    const p = themeFile(file);
+    await assertWritable(p);
+    await rm(p, { force: true });
+  });
+  handle("themes:reveal", async (file) => {
+    const p = themeFile(file);
+    if (existsSync(p)) shell.showItemInFolder(p);
+  });  handle("workspace:info", async () => {
     const format = await readFormat();
     const site = await pagesSite().catch(() => undefined);
     return { folder: notesHome(), ...(format !== undefined ? { format } : {}), ...(site ? { site } : {}) };
