@@ -29,7 +29,12 @@ const posix = (p: string) => p.split(sep).join("/");
 
 export class HeldFile {
   #queue: Promise<unknown> = Promise.resolve();
-  constructor(readonly top: string, readonly file: string) {}
+  readonly top: string;
+  readonly file: string;
+  constructor(top: string, file: string) {
+    this.top = top;
+    this.file = file;
+  }
 
   /** A path inside the repository, as the block spells it; undefined outside it. */
   #rel(abs: string): string | undefined {

@@ -21,6 +21,7 @@ import { registerSync, NO_SYNC, SyncFailed, saveStateOf, syncProblemAction, type
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
+import { registerHeld, HELD_CLOSED, type HeldUiState } from "./held-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
@@ -75,6 +76,8 @@ export interface AppState {
     importNotes: ImportState;
     /** The conflict resolver (FIL-12, IA-CMP-CONFLICT). */
     conflict: ConflictState;
+    /** A new public note held out of Git until the writer answers (D-158): its pill and its question. */
+    held: HeldUiState;
     /** Settings (IA-VIEW-SETTINGS): Account and Workspace, with signing out and removing the workspace (FRE-07). */
     settings: SettingsState;
     /** Settings → Sharing and its dialogs: audiences made, changed, and withdrawn (WP-5.3). */
@@ -263,7 +266,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
     focusMode: false,
     compositing: bridge.compositing?.initial === "software" ? "software" : "gpu",
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, settings: SETTINGS_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, held: HELD_CLOSED, settings: SETTINGS_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -465,7 +468,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     if (!(await flush())) return;
     // Switching notes commits and pushes the one being left (D-23).
     const leaving = store.state.note.path;
-    if (leaving && leaving !== path) sync.switched();
+    if (leaving && leaving !== path) {
+      // A new public note that waits is asked about before its first backup (D-158).
+      heldNotes.backingUp(leaving);
+      sync.switched();
+    }
     setNote({ status: "loading" });
     // The toolbar and link editor belong to the note that was open.
     store.update((s) => ({ ...s, ui: { ...s.ui, format: FORMAT_CLOSED } }));
@@ -523,6 +530,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     run: () => (conflicts.holds(store.state.note.path) ? Promise.resolve(conflicts.offer(store.state.note.path)) : tracker.run("note.save", "task.saving", async () => {
       // What's on screen is what's saved: the editor hands over text it hasn't sent yet.
       editorAction(FLUSH_EDITOR);
+      // A new public note that waits is asked about; the rest is backed up as usual (D-158).
+      heldNotes.backingUp(store.state.note.path);
       clearTimeout(saveTimer);
       saveTimer = undefined;
       saving = saving.then(writeNow);
@@ -658,6 +667,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       if (!(await flush())) return;
       files.created(path);
       await bridge.writeNote(path, "");
+      // Without a private repository the shell held it: its pill shows from the start (D-158).
+      await heldNotes.refresh();
       await load(path);
       const heading = typeof title === "string" ? title.replace(/\s+/g, " ").trim() : "";
       if (heading && store.state.note.path === path) {
@@ -966,6 +977,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     loaded: (path, md) => workspace.loaded(path, md),
     ...(options.clock ? { now: options.clock.now } : {}),
   });
+  const heldNotes = registerHeld({ store, commands, viewModels, catalog, bridge, toast, announce });
+  void heldNotes.refresh();
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
   // The compositing can change while the app runs: the GPU process crashed and came back in software (D-121).
   bridge.compositing?.onChange((c) => {

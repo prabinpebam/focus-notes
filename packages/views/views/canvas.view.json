@@ -25,6 +25,7 @@
     "vm.setup",
     "vm.import",
     "vm.conflict",
+    "vm.held",
     "vm.deleted",
     "vm.window",
     "vm.spotlight"
@@ -736,12 +737,7 @@
             "get": "vm.app.focusMode"
           },
           "placeholder": {
-            "t": "canvas.placeholder",
-            "args": {
-              "platform": {
-                "get": "vm.app.platform"
-              }
-            }
+            "get": "vm.held.placeholder"
           },
           "emptyHeader": {
             "t": "table.emptyHeader",
@@ -2687,6 +2683,100 @@
       },
       {
         "type": "Dialog",
+        "id": "held",
+        "when": {
+          "get": "vm.held.open"
+        },
+        "props": {
+          "title": {
+            "get": "vm.held.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.held.open"
+          },
+          "size": "s",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "held.setOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "s"
+            },
+            "children": [
+              {
+                "type": "ItemCard",
+                "props": {
+                  "title": {
+                    "t": "held.local.title"
+                  },
+                  "detail": {
+                    "t": "held.local.detail"
+                  },
+                  "icon": "lock",
+                  "busy": {
+                    "get": "vm.held.busy"
+                  },
+                  "autoFocus": true
+                },
+                "on": {
+                  "press": {
+                    "run": "held.answer",
+                    "args": {
+                      "choice": "local"
+                    }
+                  }
+                },
+                "when": {
+                  "expr": {
+                    "!": {
+                      "get": "vm.held.local"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "ItemCard",
+                "props": {
+                  "title": {
+                    "t": "held.public.title"
+                  },
+                  "detail": {
+                    "t": "held.public.detail"
+                  },
+                  "icon": "share",
+                  "busy": {
+                    "get": "vm.held.busy"
+                  }
+                },
+                "on": {
+                  "press": {
+                    "run": "held.answer",
+                    "args": {
+                      "choice": "public"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
         "id": "importNotes",
         "when": {
           "get": "vm.import.open"
@@ -3148,6 +3238,23 @@
                 "on": {
                   "press": {
                     "run": "note.readOnlyAction"
+                  }
+                }
+              },
+              {
+                "type": "PillButton",
+                "id": "heldPill",
+                "when": {
+                  "get": "vm.held.pill"
+                },
+                "props": {
+                  "label": {
+                    "get": "vm.held.pillText"
+                  }
+                },
+                "on": {
+                  "press": {
+                    "run": "held.ask"
                   }
                 }
               }

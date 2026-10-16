@@ -18,6 +18,7 @@ import { parseSettings } from "@focus-notes/core/settings";
 import { restorePlace, titleOrName } from "@focus-notes/core/history";
 import { GitSync, NO_GIT } from "./git/sync.ts";
 import { TemplateGuard } from "./git/template-guard.ts";
+import { HeldFile, excludeFileOf } from "./git/held.ts";
 import { changedChars, type BackupPolicy } from "./git/cadence.ts";
 import { createRunner, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
@@ -417,6 +418,17 @@ const formatFile = () => join(notesHome(), ".focus-notes", "workspace.json");
 const isWorkspace = () => existsSync(formatFile());
 // A clone whose account can't reach the private repository has no private root (FRE-06).
 const hasPrivate = () => existsSync(join(notesHome(), "private", "notes")) || existsSync(join(notesHome(), "private", ".git"));
+// New notes without a private repository (D-158): held out of Git, in the notes repository's
+// info/exclude, until the writer answers Make it public or Keep it on this computer only.
+let heldCache: { home: string; file: HeldFile } | undefined;
+async function heldNotes(): Promise<HeldFile | undefined> {
+  const home = notesHome();
+  if (!isWorkspace()) return undefined;
+  if (heldCache?.home === home) return heldCache.file;
+  const file = await excludeFileOf(home);
+  heldCache = file ? { home, file: new HeldFile(home, file) } : undefined;
+  return heldCache?.file;
+}
 const roots = () => isWorkspace()
   ? [...(hasPrivate() ? [{ id: "private", path: join(notesHome(), "private", "notes"), readOnly: false }] : []), { id: "public", path: join(notesHome(), "notes"), readOnly: false }]
   : [{ id: "local", path: notesHome(), readOnly: false }];
@@ -629,6 +641,7 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
   // Deletes are checked before anything changes, because the trash can't be undone from here.
   for (const op of ops) if (op.op === "delete" && !existsSync(op.path)) throw refuse("notFound");
   const undo: (() => Promise<unknown>)[] = [];
+  const held = await heldNotes();
   try {
     for (const op of ops) {
       if (op.op === "createFolder") {
@@ -653,6 +666,11 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         }
         if (!(await isDir(dirname(to)))) throw refuse("notFound");
         await writesDone(from);
+        // A held note's line moves first, so its new path is never committed (D-158).
+        if (held) {
+          await held.moved(from, to);
+          undo.push(() => held.moved(to, from));
+        }
         if (caseOnly && from !== to) {
           const tmp = `${from}.${process.pid}.move.tmp`;
           await renameRetrying(from, tmp);
@@ -677,6 +695,7 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
       if (op.op !== "delete") continue;
       await writesDone(op.path);
       await shell.trashItem(op.path).catch(() => { throw refuse("trash"); });
+      await held?.removed(op.path).catch(() => {});
     }
   } catch (error) {
     for (const u of undo.reverse()) await u().catch(() => {});
@@ -921,7 +940,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const dir = typeof near === "string" && near ? dirname(notePath(near)) : notesRoot();
     for (let i = 1; ; i++) {
       const p = join(dir, i === 1 ? "Untitled.md" : `Untitled ${i}.md`);
-      if (!existsSync(p)) return p;
+      if (existsSync(p)) continue;
+      // Without a private repository, a new public note is held before its file is first written (D-158).
+      if (isWorkspace() && !hasPrivate() && inside(join(notesHome(), "notes"), p)) await (await heldNotes())?.hold(p);
+      return p;
     }
   });
   // The Pages site the public root publishes to (SHR-03, D-139): setup's, or the notes repository's origin on github.com.
@@ -951,12 +973,20 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     await (writeQueues.get(a) ?? Promise.resolve()).catch(() => {});
     const caseOnly = a.toLowerCase() === b.toLowerCase();
     if (!caseOnly && existsSync(b)) throw new Error("That name is taken");
-    if (caseOnly && a !== b) {
-      // Case-insensitive file systems need two steps for a change of case.
-      const tmp = `${a}.${process.pid}.rename.tmp`;
-      await renameRetrying(a, tmp);
-      await renameRetrying(tmp, b);
-    } else await renameRetrying(a, b);
+    // A held note's line follows it before the file moves, so its new name is never committed (D-158).
+    const held = await heldNotes();
+    await held?.moved(a, b);
+    try {
+      if (caseOnly && a !== b) {
+        // Case-insensitive file systems need two steps for a change of case.
+        const tmp = `${a}.${process.pid}.rename.tmp`;
+        await renameRetrying(a, tmp);
+        await renameRetrying(tmp, b);
+      } else await renameRetrying(a, b);
+    } catch (error) {
+      await held?.moved(b, a).catch(() => {});
+      throw error;
+    }
     parsed.move(a, b);
     void journal?.moved(a, b);
     withGit((g) => g.renamed(a, b));
@@ -1065,6 +1095,18 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("sync:now", async (reason) => {
     const g = await gitOpening;
     return g ? g.request(reason === "switch" ? "switch" : "save") : NO_GIT;
+  });
+  // New notes without a private repository (D-158): the held lists, and the writer's answer for one.
+  handle("held:list", async () => (await (await heldNotes())?.list()) ?? { waiting: [], local: [] });
+  handle("held:answer", async (p, choice) => {
+    const path = notePath(p);
+    if (choice !== "public" && choice !== "local") throw new Error("Answer public or local");
+    const held = await heldNotes();
+    if (!held) return { waiting: [], local: [] };
+    await held.answer(path, choice);
+    // Made public: it's backed up like any change, with the next save.
+    if (choice === "public" && existsSync(path)) withGit((g) => g.written(path));
+    return held.list();
   });
   handle("sync:status", async () => {
     const g = await gitOpening;

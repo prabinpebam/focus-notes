@@ -27,7 +27,7 @@ export function excludeLine(rel: string): string | undefined {
   if (/[\r\n]/.test(rel) || !rel) return undefined;
   const escaped = rel.replace(/[\\*?[]/g, (c) => `\\${c}`);
   // Git drops trailing spaces unless each is escaped.
-  const trail = /( +)$/.exec(escaped)?.[1].length ?? 0;
+  const trail = escaped.length - escaped.replace(/ +$/, "").length;
   return `/${trail ? `${escaped.slice(0, -trail)}${"\\ ".repeat(trail)}` : escaped}`;
 }
 function pathOfLine(line: string): string | undefined {

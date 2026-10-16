@@ -4,6 +4,7 @@ import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
 import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
 import type { ConflictChoiceKind, DeletedNote } from "./history.ts";
+import type { HeldNotes } from "./held.ts";
 import type { NativeWindowBridge, WindowBridge } from "./window-app.ts";
 import type { AccessBridge } from "./share-manage.ts";
 import type { DiagnosticsPreview, TimingSummary } from "./diagnostics.ts";
@@ -166,6 +167,13 @@ export interface SyncBridge {
    * conflict, and so does its repository: its commits wait until it's settled.
    */
   resolve?(choices: ConflictChoice[]): Promise<SyncReport>;
+  /**
+   * New public notes held out of Git until the writer answers, and notes kept on this computer
+   * (D-158), as absolute paths. Absent where nothing is held (the browser).
+   */
+  held?(): Promise<HeldNotes>;
+  /** Make it public (backed up with the next save) or Keep it on this computer only. Resolves to the lists after. */
+  answerHeld?(path: string, choice: "public" | "local"): Promise<HeldNotes>;
 }
 
 /** A note changed both on this computer and elsewhere since they last synced (FIL-12). */
