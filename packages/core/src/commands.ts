@@ -117,6 +117,8 @@ export class CommandRegistry<S> {
   #commands = new Map<string, CommandDef<S, any>>();
   #listeners = new Set<(id: string, error?: unknown) => void>();
   #hold: ((id: string, state: S) => string | undefined) | undefined;
+  /** The person's own keys from keybindings.json (KEY-07, D-170), on this platform only. */
+  #user: { add: ReadonlyMap<string, readonly string[]>; remove: ReadonlyMap<string, ReadonlySet<string>> } = { add: new Map(), remove: new Map() };
 
   private readonly getState: () => S;
   private readonly update: (recipe: (s: S) => S) => void;
@@ -143,6 +145,29 @@ export class CommandRegistry<S> {
     this.#hold = hold;
   }
 
+  /**
+   * The person's own keys, layered over the defaults (D-170): added chords come first and win over a
+   * default chord on the same key; removed chords go. Only on this platform: the cheat sheet's other
+   * platform shows the defaults.
+   */
+  setUserBindings(user: { add: ReadonlyMap<string, readonly string[]>; remove: ReadonlyMap<string, ReadonlySet<string>> }): void {
+    this.#user = user;
+  }
+
+  /** The commands with keys the person added. */
+  userBound(): Set<string> {
+    return new Set([...this.#user.add.keys()].filter((id) => this.#commands.has(id)));
+  }
+
+  /** A command's effective chords on a platform: the person's first, then the defaults they kept. */
+  #chords(id: string, def: CommandDef<S, any>, platform: Platform): string[] {
+    const defaults = chordsFor(def.shortcut, platform);
+    if (platform !== this.platform) return defaults;
+    const removed = this.#user.remove.get(id);
+    const added = this.#user.add.get(id) ?? [];
+    return [...added, ...defaults.filter((c) => !removed?.has(c) && !added.includes(c))];
+  }
+
   #held(id: string): string | undefined {
     return this.#hold?.(id, this.getState());
   }
@@ -167,7 +192,8 @@ export class CommandRegistry<S> {
     const held = this.#held(id);
     const d: CommandDescription = { id, title: def.title, enabled: !held && (def.enabled ? def.enabled(state) : true) };
     if (def.icon) d.icon = def.icon;
-    const chord = shortcutFor(def.shortcut, this.platform);
+    // The effective key: the person's own first, else the default they kept (D-170).
+    const chord = this.#chords(id, def, this.platform)[0];
     if (chord) d.shortcut = chord;
     if (def.checked) d.checked = def.checked(state);
     if (held) d.disabledReason = held;
@@ -201,15 +227,18 @@ export class CommandRegistry<S> {
    */
   match(event: KeyEventLike, scopes: readonly string[] = []): string | undefined {
     if (event.isComposing) return undefined;
-    // The most specific context wins: keys of the scopes focus is in, then app-wide keys.
+    // The most specific context wins: keys of the scopes focus is in, then app-wide keys. In each,
+    // the person's own keys come first, so they win over a default on the same key (D-170).
     for (const scoped of [true, false]) {
-      const id = this.#matchIn(event, scoped ? scopes : []);
-      if (id) return id;
+      for (const user of [true, false]) {
+        const id = this.#matchIn(event, scoped ? scopes : [], user);
+        if (id) return id;
+      }
     }
     return undefined;
   }
 
-  #matchIn(event: KeyEventLike, scopes: readonly string[]): string | undefined {
+  #matchIn(event: KeyEventLike, scopes: readonly string[], user: boolean): string | undefined {
     // With AltGr held the key types a character, so only that character can match.
     for (const byCode of event.altGraph ? [false] : [false, true]) {
       for (const [id, def] of this.#commands) {
@@ -218,7 +247,8 @@ export class CommandRegistry<S> {
         if (def.shortcut?.atFieldEnd && event.caretAtEnd === false) continue;
         if (this.#held(id)) continue;
         if (def.shortcut?.whenEnabled && def.enabled && !def.enabled(this.getState())) continue;
-        for (const chord of [...chordsFor(def.shortcut, this.platform), ...(def.shortcut?.quiet ?? [])]) if (chordMatches(chord, event, this.platform, byCode)) return id;
+        const chords = user ? [...(this.#user.add.get(id) ?? [])] : [...this.#chords(id, def, this.platform), ...(def.shortcut?.quiet ?? [])];
+        for (const chord of chords) if (chordMatches(chord, event, this.platform, byCode)) return id;
       }
     }
     return undefined;
@@ -228,9 +258,11 @@ export class CommandRegistry<S> {
   bindings(platform: Platform = this.platform): Binding[] {
     const out: Binding[] = [];
     for (const [id, def] of this.#commands) {
-      const chords = chordsFor(def.shortcut, platform);
-      if (!chords.length || !def.layer || !def.group || def.planned) continue;
-      out.push({ id, title: def.title, layer: def.layer, group: def.group, chords, ...(def.shortcut?.handledBy ? { handledBy: def.shortcut.handledBy } : {}) });
+      const chords = this.#chords(id, def, platform);
+      // A command the person gave keys shows with them, in the app group's power layer when it had none.
+      const own = platform === this.platform && this.#user.add.has(id);
+      if (!chords.length || def.planned || (!own && (!def.layer || !def.group))) continue;
+      out.push({ id, title: def.title, layer: def.layer ?? "power", group: def.group ?? "app", chords, ...(def.shortcut?.handledBy ? { handledBy: def.shortcut.handledBy } : {}) });
     }
     return out;
   }
