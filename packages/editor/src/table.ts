@@ -18,6 +18,7 @@ import { currentCell, locateTable, selectionRect, setTableHooks, tableHooks, typ
 export * from "./table-schema.ts";
 export * from "./table-clipboard.ts";
 export * from "./table-commands.ts";
+export * from "./table-sort.ts";
 
 const PIPE_ROW = /^\s*\|?(.*?)\|?\s*$/;
 const DELIMITER = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;

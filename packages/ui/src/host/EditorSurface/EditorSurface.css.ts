@@ -298,6 +298,8 @@ globalStyle(`${prose}.ProseMirror-hideselection`, { caretColor: "transparent" })
 /** The selection, kept visible while the link editor's field has focus (Text formatting → Link editor). */
 // Text keeps its contrast on it, also in forced colors (HighlightText on Highlight).
 export const ghost = style({ backgroundColor: t.selectionGhost, color: t.selectionGhostText });
+// Find in selection's scope (FND-03): the held selection's faint tint, under the match highlights.
+export const findScope = style({ backgroundColor: t.selectionGhost });
 // An empty header cell's column name: muted, zero-width so the caret stays at the cell's start, and
 // never selected or clicked.
 export const emptyHeader = style({

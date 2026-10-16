@@ -253,3 +253,62 @@ describe("Underline (KEY-03, Basic)", () => {
     expect(a.store.state.ui.toasts).toHaveLength(1);
   });
 });
+/** KEY-04: the Pro layer (D-160). Every Pro row is bound in the Pro layer, or planned with its reason. */
+const PRO: Record<string, Cover> = {
+  "Expand / shrink selection (word → sentence → block → note)": ["edit.expandSelection", "edit.shrinkSelection"],
+  "Copy the note as Markdown (desktop)": { planned: "WP-8.1's second box (a note command with the clipboard bridge)" },
+  "Block selection mode": { planned: "WP-8.1's second box: Esc in the note is a quiet key today, so taking it needs every editor journey re-run (D-160)" },
+  "Cell selection mode (Esc again goes back to typing)": ["table.selectCells"],
+  "Cell menu: every row and column action": ["table.contextMenu"],
+  "Match case / whole word / regex": ["find.toggle.caseSensitive", "find.toggle.wholeWord", "find.toggle.regex"],
+  "Find in selection": ["find.toggle.inSelection"],
+  "Replace in all notes": { planned: "WP-8.4 (FND-05)" },
+  "Next / previous result across notes": ["find.nextResult", "find.prevResult"],
+  "Run the nth result": ["spotlight.run1", "spotlight.run2", "spotlight.run3", "spotlight.run4", "spotlight.run5", "spotlight.run6", "spotlight.run7", "spotlight.run8", "spotlight.run9"],
+  "Copy link to the selected note": ["spotlight.copyLink"],
+  "Jump between result groups": ["spotlight.nextGroup", "spotlight.prevGroup"],
+  "Preview without opening": { planned: "the Files panel's preview (Files → What's built)" },
+  "Show in Finder / Explorer (desktop)": { planned: "the desktop shell's reveal (Files → What's built)" },
+};
+
+function proRows(): string[] {
+  const md = readFileSync(new URL("../../../documentations/experience/keyboard-shortcuts.md", import.meta.url), "utf8");
+  const rows: string[] = [];
+  let layerAt = -1;
+  for (const line of md.split(/\r?\n/)) {
+    if (!line.startsWith("|")) { layerAt = -1; continue; }
+    const cells = line.trim().slice(1, -1).split("|").map((c) => c.trim());
+    if (cells.includes("Layer") && cells[0] === "Action") { layerAt = cells.indexOf("Layer"); continue; }
+    if (layerAt < 0 || !/^Pro( \(P1\))?$/.test(cells[layerAt] ?? "")) continue;
+    rows.push(cells[0]!.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/<kbd>([^<]*)<\/kbd>/g, "$1"));
+  }
+  return rows;
+}
+
+describe("the Pro layer is complete (KEY-04)", () => {
+  const rows = proRows();
+  const { commands } = app();
+  const bound = new Map([...commands.bindings("windows"), ...commands.bindings("macos")].map((b) => [b.id, b] as const));
+  it("covers every documented Pro row, and lists no row the doc doesn't have", () => {
+    expect(rows.length).toBeGreaterThanOrEqual(14);
+    expect(rows.filter((a) => !(a in PRO)), "rows with no coverage").toEqual([]);
+    expect(Object.keys(PRO).filter((a) => !rows.includes(a)), "coverage for rows not in the doc").toEqual([]);
+  });
+  for (const action of rows) {
+    const cover = PRO[action];
+    if (!Array.isArray(cover)) continue;
+    it(`pro: ${action}`, () => {
+      for (const id of cover) {
+        const b = bound.get(id) ?? NATIVE_KEYS.find((k) => k.id === id);
+        expect(b, `${id} has keys`).toBeDefined();
+        expect(b!.layer, id).toBe("pro");
+      }
+    });
+  }
+  it("binds the Spotlight Pro keys in the Spotlight field: Mod+1 to 9, Mod+Shift+C, Alt+↑/↓", () => {
+    expect(commands.shortcut("spotlight.run3")).toMatchObject({ default: "Mod+3", handledBy: "spotlightField" });
+    expect(commands.shortcut("spotlight.copyLink")).toMatchObject({ default: "Mod+Shift+C", handledBy: "spotlightField" });
+    expect(commands.shortcut("spotlight.nextGroup")).toMatchObject({ default: "Alt+Down", handledBy: "spotlightField" });
+    expect(commands.shortcut("edit.expandSelection")).toMatchObject({ macos: "Ctrl+Shift+Mod+Right", default: "Shift+Alt+Right", handledBy: "editor" });
+  });
+});

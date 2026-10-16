@@ -19,6 +19,7 @@ export const contract = defineContract({
     findCase: { kind: "boolean", default: false },
     findWord: { kind: "boolean", default: false },
     findRegex: { kind: "boolean", default: false },
+    findInSelection: { kind: "boolean", default: false, description: "Find in selection (FND-03): only the text selected as the find bar opened, tinted while on." },
     linkEditing: { kind: "boolean", default: false, description: "The link editor is open: the selection stays highlighted and anchored." },
     slashOpen: { kind: "boolean", default: false, description: "The slash menu shows: arrows, Enter, and Tab drive it while focus stays in the note." },
     slashActive: { kind: "text", description: "The slash menu's active row, which Enter inserts." },
@@ -29,6 +30,7 @@ export const contract = defineContract({
     ready: {},
     findResult: { payload: { count: "number", current: "number", invalid: "boolean", wrapped: "boolean", replaced: "number" } },
     findPrefill: { payload: { value: "text" } },
+    findScope: { payload: { scoped: "boolean" } },
     format: { payload: {
       toolbar: "boolean", card: "boolean", bold: "text", italic: "text", strike: "text", code: "text",
       block: "text", codeBlock: "boolean", inlineCode: "boolean", oneBlock: "boolean", href: "text", table: "boolean",

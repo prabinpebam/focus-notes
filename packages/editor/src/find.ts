@@ -3,7 +3,8 @@
  * text, ignores case and accents by default (`cafe` finds `café`), and replace-all is one undo step.
  */
 import { Extension, type Editor } from "@tiptap/core";
-import type { EditorState } from "@tiptap/pm/state";
+import { Plugin, PluginKey, type EditorState } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { syncSelection } from "./sync.ts";
 import { Fragment, Slice, type Node as PMNode } from "@tiptap/pm/model";
 import {
@@ -18,6 +19,8 @@ export interface FindOptions {
   caseSensitive: boolean;
   wholeWord: boolean;
   regex: boolean;
+  /** Find in selection (FND-03): only inside the scope captured when the bar opened. */
+  inSelection?: boolean;
 }
 
 export interface FindStatus {
@@ -47,18 +50,72 @@ class PlainQuery extends SearchQuery {
   }
 }
 
-export const Find = Extension.create({
-  name: "find",
-  addProseMirrorPlugins() {
-    return [search()];
+type Range = { from: number; to: number };
+interface ScopeState { range: Range | null; shown: boolean }
+const scopeKey = new PluginKey<ScopeState>("findScope");
+
+/**
+ * Find in selection's scope (FND-03, D-160): the text selected when the find bar opened. It follows
+ * edits, as prosemirror-search's own range does, and is tinted only while the option is on.
+ */
+const FindScope = (className: string) => new Plugin<ScopeState>({
+  key: scopeKey,
+  state: {
+    init: () => ({ range: null, shown: false }),
+    apply(tr, prev) {
+      const meta = tr.getMeta(scopeKey) as Partial<ScopeState> | undefined;
+      let next = meta ? { ...prev, ...meta } : prev;
+      if (tr.docChanged && next.range) {
+        const from = tr.mapping.map(next.range.from, 1);
+        const to = tr.mapping.map(next.range.to, -1);
+        next = { ...next, range: from < to ? { from, to } : null };
+      }
+      return next;
+    },
+  },
+  props: {
+    decorations(state) {
+      const s = scopeKey.getState(state);
+      if (!className || !s?.shown || !s.range) return null;
+      return DecorationSet.create(state.doc, [Decoration.inline(s.range.from, s.range.to, { class: className })]);
+    },
   },
 });
+
+export const Find = Extension.create<{ scopeClass: string }>({
+  name: "find",
+  addOptions: () => ({ scopeClass: "" }),
+  addProseMirrorPlugins() {
+    return [search(), FindScope(this.options.scopeClass)];
+  },
+});
+
+/** The scope find in selection would search, or null when nothing was selected. */
+export const findScope = (state: EditorState): Range | null => scopeKey.getState(state)?.range ?? null;
+
+/** Takes the selection as find in selection's scope, as the find bar opens. Says whether there is one. */
+export function captureFindScope(editor: Editor): boolean {
+  syncSelection(editor);
+  const { from, to, empty } = editor.state.selection;
+  const range = empty ? null : { from, to };
+  editor.view.dispatch(editor.state.tr.setMeta(scopeKey, { range, shown: false }).setMeta("addToHistory", false));
+  return Boolean(range);
+}
+
+/** Forgets the scope, as the find bar closes. */
+export function clearFindScope(editor: Editor): void {
+  if (!scopeKey.getState(editor.state)?.range) return;
+  editor.view.dispatch(editor.state.tr.setMeta(scopeKey, { range: null, shown: false }).setMeta("addToHistory", false));
+}
 
 /** Sets the active query. It isn't an edit, so it never enters the undo history. */
 export function setFind(editor: Editor, o: FindOptions): void {
   // Runs from an effect, after a pause in typing: read any selection the keys just made first.
   syncSelection(editor);
-  const tr = setSearchState(editor.state.tr, buildQuery(o)).setMeta("addToHistory", false);
+  const scope = o.inSelection && o.query ? findScope(editor.state) : null;
+  const tr = setSearchState(editor.state.tr, buildQuery(o), scope)
+    .setMeta(scopeKey, { shown: Boolean(o.inSelection && findScope(editor.state)) })
+    .setMeta("addToHistory", false);
   editor.view.dispatch(tr);
 }
 
@@ -77,8 +134,10 @@ export function findFromCaret(editor: Editor): boolean {
   const { state } = editor;
   const s = getSearchState(state);
   if (!s?.query.valid) return false;
-  const start = state.selection.from;
-  const hit = s.query.findNext(state, start) ?? s.query.findNext(state, 0, start);
+  // Inside find in selection's scope, when it's on.
+  const range = s.range ?? { from: 0, to: state.doc.content.size };
+  const start = Math.min(Math.max(state.selection.from, range.from), range.to);
+  const hit = s.query.findNext(state, start, range.to) ?? s.query.findNext(state, range.from, start);
   if (!hit) return false;
   editor.commands.setTextSelection({ from: hit.from, to: hit.to });
   editor.commands.scrollIntoView();

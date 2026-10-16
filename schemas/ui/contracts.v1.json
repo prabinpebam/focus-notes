@@ -7858,6 +7858,11 @@
           "kind": "boolean",
           "default": false
         },
+        "findInSelection": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Find in selection (FND-03): only the text selected as the find bar opened, tinted while on."
+        },
         "linkEditing": {
           "kind": "boolean",
           "default": false,
@@ -7896,6 +7901,11 @@
         "findPrefill": {
           "payload": {
             "value": "text"
+          }
+        },
+        "findScope": {
+          "payload": {
+            "scoped": "boolean"
           }
         },
         "format": {

@@ -10,10 +10,11 @@ import { closeHistory } from "@tiptap/pm/history";
 import { CellSelection, TableMap } from "@tiptap/pm/tables";
 import { buildTable, cellTextPos, emptyGrid, isCell, readGrid, toAlign, type Align, type Grid } from "./table-schema.ts";
 import { clipboardFor } from "./table-clipboard.ts";
+import { sortOrder } from "./table-sort.ts";
 
 /** A structural change, reported so it can be announced (Tables → Accessibility). Indexes count from 1. */
 export interface TableChange {
-  kind: "rowInserted" | "columnInserted" | "rowMoved" | "columnMoved" | "rowDeleted" | "columnDeleted" | "rowDuplicated" | "cleared" | "aligned" | "tableDeleted" | "tableInserted" | "tableDuplicated";
+  kind: "rowInserted" | "columnInserted" | "rowMoved" | "columnMoved" | "rowDeleted" | "columnDeleted" | "rowDuplicated" | "cleared" | "aligned" | "sortedAscending" | "sortedDescending" | "tableDeleted" | "tableInserted" | "tableDuplicated";
   index?: number;
   align?: string;
 }
@@ -213,6 +214,29 @@ function align(editor: Editor, args: Args, value: Align): boolean {
     return commit(editor, c.loc, g, c.cur ? { ...c.cur, end: true } : null, { kind: "aligned", index: col + 1, align: value ?? "left" });
   });
 }
+/**
+ * Sorts the body rows by a column, once (TBL-09): the header stays, each row moves whole, and the
+ * caret's cell moves with its row. A table already in that order is left alone: no undo step.
+ */
+function sortBy(editor: Editor, args: Args, direction: "ascending" | "descending"): boolean {
+  return withTable(editor, args, (c) => {
+    const col = colOf(c, args);
+    if (col === undefined || col < 0 || col >= c.w || c.h < 2) return false;
+    const body = c.grid.cells.slice(1);
+    const order = sortOrder(body.map((r) => r[col]!.textBetween(0, r[col]!.size, " ")), direction);
+    const change: TableChange = { kind: direction === "ascending" ? "sortedAscending" : "sortedDescending", index: col + 1 };
+    if (order.every((from, to) => from === to)) {
+      tableHooks(editor).onChange?.(change);
+      return true;
+    }
+    const g = clone(c.grid);
+    g.cells = [g.cells[0]!, ...order.map((i) => body[i]!)];
+    const focus: Focus = c.cur
+      ? { row: c.cur.row === 0 ? 0 : order.indexOf(c.cur.row - 1) + 1, col: c.cur.col, end: true }
+      : { rect: { top: 0, bottom: c.h, left: col, right: col + 1 } };
+    return commit(editor, c.loc, g, focus, change);
+  });
+}
 
 /** Copy or cut the selected cells (or the caret's cell) through the clipboard, from a menu. */
 function clipboardAction(editor: Editor, kind: "copy" | "cut"): boolean {
@@ -326,6 +350,8 @@ export const TABLE_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Reco
   "table.alignLeft": (e, a) => align(e, a, "left"),
   "table.alignCenter": (e, a) => align(e, a, "center"),
   "table.alignRight": (e, a) => align(e, a, "right"),
+  "table.sortAscending": (e, a) => sortBy(e, a, "ascending"),
+  "table.sortDescending": (e, a) => sortBy(e, a, "descending"),
   "table.selectRow": (e, a) => withTable(e, a, (c) => { const r = rowOf(c, a); return r !== undefined && r >= 0 && r < c.h && selectRect(e, c.loc, { top: r, bottom: r + 1, left: 0, right: c.w }); }),
   "table.selectColumn": (e, a) => withTable(e, a, (c) => { const k = colOf(c, a); return k !== undefined && k >= 0 && k < c.w && selectRect(e, c.loc, { top: 0, bottom: c.h, left: k, right: k + 1 }); }),
   "table.selectTable": (e, a) => withTable(e, a, (c) => selectRect(e, c.loc, { top: 0, bottom: c.h, left: 0, right: c.w })),

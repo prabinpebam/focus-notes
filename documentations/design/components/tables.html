@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Insert with <code>/table</code>. Hover near a row or column boundary at the table's edge to get a <strong>+ insertion point</strong>. Hover a row or column to get its <strong>handle</strong>: click for a menu (insert, move, align, clear, delete; sort comes later), or drag to reorder. Hover the bottom or right edge for <strong>+ New row</strong> and <strong>+ New column</strong>. Drag across cells to select a range, then format, clear, copy, or paste over it. Loop's interaction patterns are kept. Loop features that GFM can't store (column types, widths, formulas, views) are explicit boundaries. Component IA-CMP-TABLE serves UC-TABLE-01 to UC-TABLE-08. Built in WP-1.5; where it differs from this design, <a href="../../plan/decisions.md">D-96</a> says why.</p>
+  <p>Insert with <code>/table</code>. Hover near a row or column boundary at the table's edge to get a <strong>+ insertion point</strong>. Hover a row or column to get its <strong>handle</strong>: click for a menu (insert, move, sort, align, clear, delete), or drag to reorder. Hover the bottom or right edge for <strong>+ New row</strong> and <strong>+ New column</strong>. Drag across cells to select a range, then format, clear, copy, or paste over it. Loop's interaction patterns are kept. Loop features that GFM can't store (column types, widths, formulas, views) are explicit boundaries. Component IA-CMP-TABLE serves UC-TABLE-01 to UC-TABLE-08. Built in WP-1.5; where it differs from this design, <a href="../../plan/decisions.md">D-96</a> says why.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -106,7 +106,7 @@
     <tr><td>Click a handle</td><td>Selects that whole row or column and opens its menu below the handle.</td><td>UC-TABLE-03, UC-TABLE-07</td></tr>
     <tr><td>Drag a handle</td><td>The row or column lifts (in the build, a selection-colored tint over it), and an accent drop line follows the nearest boundary. Release to move it, or <kbd>Esc</kbd> to cancel. The header row can't move, and nothing can be dropped above it. The moved row or column stays selected.</td><td>UC-TABLE-04</td></tr>
     <tr><td>Drag across cells, or <kbd>Shift</kbd>+click</td><td>Selects a rectangular range. The <a href="text-formatting.html">formatting toolbar</a> appears above it with marks only.</td><td>UC-TABLE-07</td></tr>
-    <tr><td>Right-click a cell</td><td>The cell menu: the row and column actions for that cell (insert, move, align, duplicate, select, delete), plus Copy, Cut, and Clear cells. Paste is <kbd>Mod</kbd>+<kbd>V</kbd>: reading the clipboard from a menu needs a permission the app doesn't ask for (<a href="../../plan/decisions.md">D-96</a>).</td><td>UC-TABLE-03, UC-TABLE-07</td></tr>
+    <tr><td>Right-click a cell</td><td>The cell menu: the row and column actions for that cell (insert, move, sort, align, duplicate, select, delete), plus Copy, Cut, and Clear cells. Paste is <kbd>Mod</kbd>+<kbd>V</kbd>: reading the clipboard from a menu needs a permission the app doesn't ask for (<a href="../../plan/decisions.md">D-96</a>).</td><td>UC-TABLE-03, UC-TABLE-07</td></tr>
   </tbody>
 </table>
 
@@ -114,7 +114,7 @@
 <table>
   <thead><tr><th>Menu</th><th>Items</th></tr></thead>
   <tbody>
-    <tr><td>Column</td><td>Insert left · Insert right · Move left · Move right · Sort A→Z · Sort Z→A (P1, WP-8.1) · Align ▸ Left / Center / Right · Clear contents · Delete column</td></tr>
+    <tr><td>Column</td><td>Insert left · Insert right · Move left · Move right · Sort A→Z · Sort Z→A · Align ▸ Left / Center / Right · Clear contents · Delete column</td></tr>
     <tr><td>Row</td><td>Insert above · Insert below · Move up · Move down · Duplicate row · Clear contents · Delete row. Header row: only Insert below and Clear contents.</td></tr>
     <tr><td>Table</td><td>Select table · Copy as Markdown · Copy as tab-separated text · Duplicate table · Delete table</td></tr>
   </tbody>
@@ -132,7 +132,7 @@
     <tr><td>Paste a range into a cell</td><td>Fills from that cell (or the selected range's top-left) right and down, overwriting, and adds rows and columns if the range doesn't fit. One undo step, and the pasted range stays selected. A toast says "Pasted 5 &times; 4. Table grew by 2 rows." A range is a spreadsheet's HTML table, or text whose lines all have the same number of tabs (not all leading, so indented code stays text).</td></tr>
     <tr><td>Paste a range on a line</td><td>Becomes a table of its shape, its first row the header.</td></tr>
     <tr><td>Paste text with line breaks into one cell</td><td>The line breaks become spaces (UNSUP-TABLE-01), with a toast the first time.</td></tr>
-    <tr><td>Sort A→Z or Z→A (P1)</td><td>Reorders the body rows once by that column, using natural order (numbers by value, ISO dates by date, text case-insensitively). The header stays. One undo step. Nothing is remembered as a "sorted view", because Markdown keeps only the order.</td></tr>
+    <tr><td>Sort A→Z or Z→A (TBL-09)</td><td>From the column menu, or the cell menu's <em>Sort column A→Z</em> and <em>Sort column Z→A</em> (<kbd>Shift</kbd>+<kbd>F10</kbd>), for the column of the handle or the caret. Reorders the body rows once by that column's visible text, in natural order: numbers (<code>-3</code>, <code>2.5</code>, <code>1,200</code>) by value and before text; ISO dates (<code>2026-10-16</code>) by date; text ignoring case and accents, with numbers inside it by value (<code>item 2</code> before <code>item 10</code>). Empty cells go last in both directions. Rows that compare equal keep their order (a stable sort), so sorting by a second column and then the first works as people expect. Each row moves whole, with its formatting; the header and the alignment stay. The caret stays in its cell, which moves with its row. One undo step, announced as "Column 2 sorted A to Z". A table already in that order isn't changed and adds no undo step. Nothing is remembered as a "sorted view", because Markdown keeps only the order (DD-TABLE-05, D-160).</td></tr>
   </tbody>
 </table>
 
@@ -147,7 +147,7 @@
 <pre><code>| Task        | Owner | Status | Due |
 | :---------- | :---: | ------ | --: |
 | Draft intro | Me    | Doing  | Mon |</code></pre>
-<p>A GFM pipe table with padded, aligned columns (TBL-06). Alignment markers come from the column menu (TBL-04). Pipes in cell text, code included, are escaped as <code>\|</code>. A cell holds one line of inline content: the editor never lets a line break or a second paragraph into it, so nothing needs <code>&lt;br&gt;</code>. Untouched tables are written back exactly as they were (<a href="../../architecture/content-model.md#round-trip-fidelity">round-trip fidelity</a>).</p>
+<p>A GFM pipe table with padded, aligned columns (TBL-06). Alignment markers come from the column menu's Align (TBL-04): left is <code>:---</code>, center <code>:---:</code>, right <code>---:</code>, and none <code>---</code>. An edited table's delimiter row carries each column's marker, and reopening it gives the same alignment; an untouched table keeps its own markers byte for byte, however short (<code>:-</code>) or long (the round-trip corpus's <code>26-table-alignment.md</code>). Pipes in cell text, code included, are escaped as <code>\|</code>. A cell holds one line of inline content: the editor never lets a line break or a second paragraph into it, so nothing needs <code>&lt;br&gt;</code>. Untouched tables are written back exactly as they were (<a href="../../architecture/content-model.md#round-trip-fidelity">round-trip fidelity</a>).</p>
 
 <h2 data-reader-personas="design">With focus mode, find, and touch</h2>
 <ul>
@@ -160,7 +160,7 @@
 <ul>
   <li>A native table with <code>th</code> header cells, so screen readers announce headers as people move between cells.</li>
   <li>Handles are buttons named for what they control ("Column 2, Owner, options" or "Row 3 options"). Insertion points are named "Insert row between rows 2 and 3".</li>
-  <li>Structural changes are announced politely ("Row inserted below row 2", "Column moved to position 1").</li>
+  <li>Structural changes are announced politely ("Row inserted below row 2", "Column moved to position 1", "Column 2 sorted A to Z").</li>
   <li>The cell menu (<kbd>Shift</kbd>+<kbd>F10</kbd>, the Menu key) reaches every action the handles, insertion points, and edge bars do. Menus open with their first item focused and return the caret to the note when they close.</li>
   <li>The hover tint and insertion line are never the only signal: the menus and keyboard paths do everything they do.</li>
 </ul>

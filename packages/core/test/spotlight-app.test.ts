@@ -436,6 +436,40 @@ describe("SPT-03: quick actions (→ or Mod+K)", () => {
   });
 });
 
+describe("KEY-04: the Spotlight Pro keys (D-160)", () => {
+  it("Mod+1 to 9 run the nth result, Mod+Shift+C copies the selected note's link, Alt+↑/↓ jump between groups", async () => {
+    const { app, copied } = await started();
+    await app.commands.run("spotlight.open");
+    await type(app, "foc");
+    const items = vm(app).items;
+    expect(app.commands.match(key("2", { ctrlKey: true, code: "Digit2" }), ["spotlightField"])).toBe("spotlight.run2");
+    expect(app.commands.match(key("C", { ctrlKey: true, shiftKey: true, code: "KeyC" }), ["spotlightField"])).toBe("spotlight.copyLink");
+    expect(app.commands.match(key("ArrowDown", { altKey: true }), ["spotlightField"])).toBe("spotlight.nextGroup");
+    // Alt+↓: the first result of the next group; Alt+↑: back to the first of the group above.
+    const groups = [...new Set(items.map((i) => i.group))];
+    await app.commands.run("spotlight.nextGroup");
+    expect(vm(app).activeId).toBe(items.find((i) => i.group === groups[1])!.id);
+    await app.commands.run("spotlight.nextGroup");
+    expect(vm(app).activeId).toBe(items.find((i) => i.group === groups[2])!.id);
+    await app.commands.run("spotlight.prevGroup");
+    expect(vm(app).activeId).toBe(items.find((i) => i.group === groups[1])!.id);
+    // Mod+Shift+C on a note copies its Markdown link and closes Spotlight.
+    await type(app, "focus sessions");
+    expect(app.commands.describe("spotlight.copyLink").enabled).toBe(true);
+    await app.commands.run("spotlight.copyLink");
+    expect(copied).toEqual(["[Focus sessions](journal/focus-sessions.md)"]);
+    expect(sp(app).open).toBe(false);
+    // Mod+3 runs the third result: here, a command.
+    await app.commands.run("spotlight.commands");
+    await type(app, "font");
+    const third = vm(app).items[2]!;
+    expect(app.commands.describe("spotlight.run3").enabled).toBe(true);
+    expect(app.commands.describe("spotlight.run9").enabled).toBe(vm(app).items.length >= 9);
+    await app.commands.run("spotlight.run3");
+    expect(sp(app).activeId).toBe(third.id);
+  });
+});
+
 describe("KEY-01: every action is a command Spotlight can run, showing its shortcut", () => {
   it("lists every registered command but internal steps, each with its shortcut", async () => {
     const { app } = await started();

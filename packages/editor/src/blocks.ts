@@ -82,3 +82,46 @@ export const BLOCK_ACTIONS: Readonly<Record<string, (editor: Editor) => boolean>
   "block.duplicate": duplicateBlock,
   "block.delete": deleteBlock,
 };
+
+/**
+ * The block handle's moves (EDT-07, D-160): a block, named by its position, dropped at a boundary
+ * between the blocks of its parent (a list item stays in its list). One transaction: one undo step.
+ */
+function moveBlockTo(editor: Editor, args?: Record<string, unknown>): boolean {
+  const pos = args?.block;
+  const to = args?.to;
+  if (typeof pos !== "number" || typeof to !== "number" || !Number.isInteger(pos) || !Number.isInteger(to)) return false;
+  const { doc } = editor.state;
+  if (pos < 0 || pos >= doc.content.size || to < 0 || to > doc.content.size) return false;
+  const node = doc.nodeAt(pos);
+  if (!node) return false;
+  const $pos = doc.resolve(pos);
+  if (!ITEMS.has(node.type.name) && $pos.depth !== 0) return false;
+  const $to = doc.resolve(to);
+  if ($to.depth !== $pos.depth || $to.start() !== $pos.start() || to === pos || to === pos + node.nodeSize) return false;
+  const tr = editor.state.tr.delete(pos, pos + node.nodeSize);
+  const at = tr.mapping.map(to);
+  tr.insert(at, node);
+  tr.setSelection(Selection.near(tr.doc.resolve(at + 1))).scrollIntoView();
+  editor.view.dispatch(tr);
+  return true;
+}
+
+/** Puts the caret in the block at `pos` (a list item or a top-level block), as the handle's menu acts on it. */
+function placeIn(editor: Editor, pos: number): boolean {
+  const { doc } = editor.state;
+  if (!Number.isInteger(pos) || pos < 0 || pos >= doc.content.size) return false;
+  const node = doc.nodeAt(pos);
+  if (!node || (!ITEMS.has(node.type.name) && doc.resolve(pos).depth !== 0)) return false;
+  editor.view.dispatch(editor.state.tr.setSelection(Selection.near(doc.resolve(pos + 1))));
+  return true;
+}
+
+type Action = (editor: Editor, args?: Record<string, unknown>) => boolean;
+/** A block command that also takes `block`, the handle's block, to act on instead of the caret's. */
+export const atBlock = (f: Action): Action => (editor, args) => {
+  if (typeof args?.block === "number" && !placeIn(editor, args.block)) return false;
+  return f(editor, args);
+};
+
+export const BLOCK_MOVE_TO: Readonly<Record<string, Action>> = { "block.moveTo": moveBlockTo };

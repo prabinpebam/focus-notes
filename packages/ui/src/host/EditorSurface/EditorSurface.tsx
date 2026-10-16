@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
-  applyLink, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
+  applyLink, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
   focusAtEnd, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
@@ -38,6 +38,8 @@ export interface EditorSurfaceProps {
   findCase?: boolean;
   findWord?: boolean;
   findRegex?: boolean;
+  /** Find in selection (FND-03): only the scope taken as the bar opened, tinted while on. */
+  findInSelection?: boolean;
   /** The link editor is open: the selection stays highlighted and anchored while its field has focus. */
   linkEditing?: boolean;
   /** The slash menu shows (EDT-06): arrows, Enter, and Tab drive it while focus stays in the note. */
@@ -50,6 +52,8 @@ export interface EditorSurfaceProps {
   onChange?: (payload: { value: string }) => void;
   onFindResult?: (payload: { count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }) => void;
   onFindPrefill?: (payload: { value: string }) => void;
+  /** Whether text was selected as the find bar opened: find in selection's scope (FND-03). */
+  onFindScope?: (payload: { scoped: boolean }) => void;
   onReady?: () => void;
   /** What the formatting toolbar and link hover card show, whenever it changes (EDT-12, EDT-13). */
   onFormat?: (payload: FormatPayload) => void;
@@ -118,9 +122,9 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({
   documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
-  findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, linkEditing,
+  findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList,
-  id, onChange, onReady, onFindResult, onFindPrefill, onFormat, onLinkEdit, onOpenLink, onSlash, onSlashMove, onPasteNotice,
+  id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onFormat, onLinkEdit, onOpenLink, onSlash, onSlashMove, onPasteNotice,
   onTable, onTableChange, onTableCopy, onTableMenu,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
@@ -130,8 +134,8 @@ export function EditorSurface({
   const session = useMemo(() => new MarkdownSession(initialValue), [documentKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const findRef = useRef({ onFindResult, onFindPrefill, findOpen });
-  findRef.current = { onFindResult, onFindPrefill, findOpen };
+  const findRef = useRef({ onFindResult, onFindPrefill, onFindScope, findOpen });
+  findRef.current = { onFindResult, onFindPrefill, onFindScope, findOpen };
   const formatRef = useRef({ onFormat, onLinkEdit, onOpenLink, onPasteNotice });
   formatRef.current = { onFormat, onLinkEdit, onOpenLink, onPasteNotice };
   const tableRef = useRef({ onTable, onTableChange, onTableCopy, onTableMenu });
@@ -142,7 +146,7 @@ export function EditorSurface({
   const tracker = useRef<FormatTracker | null>(null);
   const replaceRef = useRef(findReplace);
   replaceRef.current = findReplace;
-  const findOptions = () => ({ query: findOpen ? findQuery : "", replace: replaceRef.current, caseSensitive: findCase, wholeWord: findWord, regex: findRegex });
+  const findOptions = () => ({ query: findOpen ? findQuery : "", replace: replaceRef.current, caseSensitive: findCase, wholeWord: findWord, regex: findRegex, inSelection: findInSelection });
   const findOptionsRef = useRef(findOptions);
   findOptionsRef.current = findOptions;
   const lastFind = useRef("");
@@ -184,6 +188,7 @@ export function EditorSurface({
         ...coreExtensions(keymap ?? [], {
           openLink: (href) => formatRef.current.onOpenLink?.({ href }),
           ghostClass: s.ghost,
+          findScopeClass: s.findScope,
           emptyHeader: (index) => emptyHeaderElement((emptyHeaderRef.current ?? "").replace("{index}", String(index))),
           onPasteNotice: (kind, args = {}) => formatRef.current.onPasteNotice?.({ kind, rows: args.rows ?? 0, cols: args.cols ?? 0, addedRows: args.addedRows ?? 0, addedCols: args.addedCols ?? 0 }),
           onTableChange: (c) => tableRef.current.onTableChange?.({ kind: c.kind, index: c.index ?? 0, align: c.align ?? "" }),
@@ -310,7 +315,7 @@ export function EditorSurface({
     if (!findOpen || !findQuery) return apply();
     const h = setTimeout(apply, FIND_DEBOUNCE_MS);
     return () => clearTimeout(h);
-  }, [editor, findOpen, findQuery, findCase, findWord, findRegex]);
+  }, [editor, findOpen, findQuery, findCase, findWord, findRegex, findInSelection]);
 
   // The reading zone (UI-11): the edited line stays between 25% and 65% of the window, and with
   // find open, never under the bar.
@@ -328,7 +333,11 @@ export function EditorSurface({
   // Closing the find bar puts the caret back in the note, on the current match (VS Code behavior).
   const wasOpen = useRef(false);
   useEffect(() => {
-    if (wasOpen.current && !findOpen && editor && !editor.isDestroyed) requestAnimationFrame(() => focusNote(editor));
+    if (wasOpen.current && !findOpen && editor && !editor.isDestroyed) {
+      // Closing forgets find in selection's scope (FND-03); the next opening takes the selection then.
+      clearFindScope(editor);
+      requestAnimationFrame(() => focusNote(editor));
+    }
     wasOpen.current = Boolean(findOpen);
   }, [findOpen, editor]);
 
@@ -408,6 +417,10 @@ export function EditorSurface({
       if (!editor || editor.isDestroyed) return;
       syncSelection(editor);
       if (id === "find.prefill") {
+        // The selection is find in selection's scope (FND-03), whatever its size.
+        findRef.current.onFindScope?.({ scoped: captureFindScope(editor) });
+        // Opened to find in the selection: the field isn't filled from it.
+        if (args.scopeOnly) return;
         // A selection within one block fills the find field.
         const { from, to, empty } = editor.state.selection;
         const text = empty ? "" : editor.state.doc.textBetween(from, to, "\n");

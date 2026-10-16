@@ -56,6 +56,9 @@ export const EDITOR_COMMANDS: readonly EditorCommandSpec[] = [
   ed("block.moveDown", { default: "Mod+Shift+Down", alternates: { default: ["Alt+Down"], macos: [] } }, "power", "blocks"),
   ed("block.duplicate", "Mod+D", "power", "blocks"),
   ed("block.delete", "Mod+Shift+K", "power", "blocks"),
+  // Pro layer (KEY-04, D-160): expand and shrink selection, as VS Code does.
+  ed("edit.expandSelection", { macos: "Ctrl+Shift+Mod+Right", default: "Shift+Alt+Right" }, "pro", "editing"),
+  ed("edit.shrinkSelection", { macos: "Ctrl+Shift+Mod+Left", default: "Shift+Alt+Left" }, "pro", "editing"),
   // Tables (Keyboard shortcuts → Tables): they apply in a table and come before the block keys there.
   tb("table.nextCell", "Tab", "basic"),
   tb("table.prevCell", "Shift+Tab", "basic"),

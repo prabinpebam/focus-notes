@@ -129,3 +129,22 @@ describe("pasting tables (TBL-10)", () => {
     expect(cells(nodes[0]!)).toEqual([["A"], [""]]);
   });
 });
+
+describe("column alignment round-trips (TBL-04, D-160)", () => {
+  const aligns = (doc: PMNode) => (doc.content ?? []).filter((b) => b.type === "table").map((t) => t.content![0]!.content!.map((c) => c.attrs?.align ?? null));
+  it("every marker form opens as its alignment, and survives an edit, a save, and a reopen", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const src = readFileSync(join(import.meta.dirname, "corpus", "26-table-alignment.md"), "utf8");
+    const parsed = parseMarkdown(src);
+    const expected = [[null, "left", "center", "right"], ["left", "center", "right"], ["left", "right"], ["left", "right"]];
+    expect(aligns(parsed.doc)).toEqual(expected);
+    // Edit one body cell of every table: each is rewritten, with its alignment in the delimiter row.
+    const doc = structuredClone(parsed.doc);
+    for (const t of doc.content!.filter((b) => b.type === "table")) t.content![1]!.content![0]!.content = [{ type: "paragraph", content: [{ type: "text", text: "edited" }] }];
+    const saved = serializeMarkdown(doc, parsed);
+    expect(saved).not.toBe(src);
+    expect(saved).toContain("| ------ | :--- | :----: | ----: |");
+    expect(aligns(parseMarkdown(saved).doc)).toEqual(expected);
+  });
+});
