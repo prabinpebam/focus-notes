@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { inflateSync } from "node:zlib";
 
-type Rgb = [number, number, number];
+export type Rgb = [number, number, number];
 export interface Frame { label: string; at: number; data: Buffer }
 export interface Box { left: number; top: number; width: number; height: number }
 export interface FrameProblem { label: string; frame: number; problem: string }
@@ -65,7 +65,8 @@ const hex = (h: string): Rgb => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3
  * The palettes of the default light and dark themes (Paper and Ink), from the built tokens: every
  * semantic color, and the large surfaces that would show if the other theme's frame leaked in.
  */
-export function themePalettes(): Record<"light" | "dark", { all: Rgb[]; large: Rgb[] }> {
+export interface Palette { all: Rgb[]; large: Rgb[]; scrimmed: Rgb[] }
+export function themePalettes(): Record<"light" | "dark", Palette> {
   const css = readFileSync(join(import.meta.dirname, "..", "..", "..", "packages", "tokens", "dist", "tokens.css"), "utf8");
   const block = (selector: string) => {
     const i = css.indexOf(`${selector} {`);
@@ -83,12 +84,27 @@ export function themePalettes(): Record<"light" | "dark", { all: Rgb[]; large: R
     }
     return v && /^#[0-9a-f]{6}$/i.test(v) ? v : undefined;
   };
+  // The scrim (`color.scrim`, an rgba colour) over a colour: what a modal's backdrop draws over the app.
+  const scrimOf = (own: Map<string, string>): [Rgb, number] | undefined => {
+    let v = own.get("--fn-color-scrim") ?? base.get("--fn-color-scrim");
+    for (let i = 0; v && i < 8; i++) {
+      const ref = /^var\((--fn-[\w-]+)\)$/.exec(v);
+      if (!ref) break;
+      v = own.get(ref[1]!) ?? base.get(ref[1]!);
+    }
+    const m = v && /^rgba\(\s*(\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\s*\)$/.exec(v);
+    return m ? [[Number(m[1]), Number(m[2]), Number(m[3])], Number(m[4])] : undefined;
+  };
   const palette = (own: Map<string, string>) => {
     const r = resolveIn(own);
     const names = [...new Set([...base.keys(), ...own.keys()])].filter((n) => n.startsWith("--fn-color-") || n.startsWith("--fn-cmp-"));
     const all = names.map(r).filter((v): v is string => Boolean(v)).map(hex);
     const large = ["--fn-color-canvas", "--fn-color-surface", "--fn-color-surface-raised", "--fn-color-surface-sunken"].map(r).filter((v): v is string => Boolean(v)).map(hex);
-    return { all, large };
+    // Under a modal's scrim, once (a dialog) or twice (a confirmation over Settings): a steady frame, not a transition.
+    const sc = scrimOf(own);
+    const over = (c: Rgb): Rgb => (sc ? (c.map((x, k) => x * (1 - sc[1]) + sc[0][k]! * sc[1]) as Rgb) : c);
+    const scrimmed = sc ? [...large.map(over), ...large.map((c) => over(over(c)))] : [];
+    return { all, large, scrimmed };
   };
   return { light: palette(new Map()), dark: palette(vars(block(':root[data-theme="ink"]'))) };
 }
@@ -186,6 +202,17 @@ export async function watchMotion(page: Page): Promise<{ mark: (label: string) =
   };
 }
 
+/**
+ * A frame's main colour (each channel within 6 of it, the screencast's 6-bit bucket) that is in no
+ * theme: neither one of a theme's large surfaces (canvas, surface, raised, sunken), which is what
+ * covers most of a steady frame, nor one under a modal's scrim, once or twice. A cross-fade between two
+ * themes, or a fading element, draws such blends; a steady frame doesn't (D-148, reduced motion).
+ */
+export function midTransition(rgb: Rgb, pal: Record<"light" | "dark", Palette> = themePalettes()): boolean {
+  const [r, g, b] = rgb;
+  return ![pal.light, pal.dark].some((p) => [...p.large, ...p.scrimmed].some((c) => near(r, g, b, c, 6)));
+}
+
 const near = (r: number, g: number, b: number, c: Rgb, d: number) => Math.abs(r - c[0]) <= d && Math.abs(g - c[1]) <= d && Math.abs(b - c[2]) <= d;
 
 /**
@@ -249,7 +276,7 @@ export function frameProblems(frames: Frame[], box: Box, viewportWidth: number, 
       // With reduced motion, a swap is instant: the window's main colour is always one of a theme's own, never a blend of two.
       const key = [...counts].find(([, n]) => n === top)?.[0] ?? 0;
       const [r, g, b] = [((key >> 12) & 63) << 2, ((key >> 6) & 63) << 2, (key & 63) << 2];
-      if (![...pal.light.all, ...pal.dark.all].some((c) => near(r + 2, g + 2, b + 2, c, 6))) out.push({ label: f.label, frame: i, problem: `the frame is mid-transition (its main colour rgb(${r}, ${g}, ${b}) is in no theme)` });
+      if (midTransition([r + 2, g + 2, b + 2], pal)) out.push({ label: f.label, frame: i, problem: `the frame is mid-transition (its main colour rgb(${r}, ${g}, ${b}) is in no theme)` });
     }
   });
   return out;

@@ -13,6 +13,8 @@ export const popover = style({
   boxShadow: t.shadow,
   padding: t.padding,
   zIndex: t.layer,
+  // React Aria's maximum height is for the whole box, so the padding and border are inside it (D-111).
+  boxSizing: "border-box",
   outline: "none",
   transformOrigin: "top center",
   transitionProperty: "opacity, transform",

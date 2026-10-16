@@ -13,9 +13,12 @@ export const popover = style({
   boxShadow: t.shadow,
   padding: t.padding,
   zIndex: t.layer,
-  minWidth: t.minWidth,
+  // The least width of its content, as before the box took in its padding and border.
+  minWidth: `calc(${t.minWidth} + 2 * ${t.padding} + 2 * ${t.borderWidth})`,
   outline: "none",
-  // Never taller than the window (React Aria sets its maximum height): the menu inside scrolls.
+  // Never taller than the window (React Aria sets its maximum height): the menu inside scrolls. That
+  // height is the room it measured for the whole box, so the padding and border are inside it (D-111).
+  boxSizing: "border-box",
   display: "flex",
   flexDirection: "column",
   overflow: "hidden",

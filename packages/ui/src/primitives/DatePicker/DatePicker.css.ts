@@ -38,6 +38,8 @@ export const button = style({
 export const popover = style({
   backgroundColor: t.popover, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.popoverBorder, borderRadius: t.popoverRadius,
   boxShadow: t.popoverShadow, padding: t.popoverPadding, zIndex: t.layer, outline: "none", fontFamily: t.font, fontSize: t.fontSize, color: t.text,
+  // React Aria's maximum height is for the whole box (D-111).
+  boxSizing: "border-box",
 });
 export const dialog = style({ outline: "none" });
 export const calendar = style({ display: "flex", flexDirection: "column", gap: t.gap });
