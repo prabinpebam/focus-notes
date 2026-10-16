@@ -249,6 +249,22 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
       new PerformanceObserver((list) => {
         for (const e of list.getEntries()) g.long.push({ start: e.startTime, duration: e.duration });
       }).observe({ type: "longtask" });
+      // Long animation frames (PRF-14 trace): every frame over 40 ms, with where its time went (its
+      // scripts by source and function, and its rendering) so CI names a first-use spike.
+      type Script = { invoker: string; invokerType: string; sourceURL: string; sourceFunctionName: string; sourceCharPosition: number; duration: number; forcedStyleAndLayoutDuration: number; startTime: number; executionStart: number };
+      type Loaf = PerformanceEntry & { renderStart: number; styleAndLayoutStart: number; blockingDuration: number; scripts: Script[] };
+      const l = globalThis as unknown as { loaf: string[] };
+      l.loaf = [];
+      new PerformanceObserver((list) => {
+        for (const e of list.getEntries() as Loaf[]) {
+          if (e.duration <= 40) continue;
+          const end = e.startTime + e.duration;
+          const render = e.renderStart ? Math.round(end - e.renderStart) : 0;
+          const style = e.styleAndLayoutStart ? Math.round(end - e.styleAndLayoutStart) : 0;
+          const scripts = e.scripts.map((s) => `${s.invokerType} ${s.invoker} → ${s.sourceFunctionName || "?"} @ ${s.sourceURL.split("/").pop()}:${s.sourceCharPosition} ${Math.round(s.duration)} ms (compile/wait ${Math.round(s.executionStart - s.startTime)}, forced layout ${Math.round(s.forcedStyleAndLayoutDuration)})`);
+          l.loaf.push(`at ${Math.round(e.startTime)} ms: ${Math.round(e.duration)} ms (blocking ${Math.round(e.blockingDuration)}; render ${render}, style and layout ${style}); scripts: ${scripts.length ? scripts.join(" | ") : "none attributed"}`);
+        }
+      }).observe({ type: "long-animation-frame", buffered: false } as PerformanceObserverInit);
     });
     const editor = page.getByRole("textbox", { name: "Note" });
     const ACTIONS: [string, () => Promise<void>][] = [
@@ -281,6 +297,7 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     ];
     const results: Record<string, number[]> = {};
     const worstOf: Record<string, string[]> = {};
+    const uses: string[] = [];
     for (let round = 0; round < 5; round++) {
       for (const [name, act] of ACTIONS) {
         await editor.focus();
@@ -288,6 +305,7 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
         await act();
         await page.waitForTimeout(150);
         const to = await page.evaluate(() => performance.now());
+        uses.push(`${name} #${round + 1} ${Math.round(from)}–${Math.round(to)}`);
         const worst = await page.evaluate(([a, b]) => {
           const g = globalThis as unknown as { inp: { start: number; duration: number; at: string }[] };
           const inUse = g.inp.filter((e) => e.start >= a! && e.start <= b!).sort((x, y) => y.duration - x.duration);
@@ -301,6 +319,11 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     const p95 = all[Math.min(all.length - 1, Math.floor(all.length * 0.95))]!;
     const long = await page.evaluate(() => (globalThis as unknown as { long: { duration: number }[] }).long.map((e) => Math.round(e.duration)));
     console.log(`[D-151] input to next paint (ms, the worst input of each use, under 16 ms shown as 0): ${JSON.stringify(results)}; p95 ${p95} ms, max ${all.at(-1)} ms; long tasks ${JSON.stringify(long)}`);
+    // The PRF-14 trace: each use's window, then every long animation frame with its scripts.
+    console.log(`[PRF-14 trace] uses (page ms): ${uses.join("; ")}`);
+    const loaf = await page.evaluate(() => (globalThis as unknown as { loaf: string[] }).loaf);
+    for (const line of loaf) console.log(`[PRF-14 trace] LoAF ${line}`);
+    if (!loaf.length) console.log("[PRF-14 trace] no animation frame over 40 ms");
     for (const [name, r] of Object.entries(results)) console.log(`[D-151] ${name}: first use ${r[0]} ms, fifth ${r[4]} ms; worst input of each (name wait/handlers/to paint, ms) ${JSON.stringify(worstOf[name])}`);
     // Where Spotlight's opening goes (D-151 (12)): one more opening, traced (not measured).
     await editor.focus();
