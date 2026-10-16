@@ -48,14 +48,15 @@ describe("handles and insertion points are named for what they control (Tables �
 });
 
 describe("menus (TBL-08, Tables → Menus)", () => {
-  it("the column menu inserts, moves, aligns, clears, and deletes, last with the destructive item", async () => {
+  it("the column menu inserts, moves, sorts, aligns, clears, and deletes, last with the destructive item (TBL-09)", async () => {
     const { vm, at } = await started();
     await at({ col: 0, align: "center" });
     expect(ids(vm().columnMenu)).toEqual([
-      ["table.insertColumnLeft", "table.insertColumnRight"], ["table.moveColumnLeft", "table.moveColumnRight"], ["align", "table.clearColumn"], ["table.deleteColumn"],
+      ["table.insertColumnLeft", "table.insertColumnRight"], ["table.moveColumnLeft", "table.moveColumnRight"], ["table.sortAscending", "table.sortDescending"], ["align", "table.clearColumn"], ["table.deleteColumn"],
     ]);
     expect(vm().columnMenu[1]!.items[0]!.disabled).toBe(true);
-    expect(vm().columnMenu[2]!.items[0]!.items!.map((i) => [i.id, i.checked])).toEqual([["table.alignLeft", false], ["table.alignCenter", true], ["table.alignRight", false]]);
+    expect(vm().columnMenu[2]!.items.map((i) => i.label)).toEqual(["Sort A→Z", "Sort Z→A"]);
+    expect(vm().columnMenu[3]!.items[0]!.items!.map((i) => [i.id, i.checked])).toEqual([["table.alignLeft", false], ["table.alignCenter", true], ["table.alignRight", false]]);
   });
   it("the row menu: insert, move, duplicate, clear, delete; the header row's only inserts below and clears", async () => {
     const { vm, at } = await started();
@@ -71,7 +72,7 @@ describe("menus (TBL-08, Tables → Menus)", () => {
     expect(ids(vm().tableMenu)).toEqual([["table.selectTable"], ["table.copyMarkdown", "table.copyTsv", "table.duplicateTable"], ["table.deleteTable"]]);
     const all = ids(vm().cellMenu).flat();
     for (const id of ["table.copy", "table.cut", "table.clearCells", "table.insertRowAbove", "table.insertRowBelow", "table.insertColumnLeft", "table.insertColumnRight",
-      "table.moveRowUp", "table.moveRowDown", "table.moveColumnLeft", "table.moveColumnRight", "align", "table.deleteRow", "table.deleteColumn", "table.deleteTable"]) expect(all).toContain(id);
+      "table.moveRowUp", "table.moveRowDown", "table.moveColumnLeft", "table.moveColumnRight", "table.sortAscending", "table.sortDescending", "align", "table.deleteRow", "table.deleteColumn", "table.deleteTable"]) expect(all).toContain(id);
     await at({ selection: "row" });
     expect(ids(vm().cellMenu).at(-1)).toContain("table.deleteSelection");
     const before = vm().menuRequest;
@@ -94,7 +95,7 @@ describe("actions go back to the editor (TBL-02, TBL-08)", () => {
   });
   it("menu commands are commands too, for Spotlight", async () => {
     const { app } = await started();
-    for (const id of ["table.insertColumnRight", "table.alignCenter", "table.deleteTable", "table.copyMarkdown"]) expect(app.commands.has(id)).toBe(true);
+    for (const id of ["table.insertColumnRight", "table.alignCenter", "table.sortAscending", "table.sortDescending", "table.deleteTable", "table.copyMarkdown"]) expect(app.commands.has(id)).toBe(true);
   });
 });
 
@@ -105,6 +106,10 @@ describe("feedback", () => {
     expect(app.store.state.announcement.text).toBe("Row inserted below row 2");
     await app.commands.run("table.changed", { kind: "columnMoved", index: 1 });
     expect(app.store.state.announcement.text).toBe("Column moved to position 1");
+    await app.commands.run("table.changed", { kind: "sortedAscending", index: 2 });
+    expect(app.store.state.announcement.text).toBe("Column 2 sorted A to Z");
+    await app.commands.run("table.changed", { kind: "sortedDescending", index: 1 });
+    expect(app.store.state.announcement.text).toBe("Column 1 sorted Z to A");
   });
   it("a range pasted into a table says its size and how the table grew (TBL-10)", async () => {
     const { app } = await started();

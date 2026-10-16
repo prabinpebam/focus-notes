@@ -9,7 +9,7 @@ import { Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import { CellSelection } from "@tiptap/pm/tables";
 import {
-  coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, formatState, insertSlashEntry, MarkdownSession, parseTsv, setFind, findStatus, slashCatalog, slashEntries,
+  coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, formatState, insertSlashEntry, MarkdownSession, naturalCompare, parseTsv, setFind, findStatus, slashCatalog, slashEntries,
   tableInfo, validSlashEntries, type CoreOptions, type PMNode,
 } from "../src/index.ts";
 
@@ -464,5 +464,60 @@ describe("what the table controls are told (tableInfo)", () => {
     expect(tableInfo(editor.state)).toMatchObject({ inTable: true, table: 9, row: 2, col: 1, rows: 3, cols: 2, header: "Owner", align: null, selection: { kind: "none" } });
     editor.view.dispatch(editor.state.tr.setSelection(TextSelection.atStart(editor.state.doc)));
     expect(tableInfo(editor.state).inTable).toBe(false);
+  });
+});
+
+describe("sorting by a column (TBL-09, D-160)", () => {
+  const SORT = "| Item | Qty | Due |\n| :--- | --: | --- |\n| item 10 | 1,200 | 2026-10-16 |\n| Éclair | -3 | 2025-01-02 |\n| apple |  | 2026-01-05 |\n| item 2 | 2.5 |  |\n| **Banana** | 7 | 2024-12-31 |\n";
+  const col = (editor: Editor, c: number) => grid(editor).slice(1).map((r) => r[c]);
+  it("sorts text A→Z in natural order, ignoring case and accents, with empty cells last", () => {
+    const { editor } = open(SORT);
+    expect(run(editor, "table.sortAscending", { table: T(editor), col: 0 })).toBe(true);
+    expect(col(editor, 0)).toEqual(["apple", "Banana", "Éclair", "item 2", "item 10"]);
+  });
+  it("sorts numbers by value (negatives, decimals, thousands) with empty cells last in both directions", () => {
+    const { editor } = open(SORT);
+    run(editor, "table.sortAscending", { table: T(editor), col: 1 });
+    expect(col(editor, 1)).toEqual(["-3", "2.5", "7", "1,200", ""]);
+    run(editor, "table.sortDescending", { table: T(editor), col: 1 });
+    expect(col(editor, 1)).toEqual(["1,200", "7", "2.5", "-3", ""]);
+  });
+  it("sorts ISO dates by date", () => {
+    const { editor } = open(SORT);
+    run(editor, "table.sortAscending", { table: T(editor), col: 2 });
+    expect(col(editor, 2)).toEqual(["2024-12-31", "2025-01-02", "2026-01-05", "2026-10-16", ""]);
+  });
+  it("moves whole rows with their formatting, keeps the header and the alignment, and is one undo step", () => {
+    const { editor, md } = open(SORT);
+    run(editor, "table.sortAscending", { table: T(editor), col: 0 });
+    expect(grid(editor)[0]).toEqual(["Item", "Qty", "Due"]);
+    expect(grid(editor)[2]).toEqual(["Banana", "7", "2024-12-31"]);
+    expect(md()).toContain("| **Banana** |");
+    expect(md().split("\n")[1]).toMatch(/^\| :-+ \| -+: \| -+ \|$/);
+    editor.commands.undo();
+    expect(md()).toBe(SORT);
+  });
+  it("keeps equal rows in their order (a stable sort), and adds no step when already in order", () => {
+    const { editor, md } = open("| k | v |\n| - | - |\n| b | 1 |\n| a | 2 |\n| b | 0 |\n| a | 1 |\n");
+    run(editor, "table.sortAscending", { table: T(editor), col: 0 });
+    expect(grid(editor).slice(1)).toEqual([["a", "2"], ["a", "1"], ["b", "1"], ["b", "0"]]);
+    const sorted = md();
+    run(editor, "table.sortAscending", { table: T(editor), col: 0 });
+    expect(md()).toBe(sorted);
+    editor.commands.undo();
+    expect(md()).toBe("| k | v |\n| - | - |\n| b | 1 |\n| a | 2 |\n| b | 0 |\n| a | 1 |\n");
+  });
+  it("sorts the caret's column from the keyboard, the caret's cell moving with its row, and is announced", () => {
+    const changes: unknown[] = [];
+    const { editor } = open(SAMPLE, { onTableChange: (c) => changes.push(c) });
+    caretIn(editor, "Me");
+    run(editor, "table.sortDescending");
+    expect(grid(editor).slice(1)).toEqual([["Edit", "You"], ["Draft", "Me"]]);
+    expect(tableInfo(editor.state)).toMatchObject({ row: 2, col: 1 });
+    expect(changes).toEqual([{ kind: "sortedDescending", index: 2 }]);
+  });
+  it("orders values the way people expect (naturalCompare)", () => {
+    const sorted = ["b", "", "10", "A", "2", "a10", "a2", "2026-01-01", "-1"].sort(naturalCompare);
+    expect(sorted).toEqual(["-1", "2", "10", "2026-01-01", "A", "a2", "a10", "b", ""]);
   });
 });

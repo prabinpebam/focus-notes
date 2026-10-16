@@ -43,7 +43,7 @@ export const TABLE_MENU_COMMANDS = [
   "table.insertRowAt", "table.insertColumnAt", "table.appendRow", "table.appendColumn",
   "table.moveColumnLeft", "table.moveColumnRight", "table.moveRow", "table.moveColumn",
   "table.duplicateRow", "table.clearRow", "table.clearColumn", "table.clearCells", "table.deleteColumn", "table.deleteSelection",
-  "table.alignLeft", "table.alignCenter", "table.alignRight",
+  "table.alignLeft", "table.alignCenter", "table.alignRight", "table.sortAscending", "table.sortDescending",
   "table.selectRow", "table.selectColumn", "table.selectTable",
   "table.copy", "table.cut", "table.copyMarkdown", "table.copyTsv", "table.duplicateTable", "table.deleteTable",
 ] as const;
@@ -156,6 +156,7 @@ export function registerTables({ store, commands, viewModels, catalog, bridge, e
       const columnMenu = [
         { id: "insert", items: [item("table.insertColumnLeft", "table.menu.insertLeft"), item("table.insertColumnRight", "table.menu.insertRight")] },
         { id: "move", items: [item("table.moveColumnLeft", "table.menu.moveLeft", t.col <= 0), item("table.moveColumnRight", "table.menu.moveRight", t.col >= t.cols - 1)] },
+        { id: "sort", items: [item("table.sortAscending", "table.menu.sortAscending"), item("table.sortDescending", "table.menu.sortDescending")] },
         { id: "format", items: [align(t.align), item("table.clearColumn", "table.menu.clear")] },
         { id: "delete", items: [item("table.deleteColumn", "table.menu.deleteColumn")] },
       ];
@@ -185,6 +186,7 @@ export function registerTables({ store, commands, viewModels, catalog, bridge, e
           item("table.moveRowUp", "table.menu.moveRowUp", t.row <= 1), item("table.moveRowDown", "table.menu.moveRowDown", header || t.row >= t.rows - 1),
           item("table.moveColumnLeft", "table.menu.moveColumnLeft", t.col <= 0), item("table.moveColumnRight", "table.menu.moveColumnRight", t.col >= t.cols - 1),
         ] },
+        { id: "sort", items: [item("table.sortAscending", "table.menu.sortColumnAscending"), item("table.sortDescending", "table.menu.sortColumnDescending")] },
         { id: "format", items: [align(t.align), item("table.duplicateRow", "table.menu.duplicateRow", header)] },
         { id: "select", items: [item("table.selectRow", "table.menu.selectRow"), item("table.selectColumn", "table.menu.selectColumn"), item("table.selectTable", "table.menu.selectTable")] },
         { id: "delete", items: [
