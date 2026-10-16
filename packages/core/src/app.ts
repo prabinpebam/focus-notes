@@ -114,6 +114,10 @@ export interface FindState {
   caseSensitive: boolean;
   wholeWord: boolean;
   regex: boolean;
+  /** Find in selection (FND-03): search only the scope the editor took as the bar opened. */
+  inSelection: boolean;
+  /** The editor has a scope: text was selected as the bar opened. */
+  scoped: boolean;
   count: number;
   current: number;
   invalid: boolean;
@@ -124,7 +128,7 @@ export interface FindState {
   focusReplace: number;
 }
 const FIND_CLOSED: FindState = {
-  open: false, replaceOpen: false, query: "", replace: "", caseSensitive: false, wholeWord: false, regex: false,
+  open: false, replaceOpen: false, query: "", replace: "", caseSensitive: false, wholeWord: false, regex: false, inSelection: false, scoped: false,
   count: 0, current: 0, invalid: false, notice: "", focusFind: 0, focusReplace: 0,
 };
 
@@ -738,16 +742,18 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     findHistory.length = Math.min(findHistory.length, 20);
     historyAt = -1;
   };
-  const openFind = (replace: boolean) => {
+  const openFind = (replace: boolean, inSelection = false) => {
     const f = store.state.ui.find;
     setFind({
       open: true, replaceOpen: replace || (f.open && f.replaceOpen), notice: "",
       ...(replace && f.query ? { focusReplace: f.focusReplace + 1 } : { focusFind: f.focusFind + 1 }),
+      // A newly opened bar takes the selection as find in selection's scope; the editor says if there is one.
+      ...(f.open ? {} : { inSelection, scoped: false }),
     });
     store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false } }));
     // A selection in the note fills the field, as in VS Code and browsers; not when the bar is
-    // already open, where the selection is just the current match.
-    if (!f.open) editorAction("find.prefill");
+    // already open, where the selection is just the current match, nor when opened to find in it.
+    if (!f.open) editorAction("find.prefill", inSelection ? { scopeOnly: true } : undefined);
   };
   const ready = (s: AppState) => s.note.status === "ready";
   const findCmd = (id: string, title: string, extra: Partial<Parameters<typeof commands.register>[0]>, run: () => void) =>
@@ -776,7 +782,23 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   findCmd("find.close", "command.find.close", { shortcut: { default: "Escape", handledBy: "findBar" }, layer: "basic", group: "find" }, () => {
     remember();
-    setFind({ open: false, notice: "" });
+    setFind({ open: false, notice: "", inSelection: false, scoped: false });
+  });
+  // Find in selection (FND-03, D-160): opens the bar scoped to the selection, or toggles the scope.
+  commands.register({
+    id: "find.toggle.inSelection", title: "command.find.inSelection",
+    enabled: (s) => ready(s) && (!s.ui.find.open || s.ui.find.scoped), disabledReason: "find.noScope",
+    shortcut: { macos: "Mod+Alt+L", default: "Alt+L" }, layer: "pro", group: "find",
+    checked: (s) => s.ui.find.inSelection,
+    run: () => {
+      const f = store.state.ui.find;
+      if (!f.open) return openFind(false, true);
+      setFind({ inSelection: !f.inSelection, focusFind: f.focusFind + 1 });
+    },
+  });
+  commands.register<{ scoped: boolean }>({
+    id: "find.setScope", title: "command.find.setScope",
+    run: ({ scoped }) => setFind({ scoped: Boolean(scoped), ...(scoped ? {} : { inSelection: false }) }),
   });
   findCmd("find.toggleReplace", "command.find.toggleReplace", {}, () => setFind({ replaceOpen: !store.state.ui.find.replaceOpen }));
   for (const [opt, key, title] of [["caseSensitive", "C", "command.find.matchCase"], ["wholeWord", "W", "command.find.wholeWord"], ["regex", "R", "command.find.regex"]] as const) {
@@ -807,7 +829,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const showJump = (jump: FindJump) => {
     const f = store.state.ui.find;
     setFind({
-      open: true, query: jump.query, caseSensitive: jump.caseSensitive, wholeWord: jump.wholeWord, regex: jump.regex,
+      open: true, query: jump.query, caseSensitive: jump.caseSensitive, wholeWord: jump.wholeWord, regex: jump.regex, inSelection: false, scoped: false,
       notice: "", focusFind: f.focusFind + 1,
     });
     remember();
@@ -1058,11 +1080,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       properties: {
         open: { type: "boolean" }, replaceOpen: { type: "boolean" }, query: { type: "string" }, replace: { type: "string" },
         caseSensitive: { type: "boolean" }, wholeWord: { type: "boolean" }, regex: { type: "boolean" }, invalid: { type: "boolean" },
+        inSelection: { type: "boolean" }, scoped: { type: "boolean" },
         status: { type: "string" }, statusTone: { type: "string", enum: ["muted", "danger"] }, notice: { type: "string" },
         focusFind: { type: "number" }, focusReplace: { type: "number" }, canReplace: { type: "boolean" },
         actions: {
           type: "object",
-          properties: Object.fromEntries(["prev", "next", "close", "case", "word", "regex", "replaceNext", "replaceAll", "toggleReplace"].map((k) => [k, {
+          properties: Object.fromEntries(["prev", "next", "close", "case", "word", "regex", "inSelection", "replaceNext", "replaceAll", "toggleReplace"].map((k) => [k, {
             type: "object" as const, properties: { label: { type: "string" as const }, shortcut: { type: "string" as const } },
           }])),
         },
@@ -1083,7 +1106,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         ...f, status, statusTone: f.query && (f.count === 0 || f.invalid) ? "danger" : "muted", canReplace: f.count > 0,
         actions: {
           prev: action("find.prev"), next: action("find.next"), close: action("find.close"), case: action("find.toggle.caseSensitive"),
-          word: action("find.toggle.wholeWord"), regex: action("find.toggle.regex"), replaceNext: action("find.replaceNext"),
+          word: action("find.toggle.wholeWord"), regex: action("find.toggle.regex"), inSelection: action("find.toggle.inSelection"), replaceNext: action("find.replaceNext"),
           replaceAll: action("find.replaceAll"), toggleReplace: action("find.toggleReplace"),
         },
       };

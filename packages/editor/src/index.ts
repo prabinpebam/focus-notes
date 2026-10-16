@@ -276,6 +276,8 @@ export interface CoreOptions {
   openLink?: (href: string) => void;
   /** The class that keeps the selection visible while the link editor has focus. */
   ghostClass?: string;
+  /** The class that tints find in selection's scope while it's on (FND-03). */
+  findScopeClass?: string;
   /** Draws an empty header cell's column name ("Column 3"), see TableHooks. */
   emptyHeader?: (index: number) => HTMLElement;
   /**
@@ -310,7 +312,7 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
       },
     }),
     CommandKeymap.configure({ bindings }),
-    Find,
+    Find.configure({ scopeClass: options.findScopeClass ?? "" }),
     MarkdownLink,
     LinkPaste,
     LinkOpen.configure(options.openLink ? { openLink: options.openLink } : {}),
