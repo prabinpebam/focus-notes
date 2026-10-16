@@ -21,6 +21,7 @@ import { registerSync, NO_SYNC, SyncFailed, saveStateOf, syncProblemAction, type
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
+import { registerNoteHistory, HISTORY_CLOSED, type HistoryState } from "./note-history-app.ts";
 import { registerDeepLinks } from "./deep-link-app.ts";
 import { registerAgents, AGENTS_IDLE, type AgentsState } from "./agents-app.ts";
 import { registerKeybindings, KEYBINDINGS_NONE, type KeybindingsState } from "./keybindings-app.ts";
@@ -87,6 +88,8 @@ export interface AppState {
     conflict: ConflictState;
     /** Customize toolbar (UI-08, D-170). */
     toolbarCustomize: ToolbarCustomizeState;
+    /** Note history (FIL-13, IA-VIEW-HISTORY): the open note's versions from Git. */
+    history: HistoryState;
     /** A new public note held out of Git until the writer answers (D-158): its pill and its question. */
     held: HeldUiState;
     /** Settings → Agents (WP-7.4, D-166). */
@@ -226,7 +229,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
     ],
   },
   { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
-  { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink"] },
+  { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink", "history.open"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "toolbar.customize", "shortcuts.open", "help.open"] },
 ];
@@ -285,7 +288,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     toolbarPinned: [...DEFAULT_TOOLBAR],
     keybindings: KEYBINDINGS_NONE,
     compositing: bridge.compositing?.initial === "software" ? "software" : "gpu",
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, toolbarCustomize: TOOLBAR_CUSTOMIZE_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, toolbarCustomize: TOOLBAR_CUSTOMIZE_CLOSED, history: HISTORY_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -1065,6 +1068,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     reads: [],
     select: () => ({ on: Boolean(bridge.demo) }),
   });
+  registerNoteHistory({ store, commands, viewModels, catalog, bridge, toast, announce, setNote, flush });
   const heldNotes = registerHeld({ store, commands, viewModels, catalog, bridge, toast, announce });
   void heldNotes.refresh();
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
@@ -1430,6 +1434,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // The desktop's first run shows over the blank canvas; the first note opens when it's done (FRE-01).
       if (!(await firstRun.begin(appState))) {
         // A panel pinned on this device is there from the first frame, so the text never jumps aside (D-161).
+        files.restoreSort(appState.filesSort);
         files.restorePinned(appState.filesPinned);
         // Only the note the person last opened, and never an empty public file;
         // else the app's own note, in the Private root (D-171, SHR-01).

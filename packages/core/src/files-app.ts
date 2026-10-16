@@ -14,7 +14,7 @@ import { groupByDay, type DeletedNote } from "./history.ts";
 import { planLinkWrites, rewriteLinks, sameRootOf, type LinkWrite, type PathMove } from "./links.ts";
 import {
   actedOn, ancestorsOf, copyTitle, destinations, isRootRow, keepShowing, NO_SELECTION, rebase, rootRowId, rowMenu, select, selectAll, targetFolder, titleOfNode,
-  topLevel, visibleRows, withoutNoteId, type FileRow, type Selection,
+  topLevel, visibleRows, withoutNoteId, type FileRow, type FilesSort, type Selection,
 } from "./files.ts";
 import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
 import {
@@ -31,6 +31,8 @@ export interface FilesState {
   collapsed: readonly string[];
   selection: Selection;
   filter: string;
+  /** How the tree is sorted (FIL-11, D-175): by name, or by last change. */
+  sort: FilesSort;
   /** Bumped to move focus into the tree, to the focused row. */
   focusRequest: number;
   /** The inline name field: renaming a row, or naming a new folder in `parent`. */
@@ -48,7 +50,7 @@ export interface FilesState {
   recent: { open: boolean; loading: boolean; notes?: readonly DeletedNote[]; focus: number };
 }
 export const FILES_CLOSED: FilesState = {
-  open: false, pinned: false, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", focusRequest: 0, pending: [],
+  open: false, pinned: false, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", focusRequest: 0, pending: [],
   move: { open: false, query: "", activeId: "", paths: [], focus: 0 },
   recent: { open: false, loading: false, focus: 0 },
 };
@@ -96,13 +98,14 @@ export function registerFiles(ctx: Ctx) {
   const reason = (r: keyof typeof REASONS) => catalog.format(REASONS[r]);
 
   // ---- rows ----
-  let rowsMemo: { tree: WorkspaceTree; expanded: readonly string[]; collapsed: readonly string[]; filter: string; rows: FileRow[] } | undefined;
+  // Worked out only when the tree, the open folders, the filter, or the order change: never per keystroke (D-175).
+  let rowsMemo: { tree: WorkspaceTree; expanded: readonly string[]; collapsed: readonly string[]; filter: string; sort: FilesSort; rows: FileRow[] } | undefined;
   const rowsOf = (s: AppState): FileRow[] => {
     const f = s.ui.files;
     const t = s.workspace.tree;
-    if (rowsMemo && rowsMemo.tree === t && rowsMemo.expanded === f.expanded && rowsMemo.collapsed === f.collapsed && rowsMemo.filter === f.filter) return rowsMemo.rows;
-    const rows = visibleRows(t, { expanded: new Set(f.expanded), collapsed: new Set(f.collapsed) }, f.filter);
-    rowsMemo = { tree: t, expanded: f.expanded, collapsed: f.collapsed, filter: f.filter, rows };
+    if (rowsMemo && rowsMemo.tree === t && rowsMemo.expanded === f.expanded && rowsMemo.collapsed === f.collapsed && rowsMemo.filter === f.filter && rowsMemo.sort === f.sort) return rowsMemo.rows;
+    const rows = visibleRows(t, { expanded: new Set(f.expanded), collapsed: new Set(f.collapsed) }, f.filter, f.sort);
+    rowsMemo = { tree: t, expanded: f.expanded, collapsed: f.collapsed, filter: f.filter, sort: f.sort, rows };
     return rows;
   };
   const rowById = (id: string) => rowsOf(store.state).find((r) => r.id === id);
@@ -158,6 +161,17 @@ export function registerFiles(ctx: Ctx) {
     id: "files.reveal", title: "command.files.reveal", shortcut: { default: "Mod+Shift+E" }, layer: "power", group: "files",
     enabled: () => Boolean(ws), run: ({ path }) => reveal(typeof path === "string" && path ? path : undefined),
   });
+  // Sorting (FIL-11, D-175): by name or by last change, remembered per device.
+  for (const order of ["name", "changed"] as const) {
+    commands.register({
+      id: `files.sort.${order}`, title: `command.files.sort.${order}`, group: "files",
+      checked: (s) => s.ui.files.sort === order,
+      run: async () => {
+        setFiles(() => ({ sort: order }));
+        await ctx.persistAppState({ filesSort: order === "changed" ? "changed" : undefined });
+      },
+    });
+  }
   // Esc in the panel: pinned, the caret goes back to the note and the panel stays (D-161).
   commands.register({ id: "files.close", title: "command.files.close", run: () => (files().pinned ? ctx.editorAction("edit.focus") : close()) });
   // Mod+O in the panel: back to the note when pinned; closes it otherwise, as Mod+O always has.
@@ -832,6 +846,7 @@ export function registerFiles(ctx: Ctx) {
         selectedCount: { type: "number" }, multi: { type: "boolean" }, selectionText: { type: "string" },
         canMakePublic: { type: "boolean" }, canMakePrivate: { type: "boolean" },
         newNote: ctx.itemSchema, newFolder: ctx.itemSchema,
+        sortLabel: { type: "string" }, sortMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
       },
     },
     setters: { filter: "files.setFilter", editValue: "files.setEditValue" },
@@ -880,6 +895,9 @@ export function registerFiles(ctx: Ctx) {
         newNote: { shortcut: "", ...ctx.describeItem("files.newNote"), ...(newNoteShortcut() ? { shortcut: newNoteShortcut() } : {}) },
         newFolder: { shortcut: "", ...ctx.describeItem("files.newFolder") },
         canMakePublic: canMake(s, "public"), canMakePrivate: canMake(s, "private"),
+        // The header's sort button (D-175): Name or Last changed, the one in use checked.
+        sortLabel: catalog.format("files.sortLabel", { order: catalog.format(`files.sort.${f.sort}`) }),
+        sortMenu: [{ id: "sort", items: (["name", "changed"] as const).map((o) => ({ ...ctx.describeItem(`files.sort.${o}`), label: catalog.format(`files.sort.${o}`) })) }],
       };
     },
   });
@@ -969,6 +987,10 @@ export function registerFiles(ctx: Ctx) {
   });
 
   return {
+    /** At launch: the order chosen on this device (D-175). */
+    restoreSort(sort: unknown): void {
+      if (sort === "changed") setFiles(() => ({ sort: "changed" }));
+    },
     /** At launch: a panel pinned on this device opens, without taking the caret (D-161). */
     restorePinned(pinned: boolean | undefined): void {
       if (!pinned || !ws) return;

@@ -41,6 +41,10 @@
       "type": "boolean",
       "description": "The Files panel is pinned open on this device (D-161)."
     },
+    "filesSort": {
+      "enum": ["changed"],
+      "description": "The Files tree sorted by last change on this device; absent: by name (FIL-11, D-175)."
+    },
     "lightTheme": {
       "enum": [
         "paper",

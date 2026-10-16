@@ -3,7 +3,7 @@ import { lastWord } from "./scan.ts";
 import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
 import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
-import type { ConflictChoiceKind, DeletedNote } from "./history.ts";
+import type { ConflictChoiceKind, DeletedNote, NoteVersion } from "./history.ts";
 import type { KeybindingsBridge } from "./keybindings-app.ts";
 import type { HeldNotes } from "./held.ts";
 import type { AgentsBridge } from "./agents-app.ts";
@@ -268,6 +268,14 @@ export interface WorkspaceBridge {
    * Resolves to where each went. Rejects like `apply`.
    */
   restore?(ids: string[], folder?: string): Promise<{ path: string; title: string }[]>;
+  /**
+   * A note's saved versions from Git, newest first, following renames (FIL-13, D-175): a page at a
+   * time, at most `limit`, from HEAD or from a version already listed (`from`, which comes first again).
+   * Read only when Note history opens. Absent without Git.
+   */
+  versions?(path: string, page?: { from?: { commit: string; file: string }; limit: number }): Promise<NoteVersion[]>;
+  /** A note's text in one of its versions (a commit and file `versions` listed), or undefined if it can't be read. */
+  version?(path: string, commit: string, file: string): Promise<string | undefined>;
   /** Changes made outside the app, in batches (the desktop's file watcher). */
   onChange?(listener: (changes: WorkspaceChange[]) => void): () => void;
   /**
@@ -378,6 +386,8 @@ export interface AppStateFile {
   toolbarPinned?: string[];
   /** The Files panel is pinned open on this device (D-161). */
   filesPinned?: boolean;
+  /** The Files tree sorted by last change (FIL-11, D-175); absent: by name. */
+  filesSort?: "changed";
   /** The chosen light and dark themes (THM-08). */
   lightTheme?: string;
   darkTheme?: string;

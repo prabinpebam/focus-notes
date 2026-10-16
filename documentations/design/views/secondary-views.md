@@ -54,6 +54,7 @@ The views people open now and then: Settings, Share and visibility, the keyboard
 - **Restore** makes a new commit with the old content (the newer versions stay in history), and announces "Restored the version from 13 Oct, 14:02" with [Undo].
 - **Agent changes** can be undone right from their row ([Undo this change]), which reverts only that commit.
 - **Keyboard:** <kbd>↑</kbd>/<kbd>↓</kbd> move through versions, <kbd>Enter</kbd> previews, and <kbd>Esc</kbd> returns to the current version and closes the sheet.
+- **As built (D-175, WP-8.4):** the sheet reads the history only when it opens, 50 versions at a time with *Show older versions*, and names each wait ("Reading versions…"). A chosen version shows in the sheet, block by block against the note now, rather than in the canvas. Restoring saves the old text as the note's next version, with *Undo* on its toast. Not yet: the version in the canvas, the one-line summary of each change, and *Undo this change* on an agent's row.
 
 **Design decision**
 

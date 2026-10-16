@@ -14,6 +14,8 @@ export interface ResultListProps {
   width?: "fill" | "menu";
   /** As tall as its items up to a popover's height, or the height its container gives it. */
   height?: "content" | "fill";
+  /** Each new value moves focus to the list itself, where the list owns focus (Note history). */
+  focusRequest?: number;
   id: string;
   onAction?: (payload: { id: string }) => void;
   onActiveChange?: (payload: { id: string }) => void;
@@ -52,8 +54,11 @@ function marked(text: string, ranges: ResultItem["highlights"]): ReactNode {
  * and `descriptionHighlights` mark where the query matched. A row's `state` (a toggle's value, a
  * match's place) sits at its end, read with it.
  */
-export function ResultList({ label, items, activeId, width = "fill", height = "content", id, onAction, onActiveChange }: ResultListProps) {
+export function ResultList({ label, items, activeId, width = "fill", height = "content", focusRequest, id, onAction, onActiveChange }: ResultListProps) {
   const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (focusRequest) ref.current?.focus({ preventScroll: true });
+  }, [focusRequest]);
   useAutoHideScrollbar(ref);
   // A long list appears in two frames (PRF-14, D-151 (12)): the rows the first frame can show, then
   // the rest once that frame is drawn. Spotlight opens on every action the app has (about 180 rows,

@@ -485,9 +485,11 @@ async function assertWritable(p: string): Promise<void> {
  * A note's title from its first 16 KB, so the Files panel shows titles without reading whole notes.
  * Kept in the snapshot, so a note that hasn't changed isn't opened again (PRF-10).
  */
-async function readTitle(p: string): Promise<string | undefined> {
+async function readTitle(p: string, seen?: (changed: number) => void): Promise<string | undefined> {
   const st = await stat(p).catch(() => undefined);
   if (!st) return undefined;
+  // When it last changed, for sorting the tree by last change (D-175): from the stat this read makes anyway.
+  seen?.(Math.round(st.mtimeMs));
   const key = { path: p, size: st.size, mtimeMs: st.mtimeMs };
   const known = titles.get(key) ?? parsed.get(key);
   if (known) return known.title;
@@ -505,7 +507,7 @@ async function readTitle(p: string): Promise<string | undefined> {
     await h.close();
   }
 }
-type Entry = { path: string; kind: "note" | "folder"; title?: string };
+type Entry = { path: string; kind: "note" | "folder"; title?: string; changed?: number };
 /** Every note (with its title) and folder under a root; folders and files starting with a dot are skipped. */
 async function listTree(dir: string, out: Entry[] = []): Promise<Entry[]> {
   const items = await readdir(dir, { withFileTypes: true }).catch(() => []);
@@ -516,7 +518,10 @@ async function listTree(dir: string, out: Entry[] = []): Promise<Entry[]> {
     if (d.isDirectory()) {
       out.push({ path: p, kind: "folder" });
       await listTree(p, out);
-    } else if (d.isFile() && isMarkdown(d.name)) notes.push(readTitle(p).then((title) => ({ path: p, kind: "note", ...(title ? { title } : {}) })));
+    } else if (d.isFile() && isMarkdown(d.name)) {
+      let changed: number | undefined;
+      notes.push(readTitle(p, (t) => (changed = t)).then((title) => ({ path: p, kind: "note" as const, ...(title ? { title } : {}), ...(changed !== undefined ? { changed } : {}) })));
+    }
   }
   out.push(...(await Promise.all(notes)));
   return out;
@@ -1355,6 +1360,15 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("history:deleted", async () => (isWorkspace() ? (await gitOpening)?.deleted() ?? [] : []));
   handle("history:restore", (ids, folder) => restoreNotes(ids, folder));
+  // Note history (FIL-13, D-175): a note in the workspace, its versions read from Git by the main process.
+  handle("history:versions", async (p, page) => {
+    const o = page && typeof page === "object" ? page as { from?: unknown; limit?: unknown } : {};
+    const limit = typeof o.limit === "number" && Number.isFinite(o.limit) ? Math.min(500, Math.max(1, Math.floor(o.limit))) : undefined;
+    const f = o.from && typeof o.from === "object" ? o.from as { commit?: unknown; file?: unknown } : undefined;
+    const from = f && typeof f.commit === "string" && typeof f.file === "string" ? { commit: f.commit, file: f.file } : undefined;
+    return isWorkspace() ? (await gitOpening)?.versions(notePath(p), { ...(from ? { from } : {}), ...(limit ? { limit } : {}) }) ?? [] : [];
+  });
+  handle("history:version", async (p, commit, file) => (isWorkspace() && typeof commit === "string" && typeof file === "string" ? (await gitOpening)?.readVersion(notePath(p), commit, file) : undefined));
   windowFrame?.registerIpc(fromApp, win);
   // macOS's menu bar (DSK-05): the renderer builds it from its commands; choosing an item runs the command there.
   if (platform === "macos") {

@@ -836,6 +836,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "sort",
                     "inSelection",
                     "grip",
                     "arrowUp",
@@ -1045,6 +1046,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "sort",
                     "inSelection",
                     "grip",
                     "arrowUp",
@@ -1300,6 +1302,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "sort",
                     "inSelection",
                     "grip",
                     "arrowUp",
@@ -1986,6 +1989,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "sort",
                     "inSelection",
                     "grip",
                     "arrowUp",
@@ -2389,6 +2393,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "sort",
                     "inSelection",
                     "grip",
                     "arrowUp",
@@ -3031,6 +3036,17 @@
                 },
                 {
                   "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "focusRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
                 }
               ]
             },
@@ -4448,6 +4464,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "sort",
                     "inSelection",
                     "grip",
                     "arrowUp",
@@ -4662,6 +4679,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "sort",
                     "inSelection",
                     "grip",
                     "arrowUp",
@@ -5143,6 +5161,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "sort",
                     "inSelection",
                     "grip",
                     "arrowUp",

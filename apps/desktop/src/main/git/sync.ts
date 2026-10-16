@@ -9,7 +9,7 @@
 import { existsSync, realpathSync } from "node:fs";
 import { readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { conflictCopy, deletedId, DELETED_LOG_ARGS, parseDeletedId, parseDeletedLog, recentDeletions, RECENTLY_DELETED_DAYS, titleOrName, type DeletedNote } from "@focus-notes/core/history";
+import { conflictCopy, deletedId, DELETED_LOG_ARGS, parseDeletedId, parseDeletedLog, isVersionFile, parseVersionLog, recentDeletions, RECENTLY_DELETED_DAYS, titleOrName, VERSION_LOG_ARGS, type DeletedNote, type NoteVersion } from "@focus-notes/core/history";
 import { StatusCache, filesKey, gitFiles } from "./cache.ts";
 import { Cadence, FETCH_EVERY_MS, type BackupPolicy, POINTER_GAP_MS, pointerDelay, retryDelay, systemClock, type Clock, type SyncReason } from "./cadence.ts";
 import { releaseLock, takeLock } from "./lock.ts";
@@ -536,6 +536,43 @@ export class GitSync {
       return this.#report;
     }
     return this.sync("save");
+  }
+
+  // ---- Note history (FIL-13, D-175) ----
+
+  /** The repository a note is in and its path there (forward slashes), or undefined outside both. */
+  #noteIn(path: string): { repo: Repo; rel: string } | undefined {
+    for (const repo of [this.privateRepo, this.notes]) {
+      if (!repo) continue;
+      const rel = relative(repo.dir, resolve(path));
+      if (rel && !rel.startsWith("..") && !isAbsolute(rel)) return { repo, rel: rel.split(sep).join("/") };
+    }
+    return undefined;
+  }
+
+  /** A note's saved versions, newest first, following renames; an agent's commits name it. */
+  async versions(path: string, page: { from?: { commit: string; file: string }; limit?: number } = {}): Promise<NoteVersion[]> {
+    const at = this.#noteIn(path);
+    if (!at) return [];
+    const from = page.from;
+    if (from && (!/^[0-9a-f]{7,64}$/.test(from.commit) || !isVersionFile(from.file))) return [];
+    const r = await this.#exec(at.repo)([...VERSION_LOG_ARGS(from ? from.file : at.rel, { ...(from ? { from: from.commit } : {}), ...(page.limit ? { limit: page.limit } : {}) })], { read: true });
+    if (r.code !== 0) return [];
+    return parseVersionLog(r.stdout).map((e) => {
+      const agent = agentOf(e.message);
+      return { commit: e.commit, at: e.at, author: e.author, file: e.path, ...(agent ? { agent } : {}) };
+    });
+  }
+
+  /**
+   * A note's text in one of its versions: the file it was in that commit (as `versions` listed it),
+   * read from the note's own repository. Only a commit ID and a Markdown path in that repository.
+   */
+  async readVersion(path: string, commit: string, file: string): Promise<string | undefined> {
+    const at = this.#noteIn(path);
+    if (!at || !/^[0-9a-f]{7,64}$/.test(commit) || !isVersionFile(file)) return undefined;
+    const [text] = await readBlobs(this.#exec(at.repo), [`${commit}:${file}`]).catch(() => [undefined]);
+    return text;
   }
 
   // ---- Recently deleted (FIL-10) ----

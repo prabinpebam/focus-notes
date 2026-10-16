@@ -1,0 +1,236 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "history",
+  "ia": "IA-VIEW-HISTORY",
+  "viewModels": [
+    "vm.history"
+  ],
+  "focus": "historyList",
+  "overlay": true,
+  "root": {
+    "type": "Stack",
+    "children": [
+      {
+        "type": "Sheet",
+        "id": "noteHistory",
+        "when": {
+          "get": "vm.history.open"
+        },
+        "props": {
+          "label": {
+            "t": "history.title"
+          },
+          "side": "end",
+          "width": "theme"
+        },
+        "on": {
+          "close": {
+            "run": "history.close"
+          }
+        },
+        "slots": {
+          "header": [
+            {
+              "type": "Inline",
+              "props": {
+                "justify": "between",
+                "gap": "s"
+              },
+              "children": [
+                {
+                  "type": "Heading",
+                  "props": {
+                    "level": "2",
+                    "value": {
+                      "t": "history.title"
+                    }
+                  }
+                },
+                {
+                  "type": "IconButton",
+                  "props": {
+                    "icon": "dismiss",
+                    "label": {
+                      "t": "dialog.close"
+                    },
+                    "tone": "muted",
+                    "bleed": true
+                  },
+                  "on": {
+                    "press": {
+                      "run": "history.close"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "get": "vm.history.status"
+                },
+                "role": "caption",
+                "tone": "muted",
+                "announce": true
+              }
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "ResultList",
+                "id": "historyList",
+                "props": {
+                  "label": {
+                    "t": "history.list"
+                  },
+                  "items": {
+                    "get": "vm.history.items"
+                  },
+                  "activeId": {
+                    "get": "vm.history.activeId"
+                  },
+                  "focusRequest": {
+                    "get": "vm.history.focus"
+                  }
+                },
+                "on": {
+                  "action": {
+                    "run": "history.choose",
+                    "args": {
+                      "id": {
+                        "get": "event.id"
+                      }
+                    }
+                  },
+                  "activeChange": {
+                    "run": "history.setActive",
+                    "args": {
+                      "id": {
+                        "get": "event.id"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "id": "historyMore",
+                "when": {
+                  "get": "vm.history.more"
+                },
+                "props": {
+                  "label": {
+                    "t": "command.history.more"
+                  },
+                  "variant": "subtle",
+                  "size": "s"
+                },
+                "on": {
+                  "press": {
+                    "run": "history.more"
+                  }
+                }
+              },
+              {
+                "type": "Stack",
+                "id": "historyVersion",
+                "when": {
+                  "get": "vm.history.showing"
+                },
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.history.versionLabel"
+                      },
+                      "role": "label",
+                      "announce": true
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "history.compared"
+                      },
+                      "role": "caption",
+                      "tone": "muted"
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s",
+                      "wrap": true
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "when": {
+                          "get": "vm.history.canRestore"
+                        },
+                        "props": {
+                          "label": {
+                            "t": "command.history.restore"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "history.restore"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.history.back"
+                          },
+                          "variant": "subtle"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "history.back"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "VersionPane",
+                    "props": {
+                      "label": {
+                        "get": "vm.history.versionLabel"
+                      },
+                      "blocks": {
+                        "get": "vm.history.blocks"
+                      },
+                      "emptyText": {
+                        "get": "vm.history.emptyText"
+                      },
+                      "changedLabel": {
+                        "t": "conflict.changed"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
