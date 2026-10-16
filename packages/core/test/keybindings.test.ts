@@ -90,3 +90,50 @@ describe("user bindings in the registry", () => {
     }
   });
 });
+
+describe("PRF-14: custom keys add no work while nothing changes (candidate X)", () => {
+  const bridgeWith = (load: () => Promise<string | undefined>, onChange: (l: () => void) => void): PlatformBridge => ({
+    platform: "windows", readNote: async () => "# A\n", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/n.md",
+    defaultNotePath: async () => "/n.md", loadAppState: async () => ({ version: 1 }), saveAppState: async () => {}, systemScheme: () => "light", onSystemSchemeChange: () => () => {},
+    keybindings: { load, onChange: (l) => { onChange(l); return () => {}; }, edit: async () => {}, reset: async () => {} },
+  });
+  const settle = async () => { for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0)); };
+
+  it("a change signal with the same file touches nothing in the store; without a file the keymap's version never moves", async () => {
+    let text: string | undefined;
+    let changed: (() => void) | undefined;
+    const app = createApp(bridgeWith(async () => text, (l) => { changed = l; }), messages);
+    await app.start();
+    await settle();
+    expect(app.store.state.keybindings.version).toBe(0);
+    const keymap = (app.viewModels.select("vm.app", app.store.state) as { editorKeymap: unknown }).editorKeymap;
+    const before = app.store.version;
+    changed!();
+    await settle();
+    expect(app.store.version).toBe(before);
+    text = JSON.stringify([{ command: "focus.toggle", key: "Mod+J" }]);
+    changed!();
+    await settle();
+    expect(app.store.state.keybindings.version).toBe(1);
+    const after = app.store.version;
+    changed!();
+    await settle();
+    expect(app.store.version).toBe(after);
+    // A file whose keys are the same (only spacing changed) keeps the keymap's version.
+    text = JSON.stringify([{ command: "focus.toggle", key: "Mod+J" }], null, 2);
+    changed!();
+    await settle();
+    expect(app.store.state.keybindings.version).toBe(1);
+    expect((app.viewModels.select("vm.app", app.store.state) as { editorKeymap: unknown }).editorKeymap).not.toBe(keymap);
+  });
+
+  it("matching a key asks held and enabled only of the commands whose key it is", () => {
+    const r = new CommandRegistry<object>(() => ({}), () => {}, "windows");
+    const asked: string[] = [];
+    for (let i = 0; i < 50; i++) r.register({ id: `a.c${i}`, title: "t", shortcut: { default: `Mod+Alt+F${(i % 12) + 1}`, whenEnabled: true }, layer: "power", group: "app", enabled: () => (asked.push(`a.c${i}`), true), run: () => {} });
+    r.register({ id: "focus.toggle", title: "t", shortcut: { default: "Mod+Shift+D", whenEnabled: true }, layer: "writer", group: "app", enabled: () => (asked.push("focus.toggle"), true), run: () => {} });
+    r.setHold((id) => (asked.push(`hold:${id}`), undefined));
+    expect(r.match(key("D", { ctrlKey: true, shiftKey: true }))).toBe("focus.toggle");
+    expect(asked).toEqual(["hold:focus.toggle", "focus.toggle"]);
+  });
+});

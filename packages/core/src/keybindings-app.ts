@@ -38,13 +38,27 @@ export function registerKeybindings(ctx: Ctx) {
   const kb = bridge.keybindings;
   const title = (id: string) => (commands.has(id) ? catalog.format(commands.describe(id).title) : id);
 
+  /** The file's text and the bindings' shape as last applied: an unchanged file changes nothing (PRF-14). */
+  let last: { text: string | undefined; shape: string } | undefined;
+  const shapeOf = (b: ReturnType<typeof parseKeybindings>["bindings"]) =>
+    JSON.stringify([[...b.add].sort(), [...b.remove].map(([id, c]) => [id, [...c].sort()]).sort()]);
+
   async function load(): Promise<void> {
     if (!kb) return;
     const text = await kb.load().catch(() => undefined);
+    // The same text as last time: nothing to do, and the store isn't touched.
+    if (last && last.text === text) return;
     const parsed = parseKeybindings(text, bridge.platform, (id) => commands.has(id));
-    commands.setUserBindings(parsed.bindings);
-    const conflicts = keyConflicts(commands.bindings(), bridge.platform, commands.userBound());
-    store.update((s) => ({ ...s, keybindings: { loaded: true, version: s.keybindings.version + 1, applied: parsed.applied, problems: parsed.problems, conflicts, confirmingReset: s.keybindings.confirmingReset } }));
+    const shape = shapeOf(parsed.bindings);
+    // The keys themselves changed: only then do the registry, the editor's keymap (by version), and the conflicts follow.
+    const keysChanged = shape !== (last?.shape ?? shapeOf({ add: new Map(), remove: new Map() }));
+    last = { text, shape };
+    if (keysChanged) commands.setUserBindings(parsed.bindings);
+    const conflicts = keysChanged ? keyConflicts(commands.bindings(), bridge.platform, commands.userBound()) : store.state.keybindings.conflicts;
+    store.update((s) => ({
+      ...s,
+      keybindings: { loaded: true, version: s.keybindings.version + (keysChanged ? 1 : 0), applied: parsed.applied, problems: parsed.problems, conflicts, confirmingReset: s.keybindings.confirmingReset },
+    }));
   }
   kb?.onChange(() => void load());
 

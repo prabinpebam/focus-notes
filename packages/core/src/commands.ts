@@ -162,7 +162,8 @@ export class CommandRegistry<S> {
   /** A command's effective chords on a platform: the person's first, then the defaults they kept. */
   #chords(id: string, def: CommandDef<S, any>, platform: Platform): string[] {
     const defaults = chordsFor(def.shortcut, platform);
-    if (platform !== this.platform) return defaults;
+    // Without custom keys (the usual case) this is exactly the defaults: nothing more on the key path.
+    if (platform !== this.platform || (!this.#user.add.size && !this.#user.remove.size)) return defaults;
     const removed = this.#user.remove.get(id);
     const added = this.#user.add.get(id) ?? [];
     return [...added, ...defaults.filter((c) => !removed?.has(c) && !added.includes(c))];
@@ -229,8 +230,10 @@ export class CommandRegistry<S> {
     if (event.isComposing) return undefined;
     // The most specific context wins: keys of the scopes focus is in, then app-wide keys. In each,
     // the person's own keys come first, so they win over a default on the same key (D-170).
+    // Without custom keys there's one pass per context, as before D-170 (PRF-14).
+    const passes = this.#user.add.size ? [true, false] : [false];
     for (const scoped of [true, false]) {
-      for (const user of [true, false]) {
+      for (const user of passes) {
         const id = this.#matchIn(event, scoped ? scopes : [], user);
         if (id) return id;
       }
@@ -241,14 +244,22 @@ export class CommandRegistry<S> {
   #matchIn(event: KeyEventLike, scopes: readonly string[], user: boolean): string | undefined {
     // With AltGr held the key types a character, so only that character can match.
     for (const byCode of event.altGraph ? [false] : [false, true]) {
-      for (const [id, def] of this.#commands) {
+      // The person's own keys: only the commands that have some (D-170).
+      const entries: Iterable<[string, CommandDef<S, any>]> = user
+        ? [...this.#user.add.keys()].flatMap((id): [string, CommandDef<S, any>][] => (this.#commands.has(id) ? [[id, this.#commands.get(id)!]] : []))
+        : this.#commands;
+      for (const [id, def] of entries) {
         const where = def.shortcut?.handledBy;
         if (scopes.length ? !where || !scopes.includes(where) : where) continue;
         if (def.shortcut?.atFieldEnd && event.caretAtEnd === false) continue;
+        const chords = user ? this.#user.add.get(id) ?? [] : this.#chords(id, def, this.platform);
+        const quiet = user ? [] : def.shortcut?.quiet ?? [];
+        // The key first (string work), then whether the command takes it now: held and enabled are
+        // asked only of a command whose key this is, not of every command on every key (PRF-14).
+        if (!chords.some((c) => chordMatches(c, event, this.platform, byCode)) && !quiet.some((c) => chordMatches(c, event, this.platform, byCode))) continue;
         if (this.#held(id)) continue;
         if (def.shortcut?.whenEnabled && def.enabled && !def.enabled(this.getState())) continue;
-        const chords = user ? [...(this.#user.add.get(id) ?? [])] : [...this.#chords(id, def, this.platform), ...(def.shortcut?.quiet ?? [])];
-        for (const chord of chords) if (chordMatches(chord, event, this.platform, byCode)) return id;
+        return id;
       }
     }
     return undefined;

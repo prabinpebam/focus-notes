@@ -14,7 +14,8 @@ import { SWITCHES, connectionSnippets, type AgentsPage, type SwitchId } from "@f
 import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/agents-fs";
 import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
-import { existsSync, readFileSync, realpathSync, watchFile } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { watchKeybindings } from "./keybindings-watch.ts";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -1699,10 +1700,8 @@ app.whenReady().then(async () => {
   if (restored.length) process.stdout.write(`[focus-notes] journal: restored ${restored.length}\n`);
   mainWindow = createWindow(windowFrame);
   // keybindings.json changes (saved in an editor) apply at once, without a restart (D-170).
-  // One small file, polled twice a second: reliable on every system, editors that replace the file included.
-  watchFile(dataFile(DATA_FILES.keybindings), { interval: 500 }, (now, before) => {
-    if (now.mtimeMs !== before.mtimeMs || now.size !== before.size) mainWindow?.webContents.send("keybindings:changed");
-  });
+  // One small file, polled in this process: the window hears only of a real change (PRF-14).
+  watchKeybindings(dataFile(DATA_FILES.keybindings), () => mainWindow?.webContents.send("keybindings:changed"));
   watcher = watchWorkspace(() => mainWindow);
   // Never on the path of the first frame: Git answers when it answers (PRF-07).
   // Git opens once the caret is ready, or after 3 s if the note never becomes ready.
