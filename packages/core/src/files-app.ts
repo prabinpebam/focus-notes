@@ -481,9 +481,13 @@ export function registerFiles(ctx: Ctx) {
   commands.register<{ open: boolean }>({ id: "files.setConfirmOpen", title: "command.files.confirm", run: ({ open }) => { if (!open) setFiles((f) => ({ confirm: undefined, focusRequest: f.focusRequest + 1 })); } });
 
   // ---- duplicating (FIL-11's duplicate, D-162) ----
-  /** The notes Duplicate copies: the selection's notes when the focused row is in it, else the focused note. */
+  /**
+   * The notes Duplicate copies: with the panel open, the selection's notes when the focused row is in it,
+   * else the focused note; from elsewhere (Spotlight), the open note.
+   */
   const duplicateTargets = (s: AppState): string[] => {
     const f = s.ui.files;
+    if (!f.open) return s.note.path && findNode(s.workspace.tree, s.note.path) && !rootOf(s.workspace.tree, s.note.path)?.readOnly ? [s.note.path] : [];
     const rows = rowsOf(s);
     return actedOn(f.selection, f.selection.focus).map((id) => rows.find((r) => r.id === id)).filter((r): r is FileRow => r?.kind === "note" && !r.readOnly).map((r) => r.path);
   };

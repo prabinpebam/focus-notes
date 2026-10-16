@@ -167,6 +167,16 @@ describe("the menu in the app (D-162)", () => {
     expect(f.batches[2]).toEqual([{ op: "delete", path: "private:ideas-copy.md" }]);
     expect(f.live().map((n) => n.path).sort()).toEqual(["private:ideas-copy-2.md", "private:ideas.md", "private:welcome.md", "public:about.md"]);
   });
+  it("from Spotlight (the panel closed), Duplicate copies the open note, never a stale selection", async () => {
+    const f = setup(notes);
+    const app = await started(f);
+    await app.commands.run("files.open");
+    await app.commands.run("files.select", { id: "public:about.md", mode: "replace" });
+    await app.commands.run("files.close");
+    await app.commands.run("files.duplicate");
+    await settle();
+    expect(f.batches.map((b) => b.map((o) => (o.op === "create" ? o.path : o.op)))).toEqual([["private:welcome-copy.md"]]);
+  });
   it("several selected: every note is copied in one batch, folders aren't", async () => {
     const f = setup(notes);
     const app = await started(f);
