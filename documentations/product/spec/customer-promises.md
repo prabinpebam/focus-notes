@@ -1,9 +1,9 @@
 # Customer promises
 
-The eleven promises Focus Notes makes. Every scenario, capability, screen, and decision traces back to one of them. If something serves none of them, it doesn't belong in the product.
+The twelve promises Focus Notes makes. Every scenario, capability, screen, and decision traces back to one of them. If something serves none of them, it doesn't belong in the product.
 
 > [!NOTE]
-> **TL;DR.** **Calm**, **focus**, **fluent editing**, **reach**, **order**, **safety**, **ownership**, **deliberate sharing**, **comfort**, **ready in minutes**, and **agents on your terms**. Each promise below states what the customer experiences, why it matters, how it can be broken (the test any design must pass), and its scenarios. The promises come from the [seed spec](../../seed-specs.md) and the owner's decisions of 2026-10-13. The "signals" are proposed measures, not data.
+> **TL;DR.** **Calm**, **focus**, **fluent editing**, **reach**, **order**, **safety**, **ownership**, **deliberate sharing**, **comfort**, **ready in minutes**, **agents on your terms**, and **know what you're getting**. Each promise below states what the customer experiences, why it matters, how it can be broken (the test any design must pass), and its scenarios. The promises come from the [seed spec](../../seed-specs.md) and the owner's decisions of 2026-10-13 and 2026-10-16. The "signals" are proposed measures, not data.
 
 <h2 data-reader-personas="product design">Promise map</h2>
 
@@ -20,6 +20,7 @@ The eleven promises Focus Notes makes. Every scenario, capability, screen, and d
 | `CP-YOURS-01` | Comfortable and yours in a minute | Seed: change theme, colors, fonts; owner: light/dark/system, theme management | SC-THEME-01 to SC-THEME-07 |
 | `CP-READY-01` | Ready in minutes | Owner: device sign-in, first-run, Git works from the terminal | SC-SETUP-01 to SC-SETUP-03, SC-SETUP-05 |
 | `CP-AGENT-01` | Agents on your terms | Owner: agent-friendly, MCP | SC-AGENT-01 to SC-AGENT-03 |
+| `CP-KNOW-01` | Know what you're getting, and get help when you need it | Owner: product site, support articles, demo (2026-10-16) | SC-HELP-01 to SC-HELP-04 |
 
 <h2 data-reader-personas="product">The promises</h2>
 
@@ -132,6 +133,16 @@ The eleven promises Focus Notes makes. Every scenario, capability, screen, and d
 | Breaks when | An agent sees private notes or changes anything without permission, an agent's change can't be told apart from yours or can't be undone, or an agent can change who can read a note. |
 | Signals | Agents connected. Agent changes undone (a sign of trust problems). Zero sharing or visibility changes by agents. |
 | Scenarios | SC-AGENT-01, SC-AGENT-02, SC-AGENT-03 |
+
+### CP-KNOW-01 — Clarity before and after you install
+
+| Field | Value |
+| --- | --- |
+| Customer promise | Before you download anything, you can see what Focus Notes does, what it looks like, and whether it suits you, and try it in your browser. Once you use it, a plain answer is one click from wherever you are. |
+| Why it matters | Focus Notes asks for a GitHub account and keeps notes in your own repositories, which is unusual. People decide whether to install from the first page they see, and a writer who's stuck in setup or sync needs steps they can follow, not a developer's spec. |
+| Breaks when | The first page uses jargon or overpromises; a screenshot doesn't match the app; the demo needs a sign-in or loses the visitor; a *Learn more* link from the app goes nowhere or to the wrong article; an error in the app has no fix anyone without Git knowledge can follow; or the site tracks its visitors. |
+| Signals | Every in-app help link resolves (checked in CI). Articles read at about grade 8 or below. Unaided task success in the help usability test. Issues opened from *Was this helpful?* (no telemetry). |
+| Scenarios | SC-HELP-01, SC-HELP-02, SC-HELP-03, SC-HELP-04 |
 
 <h2 data-reader-personas="product">Tensions between promises</h2>
 

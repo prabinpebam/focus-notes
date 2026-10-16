@@ -60,6 +60,13 @@
       "gate": "GATE-M7"
     },
     {
+      "id": "MH",
+      "title": "The product site and help",
+      "outcome": "The project's GitHub Pages site becomes the product site: a landing page with real screenshots and an honest pitch, a help centre of plain-language articles the app links to, troubleshooting for every problem the app can show, downloads, and a demo in the browser.",
+      "channel": "site",
+      "gate": "GATE-MH"
+    },
+    {
       "id": "M8",
       "title": "Polish and pro features",
       "outcome": "Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, signed builds with automatic updates and channels, store listings, and more interface languages.",
@@ -1645,6 +1652,195 @@
       "specs": [
         "architecture/agents.md",
         "design/system/views-as-data.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-10.1",
+      "stage": "MH",
+      "title": "Site build and addresses",
+      "summary": "The static site builder on the design system and the public pages renderer; the new addresses; light and dark; no other origins; web vitals budgets.",
+      "requirements": [
+        "HLP-08"
+      ],
+      "dependsOn": [
+        "WP-5.1"
+      ],
+      "touches": [
+        "site",
+        "packages/ui",
+        ".github/workflows"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "product/site-and-help.md",
+        "plan/distribution.md#the-product-site"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-10.2",
+      "stage": "MH",
+      "title": "Help centre",
+      "summary": "Article front matter and content-type checks, reading level, link and anchor checks, help home, category and article pages, Was this helpful?, What's new, in-browser search.",
+      "requirements": [
+        "HLP-02",
+        "HLP-07",
+        "HLP-09"
+      ],
+      "dependsOn": [
+        "WP-10.1"
+      ],
+      "touches": [
+        "site",
+        "tools"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "product/site-and-help.md#the-help-centre",
+        "design/help-writing.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-10.3",
+      "stage": "MH",
+      "title": "Articles",
+      "summary": "The first set of about 40 articles in eight categories, troubleshooting for every problem message, each meeting the help article definition of done.",
+      "requirements": [
+        "HLP-06"
+      ],
+      "dependsOn": [
+        "WP-10.2",
+        "WP-10.4"
+      ],
+      "touches": [
+        "site"
+      ],
+      "reviews": [
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/help-writing.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-10.4",
+      "stage": "MH",
+      "title": "Screenshots from the app",
+      "summary": "The site capture catalogue on the release build with the demo workspace, light and dark at 2x, framing, alt text, the screen-level CI job, and the freshness check.",
+      "requirements": [
+        "HLP-04"
+      ],
+      "dependsOn": [
+        "WP-10.6"
+      ],
+      "touches": [
+        "tools/review",
+        ".github/workflows",
+        "site"
+      ],
+      "reviews": [
+        "code",
+        "design-system"
+      ],
+      "specs": [
+        "product/site-and-help.md#screenshots"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-10.5",
+      "stage": "MH",
+      "title": "Landing page and downloads",
+      "summary": "The pitch, trust strip, how it works, features, Is it for you?, built in the open, questions, and downloads for each system.",
+      "requirements": [
+        "HLP-01"
+      ],
+      "dependsOn": [
+        "WP-10.1",
+        "WP-10.4"
+      ],
+      "touches": [
+        "site"
+      ],
+      "reviews": [
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "product/site-and-help.md#the-landing-page"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-10.6",
+      "stage": "MH",
+      "title": "Demo",
+      "summary": "The demo workspace, the /demo/ build kept in the browser, the banner with Download and Reset demo, and no route to GitHub.",
+      "requirements": [
+        "HLP-05"
+      ],
+      "dependsOn": [
+        "WP-10.1"
+      ],
+      "touches": [
+        "apps/web",
+        "site",
+        "templates"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "product/site-and-help.md#the-demo"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-10.7",
+      "stage": "MH",
+      "title": "Learn more links",
+      "summary": "help: links in view documents, the ID registry, How to fix this on every problem message, Help > Help centre, and the CI check.",
+      "requirements": [
+        "HLP-03"
+      ],
+      "dependsOn": [
+        "WP-10.2"
+      ],
+      "touches": [
+        "views",
+        "core",
+        "tools"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "product/site-and-help.md#learn-more-links"
       ],
       "lookahead": false,
       "status": "planned"

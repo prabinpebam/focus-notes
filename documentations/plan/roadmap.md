@@ -79,6 +79,10 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 <p>A local MCP server, permissions you control, attributed and undoable agent changes, the <code>focus-notes</code> command-line tool with JSON output, <code>focus-notes://</code> deep links, and the published design-system catalog. <a href="implementation-plan.md#m7">Details</a>. AGT-01 to AGT-06, AGT-09, DSY-13.</p>
 </li>
 <li class="slate-step">
+<p class="slate-step__title">MH: The product site and help (Know what you're getting)</p>
+<p>The project's GitHub Pages site becomes the product site: a landing page with real screenshots and an honest pitch, a help centre of plain-language articles the app links to from <em>Learn more</em>, troubleshooting for every problem the app can show, downloads for each system, and a demo in the browser. <a href="implementation-plan.md#mh">Details</a>. HLP-01 to HLP-09.</p>
+</li>
+<li class="slate-step">
 <p class="slate-step__title">M8: Polish and pro features (Make it yours, fully)</p>
 <p>Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, signed builds with automatic updates and channels, store listings, and more interface languages. <a href="implementation-plan.md#m8">Details</a>. DSK-06, DSK-07, DST-04, DST-07, EDT-07, FIL-11, FIL-13, FND-03, FND-05, I18N-03, KEY-04, KEY-07, SPT-06, TBL-04, TBL-09, THM-04, THM-05, THM-09 to THM-12, UI-08.</p>
 </li>

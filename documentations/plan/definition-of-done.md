@@ -14,6 +14,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 | **Stage definition of done** | Each stage, M0 to M8 | The owner, at the stage gate | The stage gate issue on GitHub |
 | **Release definition of done** | Each public release, starting with 1.0 at M5 | The owner | The release checklist issue |
 | **Project definition of done** | Focus Notes as a whole, after M8 | The owner | The final release checklist |
+| **Help article definition of done** | Each article on the product site (stage MH onward) | CI for the automated checks, then a reviewer who has never used Git | The article's pull request |
 
 Evidence records live with the work on GitHub (pull requests and issues), not in these docs. These docs change only to describe what was actually built, and a page's manifest status becomes `stable` when the stage that builds it passes its gate.
 
@@ -44,6 +45,23 @@ A work package can start only when all of these are true:
 | **Docs and traceability** | The spec pages describe exactly what was built. Any deviation is recorded as a decision. The work graph status is updated. | Docs diff, decision IDs |
 | **Reviews** | The reviews the work package lists (code, design system, accessibility, security) approve, and the owner approves anything the [escalation rules](agentic-loop.html#escalation) name. | Approvals |
 | **Integrated** | Merged to `main`, and the nightly build from that commit installs and starts on Windows; macOS and Linux report without blocking until the platform parity pass ([D-112](decisions.md)). | Nightly build link |
+
+<h2 id="help-article-definition-of-done" data-reader-personas="product design">Help article definition of done</h2>
+
+An article in the help centre is done when every row holds. CI checks the rows marked *automated*, and a person checks the rest ([Writing help articles](../design/help-writing.md), D-168).
+
+| Check | Done means | How |
+| --- | --- | --- |
+| **One task, one type** | The title is verb-first, in sentence case, 10 words or fewer, and names a real task or question. The article is one content type and has that type's parts in order. | Automated (front matter and template parts), then review |
+| **Plain words** | About grade 8 or below (fails above 9). Every technical word is explained on first use. No "simply", "just", "click here" or Latin abbreviations. | Automated reading level and word list, then review |
+| **Steps that work** | Numbered steps, one action each, the verb first, the result stated. A reviewer follows them on the current release, on each system *Applies to* names, and gets the result. | Review on the release build |
+| **Troubleshooting from the reader's side** | Starts from the message's exact words. Causes are in order of likelihood, with the simplest fix first. Ends with *Still stuck?* | Automated (the message text matches the app's message catalogue), then review |
+| **Applies to, and current** | *Applies to*, prerequisites if any, last-updated date and release in the front matter and the footer. | Automated |
+| **Screenshots** | From the screenshot pipeline only, light and dark, fresh (no view they show changed since), with alt text, and one highlight at most. | Automated (freshness, alt text), then review |
+| **Links** | Every link and anchor resolves. Link text describes the target. Every app *Learn more* ID that points here exists. | Automated |
+| **Accessible** | Zero axe violations in light and dark. Headings in order with no skipped levels. | Automated |
+| **No tracking** | *Was this helpful?* opens a pre-filled GitHub issue. The page makes no request to another origin. | Automated |
+| **Understood** | A person who has never used Git completes the article's task using only the article (sampled for each category at the stage gate). | Usability check |
 
 <h2 id="stage-definition-of-done" data-reader-personas="product engineering">Stage definition of done</h2>
 
@@ -97,7 +115,7 @@ Focus Notes is done (as planned, before the *Later* components) when:
 
 1. **Every stage from M0 to M8 has passed its gate**, and every P0 and P1 requirement passes.
 2. **The final release meets the release definition of done in full**, including the agent-ready bar and signed, automatically updating builds.
-3. **All 11 customer promises are demonstrably kept**: for each promise, its scenarios pass as journey tests, and the owner signs off on a walkthrough.
+3. **All 12 customer promises are demonstrably kept**: for each promise, its scenarios pass as journey tests, and the owner signs off on a walkthrough.
 4. **The spec and the product agree.** Every docs page is `stable`, every requirement links to its passing tests, and the chain check and the plan check pass.
 5. **Every decision is closed.** No decision remains *Proposed*.
 6. **Every risk is closed or explicitly accepted** by the owner.
