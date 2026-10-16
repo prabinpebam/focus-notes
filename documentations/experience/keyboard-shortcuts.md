@@ -98,6 +98,8 @@ The standard OS text keys work as expected and aren't listed one by one: moving 
 | Expand / shrink selection (word → sentence → block → note) | <kbd>⌃⇧⌘→</kbd> / <kbd>⌃⇧⌘←</kbd> | <kbd>Shift+Alt+→</kbd> / <kbd>Shift+Alt+←</kbd> | Pro (P1) | VS Code |
 | Copy the note as Markdown (desktop) | <kbd>⌥⇧⌘C</kbd> | <kbd>Ctrl+Alt+Shift+C</kbd> | Pro | No common standard |
 
+**Expand and shrink selection (Pro).** Each press of expand grows the selection one step, through the word at the caret, its sentence, its block (the list item or the top-level block, as the block keys count them), and the whole note. A step that would select what's already selected is skipped. Shrink goes back through the steps expand took, and with none to go back through it does nothing. Moving the caret or typing forgets the steps. Selections stay inside a table cell until the cell is selected, then stop there (D-160).
+
 ## Inline formatting
 
 | Action | macOS / iPadOS | Windows / Linux | Layer | Precedent |
@@ -136,7 +138,7 @@ Markdown typing shortcuts (`**bold**`, `# `, `- `, …) are listed on [Editing](
 
 As built (WP-4.4, [D-115](../plan/decisions.md)): a *block* is the list item with the caret, or else the note's block (a paragraph, heading, quote, code block, list, or table). Moving swaps it with its neighbour and keeps the caret in it, Duplicate puts the copy below with the caret in it, and deleting a list's last item deletes the list. In a table the row keys come first. <kbd>Mod</kbd>+<kbd>U</kbd> shows its Markdown hint once per session.
 
-**Block selection mode (Pro).** <kbd>Esc</kbd> while typing selects the current block. <kbd>↑</kbd>/<kbd>↓</kbd> moves between blocks and <kbd>Shift</kbd>+arrows extend the selection. <kbd>Mod</kbd>+<kbd>C</kbd> copies the selected blocks as Markdown, <kbd>Backspace</kbd> deletes them, the move, duplicate, and turn-into keys work on the whole selection, and <kbd>Enter</kbd> returns to typing. A second <kbd>Esc</kbd> clears the selection.
+**Block selection mode (Pro).** <kbd>Esc</kbd> while typing (with no menu, toolbar, or table cell to close first) selects the current block, as the block keys count blocks. <kbd>↑</kbd>/<kbd>↓</kbd> moves between blocks and <kbd>Shift</kbd>+arrows extend the selection. <kbd>Mod</kbd>+<kbd>C</kbd> copies the selected blocks as Markdown, <kbd>Backspace</kbd> or <kbd>Delete</kbd> deletes them, the move, duplicate, and turn-into keys work on the whole selection, <kbd>Shift</kbd>+<kbd>F10</kbd> (or the Menu key) opens the [block menu](../design/components/text-formatting.html#block-handle), and <kbd>Enter</kbd> returns to typing at the start of the first selected block. A second <kbd>Esc</kbd> returns to typing where the caret was. The selected blocks show the selection color, and the mode is announced ("Block selected", "3 blocks selected"). Typing a character leaves the mode without replacing the blocks, so nothing is lost by accident (D-160).
 
 **Slash menu.** Typing <kbd>/</kbd> at the start of a block or after a space opens it (EDT-06). While it shows, focus stays in the note: <kbd>↑</kbd>/<kbd>↓</kbd> move through the rows (and wrap), <kbd>Enter</kbd> or <kbd>Tab</kbd> inserts the active row, and <kbd>Esc</kbd> closes it and keeps the typed text. With no row matching, <kbd>Enter</kbd> and <kbd>Tab</kbd> do what they always do. The cheat sheet lists it as *Insert a block (slash menu)*. See [Text formatting → Slash menu](../design/components/text-formatting.html#slash-menu).
 

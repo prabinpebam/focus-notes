@@ -49,7 +49,18 @@ Find and replace text in the open note, or across every note in the workspace. I
 
 ## Find in selection (P1)
 
-<kbd>⌥⌘L</kbd> / <kbd>Alt+L</kbd> limits find and replace to the text that was selected when the bar opened. The selection stays faintly tinted while this is on.
+<kbd>⌥⌘L</kbd> / <kbd>Alt+L</kbd>, or the bar's *Find in selection* toggle, limits find and replace to the text that was selected when the bar opened, as VS Code does (D-160).
+
+| Situation | Behavior |
+| --- | --- |
+| **Text selected, then <kbd>Alt+L</kbd> in the note** | The bar opens with find in selection on and its field focused. The selection becomes the **scope**: it's faintly tinted (`color.selectionGhost`) while the option is on, and the field isn't filled from it. |
+| **Text selected, then <kbd>Mod</kbd>+<kbd>F</kbd>** | The selection is kept as the scope, off until <kbd>Alt+L</kbd> or the toggle turns it on. A selection within one line still fills the field, as before. |
+| **Nothing selected when the bar opened** | There's no scope: the toggle is disabled and says why ("Select text in the note, then open find"), and <kbd>Alt+L</kbd> does nothing. |
+| **Matching** | Only matches entirely inside the scope count. The count, next and previous (which wrap inside the scope), replace, and replace all see only those. Replace all is still one undo step. |
+| **Edits** | The scope follows edits: replacing inside it, or typing elsewhere, moves its ends with the text. |
+| **Turning it off, closing** | Turning it off searches the whole note again, keeping the scope for turning it back on. Closing the bar forgets the scope; the next opening takes the selection then. |
+
+The toggle sits with Match case, Whole word, and Regular expression, is announced as a pressed or unpressed button with its shortcut, and works from the keyboard like them.
 
 ## Find in all notes
 
@@ -82,6 +93,6 @@ Find and replace text in the open note, or across every note in the workspace. I
 
 - **FND-01:** <kbd>Mod</kbd>+<kbd>F</kbd> with "focus" selected opens the bar pre-filled, shows the right count, and <kbd>Enter</kbd> steps through every match and wraps around.
 - **FND-02:** Replace-all of 100 matches is undone by a single <kbd>Mod</kbd>+<kbd>Z</kbd>, and bold or links on the replaced text are kept.
-- **FND-03:** Find in selection never matches outside the selected range.
+- **FND-03:** Find in selection never matches outside the selected range: with a word appearing inside and outside a selected paragraph, <kbd>Alt+L</kbd> counts only the ones inside, <kbd>Enter</kbd> wraps inside it, and replace all changes only those, undone by one <kbd>Mod</kbd>+<kbd>Z</kbd>; from the keyboard alone, with no axe violations (unit tests in `packages/editor/test/find.test.ts`, the M8 journey `m8-editor-pro`).
 - **FND-04:** Find in all notes on a 5,000-note workspace lists the first results within 300 ms on the desktop (`FND-04.findAllP95Ms` in the benchmark). <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd>, a query, the arrow keys, and <kbd>Enter</kbd> open the note at that exact match with the find bar showing its place in the count, from the keyboard alone and with no axe violations (the M4 journey `m4-find-all`).
 - **FND-05:** Replacing across 10 notes makes one commit, and *Revert* restores every file byte for byte.

@@ -312,6 +312,15 @@ Work packages off this path run in parallel when their dependencies are Done and
 | WP-8.6 | **Signing, updates, channels, and stores** *(lookahead)*. Code signing and notarization, automatic updates, Stable and Beta, winget, and Homebrew. Getting a certificate starts early. | DSK-07, DST-04, DST-07 | WP-5.5 | code, security |
 | WP-8.7 | **More interface languages**. Translations through the externalized messages, with pseudo-localization checks. | I18N-03 | WP-0.5 | code, design-system, accessibility |
 
+**WP-8.1 acceptance checks** (its definition of done, on top of the [work package definition of done](definition-of-done.md); [D-160](decisions.md)):
+
+- **TBL-04:** choosing Align ▸ Center in the column menu, or in the cell menu from the keyboard, writes `:---:` for that column; reopening the note shows it centered. Every marker form (`:--`, `:-:`, `--:`, `---`, short and long) round-trips byte for byte in the corpus (`26-table-alignment.md`), and an aligned column survives an edit, a save, and a reopen (`packages/markdown/test/table.test.ts`).
+- **TBL-09:** Sort A→Z and Z→A in the column menu and the cell menu reorder the body rows in natural order (numbers by value, ISO dates by date, text without case or accents, empty cells last), keep the header, the alignment, and equal rows' order, and are undone by one <kbd>Mod</kbd>+<kbd>Z</kbd>; a sorted table adds no undo step (`packages/editor/test/table.test.ts`).
+- **FND-03:** with a word inside and outside a selected range, <kbd>Alt+L</kbd> counts and steps through only the ones inside, and replace all changes only those as one undo step (`packages/editor/test/find.test.ts`).
+- **EDT-07:** the block handle shows for the hovered block, drags it between blocks as one undo step, and its menu (Turn into, Duplicate, Move up and down, Copy link to a heading, Delete) is reachable from the keyboard through block selection mode and <kbd>Shift</kbd>+<kbd>F10</kbd>.
+- **KEY-04:** every Pro row of [Keyboard shortcuts](../experience/keyboard-shortcuts.md) is bound in the Pro layer or listed as planned with its work package (`packages/core/test/keymap-layers.test.ts`).
+- **Journeys and budgets:** the M8 journey `m8-editor-pro` sorts, aligns, and finds in a selection from the keyboard alone with no axe violations, and the M1 editor, table, and find journeys still pass. The typing budget (PRF-01) is unchanged: nothing new runs on a keystroke.
+
 **Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
 
 - The [project definition of done](definition-of-done.md#project-definition-of-done) is met.
