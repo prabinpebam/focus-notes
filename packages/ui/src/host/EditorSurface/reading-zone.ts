@@ -195,7 +195,16 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   };
   // A surface anchored to the note opening (typing `/`, the caret reaching a link) ends a running
   // scroll at once on its target, as focus leaving does: it opens where its anchor stays (DEF-21).
-  const offOpen = anchors.onOpen(() => animator.finish());
+  // And a check of the band still waiting for the next frame (the key that opened it moved the
+  // caret) runs now, at once, so the note is at rest before the surface is placed: placed first, it
+  // was carried along by that scroll in the next frame (DEF-25, run 38917526303: 105 then 222).
+  const settleNow = () => {
+    animator.finish();
+    if (!frame) return;
+    cancelAnimationFrame(frame);
+    keep();
+  };
+  const offOpen = anchors.onOpen(settleNow);
 
   measure();
   const dom = editor.view.dom;
