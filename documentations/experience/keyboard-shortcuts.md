@@ -135,6 +135,7 @@ Markdown typing shortcuts (`**bold**`, `# `, `- `, …) are listed on [Editing](
 | Delete block | <kbd>⇧⌘K</kbd> | <kbd>Ctrl+Shift+K</kbd> | Power | VS Code (delete line) |
 | Go to heading in this note | <kbd>⇧⌘O</kbd> | <kbd>Ctrl+Shift+O</kbd> | Power | VS Code (go to symbol) |
 | Block selection mode | <kbd>Esc</kbd> | <kbd>Esc</kbd> | Pro | Notion |
+| Block menu (the block handle's), outside a table | <kbd>⇧F10</kbd> or the Menu key | <kbd>Shift+F10</kbd> or the Menu key | Pro | Windows context menus |
 
 As built (WP-4.4, [D-115](../plan/decisions.md)): a *block* is the list item with the caret, or else the note's block (a paragraph, heading, quote, code block, list, or table). Moving swaps it with its neighbour and keeps the caret in it, Duplicate puts the copy below with the caret in it, and deleting a list's last item deletes the list. In a table the row keys come first. <kbd>Mod</kbd>+<kbd>U</kbd> shows its Markdown hint once per session.
 

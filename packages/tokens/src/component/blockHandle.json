@@ -1,0 +1,30 @@
+{
+  "cmp": {
+    "blockHandle": {
+      "layer": { "$type": "number", "$value": "{layer.contextual}" },
+      "width": { "$type": "dimension", "$value": "{size.iconM}" },
+      "height": { "$type": "dimension", "$value": "{size.iconL}" },
+      "hit": { "$type": "dimension", "$value": "{table.handleHit}" },
+      "gap": { "$type": "dimension", "$value": "{space.xl}" },
+      "dropLine": { "$type": "dimension", "$value": "{border.focus}" },
+      "radius": { "$type": "dimension", "$value": "{radius.small}" },
+      "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
+      "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" },
+      "iconSize": { "$type": "dimension", "$value": "{size.iconS}" },
+      "duration": { "$type": "duration", "$value": "{motion.micro}" },
+      "easing": { "$type": "cubicBezier", "$value": "{easing.decelerate}" },
+      "liftOpacity": { "$type": "number", "$value": "{opacity.muted}" },
+      "color": {
+        "$type": "color",
+        "rest": { "$value": "{color.none}" },
+        "icon": { "$value": "{color.textMuted}" },
+        "hover": { "$value": "{color.hover}" },
+        "pressed": { "$value": "{color.accent}" },
+        "onPressed": { "$value": "{color.onAccent}" },
+        "drop": { "$value": "{color.accent}" },
+        "lift": { "$value": "{color.selection}" },
+        "focusRing": { "$value": "{color.focusRing}" }
+      }
+    }
+  }
+}

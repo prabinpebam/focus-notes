@@ -33,7 +33,8 @@ async function chooseByKeyboard(page: Page, name: string, menu?: string) {
   const seen = new Set<string>();
   for (let i = 0; i < 40; i++) {
     const { id, text } = await focused.evaluate((el) => ({ id: el.id, text: el.textContent ?? "" }));
-    if (text.replace("✓", "").trim() === name) {
+    // An item's text ends with its shortcut, if it has one.
+    if (text.replace("✓", "").trim().startsWith(name)) {
       await page.keyboard.press("Enter");
       return;
     }
@@ -127,5 +128,78 @@ test("FND-03 by keyboard: Alt+L finds only inside the selection, steps inside it
   await page.keyboard.press(caret.docEnd);
   await page.keyboard.press(`${mod}+f`);
   await expect(toggle).toHaveAttribute("aria-disabled", "true");
+  await quit(l);
+});
+
+test("EDT-07 by pointer: the grip answers on pointer-down, drags a block between blocks with a drop line, and opens the block menu", async () => {
+  const l = await start("# Plan\n\nFirst para.\n\nSecond para.\n\nThird para.\n");
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  const third = editor.locator("p", { hasText: "Third para." });
+  // Hidden at rest and while typing (UI-06); shown for the hovered block.
+  const grip = page.getByRole("button", { name: "Paragraph options" });
+  await expect(grip).toHaveCount(0);
+  const tb = (await third.boundingBox())!;
+  await page.mouse.move(tb.x + 20, tb.y + tb.height / 2);
+  await expect(grip).toBeVisible();
+  const gb = (await grip.boundingBox())!;
+  // Level with the block's first line, in the gutter left of it.
+  expect(gb.x + gb.width).toBeLessThan(tb.x);
+  expect(Math.abs(gb.y + gb.height / 2 - (tb.y + tb.height / 2))).toBeLessThan(tb.height);
+  // Pointer-down answers at once; moving drags, with a drop line; releasing above the first paragraph moves it there.
+  await page.mouse.move(gb.x + gb.width / 2, gb.y + gb.height / 2);
+  await page.mouse.down();
+  await expect(grip).toHaveAttribute("data-pressed", "");
+  const first = (await editor.locator("p", { hasText: "First para." }).boundingBox())!;
+  for (const y of [gb.y - 10, first.y + 20, first.y + 2]) await page.mouse.move(gb.x + gb.width / 2, y, { steps: 4 });
+  await expect(page.locator("[data-block-handle] [data-drop]")).toHaveCount(1);
+  await expect(page.locator("[data-block-handle] [data-lift]")).toHaveCount(1);
+  await page.mouse.up();
+  await expect.poll(l.saved).toBe("# Plan\n\nThird para.\n\nFirst para.\n\nSecond para.\n");
+  await expect(page.getByRole("status").filter({ hasText: "Block moved" })).toHaveCount(1);
+  await page.keyboard.press(`${mod}+z`);
+  await expect.poll(l.saved).toBe("# Plan\n\nFirst para.\n\nSecond para.\n\nThird para.\n");
+
+  // A click opens the block menu, its first item focused; Duplicate copies the block below it.
+  const second = (await editor.locator("p", { hasText: "Second para." }).boundingBox())!;
+  await page.mouse.move(second.x + 20, second.y + second.height / 2);
+  await grip.click();
+  const menu = page.getByRole("menu", { name: "Paragraph options" });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole("menuitem").first()).toBeFocused();
+  await expect(menu.getByRole("menuitem", { name: /^Move up/ })).toBeVisible();
+  expect(await settledAxe(page)).toEqual([]);
+  await menu.getByRole("menuitem", { name: /^Duplicate/ }).click();
+  await expect.poll(l.saved).toBe("# Plan\n\nFirst para.\n\nSecond para.\n\nSecond para.\n\nThird para.\n");
+  await expect(editor).toBeFocused();
+  await quit(l);
+});
+
+test("EDT-07 by keyboard: Shift+F10 outside a table opens the caret's block menu: Turn into, Move up, Copy link, Delete", async () => {
+  const l = await start("# Plan\n\nFirst para.\n\nSecond para.\n");
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  // The caret is at the note's end, in the second paragraph.
+  await page.keyboard.press("Shift+F10");
+  const menu = page.getByRole("menu", { name: "Paragraph options" });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole("menuitem").first()).toBeFocused();
+  expect(await settledAxe(page)).toEqual([]);
+  await chooseByKeyboard(page, "Turn into");
+  await chooseByKeyboard(page, "Heading 2", "Turn into");
+  await expect.poll(l.saved).toBe("# Plan\n\nFirst para.\n\n## Second para.\n");
+  await expect(editor).toBeFocused();
+  // Now a heading: Move up, and its link.
+  await page.keyboard.press("Shift+F10");
+  const heading = page.getByRole("menu", { name: "Heading 2 options" });
+  await expect(heading.getByRole("menuitem", { name: /^Copy link to block/ })).toBeVisible();
+  await chooseByKeyboard(page, "Move up");
+  await expect.poll(l.saved).toBe("# Plan\n\n## Second para.\n\nFirst para.\n");
+  // Esc closes the menu and puts the caret back.
+  await page.keyboard.press("Shift+F10");
+  await expect(page.getByRole("menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  await expect(editor).toBeFocused();
   await quit(l);
 });

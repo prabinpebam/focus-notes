@@ -359,6 +359,9 @@
           "$ref": "#/$defs/c_TableControls"
         },
         {
+          "$ref": "#/$defs/c_BlockHandle"
+        },
+        {
           "$ref": "#/$defs/c_WindowFrame"
         },
         {
@@ -813,6 +816,7 @@
                     "wholeWord",
                     "regex",
                     "inSelection",
+                    "grip",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -1021,6 +1025,7 @@
                     "wholeWord",
                     "regex",
                     "inSelection",
+                    "grip",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -1275,6 +1280,7 @@
                     "wholeWord",
                     "regex",
                     "inSelection",
+                    "grip",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -1960,6 +1966,7 @@
                     "wholeWord",
                     "regex",
                     "inSelection",
+                    "grip",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -2362,6 +2369,7 @@
                     "wholeWord",
                     "regex",
                     "inSelection",
+                    "grip",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -4420,6 +4428,7 @@
                     "wholeWord",
                     "regex",
                     "inSelection",
+                    "grip",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -4633,6 +4642,7 @@
                     "wholeWord",
                     "regex",
                     "inSelection",
+                    "grip",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -5113,6 +5123,7 @@
                     "wholeWord",
                     "regex",
                     "inSelection",
+                    "grip",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -7508,6 +7519,12 @@
             },
             "tableMenu": {
               "$ref": "#/$defs/actions"
+            },
+            "block": {
+              "$ref": "#/$defs/actions"
+            },
+            "blockMenu": {
+              "$ref": "#/$defs/actions"
             }
           }
         }
@@ -7672,6 +7689,86 @@
             "rowMenu",
             "tableMenu",
             "cellMenu"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/actions"
+            },
+            "close": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_BlockHandle": {
+      "type": "object",
+      "description": "The block handle drawn in the gutter beside the hovered block, from the editor's geometry: a grip that opens the block menu and drags the block between blocks, with a drop line.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "BlockHandle"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "menu": {
+              "$ref": "#/$defs/read"
+            },
+            "menuRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "menu"
           ]
         },
         "on": {

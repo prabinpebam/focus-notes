@@ -15,6 +15,7 @@ import { Center } from "./layouts/Center/Center.tsx";
 import { AppRoot } from "./layouts/AppRoot/AppRoot.tsx";
 import { EditorSurface } from "./host/EditorSurface/EditorSurface.tsx";
 import { TableControls } from "./host/TableControls/TableControls.tsx";
+import { BlockHandle } from "./host/BlockHandle/BlockHandle.tsx";
 import { Trigger } from "./compounds/Trigger/Trigger.tsx";
 import { Divider } from "./primitives/Divider/Divider.tsx";
 import { PopoverPanel } from "./primitives/PopoverPanel/PopoverPanel.tsx";
@@ -63,6 +64,6 @@ import { DatePicker } from "./primitives/DatePicker/DatePicker.tsx";
 export const registry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, NoteContent,
-  EditorSurface, TableControls, WindowFrame,
+  EditorSurface, TableControls, BlockHandle, WindowFrame,
   Trigger, Toolbar, Dialog,
 });
