@@ -1716,7 +1716,7 @@
         "design/help-writing.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "building"
     },
     {
       "id": "WP-10.3",
@@ -1767,7 +1767,7 @@
         "product/site-and-help.md#screenshots"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "building"
     },
     {
       "id": "WP-10.5",
@@ -1792,7 +1792,7 @@
         "product/site-and-help.md#the-landing-page"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "building"
     },
     {
       "id": "WP-10.6",
@@ -1820,7 +1820,7 @@
         "product/site-and-help.md#the-demo"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-10.7",
@@ -1879,7 +1879,8 @@
         "design/components/tables.html"
       ],
       "lookahead": false,
-      "status": "verifying"    },
+      "status": "verifying"
+    },
     {
       "id": "WP-8.2",
       "stage": "M8",
@@ -1909,7 +1910,7 @@
         "design/views/theme-manager.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "building"
     },
     {
       "id": "WP-8.3",
@@ -1969,7 +1970,7 @@
         "design/views/secondary-views.md#note-history"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "building"
     },
     {
       "id": "WP-8.5",

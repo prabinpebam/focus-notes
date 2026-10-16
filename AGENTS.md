@@ -15,7 +15,7 @@ Instructions for AI coding agents working in this repository.
 
 ## What this repository is
 
-Focus Notes, a calm, Markdown-native writing app. **Status: M0 (walking skeleton) is built and being verified; M1 is next.** Work follows [the agentic loop](documentations/plan/agentic-loop.html) over [`work-graph.json`](documentations/plan/work-graph.json).
+Focus Notes, a calm, Markdown-native writing app. **Status: M0 to M7 are built and verifying, and M8 is under way; the current state, what's left and what to do next are in [Roadmap → Current state](documentations/plan/roadmap.md#current-state-16-october-evening).** Work follows [the agentic loop](documentations/plan/agentic-loop.html) over [`work-graph.json`](documentations/plan/work-graph.json).
 
 - `apps/desktop/`: the Electron shell, the renderer and gallery entries, and the journey tests (`e2e/`).
 - `packages/`: `tokens`, `ui` (the design system), `ui-runtime` (renderer and `ui:check`), `views` (view documents and messages), `core` (state, commands, view models), `markdown`, `editor`.
