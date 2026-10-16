@@ -64,16 +64,26 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(measure);
     };
+    // Opening on a moving note: the auto-scroll ends first, so it opens where the anchor stays (DEF-21).
+    const closed = anchors.opening();
     measure();
     const off = anchors.subscribe(schedule);
     const resize = new ResizeObserver(schedule);
     resize.observe(el);
     addEventListener("resize", schedule);
+    // Any scroller moving (the note's, frame by frame while it animates): placed again in that frame,
+    // against the anchor read live, like floating-ui's autoUpdate (DEF-21). Not its own list scrolling.
+    const onScroll = (e: Event) => {
+      if (!(e.target instanceof Node && el.contains(e.target))) schedule();
+    };
+    addEventListener("scroll", onScroll, { capture: true, passive: true });
     return () => {
+      closed();
       cancelAnimationFrame(frame);
       off();
       resize.disconnect();
       removeEventListener("resize", schedule);
+      removeEventListener("scroll", onScroll, { capture: true });
       // Gone from under the pointer: pointerleave never comes, so say it left (a hover card that
       // was kept for the pointer on it lets go).
       if (companion.hovered) {
