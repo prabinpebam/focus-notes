@@ -1670,6 +1670,10 @@
       "touches": [
         "site",
         "packages/ui",
+        "packages/views",
+        "packages/core",
+        "apps/web",
+        "tools/site",
         ".github/workflows"
       ],
       "reviews": [
@@ -1683,7 +1687,7 @@
         "plan/distribution.md#the-product-site"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-10.2",

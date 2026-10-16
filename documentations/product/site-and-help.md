@@ -11,7 +11,7 @@ The public face of Focus Notes: the page a person lands on before they install a
 > - **Screenshots are captured from the release build in CI** with the demo workspace, in light and dark (D-169).
 > - **The site follows the app's rules:** the design system's tokens and components, no tracking, no requests to other sites, WCAG 2.2 AA.
 >
-> Built as stage MH ([implementation plan](../plan/implementation-plan.md#mh)). Requirements HLP-01 to HLP-09.
+> Built as stage MH ([implementation plan](../plan/implementation-plan.md#mh)). Requirements HLP-01 to HLP-09. The site's build and addresses are built (WP-10.1, [How the site is built](#how-the-site-is-built)); its words, articles, screenshots and demo come next.
 
 ## Who it's for
 
@@ -35,6 +35,7 @@ The specification under `/documentations/` stays for people building Focus Notes
 | `/download/` | Downloads for each system, with checksums | Links to the latest GitHub Release's assets |
 | `/app/` | The owner's own Focus Notes, as `/` served before D-167 | Public note pages stay at `/n/` so their addresses don't change |
 | `/n/` | The owner's public notes (D-139) | Unchanged |
+| `/s/` | The share reader, where share links point | Unchanged: it reads the sealed files from the site's root, as before |
 | `/documentations/`, `/schemas/`, `/llms.txt` | The specification, the JSON Schemas, the map for language models | Unchanged |
 | `/privacy/` | The privacy statement: nothing is collected | Linked from every page's footer |
 
@@ -107,6 +108,18 @@ Captured from the release build in CI with the demo workspace (D-169):
 - **At most one highlight** where the reader must look.
 - **Alt text** that says what the image shows, and a caption when it adds something.
 - **Kept current:** regenerated for each release by the screenshot catalogue (`tools/review/catalogs.mjs`, a `site` catalogue). A check fails if a view a screenshot shows changed after the screenshot was taken.
+
+<h2 id="how-the-site-is-built">How the site is built</h2>
+
+As built in WP-10.1 (HLP-08). The landing page's words are a draft for WP-10.5, the help centre has its categories but no articles yet (WP-10.2, WP-10.3), and `/demo/` is a placeholder until WP-10.6.
+
+- **Content in `site/`:** `index.md` is the landing page, one level-2 heading per section in the order above, with stable anchors (`start`, `trust`, `how-it-works`, `features`, `is-it-for-you`, `built-in-the-open`, `developers`, `questions`, `get-focus-notes`). `download.md`, `privacy.md` and `demo.md` are plain pages. `help/categories.json` lists the eight categories in order, and each article is `help/<category>/<id>.md` with the [writing guide's](../design/help-writing.md#every-article) front matter. Pictures go in `media/`.
+- **The design system, as the public pages use it (D-114):** core turns the Markdown into view models (`packages/core/src/site.ts`), and five view documents render them: `siteLanding`, `sitePage`, `helpHome`, `helpCategory` and `helpArticle` (IA-VIEW-SITE, IA-VIEW-HELP). Their components are **SitePage**, **SiteSection** and **SiteLink**, with **NoteContent** for the words, and their words outside the content are messages. There's no hand-written HTML or CSS.
+- **The renderer and the builder:** `apps/web/site/render.ts` is built to `apps/web/dist-site/` with the site's stylesheet and fonts. `tools/site/build.mjs` renders every page at its address, copies `media/`, and places the owner's app at `/app/` and the share reader at `/s/`.
+- **The owner's app at `/app/`:** the web app's build also makes `dist-app/`, the same app reading the notes and sealed files from the folder above it. They stay at the site's root, where `/n/` and `/s/` have always found them, so no published address changes. Notes written in the browser stay too, because the site's origin is the same.
+- **Light and dark** follow the visitor's setting, and every page is readable at 320 px.
+- **Nothing from another origin:** the pages have no script, and their Content-Security-Policy allows only the site's own styles, fonts and pictures. The builder fails when a page links to an address the site doesn't have, to a missing anchor, or to any other site than GitHub, or names another origin anywhere else.
+- **Checked in CI:** the builder's tests (`tools/test/site-build.test.mjs`, `packages/core/test/site.test.ts`) and the site journey (`apps/web/e2e/site.spec.ts`). The journey builds the site with a fixture instance and checks every page with axe in light and dark, with no request to another origin. It also checks the landing page's LCP, INP and CLS on a throttled profile (PRF-12), and that the app at `/app/`, `/n/` and `/s/` still work.
 
 ## Quality and done
 

@@ -35,10 +35,11 @@ focus-notes/
 │  ├─ mcp/            # MCP server
 │  └─ cli/            # focus-notes command-line tool
 ├─ templates/workspace/   # Source of the template repository (notes/, .focus-notes/, AGENTS.md, README, Deploy app workflow, .gitattributes; built in WP-3.1)
+├─ site/                  # The product site's content: the landing page, download, privacy, demo, the help centre's categories and articles, media/ (D-167, WP-10.1)
 ├─ notes/                 # The owner's public notes (this repository is the owner's instance, D-87)
 ├─ private/               # The owner's private repository (submodule)
 ├─ schemas/               # JSON Schemas (front matter, settings, themes, keybindings, access, app state, export bundle)
-├─ tools/                 # Repository checks (plan, chain, boundaries, licenses) and the benchmark, tools/bench/ with its budgets file
+├─ tools/                 # Repository checks (plan, chain, boundaries, licenses), the benchmark (tools/bench/ with its budgets file), and the product site's builder (tools/site/)
 ├─ .github/workflows/     # ci.yml, codeql.yml, nightly.yml, release.yml, preview-channel.yml, pages.yml (Deploy app: builds from source)
 ├─ documentations/        # This Slate documentation host
 ├─ slate/                 # Slate (submodule)
@@ -157,10 +158,13 @@ The project repository's GitHub Pages site is the **product site** (D-167): the 
 | `/download/` | Downloads for each system from the latest GitHub Release, with checksums |
 | `/app/` | The owner's Focus Notes. Until a browser unlocks the owner's private notes, it shows the visitor view (PKG-09, DST-01) |
 | `/n/` | The owner's public note pages, at unchanged addresses (D-139) |
+| `/s/` | The share reader, at the address share links have always used |
 | `/documentations/` | This documentation |
 | `/schemas/` | The JSON Schemas at stable `$id` URLs, and the design-system catalogue (DSY-13) |
 | `/llms.txt` | A map of these docs for language models |
 | `/privacy/` | The privacy statement (no data collected) |
+
+**As built (WP-10.1).** *Deploy app* builds the web app, which also makes `apps/web/dist-app/`: the app built to read the notes and sealed files from the folder above it. It then copies the docs, and runs `tools/site/build.mjs`, which renders `site/` through the design system, puts `dist-app/` at `/app/`, and keeps the share reader at `/s/`. The builder fails on a broken link or anything from another origin. The publisher then adds the notes, `/n/` and the sealed files at the root as before, and the leak check covers the whole site. Template instances are unchanged: their app is still their whole site. See [Product site and help → How the site is built](../product/site-and-help.md#how-the-site-is-built).
 
 ## Repository hygiene
 
