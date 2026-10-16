@@ -40,7 +40,7 @@ Underline, text color, and highlight aren't offered because CommonMark/GFM can't
 
 - **Contextual formatting toolbar.** Appears just above any non-empty selection with *Turn into ▾*, Bold, Italic, Strikethrough, Code, and Link. It never covers the selection, hides when typing resumes, and is reachable with <kbd>⌥F10</kbd> / <kbd>Alt+F10</kbd> (EDT-12).
 - **Slash menu.** Typing `/` at the start of a block or after a space opens a filterable list of the registered blocks that are valid at the caret (EDT-06). The list comes from the block registry, so new components show up on their own. Arrows, <kbd>Enter</kbd>, and <kbd>Tab</kbd> work while you keep typing, and <kbd>Esc</kbd> keeps what you typed. It never opens in code.
-- **Block handle.** On hover or keyboard focus, a handle appears in the left margin. Drag it to reorder; click it for Duplicate, Delete, Turn into, and Copy link to block (EDT-07).
+- **Block handle.** On hover, a grip appears in the left margin beside the block (not beside a table, which has its own handles). Drag it to reorder; click it, or press <kbd>Shift</kbd>+<kbd>F10</kbd> outside a table, for Turn into, Duplicate, Move up and down, Copy link to a heading, and Delete (EDT-07).
 
 All three use the theme's surface tokens and stay quiet. None of them appear while you're just typing, which keeps the [blank-canvas](main-ui.html) promise. The detailed design (anatomy, placement, states, keyboard, and rationale) is in [Text formatting](../design/components/text-formatting.html).
 
