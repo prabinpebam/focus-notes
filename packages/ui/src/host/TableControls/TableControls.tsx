@@ -160,6 +160,23 @@ export function TableControls({
   const boundary = useWindowBoundary();
   const g = useSyncExternalStore(tableGeometry.subscribe, tableGeometry.get, () => null);
   const [menu, setMenu] = useState<OpenMenu | null>(null);
+  /**
+   * A menu from a cell near the window's right edge opens leftward, from the cell's right (D-111): a
+   * table filling the column (D-182) puts cells there, and a menu starting at one ran past the edge.
+   */
+  const [menuEnd, setMenuEnd] = useState(false);
+  const popoverRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (!menu) { setMenuEnd(false); return; }
+    let frame = requestAnimationFrame(function check() {
+      const pop = popoverRef.current;
+      const win = fixedBox(pop);
+      if (!pop) { frame = requestAnimationFrame(check); return; }
+      const r = pop.getBoundingClientRect();
+      if (r.width && r.right > win.left + win.width - (boundary.containerPadding ?? 0) + 1) setMenuEnd(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [menu]); // eslint-disable-line react-hooks/exhaustive-deps
   const [drag, setDrag] = useState<Drag | null>(null);
   const hovered = useRef(false);
   const dragged = useRef(false);
@@ -443,7 +460,8 @@ export function TableControls({
           triggerRef={trigger}
           isOpen
           onOpenChange={(open) => { if (!open) close(); }}
-          placement="bottom start"
+          ref={popoverRef}
+          placement={menuEnd ? "bottom end" : "bottom start"}
           offset={8}
           className={menuStyles.popover}
           {...boundary}

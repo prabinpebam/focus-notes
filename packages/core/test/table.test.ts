@@ -71,7 +71,7 @@ describe("menus (TBL-08, Tables → Menus)", () => {
     await at({});
     expect(ids(vm().tableMenu)).toEqual([["table.selectTable"], ["table.fitToColumn", "table.bleedToEdge"], ["table.copyMarkdown", "table.copyTsv", "table.duplicateTable"], ["table.deleteTable"]]);
     // Fit to column or Bleed to edge (D-182): the one in use is checked.
-    expect(vm().tableMenu[1]!.items.map((i: { checked?: boolean }) => i.checked)).toEqual([true, false]);
+    expect(vm().tableMenu[1]!.items.map((i) => (i as { checked?: boolean }).checked)).toEqual([true, false]);
     const all = ids(vm().cellMenu).flat();
     for (const id of ["table.copy", "table.cut", "table.clearCells", "table.insertRowAbove", "table.insertRowBelow", "table.insertColumnLeft", "table.insertColumnRight",
       "table.moveRowUp", "table.moveRowDown", "table.moveColumnLeft", "table.moveColumnRight", "table.sortAscending", "table.sortDescending", "align", "table.deleteRow", "table.deleteColumn", "table.deleteTable"]) expect(all).toContain(id);
