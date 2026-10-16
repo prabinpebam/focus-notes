@@ -1060,6 +1060,14 @@
           },
           "blockMenu": {
             "run": "block.openMenu"
+          },
+          "blockSelect": {
+            "run": "block.selected",
+            "args": {
+              "count": {
+                "get": "event.count"
+              }
+            }
           }
         }
       },

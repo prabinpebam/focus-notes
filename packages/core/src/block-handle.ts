@@ -95,6 +95,15 @@ export function registerBlockHandle({ store, commands, viewModels, catalog, brid
       toast(catalog.format("table.copyFailed"));
     }
   };
+  // Block selection mode (KEY-04): how many blocks are selected, announced politely.
+  commands.register<{ count: number }>({
+    id: "block.selected", title: "command.block.selected",
+    run: ({ count }) => {
+      const n = int(count, 0);
+      if (n === 1) announce("block.announce.selected");
+      else if (n > 1) announce("block.announce.selectedMany", { count: n });
+    },
+  });
   commands.register({ id: "block.openMenu", title: "command.block.contextMenu", run: () => set({ menuRequest: get().menuRequest + 1 }) });
   // The menu closed, or a drag ended: the caret goes back to the note.
   commands.register({ id: "block.closeMenu", title: "command.block.closeMenu", run: () => editorAction("edit.focus") });

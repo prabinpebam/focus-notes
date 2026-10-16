@@ -106,6 +106,12 @@ export function trackBlocks(editor: Editor, scroller: HTMLElement, column: HTMLE
       if (pointer.y >= s.top && pointer.y <= s.bottom) pos = blockAt(pointer.y);
     }
     if (pos === null && shown !== null && leaving) pos = shown;
+    // Typing: the grip just goes, without a word to the app, so nothing runs on the typing path (PRF-01).
+    if (pos === null && typing) {
+      shown = null;
+      blockGeometry.set(null);
+      return;
+    }
     const info = pos === null ? null : blockInfo(view.state, pos);
     const dom = info ? (view.nodeDOM(info.block) as HTMLElement | null) : null;
     if (!info || !dom?.getBoundingClientRect || info.kind === "table") return clear();
@@ -129,6 +135,9 @@ export function trackBlocks(editor: Editor, scroller: HTMLElement, column: HTMLE
 
   const onMove = (e: PointerEvent) => {
     if (e.pointerType === "touch") return;
+    // Chromium sends a move with the same coordinates after a scroll or a layout change: that's not
+    // the hand moving, so typing keeps the grip hidden, and nothing is measured on the typing path.
+    if (pointer && pointer.x === e.clientX && pointer.y === e.clientY) return;
     pointer = { x: e.clientX, y: e.clientY };
     typing = false;
     pinned = null;
@@ -148,9 +157,16 @@ export function trackBlocks(editor: Editor, scroller: HTMLElement, column: HTMLE
     if (["Shift", "Control", "Alt", "Meta"].includes(e.key) || blockGeometry.held) return;
     typing = true;
     pinned = null;
+    if (shown !== null) {
+      shown = null;
+      blockGeometry.set(null);
+    }
+  };
+  // An edit moves the grip with its block; while typing, or with no grip, there's nothing to do.
+  const onTransaction = () => {
+    if (typing || (shown === null && pinned === null && !blockGeometry.held)) return;
     schedule();
   };
-  const onTransaction = () => schedule();
   editor.on("transaction", onTransaction);
   editor.on("blur", onTransaction);
   scroller.addEventListener("pointermove", onMove, { passive: true });

@@ -121,6 +121,8 @@ test("FND-03 by keyboard: Alt+L finds only inside the selection, steps inside it
   await expect.poll(l.saved).toBe("# Notes\n\nA note before.\n\nThe middle memo, and another memo.\n\nA note after.\n");
   await page.keyboard.press("Escape");
   await expect(bar).toBeHidden();
+  // The caret goes back to the note a frame after the bar closes.
+  await expect(editor).toBeFocused();
   await page.keyboard.press(`${mod}+z`);
   await expect.poll(l.saved).toBe("# Notes\n\nA note before.\n\nThe middle note, and another note.\n\nA note after.\n");
 
@@ -213,9 +215,11 @@ test("KEY-04 block selection mode: Esc selects the block, Shift+↓ extends, Bac
   await page.keyboard.press("Escape");
   const selected = editor.locator("[data-block-selected]");
   await expect(selected).toHaveText(["Second para."]);
+  await expect(page.getByRole("status").filter({ hasText: "Block selected" })).toHaveCount(1);
   expect(await settledAxe(page)).toEqual([]);
   await page.keyboard.press("Shift+ArrowDown");
   await expect(selected).toHaveText(["Second para.", "Third para."]);
+  await expect(page.getByRole("status").filter({ hasText: "2 blocks selected" })).toHaveCount(1);
   await page.keyboard.press("Backspace");
   await expect.poll(l.saved).toBe("# Plan\n\nFirst para.\n");
   await expect(selected).toHaveCount(0);

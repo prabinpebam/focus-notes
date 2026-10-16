@@ -169,3 +169,40 @@ describe("block selection mode (KEY-04, D-160)", () => {
     expect(t.run("block.select")).toBe(false);
   });
 });
+
+describe("block selection mode: copying and announcing (KEY-04)", () => {
+  it("Mod+C copies the selected blocks; each change in how many are selected is reported, to announce", () => {
+    const counts: number[] = [];
+    const session = new MarkdownSession("one\n\ntwo\n\nthree\n\nfour\n");
+    const editor = new Editor({ extensions: coreExtensions([], { onBlockSelect: (n) => counts.push(n) }), content: session.doc as object });
+    editors.push(editor);
+    let at = -1;
+    editor.state.doc.descendants((node, pos) => { if (at < 0 && node.isText && node.text === "two") at = pos + 1; });
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, at)));
+    const press = (key: string, mods: { shiftKey?: boolean; ctrlKey?: boolean } = {}) =>
+      editor.view.someProp("handleKeyDown", (f) => f(editor.view, new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...mods })));
+    EDITOR_ACTIONS["block.select"]!(editor);
+    press("ArrowDown", { shiftKey: true });
+    expect(counts).toEqual([1, 2]);
+    // Mod+C: the browser's copy takes the two blocks.
+    expect(press("c", { ctrlKey: true })).toBeFalsy();
+    const data: Record<string, string> = {};
+    const event = new Event("copy", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", { value: { setData: (t: string, v: string) => { data[t] = v; }, clearData: () => {}, getData: (t: string) => data[t] ?? "" } });
+    editor.view.dom.dispatchEvent(event);
+    expect(data["text/plain"]).toMatch(/^two\n+three$/);
+    expect(data["text/plain"]).not.toMatch(/one|four/);
+    press("Escape");
+    expect(counts.at(-1)).toBe(0);
+  });
+});
+
+describe("block selection mode ends when the caret moves some other way (KEY-04)", () => {
+  it("Mod+Home or a click leaves the mode, so the arrows move the caret again", () => {
+    const { editor, run } = open("one\n\ntwo\n\nthree\n", "two");
+    run("block.select");
+    expect(blockSelection(editor.state)).not.toBeNull();
+    run("edit.docStart");
+    expect(blockSelection(editor.state)).toBeNull();
+  });
+});

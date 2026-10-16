@@ -8,7 +8,7 @@
 import { Extension, type Editor } from "@tiptap/core";
 import { Plugin, PluginKey, Selection, TextSelection, type EditorState, type Transaction } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
-import { blockInfo, blockTextStart } from "./blocks.ts";
+import { blockHooks, blockInfo, blockTextStart } from "./blocks.ts";
 
 interface Mode { anchor: number; head: number; caret: { anchor: number; head: number } }
 const key = new PluginKey<Mode | null>("blockSelection");
@@ -106,6 +106,8 @@ export const BlockSelection = Extension.create<{ className: string }>({
         apply(tr, prev, _old, state) {
           const meta = tr.getMeta(key) as Mode | null | undefined;
           if (meta !== undefined) return meta;
+          // The caret moved some other way (Mod+Home, a click, a find): the mode ends.
+          if (prev && tr.selectionSet && !tr.docChanged) return null;
           if (!prev || !tr.docChanged) return prev;
           // One block selected: it's the caret's, which the block keys move, duplicate, or turn into another type.
           if (prev.anchor === prev.head) {
@@ -120,6 +122,14 @@ export const BlockSelection = Extension.create<{ className: string }>({
           return $a.depth === $h.depth && $a.start() === $h.start() && tr.doc.nodeAt(anchor) && tr.doc.nodeAt(head) ? { ...prev, anchor, head } : null;
         },
       },
+      view: () => ({
+        // Each change in how many blocks are selected is announced politely ("2 blocks selected", KEY-04).
+        update(view, prevState) {
+          const now = selectedBlocks(view.state)?.blocks.length ?? 0;
+          const before = selectedBlocks(prevState)?.blocks.length ?? 0;
+          if (now !== before) blockHooks(editor).onSelect?.(now);
+        },
+      }),
       props: {
         decorations(state) {
           const sel = selectedBlocks(state);
@@ -149,7 +159,7 @@ export const BlockSelection = Extension.create<{ className: string }>({
           if (mod && !event.shiftKey && event.key.toLowerCase() === "c") {
             // The browser copies the selected blocks: the selection covers them for the copy.
             const sel = selectedBlocks(view.state);
-            if (sel) view.dispatch(view.state.tr.setSelection(TextSelection.between(view.state.doc.resolve(sel.from), view.state.doc.resolve(sel.to))).setMeta("addToHistory", false));
+            if (sel) view.dispatch(view.state.tr.setSelection(TextSelection.between(view.state.doc.resolve(sel.from), view.state.doc.resolve(sel.to))).setMeta(key, m).setMeta("addToHistory", false));
             return false;
           }
           // Typing a character leaves the mode, replacing nothing: it goes in at the caret.

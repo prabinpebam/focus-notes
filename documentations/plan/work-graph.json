@@ -1678,8 +1678,7 @@
         "design/components/tables.html"
       ],
       "lookahead": false,
-      "status": "planned"
-    },
+      "status": "verifying"    },
     {
       "id": "WP-8.2",
       "stage": "M8",

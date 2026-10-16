@@ -311,6 +311,8 @@ export interface CoreOptions {
   onTableMenu?: () => void;
   /** The block menu was asked for (Shift+F10 or the Menu key outside a table, EDT-07). */
   onBlockMenu?: () => void;
+  /** Block selection mode selected this many blocks (0: it ended), to announce (KEY-04). */
+  onBlockSelect?: (count: number) => void;
 }
 
 /**
@@ -325,7 +327,7 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
     SelectionSync,
     ExpandSelection,
     BlockSelection.configure({ className: options.blockSelectedClass ?? "" }),
-    BlockKit.configure(options.onBlockMenu ? { onMenu: options.onBlockMenu } : {}),
+    BlockKit.configure({ ...(options.onBlockMenu ? { onMenu: options.onBlockMenu } : {}), ...(options.onBlockSelect ? { onSelect: options.onBlockSelect } : {}) }),
     // Strike and line-break keys follow the app keymap (KEY-02), not Tiptap's defaults.
     StarterKit.configure({ underline: false, link: false, trailingNode: false, strike: false, hardBreak: false }),
     Strike.extend({ addKeyboardShortcuts: () => ({}) }),

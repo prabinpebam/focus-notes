@@ -127,13 +127,20 @@ export const atBlock = (f: Action): Action => (editor, args) => {
 export const BLOCK_MOVE_TO: Readonly<Record<string, Action>> = { "block.moveTo": moveBlockTo };
 
 /** What the surface hears from the block commands: the block menu was asked for (Shift+F10 outside a table). */
-export interface BlockHooks { onMenu?: () => void }
+export interface BlockHooks {
+  onMenu?: () => void;
+  /** Block selection mode selected this many blocks (0: it ended), to announce (KEY-04). */
+  onSelect?: (count: number) => void;
+}
 const hooks = new WeakMap<object, BlockHooks>();
+export const blockHooks = (editor: object): BlockHooks => hooks.get(editor) ?? {};
 export const BlockKit = Extension.create<BlockHooks>({
   name: "blockKit",
   addOptions: () => ({}),
-  onCreate() {
+  // Kept as the editor is built (an editor never mounted, in tests, has no create event).
+  addProseMirrorPlugins() {
     hooks.set(this.editor, this.options);
+    return [];
   },
 });
 
