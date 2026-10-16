@@ -1581,7 +1581,7 @@
       "id": "WP-7.2",
       "stage": "M7",
       "title": "MCP server",
-      "summary": "The stdio MCP server with its tools, resources, and prompts.",
+      "summary": "The stdio MCP server with its tools, resources, and prompts, through the WP-7.1 grant path only (D-159).",
       "requirements": [
         "AGT-01"
       ],
@@ -1596,10 +1596,11 @@
         "security"
       ],
       "specs": [
-        "architecture/agents.md#mcp-server"
+        "architecture/agents.md#mcp-server",
+        "architecture/agents.md#mcp-server-as-built"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-7.3",

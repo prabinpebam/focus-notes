@@ -23,7 +23,7 @@ export * from "./blocks.ts";
 export * from "./expand.ts";
 import { EXPAND_ACTIONS, ExpandSelection } from "./expand.ts";
 import { Find, FIND_ACTIONS } from "./find.ts";
-import { atBlock, BLOCK_ACTIONS, BLOCK_MOVE_TO } from "./blocks.ts";
+import { atBlock, BLOCK_ACTIONS, BLOCK_MENU, BLOCK_MOVE_TO, BlockKit } from "./blocks.ts";
 import { LinkOpen, LinkPaste, SelectionGhost, removeLink, selectLink } from "./format.ts";
 import { SlashMenu, blockIs, insideNode, type SlashEntry } from "./slash.ts";
 import { SmartPaste } from "./paste.ts";
@@ -204,6 +204,7 @@ const ACTIONS: Readonly<Record<string, (editor: Editor, args?: Record<string, un
   ...TABLE_ACTIONS,
   ...EXPAND_ACTIONS,
   ...BLOCK_MOVE_TO,
+  ...BLOCK_MENU,
   "task.toggle": (e) => {
     const { $from } = e.state.selection;
     for (let d = $from.depth; d > 0; d--) {
@@ -222,7 +223,7 @@ const ACTIONS: Readonly<Record<string, (editor: Editor, args?: Record<string, un
  * position), to act on it rather than on the caret's block (EDT-07).
  */
 export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Record<string, unknown>) => boolean>> = Object.fromEntries(
-  Object.entries(ACTIONS).map(([id, f]) => [id, id.startsWith("block.") && id !== "block.moveTo" ? atBlock(f) : f]),
+  Object.entries(ACTIONS).map(([id, f]) => [id, id.startsWith("block.") && id !== "block.moveTo" && id !== "block.contextMenu" ? atBlock(f) : f]),
 );
 
 import { SelectionSync, syncSelection } from "./sync.ts";
@@ -303,6 +304,8 @@ export interface CoreOptions {
   onTableCopy?: (text: string, format: "markdown" | "tsv") => void;
   /** The context menu of the selected cells was asked for (right-click, Shift+F10, or the Menu key). */
   onTableMenu?: () => void;
+  /** The block menu was asked for (Shift+F10 or the Menu key outside a table, EDT-07). */
+  onBlockMenu?: () => void;
 }
 
 /**
@@ -316,6 +319,7 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
   return [
     SelectionSync,
     ExpandSelection,
+    BlockKit.configure(options.onBlockMenu ? { onMenu: options.onBlockMenu } : {}),
     // Strike and line-break keys follow the app keymap (KEY-02), not Tiptap's defaults.
     StarterKit.configure({ underline: false, link: false, trailingNode: false, strike: false, hardBreak: false }),
     Strike.extend({ addKeyboardShortcuts: () => ({}) }),

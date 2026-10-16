@@ -3,7 +3,7 @@
  * or down, duplicate it, or delete it. A block is a list item inside a list, and otherwise a block
  * of the note. In a table the table's own keys run first (move and delete a row).
  */
-import type { Editor } from "@tiptap/core";
+import { Extension, type Editor } from "@tiptap/core";
 import { Selection, TextSelection, type EditorState } from "@tiptap/pm/state";
 
 const ITEMS = new Set(["listItem", "taskItem"]);
@@ -125,3 +125,66 @@ export const atBlock = (f: Action): Action => (editor, args) => {
 };
 
 export const BLOCK_MOVE_TO: Readonly<Record<string, Action>> = { "block.moveTo": moveBlockTo };
+
+/** What the surface hears from the block commands: the block menu was asked for (Shift+F10 outside a table). */
+export interface BlockHooks { onMenu?: () => void }
+const hooks = new WeakMap<object, BlockHooks>();
+export const BlockKit = Extension.create<BlockHooks>({
+  name: "blockKit",
+  addOptions: () => ({}),
+  onCreate() {
+    hooks.set(this.editor, this.options);
+  },
+});
+
+/** A block as the block handle names and acts on it (EDT-07). */
+export interface BlockInfo {
+  /** Its position, passed back with every action. */
+  block: number;
+  /** Its node type: paragraph, heading, listItem, taskItem, blockquote, codeBlock, table, horizontalRule, … */
+  kind: string;
+  /** A heading's level, else 0. */
+  level: number;
+  /** First or last among its siblings: it can't move up or down. */
+  first: boolean;
+  last: boolean;
+  /** A heading's text, for its link. */
+  text: string;
+}
+
+/** The block at `pos` (a list item or a top-level block), or the caret's block. */
+export function blockInfo(state: EditorState, pos?: number): BlockInfo | null {
+  let at = pos;
+  if (at === undefined) {
+    const d = blockDepth(state);
+    if (!d) return null;
+    at = state.selection.$from.before(d);
+  }
+  if (!Number.isInteger(at) || at < 0 || at >= state.doc.content.size) return null;
+  const node = state.doc.nodeAt(at);
+  if (!node) return null;
+  const $at = state.doc.resolve(at);
+  if (!ITEMS.has(node.type.name) && $at.depth !== 0) return null;
+  const index = $at.index();
+  return {
+    block: at, kind: node.type.name, level: node.type.name === "heading" ? Number(node.attrs.level) || 1 : 0,
+    first: index === 0, last: index === $at.parent.childCount - 1, text: node.type.name === "heading" ? node.textContent : "",
+  };
+}
+
+export const BLOCK_MENU: Readonly<Record<string, Action>> = {
+  "block.contextMenu": (editor) => {
+    const h = hooks.get(editor);
+    if (!h?.onMenu || !blockInfo(editor.state)) return false;
+    h.onMenu();
+    return true;
+  },
+};
+
+/** The first text position inside the block at `pos`, which the block handle is level with; null for a leaf. */
+export function blockTextStart(state: EditorState, pos: number): number | null {
+  const node = state.doc.nodeAt(pos);
+  if (!node || node.isLeaf) return null;
+  const sel = Selection.near(state.doc.resolve(pos + 1));
+  return sel.from > pos && sel.from < pos + node.nodeSize ? sel.from : null;
+}

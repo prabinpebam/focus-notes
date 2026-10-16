@@ -56,6 +56,9 @@ importers:
       '@focus-notes/github':
         specifier: workspace:*
         version: link:../../packages/github
+      '@focus-notes/mcp':
+        specifier: workspace:*
+        version: link:../../packages/mcp
       '@focus-notes/seal':
         specifier: workspace:*
         version: link:../../packages/seal
@@ -218,6 +221,12 @@ importers:
       '@types/mdast':
         specifier: 4.0.4
         version: 4.0.4
+
+  packages/mcp:
+    dependencies:
+      '@focus-notes/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/seal: {}
 
