@@ -399,19 +399,44 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
         return { samples: g.samples, moves: g.moves, loopMax: g.loop.max / 1e6, loopP99: g.loop.percentile(99) / 1e6 };
       });
       const final = await app.evaluate(({ screen }) => screen.getCursorScreenPoint());
-      const released = Date.now();
-      await page.locator("[data-drag-band]").first().dispatchEvent("pointerup", { screenX: final.x, screenY: final.y, clientX: 160, clientY: 30, pointerId: 1, isPrimary: true, button: 0, buttons: 0, bubbles: true });
-      // Settled: the window's point that was under the cursor is under it again.
-      const settledAt = await app.evaluate(async ({ BrowserWindow }, f) => {
+      // The settle is timed in the app's own timeline (DEF-23): from the release in the page to the
+      // main process having handled the drag's end with the window's point under the cursor. Timing
+      // it from this process included two of Playwright's round trips, and polling the window with
+      // setTimeout(1) waited for Windows' 15.6 ms timer, 22 ms on a busy runner for a 1 ms settle.
+      await app.evaluate(({ BrowserWindow, ipcMain }, f) => {
         const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
         const want = { x: f.final.x - f.press.cursor.x + f.press.win.x, y: f.final.y - f.press.cursor.y + f.press.win.y };
-        for (let i = 0; i < 500; i++) {
+        const g = globalThis as unknown as { settle: { end?: number; at?: number; want: { x: number; y: number } } };
+        g.settle = { want };
+        // Added after the app's own handler, so it runs once the end has been applied.
+        const onEnd = (_e: unknown, phase: unknown) => {
+          if (phase !== "end") return;
+          ipcMain.removeListener("window:drag", onEnd);
           const b = win.getBounds();
-          if (b.x === want.x && b.y === want.y) return Date.now();
+          g.settle.end = performance.timeOrigin + performance.now();
+          if (b.x === want.x && b.y === want.y) g.settle.at = g.settle.end;
+        };
+        ipcMain.on("window:drag", onEnd);
+      }, { final, press });
+      const released = await page.evaluate((f) => {
+        const band = document.querySelector("[data-drag-band]")!;
+        const t = performance.timeOrigin + performance.now();
+        band.dispatchEvent(new PointerEvent("pointerup", { screenX: f.x, screenY: f.y, clientX: 160, clientY: 30, pointerId: 1, isPrimary: true, button: 0, buttons: 0, bubbles: true }));
+        return t;
+      }, final);
+      // Settled: the window's point that was under the cursor is under it again, when the end was handled,
+      // or else the first time it's seen there after (a regression: the end didn't apply it).
+      const settledAt = await app.evaluate(async ({ BrowserWindow }) => {
+        const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
+        const g = globalThis as unknown as { settle: { end?: number; at?: number; want: { x: number; y: number } } };
+        for (let i = 0; i < 500; i++) {
+          if (g.settle.at !== undefined) return g.settle.at;
+          const b = win.getBounds();
+          if (g.settle.end !== undefined && b.x === g.settle.want.x && b.y === g.settle.want.y) return performance.timeOrigin + performance.now();
           await new Promise((r) => setTimeout(r, 1));
         }
         return Number.NaN;
-      }, { final, press });
+      });
       const after = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!.getBounds());
       // While the cursor moved (it's parked before and after): its speed, the lag, the window's moves.
       const moving = run.samples.filter((s, i) => i > 0 && (s[1] !== run.samples[i - 1]![1] || s[2] !== run.samples[i - 1]![2]));
@@ -427,7 +452,7 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
       console.log(`[D-151] ${path.name}: display ${JSON.stringify(box.display)} work ${JSON.stringify(box.work)} scale ${box.scale} ${box.hz} Hz; window ${JSON.stringify(box.win)} frame "${state}"; press ${JSON.stringify(press)}; span ${span}; mover ${out.trim().split(/\s+/).join(" ")}`);
       console.log(`[D-151] ${path.name}: cursor travelled ${travel} px in ${span0} ms (${Math.round((travel / span0) * 1000)} px/s), moving in ${moving.length} of ${run.samples.length} samples; window given ${run.moves.length} positions, setPosition p50 ${pct(costs, 0.5)?.toFixed(2)} ms p95 ${pct(costs, 0.95)?.toFixed(2)} ms; lag p50 ${pct(lag, 0.5)?.toFixed(1)} p95 ${p95.toFixed(1)} max ${lag.at(-1)?.toFixed(1)} px (at ${run.samples.find((s) => s[5] === lag.at(-1))?.[0]} ms); main loop delay p99 ${run.loopP99.toFixed(1)} max ${run.loopMax.toFixed(1)} ms; after release ${JSON.stringify(after)}`);
       console.log(`[D-151] ${path.name}: samples (ms, cursor x, y, window x, y, lag) ${JSON.stringify(run.samples.filter((_, i) => i % 40 === 0).map((s) => s.map((v) => Math.round(v))))}`);
-      console.log(`fn:window.dragLag (${path.name}) p95=${p95.toFixed(1)}px (budget ${budget.toFixed(1)} px at ${box.hz} Hz, ${lag.length} samples); fn:window.settle=${settle}ms (budget ${frame.toFixed(1)} ms)`);
+      console.log(`fn:window.dragLag (${path.name}) p95=${p95.toFixed(1)}px (budget ${budget.toFixed(1)} px at ${box.hz} Hz, ${lag.length} samples); fn:window.settle=${settle.toFixed(1)}ms (budget ${frame.toFixed(1)} ms)`);
       await quit(l);
       if (!path.gate) return;
       expect(p95).toBeLessThanOrEqual(budget);
