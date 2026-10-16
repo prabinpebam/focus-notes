@@ -1384,6 +1384,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // The desktop's first run shows over the blank canvas; the first note opens when it's done (FRE-01).
       if (!(await firstRun.begin(appState))) {
         // A panel pinned on this device is there from the first frame, so the text never jumps aside (D-161).
+        files.restoreSort(appState.filesSort);
         files.restorePinned(appState.filesPinned);
         // Only the note the person last opened, and never an empty public file;
         // else the app's own note, in the Private root (D-171, SHR-01).

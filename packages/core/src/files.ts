@@ -41,7 +41,27 @@ export interface Openness {
  * The rows to show, in tree order. With a filter, only notes and folders whose label contains it
  * (ignoring case) show, with their ancestors open; roots always show as section labels.
  */
-export function visibleRows(tree: WorkspaceTree, open: Openness, filter = ""): FileRow[] {
+/** How the tree is sorted (FIL-11, D-175): by name, or by last change, newest first. */
+export type FilesSort = "name" | "changed";
+/** A folder's last change: its newest note's, anywhere inside it; an empty folder has none. */
+const newest = new WeakMap<TreeNode, number>();
+function lastChanged(node: TreeNode): number {
+  if (node.kind === "note") return node.changed ?? 0;
+  const known = newest.get(node);
+  if (known !== undefined) return known;
+  const t = node.children.reduce((m, c) => Math.max(m, lastChanged(c)), -1);
+  newest.set(node, t);
+  return t;
+}
+/** Folders first in both orders; by last change, newest first, ties by the order by name. */
+function sorted(nodes: readonly TreeNode[], order: FilesSort): readonly TreeNode[] {
+  if (order === "name") return nodes;
+  return nodes.map((n, i) => ({ n, i, t: lastChanged(n) }))
+    .sort((a, b) => (a.n.kind !== b.n.kind ? (a.n.kind === "folder" ? -1 : 1) : b.t - a.t || a.i - b.i))
+    .map((x) => x.n);
+}
+
+export function visibleRows(tree: WorkspaceTree, open: Openness, filter = "", order: FilesSort = "name"): FileRow[] {
   const q = filter.trim().toLocaleLowerCase();
   const rows: FileRow[] = [];
   const matches = (node: TreeNode, path: string): boolean => {
@@ -49,7 +69,7 @@ export function visibleRows(tree: WorkspaceTree, open: Openness, filter = ""): F
     return node.kind === "folder" && node.children.some((c) => matches(c, joinPath(path, c.name)));
   };
   const add = (root: WorkspaceRoot, nodes: readonly TreeNode[], dir: string, level: number, parent: string) => {
-    for (const node of nodes) {
+    for (const node of sorted(nodes, order)) {
       const path = joinPath(dir, node.name);
       if (q && !matches(node, path)) continue;
       const expanded = node.kind === "folder" && (q ? node.children.some((c) => matches(c, joinPath(path, c.name))) : open.expanded.has(path));

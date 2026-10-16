@@ -349,6 +349,8 @@ export interface AppStateFile {
   toolbarPinned?: string[];
   /** The Files panel is pinned open on this device (D-161). */
   filesPinned?: boolean;
+  /** The Files tree sorted by last change (FIL-11, D-175); absent: by name. */
+  filesSort?: "changed";
   /** The chosen light and dark themes (THM-08). */
   lightTheme?: string;
   darkTheme?: string;
