@@ -1,6 +1,7 @@
 import type { Editor } from "@tiptap/react";
 import { autoScroll, tokens } from "@focus-notes/tokens";
 import { createScrollAnimator, cubicBezier } from "./scroll-animator.ts";
+import { anchors } from "../../behaviors/anchors.ts";
 
 const t = tokens.cmp.editorSurface;
 /**
@@ -85,9 +86,10 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
    * Whether the scroll now may animate (D-156): only a caret move from typing, a key, or a click in the
    * note (not a key elsewhere, a programmatic selection, or focus coming back), with the note focused,
    * find closed, and a caret rather than a range (on a range the contextual toolbar is opening, and it
-   * is anchored there). Anything else scrolls at once.
+   * is anchored there). Anything else scrolls at once, as does every scroll while a surface anchored to
+   * the note (the slash menu, a link card, a toolbar) is open: it never sits on a moving note (DEF-21).
    */
-  const mayAnimate = () => intent && !findOpen && !editor.isDestroyed && editor.view.hasFocus() && editor.state.selection.empty;
+  const mayAnimate = () => intent && !findOpen && !anchors.anyOpen && !editor.isDestroyed && editor.view.hasFocus() && editor.state.selection.empty;
 
   const keep = () => {
     frame = 0;
@@ -184,6 +186,9 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
     repeating = false;
     animator.finish();
   };
+  // A surface anchored to the note opening (typing `/`, the caret reaching a link) ends a running
+  // scroll at once on its target, as focus leaving does: it opens where its anchor stays (DEF-21).
+  const offOpen = anchors.onOpen(() => animator.finish());
 
   measure();
   const dom = editor.view.dom;
@@ -201,6 +206,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   window.addEventListener("pointerup", onUp);
   window.addEventListener("pointercancel", onUp);
   return () => {
+    offOpen();
     ro.disconnect();
     animator.cancel();
     if (frame) cancelAnimationFrame(frame);

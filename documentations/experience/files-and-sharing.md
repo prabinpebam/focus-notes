@@ -12,7 +12,8 @@ Opened from **Open** in the [trigger toolbar](main-ui.html) (<kbd>Ctrl/⌘</kbd>
 - **Two roots:** *Public* and *Private*. They map to the two content repositories (see [Repository and publishing](../architecture/repository-and-publishing.html)). Each note's visibility is clear from which root it sits under. In the browser there's a third root for the notes written in this browser, the only ones editable there; *Public* and, once unlocked, *Private* are read-only ([Web app](../architecture/web-app.md#three-kinds-of-note)).
 - **Tree:** folders first, then notes, sorted alphabetically. Expand and collapse with the arrow keys. Typing a name jumps to it.
 - **Quick open:** <kbd>Ctrl/⌘</kbd>+<kbd>P</kbd> opens [Spotlight](spotlight.html) in note mode to fuzzy-find any note by title and path (FIL-04).
-- **Context menu** on each item (right-click, the item's menu button, or <kbd>Shift</kbd>+<kbd>F10</kbd>) lists the operations below.
+- **Context menu** on each item (right-click, the item's ⋯ button, <kbd>Shift</kbd>+<kbd>F10</kbd>, or the Menu key) lists the operations below for the item or the selection, each with its shortcut ([Files panel → Row menu](../design/views/files.html#row-menu), D-162).
+- **Pinning** keeps the panel open while writing: it still floats, and the note's text moves clear of it ([Files panel → Pinning](../design/views/files.html#pinning), D-161).
 
 ## Operations
 

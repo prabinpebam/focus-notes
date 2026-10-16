@@ -18,9 +18,14 @@ export function trackSlash(editor: Editor, scroller: HTMLElement, emit: (p: Slas
   let valid = "";
   let frame = 0;
 
-  const anchor = (from: number) => {
+  const rectAt = (from: number) => {
     const c = editor.view.coordsAtPos(from);
-    anchors.set("caret", { top: c.top, bottom: c.bottom, left: c.left, right: c.left });
+    return { top: c.top, bottom: c.bottom, left: c.left, right: c.left };
+  };
+  // Published with a live reader: the menu is placed where the `/` is in the frame it's placed (DEF-21).
+  const anchor = (from: number) => {
+    const doc = editor.state.doc;
+    anchors.set("caret", rectAt(from), () => (!editor.isDestroyed && editor.state.doc === doc ? rectAt(from) : null));
   };
   const publish = () => {
     if (editor.isDestroyed) return;

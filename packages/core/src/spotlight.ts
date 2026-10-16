@@ -380,6 +380,8 @@ const INTERNAL_IDS = new Set([
   "table.openMenu", "table.closeMenu", "toast.dismiss", "toast.action", "window.drag",
   // Steps inside a dialog, a card, or the link editor, which their own controls run.
   "link.openEditor", "link.apply", "link.cancel", "account.signOutNow", "workspace.removeSync", "workspace.removeConfirm",
+  // A Files row's own Copy public link (D-162): Spotlight has the open note's, note.copyPublicLink.
+  "files.copyPublicLink",
   // Settings → Workspace's own button (D-124): not listed, so the web's list, where it never applies, stays the same.
   "workspace.openFromGitHub",
   "conflict.choose", "conflict.later", "files.confirm",

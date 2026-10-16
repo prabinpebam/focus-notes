@@ -9,10 +9,11 @@ export const contract = defineContract({
     side: { kind: "enum", values: ["start", "end"], default: "start" },
     width: { kind: "enum", values: ["files", "theme", "find"], default: "files", description: "A layout.sheet* token." },
     keyScope: { kind: "enum", values: ["none", "files", "findAll"], default: "none", description: "Keys registered for this scope work while focus is inside." },
+    pinned: { kind: "boolean", default: false, description: "Pinned open (D-161): a click on the canvas doesn't close it, and a start sheet keeps the note's text clear of it. Still floating, never docked." },
   },
   events: { close: {} },
   slots: { header: { accepts: "any" }, default: { accepts: "any" }, footer: { accepts: "any" } },
-  states: ["rest", "entering"],
+  states: ["rest", "entering", "pinned"],
   tokens: "cmp.sheet.*",
   a11y: { pattern: "complementary landmark", name: "label" },
   fixtures: [

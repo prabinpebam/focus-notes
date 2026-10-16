@@ -1,7 +1,7 @@
 {
   "$comment": "The implementation plan in machine-readable form. Agents read this file to choose ready work. Keep it in step with implementation-plan.md; the plan check (WP-0.1) fails CI if they disagree.",
   "version": 1,
-  "updated": "2026-10-15",
+  "updated": "2026-10-16",
   "stages": [
     {
       "id": "M0",
@@ -1393,7 +1393,7 @@
         "experience/desktop-app.html"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-5.9",
@@ -1422,7 +1422,7 @@
         "architecture/performance-and-quality.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-6.1",

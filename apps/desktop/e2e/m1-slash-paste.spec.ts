@@ -80,6 +80,51 @@ async function paste(page: Page, data: { text?: string; html?: string }, { plain
 /** Settles the menu's entrance fade so contrast is checked on what people finally see. */
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
 
+test("DEF-21: / typed while the note is still scrolling opens the menu where the caret stays, never over it, in any frame", async () => {
+  const lines = Array.from({ length: 40 }, (_, i) => `Line ${i}`).join("\n\n");
+  const l = await start(`# Journal\n\nIntro paragraph.\n\n${lines}\n`);
+  const { page } = l;
+  for (let round = 0; round < 3; round++) {
+    await page.keyboard.press(caret.docEnd);
+    await page.waitForTimeout(400);
+    // Every frame from here: is the caret's row under the menu, and does the menu still move once open?
+    await page.evaluate(() => {
+      const w = window as unknown as { __frames: { covered: boolean; menuTop: number }[] };
+      w.__frames = [];
+      const t0 = performance.now();
+      const tick = () => {
+        const menu = document.querySelector('[role="listbox"][aria-label="Insert a block"]');
+        const sel = getSelection();
+        const r = sel?.rangeCount ? sel.getRangeAt(0).getClientRects()[0] : undefined;
+        if (menu && r) {
+          const m = menu.getBoundingClientRect();
+          const y = r.top + Math.min(r.height / 2, 10);
+          w.__frames.push({ covered: y >= m.top && y <= m.bottom && r.left >= m.left && r.left <= m.right, menuTop: Math.round(m.top) });
+        }
+        if (performance.now() - t0 < 1200) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    // Back to the top (an animated scroll, D-156), and `/` on a new line before it ends.
+    await page.keyboard.press(caret.docStart);
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press(caret.lineEnd);
+    await page.keyboard.press("Enter");
+    await page.keyboard.type("/");
+    await expect(page.getByRole("listbox", { name: "Insert a block" })).toBeVisible();
+    await page.waitForTimeout(1300);
+    const frames = await page.evaluate(() => (window as unknown as { __frames: { covered: boolean; menuTop: number }[] }).__frames);
+    expect(frames.length).toBeGreaterThan(0);
+    expect(frames.filter((f) => f.covered), `round ${round}`).toEqual([]);
+    // It opens on a note at rest: the scroll ended when it opened, so the menu never travels.
+    expect(new Set(frames.map((f) => f.menuTop)).size, `round ${round}: menu tops ${frames.map((f) => f.menuTop).join(", ")}`).toBe(1);
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Backspace");
+    await page.keyboard.press("Backspace");
+  }
+  await quit(l);
+});
+
 test("EDT-06: / opens the block menu under the caret; typing filters, arrows and Enter insert, Esc keeps the text, a click inserts", async () => {
   const l = await start("# Journal\n\nIntro paragraph.\n");
   const { page } = l;
