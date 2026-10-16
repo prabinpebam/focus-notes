@@ -33,7 +33,7 @@ import { registerSpotlight, SPOTLIGHT_CLOSED, type SpotlightState } from "./spot
 import { registerFindAll, FIND_ALL_CLOSED, type FindAllState, type FindJump } from "./find-all-app.ts";
 import type { SearchService } from "./search/feed.ts";
 import { registerThemeManager, THEME_MANAGER_CLOSED, kindOf, rootTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
-import { customThemesOf } from "./custom-themes.ts";
+import { customThemesOf, isCustomId } from "./custom-themes.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -1332,8 +1332,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // Synced settings, when they're on, are read over this device's own (PRV-03).
       settingsFile = synced?.available ? parseSettings(synced.text) : undefined;
       appState = { ...deviceState, ...appStateOfSettings(settingsFile) };
-      // Custom themes from the workspace (THM-04, D-173), read before a chosen one is put back.
-      const customThemes = customThemesOf((await bridge.themes?.list().catch(() => [])) ?? []);
+      // Custom themes from the workspace (THM-04, D-173), read at launch only when a slot holds one,
+      // to put it back: otherwise nothing about them is read, parsed, or checked at start (PRF-14);
+      // the theme manager reads them when it opens.
+      const wantsCustom = isCustomId(appState.lightTheme) || isCustomId(appState.darkTheme);
+      const customThemes = wantsCustom ? customThemesOf((await bridge.themes?.list().catch(() => [])) ?? []) : [];
       if (customThemes.length) store.update((s) => ({ ...s, appearance: { ...s.appearance, customThemes } }));
       store.update((s) => ({ ...s, settingsSync: !synced?.available ? "unavailable" : settingsFile ? "on" : "off" }));
       store.update((s) => ({

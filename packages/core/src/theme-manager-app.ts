@@ -183,6 +183,10 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     if (!listThemes) return;
     const files = await listThemes().catch(() => undefined);
     if (!files) return;
+    // Unchanged files change nothing: no new appearance, so the root isn't styled again (PRF-14).
+    const before = store.state.appearance.customThemes ?? [];
+    const same = (xs: readonly { file: string; text: string }[]) => xs.length === before.length && xs.every((x) => before.some((t) => t.file === x.file && t.text === x.text));
+    if (same(files)) return;
     const customThemes = customThemesOf(files);
     store.update((s) => ({ ...s, appearance: { ...s.appearance, customThemes } }));
     const a = store.state.appearance;
@@ -259,6 +263,8 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
   });
   /** Choosing fills the theme's slot and shows it, switching the appearance if it's showing the other kind. */
   reg<{ id: string }>("theme.choose", async ({ id }) => {
+    // Theme files are read when they're first needed, not at launch (PRF-14).
+    if (isCustomId(String(id)) && !kindOf(store.state.appearance, String(id))) await reloadThemes();
     const kind = kindOf(store.state.appearance, String(id));
     if (!kind) return;
     const t = { id: String(id), kind };

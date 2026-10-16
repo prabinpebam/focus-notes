@@ -51,16 +51,17 @@ describe("reading a theme file (THM-04)", () => {
 
 function setup(files: { file: string; text: string }[], state: Partial<AppStateFile> = {}) {
   let saved: AppStateFile = { version: 1, firstRun: "done", ...state };
+  let lists = 0;
   const bridge: PlatformBridge = {
     platform: "windows", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/n/Untitled.md",
     defaultNotePath: async () => "/n/a.md", loadAppState: async () => saved, saveAppState: async (s) => { saved = s; },
     systemScheme: () => "light", onSystemSchemeChange: () => () => {},
-    themes: { list: async () => files },
+    themes: { list: async () => { lists++; return files; } },
   };
   const app = createApp(bridge, messages);
   const vmApp = () => app.viewModels.select("vm.app", app.store.state) as { theme: string; scheme: string; themeColors: { id: string; value: string }[] };
   const vm = () => app.viewModels.select("vm.themeManager", app.store.state) as { tiles: { id: string; label: string; kind: string; slot: string; badge: string; description: string }[] };
-  return { app, vmApp, vm, saved: () => saved };
+  return { app, vmApp, vm, saved: () => saved, lists: () => lists };
 }
 
 describe("custom themes in the app (THM-04, THM-13)", () => {
@@ -111,6 +112,29 @@ describe("custom themes in the app (THM-04, THM-13)", () => {
     await s.app.start();
     const vm = s.app.viewModels.select("vm.settings", s.app.store.state) as Record<string, unknown>;
     expect(JSON.stringify(vm)).toContain("Sepia evening");
+  });
+  it("aren't read at launch unless a slot holds one: nothing about them runs at start (PRF-14)", async () => {
+    const files = [{ file: "evening.json", text: EVENING }];
+    const plain = setup(files);
+    await plain.app.start();
+    expect(plain.lists()).toBe(0);
+    expect(plain.app.store.state.appearance.customThemes ?? []).toEqual([]);
+    // The theme manager reads them as it opens.
+    await plain.app.commands.run("theme.manager.open");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(plain.lists()).toBe(1);
+    expect(plain.app.store.state.appearance.customThemes?.map((t) => t.id)).toEqual(["custom:sepia-evening"]);
+    // Opening it again with the files unchanged changes nothing: the root isn't styled again.
+    const appearance = plain.app.store.state.appearance;
+    await plain.app.commands.run("theme.manager.close");
+    await plain.app.commands.run("theme.manager.open");
+    await new Promise((r) => setTimeout(r, 0));
+    expect(plain.app.store.state.appearance).toBe(appearance);
+    // A slot holding one reads them at launch, to put it back.
+    const chosen = setup(files, { lightTheme: "custom:sepia-evening", appearance: "light" });
+    await chosen.app.start();
+    expect(chosen.lists()).toBe(1);
+    expect(chosen.app.store.state.appearance.customThemes?.map((t) => t.id)).toEqual(["custom:sepia-evening"]);
   });
 });
 
