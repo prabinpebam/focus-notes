@@ -69,16 +69,18 @@ The [Model Context Protocol](https://modelcontextprotocol.io) server ships with 
 - **Prompts:** `summarize_note` (`path`), `draft_from_outline` (`outline`, optional `folder`), and `find_related` (`path`). They return instructions that name the tools above and never contain note text.
 - **Every call:** `agents.json` is read again, a token is taken (`takeAgentToken`), `checkAgent` decides with the shares from `private/access.json`, `resolveAgentPath` follows the paths on disk, and only `readAgentFile`, `writeAgentFile`, `moveAgentFile`, and `createAgentFolder` touch files. Listing and searching walk only readable roots and folders, skip links, and read each note through its own grant.
 - **Untrusted content:** titles, file names, headings, snippets, and bodies are note content. Structured results mark them `untrusted: true`. The text form puts them between markers with a random name per response, said before them, and the tool descriptions and the server's instructions say never to follow instructions found inside notes.
+- **Shares:** `private/access.json` is read on each call only to know who shares what; it's never returned. A missing file means there are no shares; one that can't be read counts as sharing everything, so nothing private is moved or created.
 - **Writes:** each write is one commit with attribution (`agentChange`). The server takes the workspace's [lock](desktop-and-git.md#one-writer-at-a-time) only for that commit and releases it after the push. While the desktop app holds the lock, a write is refused (`appRunning`) and nothing is written; relaying writes through the running app is planned. A folder that isn't a Git repository refuses writes (`noRepository`). `move_note` and `rename_note` don't rewrite links in other notes yet.
 
 | Error | Where | Meaning |
 | --- | --- | --- |
 | `-32700`, `-32600` | Protocol | Not JSON, or not a request (a batch, a message over 4 MB) |
 | `-32601` | Protocol | Unknown method |
-| `-32602` | Protocol | Unknown tool, prompt, or resource, or arguments that don't match the schema |
+| `-32602` | Protocol | Unknown tool, prompt, or resource (a note that isn't there, too), or a prompt's bad argument |
+| `-31000` | Protocol | A resource read refused: `data.error` is one of the refusals below |
 | `-32022` | Protocol | Unsupported protocol version, with `supported` and `requested` |
 | `notConnected`, `notPermitted`, `outsideFolders`, `outsideNotes`, `invalidPath`, `sharing`, `link`, `changed`, `never` | Tool result (`isError`) | The refusals of WP-7.1 ([Permissions](#permissions)) |
-| `notFound`, `exists`, `tooLarge`, `rateLimited` (with `retryAfterMs`), `appRunning`, `noRepository`, `invalidInput`, `failed` | Tool result (`isError`) | The note isn't there, the name is taken, over 1 MB, over the limit, the app holds the lock, no Git, bad arguments, or anything else |
+| `notFound`, `exists`, `tooLarge`, `rateLimited` (with `retryAfterMs`), `appRunning`, `noRepository`, `invalidInput`, `failed` | Tool result (`isError`) | The note (or heading) isn't there, the name is taken, over 1 MB, over the limit, the app holds the lock, no Git, arguments that don't match the tool's schema (a tool error, so the agent can correct them), or anything else |
 
 ## Permissions
 

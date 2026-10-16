@@ -153,8 +153,9 @@ export function applyOperations(current: string, ops: unknown): string {
       if (i < 0) throw new Refusal("notFound");
       const h = hs[i]!;
       const next = hs.slice(i + 1).find((x) => x.level <= h.level);
-      const end = kind === "replace_section" ? (next ? next.line : lines.length) : h.line + 1;
-      lines.splice(h.line + 1, end - h.line - 1, "", ...add.replace(/\s*$/, "").split(/\r?\n/), "");
+      const added = add.replace(/\s*$/, "").split(/\r?\n/);
+      if (kind === "replace_section") lines.splice(h.line + 1, (next ? next.line : lines.length) - h.line - 1, "", ...added, "");
+      else lines.splice(h.line + 1, 0, "", ...added);
       md = lines.join("\n");
     } else throw bad();
   }
