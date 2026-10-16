@@ -21,6 +21,8 @@ export interface NoteNode {
   readonly published: boolean;
   /** Its first H1, when the shell read it: the Files panel shows titles, not file names (D-94). */
   readonly title?: string;
+  /** When it last changed (ms), as the shell read it when listing the workspace: for sorting by last change (D-175). */
+  readonly changed?: number;
 }
 export interface FolderNode {
   readonly kind: "folder";
@@ -52,6 +54,8 @@ export interface WorkspaceEntry {
   kind: "note" | "folder";
   published?: boolean;
   title?: string;
+  /** A note's modification time (ms), for sorting by last change (D-175). */
+  changed?: number;
 }
 /** One change the file watcher saw. `format` is `.focus-notes/workspace.json` (DST-05). */
 export interface WorkspaceChange {
@@ -215,7 +219,7 @@ export function buildTree(scan: WorkspaceScan): WorkspaceTree {
       at = next;
     }
     const name = parts.at(-1)!;
-    if (e.kind === "note") at.children.set(name, { kind: "note", name, published: Boolean(e.published), ...(e.title ? { title: e.title } : {}) });
+    if (e.kind === "note") at.children.set(name, { kind: "note", name, published: Boolean(e.published), ...(e.title ? { title: e.title } : {}), ...(typeof e.changed === "number" ? { changed: e.changed } : {}) });
     else if (at.children.get(name)?.kind !== "folder") at.children.set(name, { kind: "folder", name, children: new Map() });
   }
   return { roots: tops.map(({ root, top }) => ({ id: root.id, path: root.path, readOnly: root.readOnly, children: freeze(top) })) };
