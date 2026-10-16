@@ -53,3 +53,4 @@ export * from "./agents-app.ts";
 export * from "./keybindings.ts";
 export * from "./keybindings-app.ts";
 export * from "./toolbar-customize.ts";
+export * from "./custom-themes.ts";

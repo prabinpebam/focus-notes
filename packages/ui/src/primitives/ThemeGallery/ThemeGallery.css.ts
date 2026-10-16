@@ -12,6 +12,15 @@ export const grid = style({
   fontSize: t.fontSize,
 });
 
+/** A group of tiles (Yours, Focus Notes): its tiles stay in the one grid, under a heading across it. */
+export const group = style({ display: "contents" });
+export const groupLabel = style({
+  gridColumn: "1 / -1",
+  color: t.muted,
+  fontSize: t.captionSize,
+  fontWeight: t.weight,
+});
+
 export const tile = style({
   display: "flex",
   flexDirection: "column",

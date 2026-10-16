@@ -17,11 +17,12 @@ import { toHex } from "./color.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import {
-  BUILT_IN_THEMES, CONTENT_FONTS, FOCUS_DIM, LINE_HEIGHT, MEASURE, PARAGRAPH_SPACINGS, UI_SCALES, onSteps, themeById,
+  BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, FOCUS_DIM, LINE_HEIGHT, MEASURE, PARAGRAPH_SPACINGS, UI_SCALES, onSteps, themeById,
   type ContentFont, type ParagraphSpacing, type ThemeKind,
 } from "./themes.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { themeValues } from "@focus-notes/tokens";
+import { customColors, customThemesOf, isCustomId, parseThemeFile, themeSlug, type CustomTheme } from "./custom-themes.ts";
 
 export const THEME_TABS = ["themes", "reading", "colors"] as const;
 export type ThemeTab = (typeof THEME_TABS)[number];
@@ -46,8 +47,10 @@ export interface Appearance {
   paragraphSpacing: ParagraphSpacing;
   /** Unset: each theme's own `focus.dimOpacity`. */
   focusDim?: number;
+  /** Custom themes read from the workspace (THM-04, D-173). */
+  customThemes?: CustomTheme[];
 }
-type Snapshot = Omit<Appearance, "system" | "uiScale"> & { draft?: ThemeDraft };
+type Snapshot = Omit<Appearance, "system" | "uiScale" | "customThemes"> & { draft?: ThemeDraft };
 
 export interface ThemeManagerState {
   open: boolean;
@@ -63,6 +66,8 @@ export interface ThemeManagerState {
   typing: Partial<Record<KeyColor, string>>;
   /** The key color Fix last changed, and a count that moves focus back to its field (the Fix button goes away). */
   fixed: { key?: KeyColor; n: number };
+  /** Saving a copy that fails the contrast guard was asked about once: the next press saves it (UNSUP-THEME-02). */
+  saveAsk?: boolean;
 }
 export const THEME_MANAGER_CLOSED: ThemeManagerState = { open: false, tab: "themes", focusRequest: 0, typing: {}, fixed: { n: 0 } };
 
@@ -78,15 +83,29 @@ interface Ctx<St extends S> {
   catalog: MessageCatalog;
   persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
   announce: (text: string) => void;
+  /** Writes a new theme file in the workspace (D-173); absent where themes can't be saved. */
+  saveTheme?: (file: string, text: string) => Promise<string>;
+  /** Reads the workspace's theme files again (D-173). */
+  listThemes?: () => Promise<{ file: string; text: string }[]>;
+  removeTheme?: (file: string) => Promise<void>;
+  revealTheme?: (file: string) => Promise<void>;
+  toast?: (message: string, opts?: { action?: { command: string; label: string; args?: Record<string, unknown> } }) => void;
+  /** Whether the open folder can hold theme files: a workspace, not a plain folder of notes (D-173). */
+  themesAvailable?: () => boolean;
 }
 
 /** The scheme showing (System follows the OS). */
 export const schemeOf = (a: Appearance): ThemeKind => (a.mode === "system" ? a.system : a.mode);
 /** The theme on the note now: the one being previewed, else the chosen theme for the scheme showing (THM-08). */
 export const shownTheme = (s: S): string => s.ui.theme.preview ?? (schemeOf(s.appearance) === "dark" ? s.appearance.darkTheme : s.appearance.lightTheme);
+/** A custom theme by ID, among those read from the workspace. */
+export const customOf = (a: { customThemes?: CustomTheme[] }, id: string | undefined): CustomTheme | undefined =>
+  isCustomId(id) ? a.customThemes?.find((t) => t.id === id) : undefined;
+/** A theme's kind, built-in or custom: undefined for one that isn't there. */
+export const kindOf = (a: { customThemes?: CustomTheme[] }, id: string | undefined): ThemeKind | undefined => customOf(a, id)?.kind ?? themeById(id)?.kind;
 /** A theme's colors, with a draft's edits when it's the draft's base. */
-export function colorsOf(id: string, draft?: ThemeDraft): Record<string, string> {
-  const colors: Record<string, string> = { ...themeValues[id] };
+export function colorsOf(id: string, draft?: ThemeDraft, custom?: CustomTheme): Record<string, string> {
+  const colors: Record<string, string> = custom ? customColors(custom) : { ...themeValues[id] };
   if (draft?.base === id) for (const k of KEYS) if (draft.colors[k]) for (const t of KEY_COLORS[k]) colors[t] = draft.colors[k]!;
   return colors;
 }
@@ -96,6 +115,18 @@ export const draftTokens = (s: S): { id: string; value: string }[] => {
   if (!d || d.base !== shownTheme(s)) return [];
   return KEYS.flatMap((k) => (d.colors[k] ? KEY_COLORS[k].map((id) => ({ id, value: d.colors[k]! })) : []));
 };
+/**
+ * What the root shows for the theme showing: a built-in theme's own styles, or a custom theme's base
+ * with its colors over them (D-173); an edited copy's colors over either.
+ */
+export function rootTheme(s: S): { theme: string; scheme?: ThemeKind; colors: { id: string; value: string }[] } {
+  const shown = shownTheme(s);
+  const custom = customOf(s.appearance, shown);
+  const draft = draftTokens(s);
+  if (!custom) return { theme: shown, colors: draft };
+  const edited = new Set(draft.map((d) => d.id));
+  return { theme: custom.base, scheme: custom.kind, colors: [...Object.entries(custom.tokens).filter(([id]) => !edited.has(id)).map(([id, value]) => ({ id, value })), ...draft] };
+}
 
 const normalizeHex = (v: string): string | undefined => {
   const t = v.trim().toLowerCase();
@@ -124,19 +155,50 @@ function fixFor(colors: Record<string, string>, key: KeyColor, high: boolean): s
   return fixes.get(k);
 }
 
-export function registerThemeManager<St extends S>({ store, commands, viewModels, catalog, persistAppState, announce }: Ctx<St>) {
+export function registerThemeManager<St extends S>({ store, commands, viewModels, catalog, persistAppState, announce, saveTheme, listThemes, removeTheme, revealTheme, toast, themesAvailable = () => true }: Ctx<St>) {
+  /** Saving themes needs a shell that writes them and a workspace to hold them. */
+  const canSaveThemes = () => Boolean(saveTheme) && themesAvailable();
   const state = () => store.state.ui.theme;
   const set = (patch: Partial<ThemeManagerState>) => store.update((s) => ({ ...s, ui: { ...s.ui, theme: { ...s.ui.theme, ...patch } } }));
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => unknown) =>
     commands.register<A>({ id, title: `command.${id}`, run: async (a) => { await run(a); } });
   const str = (a: { value?: unknown }) => (typeof a.value === "string" ? a.value : "");
-  const name = (id: string) => catalog.format(themeById(id)?.title ?? id);
+  const name = (id: string) => customOf(store.state.appearance, id)?.name ?? catalog.format(themeById(id)?.title ?? id);
+  /** A theme's colors as the guard checks them, its edits included. */
+  const colorsFor = (id: string, draft?: ThemeDraft) => colorsOf(id, draft, customOf(store.state.appearance, id));
+  /** The High contrast checks for a High contrast theme, or a custom theme on one. */
+  const highFor = (id: string) => themeById(customOf(store.state.appearance, id)?.base ?? id)?.contrast === "high";
 
   /** Reading settings: kept in the store and persisted like the rest of appearance (synced when Sync appearance is on). */
   const setReading = async (patch: Partial<Pick<Appearance, "lineHeight" | "measure" | "paragraphSpacing" | "focusDim">>) => {
     store.update((s) => ({ ...s, appearance: { ...s.appearance, ...patch } }));
     await persistAppState(patch);
   };
+
+  /**
+   * Reads the theme files again (D-173): new ones show, changed ones show their colors, and a slot
+   * whose theme's file is gone goes back to that slot's default, as at launch.
+   */
+  const reloadThemes = async () => {
+    if (!listThemes) return;
+    const files = await listThemes().catch(() => undefined);
+    if (!files) return;
+    // Unchanged files change nothing: no new appearance, so the root isn't styled again (PRF-14).
+    const before = store.state.appearance.customThemes ?? [];
+    const same = (xs: readonly { file: string; text: string }[]) => xs.length === before.length && xs.every((x) => before.some((t) => t.file === x.file && t.text === x.text));
+    if (same(files)) return;
+    const customThemes = customThemesOf(files);
+    store.update((s) => ({ ...s, appearance: { ...s.appearance, customThemes } }));
+    const a = store.state.appearance;
+    const patch: Partial<Pick<Appearance, "lightTheme" | "darkTheme">> = {};
+    if (isCustomId(a.lightTheme) && !customOf(a, a.lightTheme)) patch.lightTheme = DEFAULT_THEMES.light;
+    if (isCustomId(a.darkTheme) && !customOf(a, a.darkTheme)) patch.darkTheme = DEFAULT_THEMES.dark;
+    if (Object.keys(patch).length) {
+      store.update((s) => ({ ...s, appearance: { ...s.appearance, ...patch } }));
+      await persistAppState(patch);
+    }
+  };
+  reg("theme.reload", reloadThemes);
 
   // ---- the sheet ----
   commands.register({
@@ -149,6 +211,8 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         ...(state().draft ? { draft: state().draft! } : {}),
       };
       store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, theme: { ...s.ui.theme, open: true, tab: "themes", opened, typing: {}, focusRequest: s.ui.theme.focusRequest + 1 } } }));
+      // Theme files added or changed since launch show without a restart.
+      void reloadThemes();
     },
   });
   reg("theme.manager.close", () => {
@@ -185,10 +249,11 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
 
   // ---- the gallery (THM-07) ----
   reg<{ id: string }>("theme.preview", ({ id }) => {
-    const t = themeById(String(id));
-    if (!t) return;
+    const kind = kindOf(store.state.appearance, String(id));
+    if (!kind) return;
+    const t = { id: String(id), kind };
     set({ preview: t.id });
-    const level = textContrast(colorsOf(t.id, state().draft)).level;
+    const level = textContrast(colorsFor(t.id, state().draft)).level;
     announce(catalog.format("theme.previewing", { name: name(t.id), kind: catalog.format(`theme.kind.${t.kind}`), level: catalog.format(`theme.level.${level}`) }));
   });
   reg("theme.previewEnd", () => {
@@ -198,12 +263,20 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
   });
   /** Choosing fills the theme's slot and shows it, switching the appearance if it's showing the other kind. */
   reg<{ id: string }>("theme.choose", async ({ id }) => {
-    const t = themeById(String(id));
-    if (!t) return;
+    // Theme files are read when they're first needed, not at launch (PRF-14).
+    if (isCustomId(String(id)) && !kindOf(store.state.appearance, String(id))) await reloadThemes();
+    const kind = kindOf(store.state.appearance, String(id));
+    if (!kind) return;
+    const t = { id: String(id), kind };
     const { preview, ...rest } = state();
     void preview;
     store.update((s) => ({ ...s, ui: { ...s.ui, theme: rest } }));
-    await commands.run(`theme.${t.kind}.${t.id}`);
+    if (isCustomId(t.id)) {
+      // A custom theme fills its slot as the ⋯ menu's theme commands do, and is remembered the same way.
+      const key = kind === "light" ? "lightTheme" : "darkTheme";
+      store.update((s) => ({ ...s, appearance: { ...s.appearance, [key]: t.id } }));
+      await persistAppState({ [key]: t.id });
+    } else await commands.run(`theme.${t.kind}.${t.id}`);
     if (schemeOf(store.state.appearance) !== t.kind) await commands.run(`appearance.${t.kind}`);
     // A copy of another theme goes once neither slot holds its base.
     const d = state().draft;
@@ -261,7 +334,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     const colors = { ...draft?.colors, [key]: hex };
     const { [key]: _t, ...typing } = state().typing;
     void _t;
-    set({ draft: { base, colors }, typing });
+    set({ draft: { base, colors }, typing, saveAsk: false });
   };
   reg<{ key: string; value: string }>("theme.color.set", ({ key, value }) => {
     if (!(KEYS as string[]).includes(String(key))) return;
@@ -274,13 +347,93 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     if (!(KEYS as string[]).includes(String(key))) return;
     const k = key as KeyColor;
     const { base, draft } = editing();
-    const fixed = fixFor(colorsOf(base, draft), k, themeById(base)?.contrast === "high");
+    const fixed = fixFor(colorsFor(base, draft), k, highFor(base));
     if (!fixed) return;
     setColor(k, fixed);
     set({ fixed: { key: k, n: state().fixed.n + 1 } });
     announce(catalog.format("colors.fixed", { name: catalog.format(`colors.key.${k}`), value: fixed }));
   });
 
+  /**
+   * Save as a theme (THM-04, D-173): the edited copy becomes a theme file in the workspace, joins
+   * Yours, and fills its slot. One that fails the guard is asked about first, then saved anyway.
+   */
+  /**
+   * Saves a copy of a theme, with edits or none, as a new theme file (D-173), adds it to Yours, and
+   * chooses it. A copy of a custom theme keeps its name, numbered ("Paper (custom) 2"); of a built-in,
+   * "Paper (custom)".
+   */
+  const saveCopy = async (from: string, edits: ThemeDraft["colors"] = {}): Promise<string | undefined> => {
+    if (!saveTheme || !canSaveThemes()) return undefined;
+    const a = store.state.appearance;
+    const custom = customOf(a, from);
+    const base = custom?.base ?? from;
+    const info = themeById(base);
+    if (!info) return undefined;
+    const stem = custom ? custom.name : catalog.format("colors.copyName", { name: name(from) });
+    const taken = (n: string) => (a.customThemes ?? []).some((t) => t.id === `custom:${themeSlug(n)}`);
+    let title = stem;
+    for (let i = 2; taken(title); i++) title = `${stem} ${i}`;
+    const tokens: Record<string, string> = { ...custom?.tokens };
+    for (const k of KEYS) if (edits[k]) for (const t of KEY_COLORS[k]) tokens[t] = edits[k]!;
+    const text = `${JSON.stringify({ name: title, kind: info.kind, base, tokens }, null, 2)}\n`;
+    const file = await saveTheme(`${themeSlug(title)}.json`, text);
+    const theme = parseThemeFile(file, text);
+    if (!theme) return undefined;
+    store.update((s) => ({ ...s, appearance: { ...s.appearance, customThemes: [...(s.appearance.customThemes ?? []).filter((t) => t.id !== theme.id), theme].sort((x, y) => x.name.localeCompare(y.name)) } }));
+    await commands.run("theme.choose", { id: theme.id });
+    return title;
+  };
+  reg("theme.saveDraft", async () => {
+    const { draft } = editing();
+    if (!draft || !canSaveThemes()) return;
+    const custom = customOf(store.state.appearance, draft.base);
+    const info = themeById(custom?.base ?? draft.base);
+    if (!info) return;
+    const failing = saveWarning(catalog, colorsFor(draft.base, draft), info.contrast === "high");
+    if (failing && !state().saveAsk) return set({ saveAsk: true });
+    const title = await saveCopy(draft.base, draft.colors);
+    if (!title) return;
+    set({ draft: undefined, saveAsk: false, typing: {} });
+    announce(catalog.format("colors.saved", { name: title }));
+  });
+  // ---- a theme's options (the theme showing): duplicate it; for one of yours, show its file or delete it ----
+  reg("theme.duplicate", async () => {
+    const title = await saveCopy(shownTheme(store.state));
+    if (title) announce(catalog.format("colors.saved", { name: title }));
+  });
+  reg("theme.reveal", async () => {
+    const t = customOf(store.state.appearance, shownTheme(store.state));
+    if (t && revealTheme) await revealTheme(t.file);
+  });
+  reg("theme.delete", async () => {
+    const a = store.state.appearance;
+    const t = customOf(a, shownTheme(store.state));
+    if (!t || !removeTheme) return;
+    await removeTheme(t.file);
+    const slot = a.lightTheme === t.id ? "lightTheme" : a.darkTheme === t.id ? "darkTheme" : undefined;
+    const { preview, ...rest } = state();
+    void preview;
+    store.update((s) => ({ ...s, appearance: { ...s.appearance, customThemes: (s.appearance.customThemes ?? []).filter((x) => x.id !== t.id) }, ui: { ...s.ui, theme: rest } }));
+    // A theme in use falls back to the default for its slot, and Undo puts it back (Theme manager → Saving).
+    if (slot) {
+      const fallback = slot === "lightTheme" ? DEFAULT_THEMES.light : DEFAULT_THEMES.dark;
+      store.update((s) => ({ ...s, appearance: { ...s.appearance, [slot]: fallback } }));
+      await persistAppState({ [slot]: fallback });
+    }
+    toast?.(catalog.format("theme.deleted", { name: t.name }), { action: { command: "theme.restore", label: catalog.format("theme.undo"), args: { file: t.file, text: t.text, ...(slot ? { slot } : {}) } } });
+  });
+  reg<{ file: string; text: string; slot?: string }>("theme.restore", async ({ file, text, slot }) => {
+    if (!saveTheme || typeof file !== "string" || typeof text !== "string") return;
+    const written = await saveTheme(file, text);
+    const theme = parseThemeFile(written, text);
+    if (!theme) return;
+    store.update((s) => ({ ...s, appearance: { ...s.appearance, customThemes: [...(s.appearance.customThemes ?? []).filter((x) => x.id !== theme.id), theme].sort((x, y) => x.name.localeCompare(y.name)) } }));
+    if (slot === "lightTheme" || slot === "darkTheme") {
+      store.update((s) => ({ ...s, appearance: { ...s.appearance, [slot]: theme.id } }));
+      await persistAppState({ [slot]: theme.id });
+    }
+  });
   // ---- view model ----
   const OPTION = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const } } };
   const NUM = { type: "number" as const };
@@ -294,8 +447,9 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
       properties: {
         open: BOOL, tab: { type: "string", enum: [...THEME_TABS] }, tabs: { type: "array", items: OPTION },
         mode: { type: "string", enum: ["system", "light", "dark"] }, modes: { type: "array", items: OPTION },
-        tiles: { type: "array", items: { type: "object", properties: { id: STR, label: STR, kind: { type: "string", enum: ["light", "dark"] }, slot: STR, badge: STR, description: STR } } },
-        showing: STR, previewing: BOOL, focusRequest: NUM, status: STR,
+        tiles: { type: "array", items: { type: "object", properties: { id: STR, label: STR, kind: { type: "string", enum: ["light", "dark"] }, slot: STR, badge: STR, description: STR, group: STR, sample: STR, colors: { type: "array", items: { type: "object", properties: { id: STR, value: STR } } } } } },
+        showing: STR, previewing: BOOL, focusRequest: NUM, status: STR, themeMenuLabel: STR, hasThemeMenu: BOOL,
+        themeMenu: { type: "array", items: { type: "object", properties: { id: STR, items: { type: "array", items: { type: "object", properties: { id: STR, label: STR } } } } } },
         reading: {
           type: "object",
           properties: {
@@ -307,7 +461,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         colors: {
           type: "object",
           properties: {
-            note: STR, failing: BOOL, summary: STR,
+            note: STR, failing: BOOL, summary: STR, canSave: BOOL, saveLabel: STR, warning: STR, asking: BOOL,
             rows: { type: "array", items: { type: "object", properties: { id: STR, label: STR, value: STR, swatch: STR, focusRequest: NUM, invalid: BOOL, error: STR, status: STR, failing: BOOL, canFix: BOOL, fixLabel: STR } } },
           },
         },
@@ -320,19 +474,25 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     reads: ["ui.theme", "appearance"],
     select: (s) => {
       const st = s.ui.theme;
-      if (!st.open) return { open: false, tab: st.tab, tabs: [], mode: s.appearance.mode, modes: [], tiles: [], showing: "", previewing: false, focusRequest: st.focusRequest, status: "", reading: {}, colors: { rows: [] } };
+      if (!st.open) return { open: false, tab: st.tab, tabs: [], mode: s.appearance.mode, modes: [], tiles: [], showing: "", previewing: false, focusRequest: st.focusRequest, status: "", themeMenuLabel: "", hasThemeMenu: false, themeMenu: [], reading: {}, colors: { rows: [] } };
       const a = s.appearance;
       const showing = shownTheme(s);
       const chosen = schemeOf(a) === "dark" ? a.darkTheme : a.lightTheme;
-      const tiles = BUILT_IN_THEMES.map((t) => {
+      // Yours first (custom themes, THM-04), then the built-in ones. A custom theme failing the guard says so (THM-13).
+      const all = [...(a.customThemes ?? []).map((t) => ({ id: t.id, kind: t.kind, custom: t })), ...BUILT_IN_THEMES.map((t) => ({ id: t.id, kind: t.kind, custom: undefined }))];
+      const tiles = all.map((t) => {
         const slot = a.lightTheme === t.id ? catalog.format("theme.slot.light") : a.darkTheme === t.id ? catalog.format("theme.slot.dark") : "";
-        const level = textContrast(colorsOf(t.id, st.draft)).level;
+        const level = t.custom && !t.custom.readable ? "low" : textContrast(colorsOf(t.id, st.draft, t.custom)).level;
         const badge = catalog.format(`theme.level.${level}`);
-        return { id: t.id, label: name(t.id), kind: t.kind, slot, badge, description: `${catalog.format(`theme.kind.${t.kind}`)}, ${badge}` };
+        const description = `${catalog.format(`theme.kind.${t.kind}`)}, ${badge}`;
+        const own = t.custom ? { sample: t.custom.base, colors: Object.entries(t.custom.tokens).map(([id, value]) => ({ id, value })) } : {};
+        // With custom themes, the gallery is in two groups: Yours, then Focus Notes (the built-in ones).
+        const group = a.customThemes?.length ? { group: catalog.format(t.custom ? "theme.yours" : "theme.group.builtIn") } : {};
+        return { id: t.id, label: t.custom?.name ?? name(t.id), kind: t.kind, slot, badge, description: t.custom ? `${catalog.format("theme.yours")}, ${description}` : description, ...own, ...group };
       });
-      const colors = colorsOf(showing, st.draft);
+      const colors = colorsOf(showing, st.draft, customOf(a, showing));
       const tc = textContrast(colors);
-      const high = themeById(showing)?.contrast === "high";
+      const high = themeById(customOf(a, showing)?.base ?? showing)?.contrast === "high";
       const results = checkTheme(colors, high);
       const { draft } = editing();
       const rows = KEYS.map((k) => {
@@ -365,6 +525,15 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         open: true, tab: st.tab, tabs: THEME_TABS.map((id) => ({ id, label: catalog.format(`theme.tab.${id}`) })),
         mode: a.mode, modes: (["system", "light", "dark"] as const).map((id) => ({ id, label: catalog.format(`command.appearance.${id}`) })),
         tiles, showing, previewing: Boolean(st.preview && st.preview !== chosen), focusRequest: st.focusRequest,
+        hasThemeMenu: canSaveThemes() || Boolean(customOf(a, showing) && (revealTheme || removeTheme)),
+        themeMenuLabel: catalog.format("theme.options", { name: customOf(a, showing)?.name ?? name(showing) }),
+        themeMenu: [
+          ...(canSaveThemes() ? [{ id: "copy", items: [{ id: "theme.duplicate", label: catalog.format("theme.duplicate") }] }] : []),
+          ...(customOf(a, showing) ? [
+            ...(revealTheme ? [{ id: "file", items: [{ id: "theme.reveal", label: catalog.format("theme.reveal") }] }] : []),
+            ...(removeTheme ? [{ id: "delete", items: [{ id: "theme.delete", label: catalog.format("theme.delete") }] }] : []),
+          ] : []),
+        ],
         status: catalog.format("theme.status", { ratio: ratioText(tc.ratio), level: catalog.format(`theme.level.${tc.level}`) }),
         reading: {
           font: a.contentFont, fontText, fontLabel: catalog.format("reading.fontLabel", { font: fontText }), fontMenu, sizeText: catalog.format("reading.sizeText", { size: a.fontSize }),
@@ -376,6 +545,10 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         colors: {
           note: draft ? catalog.format("colors.copyNote", { name: name(draft.base) }) : catalog.format("colors.builtInNote", { name: name(showing) }),
           failing: failing > 0, summary: failing ? catalog.format("colors.summary", { count: failing }) : catalog.format("colors.allPass"),
+          canSave: Boolean(draft) && canSaveThemes(),
+          saveLabel: catalog.format(st.saveAsk ? "colors.saveAnyway" : "colors.save"),
+          warning: st.saveAsk ? saveWarning(catalog, colors, high) ?? "" : "",
+          asking: Boolean(st.saveAsk),
           rows,
         },
       };

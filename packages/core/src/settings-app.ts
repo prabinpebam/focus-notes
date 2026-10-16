@@ -18,6 +18,7 @@ import type { SyncState } from "./sync-app.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import type { TaskTracker, TaskView } from "./tasks.ts";
 import { UI_SCALES, themeById } from "./themes.ts";
+import { customOf } from "./theme-manager-app.ts";
 import { DIAGNOSTICS_IDLE, registerDiagnostics, type DiagnosticsState } from "./diagnostics-app.ts";
 
 /** Settings' categories, in order, as built so far. */
@@ -51,7 +52,7 @@ interface S {
   sync: SyncState;
   workspace: { folder?: string };
   firstRun: { active: boolean };
-  appearance: { mode: "system" | "light" | "dark"; lightTheme: string; darkTheme: string; fontSize: number; contentFont: string; uiScale: number };
+  appearance: { mode: "system" | "light" | "dark"; lightTheme: string; darkTheme: string; fontSize: number; contentFont: string; uiScale: number; customThemes?: import("./custom-themes.ts").CustomTheme[] };
   settingsSync: "unavailable" | "off" | "on";
   tasks: TaskView[];
 }
@@ -277,8 +278,8 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
         appearance: {
           summary: catalog.format("settings.appearance.summary", {
             mode: catalog.format(`command.appearance.${s.appearance.mode}`),
-            light: catalog.format(themeById(s.appearance.lightTheme)?.title ?? "theme.paper"),
-            dark: catalog.format(themeById(s.appearance.darkTheme)?.title ?? "theme.ink"),
+            light: customOf(s.appearance, s.appearance.lightTheme)?.name ?? catalog.format(themeById(s.appearance.lightTheme)?.title ?? "theme.paper"),
+            dark: customOf(s.appearance, s.appearance.darkTheme)?.name ?? catalog.format(themeById(s.appearance.darkTheme)?.title ?? "theme.ink"),
             size: s.appearance.fontSize, font: catalog.format(`font.${s.appearance.contentFont}`),
           }),
           scale: String(s.appearance.uiScale),

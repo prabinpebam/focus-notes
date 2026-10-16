@@ -38,6 +38,16 @@ export interface PlatformBridge {
   /** Enters or leaves full screen (DSK-04). Absent where the shell can't. */
   toggleFullScreen?(): void;
   /** The default note for a first launch, created if missing. */
+  /** The workspace's custom theme files (THM-04, D-173): `private/.focus-notes/themes/*.json`, or `.focus-notes/themes/` without a private repository. */
+  themes?: {
+    list(): Promise<{ file: string; text: string }[]>;
+    /** Writes a new theme file (`<slug>.json`) there, never over another. Resolves to its file name. */
+    save?(file: string, text: string): Promise<string>;
+    /** Deletes a theme file there. */
+    remove?(file: string): Promise<void>;
+    /** Shows a theme file in the system's file manager. */
+    reveal?(file: string): Promise<void>;
+  };
   defaultNotePath(): Promise<string>;
   loadAppState(): Promise<AppStateFile>;
   saveAppState(state: AppStateFile): Promise<void>;
