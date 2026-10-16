@@ -3449,6 +3449,28 @@
                       },
                       "children": [
                         {
+                          "type": "MenuButton",
+                          "props": {
+                            "icon": "sort",
+                            "label": {
+                              "get": "vm.files.sortLabel"
+                            },
+                            "sections": {
+                              "get": "vm.files.sortMenu"
+                            }
+                          },
+                          "on": {
+                            "action": {
+                              "run": "command.run",
+                              "args": {
+                                "id": {
+                                  "get": "event.id"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
                           "type": "IconButton",
                           "props": {
                             "icon": "newNote",

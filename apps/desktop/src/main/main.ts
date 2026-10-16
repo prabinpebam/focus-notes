@@ -483,9 +483,11 @@ async function assertWritable(p: string): Promise<void> {
  * A note's title from its first 16 KB, so the Files panel shows titles without reading whole notes.
  * Kept in the snapshot, so a note that hasn't changed isn't opened again (PRF-10).
  */
-async function readTitle(p: string): Promise<string | undefined> {
+async function readTitle(p: string, seen?: (changed: number) => void): Promise<string | undefined> {
   const st = await stat(p).catch(() => undefined);
   if (!st) return undefined;
+  // When it last changed, for sorting the tree by last change (D-175): from the stat this read makes anyway.
+  seen?.(Math.round(st.mtimeMs));
   const key = { path: p, size: st.size, mtimeMs: st.mtimeMs };
   const known = titles.get(key) ?? parsed.get(key);
   if (known) return known.title;
@@ -503,7 +505,7 @@ async function readTitle(p: string): Promise<string | undefined> {
     await h.close();
   }
 }
-type Entry = { path: string; kind: "note" | "folder"; title?: string };
+type Entry = { path: string; kind: "note" | "folder"; title?: string; changed?: number };
 /** Every note (with its title) and folder under a root; folders and files starting with a dot are skipped. */
 async function listTree(dir: string, out: Entry[] = []): Promise<Entry[]> {
   const items = await readdir(dir, { withFileTypes: true }).catch(() => []);
@@ -514,7 +516,10 @@ async function listTree(dir: string, out: Entry[] = []): Promise<Entry[]> {
     if (d.isDirectory()) {
       out.push({ path: p, kind: "folder" });
       await listTree(p, out);
-    } else if (d.isFile() && isMarkdown(d.name)) notes.push(readTitle(p).then((title) => ({ path: p, kind: "note", ...(title ? { title } : {}) })));
+    } else if (d.isFile() && isMarkdown(d.name)) {
+      let changed: number | undefined;
+      notes.push(readTitle(p, (t) => (changed = t)).then((title) => ({ path: p, kind: "note" as const, ...(title ? { title } : {}), ...(changed !== undefined ? { changed } : {}) })));
+    }
   }
   out.push(...(await Promise.all(notes)));
   return out;
