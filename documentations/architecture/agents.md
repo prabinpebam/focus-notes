@@ -134,6 +134,26 @@ The switches in Settings → Agents and the list of Recent agent changes are WP-
 
 Every command accepts `--json` (stable, schema-documented output) and `--workspace <path>`, and uses documented exit codes: 0 success, 1 error, 2 conflict, 3 not permitted. The command-line tool follows the same permissions as agents, except that the person at the terminal can always read and edit their own notes.
 
+**As built (WP-7.3, D-165).** The commands are `packages/cli`; the desktop app's own executable runs them with `--cli` (released builds can't run Electron as Node), through the `focus-notes` launcher in its resources ([Distribution](../plan/distribution.md)). A command acts as the person at the terminal: it claims the terminal principal once, so both roots are open whatever the switches say, with the same path, disk, and sharing checks as agents. `focus-notes mcp` never claims it and keeps the agent switches. The terminal has no rate limit, and its output isn't wrapped as untrusted.
+
+| Command | Does | `--json` (after `"ok": true`) |
+| --- | --- | --- |
+| `ls [folder]` | Notes and folders, one path a line (folders end in `/`) | `items`: `path`, `kind`, `visibility` |
+| `cat <path>` | The note's Markdown | `path`, `visibility`, `version`, `title`, `content` |
+| `search <query> [--limit n]` | `path: snippet`, one a line | `results`: `path`, `visibility`, `title`, `snippet` |
+| `new [--folder f] [--title t]` | Makes a note from standard input (or empty), in `private/notes` unless a folder is given. Without `--title`, a first `# heading` in the input is the title | `path`, `version` |
+| `append <path>` | Adds standard input at the end | `path`, `version` |
+| `edit <path> [--expected-version v]` | Replaces the body with standard input (the front matter stays) | `path`, `version` |
+| `mv <from> <to>` | Moves or renames a note in its root | `path` |
+| `open <path> [--heading anchor]` | Opens the note in the app (a deep link) | `link` |
+| `status` / `sync` | The save state / commits and pushes now | `git`, `state`, `waiting`, `problem` |
+| `mcp` | The MCP server on standard input and output | (MCP messages) |
+
+- **Writes** are one commit each, `Agent edit: <path>` with `Focus-Notes-Agent: command line`. While the desktop app holds the workspace, they're refused (`appRunning`) and nothing is written. `edit` and `append` read the note's version first, and a change in between is refused (`changed`).
+- **Output:** with `--json`, standard output is exactly one JSON object, `{"ok": true, …}` or `{"ok": false, "error": <code>, "message": …}`. Without it, results go to standard output and problems to standard error as one line.
+- **Exit codes:** 0 done; 1 error (`appRunning`, `notFound`, `noRepository`, `failed`, a usage mistake); 2 conflict (`changed`, `exists`); 3 not permitted (`outsideNotes`, `invalidPath`, `link`, `sharing`, `never`, and the other refusals).
+- **The workspace** is `--workspace <folder>`, else the one the app last opened (from its data folder, or `--data <folder>`).
+
 ## Deep links
 
 The desktop app registers `focus-notes://`:
@@ -143,6 +163,16 @@ The desktop app registers `focus-notes://`:
 - `focus-notes://search?q=<query>` opens Spotlight with the query.
 
 Deep links never write content, delete, or change visibility, and they only work inside the open workspace.
+
+**As built (WP-7.3, D-165).** Links are read-only. `open` takes a note path in `notes/` or `private/notes/` and an optional `heading` anchor (as `get_outline` gives it); `search` takes `q`. The `new` link isn't offered, because making a note writes a file at once. `parseDeepLink` in core accepts a link only if all of these hold, and ignores it otherwise:
+
+- the scheme is `focus-notes:` and the host is `open` or `search`;
+- there's no user, password, port, path, or fragment, and only the named parameters, each once;
+- the path is a valid agent path in one of the two roots, ending in `.md`;
+- the heading is letters, digits, `-`, and `_`, and the query is 1 to 200 characters with no control characters;
+- the whole link is at most 2,048 characters.
+
+The main process opens the note only if it's in the open workspace's roots. Only a packaged app registers the scheme, never development builds or journeys: Windows and Linux pass links as arguments (to the first instance, or handed on by a second), and macOS sends `open-url`.
 
 ## Files and schemas for agents
 
