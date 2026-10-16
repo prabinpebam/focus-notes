@@ -1703,14 +1703,7 @@
   "site.footer.docs": "How it's built",
   "site.footer.app": "The author's notes",
   "site.footer.note": "Focus Notes is free and open source under the MIT license. This site doesn't track you.",
-  "help.title": "Help centre",
-  "help.home.intro": "Answers for writing with Focus Notes, in plain words. Pick what you want to do.",
-  "help.breadcrumb.home": "Help centre",
-  "help.category.empty": "Articles for this are on the way.",
-  "help.article.appliesTo": "Applies to: {value}",
-  "help.article.updated": "Updated {date, date, long}, for Focus Notes {release}",
   "site.landing.empty": "More about Focus Notes is on the way.",
-  "help.home.empty": "The help centre's articles are on the way.",
   "site.landing.headline": "Write. Nothing else.",
   "site.landing.learn": "Learn how it works",
   "site.tile.markdown": "Plain Markdown files",
@@ -1756,5 +1749,6 @@
   "history.restoreUndone": "Put back the text from before the restore.",
   "command.history.more": "Show older versions",
   "history.loadingMore": "Reading older versions…",
-  "history.reading": "Reading that version…"
+  "history.reading": "Reading that version…",
+  "site.help.redirect": "Help is in the Focus Notes docs. Go to Help"
 }

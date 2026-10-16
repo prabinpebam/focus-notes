@@ -9,9 +9,14 @@ import type { JsonSchema } from "./view-models.ts";
 /** The project's repository, the only other site the product site links to (with GitHub's own help). */
 export const SITE_REPOSITORY = "https://github.com/prabinpebam/focus-notes";
 
+/** Help is a section of the Slate docs (D-181): its home, by the docs' hash route. */
+export const HELP_DOCS = "documentations/#help/index.md";
+/** A help page's address in the docs, from its file in documentations/help/ ("fix-a-problem.md"), with an optional anchor. */
+export const helpDocsPath = (page: string, anchor?: string): string => `documentations/#help/${page}${anchor ? `#${anchor}` : ""}`;
+
 /** The site's addresses (D-167), relative to its root. */
 export const SITE_PATHS = {
-  home: "", help: "help/", demo: "demo/", download: "download/", privacy: "privacy/", app: "app/", notes: "n/", docs: "documentations/",
+  home: "", help: HELP_DOCS, demo: "demo/", download: "download/", privacy: "privacy/", app: "app/", notes: "n/", docs: "documentations/",
 } as const;
 
 /**
@@ -60,14 +65,14 @@ export function siteHref(from: string, to: string): string {
 /** The chrome every site page shares (`vm.site`): its links, relative to the page, and which one is current. */
 export interface SiteChromeModel extends Record<string, unknown> {
   home: string; help: string; demo: string; download: string; privacy: string; app: string; notes: string; docs: string; source: string;
-  currentHelp: boolean; currentDemo: boolean; currentDownload: boolean;
+  currentDemo: boolean; currentDownload: boolean;
 }
 export function siteChrome(path: string): SiteChromeModel {
   const to = (p: string) => siteHref(path, p);
   return {
     home: to(SITE_PATHS.home), help: to(SITE_PATHS.help), demo: to(SITE_PATHS.demo), download: to(SITE_PATHS.download), privacy: to(SITE_PATHS.privacy),
     app: to(SITE_PATHS.app), notes: to(SITE_PATHS.notes), docs: to(SITE_PATHS.docs), source: SITE_REPOSITORY,
-    currentHelp: path.startsWith(SITE_PATHS.help), currentDemo: path.startsWith(SITE_PATHS.demo), currentDownload: path.startsWith(SITE_PATHS.download),
+    currentDemo: path.startsWith(SITE_PATHS.demo), currentDownload: path.startsWith(SITE_PATHS.download),
   };
 }
 
@@ -179,56 +184,13 @@ export function landingModel(c: LandingContent): LandingModel {
   return { heroAnchor: LANDING_HERO, headline: c.headline, line: c.line, hero, features, closingAnchor: LANDING_CLOSING, closing: c.closing };
 }
 
-export interface HelpCategory { id: string; title: string; summary: string }
-export interface HelpArticleEntry { id: string; category: string; title: string; summary: string }
-
-/** The help centre's home (`vm.helpHome`, HLP-02): each category in order, linking to it and to its articles. */
-export interface HelpHomeModel extends Record<string, unknown> {
-  title: PMNode[];
-  categories: { key: string; heading: PMNode[]; summary: PMNode[]; hasArticles: boolean; articles: PMNode[] }[];
-}
-export function helpHomeModel(title: string, categories: readonly HelpCategory[], articles: readonly HelpArticleEntry[]): HelpHomeModel {
-  return {
-    title: [heading(1, title)],
-    categories: categories.map((c) => {
-      const mine = articles.filter((a) => a.category === c.id).map((a) => ({ title: a.title, href: `${c.id}/${a.id}/` }));
-      return { key: c.id, heading: [heading(2, c.title, `${c.id}/`)], summary: c.summary ? [paragraph(c.summary)] : [], hasArticles: mine.length > 0, articles: linkList(mine) };
-    }),
-  };
-}
-
-/** A category's page (`vm.helpCategory`): its title and summary, and its articles. */
-export interface HelpCategoryModel extends Record<string, unknown> { title: PMNode[]; summary: PMNode[]; hasArticles: boolean; articles: PMNode[] }
-export function helpCategoryModel(category: HelpCategory, articles: readonly HelpArticleEntry[]): HelpCategoryModel {
-  const mine = articles.filter((a) => a.category === category.id).map((a) => ({ title: a.title, href: `${a.id}/` }));
-  return { title: [heading(1, category.title)], summary: category.summary ? [paragraph(category.summary)] : [], hasArticles: mine.length > 0, articles: linkList(mine) };
-}
-
-/** An article's page (`vm.helpArticle`, HLP-02, HLP-07): its category, title, Applies to, body, and when and for which release. */
-export interface HelpArticleModel extends Record<string, unknown> {
-  category: string; categoryHref: string; title: PMNode[]; appliesTo: string; body: PMNode[]; updated: number; release: string;
-}
-export function helpArticleModel(c: SiteContent, category: HelpCategory): HelpArticleModel {
-  const applies = c.data.appliesTo;
-  return {
-    category: category.title,
-    // An article is at help/<category>/<id>/, so its category is the folder above.
-    categoryHref: "../",
-    title: c.title,
-    appliesTo: Array.isArray(applies) ? applies.join(", ") : applies ?? "",
-    body: c.body,
-    updated: Date.parse(String(c.data.updated ?? "")) || 0,
-    release: typeof c.data.release === "string" ? c.data.release : "",
-  };
-}
-
 const BLOCKS: JsonSchema = { type: "array", items: { type: "object" } };
 const IMAGE: JsonSchema = { type: "object", properties: Object.fromEntries(["src", "srcSet", "avifSet", "sizes", "alt"].map((k) => [k, { type: "string" } as JsonSchema]).concat([["width", { type: "number" }], ["height", { type: "number" }]])) };
 const vm = (id: string, properties: Record<string, JsonSchema>) => ({ id, schema: { type: "object" as const, properties } });
 /** The site's view models, filled by the site's renderer (WP-10.1), not the app. */
 export const SITE_VIEW_MODELS = [
   vm("vm.site", Object.fromEntries([...Object.keys(SITE_PATHS), "source"].map((k) => [k, { type: "string", description: `The ${k} link, relative to the page.` } as JsonSchema])
-    .concat([["currentHelp", { type: "boolean" }], ["currentDemo", { type: "boolean" }], ["currentDownload", { type: "boolean" }]]))),
+    .concat([["currentDemo", { type: "boolean" }], ["currentDownload", { type: "boolean" }]]))),
   vm("vm.sitePage", { title: BLOCKS, body: BLOCKS }),
   vm("vm.siteLanding", {
     heroAnchor: { type: "string" },
@@ -239,10 +201,4 @@ export const SITE_VIEW_MODELS = [
     closingAnchor: { type: "string" },
     closing: { type: "string" },
   }),
-  vm("vm.helpHome", {
-    title: BLOCKS,
-    categories: { type: "array", items: { type: "object", properties: { key: { type: "string" }, heading: BLOCKS, summary: BLOCKS, hasArticles: { type: "boolean" }, articles: BLOCKS } } },
-  }),
-  vm("vm.helpCategory", { title: BLOCKS, summary: BLOCKS, hasArticles: { type: "boolean" }, articles: BLOCKS }),
-  vm("vm.helpArticle", { category: { type: "string" }, categoryHref: { type: "string" }, title: BLOCKS, appliesTo: { type: "string" }, body: BLOCKS, updated: { type: "number" }, release: { type: "string" } }),
 ] as const;

@@ -486,6 +486,87 @@
       "status": "draft",
       "updated": "2026-10-16",
       "group": "Design/System"
+    },
+    {
+      "path": "help/index.md",
+      "title": "Help",
+      "order": 50,
+      "icon": "help",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Help"
+    },
+    {
+      "path": "help/get-started.md",
+      "title": "Get started",
+      "order": 51,
+      "icon": "rocket_launch",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Help"
+    },
+    {
+      "path": "help/write.md",
+      "title": "Write",
+      "order": 52,
+      "icon": "edit",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Help"
+    },
+    {
+      "path": "help/organize.md",
+      "title": "Organize your notes",
+      "order": 53,
+      "icon": "folder",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Help"
+    },
+    {
+      "path": "help/save-and-back-up.md",
+      "title": "Save and back up",
+      "order": 54,
+      "icon": "cloud_upload",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Help"
+    },
+    {
+      "path": "help/private-and-sharing.md",
+      "title": "Private notes and sharing",
+      "order": 55,
+      "icon": "lock",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Help"
+    },
+    {
+      "path": "help/fix-a-problem.md",
+      "title": "Fix a problem",
+      "order": 56,
+      "icon": "build",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Help"
+    },
+    {
+      "path": "help/reference.md",
+      "title": "Reference",
+      "order": 57,
+      "icon": "menu_book",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Help"
+    },
+    {
+      "path": "help/developers.md",
+      "title": "For developers and AI agents",
+      "order": 58,
+      "icon": "smart_toy",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Help"
     }
   ]
 }

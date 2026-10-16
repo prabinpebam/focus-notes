@@ -41,10 +41,7 @@
             "href": {
               "get": "vm.site.help"
             },
-            "variant": "nav",
-            "current": {
-              "get": "vm.site.currentHelp"
-            }
+            "variant": "nav"
           }
         },
         {

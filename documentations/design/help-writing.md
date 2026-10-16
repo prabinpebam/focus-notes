@@ -93,7 +93,7 @@ Each template's parts appear in this order. An article never mixes two types; it
 
 | Part | Rule |
 | --- | --- |
-| **ID and address** | A stable ID (`connect-github`) and an address under its category (`/help/get-started/connect-github/`). The ID never changes. If the title or category does, the old address redirects (HLP-03). |
+| **ID and address** | A stable ID (`connect-github`) and a page in the Slate docs' Help section (`documentations/help/`, D-181), registered in the docs' manifest. The ID never changes. If the title or category does, the old address redirects (HLP-03). |
 | **Front matter** | `id`, `title`, `type`, `category`, `appliesTo`, `updated`, `release`, `summary`, `synonyms` (for search), `related`. |
 | **Headings** | Sentence case, in order with no skipped levels, each one making sense alone. Sections other features link to have stable anchors. |
 | **Steps** | Numbered, one action each, the verb first, and the expected result stated. Notes go after the step, never inside it. |

@@ -5,11 +5,10 @@
  * view documents in packages/views, the components in packages/ui, the tokens' CSS, no script.
  */
 import {
-  helpArticleModel, helpCategoryModel, helpHomeModel, landingModel, MessageCatalog, siteChrome, siteHref, siteMarkdown, sitePageModel,
-  type HelpArticleEntry, type HelpCategory, type LandingContent, type SiteContent,
+  HELP_DOCS, landingModel, MessageCatalog, siteChrome, siteHref, siteMarkdown, sitePageModel, type LandingContent,
 } from "@focus-notes/core";
 import { renderStaticView } from "@focus-notes/ui-runtime/static";
-import { renderSiteDocument, siteContracts, siteRegistry } from "@focus-notes/ui/site";
+import { renderRedirectDocument, renderSiteDocument, siteContracts, siteRegistry } from "@focus-notes/ui/site";
 import { messages, sitePages } from "@focus-notes/views";
 
 export interface SiteAssets {
@@ -22,10 +21,11 @@ export interface SiteSource {
   landing: LandingContent;
   /** Plain pages by their address (`download/`, `privacy/`, `demo/`), from site/<name>.md. */
   pages: readonly { path: string; markdown: string }[];
-  /** site/help/categories.json, in order. */
-  categories: readonly HelpCategory[];
-  /** site/help/<category>/<id>.md. */
-  articles: readonly { category: string; id: string; markdown: string }[];
+  /**
+   * The help pages in the Slate docs (documentations/help/*.md, D-181): their old addresses on the site,
+   * help/ and help/<page>/, send visitors there.
+   */
+  helpPages: readonly string[];
 }
 export interface SiteOptions {
   /** The site's address (configure-pages' base_url), for canonical links. */
@@ -63,22 +63,12 @@ export function renderSite(src: SiteSource, o: SiteOptions): SiteFile[] {
     page(p.path, "sitePage", "vm.sitePage", sitePageModel(c), c);
   }
 
-  // The help centre: its home, each category, and each article at help/<category>/<id>/ (HLP-02, HLP-03).
-  // IDs are addresses that never change, in lowercase words joined by hyphens (help-writing.md → Every article).
-  const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-  for (const c of src.categories) if (!ID.test(c.id)) throw new Error(`help/categories.json: "${c.id}" isn't a usable category ID (lowercase words joined by hyphens)`);
-  for (const a of src.articles) if (!ID.test(a.id)) throw new Error(`help/${a.category}/${a.id}.md: "${a.id}" isn't a usable article ID (lowercase words joined by hyphens)`);
-  const byCategory = new Map(src.categories.map((c) => [c.id, c]));
-  const articles: { entry: HelpArticleEntry; content: SiteContent }[] = src.articles.map((a) => {
-    const content = siteMarkdown(a.markdown);
-    if (!byCategory.has(a.category)) throw new Error(`help/${a.category}/${a.id}.md: there's no category "${a.category}" in help/categories.json`);
-    if (content.data.id !== undefined && content.data.id !== a.id) throw new Error(`help/${a.category}/${a.id}.md: its id is "${String(content.data.id)}", not its file name`);
-    return { entry: { id: a.id, category: a.category, title: content.titleText, summary: content.description }, content };
-  });
-  const entries = articles.map((a) => a.entry);
-  const helpTitle = en.format("help.title");
-  page("help/", "helpHome", "vm.helpHome", helpHomeModel(helpTitle, src.categories, entries), { titleText: helpTitle, description: en.format("help.home.intro") });
-  for (const c of src.categories) page(`help/${c.id}/`, "helpCategory", "vm.helpCategory", helpCategoryModel(c, entries), { titleText: c.title, description: c.summary });
-  for (const a of articles) page(`help/${a.entry.category}/${a.entry.id}/`, "helpArticle", "vm.helpArticle", helpArticleModel(a.content, byCategory.get(a.entry.category)!), a.content);
+  // Help is a section of the Slate docs (D-181): its old addresses redirect there.
+  const redirect = (path: string, to: string) => {
+    const html = renderRedirectDocument({ to: siteHref(path, to), title: en.format("site.nav.help"), label: en.format("site.help.redirect") });
+    out.push({ file: `${path}index.html`, html, title: en.format("site.nav.help") });
+  };
+  redirect("help/", HELP_DOCS);
+  for (const page of src.helpPages) redirect(`help/${page}/`, `documentations/#help/${page}.md`);
   return out;
 }

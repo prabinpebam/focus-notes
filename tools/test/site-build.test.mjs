@@ -23,17 +23,23 @@ const read = (out, file) => readFile(join(out, ...file.split("/")), "utf8");
 
 describe("HLP-08: the product site builds from site/ at its addresses (D-167)", () => {
   let out;
-  let categories;
+  let helpPages;
   beforeAll(async () => {
     out = join(tmp, "site");
     await buildSite({ content, out, renderer: { renderSite } });
-    categories = JSON.parse(readFileSync(join(content, "help", "categories.json"), "utf8"));
+    helpPages = (await readContent(content)).helpPages;
   });
 
-  it("renders the landing page, the help centre with every category, the demo, downloads and privacy", async () => {
-    const files = ["index.html", "help/index.html", "demo/index.html", "download/index.html", "privacy/index.html", ...categories.map((c) => `help/${c.id}/index.html`)];
-    for (const f of files) expect((await read(out, f)).length, f).toBeGreaterThan(0);
-    expect(categories.map((c) => c.title)).toEqual(["Get started", "Write", "Organize your notes", "Save and back up", "Private notes and sharing", "Fix a problem", "Reference", "For developers and AI agents"]);
+  it("renders the landing page, the demo, downloads and privacy; help is in the Slate docs, and its old addresses send visitors there (D-181)", async () => {
+    for (const f of ["index.html", "demo/index.html", "download/index.html", "privacy/index.html"]) expect((await read(out, f)).length, f).toBeGreaterThan(0);
+    expect(helpPages).toEqual(["get-started", "write", "organize", "save-and-back-up", "private-and-sharing", "fix-a-problem", "reference", "developers"]);
+    const home = await read(out, "help/index.html");
+    expect(home).toMatch(/<meta http-equiv="refresh" content="0; url=\.\.\/documentations\/#help\/index\.md" \/>/);
+    expect(home).toMatch(/<a href="\.\.\/documentations\/#help\/index\.md">Help is in the Focus Notes docs\. Go to Help<\/a>/);
+    expect(home).not.toMatch(/<script/);
+    expect(await read(out, "help/fix-a-problem/index.html")).toMatch(/url=\.\.\/\.\.\/documentations\/#help\/fix-a-problem\.md/);
+    // Every help page the redirects name is a Slate page in the docs.
+    for (const id of ["index", ...helpPages]) expect(readFileSync(join(root, "documentations", "help", `${id}.md`), "utf8")).toMatch(/^# .+\n[\s\S]*\*\*TL;DR\.\*\*/);
   });
 
   it("HLP-01, D-174: the landing page is visual first: the hero, the featured sections and the closing line, 120 words at most, every screenshot sized and described", async () => {
@@ -73,7 +79,7 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
   });
 
   it("every page is the design system's document: light and dark by the visitor's setting, no script, one main heading, the site's links", async () => {
-    for (const f of ["index.html", "help/index.html", "help/write/index.html", "privacy/index.html"]) {
+    for (const f of ["index.html", "download/index.html", "privacy/index.html"]) {
       const html = await read(out, f);
       expect(html, f).toMatch(/<html lang="en" data-theme="auto" data-page="site">/);
       expect(html, f).toMatch(/<meta name="color-scheme" content="light dark" \/>/);
@@ -84,35 +90,18 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
       expect(html, f).toMatch(/href="[./]*privacy\/"/);
       expect(html, f).toMatch(/href="[./]*app\/"/);
     }
-    expect(await read(out, "help/write/index.html")).toMatch(/aria-current="page"[^>]*>Help</);
+    expect(await read(out, "download/index.html")).toMatch(/aria-current="page"[^>]*>Download</);
+    expect(await read(out, "index.html")).toMatch(/href="documentations\/#help\/index\.md"[^>]*>Help</);
   });
 
-  it("HLP-03, PRV-01: every link resolves, and nothing names another origin but links to GitHub", async () => {
-    expect(await checkSite(out, { assume: ["app/", "documentations/"] })).toEqual([]);
+  it("HLP-03, PRV-01: every link resolves, including each docs page a link names, and nothing names another origin but links to GitHub", async () => {
+    await cp(join(root, "documentations", "help"), join(out, "documentations", "help"), { recursive: true });
+    await writeFile(join(out, "documentations", "index.html"), "");
+    expect(await checkSite(out, { assume: ["app/"] })).toEqual([]);
+    await rm(join(out, "documentations", "help", "fix-a-problem.md"));
+    expect(await checkSite(out, { assume: ["app/"] })).toEqual([expect.stringMatching(/help\/fix-a-problem\/index\.html: .* names a docs page that isn't there \(documentations\/help\/fix-a-problem\.md\)/)]);
   });
 
-  it("HLP-02: an article is at help/<category>/<id>/ with its category, Applies to, the date and release; a wrong category fails the build", async () => {
-    const src = join(tmp, "content");
-    await cp(content, src, { recursive: true });
-    await mkdir(join(src, "help", "get-started"), { recursive: true });
-    await writeFile(join(src, "help", "get-started", "connect-github.md"), "---\nid: connect-github\ntitle: Connect your GitHub account\ntype: how-to\ncategory: get-started\nappliesTo: [Desktop app on Windows, macOS, Linux]\nupdated: 2026-10-16\nrelease: 0.9.0\n---\n# Connect your GitHub account\n\nSign in once, and Focus Notes backs up your notes.\n");
-    const o = join(tmp, "with-article");
-    await buildSite({ content: src, out: o, renderer: { renderSite } });
-    const html = await read(o, "help/get-started/connect-github/index.html");
-    expect(html).toMatch(/<title>Connect your GitHub account · Focus Notes<\/title>/);
-    expect(html).toMatch(/Applies to: Desktop app on Windows, macOS, Linux/);
-    expect(html).toMatch(/Updated October 16, 2026, for Focus Notes 0\.9\.0/);
-    expect(html).toMatch(/href="\.\.\/"[^>]*>Get started</);
-    expect(await read(o, "help/index.html")).toMatch(/href="get-started\/connect-github\/"/);
-    expect(await read(o, "help/get-started/index.html")).toMatch(/href="connect-github\/"/);
-    expect(await checkSite(o, { assume: ["app/", "documentations/"] })).toEqual([]);
-
-    await writeFile(join(src, "help", "get-started", "connect-github.md"), "---\nid: connect\n---\n# Hi\n");
-    await expect(buildSite({ content: src, out: join(tmp, "bad"), renderer: { renderSite } })).rejects.toThrow(/its id is "connect"/);
-    await rm(join(src, "help", "get-started", "connect-github.md"));
-    await writeFile(join(src, "help", "get-started", "Connect GitHub.md"), "# Hi\n");
-    await expect(buildSite({ content: src, out: join(tmp, "bad2"), renderer: { renderSite } })).rejects.toThrow(/isn't a usable article ID/);
-  });
 });
 
 describe("the site's check fails on what HLP-03 and PRV-01 forbid", () => {
@@ -161,11 +150,11 @@ describe("D-167: the owner's app moves to /app/, and share links keep working at
     await expect(placeApp(app, join(tmp, "placed-left"))).rejects.toThrow(/still has a "\.\.\/" reference/);
   });
 
-  it("security review I1: a category ID that isn't lowercase words joined by hyphens fails before it's used as a path", async () => {
-    const src = join(tmp, "bad-category");
-    await cp(content, src, { recursive: true });
-    await writeFile(join(src, "help", "categories.json"), JSON.stringify([{ id: "../../outside", title: "x", summary: "" }]));
-    await expect(readContent(src)).rejects.toThrow(/isn't a usable category ID/);
+  it("security review I1: a help page name that isn't lowercase words joined by hyphens fails before it's used as a path", async () => {
+    const docs = join(tmp, "bad-docs");
+    await mkdir(docs, { recursive: true });
+    await writeFile(join(docs, "docs-manifest.json"), JSON.stringify({ version: 1, entries: [{ path: "help/../../outside.md" }, { path: "help/Bad Name.md" }] }));
+    await expect(readContent(content, docs)).rejects.toThrow(/isn't a usable help page name/);
   });
 
   it("the Deploy app workflow builds the app to read the notes from the site's root, builds the site, then publishes the notes at the root", () => {
@@ -190,9 +179,9 @@ describe("D-167: the owner's app moves to /app/, and share links keep working at
     expect(steps[at(/Publish the notes/)].run).toMatch(/--site _site /);
   });
 
-  it("the content's folders: the landing page, plain pages, and the help centre's categories", async () => {
+  it("the content's folders: the landing page and plain pages; the help pages come from the docs", async () => {
     const c = await readContent(content);
     expect(c.pages.map((p) => p.path)).toEqual(["download/", "privacy/", "demo/"]);
-    expect(c.categories).toHaveLength(8);
+    expect(c.helpPages).toHaveLength(8);
   });
 });
