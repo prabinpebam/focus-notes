@@ -74,6 +74,16 @@ describe("the block handle (EDT-07)", () => {
     ]);
     expect(app.store.state.announcement.text).toBe("Block moved");
   });
+  it("announces block selection mode politely: Block selected, 3 blocks selected (KEY-04)", async () => {
+    const { app } = await started();
+    await app.commands.run("block.selected", { count: 1 });
+    expect(app.store.state.announcement.text).toBe("Block selected");
+    await app.commands.run("block.selected", { count: 3 });
+    expect(app.store.state.announcement.text).toBe("3 blocks selected");
+    const n = app.store.state.announcement.n;
+    await app.commands.run("block.selected", { count: 0 });
+    expect(app.store.state.announcement.n).toBe(n);
+  });
   it("Shift+F10 outside a table asks for the menu: the request opens it at the caret's block", async () => {
     const { app, vm } = await started();
     expect(app.commands.shortcut("block.contextMenu")).toMatchObject({ default: "Shift+F10", handledBy: "editor" });

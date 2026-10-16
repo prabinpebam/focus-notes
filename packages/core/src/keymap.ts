@@ -58,6 +58,8 @@ export const EDITOR_COMMANDS: readonly EditorCommandSpec[] = [
   ed("block.delete", "Mod+Shift+K", "power", "blocks"),
   // Pro layer (KEY-04, D-160): expand and shrink selection, as VS Code does.
   ed("edit.expandSelection", { macos: "Ctrl+Shift+Mod+Right", default: "Shift+Alt+Right" }, "pro", "editing"),
+  // Block selection mode (KEY-04): Esc while typing, outside a table (where Esc selects cells).
+  ed("block.select", "Escape", "pro", "blocks"),
   // The block menu (EDT-07): outside a table, Shift+F10 or the Menu key opens it at the caret's block.
   ed("block.contextMenu", { default: "Shift+F10", alternates: { default: ["ContextMenu"] } }, "pro", "blocks"),
   ed("edit.shrinkSelection", { macos: "Ctrl+Shift+Mod+Left", default: "Shift+Alt+Left" }, "pro", "editing"),

@@ -7996,7 +7996,12 @@
             "text": "text"
           }
         },
-        "blockMenu": {}
+        "blockMenu": {},
+        "blockSelect": {
+          "payload": {
+            "count": "number"
+          }
+        }
       },
       "slots": {},
       "states": [

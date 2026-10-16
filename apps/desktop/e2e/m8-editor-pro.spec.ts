@@ -121,6 +121,8 @@ test("FND-03 by keyboard: Alt+L finds only inside the selection, steps inside it
   await expect.poll(l.saved).toBe("# Notes\n\nA note before.\n\nThe middle memo, and another memo.\n\nA note after.\n");
   await page.keyboard.press("Escape");
   await expect(bar).toBeHidden();
+  // The caret goes back to the note a frame after the bar closes.
+  await expect(editor).toBeFocused();
   await page.keyboard.press(`${mod}+z`);
   await expect.poll(l.saved).toBe("# Notes\n\nA note before.\n\nThe middle note, and another note.\n\nA note after.\n");
 
@@ -201,5 +203,43 @@ test("EDT-07 by keyboard: Shift+F10 outside a table opens the caret's block menu
   await page.keyboard.press("Escape");
   await expect(page.getByRole("menu")).toHaveCount(0);
   await expect(editor).toBeFocused();
+  await quit(l);
+});
+
+test("KEY-04 block selection mode: Esc selects the block, Shift+↓ extends, Backspace deletes, Mod+Z restores, Esc goes back to typing", async () => {
+  const l = await start("# Plan\n\nFirst para.\n\nSecond para.\n\nThird para.\n");
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  // The caret is at the end of the third paragraph; up to the second.
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("Escape");
+  const selected = editor.locator("[data-block-selected]");
+  await expect(selected).toHaveText(["Second para."]);
+  await expect(page.getByRole("status").filter({ hasText: "Block selected" })).toHaveCount(1);
+  expect(await settledAxe(page)).toEqual([]);
+  await page.keyboard.press("Shift+ArrowDown");
+  await expect(selected).toHaveText(["Second para.", "Third para."]);
+  await expect(page.getByRole("status").filter({ hasText: "2 blocks selected" })).toHaveCount(1);
+  await page.keyboard.press("Backspace");
+  await expect.poll(l.saved).toBe("# Plan\n\nFirst para.\n");
+  await expect(selected).toHaveCount(0);
+  await page.keyboard.press(`${mod}+z`);
+  await expect.poll(l.saved).toBe("# Plan\n\nFirst para.\n\nSecond para.\n\nThird para.\n");
+  // Esc, ↑ to the first paragraph, Mod+Shift+↓ moves it down; Esc again goes back to typing, and typing replaces nothing.
+  await page.keyboard.press(caret.docEnd);
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("ArrowUp");
+  await expect(selected).toHaveText(["First para."]);
+  await page.keyboard.press(`${mod}+Shift+ArrowDown`);
+  await expect.poll(l.saved).toBe("# Plan\n\nSecond para.\n\nFirst para.\n\nThird para.\n");
+  await expect(selected).toHaveText(["First para."]);
+  await page.keyboard.press("Escape");
+  await expect(selected).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.keyboard.type("!");
+  await expect(selected).toHaveCount(0);
+  await expect.poll(l.saved).toMatch(/!/);
+  expect(l.saved()).toContain("Second para.\n\nFirst para.\n\nThird para.");
   await quit(l);
 });

@@ -80,6 +80,8 @@ export interface EditorSurfaceProps {
   onBlock?: (payload: BlockPayload) => void;
   /** The block menu was asked for from the keyboard (Shift+F10 or the Menu key outside a table). */
   onBlockMenu?: () => void;
+  /** Block selection mode selected this many blocks (0: it ended), to announce (KEY-04). */
+  onBlockSelect?: (payload: { count: number }) => void;
 }
 
 /** Find waits this long after the last keystroke in its field before searching (FND-01). */
@@ -130,7 +132,7 @@ export function EditorSurface({
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList,
   id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onFormat, onLinkEdit, onOpenLink, onSlash, onSlashMove, onPasteNotice,
-  onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu,
+  onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
@@ -146,8 +148,8 @@ export function EditorSurface({
   const tableRef = useRef({ onTable, onTableChange, onTableCopy, onTableMenu });
   tableRef.current = { onTable, onTableChange, onTableCopy, onTableMenu };
   const tables = useRef<TableTracker | null>(null);
-  const blockRef = useRef({ onBlock, onBlockMenu });
-  blockRef.current = { onBlock, onBlockMenu };
+  const blockRef = useRef({ onBlock, onBlockMenu, onBlockSelect });
+  blockRef.current = { onBlock, onBlockMenu, onBlockSelect };
   const blocks = useRef<BlockTracker | null>(null);
   const slashRef = useRef({ open: Boolean(slashOpen), active: slashActive, onSlash, onSlashMove });
   slashRef.current = { open: Boolean(slashOpen), active: slashActive, onSlash, onSlashMove };
@@ -197,6 +199,7 @@ export function EditorSurface({
           openLink: (href) => formatRef.current.onOpenLink?.({ href }),
           ghostClass: s.ghost,
           findScopeClass: s.findScope,
+          blockSelectedClass: s.blockSelected,
           emptyHeader: (index) => emptyHeaderElement((emptyHeaderRef.current ?? "").replace("{index}", String(index))),
           onPasteNotice: (kind, args = {}) => formatRef.current.onPasteNotice?.({ kind, rows: args.rows ?? 0, cols: args.cols ?? 0, addedRows: args.addedRows ?? 0, addedCols: args.addedCols ?? 0 }),
           onTableChange: (c) => tableRef.current.onTableChange?.({ kind: c.kind, index: c.index ?? 0, align: c.align ?? "" }),
@@ -211,6 +214,7 @@ export function EditorSurface({
             blocks.current?.menu();
             blockRef.current.onBlockMenu?.();
           },
+          onBlockSelect: (count) => blockRef.current.onBlockSelect?.({ count }),
         }),
         Placeholder.configure({ placeholder: placeholder ?? "" }),
       ],

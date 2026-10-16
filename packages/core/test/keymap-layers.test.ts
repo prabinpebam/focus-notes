@@ -257,7 +257,7 @@ describe("Underline (KEY-03, Basic)", () => {
 const PRO: Record<string, Cover> = {
   "Expand / shrink selection (word → sentence → block → note)": ["edit.expandSelection", "edit.shrinkSelection"],
   "Copy the note as Markdown (desktop)": { planned: "WP-8.1's second box (a note command with the clipboard bridge)" },
-  "Block selection mode": { planned: "WP-8.1's second box: Esc in the note is a quiet key today, so taking it needs every editor journey re-run (D-160)" },
+  "Block selection mode": ["block.select"],
   "Block menu (the block handle's), outside a table": ["block.contextMenu"],
   "Cell selection mode (Esc again goes back to typing)": ["table.selectCells"],
   "Cell menu: every row and column action": ["table.contextMenu"],

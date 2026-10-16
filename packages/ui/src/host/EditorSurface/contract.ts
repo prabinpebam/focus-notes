@@ -49,6 +49,7 @@ export const contract = defineContract({
     tableMenu: {},
     block: { payload: { visible: "boolean", block: "number", kind: "text", level: "number", first: "boolean", last: "boolean", text: "text" } },
     blockMenu: {},
+    blockSelect: { payload: { count: "number" } },
   },
   slots: {},
   states: ["empty", "editing", "readOnly"],

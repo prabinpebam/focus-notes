@@ -300,6 +300,8 @@ globalStyle(`${prose}.ProseMirror-hideselection`, { caretColor: "transparent" })
 export const ghost = style({ backgroundColor: t.selectionGhost, color: t.selectionGhostText });
 // Find in selection's scope (FND-03): the held selection's faint tint, under the match highlights.
 export const findScope = style({ backgroundColor: t.selectionGhost });
+// Block selection mode (KEY-04): the selected blocks take the selection color, as a selected cell range does.
+export const blockSelected = style({ backgroundColor: t.tableSelection, borderRadius: t.findMatchOutlineWidth });
 // An empty header cell's column name: muted, zero-width so the caret stays at the cell's start, and
 // never selected or clicked.
 export const emptyHeader = style({
