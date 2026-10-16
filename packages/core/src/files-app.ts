@@ -546,6 +546,9 @@ export function registerFiles(ctx: Ctx) {
 
   // ---- who can see a note: Make public, Make private (FIL-06, SHR-01, SHR-02) ----
   /** The items a visibility change acts on: the Files selection while the panel is open, else the open note. */
+  // A public note held out of Git says so (D-158): not backed up yet, or kept on this computer.
+  const publicDescription = (s: AppState, path: string) =>
+    catalog.format(s.ui.held.held.waiting.includes(path) ? "held.pill.waiting" : s.ui.held.held.local.includes(path) ? "held.pill.local" : "files.public");
   const visibilityTargets = (s: AppState): string[] => {
     const f = s.ui.files;
     const t = s.workspace.tree;
@@ -801,7 +804,7 @@ export function registerFiles(ctx: Ctx) {
     },
     setters: { filter: "files.setFilter", editValue: "files.setEditValue" },
     // The tree, the open note, and whether the workspace can be written (PRF-11). Cheap while closed.
-    reads: ["ui.files", "workspace", "note.path"],
+    reads: ["ui.files", "workspace", "note.path", "ui.held"],
     shows: (s) => (s.ui.files.open ? [{ kind: "tree" }] : []),
     select: (s) => {
       const f = s.ui.files;
@@ -813,7 +816,7 @@ export function registerFiles(ctx: Ctx) {
       const items: Record<string, unknown>[] = rows.map((r) => ({
         id: r.id, kind: r.kind === "root" ? "section" : r.kind, level: r.level,
         label: r.kind === "root" ? rootLabel(r.rootId) : r.label,
-        description: r.readOnly ? catalog.format("files.readOnly") : r.rootId === "public" && r.kind === "note" ? catalog.format("files.public") : "",
+        description: r.readOnly ? catalog.format("files.readOnly") : r.rootId === "public" && r.kind === "note" ? publicDescription(s, r.path) : "",
         title: r.kind === "note" ? r.name : "", parent: r.parent ?? "",
         expanded: r.expanded, hasChildren: r.hasChildren, selected: selected.has(r.id), current: r.path === s.note.path && r.kind === "note",
         pending: pending.has(r.id), readOnly: r.readOnly,

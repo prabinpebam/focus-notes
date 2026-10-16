@@ -208,6 +208,24 @@ The main process decides when to commit and push from how much changed, so histo
 
 One pure function (`backupDueAt` in `git/cadence.ts`) gives the earliest moment a backup is due, and one timer waits for it, restarted by each write; the totals start again when a backup's commit starts. The thresholds are one object (`BACKUP_POLICY`); until Settings has them, `FOCUS_NOTES_IDLE_COMMIT_MS` (the 60 s pause), `FOCUS_NOTES_BACKUP_SHORT_MS`, `FOCUS_NOTES_BACKUP_MIN_CHARS`, `FOCUS_NOTES_BACKUP_BIG_CHARS`, `FOCUS_NOTES_BACKUP_STALE_MS`, `FOCUS_NOTES_BACKUP_CEILING_MS` and `FOCUS_NOTES_POINTER_GAP_MS` set them, which the journey tests use.
 
+### New notes without a private repository
+
+A workspace cloned without access to its private repository (FRE-06) has only the *Public* root, so a new note goes in `notes/`. It's never published silently (D-158, SHR-01):
+
+1. **Held from creation.** Before the new note's file is first written, the main process adds its path to the block the app manages in the notes repository's `info/exclude`, in Git's common folder (local to this clone, never committed or pushed). `git status` doesn't list ignored files, so the note is never staged by the app's backups, or by `git add -A` in a terminal, and the hold survives quitting and crashes.
+2. **Two lists.** The block has the notes that wait for an answer and the notes kept on this computer, each a path anchored at the repository's top (`/notes/…`) with Git's wildcard characters escaped:
+
+   ```text
+   # >>> Focus Notes (D-158): new public notes waiting for an answer. Managed by the app.
+   /notes/Untitled.md
+   # --- Focus Notes (D-158): notes kept on this computer only.
+   /notes/journal.md
+   # <<< Focus Notes
+   ```
+
+3. **Asked once.** *Make it public* removes the line, and the note is backed up with the next save; *Keep it on this computer only* moves it to the second list. Lines outside the block are never touched.
+4. **The hold follows the note.** A rename that follows the title, a Files move, and a delete update the line before the file changes; a held note's folder moved in Files carries the lines under it. Another program renaming a held note loses its hold (the residual risk in D-158).
+
 ### Settling a conflict
 
 The resolver ([Feedback → Conflict resolver](../design/components/feedback-and-dialogs.md#conflict-resolver)) asks the main process for the notes in conflict, private repository first: the paths both sides changed since they parted (`git merge-base`, then `git diff --raw` each way) to different results, plus files with uncommitted changes that the other side changed too. This computer's version is the file as it is now; the other is read from the remote-tracking branch through `git cat-file --batch`, and when it was made from that branch's log. No note name is ever a process argument (SEC-03): revisions and paths go through standard input.
