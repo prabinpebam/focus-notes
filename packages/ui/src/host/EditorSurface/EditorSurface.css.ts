@@ -9,8 +9,23 @@ export const tableGutterVar = createVar({ syntax: "<length>", inherits: false, i
 export const tableReachVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 export const tableBoundaryVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 
+/**
+ * Beside a pinned Files sheet (D-161): how far the column's box starts from the scroller's left, set by
+ * EditorSurface from the sheet's edge (0: centred). Registered and inherited, so it glides over
+ * motion.sheet on the scroller while the column's margins follow it; a window resize moves nothing late.
+ */
+export const pinnedClearVar = createVar({ syntax: "<length>", inherits: true, initialValue: "0px" });
+/** The gap after the sheet and the narrowest text, read in pixels (pinned-sheet.ts). */
+export const pinnedGapVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const pinnedMinVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+
 export const scroller = style({
-  vars: { [tableGutterVar]: t.tableGutter, [tableReachVar]: t.tableEdgeReach, [tableBoundaryVar]: t.tableBoundaryReach },
+  vars: { [tableGutterVar]: t.tableGutter, [tableReachVar]: t.tableEdgeReach, [tableBoundaryVar]: t.tableBoundaryReach, [pinnedGapVar]: t.pinnedGap, [pinnedMinVar]: t.pinnedColumnMin },
+  transitionProperty: pinnedClearVar.slice(4, -1),
+  transitionDuration: t.pinnedDuration,
+  transitionTimingFunction: t.pinnedEasing,
+  // The first layout and a window resize move the column at once; only pinning and unpinning glide.
+  selectors: { "&[data-pinned-instant]": { transitionDuration: t.pinnedInstant } },
   flexGrow: 1,
   minHeight: 0,
   overflowY: "auto",
@@ -138,7 +153,10 @@ export const fade = styleVariants({
 export const column = style({
   position: "relative",
   maxWidth: `calc(${t.measure} + 2 * ${t.gutter})`,
-  marginInline: "auto",
+  // Centred, in what's right of a pinned Files sheet when there is one (D-161): with no sheet, the
+  // same as auto margins; the column narrows when the space is less than its measure.
+  marginInlineStart: `calc(${pinnedClearVar} + max(0px, (100% - ${pinnedClearVar} - ${t.measure} - 2 * ${t.gutter}) / 2))`,
+  marginInlineEnd: `max(0px, (100% - ${pinnedClearVar} - ${t.measure} - 2 * ${t.gutter}) / 2)`,
   paddingInline: t.gutter,
   // The reading zone (UI-11): the note starts 25% down the window (never under the trigger band)
   // and its last line can scroll up to leave 35% below it.

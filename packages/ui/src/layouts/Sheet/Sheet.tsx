@@ -4,6 +4,7 @@ import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import type { KeyScope } from "../../data.ts";
 import { fixedBox } from "../../behaviors/frame.ts";
 import { placeSheet } from "./place.ts";
+import { pinnedSheet } from "../../behaviors/pinned-sheet.ts";
 import * as s from "./Sheet.css.ts";
 
 export interface SheetProps {
@@ -13,6 +14,8 @@ export interface SheetProps {
   width?: keyof typeof s.width;
   /** Keys registered for this scope work while focus is inside. */
   keyScope?: KeyScope;
+  /** Pinned open (D-161): a click on the canvas leaves it open, and a start sheet keeps the note's text clear of it. */
+  pinned?: boolean;
   /** What stays above the scrolling body: the title, actions, a filter. */
   header?: ReactNode;
   /** What stays below it: Recently deleted in Files. */
@@ -38,7 +41,7 @@ function placed(el: HTMLElement, side: "start" | "end") {
  * A side sheet (IA → Surface types): floats over the canvas without moving the reading column,
  * and closes on Esc or a click on the canvas. It isn't modal: the note stays readable beside it.
  */
-export function Sheet({ label, side = "start", width = "files", keyScope = "none", header, footer, id, children, onClose }: SheetProps) {
+export function Sheet({ label, side = "start", width = "files", keyScope = "none", pinned = false, header, footer, id, children, onClose }: SheetProps) {
   const ref = useRef<HTMLElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useAutoHideScrollbar(bodyRef);
@@ -46,11 +49,13 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
   useAutoHideScrollbar(mainRef);
   const close = useRef(onClose);
   close.current = onClose;
+  const pinnedRef = useRef(pinned);
+  pinnedRef.current = pinned;
   useEffect(() => {
     // A click on the note (or the window's background) closes it; menus and dialogs it opened don't.
     const down = (e: PointerEvent) => {
       const target = e.target instanceof Element ? e.target : null;
-      if (!target || ref.current?.contains(target)) return;
+      if (!target || ref.current?.contains(target) || pinnedRef.current) return;
       if (target.closest("[data-editor]") || target === document.body || target === document.documentElement || target.hasAttribute("data-theme")) close.current?.();
     };
     document.addEventListener("pointerdown", down, true);
@@ -65,6 +70,8 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
       const p = placed(el, side);
       el.style.setProperty(name(s.insetVar), `${p.inset}px`);
       el.style.setProperty(name(s.limitVar), `${p.width}px`);
+      // Where a pinned sheet ends: the note keeps its text clear of it (D-161).
+      if (pinned && side === "start") pinnedSheet.set(Math.round(fixedBox(el).left + p.inset + p.width));
       // Too short for a fixed header: it scrolls with the content (Sheet.css.ts).
       if (fixedBox(el).height - 2 * p.inset < px(el, s.shortVar)) el.dataset.short = "";
       else delete el.dataset.short;
@@ -81,8 +88,9 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
       cancelAnimationFrame(frame);
       removeEventListener("resize", schedule);
       bands.disconnect();
+      if (pinned && side === "start") pinnedSheet.set(undefined);
     };
-  }, [side, width]);
+  }, [side, width, pinned]);
   const keyDown = (e: KeyboardEvent) => {
     if (e.key !== "Escape" || e.defaultPrevented) return;
     e.preventDefault();
@@ -97,6 +105,7 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
         className={`${s.sheet} ${s.side[side]} ${s.width[width]}`}
         data-surface="sheet"
         data-side={side}
+        data-pinned={pinned ? "" : undefined}
         data-key-scope={keyScope === "none" ? undefined : keyScope}
         onKeyDown={keyDown}
       >

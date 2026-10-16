@@ -88,12 +88,24 @@ export function trackFormatting(editor: Editor, scroller: HTMLElement, emit: (p:
     const { from, to } = editor.state.selection;
     return `${from}:${to}`;
   };
+  /**
+   * A live reader for an anchor (DEF-21): the range's box now, while the document (and, for the
+   * selection, the selection) is the one it was published for; else the published rectangle stands.
+   */
+  const live = (from: number, to: number, selection: boolean) => {
+    const doc = editor.state.doc;
+    return () => {
+      if (editor.isDestroyed || editor.state.doc !== doc) return null;
+      const s = editor.state.selection;
+      return !selection || (s.from === from && s.to === to) ? rangeRect(view, from, to) : null;
+    };
+  };
   const publish = (toolbar: boolean, card: boolean, info: ReturnType<typeof formatState>, href: string) => {
     const { from, to } = editor.state.selection;
-    if (toolbar || hold) anchors.set("selection", rangeRect(view, from, to));
+    if (toolbar || hold) anchors.set("selection", rangeRect(view, from, to), live(from, to, true));
     if (card) {
       const r = hover && !info.link ? hover : info.link;
-      if (r) anchors.set("link", rangeRect(view, r.from, r.to));
+      if (r) anchors.set("link", rangeRect(view, r.from, r.to), live(r.from, r.to, false));
     }
     const p: FormatPayload = {
       toolbar, card, bold: info.marks.bold, italic: info.marks.italic, strike: info.marks.strike, code: info.marks.code,

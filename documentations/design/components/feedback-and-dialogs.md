@@ -107,6 +107,7 @@ A task has a target (the node it affects, by ID), a message key that says what's
 - App-drawn, so it follows the theme the same way on the web and the desktop. On the desktop, spelling suggestions from the OS spell checker appear at the top when right-clicking a misspelled word.
 - 14 px items with shortcuts right-aligned and dividers between groups. Submenus open with › on <kbd>→</kbd> or after a 200 ms hover. Destructive items come last. At most about 12 items, and the rest go into submenus.
 - It holds the same actions as the visible controls for that item. It's never the only way to reach anything.
+- It's the same `CommandMenu` as every app menu, in a popover at the pointer (right-click) or at the item (keyboard, ⋯). <kbd>Esc</kbd> returns focus to the item. An unavailable item stays reachable and shows why. First used for the Files rows ([Files panel → Row menu](../views/files.html#row-menu), D-162).
 
 <h2 id="move-to-picker" data-reader-personas="design product">Move to picker</h2>
 

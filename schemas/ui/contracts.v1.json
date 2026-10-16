@@ -2786,7 +2786,7 @@
     {
       "type": "FileTree",
       "tier": "primitive",
-      "description": "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, and an inline name field.",
+      "description": "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, an inline name field, and each row's menu (D-162).",
       "props": {
         "label": {
           "kind": "message",
@@ -2818,6 +2818,15 @@
         "editError": {
           "kind": "text",
           "description": "Why the name can't be used, under the field."
+        },
+        "menu": {
+          "kind": "list",
+          "of": "menuSections",
+          "description": "The focused row's menu (D-162): opened by right-click, the row's ⋯, Shift+F10, or the Menu key."
+        },
+        "menuLabel": {
+          "kind": "text",
+          "description": "The menu's name: Actions for “Ideas”."
         }
       },
       "events": {
@@ -2850,7 +2859,12 @@
           },
           "binds": "editValue"
         },
-        "editBlur": {}
+        "editBlur": {},
+        "menuAction": {
+          "payload": {
+            "id": "text"
+          }
+        }
       },
       "slots": {},
       "states": [
@@ -2864,7 +2878,8 @@
         "invalid",
         "dropTarget",
         "pending",
-        "readOnly"
+        "readOnly",
+        "menuOpen"
       ],
       "tokens": "cmp.fileTree.*",
       "a11y": {
@@ -7581,6 +7596,11 @@
           ],
           "default": "none",
           "description": "Keys registered for this scope work while focus is inside."
+        },
+        "pinned": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Pinned open (D-161): a click on the canvas doesn't close it, and a start sheet keeps the note's text clear of it. Still floating, never docked."
         }
       },
       "events": {
@@ -7599,7 +7619,8 @@
       },
       "states": [
         "rest",
-        "entering"
+        "entering",
+        "pinned"
       ],
       "tokens": "cmp.sheet.*",
       "a11y": {

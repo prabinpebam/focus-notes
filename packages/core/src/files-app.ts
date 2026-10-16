@@ -13,16 +13,19 @@ import { sourceOf } from "./notes.ts";
 import { groupByDay, type DeletedNote } from "./history.ts";
 import { planLinkWrites, rewriteLinks, sameRootOf, type LinkWrite, type PathMove } from "./links.ts";
 import {
-  actedOn, ancestorsOf, destinations, isRootRow, keepShowing, NO_SELECTION, rebase, rootRowId, select, selectAll, targetFolder, titleOfNode,
-  topLevel, visibleRows, type FileRow, type Selection,
+  actedOn, ancestorsOf, copyTitle, destinations, isRootRow, keepShowing, NO_SELECTION, rebase, rootRowId, rowMenu, select, selectAll, targetFolder, titleOfNode,
+  topLevel, visibleRows, withoutNoteId, type FileRow, type Selection,
 } from "./files.ts";
+import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
 import {
-  applyChanges, buildTree, dirOf, findNode, isWithin, joinPath, planCreateFolder, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf,
+  applyChanges, buildTree, dirOf, findNode, isWithin, joinPath, planCreateFolder, planCreateNote, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf,
   visibilityOf, walk, type RefusalReason, type WorkspaceTree,
 } from "./workspace.ts";
 
 export interface FilesState {
   open: boolean;
+  /** Pinned open (D-161): opening a note, a click on the canvas, and Esc leave it open. */
+  pinned: boolean;
   /** Open folders, by path, and collapsed root sections, by row ID. */
   expanded: readonly string[];
   collapsed: readonly string[];
@@ -45,7 +48,7 @@ export interface FilesState {
   recent: { open: boolean; loading: boolean; notes?: readonly DeletedNote[]; focus: number };
 }
 export const FILES_CLOSED: FilesState = {
-  open: false, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", focusRequest: 0, pending: [],
+  open: false, pinned: false, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", focusRequest: 0, pending: [],
   move: { open: false, query: "", activeId: "", paths: [], focus: 0 },
   recent: { open: false, loading: false, focus: 0 },
 };
@@ -67,6 +70,8 @@ interface Ctx {
   loaded: (path: string, markdown: string) => void;
   describeItem: (id: string) => Record<string, unknown>;
   itemSchema: Record<string, unknown>;
+  /** Runs an editor action: `edit.focus` puts the caret back in the note. */
+  editorAction: (id: string) => void;
 }
 
 const REASONS: Record<RefusalReason | OpErrorCode, string> = {
@@ -136,12 +141,39 @@ export function registerFiles(ctx: Ctx) {
     setFiles((f) => ({ selection: keepShowing(f.selection, rowsOf(store.state)) }));
   };
   const close = () => setFiles((f) => ({ open: false, edit: undefined, confirm: undefined, move: { ...f.move, open: false }, recent: { ...f.recent, open: false } }));
-  commands.register({ id: "files.open", title: "command.files.open", icon: "open", enabled: () => Boolean(ws), run: () => (files().open ? close() : reveal()) });
+  /** What would close an unpinned panel (opening a note, a new note): pinned, it stays (D-161). */
+  const dismiss = () => { if (!files().pinned) close(); };
+  /** Pinned, Mod+O moves focus into the tree rather than closing it (D-161). */
+  commands.register({
+    id: "files.open", title: "command.files.open", icon: "open", enabled: () => Boolean(ws),
+    run: () => (files().pinned && files().open ? setFiles((f) => ({ focusRequest: f.focusRequest + 1 })) : files().open ? close() : reveal()),
+  });
   commands.register<{ path: string }>({
     id: "files.reveal", title: "command.files.reveal", shortcut: { default: "Mod+Shift+E" }, layer: "power", group: "files",
     enabled: () => Boolean(ws), run: ({ path }) => reveal(typeof path === "string" && path ? path : undefined),
   });
-  commands.register({ id: "files.close", title: "command.files.close", run: close });
+  // Esc in the panel: pinned, the caret goes back to the note and the panel stays (D-161).
+  commands.register({ id: "files.close", title: "command.files.close", run: () => (files().pinned ? ctx.editorAction("edit.focus") : close()) });
+  // Mod+O in the panel: back to the note when pinned; closes it otherwise, as Mod+O always has.
+  commands.register({
+    id: "files.focusNote", title: "command.files.focusNote", shortcut: { default: "Mod+O", handledBy: "files" }, layer: "basic", group: "files",
+    run: () => (files().pinned ? ctx.editorAction("edit.focus") : close()),
+  });
+  // ---- pinning (D-161): kept on this device ----
+  const setPinned = (pinned: boolean) => {
+    setFiles(() => ({ pinned }));
+    void ctx.persistAppState({ filesPinned: pinned ? true : undefined });
+  };
+  commands.register({
+    id: "files.togglePin", title: "command.files.togglePin", icon: "pin", shortcut: { default: "Mod+Alt+P" }, layer: "power", group: "files",
+    enabled: () => Boolean(ws), checked: () => files().pinned,
+    run: () => {
+      const on = !files().pinned;
+      if (on && !files().open) reveal();
+      setPinned(on);
+      announce(catalog.format(on ? "files.pinnedNow" : "files.unpinnedNow"));
+    },
+  });
 
   // ---- the tree: focus, selection, folders ----
   commands.register<{ id: string; mode: string }>({
@@ -168,8 +200,8 @@ export function registerFiles(ctx: Ctx) {
     const row = rowById(id);
     if (!row) return;
     if (row.kind !== "note") return setExpanded(row.id, !row.expanded);
-    // Opening a note closes the panel (DD-FILES-01).
-    close();
+    // Opening a note closes the panel (DD-FILES-01), unless it's pinned (D-161).
+    dismiss();
     if (store.state.note.path !== row.path) await ctx.load(row.path);
   };
   commands.register<{ id: string }>({ id: "files.activate", title: "command.files.openItem", run: ({ id }) => activate(String(id)) });
@@ -448,8 +480,75 @@ export function registerFiles(ctx: Ctx) {
   });
   commands.register<{ open: boolean }>({ id: "files.setConfirmOpen", title: "command.files.confirm", run: ({ open }) => { if (!open) setFiles((f) => ({ confirm: undefined, focusRequest: f.focusRequest + 1 })); } });
 
+  // ---- duplicating (FIL-11's duplicate, D-162) ----
+  /**
+   * The notes Duplicate copies: with the panel open, the selection's notes when the focused row is in it,
+   * else the focused note; from elsewhere (Spotlight), the open note.
+   */
+  const duplicateTargets = (s: AppState): string[] => {
+    const f = s.ui.files;
+    if (!f.open) return s.note.path && findNode(s.workspace.tree, s.note.path) && !rootOf(s.workspace.tree, s.note.path)?.readOnly ? [s.note.path] : [];
+    const rows = rowsOf(s);
+    return actedOn(f.selection, f.selection.focus).map((id) => rows.find((r) => r.id === id)).filter((r): r is FileRow => r?.kind === "note" && !r.readOnly).map((r) => r.path);
+  };
+  async function doDuplicate(paths: string[]): Promise<void> {
+    if (!paths.length || !canWrite(store.state)) return;
+    const what = whatOf(paths);
+    const failed = (why: string) => catalog.format("files.duplicateFailed", { what, reason: why });
+    let t = tree();
+    const copies: { path: string; title: string; text: string }[] = [];
+    try {
+      for (const p of paths) {
+        const found = findNode(t, p);
+        if (!found || found.node.kind !== "note") continue;
+        // Clear of the titles beside it, copies made just now included.
+        const beside = findNode(t, p)!.parent.filter((n) => n.kind === "note").map(titleOfNode);
+        const title = copyTitle(titleOfNode(found.node), beside, (name, n) => catalog.format(n === 1 ? "files.copyTitle" : "files.copyTitleN", { title: name, n }));
+        const plan = planCreateNote(t, dirOf(p), title);
+        if (plan.kind === "refused") return void toast(failed(reason(plan.reason)), { tone: "error" });
+        const text = p === store.state.note.path ? store.state.note.markdown : await bridge.readNote(p);
+        t = applyChanges(plan.tree, [{ path: plan.path, kind: "note", exists: true, title }]);
+        copies.push({ path: plan.path, title, text: retitle(withoutNoteId(text), title) });
+      }
+    } catch (e) {
+      return void toast(failed(reason(opErrorCode(e))), { tone: "error" });
+    }
+    if (!copies.length) return;
+    const made = copies.map((c) => c.path);
+    await perform(t, copies.map((c) => ({ op: "create" as const, path: c.path, text: c.text })), {
+      touched: made, select: made, done: catalog.format("files.duplicated", { what }), failed,
+      undo: () => removeCopies(made),
+    });
+  }
+  /** Undo for Duplicate: the copies go, as one more batch. */
+  async function removeCopies(paths: readonly string[]): Promise<void> {
+    const what = whatOf(paths);
+    const plan = planDelete(tree(), paths);
+    if (plan.kind === "refused") return void refused("files.undoFailed", { what }, plan.reason);
+    await perform(plan.tree, paths.map((path) => ({ op: "delete" as const, path })), {
+      touched: [], deletes: [...paths], done: catalog.format("files.copyRemoved", { what }),
+      failed: (why) => catalog.format("files.undoFailed", { what, reason: why }),
+    });
+  }
+  commands.register({
+    id: "files.duplicate", title: "command.files.duplicate", icon: "copy", group: "files",
+    enabled: (s) => canWrite(s) && duplicateTargets(s).length > 0,
+    run: () => doDuplicate(duplicateTargets(store.state)),
+  });
+  // Copy public link for the focused row (SHR-03): the same link and reasons as the open note's.
+  const focusedPath = (s: AppState) => rowsOf(s).find((r) => r.id === s.ui.files.selection.focus)?.path;
+  commands.register({
+    id: "files.copyPublicLink", title: "command.note.copyPublicLink", icon: "link", group: "files",
+    enabled: (s) => Boolean(bridge.copyText) && !publicLinkReason(s, focusedPath(s)),
+    disabledReason: (s) => publicLinkReason(s, focusedPath(s)) ?? "spotlight.reason.noClipboard",
+    run: async () => { await copyPublicLink({ store, commands, catalog, bridge, toast }, focusedPath(store.state)); },
+  });
+
   // ---- who can see a note: Make public, Make private (FIL-06, SHR-01, SHR-02) ----
   /** The items a visibility change acts on: the Files selection while the panel is open, else the open note. */
+  // A public note held out of Git says so (D-158): not backed up yet, or kept on this computer.
+  const publicDescription = (s: AppState, path: string) =>
+    catalog.format(s.ui.held.held.waiting.includes(path) ? "held.pill.waiting" : s.ui.held.held.local.includes(path) ? "held.pill.local" : "files.public");
   const visibilityTargets = (s: AppState): string[] => {
     const f = s.ui.files;
     const t = s.workspace.tree;
@@ -667,14 +766,35 @@ export function registerFiles(ctx: Ctx) {
     ]),
   };
   const NO_ITEM = { id: "", label: "", shortcut: "", disabled: false };
-  const CLOSED = { open: false, focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
+  const CLOSED = { open: false, pinned: false, pinIcon: "pin", pinLabel: "", pinShortcut: "", menu: [], menuLabel: "", focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
   const newNoteShortcut = () => (ctx.describeItem("note.new").shortcut as string | undefined) ?? "";
+  /** The focused row's menu (D-162): its items as the ⋯ menu shows commands, and its name. */
+  const menuOf = (s: AppState, rows: readonly FileRow[]) => {
+    const f = s.ui.files;
+    const focus = rows.find((r) => r.id === f.selection.focus);
+    if (!focus) return { menu: [], menuLabel: "" };
+    const acted = actedOn(f.selection, focus.id).map((id) => rows.find((r) => r.id === id)).filter((r): r is FileRow => Boolean(r));
+    const roots = s.workspace.tree.roots;
+    const both = ["public", "private"].every((id) => roots.some((r) => r.id === id && !r.readOnly));
+    const item = (id: string) => {
+      const d = ctx.describeItem(id);
+      if (id === "files.openItem") return { ...d, label: catalog.format("files.menu.open") };
+      // New note runs the app's own, so it shows that shortcut, as the header's button does.
+      if (id === "files.newNote" && newNoteShortcut()) return { ...d, shortcut: newNoteShortcut() };
+      return d;
+    };
+    const menu = rowMenu(focus, acted, { both }).map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
+    const what = acted.length > 1 ? catalog.format("files.items", { count: acted.length }) : catalog.format("files.quoted", { name: focus.kind === "root" ? rootLabel(focus.rootId) : focus.label });
+    return { menu, menuLabel: catalog.format("files.menuLabel", { what }) };
+  };
   viewModels.register({
     id: "vm.files",
     schema: {
       type: "object",
       properties: {
-        open: { type: "boolean" }, focusRequest: { type: "number" }, items: { type: "array", items: TREE_ITEM }, focusId: { type: "string" },
+        open: { type: "boolean" }, pinned: { type: "boolean" }, pinIcon: { type: "string", enum: ["pin", "pinOff"] }, pinLabel: { type: "string" }, pinShortcut: { type: "string" },
+        menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } }, menuLabel: { type: "string" },
+        focusRequest: { type: "number" }, items: { type: "array", items: TREE_ITEM }, focusId: { type: "string" },
         editValue: { type: "string" }, editError: { type: "string" }, editLabel: { type: "string" },
         filter: { type: "string" }, empty: { type: "boolean" }, emptyText: { type: "string" },
         selectedCount: { type: "number" }, multi: { type: "boolean" }, selectionText: { type: "string" },
@@ -684,7 +804,7 @@ export function registerFiles(ctx: Ctx) {
     },
     setters: { filter: "files.setFilter", editValue: "files.setEditValue" },
     // The tree, the open note, and whether the workspace can be written (PRF-11). Cheap while closed.
-    reads: ["ui.files", "workspace", "note.path"],
+    reads: ["ui.files", "workspace", "note.path", "ui.held"],
     shows: (s) => (s.ui.files.open ? [{ kind: "tree" }] : []),
     select: (s) => {
       const f = s.ui.files;
@@ -696,7 +816,7 @@ export function registerFiles(ctx: Ctx) {
       const items: Record<string, unknown>[] = rows.map((r) => ({
         id: r.id, kind: r.kind === "root" ? "section" : r.kind, level: r.level,
         label: r.kind === "root" ? rootLabel(r.rootId) : r.label,
-        description: r.readOnly ? catalog.format("files.readOnly") : r.rootId === "public" && r.kind === "note" ? catalog.format("files.public") : "",
+        description: r.readOnly ? catalog.format("files.readOnly") : r.rootId === "public" && r.kind === "note" ? publicDescription(s, r.path) : "",
         title: r.kind === "note" ? r.name : "", parent: r.parent ?? "",
         expanded: r.expanded, hasChildren: r.hasChildren, selected: selected.has(r.id), current: r.path === s.note.path && r.kind === "note",
         pending: pending.has(r.id), readOnly: r.readOnly,
@@ -714,8 +834,11 @@ export function registerFiles(ctx: Ctx) {
       }
       const count = f.selection.selected.filter((x) => !isRootRow(x)).length;
       const notes = rows.filter((r) => r.kind !== "root").length;
+      const pin = ctx.describeItem("files.togglePin");
       return {
-        open: true, focusRequest: f.focusRequest, items, focusId: f.edit ? f.edit.id : f.selection.focus,
+        open: true, pinned: f.pinned, pinIcon: f.pinned ? "pinOff" : "pin", pinLabel: catalog.format(f.pinned ? "files.unpin" : "files.pin"), pinShortcut: (pin.shortcut as string | undefined) ?? "",
+        ...menuOf(s, rows),
+        focusRequest: f.focusRequest, items, focusId: f.edit ? f.edit.id : f.selection.focus,
         editValue: f.edit?.value ?? "", editError: f.edit?.error ?? "",
         editLabel: catalog.format(f.edit?.kind === "newFolder" ? "files.folderName" : rows.find((r) => r.id === f.edit?.id)?.kind === "folder" ? "files.folderName" : "files.title"),
         filter: f.filter, empty: notes === 0,
@@ -814,12 +937,18 @@ export function registerFiles(ctx: Ctx) {
   });
 
   return {
+    /** At launch: a panel pinned on this device opens, without taking the caret (D-161). */
+    restorePinned(pinned: boolean | undefined): void {
+      if (!pinned || !ws) return;
+      setFiles(() => ({ pinned: true }));
+      reveal(undefined, false);
+    },
     /** Where note.new puts a note while the panel is open, and closes it (Files → Creating). Undefined otherwise. */
     newNoteFolder(): string | undefined {
       const s = store.state;
       if (!s.ui.files.open) return undefined;
       const folder = targetFolder(tree(), rowsOf(s), s.ui.files.selection.focus, s.note.path);
-      close();
+      dismiss();
       return folder;
     },
     /** A note the app is about to write shows in the tree first (PRF-09). */

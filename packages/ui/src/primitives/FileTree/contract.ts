@@ -3,7 +3,7 @@ import { defineContract } from "../../contract.ts";
 export const contract = defineContract({
   type: "FileTree",
   tier: "primitive",
-  description: "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, and an inline name field.",
+  description: "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, an inline name field, and each row's menu (D-162).",
   props: {
     label: { kind: "message", required: true },
     items: { kind: "list", of: "treeItems", required: true },
@@ -12,17 +12,19 @@ export const contract = defineContract({
     editValue: { kind: "text", bindable: true, description: "The text of the row being named." },
     editLabel: { kind: "text", description: "The name field's label: Title or Folder name." },
     editError: { kind: "text", description: "Why the name can't be used, under the field." },
-  },
-  events: {
+    menu: { kind: "list", of: "menuSections", description: "The focused row's menu (D-162): opened by right-click, the row's ⋯, Shift+F10, or the Menu key." },
+    menuLabel: { kind: "text", description: "The menu's name: Actions for “Ideas”." },
+  },  events: {
     select: { payload: { id: "text", mode: "text" } },
     expand: { payload: { id: "text", expanded: "boolean" } },
     action: { payload: { id: "text" } },
     drop: { payload: { source: "text", target: "text" } },
     editChange: { payload: { value: "text" }, binds: "editValue" },
     editBlur: {},
+    menuAction: { payload: { id: "text" } },
   },
   slots: {},
-  states: ["rest", "hover", "focusVisible", "selected", "current", "multiSelected", "editing", "invalid", "dropTarget", "pending", "readOnly"],
+  states: ["rest", "hover", "focusVisible", "selected", "current", "multiSelected", "editing", "invalid", "dropTarget", "pending", "readOnly", "menuOpen"],
   tokens: "cmp.fileTree.*",
   a11y: { pattern: "tree (multi-selectable) with type-ahead", name: "label" },
   fixtures: [

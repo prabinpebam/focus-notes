@@ -148,6 +148,9 @@ contextBridge.exposeInMainWorld("focusNotes", {
     // The conflict resolver (FIL-12): both versions, and the choices; the main process checks them.
     conflicts: () => ipcRenderer.invoke("sync:conflicts"),
     resolve: (choices: unknown[]) => ipcRenderer.invoke("sync:resolve", choices),
+    // New notes without a private repository (D-158): held until the writer answers; the main process checks the answer.
+    held: () => ipcRenderer.invoke("held:list"),
+    answerHeld: (path: string, choice: "public" | "local") => ipcRenderer.invoke("held:answer", path, choice),
     onStatus: (listener: (report: unknown) => void) => {
       const handler = (_e: unknown, report: unknown) => listener(report);
       ipcRenderer.on("sync:status", handler);

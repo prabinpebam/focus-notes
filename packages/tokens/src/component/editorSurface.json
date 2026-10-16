@@ -97,6 +97,26 @@
         "$type": "dimension",
         "$value": "{layout.measure}"
       },
+      "pinnedColumnMin": {
+        "$type": "dimension",
+        "$value": "{layout.pinnedColumnMin}"
+      },
+      "pinnedGap": {
+        "$type": "dimension",
+        "$value": "{space.l}"
+      },
+      "pinnedDuration": {
+        "$type": "duration",
+        "$value": "{motion.sheet}"
+      },
+      "pinnedInstant": {
+        "$type": "duration",
+        "$value": "{motion.none}"
+      },
+      "pinnedEasing": {
+        "$type": "cubicBezier",
+        "$value": "{easing.decelerate}"
+      },
       "gutter": {
         "$type": "dimension",
         "$value": "{layout.gutter}"

@@ -8,6 +8,7 @@ import {
 import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
 import { keepInReadingZone } from "./reading-zone.ts";
+import { keepClearOfPinned } from "./pinned-column.ts";
 import { trackFormatting, type FormatPayload, type FormatTracker } from "./formatting.ts";
 import { trackSlash, type SlashPayload } from "./slash-menu.ts";
 import { trackTables, type TablePayload, type TableTracker } from "./table-tracker.ts";
@@ -322,6 +323,12 @@ export function EditorSurface({
     if (!editor || !scrollerRef.current || !columnRef.current) return;
     return keepInReadingZone(editor, scrollerRef.current, columnRef.current, Boolean(findOpen));
   }, [editor, findOpen]);
+
+  // Beside a pinned Files sheet, the text moves clear of it, the caret's line staying put (D-161).
+  useEffect(() => {
+    if (!editor || !scrollerRef.current || !columnRef.current) return;
+    return keepClearOfPinned(scrollerRef.current, columnRef.current, editor);
+  }, [editor]);
 
   // Closing the find bar puts the caret back in the note, on the current match (VS Code behavior).
   const wasOpen = useRef(false);

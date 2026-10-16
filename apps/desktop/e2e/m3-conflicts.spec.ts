@@ -109,8 +109,9 @@ test("FIL-12: a sync conflict offers Resolve; Take the other version by keyboard
   await expect(sheet.getByText(/^Welcome \(your version, /)).toBeVisible();
   expect(await settledAxe(page)).toEqual([]);
   await page.screenshot({ path: "../../test-results/screens/recently-deleted.png" });
-  // Tab wraps past the trigger (and the window buttons on Windows and Linux) to the panel's list.
-  await tabTo(page, sheet.getByRole("button", { name: "Restore", exact: true }), 10);
+  // Tab wraps past the trigger (and the window buttons on Windows and Linux) and the header's New note,
+  // New folder and pin (D-161) to the panel's list: 11 stops on Windows.
+  await tabTo(page, sheet.getByRole("button", { name: "Restore", exact: true }), 11);
   await page.keyboard.press("Enter");
   await expect(page.locator("#toasts").getByText(/^Restored “Welcome \(your version, .+\)” to “Private”\.$/)).toBeVisible({ timeout: 15_000 });
   // Back in the tree, selected and focused, and on disk with this computer's text.

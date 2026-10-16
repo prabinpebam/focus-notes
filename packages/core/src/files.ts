@@ -157,6 +157,58 @@ export function targetFolder(tree: WorkspaceTree, rows: readonly FileRow[], focu
   return (fromRow !== undefined ? writable(fromRow) : undefined) ?? (fromNote !== undefined ? writable(fromNote) : undefined) ?? tree.roots.find((r) => !r.readOnly)?.path;
 }
 
+// ---- the row menu and Duplicate (D-162) ----
+
+/**
+ * A row's menu (Files → Row menu): sections of command IDs, for what's acted on. `focus` is the row
+ * it opened on; `acted` is what an operation acts on (the selection when the row is in it). A section
+ * row acts on nothing but takes new things. A read-only section offers only what can be done there.
+ * `both`: the workspace has a public and a private section, so visibility can change.
+ */
+export function rowMenu(focus: FileRow, acted: readonly FileRow[], o: { both: boolean }): string[][] {
+  const vis = (rows: readonly FileRow[]) => (o.both ? [
+    ...(rows.some((r) => r.rootId === "private") ? ["files.makePublic"] : []),
+    ...(rows.some((r) => r.rootId === "public") ? ["files.makePrivate"] : []),
+  ] : []);
+  const out = (sections: string[][]) => sections.filter((s) => s.length);
+  if (focus.kind === "root" && !acted.length) return focus.readOnly ? [] : [["files.newNote", "files.newFolder"]];
+  if (!acted.length) return [];
+  if (acted.some((r) => r.readOnly)) {
+    if (acted.length !== 1 || acted[0]!.kind !== "note") return [];
+    return out([["files.openItem"], acted[0]!.rootId === "public" ? ["files.copyPublicLink"] : []]);
+  }
+  if (acted.length > 1) {
+    return out([[...(acted.some((r) => r.kind === "note") ? ["files.duplicate"] : []), "files.moveTo"], vis(acted), ["files.delete"]]);
+  }
+  const r = acted[0]!;
+  if (r.kind === "folder") return out([["files.newNote", "files.newFolder"], ["files.rename", "files.moveTo"], vis(acted), ["files.delete"]]);
+  return out([["files.openItem"], ["files.rename", "files.duplicate", "files.moveTo"], [...vis(acted), ...(r.rootId === "public" ? ["files.copyPublicLink"] : [])], ["files.delete"]]);
+}
+
+/** A copy's title: `name(title, 1)` ("Ideas copy"), else the first of `name(title, 2)`, … not among `taken`, ignoring case. */
+export function copyTitle(title: string, taken: Iterable<string>, name: (title: string, n: number) => string): string {
+  const keys = new Set([...taken].map((t) => t.normalize("NFC").toLocaleLowerCase()));
+  for (let n = 1; ; n++) {
+    const t = name(title, n);
+    if (!keys.has(t.normalize("NFC").toLocaleLowerCase())) return t;
+  }
+}
+
+/**
+ * A note's text without its front matter `id` (the one key the app writes): a copy is a new note, so a
+ * share by ID never reaches it. Front matter left empty goes; everything else stays byte for byte.
+ */
+export function withoutNoteId(markdown: string): string {
+  const fm = /^(\uFEFF?)---(\r?\n)([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(markdown);
+  if (!fm) return markdown;
+  const eol = fm[2]!;
+  const lines = fm[3]!.split(/\r?\n/);
+  const kept = lines.filter((l) => !/^id:/.test(l));
+  if (kept.length === lines.length) return markdown;
+  const rest = markdown.slice(fm[0].length);
+  return kept.length ? `${fm[1]}---${eol}${kept.join(eol)}${eol}---${eol}${rest}` : fm[1] + rest;
+}
+
 /** Folders (and roots) things can be moved into, for Move to…, with whether each changes visibility. */
 export function destinations(tree: WorkspaceTree, moving: readonly string[]): { path: string; root: WorkspaceRoot; depth: number; name: string }[] {
   const out: { path: string; root: WorkspaceRoot; depth: number; name: string }[] = [];
