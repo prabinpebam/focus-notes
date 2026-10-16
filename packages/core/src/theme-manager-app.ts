@@ -334,7 +334,10 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     const colors = { ...draft?.colors, [key]: hex };
     const { [key]: _t, ...typing } = state().typing;
     void _t;
-    set({ draft: { base, colors }, typing, saveAsk: false });
+    // The same color again (the field committing once more, on Enter and then on change) changes
+    // nothing: a Save anyway question already asked stays (m8-custom-themes on a slow runner).
+    const same = draft?.colors[key] === hex;
+    set({ draft: { base, colors }, typing, ...(same ? {} : { saveAsk: false }) });
   };
   reg<{ key: string; value: string }>("theme.color.set", ({ key, value }) => {
     if (!(KEYS as string[]).includes(String(key))) return;

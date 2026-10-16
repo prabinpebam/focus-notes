@@ -177,6 +177,9 @@ describe("saving edited colors as a theme (THM-04, THM-13)", () => {
     expect(s.written).toHaveLength(0);
     expect(s.colors().colors.warning).toMatch(/hard-to-read pairs?\. Save anyway\?$/);
     expect(s.colors().colors.saveLabel).toBe("Save anyway");
+    // The field committing the same color again (Enter, then its change) keeps the question asked.
+    await s.app.commands.run("theme.color.set", { key: "text", value: "#eeeeee" });
+    expect(s.colors().colors.saveLabel).toBe("Save anyway");
     await s.app.commands.run("theme.saveDraft");
     expect(s.written).toHaveLength(1);
     expect((s.app.store.state.appearance.customThemes ?? [])[0]).toMatchObject({ readable: false });
