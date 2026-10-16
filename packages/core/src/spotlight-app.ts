@@ -540,6 +540,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     // A public note's page address needs the site's (SHR-03, D-139).
     const publicLink = visibility === "public" ? publicLinkReason(s, path) : undefined;
     return {
+      newWindow: Boolean(bridge.windows),
       writable: Boolean(root && !root.readOnly) && s.workspace.access === "write",
       ...(visibility ? { visibility } : {}),
       otherRoot: t.roots.some((r) => r.id === other && !r.readOnly),
@@ -614,6 +615,11 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
         return row.kind === "text" ? openAt(path, { find: parseFilters(sp().query).text }) : openAt(path, {});
       case "goTo":
         return openAt(path, { heading: { index: row.heading?.index ?? 0, text: row.label } });
+      case "openWindow":
+        // In a window of its own (DSK-06, D-179); this window keeps its note.
+        close();
+        frecency.record(path, ctx.now());
+        return void (await bridge.windows?.open(path));
       case "run":
         frecency.record(itemKey("command", row.key), ctx.now());
         return run(row.key);
@@ -648,7 +654,8 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     const row = activeRow();
     if (!row || !rowEnabled(row)) return;
     if (alternative) {
-      // Notes, headings, and matches open in a new window (WP-8.5); folders get a new note; commands show their keys.
+      // Notes, headings, and matches open in a new window (DSK-06, D-179); folders get a new note; commands show their keys.
+      if ((row.kind === "note" || row.kind === "text" || row.kind === "heading") && row.path && bridge.windows) return perform(row, "openWindow");
       if (row.kind === "folder") return perform(row, "newNoteHere");
       if (row.kind === "command") {
         close();

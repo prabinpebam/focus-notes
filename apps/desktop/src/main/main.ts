@@ -16,6 +16,7 @@ import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
+import { stateFromWindow } from "./windows.ts";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -214,7 +215,7 @@ const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], g
       checkRemote: (url) => templateGuard.checkRemote(url),
       // After the window closes, the final sync on quit still runs; there's just no one to tell.
       onReport: (r) => {
-        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("sync:status", r);
+        sendAll("sync:status", r);
       },
       // Counts and problems only: note names are private.
       log: logLine,
@@ -377,7 +378,7 @@ async function removeLocalWorkspace(): Promise<RemovalCheck> {
   await old?.dispose();
   const r = await removeWorkspace(setupRunner, folder);
   if (r.state !== "removed") {
-    watcher = watchWorkspace(() => mainWindow);
+    watcher = watchWorkspace(() => windows);
     startGit();
     return r;
   }
@@ -394,6 +395,8 @@ async function removeLocalWorkspace(): Promise<RemovalCheck> {
  */
 function restartInPlace(): void {
   setTimeout(() => {
+    // Windows opened for a note close (their notes are the old workspace's), saving first; the first restarts (DSK-06).
+    for (const w of [...windows]) if (w !== mainWindow && !w.isDestroyed()) w.close();
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("workspace:switched");
   }, 0);
 }
@@ -439,7 +442,7 @@ async function switchWorkspace(folder: string): Promise<void> {
   const old = gitSync;
   armGit();
   await old?.dispose();
-  watcher = watchWorkspace(() => mainWindow);
+  watcher = watchWorkspace(() => windows);
   setTimeout(() => startGit(), 3000);
   restartInPlace();
 }
@@ -1292,8 +1295,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     });
   }
   handle("window:fullScreen", async () => {
-    if (windowFrame?.toggleFullScreen()) return;
     const w = win();
+    if (windowFrame?.toggleFullScreen(w)) return;
     if (w) w.setFullScreen(!w.isFullScreen());
   });
   // The recovery journal (QLT-03): unsaved text, appended off the typing path; and what this launch restored.
@@ -1310,9 +1313,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       return { version: 1 };
     }
   });
-  handle("state:save", async (s) => {
-    if (!s || s.version !== 1) throw new Error("Unknown state version");
-    await atomicWrite(stateFile(), JSON.stringify(s, null, 2));
+  // One state file for every window: a window opened for a note keeps the file's note to reopen (DSK-06, D-179).
+  ipcMain.handle("state:save", async (e, s: unknown) => {
+    if (!fromApp(e)) throw new Error("Refused: request didn't come from the app");
+    await slowSeam("state:save");
+    if (!s || typeof s !== "object" || (s as { version?: unknown }).version !== 1) throw new Error("Unknown state version");
+    const secondary = secondaryPages.has(e.sender.id);
+    const onDisk = secondary ? await readFile(stateFile(), "utf8").then((t) => JSON.parse(t) as Record<string, unknown>).catch(() => undefined) : undefined;
+    await atomicWrite(stateFile(), JSON.stringify(stateFromWindow(s as Record<string, unknown>, onDisk, secondary), null, 2));
   });
   // Copying a link's address (EDT-13). Text only, and never read back: the renderer can't read the clipboard.
   handle("clipboard:write", async (text) => {
@@ -1331,7 +1339,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const ms = Math.round(process.uptime() * 1000);
     process.stdout.write(`[focus-notes] ready-ms=${ms}\n`);
     startGit();
-    windowFrame?.ready();
+    windowFrame?.ready(BrowserWindow.fromWebContents(e.sender) ?? undefined);
+  });
+  // A note in a new window (DSK-06, D-179): only a Markdown note path, as reading one.
+  ipcMain.handle("window:open", async (e, p: unknown) => {
+    if (!fromApp(e)) throw new Error("Refused: request didn't come from the app");
+    const path = notePath(p);
+    if (!existsSync(path)) throw new Error("That note isn't there");
+    openNoteWindow(path, BrowserWindow.fromWebContents(e.sender) ?? undefined);
   });
 }
 
@@ -1367,7 +1382,7 @@ function bootTheme(): { scheme: "light" | "dark"; theme: string } {
 /** How long the window waits for the page's first themed frame before it shows anyway. */
 const FIRST_FRAME_TIMEOUT_MS = 4000;
 
-function createWindow(frame: AppWindowFrame): BrowserWindow {
+function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?: ReturnType<AppWindowFrame["placementFrom"]> } = {}): BrowserWindow {
   const boot = bootTheme();
   const win = new BrowserWindow({
     minWidth: 360,
@@ -1378,7 +1393,7 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
     // The app icon (build/icon.svg) for the window and the taskbar; macOS takes the bundle's.
     ...(platform === "macos" ? {} : { icon: join(import.meta.dirname, "icon.png") }),
     // Where it was last time, and how it's drawn on this platform.
-    ...frame.options(),
+    ...frame.options(extra.placement),
     ...(journey ? JOURNEY_WINDOW_OPTIONS : {}),
     webPreferences: {
       preload: join(import.meta.dirname, "preload.cjs"),
@@ -1410,7 +1425,15 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
     clearTimeout(fallback);
     ipcMain.removeListener("window:firstFrame", onFirstFrame);
   });
-  frame.attach(win);
+  frame.attach(win, extra.placement);
+  windows.add(win);
+  const page = win.webContents.id;
+  win.on("closed", () => {
+    windows.delete(win);
+    secondaryPages.delete(page);
+    // The first window closed with others open: the next one speaks for the app now.
+    if (mainWindow === win) mainWindow = [...windows][0];
+  });
   // ⇧⌘V pastes plain text on macOS too (Keyboard shortcuts → Everyday editing), where Chromium binds
   // only ⌥⇧⌘V. The renderer still sees Shift held, so the editor pastes the text as it is (EDT-09).
   if (platform === "macos") {
@@ -1424,7 +1447,7 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
   // The theme is read again each time, so a page loaded after a crash paints the theme showing now.
   const load = () => {
     const b = bootTheme();
-    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
+    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
   };
   void load();
   // The theme's canvas now: the window's cover after a renderer crash is painted in it.
@@ -1440,7 +1463,7 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
         const v = new View();
         v.setBackgroundColor(color);
         const [width, height] = win.getContentSize();
-        const margin = frame.margin();
+        const margin = frame.margin(win);
         v.setBounds(coverBounds({ width: width!, height: height! }, margin));
         if (margin) v.setBorderRadius(WINDOW_METRICS.radius);
         win.contentView.addChildView(v);
@@ -1502,28 +1525,40 @@ function createWindow(frame: AppWindowFrame): BrowserWindow {
         win.close();
       }
     };
-    const timer = setTimeout(() => {
-      ipcMain.removeAllListeners("app:flushed");
-      void decide(false);
-    }, 5000);
-    ipcMain.once("app:flushed", (_e, ok: unknown) => {
+    // This window's answer only: several windows can be closing at once (DSK-06).
+    const flushed = (e: IpcMainEvent, ok: unknown) => {
+      if (e.sender !== win.webContents) return;
+      ipcMain.removeListener("app:flushed", flushed);
       clearTimeout(timer);
       void decide(ok === true);
-    });
+    };
+    const timer = setTimeout(() => {
+      ipcMain.removeListener("app:flushed", flushed);
+      void decide(false);
+    }, 5000);
+    ipcMain.on("app:flushed", flushed);
     win.webContents.send("app:flush");
   });
 
-  nativeTheme.on("updated", () => {
+  const onSystemScheme = () => {
+    if (win.isDestroyed()) return;
     const d = nativeTheme.shouldUseDarkColors;
     win.webContents.send("scheme:changed", d ? "dark" : "light");
-  });
-  ipcMain.on("window:scheme", (e, scheme: unknown, canvas: unknown, accent: unknown) => {
-    if (!fromApp(e) || (scheme !== "light" && scheme !== "dark")) return;
+  };
+  nativeTheme.on("updated", onSystemScheme);
+  // This window's page only: each window has its own canvas (DSK-06).
+  const onScheme = (e: IpcMainEvent, scheme: unknown, canvas: unknown, accent: unknown) => {
+    if (!fromApp(e) || e.sender !== win.webContents || win.isDestroyed() || (scheme !== "light" && scheme !== "dark")) return;
     const color = typeof canvas === "string" && /^#[0-9a-f]{6}$/i.test(canvas) ? canvas : CANVAS[scheme];
     canvasNow = color;
     // The transparent window stays transparent: the page draws the window's canvas inside its shadow margin.
     win.setBackgroundColor(frame.kind === "custom" ? "#00000000" : color);
     frame.setAccent(accent);
+  };
+  ipcMain.on("window:scheme", onScheme);
+  win.on("closed", () => {
+    nativeTheme.off("updated", onSystemScheme);
+    ipcMain.removeListener("window:scheme", onScheme);
   });
   return win;
 }
@@ -1545,7 +1580,7 @@ app.on("web-contents-created", (_e, contents) => {
  * Events are batched for 30 ms, checked against the disk, and sent as one report (PRF-11).
  * Git's own files, dot folders, and the app's temporary files aren't reported.
  */
-function watchWorkspace(win: () => BrowserWindow | undefined): TreeWatcher | undefined {
+function watchWorkspace(win: () => Iterable<BrowserWindow>): TreeWatcher | undefined {
   const home = notesHome();
   const formatRel = join(".focus-notes", "workspace.json");
   const pending = new Set<string>();
@@ -1578,7 +1613,8 @@ function watchWorkspace(win: () => BrowserWindow | undefined): TreeWatcher | und
     if (!changes.length) return;
     // Anything that changed on disk changes the Git status cache's key (PRF-07).
     gitSync?.changed();
-    win()?.webContents.send("workspace:changed", changes);
+    // Every window: one with the same note open reloads it, or keeps its edits and asks (D-92, DSK-06).
+    for (const w of win()) if (!w.isDestroyed()) w.webContents.send("workspace:changed", changes);
     // Counts and times only: note names are private.
     process.stdout.write(`[focus-notes] workspace-changed n=${changes.length} at=${Date.now()}\n`);
   };
@@ -1596,8 +1632,30 @@ function watchWorkspace(win: () => BrowserWindow | undefined): TreeWatcher | und
   }
 }
 
+/** The first window: the one setup, the first run, and links speak to, and whose note the app reopens at launch. */
 let mainWindow: BrowserWindow | undefined;
+/** Every window, the first included (DSK-06, D-179). */
+const windows = new Set<BrowserWindow>();
+/** The pages of windows opened for a note: they never change which note the app reopens (D-179). */
+const secondaryPages = new Set<number>();
+/** Something every window hears: sync's state, changes on disk. */
+function sendAll(channel: string, ...args: unknown[]): void {
+  for (const w of windows) if (!w.isDestroyed()) w.webContents.send(channel, ...args);
+}
 let watcher: TreeWatcher | undefined;
+
+/**
+ * A note in a window of its own (DSK-06, D-179), cascaded from the window it was opened from. Like
+ * the first, it shows on its first themed frame (DSK-09) and is drawn by the app, draggable and
+ * snapping, with its own frame. Each window saves through the same check (DEF-24), so two windows
+ * on one note never write over each other: the second to save is told the note changed.
+ */
+function openNoteWindow(path: string, from: BrowserWindow | undefined): BrowserWindow | undefined {
+  if (!windowFrame) return undefined;
+  const w = createWindow(windowFrame, { note: path, placement: windowFrame.placementFrom(from) });
+  secondaryPages.add(w.webContents.id);
+  return w;
+}
 
 // ---- deep links (WP-7.3, AGT-06, D-165) ----
 // Read-only, and accepted only in their exact shape (`parseDeepLink`). Windows and Linux pass them
@@ -1649,7 +1707,7 @@ app.whenReady().then(async () => {
   readFirstRun();
   hardenSession();
   windowFrame = new AppWindowFrame(frameKind, join(app.getPath("userData"), DATA_FILES.window), journey);
-  registerIpc(() => mainWindow);
+  registerIpc(() => BrowserWindow.getFocusedWindow() ?? mainWindow);
   await stat(notesHome()).catch(() => mkdir(notesHome(), { recursive: true }));
   // What a crash left unsaved goes back into its notes before the window reads any (QLT-03).
   // Only the first instance has a journal: it's the one writing it.
@@ -1663,7 +1721,7 @@ app.whenReady().then(async () => {
   if (journal) restored = await restoreUnsaved(journal);
   if (restored.length) process.stdout.write(`[focus-notes] journal: restored ${restored.length}\n`);
   mainWindow = createWindow(windowFrame);
-  watcher = watchWorkspace(() => mainWindow);
+  watcher = watchWorkspace(() => windows);
   // Never on the path of the first frame: Git answers when it answers (PRF-07).
   // Git opens once the caret is ready, or after 3 s if the note never becomes ready.
   setTimeout(() => (startGit(), windowFrame?.ready()), 3000);

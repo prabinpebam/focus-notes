@@ -1,5 +1,5 @@
 /**
- * The main window's frame (D-14): on macOS the system's own window, with its place remembered and its
+ * Every window's frame (D-14), each window with its own (DSK-06, D-179): on macOS the system's own window, with its place remembered and its
  * traffic lights shown only on the title bar band (`MacTitleBar`, DSK-02); on Windows and Linux the
  * transparent, app-built window (`CustomWindow`), with its snap preview, its keys (Alt+Space and the
  * system menu's Move and Size), and its IPC.
@@ -8,7 +8,7 @@ import { app, BrowserWindow, ipcMain, screen, type BrowserWindowConstructorOptio
 import { SNAP_ZONES, WINDOW_METRICS, type DisplayInfo, type Rect, type SnapZone } from "@focus-notes/core/window-geometry";
 import { CustomWindow, POINTER_EDGE_PX, type PreviewLike } from "./custom-window.ts";
 import { BAND_APPROACH_PX, MacTitleBar } from "./mac-title-bar.ts";
-import { initialPlacement, readWindowMemory, writeWindowMemory, type Placement } from "./placement.ts";
+import { cascadePlacement, initialPlacement, readWindowMemory, writeWindowMemory, type Placement } from "./placement.ts";
 
 export type FrameKind = "custom" | "opaque";
 const EDGES: readonly string[] = ["n", "s", "e", "w", "ne", "nw", "se", "sw"];
@@ -60,8 +60,9 @@ export class AppWindowFrame {
   readonly kind: FrameKind | undefined;
   readonly #file: string;
   readonly #placement: Placement;
-  #custom: CustomWindow | undefined;
-  #mac: MacTitleBar | undefined;
+  /** Each window's own frame, by its page (DSK-06, D-179): a window's channels reach only its own. */
+  readonly #customs = new Map<number, CustomWindow>();
+  readonly #macs = new Map<number, MacTitleBar>();
   #accent = "#2f6fed";
   /** Journeys (`FOCUS_NOTES_E2E=1`): a drag follows the page's pointer, which is the journey's, not the computer's (D-104, D-151). */
   readonly #journey: boolean;
@@ -73,9 +74,15 @@ export class AppWindowFrame {
     this.#placement = initialPlacement(readWindowMemory(memoryFile), displays(), primary());
   }
 
+  /** A new window's place: cascaded from the window it was opened from (DSK-06, D-179). */
+  placementFrom(from: BrowserWindow | undefined): Placement {
+    if (!from || from.isDestroyed()) return this.#placement;
+    const custom = this.#customs.get(from.webContents.id);
+    return cascadePlacement(custom ? custom.normalBounds() : from.getNormalBounds(), displays());
+  }
+
   /** Where the window opens, and how it's drawn. */
-  options(): BrowserWindowConstructorOptions {
-    const p = this.#placement;
+  options(p: Placement = this.#placement): BrowserWindowConstructorOptions {
     // macOS: the traffic lights sit in the 44 px title bar band (DSK-02).
     if (!this.kind) return { ...p.restore, titleBarStyle: "hiddenInset", trafficLightPosition: { x: WINDOW_METRICS.trafficLightX, y: WINDOW_METRICS.trafficLightY } };
     const outer = CustomWindow.outer(p, this.kind);
@@ -91,17 +98,18 @@ export class AppWindowFrame {
    * page reports the pointer (`window:pointer`): near the edges of the click-through margin (Windows
    * and Linux), or near the title bar band (macOS). Nothing else polls for it (PRF-04).
    */
-  query(): Record<string, string> {
+  query(win?: BrowserWindow): Record<string, string> {
     if (!this.kind) return { pointer: `top:${WINDOW_METRICS.titleBarHeight + BAND_APPROACH_PX}` };
+    const custom = win ? this.#customs.get(win.webContents.id) : undefined;
     return {
-      ...(this.#custom ? { window: JSON.stringify(this.#custom.report()) } : {}),
+      ...(custom ? { window: JSON.stringify(custom.report()) } : {}),
       ...(this.kind === "custom" ? { pointer: `edge:${POINTER_EDGE_PX}` } : {}),
     };
   }
 
   /** The shadow margin around the drawn window now, in DIP (none for a system-drawn or maximized window). */
-  margin(): number {
-    return this.#custom?.margin() ?? 0;
+  margin(win?: BrowserWindow): number {
+    return (win ? this.#customs.get(win.webContents.id)?.margin() : undefined) ?? 0;
   }
 
   /** The theme's accent, for the snap preview (`cmp.windowFrame.snapPreview`). */
@@ -113,8 +121,8 @@ export class AppWindowFrame {
     return `#${alpha}${this.#accent.slice(1)}`;
   }
 
-  attach(win: BrowserWindow): void {
-    const p = this.#placement;
+  attach(win: BrowserWindow, p: Placement = this.#placement): void {
+    const id = win.webContents.id;
     if (!this.kind) {
       // macOS: the system's window, put back where it was.
       if (p.mode === "maximized") win.maximize();
@@ -122,14 +130,17 @@ export class AppWindowFrame {
       win.on("close", () => writeWindowMemory(this.#file, { version: 1, bounds: win.getNormalBounds(), ...(win.isMaximized() ? { maximized: true } : {}), ...(win.isFullScreen() ? { fullScreen: true } : {}) }));
       // Its traffic lights, hidden at rest (DD-DSK-04).
       const mac = new MacTitleBar(win, () => screen.getCursorScreenPoint());
-      this.#mac = mac;
+      this.#macs.set(id, mac);
       const update = () => mac.update();
       win.on("show", update);
       win.on("focus", update);
       win.on("blur", update);
       win.on("enter-full-screen", update);
       win.on("leave-full-screen", update);
-      win.on("closed", () => mac.stop());
+      win.on("closed", () => {
+        mac.stop();
+        this.#macs.delete(id);
+      });
       return;
     }
     const preview = snapPreview();
@@ -153,7 +164,7 @@ export class AppWindowFrame {
       dragPointer: () => (!this.#journey ? "cursor" : (globalThis as { focusNotesDragPointer?: "cursor" | "page" | "relay" }).focusNotesDragPointer ?? "page"),
       frameMs: () => 1000 / (screen.getDisplayMatching(win.getBounds()).displayFrequency || 60),
     }, p);
-    this.#custom = custom;
+    this.#customs.set(id, custom);
     // D-153: on Windows, Electron's setIgnoreMouseEvents(false) takes WS_EX_LAYERED off the window
     // unless it's layered already, so every time the margin's pass-through ended the window's style
     // changed under the compositor. Setting the opacity once makes Electron keep the window layered
@@ -210,6 +221,7 @@ export class AppWindowFrame {
     screen.on("display-metrics-changed", changed);
     win.on("close", () => custom.save());
     win.on("closed", () => {
+      this.#customs.delete(id);
       custom.stop();
       preview.destroy();
       screen.off("display-added", changed);
@@ -219,54 +231,58 @@ export class AppWindowFrame {
   }
 
   /** Once the caret is ready: the page's pointer reports are followed, never competing with the first frame (PRF-02). */
-  ready(): void {
-    this.#custom?.trackPointer();
-    this.#mac?.trackPointer();
+  ready(win?: BrowserWindow): void {
+    const id = win?.webContents.id;
+    for (const [k, c] of this.#customs) if (id === undefined || k === id) c.trackPointer();
+    for (const [k, m] of this.#macs) if (id === undefined || k === id) m.trackPointer();
   }
 
   /** F11 in the app-built window, which keeps full screen itself. False where the system does it (macOS). */
-  toggleFullScreen(): boolean {
-    this.#custom?.toggleFullScreen();
-    return Boolean(this.#custom);
+  toggleFullScreen(win?: BrowserWindow): boolean {
+    const custom = win ? this.#customs.get(win.webContents.id) : undefined;
+    custom?.toggleFullScreen();
+    return Boolean(this.kind);
   }
 
   /** The window channels, each checked to come from the app's own page. */
   registerIpc(fromApp: (e: IpcMainEvent | IpcMainInvokeEvent) => boolean, win: () => BrowserWindow | undefined): void {
-    const on = (channel: string, fn: (...args: unknown[]) => void) =>
+    // Each window's channels reach its own frame only: the sender's (DSK-06, D-179).
+    const on = (channel: string, fn: (custom: CustomWindow, e: IpcMainEvent, ...args: unknown[]) => void) =>
       ipcMain.on(channel, (e, ...args: unknown[]) => {
-        if (fromApp(e) && this.#custom) fn(...args);
+        const custom = this.#customs.get(e.sender.id);
+        if (fromApp(e) && custom) fn(custom, e, ...args);
       });
-    ipcMain.handle("window:state", (e) => (fromApp(e) ? this.#custom?.report() : undefined));
+    ipcMain.handle("window:state", (e) => (fromApp(e) ? this.#customs.get(e.sender.id)?.report() : undefined));
     // macOS: the traffic lights show while the toolbar is open, as the app-drawn controls do.
     ipcMain.on("window:reveal", (e, show: unknown) => {
-      if (fromApp(e)) this.#mac?.reveal(show === true);
+      if (fromApp(e)) this.#macs.get(e.sender.id)?.reveal(show === true);
     });
     // The page saw the pointer near the margin or the band, or leave the page. It carries nothing: where the pointer is, the system says.
     ipcMain.on("window:pointer", (e) => {
       if (!fromApp(e)) return;
-      this.#custom?.pointerCheck();
-      this.#mac?.pointerMoved();
+      this.#customs.get(e.sender.id)?.pointerCheck();
+      this.#macs.get(e.sender.id)?.pointerMoved();
     });
-    on("window:minimize", () => this.#custom?.minimize());
-    on("window:maximize", () => this.#custom?.maximize());
-    on("window:restore", () => this.#custom?.restore());
+    on("window:minimize", (c) => c.minimize());
+    on("window:maximize", (c) => c.maximize());
+    on("window:restore", (c) => c.restore());
     // Double-clicking the top or bottom border (D-141).
-    on("window:vertical", () => this.#custom?.toggleVertical());
-    on("window:close", () => win()?.close());
-    on("window:snap", (zone) => {
-      if ((SNAP_ZONES as readonly unknown[]).includes(zone)) this.#custom?.snap(zone as SnapZone);
+    on("window:vertical", (c) => c.toggleVertical());
+    on("window:close", (_c, e) => (BrowserWindow.fromWebContents(e.sender) ?? win())?.close());
+    on("window:snap", (c, _e, zone) => {
+      if ((SNAP_ZONES as readonly unknown[]).includes(zone)) c.snap(zone as SnapZone);
     });
-    on("window:drag", (phase, kind, x, y, shift) => {
+    on("window:drag", (c, _e, phase, kind, x, y, shift) => {
       if ((phase !== "start" && phase !== "move" && phase !== "end") || (kind !== "move" && !EDGES.includes(kind as string))) return;
       if (typeof x !== "number" || typeof y !== "number" || !Number.isFinite(x) || !Number.isFinite(y)) return;
-      this.#custom?.drag(phase, kind as Parameters<CustomWindow["drag"]>[1], Math.round(x), Math.round(y), shift === true);
+      c.drag(phase, kind as Parameters<CustomWindow["drag"]>[1], Math.round(x), Math.round(y), shift === true);
     });
-    on("window:keyboard", (mode) => {
-      if (mode === "move" || mode === "size") this.#custom?.keyboard(mode);
+    on("window:keyboard", (c, _e, mode) => {
+      if (mode === "move" || mode === "size") c.keyboard(mode);
     });
     // Keys of Move and Size that reached the page rather than the shell's own key handling.
-    on("window:key", (key, fine) => {
-      if (typeof key === "string" && /^(Arrow(Left|Right|Up|Down)|Enter|Escape)$/.test(key)) this.#custom?.key({ type: "keyDown", key, control: fine === true, alt: false, shift: false, meta: false });
+    on("window:key", (c, _e, key, fine) => {
+      if (typeof key === "string" && /^(Arrow(Left|Right|Up|Down)|Enter|Escape)$/.test(key)) c.key({ type: "keyDown", key, control: fine === true, alt: false, shift: false, meta: false });
     });
   }
 }

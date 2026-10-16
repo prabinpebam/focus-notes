@@ -91,6 +91,8 @@ export interface PlatformBridge {
    * itself is saved at least every second while typing goes on.
    */
   journal?: JournalBridge;
+  /** Windows of their own, one note each (desktop, DSK-06, D-179). Absent where the shell has one window. */
+  windows?: WindowsBridge;
   /** False turns the warm-up after start off, as in end-to-end tests (PRF-10). */
   warmUp?: boolean;
   /**
@@ -364,4 +366,14 @@ export interface AppStateFile {
   webWelcomed?: boolean;
   /** The desktop first run's step, kept so quitting resumes there, or done (FRE-01). */
   firstRun?: FirstRunStep | "done";
+}
+
+/** Notes in windows of their own (DSK-06, D-179). */
+export interface WindowsBridge {
+  /** Opens the note in a new window, which shows on its first themed frame (DSK-09). */
+  open(path: string): Promise<void>;
+  /** The note this window was opened for, if it was opened for one: it opens that note, not the last one. */
+  initialNote?: string;
+  /** A window opened for a note: what it opens is never remembered as the note to reopen at launch, which is the first window's. */
+  secondary: boolean;
 }
