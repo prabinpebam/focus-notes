@@ -183,7 +183,7 @@ Compounds compose primitives, layouts, and other compounds. They hold behavior (
 | **CopyField** | Inline, TextField (read-only), IconButton | Sharing, Settings → Agents | Copies and announces "Copied". |
 | **KeyValueList** | Stack, Inline, Text | Settings → About, diagnostics | Read-only facts. |
 | **ReaderPage**, **PasscodeGate** | Center, Stack, block components, TextField, SecretField, Button | IA-VIEW-PUBLIC | The published note and the share reader, rendered to static HTML with only the gate made interactive. |
-| **SitePage**, **SiteSection**, **SiteLink** | Stack, Inline, Text, NoteContent | IA-VIEW-SITE, IA-VIEW-HELP | The product site's pages (WP-10.1): a skip link, the site's navigation and a footer around the content; sections with stable anchors, some on a raised band; plain links, the brand, navigation with the current page marked, and two call-to-action looks. Rendered to static HTML with no script (HLP-08). |
+| **SitePage**, **SiteSection**, **SiteLink**, **SiteText**, **SiteFigure**, **SiteGrid** | Stack, Inline, Text, Icon, NoteContent | IA-VIEW-SITE, IA-VIEW-HELP | The product site's pages (WP-10.1): a skip link, the site's navigation and a footer around the content; sections with stable anchors, some on a raised band; plain links, the brand, navigation with the current page marked, and two call-to-action looks; the display type, screenshots light or dark with their size, and a grid of tiles for the visual-first landing page (D-174). Rendered to static HTML with no script (HLP-08). |
 
 <h2 data-reader-personas="product design engineering">Design decisions</h2>
 

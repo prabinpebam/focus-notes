@@ -4,7 +4,7 @@ The public face of Focus Notes: the page a person lands on before they install a
 
 > [!NOTE]
 > **TL;DR.** The project repository's GitHub Pages site becomes the product site (D-167).
-> - **`/` is the landing page:** a one-sentence pitch, how it works in three steps, focus mode first, real screenshots, an honest *Is it for you?*, a short FAQ, downloads for each system, and *Try the demo*.
+> - **`/` is the landing page,** visual first (D-174): a headline of a few words, a large screenshot of focus mode, up to five featured sections with a screenshot each, a grid of small tiles, downloads and *Try the demo*. The explanations live in the help centre.
 > - **`/help/` is the help centre:** about 40 articles in eight categories named by what the reader wants to do, each one a single content type from the [writing guide](../design/help-writing.md) (D-168).
 > - **`/demo/` is the web app** with sample notes, kept in the visitor's browser, with no sign-in.
 > - **The app links into the help centre** by article ID (*Learn more*, *How to fix this*). CI fails on any ID or anchor that doesn't exist.
@@ -41,22 +41,18 @@ The specification under `/documentations/` stays for people building Focus Notes
 
 <h2 id="the-landing-page">The landing page</h2>
 
-One page, in this order. Each section has one job, and nothing on it is written for developers except the last feature section, which says so.
+Visual first, in the manner of apple.com's product pages (D-174). Pictures carry the page, and the words are few. If something can be shown, it's shown.
 
 | # | Section | Content |
 | --- | --- | --- |
-| 1 | **Hero** | One sentence that says what it is and what makes it different ("A calm place to write, with your notes kept in your own GitHub account"), a short line about focus mode, the primary action *Download for ⟨your system⟩* (detected from the browser, with the others one click away), and *Try the demo*. Beside it, a screenshot of focus mode on a real note, in the visitor's light or dark. |
-| 2 | **Trust strip** | Four short facts, each linking to proof: *Free and open source (MIT)* to the repository, *No Focus Notes account or server* to how it works, *Nothing tracked* to the privacy statement, *Your notes are plain Markdown files* to the concept article. |
-| 3 | **How it works, in three steps** | Connect your GitHub account → write, with focus mode → your notes are saved on your computer and backed up to your own repositories. One screenshot each, in plain words, linked to the getting-started article. |
-| 4 | **Features** | Focus mode (a short looping capture of the band following the caret, still with reduced motion), the calm canvas and Spotlight, files and folders, private notes and sharing with a passcode, themes. Each with one screenshot and one paragraph, linking to its how-to. |
-| 5 | **Is it for you?** | Honest lists. *It's for you if* you want plain files you own, a quiet editor, and don't mind a free GitHub account. *Look elsewhere if* you need real-time collaboration with others, want nothing to do with GitHub, or want databases and rich media; with alternatives named. |
-| 6 | **Built in the open** | No invented testimonials: the repository, the latest release and its date, the change log, and how to report a problem. |
-| 7 | **For developers and AI agents** | Clearly labelled and last among the features: Markdown and Git underneath, the MCP server, the command-line tool, `focus-notes://` links. Links to the developer category. |
-| 8 | **Questions** | Five to eight questions people ask before installing, each answered in one to three sentences with a link to the full article. Is it free? Do I need to know Git? Where are my notes kept? Can anyone read my private notes? Does it work offline? What about my phone? |
-| 9 | **Get Focus Notes** | The downloads again, *Try the demo*, and the help centre. |
+| 1 | **Hero** | One headline of at most 6 words in large display type ("Write. Nothing else."), one line of at most 14 words, *Download* and *Try the demo*, and a large screenshot of focus mode on a real note, in the visitor's light or dark. |
+| 2 | **Featured sections** | At most 5, the strongest first: focus mode, Spotlight, files and folders, private notes and sealed sharing, light and dark. Each has an optional eyebrow, a headline of at most 5 words, one line of at most 14 words, and a large screenshot, or a short loop if motion sells it. |
+| 3 | **Tiles** | One grid of small tiles, an icon and at most 4 words each: plain Markdown files, works offline, free and open source (MIT), private notes sealed, light and dark, nothing tracked, MCP for AI agents. |
+| 4 | **Closing** | One line, the downloads again, *Try the demo*, and one small *Learn how it works* link to the help centre. |
 
-**Words:** the [writing guide's](../design/help-writing.md) voice. No "revolutionary", "seamless" or "blazing fast". Name what it does, not how it feels to build. Every claim on the page is true of the release it links to.
+**Not on the landing page:** prose paragraphs and bulleted prose. The questions people ask before installing, *Is it for you?* and how it works are help centre articles, reached through *Learn how it works*.
 
+**Limits, checked when the site is built:** at most about 120 words of visible text outside the navigation and footer, no text block over 20 words, and VVS ≥ 80 (D-127). Every image has alt text, a width and a height. The type is the system's display sans, never the note font. Every claim is true of the release it links to.
 <h2 id="the-help-centre">The help centre</h2>
 
 ### Categories
@@ -113,8 +109,8 @@ Captured from the release build in CI with the demo workspace (D-169):
 
 As built in WP-10.1 (HLP-08). The landing page's words are a draft for WP-10.5, the help centre has its categories but no articles yet (WP-10.2, WP-10.3), and `/demo/` is a placeholder until WP-10.6.
 
-- **Content in `site/`:** `index.md` is the landing page, one level-2 heading per section in the order above, with stable anchors (`start`, `trust`, `how-it-works`, `features`, `is-it-for-you`, `built-in-the-open`, `developers`, `questions`, `get-focus-notes`). `download.md`, `privacy.md` and `demo.md` are plain pages. `help/categories.json` lists the eight categories in order, and each article is `help/<category>/<id>.md` with the [writing guide's](../design/help-writing.md#every-article) front matter. Pictures go in `media/`.
-- **The design system, as the public pages use it (D-114):** core turns the Markdown into view models (`packages/core/src/site.ts`), and five view documents render them: `siteLanding`, `sitePage`, `helpHome`, `helpCategory` and `helpArticle` (IA-VIEW-SITE, IA-VIEW-HELP). Their components are **SitePage**, **SiteSection** and **SiteLink**, with **NoteContent** for the words, and their words outside the content are messages. There's no hand-written HTML or CSS.
+- **Content in `site/`:** `landing.json` is the landing page (D-174): the headline, its line, the hero's screenshot, the featured sections with their stable anchors (`start`, then each feature's ID, then `get-focus-notes`), and the closing line. The tiles and buttons are in its view document. `download.md`, `privacy.md` and `demo.md` are plain pages. `help/categories.json` lists the eight categories in order, and each article is `help/<category>/<id>.md` with the [writing guide's](../design/help-writing.md#every-article) front matter. Screenshots go in `media/`, from the `site` catalogue (`apps/desktop/e2e/site-catalog.spec.ts`): a curated demo workspace, the app's own window captured with `webContents.capturePage`, light and dark, as WebP.
+- **The design system, as the public pages use it (D-114):** core turns the Markdown into view models (`packages/core/src/site.ts`), and five view documents render them: `siteLanding`, `sitePage`, `helpHome`, `helpCategory` and `helpArticle` (IA-VIEW-SITE, IA-VIEW-HELP). Their components are **SitePage**, **SiteSection**, **SiteLink**, **SiteText**, **SiteFigure** and **SiteGrid**, with **NoteContent** for the help centre's words, and their words outside the content are messages. There's no hand-written HTML or CSS.
 - **The renderer and the builder:** `apps/web/site/render.ts` is built to `apps/web/dist-site/` with the site's stylesheet and fonts. `tools/site/build.mjs` renders every page at its address, copies `media/`, and places the owner's app at `/app/` and the share reader at `/s/`.
 - **The owner's app at `/app/`:** the web app's build also makes `dist-app/`, the same app reading the notes and sealed files from the folder above it. They stay at the site's root, where `/n/` and `/s/` have always found them, so no published address changes. Notes written in the browser stay too, because the site's origin is the same. The app never had addresses of its own below `/` (no routes, no service worker), so nothing needs a redirect: a bookmark of `/` opens the landing page, whose footer links to `/app/`.
 - **Light and dark** follow the visitor's setting, and every page is readable at 320 px.
