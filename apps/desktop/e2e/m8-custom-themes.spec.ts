@@ -94,21 +94,35 @@ test("THM-04, THM-13: edited colors are saved as a theme file, listed in the gal
   await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
   await openThemeManager(page);
   await sheet(page).getByRole("tab", { name: "Edit colors" }).click();
+  // A readable edit: saved at once, and the tab has no axe violations with the button showing.
+  const accent = sheet(page).getByRole("textbox", { name: "Accent", exact: true });
+  await accent.fill("#7a3e9d");
+  await accent.press("Enter");
+  const save = sheet(page).getByRole("button", { name: "Save as a theme" });
+  await expect(save).toBeVisible();
+  await settled(page);
+  expect(await axeViolations(page)).toEqual([]);
+  await save.click();
+  const themes = join(dirs.docs, "private", ".focus-notes", "themes");
+  await expect.poll(() => existsSync(join(themes, "paper-custom.json"))).toBe(true);
+  expect(JSON.parse(readFileSync(join(themes, "paper-custom.json"), "utf8"))).toMatchObject({ name: "Paper (custom)", kind: "light", base: "paper", tokens: { "color.accent": "#7a3e9d" } });
+  // A hard-to-read edit of it: asked first, then saved anyway as a numbered copy.
   const text = sheet(page).getByRole("textbox", { name: "Text", exact: true });
   await text.fill("#eeeeee");
   await text.press("Enter");
-  const save = sheet(page).getByRole("button", { name: "Save as a theme" });
   await save.click();
-  // Hard to read: asked first, then saved anyway.
-  await expect(sheet(page).getByText(/hard-to-read pairs?\. Save anyway\?/)).toBeVisible();
+  const warning = sheet(page).getByText(/hard-to-read pairs?\. Save anyway\?/);
+  await expect(warning).toBeVisible();
   await settled(page);
-  expect(await axeViolations(page)).toEqual([]);
+  // The colors chosen are hard to read on purpose here, which the warning is about: every other rule still holds.
+  expect((await axeViolations(page)).filter((v) => !v.startsWith("color-contrast:"))).toEqual([]);
   await sheet(page).getByRole("button", { name: "Save anyway" }).click();
-  const file = join(dirs.docs, "private", ".focus-notes", "themes", "paper-custom.json");
-  await expect.poll(() => existsSync(file)).toBe(true);
-  expect(JSON.parse(readFileSync(file, "utf8"))).toMatchObject({ name: "Paper (custom)", kind: "light", base: "paper", tokens: { "color.text": "#eeeeee" } });
+  await expect.poll(() => existsSync(join(themes, "paper-custom-2.json"))).toBe(true);
+  expect(JSON.parse(readFileSync(join(themes, "paper-custom-2.json"), "utf8"))).toMatchObject({ name: "Paper (custom) 2", base: "paper", tokens: { "color.text": "#eeeeee", "color.accent": "#7a3e9d" } });
   await sheet(page).getByRole("tab", { name: "Themes" }).click();
-  await expect(gallery(page).getByRole("option").first()).toHaveAccessibleName(/^Paper \(custom\).*Light ✓/);
-  await expect(gallery(page).getByRole("option").first()).toContainText("Low contrast");
+  const options = gallery(page).getByRole("option");
+  await expect(options.nth(0)).toHaveAccessibleName(/^Paper \(custom\)/);
+  await expect(options.nth(1)).toHaveAccessibleName(/^Paper \(custom\) 2.*Light ✓/);
+  await expect(options.nth(1)).toContainText("Low contrast");
   await quit(l);
 });

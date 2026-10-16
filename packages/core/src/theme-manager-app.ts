@@ -331,7 +331,8 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     const colors = colorsFor(draft.base, draft);
     const failing = saveWarning(catalog, colors, info.contrast === "high");
     if (failing && !state().saveAsk) return set({ saveAsk: true });
-    const stem = catalog.format("colors.copyName", { name: name(draft.base) });
+    // A copy of a custom theme keeps its name, numbered ("Paper (custom) 2"); of a built-in, "Paper (custom)".
+    const stem = custom ? custom.name : catalog.format("colors.copyName", { name: name(draft.base) });
     const taken = (n: string) => (a.customThemes ?? []).some((t) => t.id === `custom:${themeSlug(n)}`);
     let title = stem;
     for (let i = 2; taken(title); i++) title = `${stem} ${i}`;
