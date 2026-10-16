@@ -32,7 +32,8 @@ import { WarmUp } from "./warmup.ts";
 import { registerSpotlight, SPOTLIGHT_CLOSED, type SpotlightState } from "./spotlight-app.ts";
 import { registerFindAll, FIND_ALL_CLOSED, type FindAllState, type FindJump } from "./find-all-app.ts";
 import type { SearchService } from "./search/feed.ts";
-import { registerThemeManager, THEME_MANAGER_CLOSED, draftTokens, shownTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
+import { registerThemeManager, THEME_MANAGER_CLOSED, kindOf, rootTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
+import { customThemesOf } from "./custom-themes.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -1177,14 +1178,16 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     reads: ["appearance", "focusMode", "compositing", "ui.theme.preview", "ui.theme.draft"],
     select: (s) => {
       // The theme manager's keyboard preview shows on the real note (THM-07), and so does an edited copy.
-      const theme = shownTheme(s);
+      // A custom theme shows through its base's styles with its own colors over them (D-173).
+      const root = rootTheme(s);
+      const theme = root.theme;
       const a = s.appearance;
       return {
-        scheme: themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode,
+        scheme: root.scheme ?? themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode,
         contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap, compositing: s.compositing,
         lineHeight: a.lineHeight === LINE_HEIGHT.default ? undefined : a.lineHeight,
         measure: a.measure === MEASURE.default ? undefined : a.measure,
-        paragraphSpacing: a.paragraphSpacing, focusDim: a.focusDim, themeColors: draftTokens(s),
+        paragraphSpacing: a.paragraphSpacing, focusDim: a.focusDim, themeColors: root.colors,
       };
     },
   });
@@ -1327,6 +1330,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // Synced settings, when they're on, are read over this device's own (PRV-03).
       settingsFile = synced?.available ? parseSettings(synced.text) : undefined;
       appState = { ...deviceState, ...appStateOfSettings(settingsFile) };
+      // Custom themes from the workspace (THM-04, D-173), read before a chosen one is put back.
+      const customThemes = customThemesOf((await bridge.themes?.list().catch(() => [])) ?? []);
+      if (customThemes.length) store.update((s) => ({ ...s, appearance: { ...s.appearance, customThemes } }));
       store.update((s) => ({ ...s, settingsSync: !synced?.available ? "unavailable" : settingsFile ? "on" : "off" }));
       store.update((s) => ({
         ...s,
@@ -1335,8 +1341,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           ...(appState.appearance ? { mode: appState.appearance } : {}),
           ...(appState.fontSize ? { fontSize: appState.fontSize } : {}),
           // Unknown or removed themes fall back to the defaults rather than failing.
-          ...(themeById(appState.lightTheme)?.kind === "light" ? { lightTheme: appState.lightTheme! } : {}),
-          ...(themeById(appState.darkTheme)?.kind === "dark" ? { darkTheme: appState.darkTheme! } : {}),
+          ...(kindOf({ customThemes }, appState.lightTheme) === "light" ? { lightTheme: appState.lightTheme! } : {}),
+          ...(kindOf({ customThemes }, appState.darkTheme) === "dark" ? { darkTheme: appState.darkTheme! } : {}),
           ...((CONTENT_FONTS as readonly string[]).includes(appState.contentFont ?? "") ? { contentFont: appState.contentFont as ContentFont } : {}),
           ...((UI_SCALES as readonly number[]).includes(appState.uiScale ?? 0) ? { uiScale: appState.uiScale! } : {}),
           ...(onSteps(appState.lineHeight, LINE_HEIGHT) !== undefined ? { lineHeight: onSteps(appState.lineHeight, LINE_HEIGHT)! } : {}),

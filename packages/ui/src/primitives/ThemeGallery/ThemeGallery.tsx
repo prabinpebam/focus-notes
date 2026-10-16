@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { cssVarName } from "@focus-notes/tokens";
 import type { ThemeTile } from "../../data.ts";
 import * as s from "./ThemeGallery.css.ts";
 
@@ -24,6 +25,23 @@ export interface ThemeGalleryProps {
  * Enter or a click chooses, and Esc, while previewing, goes back without closing the sheet. Each
  * tile's sample is drawn in its own theme's colors (`data-theme-sample`, from the token build).
  */
+/** Only color tokens, and only hex values, reach a tile's sample (a theme file can't inject CSS, UNSUP-THEME-01). */
+const COLOR_TOKEN = /^(color|trigger|code)\.[a-zA-Z]+$/;
+const HEX = /^#[0-9a-fA-F]{6}$/;
+/** The sample's tokens (each a theme's own value inside `data-theme-sample`) and the colors they show. */
+const SAMPLE_OF: Readonly<Record<string, string>> = {
+  "color.canvas": "cmp.themeGallery.sampleCanvas", "color.text": "cmp.themeGallery.sampleText", "color.accent": "cmp.themeGallery.sampleAccent",
+  "trigger.dot": "cmp.themeGallery.sampleDot", "color.border": "cmp.themeGallery.sampleBorder",
+};
+/** A custom theme's colors on its tile, over its base theme's sample. */
+function paint(el: HTMLElement | null, t: ThemeTile): void {
+  if (!el) return;
+  for (const c of t.colors ?? []) {
+    const sample = SAMPLE_OF[c.id];
+    if (sample && COLOR_TOKEN.test(c.id) && HEX.test(c.value)) el.style.setProperty(cssVarName(sample), c.value);
+  }
+}
+
 export function ThemeGallery({ label, items, value, previewing, focusRequest, id, onPreview, onChoose, onRevert }: ThemeGalleryProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const baseId = useId();
@@ -95,7 +113,8 @@ export function ThemeGallery({ label, items, value, previewing, focusRequest, id
           key={t.id}
           role="option"
           data-tile={t.id}
-          data-theme-sample={t.id}
+          data-theme-sample={t.sample ?? t.id}
+          ref={(el) => paint(el, t)}
           aria-selected={t.id === value}
           {...(t.description ? { "aria-describedby": `${baseId}-${t.id}` } : {})}
           tabIndex={t.id === active ? 0 : -1}

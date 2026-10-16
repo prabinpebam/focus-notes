@@ -1,0 +1,113 @@
+/**
+ * THM-04, THM-13 (D-173): custom themes are JSON files in the workspace, added without code. They
+ * show in the theme manager first, with their contrast badge, can be previewed and chosen for their
+ * slot, show on the note through their base theme's styles and their own colors, and the choice is
+ * remembered; a theme file that's gone falls back to the slot's default.
+ */
+import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { createApp, customThemesOf, parseThemeFile, type AppStateFile, type PlatformBridge } from "../src/index.ts";
+
+const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
+
+const EVENING = JSON.stringify({ name: "Sepia evening", kind: "light", base: "sepia", tokens: { "color.canvas": "#f4ecd8", "color.text": "#3b2f1e", "color.accent": "#9a5b13" } });
+const MIDNIGHT = JSON.stringify({ name: "Midnight", kind: "dark", base: "ink", tokens: { "color.canvas": "#0b1020", "color.text": "#e6e9f2" } });
+const FADED = JSON.stringify({ name: "Faded", kind: "light", tokens: { "color.canvas": "#ffffff", "color.text": "#bbbbbb" } });
+
+describe("reading a theme file (THM-04)", () => {
+  it("keeps the color tokens its base has, with hex values; a key color leads its tokens", () => {
+    const t = parseThemeFile("evening.json", EVENING)!;
+    expect(t).toMatchObject({ id: "custom:sepia-evening", name: "Sepia evening", kind: "light", base: "sepia", readable: true, ignored: [] });
+    expect(t.tokens["color.canvas"]).toBe("#f4ecd8");
+    // The accent leads the link and the focus ring.
+    expect(t.tokens["color.link"]).toBe("#9a5b13");
+    expect(t.tokens["color.focusRing"]).toBe("#9a5b13");
+  });
+  it("can't inject CSS: unknown tokens, non-color values, url() and raw CSS are left out and listed", () => {
+    const t = parseThemeFile("x.json", JSON.stringify({ name: "X", kind: "dark", tokens: {
+      "color.canvas": "url(https://evil.example/x.png)", "color.text": "#fff; background: red", "font.family": "#123456",
+      "color.notAToken": "#123456", "color.accent": "#3a8", "color.textMuted": 12,
+    } }))!;
+    expect(t.base).toBe("ink");
+    expect(Object.keys(t.tokens).sort()).toEqual(["color.accent", "color.focusRing", "color.link"]);
+    expect(t.tokens["color.accent"]).toBe("#33aa88");
+    expect(t.ignored.sort()).toEqual(["color.canvas", "color.notAToken", "color.text", "color.textMuted", "font.family"]);
+  });
+  it("isn't a theme without a name and tokens, or when it isn't JSON; a base of the other kind becomes that kind's default", () => {
+    expect(parseThemeFile("a.json", "{ nope")).toBeUndefined();
+    expect(parseThemeFile("a.json", JSON.stringify({ tokens: {} }))).toBeUndefined();
+    expect(parseThemeFile("a.json", JSON.stringify({ name: "A" }))).toBeUndefined();
+    expect(parseThemeFile("a.json", JSON.stringify({ name: "A", kind: "dark", base: "paper", tokens: {} }))?.base).toBe("ink");
+  });
+  it("checks the contrast guard's pairs (THM-13): a failing theme is marked, not refused", () => {
+    expect(parseThemeFile("faded.json", FADED)).toMatchObject({ readable: false, base: "paper" });
+  });
+  it("one theme per name: the first file wins", () => {
+    expect(customThemesOf([{ file: "b.json", text: EVENING }, { file: "a.json", text: EVENING.replace("#f4ecd8", "#ffffff") }]).map((t) => [t.file, t.tokens["color.canvas"]]))
+      .toEqual([["a.json", "#ffffff"]]);
+  });
+});
+
+function setup(files: { file: string; text: string }[], state: Partial<AppStateFile> = {}) {
+  let saved: AppStateFile = { version: 1, firstRun: "done", ...state };
+  const bridge: PlatformBridge = {
+    platform: "windows", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/n/Untitled.md",
+    defaultNotePath: async () => "/n/a.md", loadAppState: async () => saved, saveAppState: async (s) => { saved = s; },
+    systemScheme: () => "light", onSystemSchemeChange: () => () => {},
+    themes: { list: async () => files },
+  };
+  const app = createApp(bridge, messages);
+  const vmApp = () => app.viewModels.select("vm.app", app.store.state) as { theme: string; scheme: string; themeColors: { id: string; value: string }[] };
+  const vm = () => app.viewModels.select("vm.themeManager", app.store.state) as { tiles: { id: string; label: string; kind: string; slot: string; badge: string; description: string }[] };
+  return { app, vmApp, vm, saved: () => saved };
+}
+
+describe("custom themes in the app (THM-04, THM-13)", () => {
+  it("are listed first in the gallery, as Yours, with their badge; a failing one says Low contrast", async () => {
+    const s = setup([{ file: "evening.json", text: EVENING }, { file: "faded.json", text: FADED }]);
+    await s.app.start();
+    await s.app.commands.run("theme.manager.open");
+    const tiles = s.vm().tiles;
+    expect(tiles.slice(0, 2).map((t) => [t.id, t.label, t.kind])).toEqual([["custom:faded", "Faded", "light"], ["custom:sepia-evening", "Sepia evening", "light"]]);
+    expect(tiles[0]!.badge).toBe("Low contrast");
+    expect(tiles[1]!.description).toMatch(/^Yours, light, AA/);
+    expect(tiles.length).toBe(12);
+  });
+  it("previewed and chosen, it shows on the note through its base's styles and its own colors, and is remembered", async () => {
+    const s = setup([{ file: "evening.json", text: EVENING }]);
+    await s.app.start();
+    await s.app.commands.run("theme.manager.open");
+    await s.app.commands.run("theme.preview", { id: "custom:sepia-evening" });
+    expect(s.vmApp()).toMatchObject({ theme: "sepia", scheme: "light" });
+    expect(s.vmApp().themeColors).toContainEqual({ id: "color.canvas", value: "#f4ecd8" });
+    await s.app.commands.run("theme.choose", { id: "custom:sepia-evening" });
+    expect(s.app.store.state.appearance.lightTheme).toBe("custom:sepia-evening");
+    expect(s.saved().lightTheme).toBe("custom:sepia-evening");
+    expect(s.vm().tiles[0]!.slot).toBe("Light ✓");
+  });
+  it("a dark custom theme chosen while light shows switches to dark, as built-in themes do", async () => {
+    const s = setup([{ file: "midnight.json", text: MIDNIGHT }]);
+    await s.app.start();
+    await s.app.commands.run("theme.choose", { id: "custom:midnight" });
+    expect(s.app.store.state.appearance.darkTheme).toBe("custom:midnight");
+    expect(s.vmApp()).toMatchObject({ theme: "ink", scheme: "dark" });
+    expect(s.vmApp().themeColors).toContainEqual({ id: "color.canvas", value: "#0b1020" });
+  });
+  it("comes back at the next launch, and a theme whose file is gone falls back to the slot's default", async () => {
+    const back = setup([{ file: "evening.json", text: EVENING }], { lightTheme: "custom:sepia-evening", appearance: "light" });
+    await back.app.start();
+    expect(back.app.store.state.appearance.lightTheme).toBe("custom:sepia-evening");
+    expect(back.vmApp().theme).toBe("sepia");
+    const gone = setup([], { lightTheme: "custom:sepia-evening", appearance: "light" });
+    await gone.app.start();
+    expect(gone.app.store.state.appearance.lightTheme).toBe("paper");
+    expect(gone.vmApp()).toMatchObject({ theme: "paper", themeColors: [] });
+  });
+  it("Settings → Appearance names it", async () => {
+    const s = setup([{ file: "evening.json", text: EVENING }], { lightTheme: "custom:sepia-evening" });
+    await s.app.start();
+    const vm = s.app.viewModels.select("vm.settings", s.app.store.state) as Record<string, unknown>;
+    expect(JSON.stringify(vm)).toContain("Sepia evening");
+  });
+});
