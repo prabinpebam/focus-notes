@@ -21,6 +21,8 @@ export * from "./sanitize.ts";
 export * from "./table.ts";
 export * from "./blocks.ts";
 export * from "./expand.ts";
+export * from "./block-select.ts";
+import { BLOCK_SELECT, BlockSelection } from "./block-select.ts";
 import { EXPAND_ACTIONS, ExpandSelection } from "./expand.ts";
 import { Find, FIND_ACTIONS } from "./find.ts";
 import { atBlock, BLOCK_ACTIONS, BLOCK_MENU, BLOCK_MOVE_TO, BlockKit } from "./blocks.ts";
@@ -205,6 +207,7 @@ const ACTIONS: Readonly<Record<string, (editor: Editor, args?: Record<string, un
   ...EXPAND_ACTIONS,
   ...BLOCK_MOVE_TO,
   ...BLOCK_MENU,
+  ...BLOCK_SELECT,
   "task.toggle": (e) => {
     const { $from } = e.state.selection;
     for (let d = $from.depth; d > 0; d--) {
@@ -291,6 +294,8 @@ export interface CoreOptions {
   ghostClass?: string;
   /** The class that tints find in selection's scope while it's on (FND-03). */
   findScopeClass?: string;
+  /** The class block selection mode gives the selected blocks (KEY-04). */
+  blockSelectedClass?: string;
   /** Draws an empty header cell's column name ("Column 3"), see TableHooks. */
   emptyHeader?: (index: number) => HTMLElement;
   /**
@@ -319,6 +324,7 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
   return [
     SelectionSync,
     ExpandSelection,
+    BlockSelection.configure({ className: options.blockSelectedClass ?? "" }),
     BlockKit.configure(options.onBlockMenu ? { onMenu: options.onBlockMenu } : {}),
     // Strike and line-break keys follow the app keymap (KEY-02), not Tiptap's defaults.
     StarterKit.configure({ underline: false, link: false, trailingNode: false, strike: false, hardBreak: false }),

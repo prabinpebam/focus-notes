@@ -448,6 +448,7 @@
   "command.block.setState": "Show the block handle",
   "command.block.action": "Run a block handle action",
   "command.block.contextMenu": "Block menu",
+  "command.block.select": "Select the block (block selection mode)",
   "command.block.closeMenu": "Close the block menu",
   "block.handle.paragraph": "Paragraph options",
   "block.handle.heading1": "Heading 1 options",

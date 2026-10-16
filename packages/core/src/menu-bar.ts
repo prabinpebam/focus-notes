@@ -62,7 +62,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
       "format.bold", "format.italic", "format.underline", "format.strike", "format.code", "link.edit", "format.clear", "-",
       "block.paragraph", "block.heading1", "block.heading2", "block.heading3", "-",
       "block.bulletList", "block.orderedList", "block.taskList", "task.toggle", "-",
-      "block.quote", "block.codeBlock", "-", "block.moveUp", "block.moveDown", "block.duplicate", "block.delete", "block.contextMenu", "-", "format.focusToolbar",
+      "block.quote", "block.codeBlock", "-", "block.moveUp", "block.moveDown", "block.duplicate", "block.delete", "block.select", "block.contextMenu", "-", "format.focusToolbar",
     ],
   },
   {

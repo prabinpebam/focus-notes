@@ -197,6 +197,7 @@ export function EditorSurface({
           openLink: (href) => formatRef.current.onOpenLink?.({ href }),
           ghostClass: s.ghost,
           findScopeClass: s.findScope,
+          blockSelectedClass: s.blockSelected,
           emptyHeader: (index) => emptyHeaderElement((emptyHeaderRef.current ?? "").replace("{index}", String(index))),
           onPasteNotice: (kind, args = {}) => formatRef.current.onPasteNotice?.({ kind, rows: args.rows ?? 0, cols: args.cols ?? 0, addedRows: args.addedRows ?? 0, addedCols: args.addedCols ?? 0 }),
           onTableChange: (c) => tableRef.current.onTableChange?.({ kind: c.kind, index: c.index ?? 0, align: c.align ?? "" }),
