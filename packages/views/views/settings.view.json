@@ -13,7 +13,8 @@
     "vm.diagnostics",
     "vm.shareTemplate",
     "vm.shareNote",
-    "vm.agents"
+    "vm.agents",
+    "vm.keyboard"
   ],
   "focus": "settingsCategories",
   "overlay": true,
@@ -1094,6 +1095,246 @@
                                 "t": "settings.appearance.syncNote"
                               },
                               "tone": "muted"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "keyboard": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "keyboard.heading.keys"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "get": "vm.keyboard.status"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs"
+                        },
+                        "children": [
+                          {
+                            "each": {
+                              "get": "vm.keyboard.problems"
+                            },
+                            "as": "item",
+                            "key": "item.id",
+                            "empty": {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "t": "keyboard.noProblems"
+                                },
+                                "tone": "muted"
+                              }
+                            },
+                            "render": {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "get": "item.text"
+                                },
+                                "tone": "danger"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "gap": "s",
+                          "wrap": true
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.keybindings.edit"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "keybindings.edit"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.keybindings.reset"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "keybindings.reset"
+                              }
+                            },
+                            "when": {
+                              "expr": {
+                                "!": {
+                                  "get": "vm.keyboard.confirmingReset"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "when": {
+                          "get": "vm.keyboard.confirmingReset"
+                        },
+                        "props": {
+                          "gap": "s",
+                          "align": "start"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "keyboard.resetAsk"
+                              },
+                              "tone": "warning",
+                              "announce": true
+                            }
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s"
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "command.keybindings.resetCancel"
+                                  },
+                                  "autoFocus": true
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "keybindings.resetCancel"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "command.keybindings.reset"
+                                  },
+                                  "variant": "danger"
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "keybindings.resetConfirm"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "keyboard.heading.conflicts"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs"
+                        },
+                        "children": [
+                          {
+                            "each": {
+                              "get": "vm.keyboard.conflicts"
+                            },
+                            "as": "item",
+                            "key": "item.id",
+                            "empty": {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "t": "keyboard.noConflicts"
+                                },
+                                "tone": "muted"
+                              }
+                            },
+                            "render": {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "get": "item.text"
+                                },
+                                "tone": "warning"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "keyboard.heading.toolbar"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs",
+                          "align": "start"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "keyboard.toolbarNote"
+                              },
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.toolbar.customize"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "toolbar.customize"
+                              }
                             }
                           }
                         ]

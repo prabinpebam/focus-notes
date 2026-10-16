@@ -37,6 +37,8 @@ export const DATA_FILES = {
   journal: "recovery-journal.jsonl",
   /** The signed-in account's public GitHub picture, for the first run's profile card (D-126). */
   avatar: "avatar.json",
+  /** The person's own keys (KEY-07, D-170): commands and chords, no note content. */
+  keybindings: "keybindings.json",
   /** What agents may do on this computer (AGT-03, D-145): switches and folder limits, never note text. */
   agents: "agents.json",
   /** This computer's agent rate limit (AGT-09): two token counts and times, while agents are used. */
@@ -80,6 +82,7 @@ export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "signedOut", path: DATA_FILES.account, removedBy: ["signIn", "deleteDataFolder"] },
   { id: "windowPlace", path: DATA_FILES.window, removedBy: ["deleteDataFolder"] },
   { id: "accountPicture", path: DATA_FILES.avatar, removedBy: ["deleteDataFolder"] },
+  { id: "keybindings", path: DATA_FILES.keybindings, removedBy: ["deleteDataFolder"] },
   { id: "agentPermissions", path: DATA_FILES.agents, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "agentLimits", path: DATA_FILES.agentLimits, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "agentLimitsLock", path: DATA_FILES.agentLimitsLock, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
