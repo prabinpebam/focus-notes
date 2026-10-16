@@ -22,7 +22,7 @@ function setup(o: { changedOutside?: boolean; cli?: boolean } = {}) {
   let changedOutside = o.changedOutside ?? false;
   const page = (): AgentsPage => ({
     permissions: perms, changedOutside,
-    snippets: connectionSnippets("C:\\Program Files\\Focus Notes\\focus-notes.exe", ["--cli", "mcp", "--data", "C:\\Users\\me\\AppData\\Roaming\\Focus Notes"]),
+    snippets: connectionSnippets("C:\\Program Files\\Focus Notes\\focus-notes.exe", ["--cli", "mcp", "--data", "C:\\Users\\me\\AppData\\Roaming\\Focus Notes"], "windows"),
     recent: [{ repo: "private", commit: "a".repeat(40), at: Date.UTC(2026, 9, 16, 6, 0), agent: "Claude Desktop", path: "notes/plan.md" }],
     cli: { available: o.cli ?? false, installed: false, onPath: false },
   });
@@ -94,10 +94,10 @@ describe("AGT-02: Settings → Agents", () => {
     const f = setup();
     const app = await opened(f);
     const s = vm(app).snippets;
-    expect(s.map((x) => x.id)).toEqual(["vscode", "claude", "stdio"]);
+    expect(s.map((x) => x.id)).toEqual(["vscode", "claude", "powershell"]);
     expect(JSON.parse(s[0]!.value)).toEqual({ servers: { "focus-notes": { type: "stdio", command: "C:\\Program Files\\Focus Notes\\focus-notes.exe", args: ["--cli", "mcp", "--data", "C:\\Users\\me\\AppData\\Roaming\\Focus Notes"] } } });
     expect(JSON.parse(s[1]!.value).mcpServers["focus-notes"].args).toContain("mcp");
-    expect(s[2]!.value).toBe('"C:\\\\Program Files\\\\Focus Notes\\\\focus-notes.exe" --cli mcp --data "C:\\\\Users\\\\me\\\\AppData\\\\Roaming\\\\Focus Notes"');
+    expect(s[2]!.value).toBe("& 'C:\\Program Files\\Focus Notes\\focus-notes.exe' '--cli' 'mcp' '--data' 'C:\\Users\\me\\AppData\\Roaming\\Focus Notes'");
     await app.commands.run("agents.copySnippet", { id: "claude" });
     expect(f.copied).toEqual([s[1]!.value]);
     expect(vm(app).snippets[1]!.copyLabel).toBe("Copied");
@@ -130,10 +130,13 @@ describe("AGT-02: Settings → Agents", () => {
   });
 });
 
-describe("connectionSnippets", () => {
-  it("quotes arguments for a shell only when they need it", () => {
-    expect(connectionSnippets("/opt/Focus Notes/focus-notes", ["--cli", "mcp", "--data", "/home/me/.config/Focus Notes"])[2]!.text)
-      .toBe('"/opt/Focus Notes/focus-notes" --cli mcp --data "/home/me/.config/Focus Notes"');
-    expect(connectionSnippets("/x", ['a"b', "$HOME"])[2]!.text).toBe('/x "a\\"b" "\\$HOME"');
+describe("connectionSnippets (review of ba5dcb9, #6)", () => {
+  it("quotes the command line the way this computer's shell reads it, and keeps arguments apart in JSON", () => {
+    const posix = connectionSnippets("/opt/Focus Notes/focus-notes", ["--cli", "mcp", "--data", "/home/o'neil/.config/Focus Notes"], "posix");
+    expect(posix.map((x) => x.id)).toEqual(["vscode", "claude", "terminal"]);
+    expect(posix[2]!.text).toBe("'/opt/Focus Notes/focus-notes' '--cli' 'mcp' '--data' '/home/o'\\''neil/.config/Focus Notes'");
+    const win = connectionSnippets("C:\\Program Files\\Focus Notes\\focus-notes.exe", ["--data", "C:\\Users\\O'Neil\\$x %PATH%"], "windows");
+    expect(win[2]!.text).toBe("& 'C:\\Program Files\\Focus Notes\\focus-notes.exe' '--data' 'C:\\Users\\O''Neil\\$x %PATH%'");
+    expect(JSON.parse(win[0]!.text).servers["focus-notes"].args).toEqual(["--data", "C:\\Users\\O'Neil\\$x %PATH%"]);
   });
 });

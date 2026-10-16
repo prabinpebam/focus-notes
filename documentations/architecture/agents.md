@@ -118,9 +118,9 @@ The switches in Settings → Agents and the list of Recent agent changes are WP-
 | Switches | *Agents can connect*, then *Read public notes*, *Read private and shared notes*, *Create and edit notes*, and *Create public notes*, each with one line on what it allows | Writes `agents.json`. The others are disabled while agents can't connect |
 | Folder limit | All folders, or the folders in the limit | Editing it is planned |
 | Changed outside the app | A warning that the file's check didn't match, so the defaults apply | Any switch writes a fresh file |
-| Connect an agent | Snippets for VS Code, Claude Desktop, and a generic stdio command: the app's own executable with `--cli mcp --data <data folder>` | Copy, then *Copied* |
+| Connect an agent | Snippets for VS Code and Claude Desktop (JSON, the command and its arguments apart), and a command line quoted for this computer's shell (PowerShell on Windows, a POSIX shell elsewhere): the app's own executable with `--cli mcp --data <data folder>` | Copy, then *Copied* |
 | Recent agent changes | The last 50: *⟨client⟩ (self-reported)*, the note, and when | *Undo*, by D-145's rules; a refusal says why |
-| Command-line tool | Whether `focus-notes` is installed | *Install command-line tool*: the user's `Path` on Windows, `~/.local/bin/focus-notes` elsewhere. Only in the installed app |
+| Command-line tool | Whether `focus-notes` is installed | *Install command-line tool*: on Windows the user's own `Path`, read raw and written back with its kind (`REG_EXPAND_SZ` stays expandable), then read back to check; `~/.local/bin/focus-notes` elsewhere. Only in the installed app |
 
 
 ## Attribution and undo

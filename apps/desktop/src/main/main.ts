@@ -16,6 +16,8 @@ import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
@@ -940,19 +942,24 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   const cliAvailable = () => app.isPackaged && !journey && existsSync(cliBin());
   const installHost = (): InstallHost => ({
     platform: process.platform, binDir: cliBin(), home: app.getPath("home"), envPath: process.env.PATH ?? "",
-    powershell: (script, env) => new Promise((resolve) => {
-      const p = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", "-"], { env: { ...process.env, ...env }, stdio: ["pipe", "ignore", "ignore"], windowsHide: true });
-      p.on("error", () => resolve(-1));
-      p.on("exit", (code) => resolve(code ?? -1));
-      p.stdin.end(script);
-    }),
-    userPath: () => new Promise((resolve) => {
-      const p = spawn("reg.exe", ["query", "HKCU\\Environment", "/v", "Path"], { stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
-      let out = "";
-      p.stdout.on("data", (d: Buffer) => void (out += d.toString("utf8")));
-      p.on("error", () => resolve(""));
-      p.on("exit", () => resolve(/\bPath\s+REG_(?:EXPAND_)?SZ\s+(.*)$/im.exec(out)?.[1]?.trim() ?? ""));
-    }),
+    // One of the two fixed scripts, from a temporary file of its own, by Windows PowerShell's absolute
+    // path (never a program found on the PATH), with its values in the environment (D-166 (5)).
+    powershell: async (script, env) => {
+      const exe = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+      const file = join(tmpdir(), `focus-notes-${randomBytes(8).toString("hex")}.ps1`);
+      await writeFile(file, script, { encoding: "utf8", flag: "wx" });
+      try {
+        return await new Promise<{ code: number; stdout: string }>((resolve) => {
+          const p = spawn(exe, ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", file], { env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
+          let stdout = "";
+          p.stdout.on("data", (d: Buffer) => void (stdout += d.toString("utf8")));
+          p.on("error", () => resolve({ code: -1, stdout: "" }));
+          p.on("exit", (code) => resolve({ code: code ?? -1, stdout }));
+        });
+      } finally {
+        await rm(file, { force: true });
+      }
+    },
   });
   async function agentsPage(): Promise<AgentsPage> {
     const { permissions, changedOutside } = await readAgentPermissions(agentsData());
@@ -961,7 +968,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     // The app's own executable runs the server (D-165): with the built main script in development.
     const args = [...(app.isPackaged ? [] : [join(import.meta.dirname, "main.mjs")]), "--cli", "mcp", "--data", agentsData()];
     const cli = cliAvailable() ? await cliInstallState(installHost()).catch(() => ({ installed: false, onPath: false })) : { installed: false, onPath: false };
-    return { permissions, changedOutside, snippets: connectionSnippets(process.execPath, args), recent, cli: { available: cliAvailable(), ...cli } };
+    return { permissions, changedOutside, snippets: connectionSnippets(process.execPath, args, process.platform === "win32" ? "windows" : "posix"), recent, cli: { available: cliAvailable(), ...cli } };
   }
   handle("agents:load", () => agentsPage());
   handle("agents:set", async (raw) => {

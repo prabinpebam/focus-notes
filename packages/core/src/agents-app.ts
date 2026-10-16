@@ -13,7 +13,7 @@ import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { agentLabel, type AgentPermissions } from "./agents.ts";
 
-export type SnippetId = "vscode" | "claude" | "stdio";
+export type SnippetId = "vscode" | "claude" | "powershell" | "terminal";
 export interface AgentChangeRow { repo: "notes" | "private"; commit: string; at: number; agent: string; path: string }
 export interface AgentsPage {
   permissions: AgentPermissions;
@@ -37,14 +37,20 @@ export type SwitchId = (typeof SWITCHES)[number];
 export interface AgentsState { page?: AgentsPage; loading: boolean; busy: boolean; copied?: SnippetId; undoing?: string }
 export const AGENTS_IDLE: AgentsState = { loading: false, busy: false };
 
-/** One argument as a shell would read it back: quoted when it has a space or a quote. */
-const shellArg = (a: string) => (/^[\w@%+=:,./\\-]+$/.test(a) ? a : `"${a.replace(/(["\\$`])/g, "\\$1")}"`);
-/** The connection snippets for a command that starts this app's MCP server (D-166 (3)). */
-export function connectionSnippets(command: string, args: readonly string[]): { id: SnippetId; text: string }[] {
+/** PowerShell: every word in single quotes, a quote inside doubled; `&` runs the quoted program. */
+const powershellLine = (command: string, args: readonly string[]) => `& ${[command, ...args].map((a) => `'${a.replace(/'/g, "''")}'`).join(" ")}`;
+/** A POSIX shell: every word in single quotes, a quote inside closed, escaped, and reopened. */
+const posixLine = (command: string, args: readonly string[]) => [command, ...args].map((a) => `'${a.replace(/'/g, "'\\''")}'`).join(" ");
+/**
+ * The connection snippets for a command that starts this app's MCP server (D-166 (3)): the JSON
+ * forms (command and arguments apart, so no shell reads them), and the command line for this
+ * computer's shell, quoted the way that shell reads it.
+ */
+export function connectionSnippets(command: string, args: readonly string[], shell: "windows" | "posix"): { id: SnippetId; text: string }[] {
   return [
     { id: "vscode", text: JSON.stringify({ servers: { "focus-notes": { type: "stdio", command, args } } }, null, 2) },
     { id: "claude", text: JSON.stringify({ mcpServers: { "focus-notes": { command, args } } }, null, 2) },
-    { id: "stdio", text: [command, ...args].map(shellArg).join(" ") },
+    shell === "windows" ? { id: "powershell", text: powershellLine(command, args) } : { id: "terminal", text: posixLine(command, args) },
   ];
 }
 
