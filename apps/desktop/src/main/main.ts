@@ -15,7 +15,7 @@ import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/a
 import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { writeUnlessChanged } from "./note-write.ts";
+import { NoteWriter, noteSave, readNow } from "./note-write.ts";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -569,18 +569,27 @@ function notePath(p: unknown): string {
   return abs;
 }
 
-/** Writes to one path run one after another, so an older write can never land after a newer one. */
-const writeQueues = new Map<string, Promise<void>>();
-let tmpCounter = 0;
-
-/** Atomic write: a temporary file next to the note, then rename (Performance and quality → Reliability). */
-function atomicWrite(path: string, content: string): Promise<void> {
-  const previous = writeQueues.get(path) ?? Promise.resolve();
-  const next = previous.catch(() => {}).then(() => writeNow(path, content));
-  writeQueues.set(path, next);
-  void next.finally(() => { if (writeQueues.get(path) === next) writeQueues.delete(path); }).catch(() => {});
-  return next;
-}
+/**
+ * Writes to one path run one after another, so an older write can never land after a newer one; each
+ * is atomic, a temporary file next to the note, then a rename (Performance and quality → Reliability).
+ * With `expected`, the file is checked once the write's turn has come, after any Git pull, and right
+ * before the rename: another program's change is never written over (D-92, DEF-24).
+ */
+const writer = new NoteWriter({
+  ready: async (path) => {
+    await assertWritable(path);
+    // A pull rewriting files finishes first, so a save never lands in the middle of it.
+    await gitSync?.writable();
+  },
+  // A write hands its result straight to the snapshot: the next read doesn't touch the disk (PRF-10).
+  written: async (path, content) => {
+    if (!isMarkdown(path)) return;
+    const st = await stat(path).catch(() => undefined);
+    if (st) parsed.set({ path, size: st.size, mtimeMs: st.mtimeMs }, parseNote(content));
+  },
+});
+const writeQueues = writer.queues;
+const atomicWrite = (path: string, content: string, expected?: string) => writer.write(path, content, expected);
 
 /** Renames, retrying while Windows sync clients and antivirus briefly lock a file they just saw. */
 async function renameRetrying(from: string, to: string): Promise<void> {
@@ -596,40 +605,11 @@ async function renameRetrying(from: string, to: string): Promise<void> {
   }
 }
 
-async function writeNow(path: string, content: string): Promise<void> {
-  await assertWritable(path);
-  // A pull rewriting files finishes first, so a save never lands in the middle of it.
-  await gitSync?.writable();
-  await mkdir(dirname(path), { recursive: true });
-  const tmp = `${path}.${process.pid}.${Date.now()}.${tmpCounter++}.tmp`;
-  await writeFile(tmp, content, "utf8");
-  // On Windows, sync clients and antivirus briefly lock files; retry before reporting a failure.
-  for (let attempt = 0; ; attempt++) {
-    try {
-      await rename(tmp, path);
-      // A write hands its result straight to the snapshot: the next read doesn't touch the disk (PRF-10).
-      if (isMarkdown(path)) {
-        const st = await stat(path).catch(() => undefined);
-        if (st) parsed.set({ path, size: st.size, mtimeMs: st.mtimeMs }, parseNote(content));
-      }
-      return;
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (attempt < 4 && (code === "EPERM" || code === "EBUSY" || code === "EACCES")) {
-        await new Promise((r) => setTimeout(r, 50 * 2 ** attempt));
-        continue;
-      }
-      await rm(tmp, { force: true });
-      throw error;
-    }
-  }
-}
-
 // ---- file operations from the Files panel (WP-2.4, D-94) ----
 
 /** A refusal the renderer explains: the message is the reason's code (OpErrorCode in core). */
 class Refused extends Error {}
-const refuse = (code: "notFound" | "taken" | "readOnly" | "invalid" | "intoItself" | "trash" | "failed") => new Refused(code);
+const refuse = (code: "notFound" | "taken" | "readOnly" | "invalid" | "intoItself" | "trash" | "failed" | "changed") => new Refused(code);
 /** A path the Files panel may change: absolute, inside a writable root (not the root itself), no dot folders. */
 function opPath(p: unknown): { path: string; root: string } {
   if (typeof p !== "string" || !p || !isAbsolute(p) || resolve(p) !== p) throw refuse("invalid");
@@ -653,7 +633,7 @@ const writesDone = (p: string) => Promise.allSettled([...writeQueues].filter(([k
 async function applyOps(raw: unknown): Promise<BatchOp[]> {
   if (!Array.isArray(raw) || raw.length === 0 || raw.length > 5000) throw refuse("invalid");
   type Op = { op: "createFolder" | "delete"; path: string; root: string } | { op: "move"; path: string; to: string; root: string }
-    | { op: "write" | "create"; path: string; text: string; root: string };
+    | { op: "write" | "create"; path: string; text: string; root: string; before?: string };
   const ops = raw.map((op: unknown): Op => {
     const o = op as Record<string, unknown>;
     if (o?.op === "createFolder" || o?.op === "delete") return { op: o.op, ...opPath(o.path) };
@@ -667,7 +647,8 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
     if (o?.op === "write" || o?.op === "create") {
       const at = opPath(o.path);
       if (typeof o.text !== "string" || !isMarkdown(at.path)) throw refuse("invalid");
-      return { op: o.op, ...at, text: o.text };
+      if (o.before !== undefined && (o.op !== "write" || typeof o.before !== "string")) throw refuse("invalid");
+      return { op: o.op, ...at, text: o.text, ...(typeof o.before === "string" ? { before: o.before } : {}) };
     }
     throw refuse("invalid");
   });
@@ -713,10 +694,11 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         undo.push(() => renameRetrying(to, from));
       } else if (op.op === "write") {
         // Only a note that's there (after the batch's moves) is written: never a new file.
-        const old = (await isDir(op.path)) ? undefined : await readFile(op.path, "utf8").catch(() => undefined);
+        const old = (await isDir(op.path)) ? undefined : await readNow(op.path).catch(() => undefined);
         if (old === undefined) throw refuse("notFound");
-        await atomicWrite(op.path, op.text);
-        undo.push(() => atomicWrite(op.path, old));
+        // Links rewritten from the text the app read: never over a change since (DEF-24).
+        if (await atomicWrite(op.path, op.text, op.before)) throw refuse("changed");
+        undo.push(() => atomicWrite(op.path, old).then(() => {}));
       } else if (op.op === "create") {
         // A new note, never over another (the conflict resolver's copies, FIL-12).
         if (existsSync(op.path)) throw refuse("taken");
@@ -1007,21 +989,20 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     }
     return out;
   });
-  handle("note:write", async (p, content, expected) => {
-    if (typeof content !== "string") throw new Error("Content must be text");
-    if (expected !== undefined && typeof expected !== "string") throw new Error("Expected text must be text");
-    const path = notePath(p);
-    // The app saves its latest text: this supersedes every text the journal was sent before it (QLT-03).
-    const upTo = journal?.mark();
+  // A save: written only over the text the window expects on disk (D-92, DEF-24).
+  handle("note:write", noteSave({
+    path: notePath,
+    write: atomicWrite,
     // How much changed decides when it's backed up (D-133): against the text last written here, or on disk.
-    const before = lastWritten.get(path) ?? (await readFile(path, "utf8").catch(() => ""));
-    // Never over another program's change: checked right before writing (D-92, DEF-24).
-    const outside = await writeUnlessChanged(path, content, expected, atomicWrite);
-    if (outside) return outside;
-    lastWritten.set(path, content);
-    void journal?.saved(path, content, upTo);
-    withGit((g) => g.written(path, changedChars(before, content)));
-  });
+    before: async (path) => lastWritten.get(path) ?? (await readFile(path, "utf8").catch(() => "")),
+    // The app saves its latest text: this supersedes every text the journal was sent before it (QLT-03).
+    mark: () => journal?.mark(),
+    saved: (path, content, upTo) => void journal?.saved(path, content, upTo as ReturnType<NonNullable<typeof journal>["mark"]>),
+    written: (path, before, content) => {
+      lastWritten.set(path, content);
+      withGit((g) => g.written(path, changedChars(before, content)));
+    },
+  }));
   handle("note:choose", async () => {
     const w = win();
     const opts = { properties: ["openFile" as const], defaultPath: notesHome(), filters: [{ name: "Markdown", extensions: ["md", "markdown"] }] };
@@ -1121,7 +1102,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   const access = accessStore({
     dir: privateDir,
     site: pagesSite,
-    write: atomicWrite,
+    write: async (file, text) => void (await atomicWrite(file, text)),
     written: (file) => withGit((g) => g.written(file)),
   });
   handle("access:load", async () => (settingsAvailable() ? access.load() : { available: false, vault: false, grants: [] }));

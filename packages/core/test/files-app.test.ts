@@ -316,8 +316,8 @@ describe("links follow renames and moves (FIL-09)", () => {
     await settle();
     expect(f.batches).toEqual([[
       { op: "move", from: "b.md", to: "Box/b.md" },
-      { op: "write", path: "a.md", text: "# A\n\nSee [B](Box/b.md#part).\n" },
-      { op: "write", path: "Box/b.md", text: "# B\n\nBack to [A](../a.md).\n" },
+      { op: "write", path: "a.md", text: "# A\n\nSee [B](Box/b.md#part).\n", before: "# A\n\nSee [B](b.md#part).\n" },
+      { op: "write", path: "Box/b.md", text: "# B\n\nBack to [A](../a.md).\n", before: "# B\n\nBack to [A](a.md).\n" },
     ]]);
     expect(text(f, "Box/b.md")).toBe("# B\n\nBack to [A](../a.md).\n");
     expect(text(f, "c.md")).toBe("# C\n\n`[b](b.md)`\n");
@@ -335,7 +335,7 @@ describe("links follow renames and moves (FIL-09)", () => {
     await app.commands.run("files.commitEdit");
     await app.idle();
     await settle();
-    expect(f.batches).toEqual([[{ op: "move", from: "Box", to: "Crate" }, { op: "write", path: "a.md", text: "[x](Crate/x.md) [y](./Crate/sub/y.md)\n" }]]);
+    expect(f.batches).toEqual([[{ op: "move", from: "Box", to: "Crate" }, { op: "write", path: "a.md", text: "[x](Crate/x.md) [y](./Crate/sub/y.md)\n", before: "[x](Box/x.md) [y](./Box/sub/y.md)\n" }]]);
     expect(text(f, "Crate/x.md")).toBe("# X\n\n[y](sub/y.md)\n");
   });
   it("renaming a note by its title renames the file and rewrites links to it, all in one batch", async () => {
@@ -348,8 +348,8 @@ describe("links follow renames and moves (FIL-09)", () => {
     await app.commands.run("files.commitEdit");
     expect(f.batches).toEqual([[
       { op: "move", from: "idea.md", to: "better-idea.md" },
-      { op: "write", path: "better-idea.md", text: "# Better idea\n\nBody\n" },
-      { op: "write", path: "other.md", text: "# Other\n\n[i](better-idea.md) [j](<better-idea.md>)\n" },
+      { op: "write", path: "better-idea.md", text: "# Better idea\n\nBody\n", before: "# Idea\n\nBody\n" },
+      { op: "write", path: "other.md", text: "# Other\n\n[i](better-idea.md) [j](<better-idea.md>)\n", before: "# Other\n\n[i](idea.md) [j](<idea.md>)\n" },
     ]]);
     expect(text(f, "other.md")).toBe("# Other\n\n[i](better-idea.md) [j](<better-idea.md>)\n");
     expect(toasts(app)).toContain("Renamed to “Better idea”. Updated links in 1 note.");
@@ -361,7 +361,7 @@ describe("links follow renames and moves (FIL-09)", () => {
     await app.commands.run("note.save");
     await settle();
     expect(app.store.state.note.path).toBe("plan.md");
-    expect(f.batches).toEqual([[{ op: "move", from: "idea.md", to: "plan.md" }, { op: "write", path: "other.md", text: "[i](plan.md)\n" }]]);
+    expect(f.batches).toEqual([[{ op: "move", from: "idea.md", to: "plan.md" }, { op: "write", path: "other.md", text: "[i](plan.md)\n", before: "[i](idea.md)\n" }]]);
     expect(text(f, "plan.md")).toBe("# Plan\n");
   });
   it("the open note's links update in the editor, keeping what was typed before the move", async () => {

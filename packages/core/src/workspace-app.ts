@@ -117,6 +117,16 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
   /** What the app knows is on disk for a note: what it last wrote, or read, there (D-92, DEF-24). */
   let lastWritten: { path: string; text: string } | undefined;
   const onDisk = (path: string) => (lastWritten?.path === path ? lastWritten.text : store.state.note.path === path ? store.state.note.initialMarkdown : undefined);
+  // The open note moved or renamed (Files, a title that names the file): its file, with the text it
+  // had, is at the new path now. Opening another note says what's on disk there itself.
+  let openPath = store.state.note.path;
+  store.subscribe(() => {
+    const now = store.state.note.path;
+    if (now === openPath) return;
+    const was = openPath;
+    openPath = now;
+    if (now && was && lastWritten?.path === was) lastWritten = { path: now, text: lastWritten.text };
+  });
   let outside = 0;
   const setTree = (tree: WorkspaceTree) => { if (tree !== store.state.workspace.tree) setWorkspace({ tree }); };
 
@@ -177,7 +187,7 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
         // Links to it in other notes change in the same batch as the name (FIL-09).
         const writes = await planLinkWrites(store.state.workspace.tree, moves, (p) => (p === path ? Promise.resolve(markdown) : bridge.readNote(p)));
         own = writes.find((w) => w.from === path)?.text;
-        await ws.apply([{ op: "move", from: path, to: plan.to }, ...writes.map((w) => ({ op: "write" as const, path: w.path, text: w.text }))]);
+        await ws.apply([{ op: "move", from: path, to: plan.to }, ...writes.map((w) => ({ op: "write" as const, path: w.path, text: w.text, before: w.before }))]);
       } else await ws.renameNote(path, plan.to);
     } catch {
       return; // The name is taken or locked: it's tried again on the next save.

@@ -285,12 +285,13 @@ export type WorkspaceOp =
   /** Desktop: to the system trash until Git keeps deletions (FIL-10). Browser: kept, marked deleted. */
   | { op: "delete"; path: string }
   /** A note's new text, at its path after the batch's moves: links that follow a rename or move (FIL-09, D-95). */
-  | { op: "write"; path: string; text: string }
+  /** `before`: the text the app read and rewrote; the shell writes nothing if the file holds anything else (DEF-24). */
+  | { op: "write"; path: string; text: string; before?: string }
   /** A new note, never over another: a copy the conflict resolver keeps (FIL-12). */
   | { op: "create"; path: string; text: string };
 
 /** Why a batch was refused. The shell's error message ends with one of these. */
-export const OP_ERROR_CODES = ["notFound", "taken", "readOnly", "invalid", "intoItself", "trash", "failed"] as const;
+export const OP_ERROR_CODES = ["notFound", "taken", "readOnly", "invalid", "intoItself", "trash", "failed", "changed"] as const;
 export type OpErrorCode = (typeof OP_ERROR_CODES)[number];
 /** The code at the end of a shell's error message (Electron prefixes its own words), or "failed". */
 export function opErrorCode(error: unknown): OpErrorCode {

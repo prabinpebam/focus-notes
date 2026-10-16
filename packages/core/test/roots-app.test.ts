@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createApp, titleOfMarkdown, type AppStateFile, type PlatformBridge, type WorkspaceOp } from "../src/index.ts";
+import { checkingDisk } from "./checking-disk.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 const PRIV = "/w/private/notes";
@@ -26,7 +27,7 @@ function setup(opts: { files?: Record<string, string>; folders?: string[]; open?
   const bridge: PlatformBridge = {
     platform: "windows",
     readNote: async (p) => { if (!(p in files)) throw new Error("missing"); return files[p]!; },
-    writeNote: async (p, c) => { files[p] = c; },
+    writeNote: checkingDisk(files).writeNote,
     chooseNote: async () => undefined,
     newNotePath: async (near) => {
       const dir = near ? near.slice(0, near.lastIndexOf("/")) : PRIV;
@@ -59,7 +60,7 @@ function setup(opts: { files?: Record<string, string>; folders?: string[]; open?
           if (op.op === "move") {
             for (const p of Object.keys(files)) if (under(op.from, p)) { files[op.to + p.slice(op.from.length)] = files[p]!; delete files[p]; }
             for (const d of [...folders]) if (under(op.from, d)) { folders.delete(d); folders.add(op.to + d.slice(op.from.length)); }
-          } else if (op.op === "write") files[op.path] = op.text;
+          } else if (op.op === "write") checkingDisk(files).writeOp(op);
         }
       },
       chooseBundle: async () => ({ id: "b1", name: "focus-notes-export-2026-10-14.json", notes: 2 }),

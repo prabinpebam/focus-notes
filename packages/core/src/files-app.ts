@@ -70,6 +70,8 @@ interface Ctx {
   loaded: (path: string, markdown: string) => void;
   /** The app wrote this text to the open note's file itself (a move, its links): the next save expects it there (DEF-24). */
   sawOnDisk?: (path: string, text: string) => void;
+  /** Whether a note's saves wait for a conflict choice (FIL-12, D-92). */
+  holds?: (path: string) => boolean;
   describeItem: (id: string) => Record<string, unknown>;
   itemSchema: Record<string, unknown>;
   /** Runs an editor action: `edit.focus` puts the caret back in the note. */
@@ -78,7 +80,7 @@ interface Ctx {
 
 const REASONS: Record<RefusalReason | OpErrorCode, string> = {
   notFound: "files.reason.notFound", taken: "files.reason.taken", readOnly: "files.reason.readOnly", invalid: "files.reason.invalid",
-  intoItself: "files.reason.intoItself", trash: "files.reason.trash", failed: "files.reason.failed",
+  intoItself: "files.reason.intoItself", trash: "files.reason.trash", failed: "files.reason.failed", changed: "files.reason.changed",
 };
 
 export function registerFiles(ctx: Ctx) {
@@ -213,10 +215,31 @@ export function registerFiles(ctx: Ctx) {
   });
 
   // ---- links that follow renames and moves (FIL-09, D-95) ----
-  /** A note's text for link updates. The open note's is the editor's: by now, what's saved. */
+  /**
+   * The open note's text, for a batch that rewrites it: the editor's, which by now is what's saved.
+   * Not saved (it changed outside and waits for a choice, or its save failed), a batch that would
+   * rewrite it is refused: its links are never written from unsaved text, nor over the other version
+   * (DEF-24).
+   */
+  const unsavedOpen = (): Error | undefined => {
+    const n = store.state.note;
+    return n.saveState === "saved" ? undefined : new Error(n.path && ctx.holds?.(n.path) ? "changed" : "failed");
+  };
+  const openText = (): Promise<string> => {
+    const no = unsavedOpen();
+    return no ? Promise.reject(no) : Promise.resolve(store.state.note.markdown);
+  };
+  /** A note's text for link updates. The open note's is the editor's (checked once planned: refusedIfOpen). */
   const readForLinks = (own?: { path: string; text: string }) => (p: string): Promise<string> =>
     own && p === own.path ? Promise.resolve(own.text) : p === store.state.note.path ? Promise.resolve(store.state.note.markdown) : bridge.readNote(p);
-  const writeOps = (writes: readonly LinkWrite[]): WorkspaceOp[] => writes.map((w) => ({ op: "write", path: w.path, text: w.text }));
+  /** Planned rewrites that include the open note while it isn't saved: the batch is refused. */
+  const refusedIfOpen = (writes: readonly LinkWrite[]) => {
+    const open = store.state.note.path;
+    const no = open && writes.some((w) => w.from === open) ? unsavedOpen() : undefined;
+    if (no) throw no;
+  };
+  /** Each rewrite carries the text it was made from: the shell writes nothing over a change since (DEF-24). */
+  const writeOps = (writes: readonly LinkWrite[]): WorkspaceOp[] => writes.map((w) => ({ op: "write", path: w.path, text: w.text, before: w.before }));
   /** After the batch, the open note shows its new links, keeping anything typed while it was written. */
   const followLinks = (writes: readonly LinkWrite[], moves: readonly PathMove[], before: WorkspaceTree) => {
     const n = store.state.note;
@@ -278,6 +301,7 @@ export function registerFiles(ctx: Ctx) {
     const done = queue.catch(() => {}).then(() => ctx.exclusive(async (): Promise<LinkWrite[]> => {
       // Links in other notes, and in the moved notes themselves, change in the same batch (FIL-09).
       const writes = await planLinkWrites(before, moves, readForLinks());
+      refusedIfOpen(writes);
       await ws!.apply!([...ops, ...writeOps(writes)]);
       // The open note follows a move; a deleted one is closed after.
       const p = store.state.note.path;
@@ -726,16 +750,17 @@ export function registerFiles(ctx: Ctx) {
     try {
       await ctx.exclusive(async () => {
         const isOpen = store.state.note.path === path;
-        const text = isOpen ? store.state.note.markdown : await bridge.readNote(path);
+        const text = isOpen ? await openText() : await bridge.readNote(path);
         const next = retitle(text, title);
         const before = tree();
         const plan = planRename(before, path, title);
         const to = plan?.kind === "renamed" ? plan.to : path;
         const moves = to === path ? [] : [{ from: path, to }];
         const writes = await planLinkWrites(before, moves, readForLinks({ path, text: next }));
+        refusedIfOpen(writes.filter((w) => w.from !== path));
         const own = writes.find((w) => w.from === path)?.text ?? next;
         others = writes.filter((w) => w.from !== path);
-        await ws!.apply!([...moves.map((m) => ({ op: "move" as const, ...m })), { op: "write", path: to, text: own }, ...writeOps(others)]);
+        await ws!.apply!([...moves.map((m) => ({ op: "move" as const, ...m })), { op: "write", path: to, text: own, before: text }, ...writeOps(others)]);
         if (plan?.kind === "renamed") setTree(plan.tree);
         setTree(applyChanges(tree(), [{ path: to, kind: "note", exists: true, title }]));
         setFiles((f) => ({ selection: { selected: [to], anchor: to, focus: to } }));
