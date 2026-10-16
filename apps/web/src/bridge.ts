@@ -46,9 +46,12 @@ export interface WebBridgeOptions {
   fetchSite?: SiteFetch;
 }
 
+/** The site's root from the app's page (vite.config.ts): "./", or "../" where the app is at /app/ (D-167). */
+const SITE_ROOT: string = import.meta.env.FOCUS_NOTES_SITE_ROOT ?? "./";
+
 const siteFetch: SiteFetch = async (path) => {
   // The manifest and keyring change every deploy; the browser revalidates them instead of trusting a cache.
-  const res = await fetch(new URL(path, document.baseURI), { cache: "no-cache", credentials: "omit", redirect: "error" });
+  const res = await fetch(new URL(path, new URL(SITE_ROOT, document.baseURI)), { cache: "no-cache", credentials: "omit", redirect: "error" });
   if (res.status === 404) return undefined;
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.text();
