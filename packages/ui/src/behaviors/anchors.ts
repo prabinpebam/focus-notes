@@ -15,12 +15,28 @@ export interface AnchorRect {
 export type AnchorName = "selection" | "link" | "caret";
 
 const rects: Record<AnchorName, AnchorRect | null> = { selection: null, link: null, caret: null };
+/** Reads an anchor where it is now (DEF-21): a Positioner places against the live rectangle, never one a frame old. */
+const readers: Record<AnchorName, (() => AnchorRect | null) | null> = { selection: null, link: null, caret: null };
 const listeners = new Set<() => void>();
+const openers = new Set<() => void>();
+let open = 0;
 
 export const anchors = {
-  get: (name: AnchorName): AnchorRect | null => rects[name],
-  set(name: AnchorName, rect: AnchorRect | null): void {
+  /** Where the anchor is now: read live when its publisher gave a reader, else the last rectangle published. */
+  get(name: AnchorName): AnchorRect | null {
+    const read = readers[name];
+    if (rects[name] && read) {
+      try {
+        return read() ?? rects[name];
+      } catch {
+        return rects[name]; // the document changed under it: the last published rectangle until the next publish
+      }
+    }
+    return rects[name];
+  },
+  set(name: AnchorName, rect: AnchorRect | null, read?: () => AnchorRect | null): void {
     const old = rects[name];
+    readers[name] = rect ? read ?? null : null;
     if (old === rect || (old && rect && old.top === rect.top && old.bottom === rect.bottom && old.left === rect.left && old.right === rect.right)) return;
     rects[name] = rect;
     for (const l of listeners) l();
@@ -28,6 +44,28 @@ export const anchors = {
   subscribe(listener: () => void): () => void {
     listeners.add(listener);
     return () => listeners.delete(listener);
+  },
+  /**
+   * A surface anchored to the note is opening (a Positioner mounting): what moves the note ends first
+   * (DEF-21). Returns the call that says it closed.
+   */
+  opening(): () => void {
+    open++;
+    for (const o of openers) o();
+    let done = false;
+    return () => {
+      if (!done) open--;
+      done = true;
+    };
+  },
+  /** Whether a surface anchored to the note is open: the note's scrolls are then instant (D-156, DEF-21). */
+  get anyOpen(): boolean {
+    return open > 0;
+  },
+  /** Called when a surface anchored to the note opens: D-156's auto-scroll ends at once on its target. */
+  onOpen(listener: () => void): () => void {
+    openers.add(listener);
+    return () => openers.delete(listener);
   },
 };
 
