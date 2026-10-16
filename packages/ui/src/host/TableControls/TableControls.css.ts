@@ -114,6 +114,18 @@ export const stripColumn = style([strip, {
   transform: "translateX(-50%)",
   selectors: { "&::before": { width: t.insertLine, height: "100%" } },
 }]);
+/**
+ * The column border on the header row (D-182): drag to resize the column on its left, double-click to
+ * reset it. Its cursor says so; a click there inserts nothing. As wide as the insert zone.
+ */
+export const resizeZone = style([placed, {
+  pointerEvents: "auto",
+  cursor: "col-resize",
+  width: t.insertZone,
+  height: hVar,
+  transform: "translateX(-50%)",
+  touchAction: "none",
+}]);
 /** The 3 px accent line across the table at that boundary, and the drop line while dragging. */
 export const line = style([area, { backgroundColor: t.color.accent }]);
 export const lineRow = style({ height: t.insertLine, transform: "translateY(-50%)" });

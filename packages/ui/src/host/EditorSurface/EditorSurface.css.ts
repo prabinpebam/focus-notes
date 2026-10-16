@@ -33,6 +33,8 @@ export const scroller = style({
   color: t.text,
   // Space for the scrollbar is always reserved, so nothing moves when it appears (UI-09).
   scrollbarGutter: "stable",
+  // A table bled to the edge measures the note's width against this (D-182).
+  containerType: "inline-size",
 });
 
 // The minimal scrollbar (D-73, UI-09).
@@ -285,6 +287,19 @@ globalStyle(p("tr:last-child > th, tr:last-child > td"), { borderBlockEndStyle: 
 globalStyle(p("th"), { backgroundColor: t.tableHeader, fontWeight: t.tableHeaderWeight });
 globalStyle(p("tr:first-child > th:first-child"), { borderStartStartRadius: t.tableRadius });
 globalStyle(p("tr:first-child > th:last-child"), { borderStartEndRadius: t.tableRadius });
+// Bleed to edge (D-182): the table may be as wide as the note's area (less the gutters, and right of a
+// pinned Files sheet), centred on the text column, never stretched: as wide as its columns, each
+// aiming for at most 75 characters a line, and narrower columns where the room runs out.
+const bleedRoom = `calc(100cqi - ${pinnedClearVar} - 2 * ${t.gutter})`;
+globalStyle(p('[data-table][data-layout="bleed"]'), {
+  width: bleedRoom,
+  maxWidth: "none",
+  marginInlineStart: `calc((100% - ${bleedRoom}) / 2)`,
+});
+globalStyle(p('[data-table][data-layout="bleed"] > table'), { width: "max-content", maxWidth: "100%", tableLayout: "auto", marginInline: "auto" });
+globalStyle(p('[data-table][data-layout="bleed"] :is(th, td) > p'), { maxWidth: t.tableBleedMeasure });
+// Set widths (D-182): the columns are exactly as wide as set; bled out, the table is their sum (set by the view).
+globalStyle(p('[data-table][data-layout="bleed"][data-widths] > table'), { tableLayout: "fixed", maxWidth: "none" });
 globalStyle(p('[data-align="center"]'), { textAlign: "center" });
 globalStyle(p('[data-align="right"]'), { textAlign: "end" });
 globalStyle(p('[data-align="left"]'), { textAlign: "start" });

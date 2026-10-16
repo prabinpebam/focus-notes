@@ -56,6 +56,12 @@ export const tableGeometry = {
   },
   /** Measures every boundary of the current table; the editor surface provides it. */
   edges: (): TableEdges | null => null,
+  /**
+   * The current table's columns as drawn, for a resize that follows the hand (D-182): each column's
+   * width in pixels, the width of a character in its font, the narrowest a column may be (px), and a
+   * way to show widths (px) on screen before they're saved, or put back what's saved (null).
+   */
+  columns: (): { widths: number[]; ch: number; min: number; show(widths: number[] | null): void } | null => null,
   /** True while the pointer is on the controls, a menu is open, or a drag is under way: hover stays. */
   held: false,
   /** Asks the editor surface to measure again (the pointer left the controls); it provides it. */

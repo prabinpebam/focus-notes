@@ -1092,6 +1092,9 @@
           "insertLabel": {
             "get": "vm.table.insertLabel"
           },
+          "layout": {
+            "get": "vm.table.layout"
+          },
           "newRowLabel": {
             "get": "vm.table.newRowLabel"
           },
@@ -1141,6 +1144,12 @@
               },
               "to": {
                 "get": "event.to"
+              },
+              "width": {
+                "get": "event.width"
+              },
+              "next": {
+                "get": "event.next"
               }
             }
           },

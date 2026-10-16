@@ -52,7 +52,7 @@ describe("menus (TBL-08, Tables → Menus)", () => {
     const { vm, at } = await started();
     await at({ col: 0, align: "center" });
     expect(ids(vm().columnMenu)).toEqual([
-      ["table.insertColumnLeft", "table.insertColumnRight"], ["table.moveColumnLeft", "table.moveColumnRight"], ["table.sortAscending", "table.sortDescending"], ["align", "table.clearColumn"], ["table.deleteColumn"],
+      ["table.insertColumnLeft", "table.insertColumnRight"], ["table.moveColumnLeft", "table.moveColumnRight"], ["table.sortAscending", "table.sortDescending"], ["align", "table.clearColumn"], ["table.widenColumn", "table.narrowColumn", "table.resetColumnWidth"], ["table.deleteColumn"],
     ]);
     expect(vm().columnMenu[1]!.items[0]!.disabled).toBe(true);
     expect(vm().columnMenu[2]!.items.map((i) => i.label)).toEqual(["Sort A→Z", "Sort Z→A"]);
@@ -69,7 +69,9 @@ describe("menus (TBL-08, Tables → Menus)", () => {
   it("the table menu, and a context menu that reaches every row and column action from the keyboard", async () => {
     const { vm, at, app } = await started();
     await at({});
-    expect(ids(vm().tableMenu)).toEqual([["table.selectTable"], ["table.copyMarkdown", "table.copyTsv", "table.duplicateTable"], ["table.deleteTable"]]);
+    expect(ids(vm().tableMenu)).toEqual([["table.selectTable"], ["table.fitToColumn", "table.bleedToEdge"], ["table.copyMarkdown", "table.copyTsv", "table.duplicateTable"], ["table.deleteTable"]]);
+    // Fit to column or Bleed to edge (D-182): the one in use is checked.
+    expect(vm().tableMenu[1]!.items.map((i) => (i as { checked?: boolean }).checked)).toEqual([true, false]);
     const all = ids(vm().cellMenu).flat();
     for (const id of ["table.copy", "table.cut", "table.clearCells", "table.insertRowAbove", "table.insertRowBelow", "table.insertColumnLeft", "table.insertColumnRight",
       "table.moveRowUp", "table.moveRowDown", "table.moveColumnLeft", "table.moveColumnRight", "table.sortAscending", "table.sortDescending", "align", "table.deleteRow", "table.deleteColumn", "table.deleteTable"]) expect(all).toContain(id);
@@ -138,7 +140,7 @@ describe("keys (Keyboard shortcuts → Tables)", () => {
     expect(tables).toEqual([
       ["table.nextCell", "Tab"], ["table.prevCell", "Shift+Tab"], ["table.cellBelow", "Enter"], ["table.cellAbove", "Shift+Enter"],
       ["table.addRowBelow", "Mod+Enter"], ["table.addRowAbove", "Mod+Shift+Enter"], ["table.moveRowUp", "Mod+Shift+Up"], ["table.moveRowDown", "Mod+Shift+Down"],
-      ["table.deleteRow", "Mod+Shift+K"], ["table.selectCells", "Escape"], ["table.contextMenu", "Shift+F10 ContextMenu"],
+      ["table.deleteRow", "Mod+Shift+K"], ["table.widenColumn", "Alt+Shift+Right"], ["table.narrowColumn", "Alt+Shift+Left"], ["table.selectCells", "Escape"], ["table.contextMenu", "Shift+F10 ContextMenu"],
     ]);
     const keymap = (app.viewModels.select("vm.app", app.store.state) as { editorKeymap: { id: string; chord: string }[] }).editorKeymap;
     expect(keymap.filter((k) => k.chord === "Mod+Enter").map((k) => k.id).sort()).toEqual(["table.addRowBelow", "task.toggle"]);

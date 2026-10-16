@@ -247,5 +247,7 @@ export const TableKit = Extension.create<TableHooks>({
 
 /** Everything tables add to the editor: the nodes, their roles, the GFM normalizer, and TableKit. */
 export function tableExtensions(hooks: TableHooks = {}): AnyExtension[] {
-  return [Table, TableRow, TableHeader, TableCell, TableRoles, TableNormalizer, TableKit.configure(hooks)];
+  // The design system draws the table, with its layout and set column widths (D-182).
+  const table = hooks.view ? Table.extend({ addNodeView: () => ({ node }) => hooks.view!(node) }) : Table;
+  return [table, TableRow, TableHeader, TableCell, TableRoles, TableNormalizer, TableKit.configure(hooks)];
 }

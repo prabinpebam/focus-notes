@@ -26,15 +26,51 @@ const CELL_ATTRS = {
   colwidth: { default: null, parseHTML: () => null, renderHTML: () => ({}) },
 };
 
+/** How a table is sized (D-182): within the text column (fit, the default), or out to the window (bleed). */
+export type TableLayout = "fit" | "bleed";
+/** A column's width set by the person, in characters of the note's font (`ch`), or none. */
+export type ColumnWidth = number | null;
+/** The narrowest a column can be set, in characters, and the step the keys change it by (D-182). */
+export const COLUMN_MIN_CH = 4;
+export const COLUMN_STEP_CH = 2;
+/** The width a column aims for when its width is reset: 30 to 75 characters a line (D-182). */
+export const COLUMN_OPTIMAL_CH = { min: 30, max: 75 } as const;
+
+/** Widths from an attribute: numbers of characters, or null; anything else is no widths at all. */
+export function toWidths(v: unknown): ColumnWidth[] | null {
+  if (!Array.isArray(v) || !v.length) return null;
+  const out = v.map((w) => (typeof w === "number" && Number.isFinite(w) && w > 0 ? Math.max(COLUMN_MIN_CH, Math.round(w * 10) / 10) : null));
+  return out.some((w) => w !== null) ? out : null;
+}
+const parseWidths = (s: string | null) => toWidths((s ?? "").split(",").map((w) => (w.trim() && w.trim() !== "-" ? Number(w) : null)));
+
 export const Table = Node.create({
   name: "table",
   group: "block",
   content: "tableRow+",
   isolating: true,
+  addAttributes: () => ({
+    layout: {
+      default: "fit",
+      parseHTML: (el: HTMLElement) => (el.closest("[data-table]")?.getAttribute("data-layout") === "bleed" ? "bleed" : "fit"),
+      renderHTML: () => ({}),
+    },
+    widths: {
+      default: null,
+      parseHTML: (el: HTMLElement) => parseWidths(el.closest("[data-table]")?.getAttribute("data-widths") ?? null),
+      renderHTML: () => ({}),
+    },
+  }),
   parseHTML: () => [{ tag: "table" }],
   // The frame scrolls sideways when the table is wider than the page (Tables → Size and wide tables).
-  renderHTML: ({ HTMLAttributes }) => ["div", { "data-table": "" }, ["table", mergeAttributes(HTMLAttributes), ["tbody", 0]]],
+  // Its layout and column widths (D-182) are data attributes here; the view draws them (tableView).
+  renderHTML: ({ node, HTMLAttributes }) => ["div", {
+    "data-table": "",
+    ...(node.attrs.layout === "bleed" ? { "data-layout": "bleed" } : {}),
+    ...(node.attrs.widths ? { "data-widths": (node.attrs.widths as ColumnWidth[]).map((w) => w ?? "-").join(",") } : {}),
+  }, ["table", mergeAttributes(HTMLAttributes), ["tbody", 0]]],
 });
+
 export const TableRow = Node.create({
   name: "tableRow",
   content: "(tableCell | tableHeader)*",
@@ -72,6 +108,9 @@ export const isCell = (node: PMNode | null | undefined): boolean => node?.type.n
 export interface Grid {
   cells: Fragment[][];
   align: Align[];
+  /** How it's sized and the columns' set widths (D-182), carried through every change. */
+  layout?: TableLayout;
+  widths?: ColumnWidth[] | null;
 }
 
 /** Every cell's inline content: paragraphs joined by a space, line breaks as spaces. */
@@ -95,7 +134,8 @@ export function readGrid(table: PMNode): Grid {
   const header = table.firstChild;
   const width = Math.max(1, ...cells.map((r) => r.length));
   const align = Array.from({ length: width }, (_, c) => (header && c < header.childCount ? toAlign(header.child(c).attrs.align) : null));
-  return { cells, align };
+  const widths = toWidths(table.attrs.widths);
+  return { cells, align, layout: table.attrs.layout === "bleed" ? "bleed" : "fit", widths: widths ? Array.from({ length: width }, (_, c) => widths[c] ?? null) : null };
 }
 
 /** A GFM-shaped table from a grid: rows filled to the widest, a body row added if there's none. */
@@ -104,7 +144,8 @@ export function buildTable(schema: Schema, grid: Grid): PMNode {
   const rows = grid.cells.length ? [...grid.cells] : [[]];
   if (rows.length < 2) rows.push([]);
   const n = schema.nodes;
-  return n.table!.create(null, rows.map((r, i) => n.tableRow!.create(null, Array.from({ length: width }, (_, c) =>
+  const widths = grid.widths ? toWidths(Array.from({ length: width }, (_, c) => grid.widths![c] ?? null)) : null;
+  return n.table!.create({ layout: grid.layout === "bleed" ? "bleed" : "fit", widths }, rows.map((r, i) => n.tableRow!.create(null, Array.from({ length: width }, (_, c) =>
     (i === 0 ? n.tableHeader! : n.tableCell!).create({ align: grid.align[c] ?? null }, n.paragraph!.create(null, r[c] ?? Fragment.empty))))));
 }
 

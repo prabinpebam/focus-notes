@@ -19,6 +19,7 @@ export * from "./slash.ts";
 export * from "./paste.ts";
 export * from "./sanitize.ts";
 export * from "./table.ts";
+export { COLUMN_MIN_CH, COLUMN_OPTIMAL_CH, COLUMN_STEP_CH } from "./table-schema.ts";
 export * from "./blocks.ts";
 export * from "./expand.ts";
 export * from "./block-select.ts";
@@ -30,7 +31,7 @@ import { LinkOpen, LinkPaste, SelectionGhost, removeLink, selectLink } from "./f
 import { SlashMenu, blockIs, insideNode, type SlashEntry } from "./slash.ts";
 import { SmartPaste } from "./paste.ts";
 import { isSafeHref } from "./sanitize.ts";
-import { TABLE_ACTIONS, insertTable, tableExtensions, type TableChange } from "./table.ts";
+import { TABLE_ACTIONS, insertTable, tableExtensions, type TableChange, type TableHooks } from "./table.ts";
 
 /** One registration per block type, built-in or future (Editor engine → Block registry contract). */
 export interface BlockRegistration {
@@ -248,7 +249,11 @@ export function toKeyName(chord: string): string {
   const key = parts.pop()!;
   const NAMES: Record<string, string> = { Plus: "+", Up: "ArrowUp", Down: "ArrowDown", Left: "ArrowLeft", Right: "ArrowRight" };
   const name = NAMES[key] ?? (key.length === 1 ? key.toLowerCase() : key);
-  return [...parts, name].join("-");
+  // One order for the modifiers, as ProseMirror's keymap reads them: "Shift+Alt+Right" and
+  // "Alt+Shift+Right" are one key, so a table's key and the editor's elsewhere share it (D-182).
+  const ORDER = ["Mod", "Ctrl", "Meta", "Alt", "Shift"];
+  const mods = [...parts].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+  return [...mods, name].join("-");
 }
 
 export interface KeyBinding {
@@ -298,6 +303,9 @@ export interface CoreOptions {
   blockSelectedClass?: string;
   /** Draws an empty header cell's column name ("Column 3"), see TableHooks. */
   emptyHeader?: (index: number) => HTMLElement;
+  /** Draws a table with its layout and set column widths, and measures its columns (D-182), see TableHooks. */
+  tableView?: TableHooks["view"];
+  tableColumns?: TableHooks["columns"];
   /**
    * What a paste did that's worth saying: images left out (until EXT-03), a range pasted into a
    * table (`tablePasted`, with its size and how the table grew), or line breaks kept off a cell.
@@ -355,6 +363,8 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
       ...(options.onTableCopy ? { onCopyText: options.onTableCopy } : {}),
       ...(options.onTableMenu ? { onContextMenu: options.onTableMenu } : {}),
       ...(options.emptyHeader ? { emptyHeader: options.emptyHeader } : {}),
+      ...(options.tableView ? { view: options.tableView } : {}),
+      ...(options.tableColumns ? { columns: options.tableColumns } : {}),
     }),
   ];
 }
