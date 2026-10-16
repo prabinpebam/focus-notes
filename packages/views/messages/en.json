@@ -1595,5 +1595,6 @@
   "site.tile.offline": "Works offline",
   "site.tile.open": "Free and open source",
   "site.tile.private": "Private notes, sealed",
-  "site.tile.themes": "Light and dark"
+  "site.footer.credit": "Desktop photo by Cristina Gottardi on Unsplash.",
+  "site.tile.tracking": "Nothing tracked"
 }

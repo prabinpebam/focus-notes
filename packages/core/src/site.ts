@@ -114,8 +114,33 @@ export function siteMarkdown(markdown: string): SiteContent {
 export interface SitePageModel extends Record<string, unknown> { title: PMNode[]; body: PMNode[] }
 export const sitePageModel = (c: SiteContent): SitePageModel => ({ title: c.title, body: c.body });
 
-/** A screenshot on the site (D-169): light, and dark if there is one, with its size in CSS pixels. */
-export interface SiteImage { src: string; srcDark?: string; alt: string; width: number; height: number }
+/**
+ * A desktop scene on the site (D-176): the app's window on the wallpaper, made by tools/site/scenes.py
+ * as `media/<scene>-<width>.avif` and `.webp` at each of SCENE_WIDTHS, all SCENE_SIZE. `dark` is the
+ * scene a visitor whose setting is dark sees instead.
+ */
+export interface SiteImage { scene: string; dark?: string; alt: string }
+export const SCENE_WIDTHS = [960, 1920] as const;
+export const SCENE_SIZE = { width: 1920, height: 1080 } as const;
+/** What a SiteFigure is given: its sources at each width, the visitor's dark ones, and its size. */
+export interface SiteFigureModel {
+  src: string; srcSet: string; avifSet: string; darkSrcSet: string; darkAvifSet: string; sizes: string; alt: string; width: number; height: number;
+}
+const sceneSet = (scene: string, ext: string) => SCENE_WIDTHS.map((w) => `media/${scene}-${w}.${ext} ${w}w`).join(", ");
+/** As wide as the page's widest column, or the viewport below it (cmp.siteFigure.maxWidth is 1200 px). */
+export const SCENE_SIZES = "(min-width: 1200px) 1200px, 100vw";
+export function sceneFigure(i: SiteImage): SiteFigureModel {
+  return {
+    src: `media/${i.scene}-${SCENE_WIDTHS[0]}.webp`,
+    srcSet: sceneSet(i.scene, "webp"),
+    avifSet: sceneSet(i.scene, "avif"),
+    darkSrcSet: i.dark ? sceneSet(i.dark, "webp") : "",
+    darkAvifSet: i.dark ? sceneSet(i.dark, "avif") : "",
+    sizes: SCENE_SIZES,
+    alt: i.alt,
+    ...SCENE_SIZE,
+  };
+}
 /** site/landing.json (D-174): the hero, up to five featured sections, and the closing line. */
 export interface LandingContent {
   /** Which work package writes its final words. */
@@ -131,8 +156,8 @@ export interface LandingModel extends Record<string, unknown> {
   heroAnchor: string;
   headline: string;
   line: string;
-  hero: Required<SiteImage>;
-  features: { key: string; anchor: string; hasEyebrow: boolean; eyebrow: string; headline: string; line: string; image: Required<SiteImage> }[];
+  hero: SiteFigureModel;
+  features: { key: string; anchor: string; hasEyebrow: boolean; eyebrow: string; headline: string; line: string; image: SiteFigureModel }[];
   closingAnchor: string;
   closing: string;
 }
@@ -143,9 +168,9 @@ const ANCHOR = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 export function landingModel(c: LandingContent): LandingModel {
   const over: string[] = [];
   const limit = (what: string, text: string | undefined, max: number) => { if (text !== undefined && countWords(text) > max) over.push(`${what} has ${countWords(text)} words (at most ${max})`); };
-  const image = (what: string, i: SiteImage): Required<SiteImage> => {
-    if (!i?.src || !i.alt?.trim() || !(i.width > 0) || !(i.height > 0)) over.push(`${what}'s screenshot needs src, alt, width and height`);
-    return { src: i?.src ?? "", srcDark: i?.srcDark ?? "", alt: i?.alt ?? "", width: i?.width ?? 0, height: i?.height ?? 0 };
+  const image = (what: string, i: SiteImage): SiteFigureModel => {
+    if (!i?.scene || !ANCHOR.test(i.scene) || (i.dark !== undefined && !ANCHOR.test(i.dark)) || !i.alt?.trim()) over.push(`${what}'s screenshot needs a scene and alt text`);
+    return sceneFigure({ scene: i?.scene ?? "", ...(i?.dark ? { dark: i.dark } : {}), alt: i?.alt ?? "" });
   };
   limit("The headline", c.headline, LANDING_LIMITS.headline);
   limit("The hero's line", c.line, LANDING_LIMITS.line);
@@ -207,7 +232,7 @@ export function helpArticleModel(c: SiteContent, category: HelpCategory): HelpAr
 }
 
 const BLOCKS: JsonSchema = { type: "array", items: { type: "object" } };
-const IMAGE: JsonSchema = { type: "object", properties: { src: { type: "string" }, srcDark: { type: "string" }, alt: { type: "string" }, width: { type: "number" }, height: { type: "number" } } };
+const IMAGE: JsonSchema = { type: "object", properties: Object.fromEntries(["src", "srcSet", "avifSet", "darkSrcSet", "darkAvifSet", "sizes", "alt"].map((k) => [k, { type: "string" } as JsonSchema]).concat([["width", { type: "number" }], ["height", { type: "number" }]])) };
 const vm = (id: string, properties: Record<string, JsonSchema>) => ({ id, schema: { type: "object" as const, properties } });
 /** The site's view models, filled by the site's renderer (WP-10.1), not the app. */
 export const SITE_VIEW_MODELS = [

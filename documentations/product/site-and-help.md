@@ -97,13 +97,15 @@ The app links into the help centre wherever a setting, a step or a message needs
 
 ## Screenshots
 
-Captured from the release build in CI with the demo workspace (D-169):
+Desktop scenes of the app with the demo workspace (D-169, D-176):
 
-- **Light and dark,** at 2× scale, cropped to the window with the window's own corners and shadow on a neutral background, with no desktop or taskbar.
-- **The same sample notes** throughout, with consistent window sizes (1280 × 800 for the full window, 720 × 480 for details).
+- **A scene, not a cut-out:** a 1920 × 1080 desktop (a mountain photo by Cristina Gottardi on Unsplash) with the app's own window centred on it at its real size, about three quarters of its width, its drawn corners and shadow intact, so the window stands apart from the page's background.
+- **Light and dark:** each scene in both, and a visitor whose setting is dark sees the dark ones.
+- **No banding:** composited at full precision and served as AVIF 4:4:4 with a WebP fallback, at 1920 and 960 pixels wide, with width and height set. Quality wins over size.
+- **The same sample notes** throughout: an essay, a reading list, a garden, a journal, projects and recipes, written for the demo and never anyone's own.
 - **At most one highlight** where the reader must look.
 - **Alt text** that says what the image shows, and a caption when it adds something.
-- **Kept current:** regenerated for each release by the screenshot catalogue (`tools/review/catalogs.mjs`, a `site` catalogue). A check fails if a view a screenshot shows changed after the screenshot was taken.
+- **Kept current:** `apps/desktop/e2e/site-catalog.spec.ts` captures the window (`webContents.capturePage`, never the screen) and `tools/site/scenes.py` makes the scenes. On CI the screenshot catalogue can regenerate them for each release (`tools/review/catalogs.mjs`, a `site` catalogue). A check will fail if a view a screenshot shows changed after the screenshot was taken.
 
 <h2 id="how-the-site-is-built">How the site is built</h2>
 

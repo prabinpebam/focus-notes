@@ -45,7 +45,14 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
     expect(html).toMatch(/<h1 class="[^"]*">Write\. Nothing else\.<\/h1>/);
     expect(html).toMatch(/href="download\/"[^>]*>Download Focus Notes</);
     expect(html).toMatch(/href="demo\/"[^>]*>Try the demo</);
-    expect(html).toMatch(/<source srcSet="media\/focus-dark\.webp" media="\(prefers-color-scheme: dark\)"\/>/i);
+    expect(html).toMatch(/<source type="image\/avif" srcSet="media\/focus-dark-960\.avif 960w, media\/focus-dark-1920\.avif 1920w" sizes="[^"]+" media="\(prefers-color-scheme: dark\)"\/>/i);
+    expect(html).toMatch(/fetchPriority="high"/i);
+    // D-176: every scene is in site/media at both widths, both formats, and the wallpaper's source isn't published.
+    for (const s of [landing.hero, ...landing.features.map((f) => f.image)].flatMap((i) => [i.scene, i.dark].filter(Boolean))) {
+      for (const f of [`${s}-960.avif`, `${s}-1920.avif`, `${s}-960.webp`, `${s}-1920.webp`]) expect((await readFile(join(out, "media", f))).length, f).toBeGreaterThan(0);
+    }
+    await expect(readFile(join(out, "media", "source", "wallpaper-1920.webp"))).rejects.toThrow();
+    expect(html).toMatch(/Desktop photo by Cristina Gottardi on Unsplash/);
     const { words, blocks } = visibleText(html);
     expect(words).toBeLessThanOrEqual(LANDING_WORDS);
     for (const b of blocks) expect(b.split(/\s+/).length, b).toBeLessThanOrEqual(LANDING_BLOCK);

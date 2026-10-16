@@ -61,7 +61,7 @@ export async function buildSite({ content = "site", out, renderer = "apps/web/di
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, f.html);
   }
-  if (await isDir(join(content, "media"))) await cp(join(content, "media"), join(out, "media"), { recursive: true, filter: (p) => !p.endsWith(".gitkeep") });
+  if (await isDir(join(content, "media"))) await cp(join(content, "media"), join(out, "media"), { recursive: true, filter: (p) => !p.endsWith(".gitkeep") && relative(join(content, "media"), p).split(sep)[0] !== "source" });
   if (app) await placeApp(app, out);
   log(`Built ${files.length} site pages${app ? ", with the app at app/" : ""}.`);
   return files;
@@ -80,7 +80,7 @@ export async function placeApp(app, out) {
   }
 }
 
-const HTML_REF = /\s(href|src|srcset)="([^"]*)"/g;
+const HTML_REF = /\s(href|src|srcset)="([^"]*)"/gi;
 /** The landing page's word budget and its longest block (D-174; packages/core/src/site.ts says the same). */
 export const LANDING_WORDS = 120;
 export const LANDING_BLOCK = 20;
@@ -132,7 +132,7 @@ export async function checkSite(out, { assume = [], siteUrl } = {}) {
     const css = rel.endsWith(".css");
     const refs = css
       ? [...body.matchAll(CSS_REF)].map((m) => ({ attr: "src", url: m[1] }))
-      : [...body.matchAll(HTML_REF)].map((m) => ({ attr: m[1] === "srcset" ? "src" : m[1], url: m[2].replace(/&amp;/g, "&").split(/\s+/)[0] }));
+      : [...body.matchAll(HTML_REF)].flatMap((m) => m[1].toLowerCase() === "srcset" ? m[2].split(",").map((c) => ({ attr: "src", url: c.trim().split(/\s+/)[0] })) : [{ attr: m[1], url: m[2].replace(/&amp;/g, "&") }]);
     const canonical = css ? undefined : /<link rel="canonical" href="([^"]*)"/.exec(body)?.[1];
     for (const { attr, url } of refs) {
       if (url === canonical) continue;

@@ -5864,7 +5864,7 @@
     },
     "c_SiteFigure": {
       "type": "object",
-      "description": "A screenshot on the product site (D-169, D-174): the app's own window, in the visitor's light or dark, with its width and height so nothing shifts as it loads (PRF-12). The first one on a page loads first; the rest when they're near.",
+      "description": "A screenshot on the product site (D-169, D-176): a desktop scene, AVIF where the browser takes it and WebP otherwise, at the width the page shows it, in the visitor's light or dark, with its width and height so nothing shifts as it loads (PRF-12). The first one on a page loads first; the rest when they're near.",
       "required": [
         "type",
         "props"
@@ -5902,7 +5902,35 @@
                 }
               ]
             },
-            "srcDark": {
+            "srcSet": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "avifSet": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "darkSrcSet": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "darkAvifSet": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "sizes": {
               "anyOf": [
                 {
                   "$ref": "#/$defs/read"

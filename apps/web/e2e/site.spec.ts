@@ -106,7 +106,7 @@ test("the site's navigation reaches each address, the skip link goes to the cont
   await page.getByRole("link", { name: "Focus Notes", exact: true }).click();
   await expect(page).toHaveURL(`${origin}/`);
   // The landing page's sections, in the specification's order, each with its anchor.
-  expect(await page.locator("main section[id]").evaluateAll((s) => s.map((e) => e.id))).toEqual(["start", "spotlight", "files", "get-focus-notes"]);
+  expect(await page.locator("main section[id]").evaluateAll((s) => s.map((e) => e.id))).toEqual(["start", "spotlight", "themes", "light-and-dark", "files", "get-focus-notes"]);
 });
 
 test("PRF-12: the landing page's LCP, INP and CLS on a throttled profile", async ({ page }) => {

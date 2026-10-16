@@ -1,10 +1,11 @@
 /**
  * The product site's screenshots (D-169, D-174, WP-10.4 brought forward): a curated demo workspace,
  * each scene the landing page shows, captured from the app's own window (webContents.capturePage,
- * never the screen, D-141) at 2× and written to site/media/ as WebP (the PNGs go to test-results/site-capture/).
+ * never the screen, D-141) as lossless PNG with its shadow's alpha, into test-results/site-capture/.
+ * tools/site/scenes.py then sets each on the wallpaper as a 2560 × 1440 desktop scene (D-176).
  *
  * Opt in with `FOCUS_NOTES_CAPTURE_SITE=1` (and `FOCUS_NOTES_E2E=1`). `FOCUS_NOTES_SITE_OUT` names the
- * folder (default `site/media`). Locally it takes the default window; the Review captures workflow
+ * folder. The window is 1440 × 900 unless `FOCUS_NOTES_SITE_WINDOW_W`/`_H` say otherwise; the Review captures workflow
  * can regenerate it on CI (`gh workflow run review-captures.yml -f catalog=site`).
  */
 import { test, expect, type Page } from "./fixtures.ts";
@@ -17,9 +18,9 @@ import { repoRoot } from "./github-world.ts";
 
 test.skip(process.env.FOCUS_NOTES_CAPTURE_SITE !== "1", "Opt in with FOCUS_NOTES_CAPTURE_SITE=1");
 
-const OUT = process.env.FOCUS_NOTES_SITE_OUT ?? join(repoRoot, "site", "media");
-/** The lossless PNGs, for review and other formats; not published. */
-const PNG_OUT = join(repoRoot, "test-results", "site-capture");
+/** The window's size (D-176), and where the lossless captures go; tools/site/scenes.py makes the site's images from them. */
+const WINDOW = { width: Number(process.env.FOCUS_NOTES_SITE_WINDOW_W ?? 1440), height: Number(process.env.FOCUS_NOTES_SITE_WINDOW_H ?? 900) };
+const PNG_OUT = process.env.FOCUS_NOTES_SITE_OUT ?? join(repoRoot, "test-results", "site-capture");
 
 /** The demo workspace: real writing, nobody's own notes, nothing private. */
 export const DEMO_NOTES: Record<string, string> = {
@@ -64,6 +65,8 @@ async function start(theme: "light" | "dark"): Promise<Launched> {
     writeFileSync(file, text);
   }
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done" }));
+  // A large window, as on a 2560 × 1440 desktop (D-176), opened inactive like every journey window.
+  writeFileSync(join(dirs.userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 40, y: 40, width: WINDOW.width, height: WINDOW.height } }));
   const l = await launch(dirs);
   await expect(l.page.getByRole("textbox", { name: "Note" })).toBeFocused();
   await scheme(l.page, theme);
@@ -88,39 +91,32 @@ async function caretOn(page: Page, text: string) {
   await page.keyboard.press("End");
 }
 
-/** The app's own window, at 2×, as PNG and WebP (D-141: never the screen). */
+/**
+ * The app's own window as lossless PNG with its alpha: the drawn corners and shadow in their
+ * transparent margin (D-141: never the screen). tools/site/scenes.py sets it on the wallpaper.
+ */
 async function capture(l: Launched, name: string) {
   await settled(l.page);
-  await l.page.waitForTimeout(400);
-  const cdp = await l.page.context().newCDPSession(l.page);
-  await cdp.send("Emulation.setDeviceMetricsOverride", { width: 0, height: 0, deviceScaleFactor: 2, mobile: false });
-  await l.page.waitForTimeout(400);
+  await l.page.waitForTimeout(500);
   const png = await l.app.evaluate(async ({ BrowserWindow }) => {
     const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
     return (await w.webContents.capturePage()).toPNG().toString("base64");
   });
-  await cdp.send("Emulation.clearDeviceMetricsOverride");
-  // WebP from the PNG, in the page itself: no request, no dependency.
-  const webp = await l.page.evaluate(async (b64) => {
-    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    const bmp = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
-    const canvas = new OffscreenCanvas(bmp.width, bmp.height);
-    canvas.getContext("2d")!.drawImage(bmp, 0, 0);
-    const blob = await canvas.convertToBlob({ type: "image/webp", quality: 0.9 });
-    const buf = new Uint8Array(await blob.arrayBuffer());
-    let s = "";
-    for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-    return { b64: btoa(s), width: bmp.width, height: bmp.height };
-  }, png);
-  mkdirSync(OUT, { recursive: true });
   mkdirSync(PNG_OUT, { recursive: true });
   writeFileSync(join(PNG_OUT, `${name}.png`), Buffer.from(png, "base64"));
-  writeFileSync(join(OUT, `${name}.webp`), Buffer.from(webp.b64, "base64"));
-  console.log(`${name}: ${webp.width} × ${webp.height}`);
+}
+
+async function openThemes(page: Page) {
+  await page.keyboard.press(`${mod}+.`);
+  await expect(page.getByRole("toolbar", { name: "Toolbar" }).locator(":focus")).toHaveCount(1);
+  await page.keyboard.press("End");
+  await page.keyboard.press("ArrowDown");
+  await page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: /^Theme…/ }).click();
+  await expect(page.getByRole("complementary", { name: "Theme" })).toBeVisible();
 }
 
 for (const theme of ["light", "dark"] as const) {
-  test(`D-174: the landing page's scenes, ${theme}`, async () => {
+  test(`D-176: the landing page's scenes, ${theme}`, async () => {
     test.setTimeout(180_000);
     const l = await start(theme);
     const { page } = l;
@@ -129,17 +125,18 @@ for (const theme of ["light", "dark"] as const) {
     await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBeDefined();
     await caretOn(page, "Most of what I write well");
     await capture(l, `focus-${theme}`);
-    {
-      await page.keyboard.press("F8");
-      await reset(page);
-      await spotlight(page, `${mod}+Slash`);
-      await page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox").fill("gar");
-      await page.waitForTimeout(600);
-      await capture(l, `spotlight-${theme}`);
-      await reset(page);
-      await files(page);
-      await capture(l, `files-${theme}`);
-    }
+    await page.keyboard.press("F8");
+    await reset(page);
+    await spotlight(page, `${mod}+Slash`);
+    await page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox").fill("gar");
+    await page.waitForTimeout(600);
+    await capture(l, `spotlight-${theme}`);
+    await reset(page);
+    await files(page);
+    await capture(l, `files-${theme}`);
+    await reset(page);
+    await openThemes(page);
+    await capture(l, `themes-${theme}`);
     await quit(l);
   });
 }

@@ -159,6 +159,16 @@
                 "role": "caption",
                 "tone": "muted"
               }
+            },
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "site.footer.credit"
+                },
+                "role": "caption",
+                "tone": "muted"
+              }
             }
           ]
         }
@@ -233,8 +243,20 @@
               "src": {
                 "get": "vm.siteLanding.hero.src"
               },
-              "srcDark": {
-                "get": "vm.siteLanding.hero.srcDark"
+              "srcSet": {
+                "get": "vm.siteLanding.hero.srcSet"
+              },
+              "avifSet": {
+                "get": "vm.siteLanding.hero.avifSet"
+              },
+              "darkSrcSet": {
+                "get": "vm.siteLanding.hero.darkSrcSet"
+              },
+              "darkAvifSet": {
+                "get": "vm.siteLanding.hero.darkAvifSet"
+              },
+              "sizes": {
+                "get": "vm.siteLanding.hero.sizes"
               },
               "alt": {
                 "get": "vm.siteLanding.hero.alt"
@@ -316,8 +338,20 @@
                 "src": {
                   "get": "feature.image.src"
                 },
-                "srcDark": {
-                  "get": "feature.image.srcDark"
+                "srcSet": {
+                  "get": "feature.image.srcSet"
+                },
+                "avifSet": {
+                  "get": "feature.image.avifSet"
+                },
+                "darkSrcSet": {
+                  "get": "feature.image.darkSrcSet"
+                },
+                "darkAvifSet": {
+                  "get": "feature.image.darkAvifSet"
+                },
+                "sizes": {
+                  "get": "feature.image.sizes"
                 },
                 "alt": {
                   "get": "feature.image.alt"
@@ -454,7 +488,7 @@
                   {
                     "type": "Icon",
                     "props": {
-                      "name": "darkTheme",
+                      "name": "check",
                       "size": "l"
                     }
                   },
@@ -462,7 +496,7 @@
                     "type": "SiteText",
                     "props": {
                       "value": {
-                        "t": "site.tile.themes"
+                        "t": "site.tile.tracking"
                       },
                       "look": "tile",
                       "as": "h3"
