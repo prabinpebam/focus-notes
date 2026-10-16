@@ -166,3 +166,36 @@ describe("saving edited colors as a theme (THM-04, THM-13)", () => {
     expect(JSON.parse(s.written[0]!.text).name).toBe("Paper (custom) 2");
   });
 });
+
+describe("reading theme files again, and syncing the slots (THM-04, THM-05)", () => {
+  it("opening the theme manager reads the theme files again: a new one shows, a changed one shows its new colors, and a chosen one that's gone falls back", async () => {
+    const files = [{ file: "evening.json", text: EVENING }];
+    const s = setup(files, { lightTheme: "custom:sepia-evening", appearance: "light" });
+    await s.app.start();
+    files.push({ file: "midnight.json", text: MIDNIGHT });
+    files[0] = { file: "evening.json", text: EVENING.replace("#f4ecd8", "#f0e6d0") };
+    await s.app.commands.run("theme.manager.open");
+    await expect.poll(() => s.vm().tiles.map((t) => t.id).slice(0, 2)).toEqual(["custom:midnight", "custom:sepia-evening"]);
+    expect(s.vmApp().themeColors).toContainEqual({ id: "color.canvas", value: "#f0e6d0" });
+    files.splice(0, 1);
+    await s.app.commands.run("theme.manager.close");
+    await s.app.commands.run("theme.manager.open");
+    await expect.poll(() => s.app.store.state.appearance.lightTheme).toBe("paper");
+    expect(s.saved().lightTheme).toBe("paper");
+  });
+  it("a custom theme chosen on another computer comes through Sync appearance, with its file in the private repository", async () => {
+    let settings = JSON.stringify({ appearance: { mode: "light", lightTheme: "custom:sepia-evening" } });
+    const bridge: PlatformBridge = {
+      platform: "windows", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/n/Untitled.md",
+      defaultNotePath: async () => "/n/a.md", loadAppState: async () => ({ version: 1, firstRun: "done" }), saveAppState: async () => {},
+      systemScheme: () => "dark", onSystemSchemeChange: () => () => {},
+      settings: { load: async () => ({ available: true, text: settings }), save: async (t) => { settings = t; }, remove: async () => {} },
+      themes: { list: async () => [{ file: "evening.json", text: EVENING }] },
+    };
+    const app = createApp(bridge, messages);
+    await app.start();
+    expect(app.store.state.appearance).toMatchObject({ mode: "light", lightTheme: "custom:sepia-evening" });
+    await app.commands.run("theme.choose", { id: "custom:sepia-evening" });
+    expect(JSON.parse(settings).appearance.lightTheme).toBe("custom:sepia-evening");
+  });
+});

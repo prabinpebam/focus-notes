@@ -17,12 +17,12 @@ import { toHex } from "./color.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import {
-  BUILT_IN_THEMES, CONTENT_FONTS, FOCUS_DIM, LINE_HEIGHT, MEASURE, PARAGRAPH_SPACINGS, UI_SCALES, onSteps, themeById,
+  BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, FOCUS_DIM, LINE_HEIGHT, MEASURE, PARAGRAPH_SPACINGS, UI_SCALES, onSteps, themeById,
   type ContentFont, type ParagraphSpacing, type ThemeKind,
 } from "./themes.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { themeValues } from "@focus-notes/tokens";
-import { customColors, isCustomId, parseThemeFile, themeSlug, type CustomTheme } from "./custom-themes.ts";
+import { customColors, customThemesOf, isCustomId, parseThemeFile, themeSlug, type CustomTheme } from "./custom-themes.ts";
 
 export const THEME_TABS = ["themes", "reading", "colors"] as const;
 export type ThemeTab = (typeof THEME_TABS)[number];
@@ -85,6 +85,8 @@ interface Ctx<St extends S> {
   announce: (text: string) => void;
   /** Writes a new theme file in the workspace (D-173); absent where themes can't be saved. */
   saveTheme?: (file: string, text: string) => Promise<string>;
+  /** Reads the workspace's theme files again (D-173). */
+  listThemes?: () => Promise<{ file: string; text: string }[]>;
 }
 
 /** The scheme showing (System follows the OS). */
@@ -148,7 +150,7 @@ function fixFor(colors: Record<string, string>, key: KeyColor, high: boolean): s
   return fixes.get(k);
 }
 
-export function registerThemeManager<St extends S>({ store, commands, viewModels, catalog, persistAppState, announce, saveTheme }: Ctx<St>) {
+export function registerThemeManager<St extends S>({ store, commands, viewModels, catalog, persistAppState, announce, saveTheme, listThemes }: Ctx<St>) {
   const state = () => store.state.ui.theme;
   const set = (patch: Partial<ThemeManagerState>) => store.update((s) => ({ ...s, ui: { ...s.ui, theme: { ...s.ui.theme, ...patch } } }));
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => unknown) =>
@@ -166,6 +168,27 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     await persistAppState(patch);
   };
 
+  /**
+   * Reads the theme files again (D-173): new ones show, changed ones show their colors, and a slot
+   * whose theme's file is gone goes back to that slot's default, as at launch.
+   */
+  const reloadThemes = async () => {
+    if (!listThemes) return;
+    const files = await listThemes().catch(() => undefined);
+    if (!files) return;
+    const customThemes = customThemesOf(files);
+    store.update((s) => ({ ...s, appearance: { ...s.appearance, customThemes } }));
+    const a = store.state.appearance;
+    const patch: Partial<Pick<Appearance, "lightTheme" | "darkTheme">> = {};
+    if (isCustomId(a.lightTheme) && !customOf(a, a.lightTheme)) patch.lightTheme = DEFAULT_THEMES.light;
+    if (isCustomId(a.darkTheme) && !customOf(a, a.darkTheme)) patch.darkTheme = DEFAULT_THEMES.dark;
+    if (Object.keys(patch).length) {
+      store.update((s) => ({ ...s, appearance: { ...s.appearance, ...patch } }));
+      await persistAppState(patch);
+    }
+  };
+  reg("theme.reload", reloadThemes);
+
   // ---- the sheet ----
   commands.register({
     id: "theme.manager.open", title: "command.theme.manager.open", icon: "color",
@@ -177,6 +200,8 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
         ...(state().draft ? { draft: state().draft! } : {}),
       };
       store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, theme: { ...s.ui.theme, open: true, tab: "themes", opened, typing: {}, focusRequest: s.ui.theme.focusRequest + 1 } } }));
+      // Theme files added or changed since launch show without a restart.
+      void reloadThemes();
     },
   });
   reg("theme.manager.close", () => {

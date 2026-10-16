@@ -1517,6 +1517,7 @@
   "colors.save": "Save as a theme",
   "colors.saveAnyway": "Save anyway",
   "colors.saved": "Saved as {name}",
+  "command.theme.reload": "Read theme files again",
   "command.theme.saveDraft": "Save edited colors as a theme",
   "colors.copyNote": "Editing a copy, {name} (custom). It's kept until you close the app.",
   "colors.builtInNote": "{name} is built in. Your first change makes a copy, {name} (custom).",
