@@ -354,6 +354,10 @@
         "$type": "dimension",
         "$value": "{layout.scrollBlur}"
       },
+      "edgeBlurTop": {
+        "$type": "dimension",
+        "$value": "{layout.scrollBlurTop}"
+      },
       "edgeLayers": {
         "$type": "number",
         "$value": "{layout.scrollBands}"

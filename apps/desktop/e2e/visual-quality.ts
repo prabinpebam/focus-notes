@@ -33,7 +33,7 @@ export interface VisualOptions {
 }
 
 /** The distances, in CSS px, the rules use (Foundations → Visual quality). */
-export const VISUAL = { dialogInset: 24, dialogMinHeight: 400, itemGap: 2, fade: 50, blur: 40, triggerClear: 80, triggerVeil: 0.85, groupGap: 16, tolerance: 1, tooltipGap: 16 } as const;
+export const VISUAL = { dialogInset: 24, dialogMinHeight: 400, itemGap: 2, fade: 50, blur: 40, blurTop: 8, triggerClear: 80, scrollVeil: 0.3, triggerVeil: 0.25, triggerVeilPlain: 0.85, groupGap: 16, tolerance: 1, tooltipGap: 16 } as const;
 
 /** Everything on the open surfaces that breaks a rule, one line each; empty when it all holds. */
 export function visualProblems(page: Page, opts: VisualOptions = {}): Promise<string[]> {
@@ -570,10 +570,14 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
         // The top edge is taller, one blur and fade over the trigger's place (`triggerClear`) and the fade (D-119).
         const tall = side === "top" ? v.triggerClear + v.fade : v.fade;
         if (Math.abs(r.height - tall) > tol) out.push(`fading scroll edges: the note's ${side} edge is ${px(r.height)} px, not ${tall}`);
-        // The blur grows toward the edge, up to 40 px at it; none with reduced transparency.
+        // The top edge starts at the window's very top (its drawn frame, inside the shadow's margin), so its blur reaches the edge (D-172).
+        const windowTop = document.querySelector("[data-app-root]")?.getBoundingClientRect().top ?? 0;
+        if (side === "top" && r.top - windowTop > tol) out.push(`fading scroll edges: the note's top edge starts ${px(r.top - windowTop)} px below the window's top, so its blur doesn't reach the edge`);
+        // The blur grows toward the edge, up to 40 px at the bottom and 8 px at the top (D-172); none with reduced transparency.
+        const most = side === "top" ? v.blurTop : v.blur;
         const blurs = [...edge.children].map((c) => /blur\(([\d.]+)px\)/.exec(getComputedStyle(c).backdropFilter)?.[1]).filter((b): b is string => b !== undefined && getComputedStyle(edge.children[0]!).display !== "none").map(Number);
-        // 5 to 8 bands, the strongest (40 px) at the window's edge, each one in softer than the last.
-        if (reduced ? blurs.length > 0 : blurs.length < 5 || blurs.length > 8 || blurs[0] !== v.blur || blurs.some((b, i) => i > 0 && b >= blurs[i - 1]!)) out.push(`fading scroll edges: the note's ${side} edge blurs ${blurs.join(", ") || "nothing"} px (up to ${reduced ? 0 : v.blur} at the edge, less further in)`);
+        // 5 to 8 bands, the strongest at the window's edge, each one in softer than the last.
+        if (reduced ? blurs.length > 0 : blurs.length < 5 || blurs.length > 8 || blurs[0] !== most || blurs.some((b, i) => i > 0 && b >= blurs[i - 1]!)) out.push(`fading scroll edges: the note's ${side} edge blurs ${blurs.join(", ") || "nothing"} px (up to ${reduced ? 0 : most} at the edge, less further in)`);
         if (![...edge.children].some((c) => getComputedStyle(c).backgroundImage.startsWith("linear-gradient"))) out.push(`fading scroll edges: the note's ${side} edge doesn't fade`);
         // Nothing from the edge up may be a backdrop root, or its blurs see nothing behind them.
         for (let a: Element | null = edge; a && a !== document.documentElement; a = a.parentElement) {
@@ -628,8 +632,11 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
         };
         const y = t.bottom - e.top;
         const alpha = Math.min(...[t.top, (t.top + t.bottom) / 2, t.bottom].map((at) => veilAt(at - e.top)));
-        if (stops.length < 2 || alpha < v.triggerVeil - 0.005) out.push(`text under the trigger: the top edge's canvas color is ${(alpha * 100).toFixed(0)}% opaque at the trigger's bottom (${px(y)} px down), not at least ${v.triggerVeil * 100}%`);
         const blurOff = document.documentElement.dataset.transparency === "reduced" || document.documentElement.dataset.compositing === "software";
+        // With the blur the veil is light (D-172), so the text visibly reaches the window's edge; without it, near opaque.
+        const least = blurOff ? v.triggerVeilPlain : v.triggerVeil;
+        if (stops.length < 2 || alpha < least - 0.005) out.push(`text under the trigger: the top edge's canvas color is ${(alpha * 100).toFixed(0)}% opaque at the trigger's bottom (${px(y)} px down), not at least ${least * 100}%`);
+        if (!blurOff && stops.length >= 2 && veilAt(0) > v.scrollVeil + 0.005) out.push(`fading scroll edges: the top edge's canvas color is ${(veilAt(0) * 100).toFixed(0)}% opaque at the window's edge, more than ${v.scrollVeil * 100}%, so the blurred text vanishes before the edge`);
         if (!blurOff) {
           const blurred = (at: number) => layers.some((l) => {
             const r = rect(l);

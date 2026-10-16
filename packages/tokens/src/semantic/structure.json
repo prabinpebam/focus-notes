@@ -366,13 +366,22 @@
     },
     "scrollVeil": {
       "$type": "number",
-      "$value": 0.92,
-      "$description": "The opacity of the canvas color over the note's text at the window's very top edge, its most (D-119, amended): under it the most-blurred text still shows faintly, so the blur reaches the edge."
+      "$value": 0.3,
+      "$description": "The opacity of the canvas color over the note's text at the window's very top edge, its most (D-172): light enough that the blurred text visibly reaches the edge, never fading to nothing before it."
     },
     "triggerVeil": {
       "$type": "number",
+      "$value": 0.25,
+      "$description": "The opacity of the canvas color at the bottom of the trigger's place (layout.triggerClear), and at least this all the way up, with the blur: text under the trigger's dot is softened and quiet but still visibly there (D-172, amending D-119)."
+    },
+    "triggerVeilPlain": {
+      "$type": "number",
       "$value": 0.85,
-      "$description": "The opacity of the canvas color at the bottom of the trigger's place (layout.triggerClear), and at least this all the way up, so text under the trigger's dot is blurred and nearly hidden, and the dot sits on calm canvas (D-119, amended)."
+      "$description": "The same, where there's no blur (reduced transparency, software compositing, D-121): unblurred text under the dot would read, so the canvas color stays at least this opaque over the trigger's place, and fully opaque at the window's edge (D-119, D-172)."
+    },
+    "scrollBlurTop": {
+      "$value": "{ref.size.8}",
+      "$description": "The note's top edge blur at the window's very top (D-172): the outermost layer's radius, halving inward. Lighter than the bottom's layout.scrollBlur, so the blurred text stays visible all the way to the edge."
     },
     "scrollbarEnds": {
       "$value": "{ref.size.20}",

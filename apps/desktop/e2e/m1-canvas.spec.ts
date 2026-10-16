@@ -295,15 +295,51 @@ test("D-111: the note's edges blur progressively, crisp at the band's inner edge
     expect(blurs.length).toBeGreaterThanOrEqual(5);
     expect(blurs.every((b) => b.display !== "none" && b.backdrop.startsWith("blur("))).toBe(true);
   }
-  // The top's blur reaches the window's very edge, with no solid band (D-119, amended): its outermost
-  // layer starts at the edge, blurs 40 px, and its mask is opaque there.
+  // D-172: the blurred text visibly reaches the window's top. With a line of text right under the
+  // window's top (where the blur and veil are strongest), the strongest difference from the bare canvas
+  // in the note's top 16 px, over the text, is at least an eighth of crisp text's in the middle of the
+  // window (the old 92% veil over a 40 px blur left a thirtieth; 45% over 12 px a tenth). Only the app's own window is
+  // captured, never the screen (D-141).
+  const lineAtTop = () => scroller.evaluate((el: HTMLElement) => {
+    const s = el.getBoundingClientRect();
+    const range = document.createRange();
+    range.selectNodeContents(el.querySelector(".ProseMirror")!);
+    const line = [...range.getClientRects()].find((r) => r.height > 0 && r.top > s.top + s.height / 2)!;
+    el.scrollTop += line.top - s.top - 2;
+  });
+  const area = await page.evaluate(() => {
+    const s = document.querySelector("[data-editor-scroller]")!.getBoundingClientRect();
+    const c = document.querySelector("[data-editor-scroller] .ProseMirror")!.getBoundingClientRect();
+    return { top: s.top, left: c.left, right: c.right, bare: s.left + 4, mid: s.top + s.height / 2, width: window.innerWidth };
+  });
+  const look = async () => {
+    await lineAtTop();
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    return l.app.evaluate(async ({ BrowserWindow }, a) => {
+      const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
+      const img = await w.webContents.capturePage();
+      const { width } = img.getSize();
+      const k = width / a.width;
+      const bmp = img.toBitmap();
+      const at = (x: number, y: number) => { const i = (Math.round(y * k) * width + Math.round(x * k)) * 4; return [bmp[i + 2]!, bmp[i + 1]!, bmp[i]!]; };
+      const bg = at(a.bare, a.mid);
+      const most = (from: number) => {
+        let m = 0;
+        for (let y = from; y < from + 16; y++) for (let x = a.left; x < a.right; x += 1 / k) m = Math.max(m, ...at(x, y).map((v, j) => Math.abs(v - bg[j]!)));
+        return m;
+      };
+      return { top: most(a.top + 1), crisp: most(a.mid) };
+    }, area);
+  };
+  await expect.poll(async () => { const seen = await look(); console.log("SEEN", JSON.stringify(seen)); return seen.top / seen.crisp; }, { message: "the blurred text in the note's top 16 px is too faint against crisp text (the SEEN line has the numbers)" }).toBeGreaterThanOrEqual(0.125);
+  // The top's blur reaches the window's very edge, with no solid band (D-119, D-172): its outermost
+  // layer starts at the edge, blurs a light 8 px, and its mask is opaque there.
   const outer = (await edgeLayers(page, "top"))[0]!;
   expect(outer.top).toBe(0);
-  expect(outer.backdrop).toBe("blur(40px)");
+  expect(outer.backdrop).toBe("blur(8px)");
   expect(outer.mask).toMatch(/rgb\(0, 0, 0\) 0px/);
-  // And the visual quality check: under the trigger, at least 85% canvas color and blurred.
+  // And the visual quality check: under the trigger, the veil and the blur.
   expect(await visualProblems(page, EDGES_ONLY)).toEqual([]);
-  await page.waitForTimeout(300);
   const box = (await scroller.boundingBox())!;
   await page.screenshot({ path: "../../test-results/screens/edge-blur-top.png", clip: { x: box.x, y: box.y, width: Math.min(box.width, 900), height: 60 } });
   await page.screenshot({ path: "../../test-results/screens/edge-blur-bottom.png", clip: { x: box.x, y: box.y + box.height - 60, width: Math.min(box.width, 900), height: 60 } });

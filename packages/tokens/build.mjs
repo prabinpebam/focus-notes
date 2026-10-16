@@ -188,6 +188,7 @@ const windowMetrics = Object.fromEntries([...all.keys()].filter((k) => k.startsW
 const scrollEdge = {
   bands: px("layout.scrollBands"), blur: px("layout.scrollBlur"), range: px("layout.scrollFade"),
   clear: px("layout.triggerClear"), veil: px("layout.scrollVeil"), triggerVeil: px("layout.triggerVeil"),
+  triggerVeilPlain: px("layout.triggerVeilPlain"), blurTop: px("layout.scrollBlurTop"),
 };
 // The frosted surface's opacity, for the contrast guard: what's on it is measured as it's drawn (THM-13, D-111).
 const frost = { opacity: px("frost.opacity") };
