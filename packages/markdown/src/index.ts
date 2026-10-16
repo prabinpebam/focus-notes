@@ -57,10 +57,40 @@ const KEPT_ATTRS: Record<string, string[]> = {
   link: ["href", "title"],
 };
 
+/**
+ * A table's layout and set column widths (D-182) live in an HTML comment on the line before it, which
+ * GitHub and other readers don't show: `<!-- table: layout=bleed widths=24,40,- -->`. Only what isn't
+ * the default is written; a table without one is Fit to column with no set widths.
+ */
+const TABLE_NOTE = /^<!--\s*table:\s*([\s\S]*?)\s*-->$/;
+export interface TableSettings { layout: "fit" | "bleed"; widths: (number | null)[] | null }
+export function parseTableNote(html: string): TableSettings | undefined {
+  const m = TABLE_NOTE.exec(html.trim());
+  if (!m) return undefined;
+  const out: TableSettings = { layout: "fit", widths: null };
+  for (const part of m[1]!.split(/\s+/)) {
+    const [k, v = ""] = part.split("=");
+    if (k === "layout" && v === "bleed") out.layout = "bleed";
+    if (k === "widths") {
+      const ws = v.split(",").map((w) => (/^\d+(\.\d+)?$/.test(w) && Number(w) > 0 ? Number(w) : null));
+      if (ws.some((w) => w !== null)) out.widths = ws;
+    }
+  }
+  return out;
+}
+const tableSettingsOf = (node: PMNode): TableSettings => {
+  const ws = Array.isArray(node.attrs?.widths) ? (node.attrs!.widths as unknown[]).map((w) => (typeof w === "number" && w > 0 ? w : null)) : null;
+  return { layout: node.attrs?.layout === "bleed" ? "bleed" : "fit", widths: ws && ws.some((w) => w !== null) ? ws : null };
+};
+export function tableNote(s: TableSettings): string | undefined {
+  const parts = [...(s.layout === "bleed" ? ["layout=bleed"] : []), ...(s.widths ? [`widths=${s.widths.map((w) => w ?? "-").join(",")}`] : [])];
+  return parts.length ? `<!-- table: ${parts.join(" ")} -->` : undefined;
+}
+
 /** A stable description of a node that ignores editor-only attributes. */
 export function canonical(node: PMNode): unknown {
   const keep = KEPT_ATTRS[node.type] ?? [];
-  const attrs = Object.fromEntries(keep.map((k) => [k, node.attrs?.[k] ?? null]));
+  const attrs: Record<string, unknown> = node.type === "table" ? { ...tableSettingsOf(node) } : Object.fromEntries(keep.map((k) => [k, node.attrs?.[k] ?? null]));
   const marks = (node.marks ?? [])
     .map((m) => ({ type: m.type, attrs: Object.fromEntries((KEPT_ATTRS[m.type] ?? []).map((k) => [k, m.attrs?.[k] ?? null])) }))
     .sort((a, b) => MARK_ORDER.indexOf(a.type) - MARK_ORDER.indexOf(b.type));
@@ -81,10 +111,23 @@ export function parseMarkdown(input: string): Parsed {
   const tree = processor.parse(source) as Md.Root;
   const content: PMNode[] = [];
   const blocks: SourceBlock[] = [];
-  for (const child of tree.children) {
+  for (let i = 0; i < tree.children.length; i++) {
+    const child = tree.children[i]!;
     const start = child.position?.start.offset ?? 0;
-    const end = child.position?.end.offset ?? start;
-    const node = blockFromMdast(child, source.slice(start, end));
+    let end = child.position?.end.offset ?? start;
+    let node: PMNode | undefined;
+    // A table's settings comment (D-182), on the line right before it, belongs to that table.
+    const next = tree.children[i + 1];
+    const settings = child.type === "html" ? parseTableNote(child.value) : undefined;
+    if (settings && next?.type === "table" && /^\r?\n$/.test(source.slice(end, next.position?.start.offset ?? end))) {
+      const table = convertTable(next);
+      if (table) {
+        node = { ...table, attrs: { layout: settings.layout, widths: settings.widths } };
+        end = next.position?.end.offset ?? end;
+        i++;
+      }
+    }
+    node ??= blockFromMdast(child, source.slice(start, end));
     content.push(node);
     blocks.push({ fingerprint: fingerprint(node), start, end });
   }
@@ -366,7 +409,10 @@ export function serializeMarkdown(doc: PMNode, original?: Parsed): string {
 export function blockToMarkdown(node: PMNode): string {
   if (node.type === "rawMarkdown") return String(node.attrs?.source ?? "");
   const mdast = { type: "root", children: [toMdastBlock(node)] } as Md.Root;
-  return toMarkdown(mdast, MD_OPTIONS).replace(/\n+$/, "");
+  const text = toMarkdown(mdast, MD_OPTIONS).replace(/\n+$/, "");
+  // A table's layout and set widths go on the line before it (D-182).
+  const note = node.type === "table" ? tableNote(tableSettingsOf(node)) : undefined;
+  return note ? `${note}\n${text}` : text;
 }
 
 function toMdastBlock(node: PMNode): Md.RootContent {

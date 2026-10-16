@@ -334,6 +334,10 @@
         "$type": "dimension",
         "$value": "{table.boundaryReach}"
       },
+      "tableBleedMeasure": {
+        "$type": "dimension",
+        "$value": "{table.bleedMeasure}"
+      },
       "tableInsertZone": {
         "$type": "dimension",
         "$value": "{table.insertZone}"

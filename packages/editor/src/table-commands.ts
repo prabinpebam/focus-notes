@@ -8,13 +8,13 @@ import { Selection, TextSelection, type EditorState, type Transaction } from "@t
 import { Fragment, type Node as PMNode } from "@tiptap/pm/model";
 import { closeHistory } from "@tiptap/pm/history";
 import { CellSelection, TableMap } from "@tiptap/pm/tables";
-import { buildTable, cellTextPos, emptyGrid, isCell, readGrid, toAlign, type Align, type Grid } from "./table-schema.ts";
+import { buildTable, cellTextPos, COLUMN_MIN_CH, COLUMN_OPTIMAL_CH, COLUMN_STEP_CH, emptyGrid, isCell, readGrid, toAlign, type Align, type ColumnWidth, type Grid } from "./table-schema.ts";
 import { clipboardFor } from "./table-clipboard.ts";
 import { sortOrder } from "./table-sort.ts";
 
 /** A structural change, reported so it can be announced (Tables → Accessibility). Indexes count from 1. */
 export interface TableChange {
-  kind: "rowInserted" | "columnInserted" | "rowMoved" | "columnMoved" | "rowDeleted" | "columnDeleted" | "rowDuplicated" | "cleared" | "aligned" | "sortedAscending" | "sortedDescending" | "tableDeleted" | "tableInserted" | "tableDuplicated";
+  kind: "rowInserted" | "columnInserted" | "rowMoved" | "columnMoved" | "rowDeleted" | "columnDeleted" | "rowDuplicated" | "cleared" | "aligned" | "sortedAscending" | "sortedDescending" | "tableDeleted" | "columnResized" | "bleedToEdge" | "fitToColumn" | "tableInserted" | "tableDuplicated";
   index?: number;
   align?: string;
 }
@@ -29,6 +29,13 @@ export interface TableHooks {
    * with no text would name nothing for its column (A11Y-01, axe empty-table-header).
    */
   emptyHeader?: (index: number) => HTMLElement;
+  /** Draws a table: its frame, colgroup, and body, kept in step with its layout and widths (D-182). */
+  view?: (node: PMNode) => { dom: HTMLElement; contentDOM: HTMLElement; update(node: PMNode): boolean; ignoreMutation?(m: unknown): boolean };
+  /**
+   * Measures a drawn table's columns (D-182): each one's width in pixels, a character's width in the
+   * note's font, and the width a column aims for (its longest line, held to 30 to 75 characters).
+   */
+  columns?: (frame: HTMLElement) => { widths: number[]; ch: number; optimal(col: number): number } | null;
 }
 const hooks = new WeakMap<object, TableHooks>();
 export const setTableHooks = (editor: object, h: TableHooks): void => void hooks.set(editor, h);
@@ -109,7 +116,11 @@ function commit(editor: Editor, loc: Located, grid: Grid, focus: Focus, change?:
 }
 
 const int = (v: unknown): number | undefined => (typeof v === "number" && Number.isInteger(v) ? v : undefined);
-const clone = (g: Grid): Grid => ({ cells: g.cells.map((r) => [...r]), align: [...g.align] });
+const clone = (g: Grid): Grid => ({ cells: g.cells.map((r) => [...r]), align: [...g.align], ...(g.layout ? { layout: g.layout } : {}), widths: g.widths ? [...g.widths] : null });
+/** Set widths follow their columns through inserts, moves, and deletes (D-182). */
+const spliceWidths = (g: Grid, at: number, remove: number, ...add: ColumnWidth[]) => {
+  if (g.widths) g.widths.splice(at, remove, ...add);
+};
 const blank = (w: number) => Array.from({ length: w }, () => Fragment.empty);
 
 type Args = Record<string, unknown> | undefined;
@@ -135,6 +146,8 @@ function insertColumn(editor: Editor, c: Ctx, index: number): boolean {
   const g = clone(c.grid);
   for (const r of g.cells) r.splice(index, 0, Fragment.empty);
   g.align.splice(index, 0, null);
+  // A new column next to set ones takes its neighbour's width, so the others keep theirs.
+  spliceWidths(g, index, 0, g.widths?.[Math.max(0, index - 1)] ?? null);
   return commit(editor, c.loc, g, { row: 0, col: index }, { kind: "columnInserted", index: index + 1 });
 }
 function moveRow(editor: Editor, c: Ctx, from: number, to: number): boolean {
@@ -150,6 +163,7 @@ function moveColumn(editor: Editor, c: Ctx, from: number, to: number): boolean {
   const g = clone(c.grid);
   for (const r of g.cells) r.splice(to, 0, r.splice(from, 1)[0]!);
   g.align.splice(to, 0, g.align.splice(from, 1)[0]!);
+  if (g.widths) g.widths.splice(to, 0, g.widths.splice(from, 1)[0] ?? null);
   const focus: Focus = c.keyboard ? { row: c.cur?.row ?? 0, col: to, end: true } : { rect: { top: 0, bottom: c.h, left: to, right: to + 1 } };
   return commit(editor, c.loc, g, focus, { kind: "columnMoved", index: to + 1 });
 }
@@ -167,8 +181,55 @@ function deleteColumn(editor: Editor, c: Ctx, col: number): boolean {
   const g = clone(c.grid);
   for (const r of g.cells) r.splice(col, 1);
   g.align.splice(col, 1);
+  spliceWidths(g, col, 1);
   return commit(editor, c.loc, g, { row: c.cur?.row ?? 0, col: Math.min(col, c.w - 2), end: true }, { kind: "columnDeleted", index: col + 1 });
 }
+// ---- column widths and the table's layout (D-182) ----
+
+/** The table's columns as drawn, measured by the design system (D-182). */
+const measured = (editor: Editor, loc: Located) => {
+  const dom = editor.view.nodeDOM(loc.pos);
+  return dom ? tableHooks(editor).columns?.(dom as HTMLElement) ?? null : null;
+};
+/** Every column's width as set, or as drawn now where none is set, in characters. */
+function widthsNow(editor: Editor, c: Ctx): ColumnWidth[] {
+  const m = measured(editor, c.loc);
+  return Array.from({ length: c.w }, (_, k) => c.grid.widths?.[k] ?? (m && m.widths[k] !== undefined ? Math.round((m.widths[k]! / m.ch) * 10) / 10 : null));
+}
+const atLeast = (w: number) => Math.max(COLUMN_MIN_CH, Math.round(w * 10) / 10);
+/**
+ * Sets a column's width. Fit to column: its neighbour (the next, or the previous for the last) gives
+ * or takes the difference, so the table stays as wide as the text column; Bleed to edge: the table
+ * grows or shrinks with it. Never under the minimum (COLUMN_MIN_CH).
+ */
+function resizeColumn(editor: Editor, c: Ctx, col: number, width: number, next?: number): boolean {
+  if (col < 0 || col >= c.w || !Number.isFinite(width)) return false;
+  const g = clone(c.grid);
+  const widths = widthsNow(editor, c);
+  const before = widths[col];
+  widths[col] = atLeast(width);
+  if (g.layout !== "bleed" && c.w > 1) {
+    const k = col + 1 < c.w ? col + 1 : col - 1;
+    const was = widths[k];
+    if (next !== undefined) widths[k] = atLeast(next);
+    else if (was != null && before != null) {
+      // The neighbour gives or takes the difference, down to its minimum; the column gets only what it gave.
+      widths[k] = atLeast(was - (widths[col]! - before));
+      widths[col] = atLeast(before + (was - widths[k]!));
+    }
+  }
+  g.widths = widths;
+  return commit(editor, c.loc, g, c.cur ? { row: c.cur.row, col: c.cur.col, end: true } : null, { kind: "columnResized", index: col + 1 });
+}
+/** The width a column aims for: its longest line, held to 30 to 75 characters (D-182). */
+const optimalWidth = (editor: Editor, c: Ctx, col: number): number => measured(editor, c.loc)?.optimal(col) ?? COLUMN_OPTIMAL_CH.min;
+function setLayout(editor: Editor, c: Ctx, layout: "fit" | "bleed"): boolean {
+  if ((c.grid.layout ?? "fit") === layout) return true;
+  const g = clone(c.grid);
+  g.layout = layout;
+  return commit(editor, c.loc, g, c.cur ? { row: c.cur.row, col: c.cur.col, end: true } : null, { kind: layout === "bleed" ? "bleedToEdge" : "fitToColumn" });
+}
+
 function clearRect(editor: Editor, c: Ctx, rect: Rect): boolean {
   const g = clone(c.grid);
   for (let r = rect.top; r < rect.bottom; r++) for (let k = rect.left; k < rect.right; k++) g.cells[r]![k] = Fragment.empty;
@@ -335,6 +396,7 @@ export const TABLE_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Reco
       const g = clone(c.grid);
       for (const r of g.cells) r.splice(rect.left, rect.right - rect.left);
       g.align.splice(rect.left, rect.right - rect.left);
+      spliceWidths(g, rect.left, rect.right - rect.left);
       return commit(e, c.loc, g, { row: 0, col: Math.min(rect.left, g.align.length - 1), end: true }, { kind: "columnDeleted", index: rect.left + 1 });
     }
     if (rows) {
@@ -347,6 +409,23 @@ export const TABLE_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Reco
     }
     return clearRect(e, c, rect);
   }),
+  "table.resizeColumn": (e, a) => withTable(e, a, (c) => {
+    const k = colOf(c, a);
+    const width = typeof a?.width === "number" ? a.width : NaN;
+    return k !== undefined && resizeColumn(e, c, k, width, typeof a?.next === "number" ? a.next : undefined);
+  }),
+  "table.widenColumn": (e, a) => withTable(e, a, (c) => { const k = colOf(c, a); return k !== undefined && resizeColumn(e, c, k, (widthsNow(e, c)[k] ?? COLUMN_OPTIMAL_CH.min) + COLUMN_STEP_CH); }),
+  "table.narrowColumn": (e, a) => withTable(e, a, (c) => { const k = colOf(c, a); return k !== undefined && resizeColumn(e, c, k, (widthsNow(e, c)[k] ?? COLUMN_OPTIMAL_CH.min) - COLUMN_STEP_CH); }),
+  "table.resetColumnWidth": (e, a) => withTable(e, a, (c) => {
+    const k = colOf(c, a);
+    if (k === undefined || k < 0 || k >= c.w) return false;
+    const g = clone(c.grid);
+    g.widths = widthsNow(e, c);
+    g.widths[k] = optimalWidth(e, c, k);
+    return commit(e, c.loc, g, c.cur ? { row: c.cur.row, col: c.cur.col, end: true } : null, { kind: "columnResized", index: k + 1 });
+  }),
+  "table.fitToColumn": (e, a) => withTable(e, a, (c) => setLayout(e, c, "fit")),
+  "table.bleedToEdge": (e, a) => withTable(e, a, (c) => setLayout(e, c, "bleed")),
   "table.alignLeft": (e, a) => align(e, a, "left"),
   "table.alignCenter": (e, a) => align(e, a, "center"),
   "table.alignRight": (e, a) => align(e, a, "right"),

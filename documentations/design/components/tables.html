@@ -138,9 +138,10 @@
 
 <h2 data-reader-personas="design engineering">Size and wide tables</h2>
 <ul>
-  <li><strong>Column widths are automatic</strong>, based on content, with text wrapping inside cells. There's no column resizing, because GFM can't save widths (UNSUP-TABLE-03).</li>
-  <li>A table may grow wider than the reading column, up to <code>layout.wideContent</code>, centered on the column so its first cells stay near the text. <em>Not built yet:</em> in WP-1.5 a wide table scrolls sideways inside the reading column (<a href="../../plan/decisions.md">D-96</a>).</li>
-  <li>Beyond that, it scrolls sideways inside its frame. A soft fade on the edge shows there's more (not built yet), and the first column doesn't stay pinned. Arrow-key navigation scrolls the active cell into view.</li>
+  <li><strong>Fit to column</strong> (the default): the table spans the text column in equal columns, as in Microsoft Loop, and its text wraps inside them (<a href="../../plan/decisions.md">D-182</a>).</li>
+  <li><strong>Bleed to edge</strong>: the table may be as wide as the note's area (less the gutters, and right of a pinned Files sheet), centred on the text column. It isn't stretched: it's as wide as its columns, each aiming for at most 75 characters a line (<code>table.bleedMeasure</code>), and narrower where the room runs out. Switched from the table menu or the cell menu (the one in use is checked), or the commands <em>Fit table to column</em> and <em>Bleed table to edge</em>.</li>
+  <li><strong>Resizing a column</strong>: drag the border between two column headers (its cursor is <code>col-resize</code> there); the column on its left follows the hand in the frame of each move, never narrower than 4 characters. Fit to column: the column on its right gives or takes the difference, so the table keeps its width; Bleed to edge: the table grows or shrinks. A double-click on that border resets the column to its aim (its longest line, 30 to 75 characters). From the keyboard, <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>→</kbd> and <kbd>←</kbd> widen and narrow the caret's column by 2 characters, and the column and cell menus have <em>Widen column</em>, <em>Narrow column</em>, and <em>Reset column width</em>. Below the header row, a drag on the highlighted border resizes too, and a click there inserts a column.</li>
+  <li>Beyond the room it has, a table scrolls sideways inside its frame. The first column doesn't stay pinned. Arrow-key navigation scrolls the active cell into view.</li>
 </ul>
 
 <h2 data-reader-personas="engineering">What's saved</h2>
@@ -148,6 +149,7 @@
 | :---------- | :---: | ------ | --: |
 | Draft intro | Me    | Doing  | Mon |</code></pre>
 <p>A GFM pipe table with padded, aligned columns (TBL-06). Alignment markers come from the column menu's Align (TBL-04): left is <code>:---</code>, center <code>:---:</code>, right <code>---:</code>, and none <code>---</code>. An edited table's delimiter row carries each column's marker, and reopening it gives the same alignment; an untouched table keeps its own markers byte for byte, however short (<code>:-</code>) or long (the round-trip corpus's <code>26-table-alignment.md</code>). Pipes in cell text, code included, are escaped as <code>\|</code>. A cell holds one line of inline content: the editor never lets a line break or a second paragraph into it, so nothing needs <code>&lt;br&gt;</code>. Untouched tables are written back exactly as they were (<a href="../../architecture/content-model.md#round-trip-fidelity">round-trip fidelity</a>).</p>
+<p>A table's layout and set column widths (<a href="../../plan/decisions.md">D-182</a>) are an HTML comment on the line right before it, which GitHub and other readers don't show: <code>&lt;!-- table: layout=bleed widths=24,40,- --&gt;</code>. Widths are characters of the note's font (<code>-</code> for a column with none); only what isn't the default is written, so a Fit to column table without set widths has no comment. The round-trip corpus's <code>27-table-layout-widths.md</code> keeps it byte for byte.</p>
 
 <h2 data-reader-personas="design">With focus mode, find, and touch</h2>
 <ul>
@@ -173,7 +175,7 @@
     <tr><td>Column header menu (sort, insert, delete)</td><td><strong>Same</strong>, plus move and align</td><td>UC-TABLE-03, UC-TABLE-05, UC-TABLE-08</td></tr>
     <tr><td>Drag a row handle to reorder</td><td><strong>Same</strong>, for rows and columns</td><td>UC-TABLE-04</td></tr>
     <tr><td>Column types (text, number, date, person, label, voting)</td><td><strong>Not offered</strong></td><td>UNSUP-TABLE-02. GFM stores text only.</td></tr>
-    <tr><td>Resizing columns</td><td><strong>Not offered</strong>. Widths are automatic.</td><td>UNSUP-TABLE-03</td></tr>
+    <tr><td>Resizing columns</td><td>Drag the border between column headers; the widths are kept in a comment before the table (D-182).</td><td>D-182 (was UNSUP-TABLE-03)</td></tr>
     <tr><td>Row detail view, board view, rules and automation</td><td><strong>Not offered</strong></td><td>UNSUP-TABLE-02. These need data Markdown can't hold.</td></tr>
   </tbody>
 </table>

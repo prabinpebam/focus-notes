@@ -73,6 +73,9 @@ export const EDITOR_COMMANDS: readonly EditorCommandSpec[] = [
   tb("table.moveRowUp", "Mod+Shift+Up", "power"),
   tb("table.moveRowDown", "Mod+Shift+Down", "power"),
   tb("table.deleteRow", "Mod+Shift+K", "power"),
+  // The current column a step wider or narrower (D-182).
+  tb("table.widenColumn", "Alt+Shift+Right", "power"),
+  tb("table.narrowColumn", "Alt+Shift+Left", "power"),
   tb("table.selectCells", "Escape", "pro"),
   tb("table.contextMenu", { default: "Shift+F10", alternates: { default: ["ContextMenu"] } }, "pro"),
 ];

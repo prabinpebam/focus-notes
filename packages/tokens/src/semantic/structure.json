@@ -774,6 +774,11 @@
       "$value": "{ref.size.12}",
       "$description": "The band centred on an inner column or row border where hovering offers to insert there (D-182): the line is highlighted, and a + shows at its top or left end."
     },
+    "bleedMeasure": {
+      "$type": "dimension",
+      "$value": "{ref.size.75ch}",
+      "$description": "Bleed to edge: the longest line a table column aims for, 75 characters (D-182)."
+    },
     "insertLineHit": {
       "$type": "dimension",
       "$value": "{ref.size.4}",

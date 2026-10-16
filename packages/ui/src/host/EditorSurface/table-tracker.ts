@@ -5,7 +5,8 @@
  * only when that changes, and measures in one animation frame, so typing in a big table stays fast.
  */
 import type { Editor } from "@tiptap/react";
-import { tableInfo } from "@focus-notes/editor";
+import { COLUMN_MIN_CH, tableInfo } from "@focus-notes/editor";
+import { chOf } from "./table-view.ts";
 import { tableGeometry, type Box, type TableGeometry } from "../../behaviors/table-geometry.ts";
 
 export interface TablePayload {
@@ -20,8 +21,10 @@ export interface TablePayload {
   insertAxis: string;
   insertIndex: number;
   selection: string;
+  /** Fit to column or Bleed to edge (D-182). */
+  layout: string;
 }
-const NONE: TablePayload = { inTable: false, table: -1, row: 0, col: 0, rows: 0, cols: 0, header: "", align: "", insertAxis: "", insertIndex: 0, selection: "none" };
+const NONE: TablePayload = { inTable: false, table: -1, row: 0, col: 0, rows: 0, cols: 0, header: "", align: "", insertAxis: "", insertIndex: 0, selection: "none", layout: "fit" };
 
 /** Hover lingers this long after leaving. The insertion point shows at once (D-182). */
 const LEAVE_DELAY_MS = 200;
@@ -99,7 +102,7 @@ export function trackTables(editor: Editor, scroller: HTMLElement, vars: TableVa
   let insert: TableGeometry["insert"] = null;
   let frame = 0;
   let last = "";
-  const px = { gutter: 40, boundary: 12, reach: 24 };
+  const px = { gutter: 40, boundary: 12, reach: 24, columnMin: COLUMN_MIN_CH };
   const readVars = () => {
     const cs = getComputedStyle(scroller);
     const read = (v: string, d: number) => parseFloat(cs.getPropertyValue(varName(v))) || d;
@@ -224,6 +227,7 @@ export function trackTables(editor: Editor, scroller: HTMLElement, vars: TableVa
     publish({
       inTable: true, table: info.table, row, col, rows: info.rows, cols: info.cols, header: info.header, align: info.align ?? "",
       insertAxis: hovering && insert ? insert.axis : "", insertIndex: hovering && insert ? insert.index : 0, selection: info.selection.kind,
+      layout: wrap.getAttribute("data-layout") === "bleed" ? "bleed" : "fit",
     });
   };
   const schedule = () => {
@@ -266,6 +270,27 @@ export function trackTables(editor: Editor, scroller: HTMLElement, vars: TableVa
     if (cells.length) cols.push(cells.at(-1)!.getBoundingClientRect().right);
     return { rows, cols };
   };
+  tableGeometry.columns = () => {
+    const wrap = hoverWrap ?? (view.nodeDOM(tableInfo(editor.state).table) as HTMLElement | null);
+    const t = wrap?.querySelector?.("table");
+    const cells = t?.rows[0] ? [...t.rows[0].cells] : [];
+    if (!t || !cells.length) return null;
+    const ch = chOf(cells[0]!);
+    const cols = [...t.querySelectorAll(":scope > colgroup > col")] as HTMLElement[];
+    const kept = cols.map((c) => c.style.width);
+    const keptTable = t.style.width;
+    return {
+      widths: cells.map((c) => c.getBoundingClientRect().width),
+      ch,
+      min: px.columnMin * ch,
+      show: (widths) => {
+        cols.forEach((c, i) => { c.style.width = widths ? `${widths[i]}px` : kept[i]!; });
+        // Bled out, the table follows its columns; fitted, it stays the column's width.
+        if (widths && wrap!.getAttribute("data-layout") === "bleed") { t.style.width = `${widths.reduce((a, w) => a + w, 0)}px`; t.style.tableLayout = "fixed"; }
+        if (!widths) { t.style.width = keptTable; t.style.removeProperty("table-layout"); }
+      },
+    };
+  };
   readVars();
   schedule();
 
@@ -288,6 +313,7 @@ export function trackTables(editor: Editor, scroller: HTMLElement, vars: TableVa
       view.dom.removeEventListener("scroll", schedule, { capture: true });
       window.removeEventListener("resize", onResize);
       tableGeometry.edges = () => null;
+      tableGeometry.columns = () => null;
       tableGeometry.set(null);
     },
   };

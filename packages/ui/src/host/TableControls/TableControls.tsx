@@ -18,7 +18,13 @@ export interface TableAction {
   index: number;
   from: number;
   to: number;
+  /** A column's width and its neighbour's while resizing (D-182), in characters. */
+  width?: number;
+  next?: number;
 }
+
+/** The header row's bottom: where a column border stops resizing and starts inserting only (D-182). */
+const headerBottom = (g: TableGeometry): number => tableGeometry.edges()?.rows[1] ?? g.frame.bottom;
 
 export interface TableControlsProps {
   /** "Column 2, Owner, options", "Row 3 options", "Table options" (Tables → Accessibility). */
@@ -37,6 +43,8 @@ export interface TableControlsProps {
   cellMenu: MenuSection[];
   /** Each new value opens the context menu at the active cell. */
   menuRequest?: number;
+  /** Fit to column or Bleed to edge (D-182). */
+  layout?: "fit" | "bleed";
   onAction?: (payload: TableAction) => void;
   /** A menu closed, or a control was used: the caret goes back to the note. */
   onClose?: () => void;
@@ -66,30 +74,34 @@ function Area({ className, box }: { className: string; box: Box }) {
 
 /**
  * The highlighted border (D-182): a press and release on it without moving inserts there, as the +
- * does. Pointer only; the + is the control the keyboard and screen readers reach.
+ * does; on a column border, a drag resizes the column on its left. Pointer only; the + and the menus
+ * are what the keyboard and screen readers reach.
  */
-function Strip({ className, box, onInsert }: { className: string; box: Box; onInsert: () => void }) {
+function Strip({ className, box, onInsert, onResize, attr = "data-table-insert-line", onDoubleClick }: {
+  className: string; box: Box; onInsert?: () => void; onResize?: (e: React.PointerEvent<HTMLDivElement>) => void; attr?: string; onDoubleClick?: () => void;
+}) {
   const ref = useRef<HTMLDivElement | null>(null);
   usePlace(ref, box.left, box.top, box.right - box.left, box.bottom - box.top);
-  const down = useRef<{ x: number; y: number } | null>(null);
   return (
     <div
       ref={ref}
       className={className}
       aria-hidden="true"
-      data-table-insert-line=""
+      {...{ [attr]: "" }}
       // Never takes focus from the note.
       onMouseDown={(e) => e.preventDefault()}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
-        down.current = { x: e.clientX, y: e.clientY };
+        if (onResize) return onResize(e);
+        const start = { x: e.clientX, y: e.clientY };
+        const el = e.currentTarget;
+        const up = (ev: PointerEvent) => {
+          el.removeEventListener("pointerup", up);
+          if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < 4) onInsert?.();
+        };
+        el.addEventListener("pointerup", up);
       }}
-      onPointerUp={(e) => {
-        const d = down.current;
-        down.current = null;
-        if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 4) onInsert();
-      }}
-      onPointerLeave={() => { down.current = null; }}
+      onDoubleClick={onDoubleClick}
     />
   );
 }
@@ -143,7 +155,7 @@ interface Drag { axis: "row" | "column"; from: number; index: number; at: number
  */
 export function TableControls({
   columnLabel, rowLabel, tableLabel, insertLabel = "", newRowLabel, newColumnLabel, cellMenuLabel,
-  columnMenu, rowMenu, tableMenu, cellMenu, menuRequest = 0, onAction, onClose,
+  columnMenu, rowMenu, tableMenu, cellMenu, menuRequest = 0, layout = "fit", onAction, onClose,
 }: TableControlsProps) {
   const boundary = useWindowBoundary();
   const g = useSyncExternalStore(tableGeometry.subscribe, tableGeometry.get, () => null);
@@ -183,6 +195,71 @@ export function TableControls({
   }, [menuRequest]);
 
   const pressed = useRef(false);
+  /**
+   * Resizes the column on the border's left by dragging (D-182): it follows the hand in the frame of
+   * each move (the widths are drawn before they're saved), never narrower than the minimum. Fit to
+   * column: the column on the right gives or takes the difference; Bleed to edge: the table grows.
+   * Saved once, on release; Esc puts it back. A press that doesn't move inserts on the line's body
+   * (`insertOnClick`), and does nothing on the header row.
+   */
+  const startResize = (col: number, insertOnClick: boolean) => (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!g) return;
+    const el = e.currentTarget;
+    el.setPointerCapture?.(e.pointerId);
+    const x0 = e.clientX;
+    const y0 = e.clientY;
+    const bleed = isBleed();
+    let cols: ReturnType<typeof tableGeometry.columns> = null;
+    let widths: number[] | null = null;
+    tableGeometry.held = true;
+    const finish = () => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", cancel);
+      window.removeEventListener("keydown", key, true);
+      tableGeometry.held = hovered.current;
+    };
+    const move = (ev: PointerEvent) => {
+      if (!cols) {
+        if (Math.abs(ev.clientX - x0) < 4) return;
+        cols = tableGeometry.columns();
+        if (!cols || col < 0 || col >= cols.widths.length) { cols = null; return; }
+      }
+      const w0 = cols.widths;
+      const dx = ev.clientX - x0;
+      const next = [...w0];
+      next[col] = Math.max(cols.min, w0[col]! + dx);
+      const k = col + 1 < w0.length ? col + 1 : -1;
+      if (!bleed && k >= 0) {
+        next[k] = w0[k]! - (next[col]! - w0[col]!);
+        if (next[k]! < cols.min) { next[k] = cols.min; next[col] = w0[col]! + (w0[k]! - cols.min); }
+      }
+      widths = next;
+      cols.show(next);
+    };
+    const up = (ev: PointerEvent) => {
+      finish();
+      if (cols && widths) {
+        cols.show(null);
+        const k = col + 1 < widths.length ? col + 1 : -1;
+        act("table.resizeColumn", { col, width: widths[col]! / cols.ch, ...(!bleed && k >= 0 ? { next: widths[k]! / cols.ch } : {}) } as Partial<TableAction>);
+        requestAnimationFrame(() => onClose?.());
+      } else if (insertOnClick && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 4) insertHere();
+    };
+    const cancel = () => { finish(); cols?.show(null); };
+    const key = (ev: KeyboardEvent) => {
+      if (ev.key !== "Escape") return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      cancel();
+    };
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", cancel);
+    window.addEventListener("keydown", key, true);
+  };
+  /** Whether the hovered table is bled to the edge (its layout, from the editor's state). */
+  const isBleed = () => layout === "bleed";
   /** Inserts a row or column at the offered border (D-182). */
   const insertHere = () => {
     if (!g?.insert) return;
@@ -293,7 +370,17 @@ export function TableControls({
             className={g.insert.axis === "row" ? s.stripRow : s.stripColumn}
             box={g.insert.axis === "row" ? { top: g.insert.at, bottom: g.insert.at, left: g.frame.left, right: g.frame.right } : { top: g.frame.top, bottom: g.frame.bottom, left: g.insert.at, right: g.insert.at }}
             onInsert={insertHere}
+            {...(g.insert.axis === "column" ? { onResize: startResize(g.insert.index - 1, true) } : {})}
           />
+          {g.insert.axis === "column" ? (
+            <Strip
+              className={s.resizeZone}
+              attr="data-table-resize"
+              box={{ top: g.frame.top, bottom: headerBottom(g), left: g.insert.at, right: g.insert.at }}
+              onResize={startResize(g.insert.index - 1, false)}
+              onDoubleClick={() => act("table.resetColumnWidth", { col: g.insert!.index - 1 })}
+            />
+          ) : null}
           <Control
             className={`${s.insert} ${g.insert.axis === "row" ? s.insertRow : s.insertColumn}`}
             label={insertLabel}

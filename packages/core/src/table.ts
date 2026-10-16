@@ -29,10 +29,12 @@ export interface TableUiState {
   insertAxis: "" | "row" | "column";
   insertIndex: number;
   selection: TableSelectionKind;
+  /** Fit to column or Bleed to edge (D-182). */
+  layout: "fit" | "bleed";
   /** Bumped to open the context menu of the selected cells (right-click, Shift+F10, the Menu key). */
   menuRequest: number;
 }
-export const TABLE_CLOSED: TableUiState = { inTable: false, table: -1, row: 0, col: 0, rows: 0, cols: 0, header: "", align: "", insertAxis: "", insertIndex: 0, selection: "none", menuRequest: 0 };
+export const TABLE_CLOSED: TableUiState = { inTable: false, table: -1, row: 0, col: 0, rows: 0, cols: 0, header: "", align: "", insertAxis: "", insertIndex: 0, selection: "none", layout: "fit", menuRequest: 0 };
 
 /**
  * Table commands without keys, for the handles' menus, the context menu, and Spotlight (`> Insert
@@ -46,9 +48,10 @@ export const TABLE_MENU_COMMANDS = [
   "table.alignLeft", "table.alignCenter", "table.alignRight", "table.sortAscending", "table.sortDescending",
   "table.selectRow", "table.selectColumn", "table.selectTable",
   "table.copy", "table.cut", "table.copyMarkdown", "table.copyTsv", "table.duplicateTable", "table.deleteTable",
+  "table.resizeColumn", "table.resetColumnWidth", "table.fitToColumn", "table.bleedToEdge",
 ] as const;
 /** Every table action the controls may send: the menu commands and the keyed ones they also offer. */
-const ACTIONS = new Set<string>([...TABLE_MENU_COMMANDS, "table.moveRowUp", "table.moveRowDown", "table.deleteRow"]);
+const ACTIONS = new Set<string>([...TABLE_MENU_COMMANDS, "table.moveRowUp", "table.moveRowDown", "table.deleteRow", "table.widenColumn", "table.narrowColumn"]);
 
 export interface TableDeps {
   store: Store<AppState>;
@@ -79,6 +82,7 @@ export function registerTables({ store, commands, viewModels, catalog, bridge, e
         rows: Math.max(0, int(a.rows, 0)), cols: Math.max(0, int(a.cols, 0)), header: typeof a.header === "string" ? a.header : "",
         align: a.align === "left" || a.align === "center" || a.align === "right" ? a.align : "",
         insertAxis: axis, insertIndex: int(a.insertIndex, 0), selection: kinds.includes(a.selection as TableSelectionKind) ? (a.selection as TableSelectionKind) : "none",
+        layout: a.layout === "bleed" ? "bleed" : "fit",
         // Counted only while the caret is in a table: the controls appear with the table, so a request
         // made as the caret arrives (Shift+F10 straight after an arrow key) is the first they see.
         menuRequest: a.inTable ? prev.menuRequest : 0,
@@ -95,6 +99,8 @@ export function registerTables({ store, commands, viewModels, catalog, bridge, e
       if (!ACTIONS.has(id)) return;
       const args: Record<string, unknown> = {};
       for (const k of ["table", "row", "col", "index", "from", "to"]) if (typeof a[k] === "number" && Number.isInteger(a[k])) args[k] = a[k];
+      // A column's width while resizing (D-182), in characters.
+      for (const k of ["width", "next"]) if (typeof a[k] === "number" && Number.isFinite(a[k]) && (a[k] as number) > 0 && (a[k] as number) < 1000) args[k] = a[k];
       editorAction(id, args);
     },
   });
@@ -142,6 +148,7 @@ export function registerTables({ store, commands, viewModels, catalog, bridge, e
         newRowLabel: { type: "string" }, newColumnLabel: { type: "string" }, cellMenuLabel: { type: "string" },
         columnMenu: SECTIONS, rowMenu: SECTIONS, tableMenu: SECTIONS, cellMenu: SECTIONS,
         menuRequest: { type: "number" },
+        layout: { type: "string", enum: ["fit", "bleed"] },
       },
     },
     select: (s) => {
@@ -158,8 +165,14 @@ export function registerTables({ store, commands, viewModels, catalog, bridge, e
         { id: "move", items: [item("table.moveColumnLeft", "table.menu.moveLeft", t.col <= 0), item("table.moveColumnRight", "table.menu.moveRight", t.col >= t.cols - 1)] },
         { id: "sort", items: [item("table.sortAscending", "table.menu.sortAscending"), item("table.sortDescending", "table.menu.sortDescending")] },
         { id: "format", items: [align(t.align), item("table.clearColumn", "table.menu.clear")] },
+        { id: "width", items: [item("table.widenColumn", "table.menu.widenColumn"), item("table.narrowColumn", "table.menu.narrowColumn"), item("table.resetColumnWidth", "table.menu.resetColumnWidth")] },
         { id: "delete", items: [item("table.deleteColumn", "table.menu.deleteColumn")] },
       ];
+      // Fit to column or Bleed to edge (D-182), the one in use checked.
+      const layout = { id: "layout", items: [
+        { ...item("table.fitToColumn", "table.menu.fitToColumn"), checked: t.layout !== "bleed" },
+        { ...item("table.bleedToEdge", "table.menu.bleedToEdge"), checked: t.layout === "bleed" },
+      ] };
       // The header row can only have a row inserted below it, or be cleared (Tables → Menus).
       const rowMenu = header
         ? [{ id: "insert", items: [item("table.insertRowBelow", "table.menu.insertBelow")] }, { id: "format", items: [item("table.clearRow", "table.menu.clear")] }]
@@ -171,6 +184,7 @@ export function registerTables({ store, commands, viewModels, catalog, bridge, e
         ];
       const tableMenu = [
         { id: "select", items: [item("table.selectTable", "table.menu.selectTable")] },
+        layout,
         { id: "copy", items: [item("table.copyMarkdown", "table.menu.copyMarkdown"), item("table.copyTsv", "table.menu.copyTsv"), item("table.duplicateTable", "table.menu.duplicateTable")] },
         { id: "delete", items: [item("table.deleteTable", "table.menu.deleteTable")] },
       ];
@@ -188,6 +202,8 @@ export function registerTables({ store, commands, viewModels, catalog, bridge, e
         ] },
         { id: "sort", items: [item("table.sortAscending", "table.menu.sortColumnAscending"), item("table.sortDescending", "table.menu.sortColumnDescending")] },
         { id: "format", items: [align(t.align), item("table.duplicateRow", "table.menu.duplicateRow", header)] },
+        { id: "width", items: [item("table.widenColumn", "table.menu.widenColumn"), item("table.narrowColumn", "table.menu.narrowColumn"), item("table.resetColumnWidth", "table.menu.resetColumnWidth")] },
+        layout,
         { id: "select", items: [item("table.selectRow", "table.menu.selectRow"), item("table.selectColumn", "table.menu.selectColumn"), item("table.selectTable", "table.menu.selectTable")] },
         { id: "delete", items: [
           ...(lines ? [item("table.deleteSelection", t.selection === "row" ? "table.menu.deleteRows" : "table.menu.deleteColumns")] : []),
@@ -208,6 +224,7 @@ export function registerTables({ store, commands, viewModels, catalog, bridge, e
         cellMenuLabel: catalog.format("table.cellMenu"),
         columnMenu, rowMenu, tableMenu, cellMenu,
         menuRequest: t.menuRequest,
+        layout: t.layout,
       };
       memo = { key: t, value };
       return value;

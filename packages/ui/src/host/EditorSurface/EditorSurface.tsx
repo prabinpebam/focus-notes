@@ -11,6 +11,7 @@ import { keepInReadingZone } from "./reading-zone.ts";
 import { keepClearOfPinned } from "./pinned-column.ts";
 import { trackFormatting, type FormatPayload, type FormatTracker } from "./formatting.ts";
 import { trackSlash, type SlashPayload } from "./slash-menu.ts";
+import { measureColumns, tableView } from "./table-view.ts";
 import { trackTables, type TablePayload, type TableTracker } from "./table-tracker.ts";
 import { trackBlocks, type BlockPayload, type BlockTracker } from "./block-tracker.ts";
 import { resultItemId } from "../../primitives/ResultList/ResultList.tsx";
@@ -201,6 +202,9 @@ export function EditorSurface({
           findScopeClass: s.findScope,
           blockSelectedClass: s.blockSelected,
           emptyHeader: (index) => emptyHeaderElement((emptyHeaderRef.current ?? "").replace("{index}", String(index))),
+          // Tables drawn with their layout and set column widths, and measured for the width commands (D-182).
+          tableView,
+          tableColumns: measureColumns,
           onPasteNotice: (kind, args = {}) => formatRef.current.onPasteNotice?.({ kind, rows: args.rows ?? 0, cols: args.cols ?? 0, addedRows: args.addedRows ?? 0, addedCols: args.addedCols ?? 0 }),
           onTableChange: (c) => tableRef.current.onTableChange?.({ kind: c.kind, index: c.index ?? 0, align: c.align ?? "" }),
           onTableCopy: (text, format) => tableRef.current.onTableCopy?.({ text, format }),
