@@ -6,6 +6,7 @@
  */
 import { agentPath, rootOf, untrustedNote, withinSize, type AgentRoot } from "@focus-notes/core/agents";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
+import { parseAtx } from "@focus-notes/core/scan";
 import { Call, Refusal, fsRefusal, type Entry, type McpEnv } from "./notes.ts";
 
 export interface ToolResult {
@@ -110,25 +111,28 @@ function fileName(title: string): string {
 }
 const FRONT = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/;
 interface Heading { level: number; text: string; anchor: string; line: number }
-/** The ATX headings outside fenced code, with GitHub-style anchors. */
+/** A heading line longer than this isn't read as one: note content is untrusted, and every scan stays linear. */
+const MAX_HEADING_LINE = 4096;
+/** The ATX headings outside fenced code, with GitHub-style anchors. Parsed with string scans (`parseAtx`), never a backtracking pattern. */
 function headings(md: string): Heading[] {
   const out: Heading[] = [];
   const seen = new Map<string, number>();
   let fence: string | undefined;
   md.split(/\r?\n/).forEach((l, line) => {
-    const f = /^\s{0,3}(`{3,}|~{3,})/.exec(l);
+    const f = /^ {0,3}(`{3,}|~{3,})/.exec(l);
     if (f) {
       if (!fence) fence = f[1]![0]!;
       else if (f[1]![0] === fence) fence = undefined;
       return;
     }
     if (fence) return;
-    const h = /^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/.exec(l);
-    if (!h) return;
-    const base = h[2]!.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, "").trim().replace(/\s+/g, "-");
+    if (l.length > MAX_HEADING_LINE) return;
+    const h = parseAtx(l);
+    if (!h || h.text === undefined) return;
+    const base = h.text.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, "").trim().replace(/\s+/g, "-");
     const n = seen.get(base) ?? 0;
     seen.set(base, n + 1);
-    out.push({ level: h[1]!.length, text: h[2]!, anchor: n ? `${base}-${n}` : base, line });
+    out.push({ level: h.level, text: h.text, anchor: n ? `${base}-${n}` : base, line });
   });
   return out;
 }
@@ -141,10 +145,10 @@ export function applyOperations(current: string, ops: unknown): string {
     only(op, ["op", "text", "heading"]);
     const kind = op.op;
     const add = text(op, "text", { required: true, max: 1_048_576 })!;
-    if (kind === "append") md = `${md.replace(/\s*$/, "")}\n\n${add}\n`;
+    if (kind === "append") md = `${md.trimEnd()}\n\n${add}\n`;
     else if (kind === "prepend") {
       const fm = FRONT.exec(md)?.[0] ?? "";
-      md = `${fm}${add}\n\n${md.slice(fm.length).replace(/^\s*/, "")}`;
+      md = `${fm}${add}\n\n${md.slice(fm.length).trimStart()}`;
     } else if (kind === "replace_section" || kind === "insert_after_heading") {
       const want = text(op, "heading", { required: true, max: 500, line: true })!.trim();
       const lines = md.split(/\r?\n/);
@@ -153,7 +157,7 @@ export function applyOperations(current: string, ops: unknown): string {
       if (i < 0) throw new Refusal("notFound");
       const h = hs[i]!;
       const next = hs.slice(i + 1).find((x) => x.level <= h.level);
-      const added = add.replace(/\s*$/, "").split(/\r?\n/);
+      const added = add.trimEnd().split(/\r?\n/);
       if (kind === "replace_section") lines.splice(h.line + 1, (next ? next.line : lines.length) - h.line - 1, "", ...added, "");
       else lines.splice(h.line + 1, 0, "", ...added);
       md = lines.join("\n");
@@ -275,7 +279,7 @@ export const TOOLS: Tool[] = [
       const body = text(args, "body", { max: 1_048_576 }) ?? "";
       const folder = path(args, "folder", false) ?? "private/notes";
       if (!title) throw bad();
-      const md = body.trim() ? `# ${title}\n\n${body.replace(/\s*$/, "")}\n` : `# ${title}\n`;
+      const md = body.trim() ? `# ${title}\n\n${body.trimEnd()}\n` : `# ${title}\n`;
       if (!withinSize(md)) throw new Refusal("tooLarge");
       const name = fileName(title);
       for (let i = 1; i <= 20; i++) {

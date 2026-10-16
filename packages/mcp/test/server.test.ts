@@ -162,6 +162,46 @@ describe("the protocol, in both eras", () => {
   });
 });
 
+describe("hostile input can't hang or break the server (security review of c0c5242)", () => {
+  it("parses headings in linear time: 100,000 spaces after a heading, through get_outline and update_note", async () => {
+    const c = await connect({ edit: true });
+    const spaces = " ".repeat(100_000);
+    const some = " ".repeat(4000);
+    writeFileSync(join(c.ws, "notes/spaces.md"), `# Title${some}x\n\n## Sec${some}\n\n### Long${spaces}\n\nBody${spaces}text\n\n#${spaces}#${spaces}\n`);
+    const t0 = Date.now();
+    const o = await c.call("get_outline", { path: "notes/spaces.md" });
+    // Lines over the cap aren't headings; those within it are, parsed by scanning.
+    expect(o.structuredContent.headings.map((h: { level: number; text: string }) => [h.level, h.text.length])).toEqual([[1, 4006], [2, 3]]);
+    const v = (await c.call("read_note", { path: "notes/spaces.md" })).structuredContent.version;
+    const u = await c.call("update_note", { path: "notes/spaces.md", expected_version: v, operations: [{ op: "replace_section", heading: "Sec", text: `New${spaces}` }, { op: "append", text: "End." }, { op: "insert_after_heading", heading: "nope", text: "x" }] });
+    expect(error(u)).toBe("notFound");
+    expect(Date.now() - t0).toBeLessThan(5_000);
+  });
+
+  it("never echoes a nested protocol version, and keeps answering", async () => {
+    const c = await connect({});
+    const deep = `${"[".repeat(1_000_000)}${"]".repeat(1_000_000)}`;
+    const r = await c.raw(`{"jsonrpc":"2.0","id":77,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":${deep}}}}\n`);
+    expect([-32022, -32700, -32603]).toContain(r.error.code);
+    if (r.error.code === -32022) expect(r.error.data.requested).toBeUndefined();
+    const long = await c.request("tools/list", { _meta: { "io.modelcontextprotocol/protocolVersion": "x".repeat(65) } });
+    expect(long.error).toMatchObject({ code: -32022 });
+    expect(long.error!.data.requested).toBeUndefined();
+    expect((await c.request("ping")).result).toEqual({});
+  });
+
+  it("refuses requests beyond a bounded queue instead of holding them all", async () => {
+    const c = await connect({});
+    // One chunk: every request is read before any is answered.
+    c.send(`${Array.from({ length: 400 }, (_, i) => JSON.stringify({ jsonrpc: "2.0", id: `q${i}`, method: "ping" })).join("\n")}\n`);
+    for (let i = 0; i < 100 && c.unexpected.length < 400; i++) await new Promise((r) => setTimeout(r, 50));
+    expect(c.unexpected.length).toBe(400);
+    const busy = c.unexpected.filter((m: any) => m.error?.message === "Too many requests waiting");
+    expect(busy.length).toBeGreaterThan(0);
+    expect((await c.request("ping")).result).toEqual({});
+  });
+});
+
 describe("reading, within the permissions", () => {
   it("refuses everything while agents can't connect", async () => {
     const c = await connect("none");

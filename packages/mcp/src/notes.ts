@@ -6,7 +6,7 @@
  * `createAgentFolder` touch files. Listing walks only readable roots and folders, skips links and
  * hidden names, and resolves every folder it enters.
  */
-import { lstat, readdir, readFile } from "node:fs/promises";
+import { lstat, opendir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   agentPath, agentSharing, checkAgent, readableRoots, rootDir, rootOf, withinFolder,
@@ -115,7 +115,19 @@ export class Call {
       if (depth === 0) throw new Refusal("notFound");
       return out;
     }
-    const items = await readdir(at.abs, { withFileTypes: true }).catch(() => []);
+    // Read a folder only up to what's left of the cap: a huge folder is never loaded whole.
+    const items: import("node:fs").Dirent[] = [];
+    const dir = await opendir(at.abs).catch(() => undefined);
+    if (dir) {
+      try {
+        for await (const d of dir) {
+          items.push(d);
+          if (items.length >= MAX_ENTRIES - out.length) break;
+        }
+      } catch {
+        // An unreadable folder lists what it gave.
+      }
+    }
     items.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     const folders: string[] = [];
     for (const d of items) {

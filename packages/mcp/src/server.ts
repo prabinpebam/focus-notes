@@ -88,7 +88,8 @@ export class McpServer {
     const version = meta[`${META}protocolVersion`];
     if (method === "initialize") return { modern: false, client: "" };
     if (version !== undefined) {
-      if (version !== MODERN_VERSION) throw new RpcError(-32022, "Unsupported protocol version", { supported: SUPPORTED_VERSIONS, requested: version });
+      // Only a short string is echoed back: anything else could be built to make the response fail to serialize.
+      if (version !== MODERN_VERSION) throw new RpcError(-32022, "Unsupported protocol version", { supported: SUPPORTED_VERSIONS, ...(typeof version === "string" && version.length <= 64 ? { requested: version } : {}) });
       const info = meta[`${META}clientInfo`];
       return { modern: true, client: agentName(isObject(info) ? info.name : undefined) };
     }

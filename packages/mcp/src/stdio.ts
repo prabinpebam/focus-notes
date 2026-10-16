@@ -7,6 +7,8 @@ import type { Readable, Writable } from "node:stream";
 import type { McpServer, Response } from "./server.ts";
 
 export const MAX_MESSAGE_BYTES = 4 * 1024 * 1024;
+/** Requests waiting their turn: more are refused at once rather than queued without end. */
+export const MAX_QUEUED = 256;
 
 export interface StdioOptions {
   /** One line per event, without content: `mcp-request method=tools/call`, `mcp-error code=-32700`. */
@@ -20,10 +22,18 @@ export function serveStdio(server: McpServer, input: Readable, output: Writable,
   let size = 0;
   let skipping = false;
   let pending: Promise<unknown> = Promise.resolve();
+  let queued = 0;
   const send = (r: Response | undefined) => {
     if (!r) return;
+    let text: string;
+    try {
+      text = JSON.stringify(r);
+    } catch {
+      // A response that can't be written (it holds something built to break it) becomes an internal error.
+      text = JSON.stringify({ jsonrpc: "2.0", id: typeof r.id === "string" || typeof r.id === "number" ? r.id : null, error: { code: -32603, message: "Internal error" } });
+    }
     if ("error" in r) log(`mcp-error code=${r.error.code}`);
-    output.write(`${JSON.stringify(r)}\n`);
+    output.write(`${text}\n`);
   };
   const line = (raw: Buffer) => {
     const text = raw.toString("utf8").replace(/\r$/, "");
@@ -42,7 +52,16 @@ export function serveStdio(server: McpServer, input: Readable, output: Writable,
     }
     const method = typeof (message as { method?: unknown })?.method === "string" ? (message as { method: string }).method : "?";
     log(`mcp-request method=${/^[a-z/_]{1,40}$/i.test(method) ? method : "?"}`);
-    pending = pending.then(() => server.handle(message).then(send, () => send({ jsonrpc: "2.0", id: null, error: { code: -32603, message: "Internal error" } })));
+    if (queued >= MAX_QUEUED) {
+      const id = (message as { id?: unknown })?.id;
+      send({ jsonrpc: "2.0", id: typeof id === "string" || typeof id === "number" ? id : null, error: { code: -32600, message: "Too many requests waiting" } });
+      return;
+    }
+    queued++;
+    pending = pending
+      .then(() => server.handle(message).then(send, () => send({ jsonrpc: "2.0", id: null, error: { code: -32603, message: "Internal error" } })))
+      .catch(() => {})
+      .finally(() => void queued--);
   };
   return new Promise((resolve) => {
     input.on("data", (chunk: Buffer | string) => {
