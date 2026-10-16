@@ -553,6 +553,24 @@ describe("PRF-14, D-151: the window follows the hand", () => {
     for (let i = 0; i < 5; i++) clock.tick();
     expect(win.positions).toHaveLength(1);
   });
+  it("settles at the release at once (DEF-23): the loop stops, then the cursor's position is applied in the same call, with no tick to wait for", () => {
+    const { w, win, clock, point } = setup(undefined, undefined, undefined, true, "cursor");
+    point(500, 110);
+    w.drag("start", "move", 500, 110, false);
+    point(560, 130);
+    clock.tick();
+    expect(win.positions).toEqual([{ x: 144, y: 104 }]);
+    // The cursor moves on after the last tick, then the button is released: no tick runs in between.
+    point(640, 150);
+    w.drag("end", "move", 0, 0, false);
+    expect(clock.running).toBe(0);
+    expect(win.positions.at(-1)).toEqual({ x: 224, y: 124 });
+    expect(w.content()).toMatchObject({ x: 240, y: 140 });
+    // Nothing moves after the release.
+    point(900, 400);
+    clock.tick();
+    expect(win.positions).toHaveLength(2);
+  });
   it("runs its loop at the display's frame rate, only while a drag lasts (PRF-04)", () => {
     const { w, clock, point } = setup(undefined, undefined, undefined, true, "cursor");
     expect(clock.running).toBe(0);
