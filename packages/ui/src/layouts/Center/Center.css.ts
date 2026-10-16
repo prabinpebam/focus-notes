@@ -11,7 +11,13 @@ export const maxWidth = styleVariants({
   onboarding: { maxWidth: tokens.layout.onboarding },
 });
 // middle: centred in the height too, while there's room; taller than its scroller, it starts at the top and scrolls (D-126).
-export const block = styleVariants({ start: {}, middle: { marginBlock: "auto" } });
+// anchored: placed as a block of layout.onboardingBlock would be centred, its content at the top of it, so content
+// shorter than that changes height without moving what's already shown (DSK-09, D-148); held to its scroller's height.
+export const block = styleVariants({
+  start: {},
+  middle: { marginBlock: "auto" },
+  anchored: { marginBlock: "auto", minHeight: `min(${tokens.layout.onboardingBlock}, 100%)` },
+});
 export const gutter = styleVariants({
   none: {},
   regular: { paddingInline: tokens.layout.gutter, "@media": { [`(max-width: ${breakpoints.medium - 1}px)`]: { paddingInline: tokens.layout.gutterCompact } } },

@@ -296,6 +296,10 @@
       "$value": "{ref.size.560}",
       "$description": "The reading column of the full-window setup (D-126): a step's display title fits on one line."
     },
+    "onboardingBlock": {
+      "$value": "{ref.size.480}",
+      "$description": "The height a full-window setup step is placed for (D-148): centred as a step this tall would be, so a shorter one's top stays still while its content changes height."
+    },
     "dialogM": {
       "$value": "{ref.size.640}"
     },

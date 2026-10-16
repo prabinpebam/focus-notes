@@ -53,6 +53,40 @@ export function DialogPanel({ label, open, size = "l", header, fixed, footer, pl
       modal.style.removeProperty(name);
     };
   }, [open, height]);
+  // A centred confirmation keeps its top where it opened, so its content changing height (a check
+  // finishing, a longer message) never moves what's already shown (DSK-09, D-148). When the window
+  // changes size, it's centred again and anchored there.
+  useEffect(() => {
+    const modal = bodyRef.current?.closest<HTMLElement>("[data-dialog-modal]");
+    const overlay = modal?.parentElement;
+    if (!open || !modal || !overlay || height !== "content" || placement !== "center") return;
+    const name = s.anchorVar.replace(/^var\(|\)$/g, "");
+    let frame = 0;
+    const anchor = () => {
+      delete overlay.dataset.anchored;
+      overlay.style.removeProperty(name);
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        overlay.style.setProperty(name, `${modal.offsetTop}px`);
+        overlay.dataset.anchored = "";
+      });
+    };
+    let width = overlay.clientWidth, tall = overlay.clientHeight;
+    const watch = new ResizeObserver(() => {
+      if (overlay.clientWidth === width && overlay.clientHeight === tall) return;
+      width = overlay.clientWidth;
+      tall = overlay.clientHeight;
+      anchor();
+    });
+    anchor();
+    watch.observe(overlay);
+    return () => {
+      cancelAnimationFrame(frame);
+      watch.disconnect();
+      delete overlay.dataset.anchored;
+      overlay.style.removeProperty(name);
+    };
+  }, [open, height, placement]);
   // Focus never falls to the page while it's open (WCAG 2.4.3, DEF-12). When the control holding it
   // goes away or stops taking it (a tab panel that was a tab stop until its first control appeared),
   // it moves to the nearest control still there, or to the body. React Aria's own containment does

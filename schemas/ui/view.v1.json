@@ -6349,7 +6349,8 @@
                 {
                   "enum": [
                     "start",
-                    "middle"
+                    "middle",
+                    "anchored"
                   ]
                 },
                 {

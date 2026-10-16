@@ -3951,7 +3951,7 @@
                 "type": "Center",
                 "props": {
                   "maxWidth": "onboarding",
-                  "block": "middle",
+                  "block": "anchored",
                   "gutter": "none"
                 },
                 "children": [
@@ -4066,148 +4066,6 @@
                               },
                               "level": "display"
                             }
-                          },
-                          {
-                            "type": "Inline",
-                            "when": {
-                              "get": "vm.firstRun.hasWait"
-                            },
-                            "props": {
-                              "gap": "s",
-                              "align": "center",
-                              "wrap": true
-                            },
-                            "children": [
-                              {
-                                "type": "Spinner",
-                                "props": {
-                                  "size": "s"
-                                }
-                              },
-                              {
-                                "type": "Text",
-                                "props": {
-                                  "value": {
-                                    "get": "vm.firstRun.waitText"
-                                  },
-                                  "tone": "muted"
-                                }
-                              }
-                            ]
-                          },
-                          {
-                            "type": "ProgressBar",
-                            "when": {
-                              "get": "vm.firstRun.hasOpenPercent"
-                            },
-                            "props": {
-                              "value": {
-                                "get": "vm.firstRun.openPercent"
-                              },
-                              "label": {
-                                "get": "vm.firstRun.percentLabel"
-                              }
-                            }
-                          },
-                          {
-                            "type": "Stack",
-                            "when": {
-                              "get": "vm.firstRun.hasOpenParts"
-                            },
-                            "props": {
-                              "gap": "s"
-                            },
-                            "children": [
-                              {
-                                "each": {
-                                  "get": "vm.firstRun.openParts"
-                                },
-                                "as": "step",
-                                "key": "step.id",
-                                "render": {
-                                  "type": "Inline",
-                                  "props": {
-                                    "gap": "s",
-                                    "wrap": true
-                                  },
-                                  "children": [
-                                    {
-                                      "switch": {
-                                        "get": "step.state"
-                                      },
-                                      "cases": {
-                                        "done": {
-                                          "type": "Icon",
-                                          "props": {
-                                            "name": "check",
-                                            "size": "s",
-                                            "label": {
-                                              "t": "firstRun.workspace.state.done"
-                                            }
-                                          }
-                                        },
-                                        "skipped": {
-                                          "type": "Icon",
-                                          "props": {
-                                            "name": "divider",
-                                            "size": "s",
-                                            "label": {
-                                              "t": "firstRun.workspace.state.skipped"
-                                            }
-                                          }
-                                        },
-                                        "running": {
-                                          "type": "Spinner",
-                                          "props": {
-                                            "size": "s",
-                                            "label": {
-                                              "t": "firstRun.workspace.state.running"
-                                            }
-                                          }
-                                        },
-                                        "failed": {
-                                          "type": "Icon",
-                                          "props": {
-                                            "name": "error",
-                                            "size": "s",
-                                            "label": {
-                                              "t": "firstRun.workspace.state.failed"
-                                            }
-                                          }
-                                        },
-                                        "pending": {
-                                          "type": "Icon",
-                                          "props": {
-                                            "name": "circle",
-                                            "size": "s",
-                                            "label": {
-                                              "t": "firstRun.workspace.state.pending"
-                                            }
-                                          }
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "type": "Text",
-                                      "props": {
-                                        "value": {
-                                          "get": "step.label"
-                                        }
-                                      }
-                                    }
-                                  ]
-                                },
-                                "empty": {
-                                  "type": "Text",
-                                  "props": {
-                                    "value": {
-                                      "t": "firstRun.workspace.state.pending"
-                                    },
-                                    "tone": "muted"
-                                  }
-                                }
-                              }
-                            ]
                           }
                         ]
                       },
@@ -6715,6 +6573,159 @@
                             ]
                           }
                         }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s",
+                          "align": {
+                            "get": "vm.firstRun.align"
+                          }
+                        },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "when": {
+                              "get": "vm.firstRun.hasWait"
+                            },
+                            "props": {
+                              "gap": "s",
+                              "align": "center",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Spinner",
+                                "props": {
+                                  "size": "s"
+                                }
+                              },
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "get": "vm.firstRun.waitText"
+                                  },
+                                  "tone": "muted"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "ProgressBar",
+                            "when": {
+                              "get": "vm.firstRun.hasOpenPercent"
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.firstRun.openPercent"
+                              },
+                              "label": {
+                                "get": "vm.firstRun.percentLabel"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Stack",
+                            "when": {
+                              "get": "vm.firstRun.hasOpenParts"
+                            },
+                            "props": {
+                              "gap": "s"
+                            },
+                            "children": [
+                              {
+                                "each": {
+                                  "get": "vm.firstRun.openParts"
+                                },
+                                "as": "step",
+                                "key": "step.id",
+                                "render": {
+                                  "type": "Inline",
+                                  "props": {
+                                    "gap": "s",
+                                    "wrap": true
+                                  },
+                                  "children": [
+                                    {
+                                      "switch": {
+                                        "get": "step.state"
+                                      },
+                                      "cases": {
+                                        "done": {
+                                          "type": "Icon",
+                                          "props": {
+                                            "name": "check",
+                                            "size": "s",
+                                            "label": {
+                                              "t": "firstRun.workspace.state.done"
+                                            }
+                                          }
+                                        },
+                                        "skipped": {
+                                          "type": "Icon",
+                                          "props": {
+                                            "name": "divider",
+                                            "size": "s",
+                                            "label": {
+                                              "t": "firstRun.workspace.state.skipped"
+                                            }
+                                          }
+                                        },
+                                        "running": {
+                                          "type": "Spinner",
+                                          "props": {
+                                            "size": "s",
+                                            "label": {
+                                              "t": "firstRun.workspace.state.running"
+                                            }
+                                          }
+                                        },
+                                        "failed": {
+                                          "type": "Icon",
+                                          "props": {
+                                            "name": "error",
+                                            "size": "s",
+                                            "label": {
+                                              "t": "firstRun.workspace.state.failed"
+                                            }
+                                          }
+                                        },
+                                        "pending": {
+                                          "type": "Icon",
+                                          "props": {
+                                            "name": "circle",
+                                            "size": "s",
+                                            "label": {
+                                              "t": "firstRun.workspace.state.pending"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "value": {
+                                          "get": "step.label"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                "empty": {
+                                  "type": "Text",
+                                  "props": {
+                                    "value": {
+                                      "t": "firstRun.workspace.state.pending"
+                                    },
+                                    "tone": "muted"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
                       }
                     ]
                   }

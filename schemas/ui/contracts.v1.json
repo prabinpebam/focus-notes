@@ -6304,10 +6304,11 @@
           "kind": "enum",
           "values": [
             "start",
-            "middle"
+            "middle",
+            "anchored"
           ],
           "default": "start",
-          "description": "middle: centred in the height of a scroller while there's room (the full-window setup, D-126)."
+          "description": "middle: centred in the height of a scroller while there's room (the full-window setup, D-126). anchored: placed as a block of layout.onboardingBlock would be centred, so content shorter than that changes height without moving (DSK-09, D-148)."
         },
         "gutter": {
           "kind": "enum",
@@ -6448,6 +6449,22 @@
           "name": "block middle",
           "props": {
             "block": "middle"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "block anchored",
+          "props": {
+            "block": "anchored"
           },
           "children": [
             {

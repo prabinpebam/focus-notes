@@ -24,6 +24,8 @@ export const overlay = style({
 
 /** The tallest the dialog has been since it opened (DialogPanel.tsx): it never shrinks while open. */
 export const grownVar = createVar();
+/** Where a centred confirmation's top was when it opened (DSK-09, D-148). */
+export const anchorVar = createVar();
 
 // The window's title bar band (DSK-02, D-147) over the scrim, held by the modal so the rest of the
 // app going inert doesn't take it: a dialog never takes the window's dragging, and a press there
@@ -63,7 +65,11 @@ export const height = {
 
 /** Centered, or near the top like Spotlight, where results grow downward without the field moving. */
 export const placement = {
-  center: style({}),
+  center: style({
+    // A confirmation, once open, keeps its top where it opened: its content growing or shrinking
+    // never moves what's already shown (DSK-09, D-148). Set from the opened layout (DialogPanel).
+    selectors: { "&[data-anchored]": { alignItems: "flex-start", paddingBlockStart: fallbackVar(anchorVar, "0px") } },
+  }),
   top: style({ alignItems: "flex-start", paddingBlockStart: t.top }),
 };
 

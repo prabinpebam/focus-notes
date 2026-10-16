@@ -49,20 +49,11 @@ async function check(l: Launched, frames: Frame[], schemeOf: (label: string) => 
   return problems.map((p) => `${p.label}: ${p.problem}`);
 }
 /** The main process shows the window on the page's first themed frame, not on ready-to-show alone. */
-/**
- * Known layout shifts, quarantined with a scope, owner and expiry in gate-evidence.md (D-148): each is
- * a defect queued to fix, not an allowance. Only these, at most this large, pass; any other fails.
- */
-const KNOWN_SHIFTS: { source: string; max: number; why: string }[] = [
-  { source: `"We found your notes`, max: 0.03, why: "the setup card is centred, so it moves when We found your notes changes height (skeleton rows to the found repository)" },
-  { source: "section#removeWorkspace", max: 0.03, why: "Remove this workspace? grows while it checks, and is centred, so it moves" },
-];
 /** Layout shifts after the first frame that no input caused, over 0.01 of the page (DSK-09: no shifting layout). */
 async function shiftProblems(shifts: Awaited<ReturnType<typeof watchShifts>>): Promise<string[]> {
   const found = await shifts.shifts(0.01);
   for (const s of found) process.stdout.write(`[shifts] ${s.label}: ${s.value.toFixed(3)} at ${Math.round(s.at)} ms (${s.sources.join(", ")})\n`);
-  const known = (s: (typeof found)[number]) => KNOWN_SHIFTS.some((k) => s.value <= k.max && s.sources.length > 0 && s.sources.every((x) => x.includes(k.source)));
-  return found.filter((s) => !known(s)).map((s) => `${s.label}: a layout shift of ${s.value.toFixed(3)} (${s.sources.join(", ")})`);
+  return found.map((s) => `${s.label}: a layout shift of ${s.value.toFixed(3)} (${s.sources.join(", ")})`);
 }
 const shownOnFirstFrame = (l: Launched) => expect.soft.poll(() => l.log.find((x) => x.includes("window-shown")) ?? "", { timeout: 5_000 }).toContain("window-shown on=first-frame");
 
