@@ -339,6 +339,60 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     expect(p95, "input to next paint p95 (budget 50 ms)").toBeLessThanOrEqual(50);
     await quit(l);
   });
+  // The PRF-14 trace (test only): fresh launches whose first round of uses is traced whole, printing
+  // the longest events on each thread, so CI names what a first-use spike is (script, GC, style,
+  // layout, paint, raster, the GPU or the compositor).
+  for (const pass of [1, 2]) test(`PRF-14 trace: the first uses, traced (pass ${pass})`, async () => {
+    const l = await start({ FOCUS_NOTES_WARMUP: "1", FOCUS_NOTES_CHROMIUM_SWITCHES: "disable-features=CalculateNativeWinOcclusion,disable-backgrounding-occluded-windows" });
+    const { page } = l;
+    await page.waitForTimeout(3000);
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+    const editor = page.getByRole("textbox", { name: "Note" });
+    const cdp = await page.context().newCDPSession(page);
+    type Ev = { name: string; cat: string; dur?: number; ts: number; ph: string; pid: number; tid: number; args?: Record<string, unknown> };
+    const traced: Ev[] = [];
+    cdp.on("Tracing.dataCollected", (d) => traced.push(...(d.value as unknown as Ev[])));
+    const complete = new Promise((r) => cdp.once("Tracing.tracingComplete", r));
+    await cdp.send("Tracing.start", { categories: "devtools.timeline,disabled-by-default-devtools.timeline,v8,v8.execute,toplevel,blink,cc,viz,gpu,ipc", transferMode: "ReportEvents" });
+    // Each use is marked in the trace itself (a TimeStamp event), on the trace's clock.
+    const mark = (name: string) => page.evaluate((n) => console.timeStamp(`prf14:${n}`), name);
+    await editor.focus();
+    await mark("toolbar");
+    await page.keyboard.press(`${mod}+.`);
+    await page.waitForTimeout(150);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(150);
+    await editor.focus();
+    await mark("Files");
+    await page.keyboard.press(`${mod}+O`);
+    await page.waitForFunction(() => document.activeElement?.getAttribute("role") === "treeitem");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(150);
+    await editor.focus();
+    await mark("Spotlight");
+    await page.keyboard.press(`${mod}+/`);
+    await page.getByRole("dialog", { name: "Spotlight" }).waitFor();
+    await page.keyboard.type("note");
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(150);
+    await mark("end");
+    await cdp.send("Tracing.end");
+    await complete;
+    await cdp.detach();
+    const threads = new Map(traced.filter((e) => e.ph === "M" && e.name === "thread_name").map((e) => [`${e.pid}:${e.tid}`, String(e.args?.name ?? "")]));
+    const t0 = traced.filter((e) => e.ts > 0).reduce((m, e) => Math.min(m, e.ts), Infinity);
+    const top = traced.filter((e) => e.ph === "X" && (e.dur ?? 0) >= 12_000).sort((a, b) => (b.dur ?? 0) - (a.dur ?? 0)).slice(0, 40);
+    const detail = (e: Ev) => {
+      const d = (e.args?.data ?? e.args?.beginData ?? {}) as Record<string, unknown>;
+      const what = [d.functionName, d.url, d.type, d.name, d.frame && "", d.stackTrace && JSON.stringify((d.stackTrace as { functionName: string; url: string }[])[0])].filter(Boolean).join(" ");
+      return what ? ` (${String(what).slice(0, 160)})` : "";
+    };
+    const marks = traced.filter((e) => e.name === "TimeStamp" && String((e.args?.data as { message?: string } | undefined)?.message ?? "").startsWith("prf14:"));
+    console.log(`[PRF-14 trace] pass ${pass}: marks (ms from the first event): ${marks.map((e) => `${String((e.args!.data as { message: string }).message).slice(6)} ${Math.round((e.ts - t0) / 1000)}`).join(", ")}`);
+    for (const e of top) console.log(`[PRF-14 trace] pass ${pass}: ${(e.dur! / 1000).toFixed(1)} ms at ${Math.round((e.ts - t0) / 1000)} ${threads.get(`${e.pid}:${e.tid}`) ?? `${e.pid}:${e.tid}`} ${e.cat} ${e.name}${detail(e)}`);
+    await quit(l);
+  });
   // The same real-cursor drag on three paths, so CI tells the loop from the runner (D-151):
   // "relay", the path before D-151 (each page move applied as it arrives); "cursor", the app's
   // (the main process reads the cursor at its own ticks and at each page frame); and "cursor, timer
