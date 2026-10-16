@@ -279,7 +279,7 @@ test("SPT-05, FIL-04 (M4 demo 2): jump to a heading, run a command with >, help 
   await quit(l);
 });
 
-test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make public, and a new window that isn't here yet", async () => {
+test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make public, and open in a new window", async () => {
   const l = await started();
   const { page } = l;
   await open(page);
@@ -290,8 +290,8 @@ test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make publi
   await expect(results(page).getByRole("option")).toHaveText([
     /^Open$/, /^Open in new window/, /^Copy Markdown link/, /^Rename/, /^Move to…/, /^Make public/, /^Show in Files/, /^Delete/,
   ]);
-  await expect(option(page, /^Open in new window/)).toHaveAttribute("aria-disabled", "true");
-  await expect(option(page, /^Open in new window/)).toContainText("New windows arrive in a later preview");
+  // Open in new window is built (WP-8.5): offered, not disabled.
+  await expect(option(page, /^Open in new window/)).not.toHaveAttribute("aria-disabled", "true");
   await page.keyboard.press("ArrowLeft");
   await expect(spotlight(page)).not.toContainText("Actions for");
   await page.keyboard.press(`${mod}+K`);
