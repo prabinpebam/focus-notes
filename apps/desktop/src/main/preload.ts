@@ -142,6 +142,13 @@ contextBridge.exposeInMainWorld("focusNotes", {
     reportProblem: (timings: unknown) => ipcRenderer.invoke("diagnostics:reportProblem", timings),
   },
   // Save and sync with the user's own Git (WP-3.3): intent-level only, never a Git command.
+  // Settings → Agents (D-166): the main process reads and writes agents.json; the window asks by name.
+  agents: {
+    load: () => ipcRenderer.invoke("agents:load"),
+    setSwitches: (s: unknown) => ipcRenderer.invoke("agents:set", s),
+    undo: (repo: string, commit: string) => ipcRenderer.invoke("agents:undo", repo, commit),
+    installCli: () => ipcRenderer.invoke("agents:installCli"),
+  },
   // Read-only deep links (D-165): the main process checks and resolves them; the window only takes them.
   deepLinks: {
     take: () => ipcRenderer.invoke("deeplink:take"),

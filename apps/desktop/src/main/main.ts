@@ -10,7 +10,12 @@ import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
 import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
 import type { ResolvedDeepLink } from "@focus-notes/core";
 import { runCli } from "../cli/run.ts";
+import { SWITCHES, connectionSnippets, type AgentsPage, type SwitchId } from "@focus-notes/core/agents-app";
+import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/agents-fs";
+import type { AgentPermissions } from "@focus-notes/core/agents";
+import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { spawn } from "node:child_process";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
@@ -926,6 +931,56 @@ async function slowSeam(channel: string): Promise<void> {
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("note:read", async (p) => (await readParsed(notePath(p))).text);
+  // ---- Settings → Agents (WP-7.4, AGT-02, D-166) ----
+  // The main process reads and writes agents.json and builds every command line; the window only
+  // sees the page and asks for a switch by name.
+  const agentsData = () => app.getPath("userData");
+  const cliBin = () => join(process.resourcesPath, "bin");
+  /** Install command-line tool only in an installed app: never development builds or journeys. */
+  const cliAvailable = () => app.isPackaged && !journey && existsSync(cliBin());
+  const installHost = (): InstallHost => ({
+    platform: process.platform, binDir: cliBin(), home: app.getPath("home"), envPath: process.env.PATH ?? "",
+    powershell: (script, env) => new Promise((resolve) => {
+      const p = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", "-"], { env: { ...process.env, ...env }, stdio: ["pipe", "ignore", "ignore"], windowsHide: true });
+      p.on("error", () => resolve(-1));
+      p.on("exit", (code) => resolve(code ?? -1));
+      p.stdin.end(script);
+    }),
+    userPath: () => new Promise((resolve) => {
+      const p = spawn("reg.exe", ["query", "HKCU\\Environment", "/v", "Path"], { stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
+      let out = "";
+      p.stdout.on("data", (d: Buffer) => void (out += d.toString("utf8")));
+      p.on("error", () => resolve(""));
+      p.on("exit", () => resolve(/\bPath\s+REG_(?:EXPAND_)?SZ\s+(.*)$/im.exec(out)?.[1]?.trim() ?? ""));
+    }),
+  });
+  async function agentsPage(): Promise<AgentsPage> {
+    const { permissions, changedOutside } = await readAgentPermissions(agentsData());
+    const g = await gitOpening;
+    const recent = g ? await g.agentChanges(50).catch(() => []) : [];
+    // The app's own executable runs the server (D-165): with the built main script in development.
+    const args = [...(app.isPackaged ? [] : [join(import.meta.dirname, "main.mjs")]), "--cli", "mcp", "--data", agentsData()];
+    const cli = cliAvailable() ? await cliInstallState(installHost()).catch(() => ({ installed: false, onPath: false })) : { installed: false, onPath: false };
+    return { permissions, changedOutside, snippets: connectionSnippets(process.execPath, args), recent, cli: { available: cliAvailable(), ...cli } };
+  }
+  handle("agents:load", () => agentsPage());
+  handle("agents:set", async (raw) => {
+    // Exactly the five switches, each true or false; the folder limit is kept as the file has it.
+    const o = raw as Record<string, unknown>;
+    if (typeof o !== "object" || o === null || Object.keys(o).length !== SWITCHES.length || !SWITCHES.every((k) => typeof o[k] === "boolean")) throw new Error("Not agent switches");
+    const { permissions } = await readAgentPermissions(agentsData());
+    await writeAgentPermissions(agentsData(), { ...permissions, ...(Object.fromEntries(SWITCHES.map((k) => [k, o[k] === true])) as Pick<AgentPermissions, SwitchId>) });
+    return agentsPage();
+  });
+  handle("agents:undo", async (repo, commit) => {
+    if ((repo !== "notes" && repo !== "private") || typeof commit !== "string" || !/^([0-9a-f]{40}|[0-9a-f]{64})$/.test(commit)) return { problem: "notAgent" };
+    const g = await gitOpening;
+    return g ? g.undoAgentChange(repo, commit) : { problem: "failed" };
+  });
+  handle("agents:installCli", async () => {
+    if (!cliAvailable()) return { installed: false, onPath: false, problem: "unavailable" };
+    return installCli(installHost()).catch(() => ({ installed: false, onPath: false, problem: "failed" }));
+  });
   // The link the app was opened with (or the latest one), taken once (D-165).
   handle("deeplink:take", async () => {
     const l = pendingLink;
@@ -1269,7 +1324,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // Copying a link's address (EDT-13). Text only, and never read back: the renderer can't read the clipboard.
   handle("clipboard:write", async (text) => {
     if (typeof text !== "string" || text.length > 10_000) throw new Error("Only text can be copied");
-    clipboard.writeText(text);
+    // Journeys copy into memory, never the computer's clipboard.
+    appClipboard().writeText(text);
   });
   // A link from a note (EDT-13): only http, https, and mailto, and only in the user's browser.
   ipcMain.on("link:open", (e, url: unknown) => {

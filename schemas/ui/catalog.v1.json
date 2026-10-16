@@ -4047,7 +4047,8 @@
         "vm.shareConfirm",
         "vm.diagnostics",
         "vm.shareTemplate",
-        "vm.shareNote"
+        "vm.shareNote",
+        "vm.agents"
       ]
     },
     {

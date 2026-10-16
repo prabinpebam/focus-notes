@@ -5,6 +5,7 @@ import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
 import type { ConflictChoiceKind, DeletedNote } from "./history.ts";
 import type { HeldNotes } from "./held.ts";
+import type { AgentsBridge } from "./agents-app.ts";
 import type { NativeWindowBridge, WindowBridge } from "./window-app.ts";
 import type { AccessBridge } from "./share-manage.ts";
 import type { DiagnosticsPreview, TimingSummary } from "./diagnostics.ts";
@@ -63,6 +64,8 @@ export interface PlatformBridge {
    * inside the workspace, taken once; and a signal when another arrives. The desktop's only.
    */
   deepLinks?: { take(): Promise<ResolvedDeepLink | undefined>; onArrive(listener: () => void): () => void };
+  /** Settings → Agents (WP-7.4, D-166): agents.json, the snippets, recent agent changes, and the command-line tool. The desktop's only. */
+  agents?: AgentsBridge;
   /** Commits and pushes with the user's own Git (the desktop, WP-3.3). Absent in the browser. */
   sync?: SyncBridge;
   /** Sets up the user's instance on GitHub and this computer (the desktop, FRE-08). Absent in the browser. */
