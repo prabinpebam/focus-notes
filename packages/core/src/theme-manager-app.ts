@@ -22,6 +22,7 @@ import {
 } from "./themes.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { themeValues } from "@focus-notes/tokens";
+import { customColors, isCustomId, type CustomTheme } from "./custom-themes.ts";
 
 export const THEME_TABS = ["themes", "reading", "colors"] as const;
 export type ThemeTab = (typeof THEME_TABS)[number];
@@ -46,8 +47,10 @@ export interface Appearance {
   paragraphSpacing: ParagraphSpacing;
   /** Unset: each theme's own `focus.dimOpacity`. */
   focusDim?: number;
+  /** Custom themes read from the workspace (THM-04, D-173). */
+  customThemes?: CustomTheme[];
 }
-type Snapshot = Omit<Appearance, "system" | "uiScale"> & { draft?: ThemeDraft };
+type Snapshot = Omit<Appearance, "system" | "uiScale" | "customThemes"> & { draft?: ThemeDraft };
 
 export interface ThemeManagerState {
   open: boolean;
@@ -84,9 +87,14 @@ interface Ctx<St extends S> {
 export const schemeOf = (a: Appearance): ThemeKind => (a.mode === "system" ? a.system : a.mode);
 /** The theme on the note now: the one being previewed, else the chosen theme for the scheme showing (THM-08). */
 export const shownTheme = (s: S): string => s.ui.theme.preview ?? (schemeOf(s.appearance) === "dark" ? s.appearance.darkTheme : s.appearance.lightTheme);
+/** A custom theme by ID, among those read from the workspace. */
+export const customOf = (a: { customThemes?: CustomTheme[] }, id: string | undefined): CustomTheme | undefined =>
+  isCustomId(id) ? a.customThemes?.find((t) => t.id === id) : undefined;
+/** A theme's kind, built-in or custom: undefined for one that isn't there. */
+export const kindOf = (a: { customThemes?: CustomTheme[] }, id: string | undefined): ThemeKind | undefined => customOf(a, id)?.kind ?? themeById(id)?.kind;
 /** A theme's colors, with a draft's edits when it's the draft's base. */
-export function colorsOf(id: string, draft?: ThemeDraft): Record<string, string> {
-  const colors: Record<string, string> = { ...themeValues[id] };
+export function colorsOf(id: string, draft?: ThemeDraft, custom?: CustomTheme): Record<string, string> {
+  const colors: Record<string, string> = custom ? customColors(custom) : { ...themeValues[id] };
   if (draft?.base === id) for (const k of KEYS) if (draft.colors[k]) for (const t of KEY_COLORS[k]) colors[t] = draft.colors[k]!;
   return colors;
 }
@@ -96,6 +104,18 @@ export const draftTokens = (s: S): { id: string; value: string }[] => {
   if (!d || d.base !== shownTheme(s)) return [];
   return KEYS.flatMap((k) => (d.colors[k] ? KEY_COLORS[k].map((id) => ({ id, value: d.colors[k]! })) : []));
 };
+/**
+ * What the root shows for the theme showing: a built-in theme's own styles, or a custom theme's base
+ * with its colors over them (D-173); an edited copy's colors over either.
+ */
+export function rootTheme(s: S): { theme: string; scheme?: ThemeKind; colors: { id: string; value: string }[] } {
+  const shown = shownTheme(s);
+  const custom = customOf(s.appearance, shown);
+  const draft = draftTokens(s);
+  if (!custom) return { theme: shown, colors: draft };
+  const edited = new Set(draft.map((d) => d.id));
+  return { theme: custom.base, scheme: custom.kind, colors: [...Object.entries(custom.tokens).filter(([id]) => !edited.has(id)).map(([id, value]) => ({ id, value })), ...draft] };
+}
 
 const normalizeHex = (v: string): string | undefined => {
   const t = v.trim().toLowerCase();
@@ -130,7 +150,11 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => unknown) =>
     commands.register<A>({ id, title: `command.${id}`, run: async (a) => { await run(a); } });
   const str = (a: { value?: unknown }) => (typeof a.value === "string" ? a.value : "");
-  const name = (id: string) => catalog.format(themeById(id)?.title ?? id);
+  const name = (id: string) => customOf(store.state.appearance, id)?.name ?? catalog.format(themeById(id)?.title ?? id);
+  /** A theme's colors as the guard checks them, its edits included. */
+  const colorsFor = (id: string, draft?: ThemeDraft) => colorsOf(id, draft, customOf(store.state.appearance, id));
+  /** The High contrast checks for a High contrast theme, or a custom theme on one. */
+  const highFor = (id: string) => themeById(customOf(store.state.appearance, id)?.base ?? id)?.contrast === "high";
 
   /** Reading settings: kept in the store and persisted like the rest of appearance (synced when Sync appearance is on). */
   const setReading = async (patch: Partial<Pick<Appearance, "lineHeight" | "measure" | "paragraphSpacing" | "focusDim">>) => {
@@ -185,10 +209,11 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
 
   // ---- the gallery (THM-07) ----
   reg<{ id: string }>("theme.preview", ({ id }) => {
-    const t = themeById(String(id));
-    if (!t) return;
+    const kind = kindOf(store.state.appearance, String(id));
+    if (!kind) return;
+    const t = { id: String(id), kind };
     set({ preview: t.id });
-    const level = textContrast(colorsOf(t.id, state().draft)).level;
+    const level = textContrast(colorsFor(t.id, state().draft)).level;
     announce(catalog.format("theme.previewing", { name: name(t.id), kind: catalog.format(`theme.kind.${t.kind}`), level: catalog.format(`theme.level.${level}`) }));
   });
   reg("theme.previewEnd", () => {
@@ -198,12 +223,18 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
   });
   /** Choosing fills the theme's slot and shows it, switching the appearance if it's showing the other kind. */
   reg<{ id: string }>("theme.choose", async ({ id }) => {
-    const t = themeById(String(id));
-    if (!t) return;
+    const kind = kindOf(store.state.appearance, String(id));
+    if (!kind) return;
+    const t = { id: String(id), kind };
     const { preview, ...rest } = state();
     void preview;
     store.update((s) => ({ ...s, ui: { ...s.ui, theme: rest } }));
-    await commands.run(`theme.${t.kind}.${t.id}`);
+    if (isCustomId(t.id)) {
+      // A custom theme fills its slot as the ⋯ menu's theme commands do, and is remembered the same way.
+      const key = kind === "light" ? "lightTheme" : "darkTheme";
+      store.update((s) => ({ ...s, appearance: { ...s.appearance, [key]: t.id } }));
+      await persistAppState({ [key]: t.id });
+    } else await commands.run(`theme.${t.kind}.${t.id}`);
     if (schemeOf(store.state.appearance) !== t.kind) await commands.run(`appearance.${t.kind}`);
     // A copy of another theme goes once neither slot holds its base.
     const d = state().draft;
@@ -274,7 +305,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
     if (!(KEYS as string[]).includes(String(key))) return;
     const k = key as KeyColor;
     const { base, draft } = editing();
-    const fixed = fixFor(colorsOf(base, draft), k, themeById(base)?.contrast === "high");
+    const fixed = fixFor(colorsFor(base, draft), k, highFor(base));
     if (!fixed) return;
     setColor(k, fixed);
     set({ fixed: { key: k, n: state().fixed.n + 1 } });
@@ -294,7 +325,7 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
       properties: {
         open: BOOL, tab: { type: "string", enum: [...THEME_TABS] }, tabs: { type: "array", items: OPTION },
         mode: { type: "string", enum: ["system", "light", "dark"] }, modes: { type: "array", items: OPTION },
-        tiles: { type: "array", items: { type: "object", properties: { id: STR, label: STR, kind: { type: "string", enum: ["light", "dark"] }, slot: STR, badge: STR, description: STR } } },
+        tiles: { type: "array", items: { type: "object", properties: { id: STR, label: STR, kind: { type: "string", enum: ["light", "dark"] }, slot: STR, badge: STR, description: STR, sample: STR, colors: { type: "array", items: { type: "object", properties: { id: STR, value: STR } } } } } },
         showing: STR, previewing: BOOL, focusRequest: NUM, status: STR,
         reading: {
           type: "object",
@@ -324,15 +355,19 @@ export function registerThemeManager<St extends S>({ store, commands, viewModels
       const a = s.appearance;
       const showing = shownTheme(s);
       const chosen = schemeOf(a) === "dark" ? a.darkTheme : a.lightTheme;
-      const tiles = BUILT_IN_THEMES.map((t) => {
+      // Yours first (custom themes, THM-04), then the built-in ones. A custom theme failing the guard says so (THM-13).
+      const all = [...(a.customThemes ?? []).map((t) => ({ id: t.id, kind: t.kind, custom: t })), ...BUILT_IN_THEMES.map((t) => ({ id: t.id, kind: t.kind, custom: undefined }))];
+      const tiles = all.map((t) => {
         const slot = a.lightTheme === t.id ? catalog.format("theme.slot.light") : a.darkTheme === t.id ? catalog.format("theme.slot.dark") : "";
-        const level = textContrast(colorsOf(t.id, st.draft)).level;
+        const level = t.custom && !t.custom.readable ? "low" : textContrast(colorsOf(t.id, st.draft, t.custom)).level;
         const badge = catalog.format(`theme.level.${level}`);
-        return { id: t.id, label: name(t.id), kind: t.kind, slot, badge, description: `${catalog.format(`theme.kind.${t.kind}`)}, ${badge}` };
+        const description = `${catalog.format(`theme.kind.${t.kind}`)}, ${badge}`;
+        const own = t.custom ? { sample: t.custom.base, colors: Object.entries(t.custom.tokens).map(([id, value]) => ({ id, value })) } : {};
+        return { id: t.id, label: t.custom?.name ?? name(t.id), kind: t.kind, slot, badge, description: t.custom ? `${catalog.format("theme.yours")}, ${description}` : description, ...own };
       });
-      const colors = colorsOf(showing, st.draft);
+      const colors = colorsOf(showing, st.draft, customOf(a, showing));
       const tc = textContrast(colors);
-      const high = themeById(showing)?.contrast === "high";
+      const high = themeById(customOf(a, showing)?.base ?? showing)?.contrast === "high";
       const results = checkTheme(colors, high);
       const { draft } = editing();
       const rows = KEYS.map((k) => {

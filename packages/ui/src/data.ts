@@ -92,6 +92,10 @@ export interface ThemeTile {
   badge: string;
   /** Said after the name: its kind and badge. */
   description?: string;
+  /** The built-in theme whose styles its sample uses, when it isn't one (a custom theme's base). */
+  sample?: string;
+  /** A custom theme's own colors over its sample's (THM-04): color tokens and hex values. */
+  colors?: ColorValue[];
 }
 
 /** A color token's value for the root (AppRoot's themeColors): an edited copy of a theme. */
