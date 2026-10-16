@@ -14,6 +14,7 @@ import { isReadOnlyPath } from "./notes.ts";
 import { isWebAddress } from "./scan.ts";
 import { registerSlash, SLASH_CLOSED, type SlashMenuState } from "./slash.ts";
 import { registerTables, TABLE_CLOSED, type TableUiState } from "./table.ts";
+import { registerBlockHandle, BLOCK_CLOSED, type BlockUiState } from "./block-handle.ts";
 
 export type MarkState = "on" | "off" | "mixed";
 const MARKS = ["bold", "italic", "strike", "code"] as const;
@@ -48,6 +49,8 @@ export interface FormatState {
   inTable: boolean;
   /** The table controls (IA-CMP-TABLE), which belong to the open note too. */
   table: TableUiState;
+  /** The block handle (IA-CMP-HANDLE, EDT-07), which belongs to the open note too. */
+  blockHandle: BlockUiState;
 }
 export interface LinkEditorState {
   open: boolean;
@@ -61,7 +64,7 @@ export interface LinkEditorState {
 export const FORMAT_CLOSED: FormatState = {
   toolbar: false, card: false, bold: "off", italic: "off", strike: "off", code: "off", block: "", codeBlock: false, inlineCode: false,
   oneBlock: false, href: "", focusToolbar: 0, link: { open: false, url: "", text: "", withText: false, error: "", focus: 0 }, slash: SLASH_CLOSED,
-  inTable: false, table: TABLE_CLOSED,
+  inTable: false, table: TABLE_CLOSED, blockHandle: BLOCK_CLOSED,
 };
 
 /** A web address the shell may open in the browser: http, https, or mailto (EDT-13). */
@@ -107,6 +110,7 @@ export interface FormatDeps {
 export function registerFormatting({ store, commands, viewModels, catalog, bridge, editorAction, toast, announce }: FormatDeps): void {
   registerSlash({ store, commands, viewModels, catalog, editorAction, toast });
   registerTables({ store, commands, viewModels, catalog, bridge, editorAction, toast, announce });
+  registerBlockHandle({ store, commands, viewModels, catalog, bridge, editorAction, toast, announce });
   const set = (patch: Partial<FormatState>) => store.update((s) => ({ ...s, ui: { ...s.ui, format: { ...s.ui.format, ...patch } } }));
   const setLink = (patch: Partial<LinkEditorState>) => set({ link: { ...store.state.ui.format.link, ...patch } });
   const writable = (s: AppState) => s.note.status === "ready" && !isReadOnlyPath(s.note.path);

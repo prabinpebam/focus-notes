@@ -47,6 +47,8 @@ export const contract = defineContract({
     tableChange: { payload: { kind: "text", index: "number", align: "text" } },
     tableCopy: { payload: { text: "text", format: "text" } },
     tableMenu: {},
+    block: { payload: { visible: "boolean", block: "number", kind: "text", level: "number", first: "boolean", last: "boolean", text: "text" } },
+    blockMenu: {},
   },
   slots: {},
   states: ["empty", "editing", "readOnly"],

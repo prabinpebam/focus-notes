@@ -16,6 +16,7 @@ import { contract as Center } from "./layouts/Center/contract.ts";
 import { contract as AppRoot } from "./layouts/AppRoot/contract.ts";
 import { contract as EditorSurface } from "./host/EditorSurface/contract.ts";
 import { contract as TableControls } from "./host/TableControls/contract.ts";
+import { contract as BlockHandle } from "./host/BlockHandle/contract.ts";
 import { contract as Trigger } from "./compounds/Trigger/contract.ts";
 import { contract as Divider } from "./primitives/Divider/contract.ts";
 import { contract as PopoverPanel } from "./primitives/PopoverPanel/contract.ts";
@@ -63,7 +64,7 @@ import { contract as DatePicker } from "./primitives/DatePicker/contract.ts";
 export const contracts: readonly Contract[] = [
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage,
-  EditorSurface, TableControls, WindowFrame,
+  EditorSurface, TableControls, BlockHandle, WindowFrame,
   Trigger, Toolbar, Dialog,
   NoteContent,
 ];

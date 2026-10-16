@@ -12,6 +12,7 @@ import { keepClearOfPinned } from "./pinned-column.ts";
 import { trackFormatting, type FormatPayload, type FormatTracker } from "./formatting.ts";
 import { trackSlash, type SlashPayload } from "./slash-menu.ts";
 import { trackTables, type TablePayload, type TableTracker } from "./table-tracker.ts";
+import { trackBlocks, type BlockPayload, type BlockTracker } from "./block-tracker.ts";
 import { resultItemId } from "../../primitives/ResultList/ResultList.tsx";
 import { inCompanion } from "../../behaviors/anchors.ts";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
@@ -75,6 +76,10 @@ export interface EditorSurfaceProps {
   onTableCopy?: (payload: { text: string; format: string }) => void;
   /** The context menu of the selected cells was asked for (right-click, Shift+F10, the Menu key). */
   onTableMenu?: () => void;
+  /** The block the block handle is for, whenever that changes (IA-CMP-HANDLE, EDT-07). */
+  onBlock?: (payload: BlockPayload) => void;
+  /** The block menu was asked for from the keyboard (Shift+F10 or the Menu key outside a table). */
+  onBlockMenu?: () => void;
 }
 
 /** Find waits this long after the last keystroke in its field before searching (FND-01). */
@@ -125,7 +130,7 @@ export function EditorSurface({
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList,
   id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onFormat, onLinkEdit, onOpenLink, onSlash, onSlashMove, onPasteNotice,
-  onTable, onTableChange, onTableCopy, onTableMenu,
+  onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
@@ -141,6 +146,9 @@ export function EditorSurface({
   const tableRef = useRef({ onTable, onTableChange, onTableCopy, onTableMenu });
   tableRef.current = { onTable, onTableChange, onTableCopy, onTableMenu };
   const tables = useRef<TableTracker | null>(null);
+  const blockRef = useRef({ onBlock, onBlockMenu });
+  blockRef.current = { onBlock, onBlockMenu };
+  const blocks = useRef<BlockTracker | null>(null);
   const slashRef = useRef({ open: Boolean(slashOpen), active: slashActive, onSlash, onSlashMove });
   slashRef.current = { open: Boolean(slashOpen), active: slashActive, onSlash, onSlashMove };
   const tracker = useRef<FormatTracker | null>(null);
@@ -197,6 +205,11 @@ export function EditorSurface({
             // The controls follow the caret's cell while the menu is open, wherever the pointer is.
             tables.current?.menu();
             tableRef.current.onTableMenu?.();
+          },
+          onBlockMenu: () => {
+            // The grip goes to the caret's block, and its menu opens there.
+            blocks.current?.menu();
+            blockRef.current.onBlockMenu?.();
           },
         }),
         Placeholder.configure({ placeholder: placeholder ?? "" }),
@@ -365,6 +378,16 @@ export function EditorSurface({
       tables.current = null;
     };
   }, [editor]);
+  // The block handle (IA-CMP-HANDLE): the grip follows the pointer down the note.
+  useEffect(() => {
+    if (!editor || !scrollerRef.current || !columnRef.current) return;
+    const t = trackBlocks(editor, scrollerRef.current, columnRef.current, (p) => blockRef.current.onBlock?.(p));
+    blocks.current = t;
+    return () => {
+      t.dispose();
+      blocks.current = null;
+    };
+  }, [editor]);
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
     setSelectionGhost(editor, Boolean(linkEditing));
@@ -462,7 +485,8 @@ export function EditorSurface({
       if (runLinkAction(id, args)) return;
       const action = EDITOR_ACTIONS[id];
       // From the table controls: they hand focus back to the note themselves once their menu closes.
-      if (id.startsWith("table.") && action) {
+      // And from the block handle, which names its block (EDT-07).
+      if ((id.startsWith("table.") || (id.startsWith("block.") && typeof args.block === "number")) && action) {
         if (editor.isEditable) action(editor, args);
         return;
       }

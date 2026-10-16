@@ -11,6 +11,7 @@
     "vm.format",
     "vm.slash",
     "vm.table",
+    "vm.block",
     "vm.feedback",
     "vm.picker",
     "vm.account",
@@ -1030,6 +1031,35 @@
           },
           "tableMenu": {
             "run": "table.openMenu"
+          },
+          "block": {
+            "run": "block.setState",
+            "args": {
+              "visible": {
+                "get": "event.visible"
+              },
+              "block": {
+                "get": "event.block"
+              },
+              "kind": {
+                "get": "event.kind"
+              },
+              "level": {
+                "get": "event.level"
+              },
+              "first": {
+                "get": "event.first"
+              },
+              "last": {
+                "get": "event.last"
+              },
+              "text": {
+                "get": "event.text"
+              }
+            }
+          },
+          "blockMenu": {
+            "run": "block.openMenu"
           }
         }
       },
@@ -1106,6 +1136,43 @@
           },
           "close": {
             "run": "table.closeMenu"
+          }
+        }
+      },
+      {
+        "type": "BlockHandle",
+        "id": "blockHandle",
+        "when": {
+          "get": "vm.block.visible"
+        },
+        "props": {
+          "label": {
+            "get": "vm.block.label"
+          },
+          "menu": {
+            "get": "vm.block.menu"
+          },
+          "menuRequest": {
+            "get": "vm.block.menuRequest"
+          }
+        },
+        "on": {
+          "action": {
+            "run": "block.action",
+            "args": {
+              "id": {
+                "get": "event.id"
+              },
+              "block": {
+                "get": "event.block"
+              },
+              "to": {
+                "get": "event.to"
+              }
+            }
+          },
+          "close": {
+            "run": "block.closeMenu"
           }
         }
       },
