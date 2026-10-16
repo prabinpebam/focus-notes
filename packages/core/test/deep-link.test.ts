@@ -74,4 +74,36 @@ describe("a search link in the app (security review of d8cdb0c, #1)", () => {
     }
     expect(ran.filter((id) => !id.startsWith("spotlight.") && id !== "app.ready")).toEqual([]);
   });
+
+  it("offers no Create note, Find, or quick actions for a link's query, so Enter on no match writes nothing (review of 0e44978, #1)", async () => {
+    const links: ResolvedDeepLink[] = [];
+    let arrive: (() => void) | undefined;
+    const writes: string[] = [];
+    const bridge: PlatformBridge = {
+      platform: "windows",
+      readNote: async () => "# Hello\n", writeNote: async (p) => void writes.push(p), chooseNote: async () => undefined,
+      newNotePath: async () => "/w/notes/Untitled.md", defaultNotePath: async () => "/w/notes/hello.md",
+      loadAppState: async () => ({ version: 1 }), saveAppState: async () => {},
+      systemScheme: () => "light", onSystemSchemeChange: () => () => {},
+      deepLinks: { take: async () => links.shift(), onArrive: (l) => { arrive = l; return () => {}; } },
+    };
+    const app = createApp(bridge, messages);
+    await app.start();
+    writes.length = 0;
+    links.push({ kind: "search", q: "zzz no such note" });
+    arrive!();
+    for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0));
+    const sp = app.store.state.ui.spotlight;
+    expect(sp).toMatchObject({ open: true, mode: "notes", fromLink: true });
+    expect(sp.rows.filter((r) => r.group === "actions")).toEqual([]);
+    expect(app.commands.describe("spotlight.actions").enabled).toBe(false);
+    await app.commands.run("spotlight.choose").catch(() => {});
+    for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
+    expect(writes).toEqual([]);
+    // Typing makes the query the person's own: Create note comes back.
+    await app.commands.run("spotlight.setQuery", { value: "zzz no such notes" });
+    for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0));
+    expect(app.store.state.ui.spotlight.fromLink).toBe(false);
+    expect(app.store.state.ui.spotlight.rows.some((r) => r.group === "actions" && r.kind === "create")).toBe(true);
+  });
 });

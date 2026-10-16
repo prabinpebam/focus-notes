@@ -44,6 +44,15 @@ test("AGT-06: a deep link opens its note at its heading; a search link opens Spo
     else await expect(l.page.getByRole("dialog")).toHaveCount(0);
     await quit(l);
   }
+  // A search link with no match: Enter creates nothing (no Create note row for a link's query).
+  l = await launch(dirs, {}, { args: ["focus-notes://search?q=zzznomatch"] });
+  const nothing = l.page.getByRole("combobox").or(l.page.getByRole("searchbox")).first();
+  await expect(nothing).toHaveValue("zzznomatch", { timeout: 10_000 });
+  await expect(l.page.getByRole("option", { name: /Create/ })).toHaveCount(0);
+  await l.page.keyboard.press("Enter");
+  await l.page.waitForTimeout(1000);
+  await quit(l);
   expect(readdirSync(join(dirs.docs, "notes")).sort()).toEqual(before);
+  expect(readdirSync(join(dirs.docs, "private", "notes")).some((f) => f.includes("zzznomatch"))).toBe(false);
   expect(existsSync(join(dirs.docs, "notes", "Injected.md"))).toBe(false);
 });
