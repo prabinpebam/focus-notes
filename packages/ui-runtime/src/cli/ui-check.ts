@@ -53,7 +53,8 @@ for (const p of problems) console.error(`✗ ${p.doc} [${p.stage}] ${p.at}: ${p.
 for (const c of coverage) console.error(`✗ fixtures: ${c}`);
 
 const out = join(import.meta.dirname, "..", "..", "..", "..", "schemas", "ui");
-const files = uiSchemaFiles(inputs);
+// The catalog lists the product's views and pages, not the gallery's (DSY-13, D-166).
+const files = uiSchemaFiles({ ...inputs, catalogViews: { ...views, ...pages } });
 if (process.argv.includes("--write")) {
   mkdirSync(out, { recursive: true });
   for (const [name, text] of Object.entries(files)) writeFileSync(join(out, name), text);

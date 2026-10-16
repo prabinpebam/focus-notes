@@ -48,6 +48,8 @@ jobs:
           mkdir -p _site
           cp -r apps/web/dist/. _site/
           cp -r documentations _site/documentations
+          # The JSON Schemas and the design system's catalog, at their published $id addresses (AGT-08, DSY-13, D-166).
+          cp -r schemas _site/schemas
           if [ -d slate ]; then cp -r slate _site/slate; fi
           touch _site/.nojekyll
       # The site's address, for public pages' canonical links (WP-5.1). A third-party step, so it
