@@ -4394,6 +4394,125 @@
       ]
     },
     {
+      "type": "SiteLink",
+      "tier": "primitive",
+      "description": "A link on the product site (WP-10.1): inline, one of the site's navigation links, the brand, or a call to action (primary or secondary). A plain anchor, so it works with no script.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "href": {
+          "kind": "text",
+          "required": true,
+          "description": "Where it goes: a relative address on the site, or GitHub."
+        },
+        "variant": {
+          "kind": "enum",
+          "values": [
+            "inline",
+            "nav",
+            "brand",
+            "primary",
+            "secondary"
+          ],
+          "default": "inline"
+        },
+        "current": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The page this navigation link names (aria-current)."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "focus"
+      ],
+      "tokens": "cmp.siteLink.*",
+      "a11y": {
+        "pattern": "link",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "variant inline",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "inline"
+          }
+        },
+        {
+          "name": "variant nav",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "nav"
+          }
+        },
+        {
+          "name": "variant brand",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "brand"
+          }
+        },
+        {
+          "name": "variant primary",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "primary"
+          }
+        },
+        {
+          "name": "variant secondary",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "secondary"
+          }
+        },
+        {
+          "name": "current",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "nav",
+            "current": true
+          }
+        }
+      ]
+    },
+    {
       "type": "Stack",
       "tier": "layout",
       "description": "Children in a column, spaced by a space token.",
@@ -7796,6 +7915,257 @@
               }
             ]
           }
+        }
+      ]
+    },
+    {
+      "type": "SitePage",
+      "tier": "layout",
+      "description": "A page of the product site (IA-VIEW-SITE, IA-VIEW-HELP, WP-10.1): a skip link, a header with the site's navigation, the content as the page's main landmark, and a footer. It follows the visitor's light or dark preference and reads from 320 px wide.",
+      "props": {
+        "skipLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The skip link to the content."
+        },
+        "navLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The site navigation's accessible name."
+        },
+        "width": {
+          "kind": "enum",
+          "values": [
+            "reading",
+            "wide"
+          ],
+          "default": "reading",
+          "description": "reading: the editor's measure, for articles; wide: the landing page's sections."
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        },
+        "header": {
+          "accepts": [
+            "SiteLink"
+          ]
+        },
+        "footer": {
+          "accepts": "any",
+          "max": 1
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.sitePage.*",
+      "a11y": {
+        "pattern": "landmarks",
+        "name": "banner with a labelled navigation, main, and contentinfo; the skip link is the first focusable element."
+      },
+      "fixtures": [
+        {
+          "name": "width reading",
+          "props": {
+            "skipLabel": {
+              "t": "site.skip"
+            },
+            "navLabel": {
+              "t": "site.nav.label"
+            },
+            "width": "reading"
+          },
+          "slots": {
+            "header": [
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.brand"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "brand"
+                }
+              },
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.nav.help"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "nav",
+                  "current": true
+                }
+              }
+            ],
+            "footer": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "site.footer.note"
+                  },
+                  "role": "caption",
+                  "tone": "muted"
+                }
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "width wide",
+          "props": {
+            "skipLabel": {
+              "t": "site.skip"
+            },
+            "navLabel": {
+              "t": "site.nav.label"
+            },
+            "width": "wide"
+          },
+          "slots": {
+            "header": [
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.brand"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "brand"
+                }
+              },
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.nav.help"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "nav",
+                  "current": true
+                }
+              }
+            ],
+            "footer": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "site.footer.note"
+                  },
+                  "role": "caption",
+                  "tone": "muted"
+                }
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "SiteSection",
+      "tier": "layout",
+      "description": "A section of a product site page (WP-10.1): one job each on the landing page, with a stable anchor other pages link to. A band sets it on a raised background.",
+      "props": {
+        "anchor": {
+          "kind": "text",
+          "required": true,
+          "description": "The section's stable anchor (its element ID)."
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "plain",
+            "band"
+          ],
+          "default": "plain"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.sitePage.*",
+      "a11y": {
+        "pattern": "region",
+        "name": "Its heading, the first child's."
+      },
+      "fixtures": [
+        {
+          "name": "tone plain",
+          "props": {
+            "anchor": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "plain"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "tone band",
+          "props": {
+            "anchor": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "band"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "vm.gallery.noteBlocks"
+                }
+              }
+            }
+          ]
         }
       ]
     },

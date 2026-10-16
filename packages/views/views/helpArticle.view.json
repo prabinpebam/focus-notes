@@ -1,0 +1,257 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "helpArticle",
+  "ia": "IA-VIEW-HELP",
+  "viewModels": [
+    "vm.site",
+    "vm.helpArticle"
+  ],
+  "focus": "page",
+  "root": {
+    "type": "SitePage",
+    "id": "page",
+    "props": {
+      "skipLabel": {
+        "t": "site.skip"
+      },
+      "navLabel": {
+        "t": "site.nav.label"
+      }
+    },
+    "slots": {
+      "header": [
+        {
+          "type": "SiteLink",
+          "props": {
+            "label": {
+              "t": "site.brand"
+            },
+            "href": {
+              "get": "vm.site.home"
+            },
+            "variant": "brand"
+          }
+        },
+        {
+          "type": "SiteLink",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.site.help"
+            },
+            "variant": "nav",
+            "current": {
+              "get": "vm.site.currentHelp"
+            }
+          }
+        },
+        {
+          "type": "SiteLink",
+          "props": {
+            "label": {
+              "t": "site.nav.demo"
+            },
+            "href": {
+              "get": "vm.site.demo"
+            },
+            "variant": "nav",
+            "current": {
+              "get": "vm.site.currentDemo"
+            }
+          }
+        },
+        {
+          "type": "SiteLink",
+          "props": {
+            "label": {
+              "t": "site.nav.download"
+            },
+            "href": {
+              "get": "vm.site.download"
+            },
+            "variant": "nav",
+            "current": {
+              "get": "vm.site.currentDownload"
+            }
+          }
+        }
+      ],
+      "footer": [
+        {
+          "type": "Stack",
+          "props": {
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Inline",
+              "props": {
+                "gap": "l",
+                "wrap": true
+              },
+              "children": [
+                {
+                  "type": "SiteLink",
+                  "props": {
+                    "label": {
+                      "t": "site.footer.privacy"
+                    },
+                    "href": {
+                      "get": "vm.site.privacy"
+                    }
+                  }
+                },
+                {
+                  "type": "SiteLink",
+                  "props": {
+                    "label": {
+                      "t": "site.footer.help"
+                    },
+                    "href": {
+                      "get": "vm.site.help"
+                    }
+                  }
+                },
+                {
+                  "type": "SiteLink",
+                  "props": {
+                    "label": {
+                      "t": "site.footer.source"
+                    },
+                    "href": {
+                      "get": "vm.site.source"
+                    }
+                  }
+                },
+                {
+                  "type": "SiteLink",
+                  "props": {
+                    "label": {
+                      "t": "site.footer.docs"
+                    },
+                    "href": {
+                      "get": "vm.site.docs"
+                    }
+                  }
+                },
+                {
+                  "type": "SiteLink",
+                  "props": {
+                    "label": {
+                      "t": "site.footer.app"
+                    },
+                    "href": {
+                      "get": "vm.site.app"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "site.footer.note"
+                },
+                "role": "caption",
+                "tone": "muted"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "Inline",
+        "props": {
+          "gap": "s",
+          "wrap": true
+        },
+        "children": [
+          {
+            "type": "SiteLink",
+            "props": {
+              "label": {
+                "t": "help.breadcrumb.home"
+              },
+              "href": {
+                "get": "vm.site.help"
+              }
+            }
+          },
+          {
+            "type": "SiteLink",
+            "props": {
+              "label": {
+                "get": "vm.helpArticle.category"
+              },
+              "href": {
+                "get": "vm.helpArticle.categoryHref"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "Stack",
+        "props": {
+          "gap": "s"
+        },
+        "children": [
+          {
+            "type": "NoteContent",
+            "props": {
+              "blocks": {
+                "get": "vm.helpArticle.title"
+              }
+            }
+          },
+          {
+            "type": "Text",
+            "props": {
+              "value": {
+                "t": "help.article.appliesTo",
+                "args": {
+                  "value": {
+                    "get": "vm.helpArticle.appliesTo"
+                  }
+                }
+              },
+              "role": "secondary",
+              "tone": "muted"
+            }
+          }
+        ]
+      },
+      {
+        "type": "NoteContent",
+        "props": {
+          "blocks": {
+            "get": "vm.helpArticle.body"
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "props": {
+          "value": {
+            "t": "help.article.updated",
+            "args": {
+              "date": {
+                "get": "vm.helpArticle.updated"
+              },
+              "release": {
+                "get": "vm.helpArticle.release"
+              }
+            }
+          },
+          "role": "secondary",
+          "tone": "muted"
+        }
+      }
+    ]
+  }
+}

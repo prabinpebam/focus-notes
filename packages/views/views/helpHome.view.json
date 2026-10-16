@@ -1,0 +1,252 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "helpHome",
+  "ia": "IA-VIEW-HELP",
+  "viewModels": [
+    "vm.site",
+    "vm.helpHome"
+  ],
+  "focus": "page",
+  "root": {
+    "type": "SitePage",
+    "id": "page",
+    "props": {
+      "skipLabel": {
+        "t": "site.skip"
+      },
+      "navLabel": {
+        "t": "site.nav.label"
+      }
+    },
+    "slots": {
+      "header": [
+        {
+          "type": "SiteLink",
+          "props": {
+            "label": {
+              "t": "site.brand"
+            },
+            "href": {
+              "get": "vm.site.home"
+            },
+            "variant": "brand"
+          }
+        },
+        {
+          "type": "SiteLink",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.site.help"
+            },
+            "variant": "nav",
+            "current": {
+              "get": "vm.site.currentHelp"
+            }
+          }
+        },
+        {
+          "type": "SiteLink",
+          "props": {
+            "label": {
+              "t": "site.nav.demo"
+            },
+            "href": {
+              "get": "vm.site.demo"
+            },
+            "variant": "nav",
+            "current": {
+              "get": "vm.site.currentDemo"
+            }
+          }
+        },
+        {
+          "type": "SiteLink",
+          "props": {
+            "label": {
+              "t": "site.nav.download"
+            },
+            "href": {
+              "get": "vm.site.download"
+            },
+            "variant": "nav",
+            "current": {
+              "get": "vm.site.currentDownload"
+            }
+          }
+        }
+      ],
+      "footer": [
+        {
+          "type": "Stack",
+          "props": {
+            "gap": "s"
+          },
+          "children": [
+            {
+              "type": "Inline",
+              "props": {
+                "gap": "l",
+                "wrap": true
+              },
+              "children": [
+                {
+                  "type": "SiteLink",
+                  "props": {
+                    "label": {
+                      "t": "site.footer.privacy"
+                    },
+                    "href": {
+                      "get": "vm.site.privacy"
+                    }
+                  }
+                },
+                {
+                  "type": "SiteLink",
+                  "props": {
+                    "label": {
+                      "t": "site.footer.help"
+                    },
+                    "href": {
+                      "get": "vm.site.help"
+                    }
+                  }
+                },
+                {
+                  "type": "SiteLink",
+                  "props": {
+                    "label": {
+                      "t": "site.footer.source"
+                    },
+                    "href": {
+                      "get": "vm.site.source"
+                    }
+                  }
+                },
+                {
+                  "type": "SiteLink",
+                  "props": {
+                    "label": {
+                      "t": "site.footer.docs"
+                    },
+                    "href": {
+                      "get": "vm.site.docs"
+                    }
+                  }
+                },
+                {
+                  "type": "SiteLink",
+                  "props": {
+                    "label": {
+                      "t": "site.footer.app"
+                    },
+                    "href": {
+                      "get": "vm.site.app"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "site.footer.note"
+                },
+                "role": "caption",
+                "tone": "muted"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "NoteContent",
+        "props": {
+          "blocks": {
+            "get": "vm.helpHome.title"
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "props": {
+          "value": {
+            "t": "help.home.intro"
+          },
+          "role": "lead"
+        }
+      },
+      {
+        "each": {
+          "get": "vm.helpHome.categories"
+        },
+        "as": "category",
+        "key": "category.key",
+        "render": {
+          "type": "Stack",
+          "props": {
+            "gap": "xs"
+          },
+          "children": [
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "category.heading"
+                }
+              }
+            },
+            {
+              "type": "NoteContent",
+              "props": {
+                "blocks": {
+                  "get": "category.summary"
+                }
+              }
+            },
+            {
+              "switch": {
+                "get": "category.hasArticles"
+              },
+              "cases": {
+                "true": {
+                  "type": "NoteContent",
+                  "props": {
+                    "blocks": {
+                      "get": "category.articles"
+                    }
+                  }
+                },
+                "false": {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "help.category.empty"
+                    },
+                    "role": "secondary",
+                    "tone": "muted"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "empty": {
+          "type": "Text",
+          "props": {
+            "value": {
+              "t": "help.home.empty"
+            },
+            "role": "body",
+            "tone": "muted"
+          }
+        }
+      }
+    ]
+  }
+}
