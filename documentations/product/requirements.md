@@ -121,7 +121,7 @@ Seed: *"Sharing of public links… content can be made public or private… Priv
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| SHR-01 | Every note is **Private**, **Shared** (with named audiences), or **Public**. New notes are private by default; in a workspace without a private repository, a new note is marked Public and isn't backed up until the writer chooses *Make it public* or *Keep it on this computer only* (D-158). *(derived: safe default)* | P0 |
+| SHR-01 | Every note is **Private**, **Shared** (with named audiences), or **Public**. New notes are private by default, and nothing is public unless the user chose it: at launch only the note they last opened is reopened (never an empty public file), else a private note opens (D-171); in a workspace without a private repository, a new note is marked Public and isn't backed up until the writer chooses *Make it public* or *Keep it on this computer only* (D-158). *(derived: safe default)* | P0 |
 | SHR-02 | Public notes are stored in the public repository; private notes are stored in the private content repository, mounted as a submodule. | P0 |
 | SHR-03 | A public note has a stable, read-only public URL on GitHub Pages. "Copy public link" (in ⋯, Share, and Spotlight) copies it. | P0 |
 | SHR-04 | Private notes are never published in plaintext. | P0 |
