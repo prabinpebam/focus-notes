@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import "@focus-notes/tokens/tokens.css";
+import "@focus-notes/tokens/site-tokens.css";
 // The content font (Roboto Mono) for articles' text, self-hosted (PRV-01); pages preload only the faces
 // their first screen uses (PRF-12).
 import "@fontsource/roboto-mono/400.css";
