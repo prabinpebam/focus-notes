@@ -23,7 +23,7 @@ export * from "./blocks.ts";
 export * from "./expand.ts";
 import { EXPAND_ACTIONS, ExpandSelection } from "./expand.ts";
 import { Find, FIND_ACTIONS } from "./find.ts";
-import { BLOCK_ACTIONS } from "./blocks.ts";
+import { atBlock, BLOCK_ACTIONS, BLOCK_MOVE_TO } from "./blocks.ts";
 import { LinkOpen, LinkPaste, SelectionGhost, removeLink, selectLink } from "./format.ts";
 import { SlashMenu, blockIs, insideNode, type SlashEntry } from "./slash.ts";
 import { SmartPaste } from "./paste.ts";
@@ -174,7 +174,7 @@ export const AutoDirection = Extension.create({
  * Editor commands by ID (KEY-01, KEY-02). The keys come from the command registry; these say what
  * each command does to the document. Each returns whether it applied.
  */
-export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Record<string, unknown>) => boolean>> = {
+const ACTIONS: Readonly<Record<string, (editor: Editor, args?: Record<string, unknown>) => boolean>> = {
   "edit.undo": (e) => e.commands.undo(),
   // Explicit, so they're reliable in long scrolled notes and scroll into the reading zone (UI-11).
   "edit.docStart": (e) => e.chain().setTextSelection(Selection.atStart(e.state.doc).from).scrollIntoView().run(),
@@ -203,6 +203,7 @@ export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Rec
   ...FIND_ACTIONS,
   ...TABLE_ACTIONS,
   ...EXPAND_ACTIONS,
+  ...BLOCK_MOVE_TO,
   "task.toggle": (e) => {
     const { $from } = e.state.selection;
     for (let d = $from.depth; d > 0; d--) {
@@ -215,6 +216,14 @@ export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Rec
     return false;
   },
 };
+
+/**
+ * Every editor command by ID. The block commands also take lock, the block handle's block (its
+ * position), to act on it rather than on the caret's block (EDT-07).
+ */
+export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Record<string, unknown>) => boolean>> = Object.fromEntries(
+  Object.entries(ACTIONS).map(([id, f]) => [id, id.startsWith("block.") && id !== "block.moveTo" ? atBlock(f) : f]),
+);
 
 import { SelectionSync, syncSelection } from "./sync.ts";
 export { syncSelection };
