@@ -7596,6 +7596,11 @@
           ],
           "default": "none",
           "description": "Keys registered for this scope work while focus is inside."
+        },
+        "pinned": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Pinned open (D-161): a click on the canvas doesn't close it, and a start sheet keeps the note's text clear of it. Still floating, never docked."
         }
       },
       "events": {
@@ -7614,7 +7619,8 @@
       },
       "states": [
         "rest",
-        "entering"
+        "entering",
+        "pinned"
       ],
       "tokens": "cmp.sheet.*",
       "a11y": {

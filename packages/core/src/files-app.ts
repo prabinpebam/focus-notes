@@ -759,7 +759,7 @@ export function registerFiles(ctx: Ctx) {
     ]),
   };
   const NO_ITEM = { id: "", label: "", shortcut: "", disabled: false };
-  const CLOSED = { open: false, pinned: false, pinLabel: "", pinShortcut: "", menu: [], menuLabel: "", focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
+  const CLOSED = { open: false, pinned: false, pinIcon: "pin", pinLabel: "", pinShortcut: "", menu: [], menuLabel: "", focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
   const newNoteShortcut = () => (ctx.describeItem("note.new").shortcut as string | undefined) ?? "";
   /** The focused row's menu (D-162): its items as the ⋯ menu shows commands, and its name. */
   const menuOf = (s: AppState, rows: readonly FileRow[]) => {
@@ -785,7 +785,7 @@ export function registerFiles(ctx: Ctx) {
     schema: {
       type: "object",
       properties: {
-        open: { type: "boolean" }, pinned: { type: "boolean" }, pinLabel: { type: "string" }, pinShortcut: { type: "string" },
+        open: { type: "boolean" }, pinned: { type: "boolean" }, pinIcon: { type: "string", enum: ["pin", "pinOff"] }, pinLabel: { type: "string" }, pinShortcut: { type: "string" },
         menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } }, menuLabel: { type: "string" },
         focusRequest: { type: "number" }, items: { type: "array", items: TREE_ITEM }, focusId: { type: "string" },
         editValue: { type: "string" }, editError: { type: "string" }, editLabel: { type: "string" },
@@ -829,7 +829,7 @@ export function registerFiles(ctx: Ctx) {
       const notes = rows.filter((r) => r.kind !== "root").length;
       const pin = ctx.describeItem("files.togglePin");
       return {
-        open: true, pinned: f.pinned, pinLabel: catalog.format(f.pinned ? "files.unpin" : "files.pin"), pinShortcut: (pin.shortcut as string | undefined) ?? "",
+        open: true, pinned: f.pinned, pinIcon: f.pinned ? "pinOff" : "pin", pinLabel: catalog.format(f.pinned ? "files.unpin" : "files.pin"), pinShortcut: (pin.shortcut as string | undefined) ?? "",
         ...menuOf(s, rows),
         focusRequest: f.focusRequest, items, focusId: f.edit ? f.edit.id : f.selection.focus,
         editValue: f.edit?.value ?? "", editError: f.edit?.error ?? "",

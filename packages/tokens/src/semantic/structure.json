@@ -272,6 +272,10 @@
       "$value": "{ref.size.200}",
       "$description": "The narrowest a side sheet gets to keep the trigger clear in a narrow window (D-111)."
     },
+    "pinnedColumnMin": {
+      "$value": "{ref.size.360}",
+      "$description": "The narrowest the note's text gets beside a pinned Files panel; narrower, the panel floats over the text (D-161)."
+    },
     "sheetMinWide": {
       "$value": "{ref.size.280}",
       "$description": "The narrowest the theme manager and find in all notes get to keep the trigger clear: room for their segmented control and tabs (D-111)."

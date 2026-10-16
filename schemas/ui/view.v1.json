@@ -833,7 +833,9 @@
                     "globe",
                     "calendar",
                     "chevronLeft",
-                    "mail"
+                    "mail",
+                    "pin",
+                    "pinOff"
                   ]
                 },
                 {
@@ -1038,7 +1040,9 @@
                     "globe",
                     "calendar",
                     "chevronLeft",
-                    "mail"
+                    "mail",
+                    "pin",
+                    "pinOff"
                   ]
                 },
                 {
@@ -1289,7 +1293,9 @@
                     "globe",
                     "calendar",
                     "chevronLeft",
-                    "mail"
+                    "mail",
+                    "pin",
+                    "pinOff"
                   ]
                 },
                 {
@@ -1971,7 +1977,9 @@
                     "globe",
                     "calendar",
                     "chevronLeft",
-                    "mail"
+                    "mail",
+                    "pin",
+                    "pinOff"
                   ]
                 },
                 {
@@ -2370,7 +2378,9 @@
                     "globe",
                     "calendar",
                     "chevronLeft",
-                    "mail"
+                    "mail",
+                    "pin",
+                    "pinOff"
                   ]
                 },
                 {
@@ -4425,7 +4435,9 @@
                     "globe",
                     "calendar",
                     "chevronLeft",
-                    "mail"
+                    "mail",
+                    "pin",
+                    "pinOff"
                   ]
                 },
                 {
@@ -4635,7 +4647,9 @@
                     "globe",
                     "calendar",
                     "chevronLeft",
-                    "mail"
+                    "mail",
+                    "pin",
+                    "pinOff"
                   ]
                 },
                 {
@@ -5112,7 +5126,9 @@
                     "globe",
                     "calendar",
                     "chevronLeft",
-                    "mail"
+                    "mail",
+                    "pin",
+                    "pinOff"
                   ]
                 },
                 {
@@ -7060,6 +7076,19 @@
                     "files",
                     "findAll"
                   ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "pinned": {
+              "anyOf": [
+                {
+                  "type": "boolean"
                 },
                 {
                   "$ref": "#/$defs/read"

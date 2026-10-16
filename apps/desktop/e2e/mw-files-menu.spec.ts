@@ -135,3 +135,108 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   expect(existsSync(join(dirs.docs, "ideas.md"))).toBe(false);
   await quit(l);
 });
+
+test("D-161: pinned, Files stays open while notes open; the text moves clear of it, the caret's line kept; Esc and Mod+O go between them; unpinning puts it back", async () => {
+  const dirs = tempDirs();
+  const para = (n: number) => `Paragraph ${n} has enough words in it to wrap across more than one line once the column gets narrower beside the panel.`;
+  writeFileSync(join(dirs.docs, "Welcome.md"), `# Welcome to Focus Notes\n\nHello.\n\n${Array.from({ length: 30 }, (_, i) => para(i + 1)).join("\n\n")}\n`);
+  writeFileSync(join(dirs.docs, "ideas.md"), "# Ideas\n\nSome.\n");
+  const { l, page, editor, files, row } = await opened(dirs);
+  // A window where the column has to narrow beside the sheet, so the text reflows.
+  await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(880, 760));
+  await expect.poll(() => page.evaluate(() => innerWidth)).toBeLessThan(900);
+  // The caret at the end of the note: its line is what must stay put. Its own scroll there is made
+  // instant, so nothing is still gliding (in a background window's few frames) when the pin is pressed.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowDown" : "Control+End");
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+  /** The last line's top (where the caret is) and the text's left edge, in the window. */
+  const where = () => page.evaluate(() => {
+    const prose = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    const last = [...prose.querySelectorAll("p")].at(-1)!.lastChild as Text;
+    const r = document.createRange();
+    r.setStart(last, last.length);
+    return { line: r.getClientRects()[0]!.top, left: prose.getBoundingClientRect().left };
+  });
+  /** Samples the last line's top each painted frame for a while, from now. */
+  const sample = () => page.evaluate(() => {
+    const w = window as unknown as { tops: number[] };
+    w.tops = [];
+    const prose = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    const start = performance.now();
+    const tick = () => setTimeout(() => {
+      const last = [...prose.querySelectorAll("p")].at(-1)!.lastChild as Text;
+      const r = document.createRange();
+      r.setStart(last, last.length);
+      w.tops.push(r.getClientRects()[0]!.top);
+      if (performance.now() - start < 500) requestAnimationFrame(tick);
+    }, 0);
+    requestAnimationFrame(tick);
+  });
+  const sampled = async () => {
+    await page.waitForTimeout(600);
+    return page.evaluate(() => (window as unknown as { tops: number[] }).tops);
+  };
+  await page.keyboard.press(`${mod}+O`);
+  const pin = files.getByRole("button", { name: "Keep Files open" });
+  await expect(pin).toHaveAttribute("aria-pressed", "false");
+  // The auto-scroll to the end is a script, not an animation: wait for the note to be still.
+  await expect.poll(async () => { const a = (await where()).line; await page.waitForTimeout(150); return a === (await where()).line; }).toBe(true);
+  const before = await where();
+  await sample();
+  await pin.click();
+  const unpin = files.getByRole("button", { name: "Unpin Files" });
+  await expect(unpin).toHaveAttribute("aria-pressed", "true");
+  const tops = await sampled();
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+  // The caret's line never moved while the text reflowed, and the text starts a gap after the sheet.
+  // Every frame drawn while it glided (a window the journey keeps in the background draws few).
+  expect(tops.length).toBeGreaterThan(0);
+  for (const y of tops) expect(Math.abs(y - before.line)).toBeLessThanOrEqual(2);
+  const pinned = await where();
+  // It reflowed: the text is narrower than before, so its lines wrap differently.
+  const width = await page.evaluate(() => (document.querySelector('[contenteditable="true"]') as HTMLElement).getBoundingClientRect().width);
+  console.log(`D-161: text left ${before.left} → ${pinned.left}, width ${width}, caret line ${before.line} → ${pinned.line}, frames ${tops.length}, worst ${Math.max(...tops.map((y) => Math.abs(y - before.line)))}`);
+  const sheet = (await files.boundingBox())!;
+  expect(pinned.left).toBeGreaterThanOrEqual(sheet.x + sheet.width + 16 - 1);
+  expect(Math.abs(pinned.line - before.line)).toBeLessThanOrEqual(1);
+  expect(await settledAxe(page)).toEqual([]);
+  await page.screenshot({ path: "../../test-results/screens/files-pinned.png" });
+  await expect.poll(() => readFileSync(join(dirs.userData, "state.json"), "utf8")).toContain('"filesPinned": true');
+
+  // Opening a note leaves it open; Esc goes back to the note, and it stays.
+  await row("Ideas").dblclick();
+  await expect(editor).toContainText("Some.");
+  await expect(files).toBeVisible();
+  await row("Ideas").focus();
+  await page.keyboard.press("Escape");
+  await expect(editor).toBeFocused();
+  await expect(files).toBeVisible();
+  // Mod+O goes into the tree, and from there back to the note; a click on the note keeps it open.
+  await page.keyboard.press(`${mod}+O`);
+  await expect(row("Ideas")).toBeFocused();
+  await page.keyboard.press(`${mod}+O`);
+  await expect(editor).toBeFocused();
+  await editor.click();
+  await expect(files).toBeVisible();
+
+  // Unpinned: the text goes back where it was, and the panel closes as it always did.
+  await row("Welcome to Focus Notes").dblclick();
+  await expect(editor).toContainText("Paragraph 30");
+  await unpin.click();
+  await expect(pin).toHaveAttribute("aria-pressed", "false");
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+  await expect.poll(async () => Math.round((await where()).left)).toBe(Math.round(before.left));
+  await page.keyboard.press("Escape");
+  await expect(files).toBeHidden();
+
+  // Reduced motion: pinned at once.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.keyboard.press(`${mod}+O`);
+  await files.getByRole("button", { name: "Keep Files open" }).click();
+  const moved = await page.evaluate(() => new Promise<number>((done) => requestAnimationFrame(() => done((document.querySelector('[contenteditable="true"]') as HTMLElement).getBoundingClientRect().left))));
+  expect(moved).toBeGreaterThanOrEqual(sheet.x + sheet.width + 16 - 1);
+  await quit(l);
+});

@@ -3167,7 +3167,10 @@
           },
           "side": "start",
           "width": "files",
-          "keyScope": "files"
+          "keyScope": "files",
+          "pinned": {
+            "get": "vm.files.pinned"
+          }
         },
         "on": {
           "close": {
@@ -3260,12 +3263,36 @@
                             "disabledReason": {
                               "t": "command.note.new.readOnly"
                             },
+                            "tone": "muted"
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.newFolder"
+                            }
+                          }
+                        },
+                        {
+                          "type": "IconButton",
+                          "props": {
+                            "icon": {
+                              "get": "vm.files.pinIcon"
+                            },
+                            "label": {
+                              "get": "vm.files.pinLabel"
+                            },
+                            "shortcut": {
+                              "get": "vm.files.pinShortcut"
+                            },
+                            "toggle": true,
+                            "pressed": {
+                              "get": "vm.files.pinned"
+                            },
                             "tone": "muted",
                             "bleed": true
                           },
                           "on": {
                             "press": {
-                              "run": "files.newFolder"
+                              "run": "files.togglePin"
                             }
                           }
                         }

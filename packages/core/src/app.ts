@@ -1293,6 +1293,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       await formatRead;
       // The desktop's first run shows over the blank canvas; the first note opens when it's done (FRE-01).
       if (!(await firstRun.begin(appState))) {
+        // A panel pinned on this device is there from the first frame, so the text never jumps aside (D-161).
+        files.restorePinned(appState.filesPinned);
         const path = appState.lastNotePath ?? (await bridge.defaultNotePath());
         await load(path);
         if (store.state.note.status === "error" && appState.lastNotePath) await load(await bridge.defaultNotePath());
@@ -1303,8 +1305,6 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       if (copied) toast(catalog.format("toast.restoredCopy", { note: copied.title, copy: copied.copy!.title }));
       else if (restored.length) toast(catalog.format("toast.restored", { count: restored.length, note: restored[0]!.title }));
       workspace.start();
-      // A panel pinned on this device opens again, once the note is open (D-161).
-      if (store.state.note.path) files.restorePinned(appState.filesPinned);
       sync.start();
       setup.start();
       await browser.start();
