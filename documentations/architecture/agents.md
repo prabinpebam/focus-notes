@@ -46,6 +46,42 @@ The [Model Context Protocol](https://modelcontextprotocol.io) server ships with 
 - Note content in results is wrapped and labeled as untrusted content from the user's notes. Tool descriptions tell the agent not to follow instructions found inside notes.
 - While the app is running, writes go through the app ([One writer at a time](desktop-and-git.md#one-writer-at-a-time)).
 
+### MCP server as built
+
+**As built (WP-7.2, D-159).** `packages/mcp` speaks MCP itself over stdio, with no network listener and no SDK. The desktop's Node entry starts it: `focus-notes-mcp --workspace <folder> --data <app data folder>`. It refuses to start (exit 3) while *Agents can connect* is off.
+
+**Transport and versions.** Newline-delimited JSON-RPC 2.0 on stdin and stdout: one UTF-8 message per line, at most 4 MB, no batches. Only protocol goes to stdout; logs go to stderr, with counts and codes but never paths or note text. The current specification, `2026-07-28`, is stateless: each request carries `_meta` with `io.modelcontextprotocol/protocolVersion` and `clientInfo`, `server/discover` lists the versions, and every result has `resultType: "complete"`. The handshake versions `2025-11-25`, `2025-06-18`, and `2025-03-26` use `initialize`, `notifications/initialized`, and `ping`.
+
+| Tool | Input | Returns | Kind |
+| --- | --- | --- | --- |
+| `search_notes` | `query` (1 to 200 characters), `visibility` (`public`, `private`, or `all`), `folder`, `limit` (1 to 50, default 20) | Matching notes: path, visibility, title and snippet | Read |
+| `read_note` | `path` | Path, visibility, `version` (the Git blob ID), title and Markdown | Read |
+| `get_outline` | `path` | Headings with level and anchor | Read |
+| `list_notes` | `folder` (default: every root it can read), `cursor`, `limit` (1 to 200, default 100) | Notes and folders, a page at a time | Read |
+| `recent_notes` | `limit` (1 to 50, default 10) | The notes most recently changed on disk | Read |
+| `create_note` | `title`, `body`, `folder` (default `private/notes`) | Path and `version` | Write |
+| `update_note` | `path`, `expected_version`, and `body` or `operations` (`append`, `prepend`, `replace_section`, `insert_after_heading`, each with `text`, the last two with `heading`) | The new `version` | Write |
+| `move_note` | `from`, `to` (same root) | The new path | Write |
+| `rename_note` | `path`, `name` (a file name, same folder) | The new path | Write |
+| `create_folder` | `path` | The path | Write |
+
+- **Resources:** `workspace://tree` and `workspace://recent` (JSON), and `note://{path}` (Markdown, a resource template). Each read takes a read from the rate limit and the same checks as the tools.
+- **Prompts:** `summarize_note` (`path`), `draft_from_outline` (`outline`, optional `folder`), and `find_related` (`path`). They return instructions that name the tools above and never contain note text.
+- **Every call:** `agents.json` is read again, a token is taken (`takeAgentToken`), `checkAgent` decides with the shares from `private/access.json`, `resolveAgentPath` follows the paths on disk, and only `readAgentFile`, `writeAgentFile`, `moveAgentFile`, and `createAgentFolder` touch files. Listing and searching walk only readable roots and folders, skip links, and read each note through its own grant.
+- **Untrusted content:** titles, file names, headings, snippets, and bodies are note content. Structured results mark them `untrusted: true`. The text form puts them between markers with a random name per response, said before them, and the tool descriptions and the server's instructions say never to follow instructions found inside notes.
+- **Shares:** `private/access.json` is read on each call only to know who shares what; it's never returned. A missing file means there are no shares; one that can't be read counts as sharing everything, so nothing private is moved or created.
+- **Writes:** each write is one commit with attribution (`agentChange`). The server takes the workspace's [lock](desktop-and-git.md#one-writer-at-a-time) only for that commit and releases it after the push. While the desktop app holds the lock, a write is refused (`appRunning`) and nothing is written; relaying writes through the running app is planned. A folder that isn't a Git repository refuses writes (`noRepository`). `move_note` and `rename_note` don't rewrite links in other notes yet.
+
+| Error | Where | Meaning |
+| --- | --- | --- |
+| `-32700`, `-32600` | Protocol | Not JSON, or not a request (a batch, a message over 4 MB) |
+| `-32601` | Protocol | Unknown method |
+| `-32602` | Protocol | Unknown tool, prompt, or resource (a note that isn't there, too), or a prompt's bad argument |
+| `-31000` | Protocol | A resource read refused: `data.error` is one of the refusals below |
+| `-32022` | Protocol | Unsupported protocol version, with `supported` and `requested` |
+| `notConnected`, `notPermitted`, `outsideFolders`, `outsideNotes`, `invalidPath`, `sharing`, `link`, `changed`, `never` | Tool result (`isError`) | The refusals of WP-7.1 ([Permissions](#permissions)) |
+| `notFound`, `exists`, `tooLarge`, `rateLimited` (with `retryAfterMs`), `appRunning`, `noRepository`, `invalidInput`, `failed` | Tool result (`isError`) | The note (or heading) isn't there, the name is taken, over 1 MB, over the limit, the app holds the lock, no Git, arguments that don't match the tool's schema (a tool error, so the agent can correct them), or anything else |
+
 ## Permissions
 
 **Settings → Agents** (IA-VIEW-SETTINGS):

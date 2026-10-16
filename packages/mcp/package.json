@@ -1,0 +1,11 @@
+{
+  "name": "@focus-notes/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Focus Notes MCP server: stdio only, every note reached through the agent permissions (WP-7.2, D-159)",
+  "license": "MIT",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc -p tsconfig.json" },
+  "dependencies": { "@focus-notes/core": "workspace:*" }
+}
