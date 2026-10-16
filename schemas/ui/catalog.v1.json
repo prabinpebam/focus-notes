@@ -2338,6 +2338,235 @@
       ]
     },
     {
+      "type": "SiteLink",
+      "tier": "primitive",
+      "description": "A link on the product site (WP-10.1): inline, one of the site's navigation links, the brand, or a call to action (primary or secondary). A plain anchor, so it works with no script.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "href": {
+          "kind": "text",
+          "required": true,
+          "description": "Where it goes: a relative address on the site, or GitHub."
+        },
+        "variant": {
+          "kind": "enum",
+          "values": [
+            "inline",
+            "nav",
+            "brand",
+            "primary",
+            "secondary"
+          ],
+          "default": "inline"
+        },
+        "current": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The page this navigation link names (aria-current)."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "focus"
+      ],
+      "tokens": "cmp.siteLink.*",
+      "a11y": {
+        "pattern": "link",
+        "name": "label"
+      },
+      "fixtures": [
+        "variant inline",
+        "variant nav",
+        "variant brand",
+        "variant primary",
+        "variant secondary",
+        "current"
+      ]
+    },
+    {
+      "type": "SiteText",
+      "tier": "primitive",
+      "description": "The product site's type (D-174): a few words in the display face at a large scale. The hero's headline (display), a section's headline, the one line under it (lead), an eyebrow, a tile's label, or a caption.",
+      "props": {
+        "value": {
+          "kind": "message",
+          "required": true
+        },
+        "as": {
+          "kind": "enum",
+          "values": [
+            "h1",
+            "h2",
+            "h3",
+            "p"
+          ],
+          "default": "p",
+          "description": "The element: a heading level, or a paragraph."
+        },
+        "look": {
+          "kind": "enum",
+          "values": [
+            "display",
+            "headline",
+            "lead",
+            "eyebrow",
+            "tile",
+            "caption"
+          ],
+          "default": "lead"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.siteText.*",
+      "a11y": {
+        "pattern": "text",
+        "name": "Headings keep their levels; the look never changes the level."
+      },
+      "fixtures": [
+        "look display",
+        "look headline",
+        "look lead",
+        "look eyebrow",
+        "look tile",
+        "look caption",
+        "as h1",
+        "as h2",
+        "as h3",
+        "as p"
+      ]
+    },
+    {
+      "type": "SiteFigure",
+      "tier": "primitive",
+      "description": "A screenshot on the product site (D-169, D-176): a desktop scene, AVIF where the browser takes it and WebP otherwise, at the width the page shows it, in the visitor's light or dark, with its width and height so nothing shifts as it loads (PRF-12). The first one on a page loads first; the rest when they're near.",
+      "props": {
+        "src": {
+          "kind": "text",
+          "required": true,
+          "description": "The fallback image's address, relative to the page."
+        },
+        "srcSet": {
+          "kind": "text",
+          "description": "WebP at each width (`media/x-1280.webp 1280w, …`)."
+        },
+        "avifSet": {
+          "kind": "text",
+          "description": "AVIF at each width."
+        },
+        "darkSrcSet": {
+          "kind": "text",
+          "description": "The dark scene's WebP, for a visitor whose setting is dark."
+        },
+        "darkAvifSet": {
+          "kind": "text",
+          "description": "The dark scene's AVIF."
+        },
+        "sizes": {
+          "kind": "text",
+          "description": "How wide the page shows it, for choosing a width."
+        },
+        "alt": {
+          "kind": "text",
+          "required": true,
+          "description": "What the screenshot shows (D-169)."
+        },
+        "width": {
+          "kind": "number",
+          "min": 1,
+          "description": "Its width in pixels (its aspect ratio, before CSS scales it)."
+        },
+        "height": {
+          "kind": "number",
+          "min": 1,
+          "description": "Its height in pixels."
+        },
+        "priority": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The page's main image: loaded first, never lazily."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.siteFigure.*",
+      "a11y": {
+        "pattern": "img",
+        "name": "alt"
+      },
+      "fixtures": [
+        "screenshot",
+        "priority, light and dark"
+      ]
+    },
+    {
+      "type": "SiteSceneToggle",
+      "tier": "primitive",
+      "description": "One desktop scene with a Light / Dark choice under it (D-176): two radio buttons switch which of its two screenshots shows, with no script. Light is chosen first. The radios are a labelled group, so arrow keys move between them and a screen reader names the choice.",
+      "props": {
+        "name": {
+          "kind": "text",
+          "required": true,
+          "description": "The radio group's name, unique on the page (the section's anchor)."
+        },
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "The group's accessible name."
+        },
+        "lightLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "darkLabel": {
+          "kind": "message",
+          "required": true
+        }
+      },
+      "events": {},
+      "slots": {
+        "light": {
+          "accepts": [
+            "SiteFigure"
+          ],
+          "min": 1,
+          "max": 1
+        },
+        "dark": {
+          "accepts": [
+            "SiteFigure"
+          ],
+          "min": 1,
+          "max": 1
+        }
+      },
+      "states": [
+        "light",
+        "dark",
+        "focus"
+      ],
+      "tokens": "cmp.siteSceneToggle.*",
+      "a11y": {
+        "pattern": "radiogroup",
+        "name": "label"
+      },
+      "fixtures": [
+        "light and dark"
+      ]
+    },
+    {
       "type": "Stack",
       "tier": "layout",
       "description": "Children in a column, spaced by a space token.",
@@ -3200,6 +3429,127 @@
       ]
     },
     {
+      "type": "SitePage",
+      "tier": "layout",
+      "description": "A page of the product site (IA-VIEW-SITE, IA-VIEW-HELP, WP-10.1): a skip link, a header with the site's navigation, the content as the page's main landmark, and a footer. It follows the visitor's light or dark preference and reads from 320 px wide.",
+      "props": {
+        "skipLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The skip link to the content."
+        },
+        "navLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The site navigation's accessible name."
+        },
+        "width": {
+          "kind": "enum",
+          "values": [
+            "reading",
+            "wide",
+            "showcase"
+          ],
+          "default": "reading",
+          "description": "reading: the editor's measure, for articles; wide: a page of sections; showcase: the landing page, as wide as its screenshots (D-174)."
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        },
+        "header": {
+          "accepts": [
+            "SiteLink"
+          ]
+        },
+        "footer": {
+          "accepts": "any",
+          "max": 1
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.sitePage.*",
+      "a11y": {
+        "pattern": "landmarks",
+        "name": "banner with a labelled navigation, main, and contentinfo; the skip link is the first focusable element."
+      },
+      "fixtures": [
+        "width reading",
+        "width wide",
+        "width showcase"
+      ]
+    },
+    {
+      "type": "SiteSection",
+      "tier": "layout",
+      "description": "A section of a product site page (WP-10.1, D-174), with a stable anchor other pages link to. plain and band hold words; hero and feature are the landing page's big, centred showcases (a headline, a line, a screenshot); tile is one small tile of a grid.",
+      "props": {
+        "anchor": {
+          "kind": "text",
+          "description": "The section's stable anchor (its element ID); a tile has none."
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "plain",
+            "band",
+            "hero",
+            "feature",
+            "tile"
+          ],
+          "default": "plain"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.siteSection.*",
+      "a11y": {
+        "pattern": "region",
+        "name": "Its heading, the first child's."
+      },
+      "fixtures": [
+        "tone plain",
+        "tone band",
+        "tone hero",
+        "tone feature",
+        "tone tile"
+      ]
+    },
+    {
+      "type": "SiteGrid",
+      "tier": "layout",
+      "description": "The product site's grid of small tiles (D-174): as many columns as fit, each at least a tile wide.",
+      "props": {},
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.siteGrid.*",
+      "a11y": {
+        "pattern": "list",
+        "name": "A list of its tiles."
+      },
+      "fixtures": [
+        "tiles"
+      ]
+    },
+    {
       "type": "EditorSurface",
       "tier": "host",
       "description": "The writing surface (Tiptap and ProseMirror). It owns the note's DOM; views place it once.",
@@ -3914,6 +4264,8 @@
       "gutter",
       "gutterCompact",
       "wideContent",
+      "siteWide",
+      "siteTile",
       "sheetFiles",
       "sheetTheme",
       "sheetFind",
@@ -4103,6 +4455,7 @@
         "vm.deleted",
         "vm.window",
         "vm.spotlight",
+        "vm.demo",
         "vm.toolbarCustomize"
       ]
     },
