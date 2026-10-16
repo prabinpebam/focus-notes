@@ -8419,6 +8419,22 @@
                   "$ref": "#/$defs/read"
                 }
               ]
+            },
+            "layout": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "fit",
+                    "bleed"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [

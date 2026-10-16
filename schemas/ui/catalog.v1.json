@@ -3837,6 +3837,15 @@
           "kind": "number",
           "min": 0,
           "description": "Each new value opens the context menu at the active cell."
+        },
+        "layout": {
+          "kind": "enum",
+          "values": [
+            "fit",
+            "bleed"
+          ],
+          "default": "fit",
+          "description": "Fit to column or Bleed to edge (D-182): how a column resize shares out the width."
         }
       },
       "events": {
@@ -3848,7 +3857,9 @@
             "col": "number",
             "index": "number",
             "from": "number",
-            "to": "number"
+            "to": "number",
+            "width": "number",
+            "next": "number"
           }
         },
         "close": {}
@@ -3861,6 +3872,7 @@
         "menuOpen",
         "insertPoint",
         "dragging",
+        "resizing",
         "rangeSelected"
       ],
       "tokens": "cmp.tableControls.*",
