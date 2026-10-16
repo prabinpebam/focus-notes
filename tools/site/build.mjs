@@ -1,9 +1,9 @@
 /**
  * The product site's builder (WP-10.1, HLP-08, D-167). Reads the content in site/ (the landing page,
- * plain pages, and the help centre's categories and articles), renders every page through the site's
+ * plain pages) and the docs' Help pages (D-181, for /help/'s redirects), renders every page through the site's
  * renderer (apps/web/site/render.ts, built to apps/web/dist-site/), and assembles the site:
  *
- *   /            the landing page            /help/…     the help centre
+ *   /            the landing page            /help/…     redirects to Help in the docs (D-181)
  *   /demo/       the demo (WP-10.6)          /download/, /privacy/
  *   /app/        the owner's Focus Notes, which / served before D-167
  *   /s/          the share reader, where share links have always pointed
@@ -32,21 +32,19 @@ const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const exists = (p) => stat(p).then(() => true, () => false);
 const isDir = (p) => stat(p).then((s) => s.isDirectory(), () => false);
 
-/** The site's content, read from its folder. */
-export async function readContent(dir) {
+/**
+ * The site's content, read from its folder, and the help pages in the Slate docs (D-181), from the
+ * docs' manifest: each documentations/help/<page>.md other than its index.
+ */
+export async function readContent(dir, docs = join(dir, "..", "documentations")) {
   const landing = JSON.parse(await readFile(join(dir, "landing.json"), "utf8"));
   const pages = [];
   for (const name of SITE_PAGES) pages.push({ path: `${name}/`, markdown: await readFile(join(dir, `${name}.md`), "utf8") });
-  const categories = JSON.parse(await readFile(join(dir, "help", "categories.json"), "utf8"));
-  const articles = [];
-  for (const c of categories) {
-    // An ID is part of an address and a path: lowercase words joined by hyphens, nothing else.
-    if (typeof c?.id !== "string" || !ID.test(c.id)) throw new Error(`help/categories.json: ${JSON.stringify(c?.id)} isn't a usable category ID (lowercase words joined by hyphens)`);
-    const folder = join(dir, "help", c.id);
-    if (!(await isDir(folder))) continue;
-    for (const f of (await readdir(folder)).sort()) if (f.endsWith(".md")) articles.push({ category: c.id, id: f.slice(0, -3), markdown: await readFile(join(folder, f), "utf8") });
-  }
-  return { landing, pages, categories, articles };
+  const manifest = JSON.parse(await readFile(join(docs, "docs-manifest.json"), "utf8"));
+  const helpPages = manifest.entries.map((e) => /^help\/([^/]+)\.md$/.exec(e.path)?.[1]).filter((id) => id && id !== "index");
+  // A page's name becomes an address and a path: lowercase words joined by hyphens, nothing else.
+  for (const id of helpPages) if (!ID.test(id)) throw new Error(`docs-manifest.json: help/${id}.md isn't a usable help page name (lowercase words joined by hyphens)`);
+  return { landing, pages, helpPages };
 }
 
 /**
@@ -165,6 +163,12 @@ export async function checkSite(out, { assume = [], siteUrl } = {}) {
       const target = new URL(url, `https://site.invalid/${rel}`);
       const path = decodeURIComponent(target.pathname.slice(1));
       if (assume.some((a) => path.startsWith(a))) continue;
+      // The Slate docs route by the fragment (documentations/#help/index.md, D-181): the page it names must exist.
+      if (path === "documentations/" && target.hash.length > 1) {
+        const page = decodeURIComponent(target.hash.slice(1)).split("#")[0];
+        if (!(await exists(join(out, "documentations", ...page.split("/"))))) problems.push(`${rel}: ${url} names a docs page that isn't there (documentations/${page})`);
+        continue;
+      }
       const file = path === "" || path.endsWith("/") ? `${path}index.html` : path;
       if (!(await exists(join(out, ...file.split("/"))))) { problems.push(`${rel}: ${url} doesn't resolve (${file})`); continue; }
       if (target.hash.length > 1 && file.endsWith(".html")) {

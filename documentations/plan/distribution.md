@@ -153,7 +153,7 @@ The project repository's GitHub Pages site is the **product site** (D-167): the 
 | Path | Serves |
 | --- | --- |
 | `/` | The landing page: what Focus Notes is, how it works, who it's for, downloads and *Try the demo* (HLP-01) |
-| `/help/` | The help centre, with *What's new* at `/help/whats-new/` (HLP-02) |
+| `/help/` | A redirect to Help, a section of these docs at `/documentations/#help/index.md` (HLP-02, D-181) |
 | `/demo/` | The demo: the web app with sample notes, kept in the visitor's browser (HLP-05) |
 | `/download/` | Downloads for each system from the latest GitHub Release, with checksums |
 | `/app/` | The owner's Focus Notes. Until a browser unlocks the owner's private notes, it shows the visitor view (PKG-09, DST-01) |

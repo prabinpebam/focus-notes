@@ -5,7 +5,7 @@ The public face of Focus Notes: the page a person lands on before they install a
 > [!NOTE]
 > **TL;DR.** The project repository's GitHub Pages site becomes the product site (D-167).
 > - **`/` is the landing page,** visual first (D-174): a headline of a few words, a large scene of the app with a real note, up to five featured sections with a screenshot each, a grid of small tiles, downloads and *Try the demo*. The explanations live in the help centre.
-> - **`/help/` is the help centre:** about 40 articles in eight categories named by what the reader wants to do, each one a single content type from the [writing guide](../design/help-writing.md) (D-168).
+> - **Help is a section of these docs** (D-181): [Help](../help/index.md), about 40 articles in eight sections named by what the reader wants to do, each one a single content type from the [writing guide](../design/help-writing.md). `/help/` on the site sends visitors there.
 > - **`/demo/` is the web app** with sample notes, kept in the visitor's browser, with no sign-in.
 > - **The app links into the help centre** by article ID (*Learn more*, *How to fix this*). CI fails on any ID or anchor that doesn't exist.
 > - **Screenshots are captured from the release build in CI** with the demo workspace, in light and dark (D-169).
@@ -29,8 +29,7 @@ The specification under `/documentations/` stays for people building Focus Notes
 | Address | Serves | Notes |
 | --- | --- | --- |
 | `/` | [The landing page](#the-landing-page) | Was the owner's Focus Notes app until D-167 |
-| `/help/` | [The help centre](#the-help-centre): categories, search and articles at `/help/<category>/<article>/` | Stable addresses (HLP-03) |
-| `/help/whats-new/` | Release notes, newest first | From each release's notes, in user-benefit words |
+| `/help/` | A redirect to [Help](../help/index.md) in these docs, at `/documentations/#help/index.md` (D-181) | `/help/<section>/` redirects to that section's page |
 | `/demo/` | [The demo](#the-demo) | The web app with sample notes |
 | `/download/` | Downloads for each system, with checksums | Links to the latest GitHub Release's assets |
 | `/app/` | The owner's own Focus Notes, as `/` served before D-167 | Public note pages stay at `/n/` so their addresses don't change |
@@ -55,6 +54,8 @@ Visual first, in the manner of apple.com's product pages (D-174). Pictures carry
 **Limits, checked when the site is built:** at most about 120 words of visible text outside the navigation and footer, no text block over 20 words, and VVS ≥ 80 (D-127). Every image has alt text, a width and a height. The type is the system's display sans, never the note font. Every claim is true of the release it links to.
 <h2 id="the-help-centre">The help centre</h2>
 
+Help is a section of these docs, built with Slate like every other page (D-181): [Help](../help/index.md), one page per section in `documentations/help/`, each registered in the docs' manifest. Its articles are written for people who write, in the [writing guide's](../design/help-writing.md) voice, and live beside their section's page.
+
 ### Categories
 
 Eight categories, named by what the reader is trying to do (NN/g: five to eight top-level groups by user goal):
@@ -74,15 +75,15 @@ Plus **What's new** (release notes) and the FAQ, linked from every page's footer
 
 ### Pages
 
-- **The help centre's home:** a search field, the eight categories with two or three popular articles each, and *Fix a problem* placed prominently.
+- **The help centre's home:** [Help](../help/index.md), the eight sections, with *Fix a problem* placed prominently.
 - **An article:** breadcrumbs, the title, *Applies to*, the body in its content type's shape, then *Related articles*, *Was this helpful?*, the last-updated date and the release it describes.
-- **Search:** a field on every help page that searches titles, headings, summaries and synonyms in the browser (HLP-09). It shows results as you type, with the article's category and the matched heading.
+- **Search:** the docs' own search, in the browser (HLP-09).
 
 <h2 id="learn-more-links">Learn more links</h2>
 
 The app links into the help centre wherever a setting, a step or a message needs more than its one line:
 
-- **The link names an article ID,** for example `help:connect-github#device-code`, in the view document. `packages/views/help-links.json` maps each ID to its address, and the app turns it into `https://prabinpebam.github.io/focus-notes/help/…` (D-168).
+- **The link names an article ID,** for example `help:connect-github#device-code`, in the view document. `packages/views/help-links.json` maps each ID to its page in the docs, and the app turns it into `https://prabinpebam.github.io/focus-notes/documentations/#help/<page>.md#<anchor>` (D-181; `helpDocsPath` in `packages/core/src/site.ts`).
 - **Desktop:** links open in the system browser. **In the browser:** links open in a new tab. Both carry no query string, no referrer and no identifier.
 - **Every problem message** the app can show gets a *How to fix this* link to its troubleshooting article (HLP-06).
 - **Help → Help centre** in the ⋯ menu and Spotlight opens the help centre's home.
@@ -115,9 +116,9 @@ Desktop scenes of the app with the demo workspace (D-169, D-176):
 
 As built in WP-10.1 (HLP-08). The landing page's words are a draft for WP-10.5, the help centre has its categories but no articles yet (WP-10.2, WP-10.3), and `/demo/` is a placeholder until WP-10.6.
 
-- **Content in `site/`:** `landing.json` is the landing page (D-174): the headline, its line, the hero's screenshot, the featured sections with their stable anchors (`start`, then each feature's ID, then `get-focus-notes`), and the closing line. The tiles and buttons are in its view document. `download.md`, `privacy.md` and `demo.md` are plain pages. `help/categories.json` lists the eight categories in order, and each article is `help/<category>/<id>.md` with the [writing guide's](../design/help-writing.md#every-article) front matter. Screenshots go in `media/`, from the `site` catalogue (`apps/desktop/e2e/site-catalog.spec.ts`): a curated demo workspace, the app's own window captured with `webContents.capturePage`, light and dark, as WebP.
-- **The design system, as the public pages use it (D-114):** core turns the Markdown into view models (`packages/core/src/site.ts`), and five view documents render them: `siteLanding`, `sitePage`, `helpHome`, `helpCategory` and `helpArticle` (IA-VIEW-SITE, IA-VIEW-HELP). Their components are **SitePage**, **SiteSection**, **SiteLink**, **SiteText**, **SiteFigure** and **SiteGrid**, with **NoteContent** for the help centre's words, and their words outside the content are messages. There's no hand-written HTML or CSS.
-- **The renderer and the builder:** `apps/web/site/render.ts` is built to `apps/web/dist-site/` with the site's stylesheet and fonts. `tools/site/build.mjs` renders every page at its address, copies `media/`, and places the owner's app at `/app/` and the share reader at `/s/`.
+- **Content in `site/`:** `landing.json` is the landing page (D-174): the headline, its line, the hero's screenshot, the featured sections with their stable anchors (`start`, then each feature's ID, then `get-focus-notes`), and the closing line. The tiles and buttons are in its view document. `download.md`, `privacy.md` and `demo.md` are plain pages. Help isn't here: it's a section of the Slate docs, in `documentations/help/` (D-181). Screenshots go in `media/`, from the `site` catalogue (`apps/desktop/e2e/site-catalog.spec.ts`): a curated demo workspace, the app's own window captured with `webContents.capturePage`, light and dark, as WebP.
+- **The design system, as the public pages use it (D-114):** core turns the Markdown into view models (`packages/core/src/site.ts`), and two view documents render them: `siteLanding` and `sitePage` (IA-VIEW-SITE). Their components are **SitePage**, **SiteSection**, **SiteLink**, **SiteText**, **SiteFigure** and **SiteGrid**, with **NoteContent** for the plain pages' words, and their words outside the content are messages. There's no hand-written HTML or CSS.
+- **The renderer and the builder:** `apps/web/site/render.ts` is built to `apps/web/dist-site/` with the site's stylesheet and fonts. `tools/site/build.mjs` renders every page at its address, writes the redirects from `/help/` to the docs' Help pages (from the docs' manifest), copies `media/`, and places the owner's app at `/app/` and the share reader at `/s/`.
 - **The owner's app at `/app/`:** the web app's build also makes `dist-app/`, the same app reading the notes and sealed files from the folder above it. They stay at the site's root, where `/n/` and `/s/` have always found them, so no published address changes. Notes written in the browser stay too, because the site's origin is the same. The app never had addresses of its own below `/` (no routes, no service worker), so nothing needs a redirect: a bookmark of `/` opens the landing page, whose footer links to `/app/`.
 - **Light and dark** follow the visitor's setting, and every page is readable at 320 px.
 - **Nothing from another origin:** the pages have no script, and their Content-Security-Policy allows only the site's own styles, fonts and pictures. The builder fails when a page links to an address the site doesn't have, to a missing anchor, or to any other site than GitHub, or names another origin anywhere else.

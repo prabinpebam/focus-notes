@@ -4,10 +4,10 @@ export declare const LINK_ORIGINS: readonly string[];
 export interface SiteSourceFiles {
   landing: string;
   pages: { path: string; markdown: string }[];
-  categories: { id: string; title: string; summary: string }[];
-  articles: { category: string; id: string; markdown: string }[];
+  /** The help pages in the Slate docs (D-181). */
+  helpPages: string[];
 }
-export declare function readContent(dir: string): Promise<SiteSourceFiles>;
+export declare function readContent(dir: string, docs?: string): Promise<SiteSourceFiles>;
 export declare function buildSite(o: {
   content?: string;
   out: string;

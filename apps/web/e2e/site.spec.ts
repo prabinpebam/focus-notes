@@ -21,7 +21,7 @@ const TYPES: Record<string, string> = {
 };
 const web = join(import.meta.dirname, "..");
 const repo = join(web, "..", "..");
-const PAGES = ["", "help/", "help/write/", "help/fix-a-problem/", "demo/", "download/", "privacy/"];
+const PAGES = ["", "demo/", "download/", "privacy/"];
 const PASSPHRASE = "correct horse battery staple";
 let site = "";
 let server: Server;
@@ -93,13 +93,12 @@ test("the site's navigation reaches each address, the skip link goes to the cont
   await page.keyboard.press("Enter");
   await expect(page.locator("main")).toBeFocused();
   const nav = page.getByRole("navigation", { name: "Focus Notes site" });
-  await nav.getByRole("link", { name: "Help" }).click();
-  await expect(page).toHaveURL(`${origin}/help/`);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Help centre");
-  await expect(nav.getByRole("link", { name: "Help" })).toHaveAttribute("aria-current", "page");
-  await page.getByRole("link", { name: "Fix a problem" }).click();
-  await expect(page).toHaveURL(`${origin}/help/fix-a-problem/`);
-  await page.getByRole("link", { name: "Download" }).first().click();
+  // Help is a section of the Slate docs (D-181); its old addresses on the site send visitors there.
+  await expect(nav.getByRole("link", { name: "Help" })).toHaveAttribute("href", "documentations/#help/index.md");
+  await page.goto(`${origin}/help/fix-a-problem/`);
+  await expect(page).toHaveURL(`${origin}/documentations/#help/fix-a-problem.md`);
+  await page.goto(`${origin}/`);
+  await nav.getByRole("link", { name: "Download" }).click();
   await expect(page).toHaveURL(`${origin}/download/`);
   await page.getByRole("link", { name: "Privacy" }).click();
   await expect(page).toHaveURL(`${origin}/privacy/`);

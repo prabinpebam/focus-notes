@@ -61,3 +61,12 @@ export function renderSiteDocument(d: SiteDocument): string {
   ];
   return `<!doctype html>\n<html lang="${esc(d.lang ?? "en")}" data-theme="auto" data-page="site">\n  <head>\n    ${head.join("\n    ")}\n  </head>\n  <body>${d.body}</body>\n</html>\n`;
 }
+
+/**
+ * A page that sends the visitor on (D-181): an old address of the help centre, now in the Slate docs.
+ * A meta refresh and a plain link, since the site has no script.
+ */
+export function renderRedirectDocument(d: { to: string; title: string; label: string; lang?: string }): string {
+  const to = esc(d.to);
+  return `<!doctype html>\n<html lang="${esc(d.lang ?? "en")}" data-theme="auto" data-page="site">\n  <head>\n    <meta charset="utf-8" />\n    <meta http-equiv="Content-Security-Policy" content="${SITE_CSP}" />\n    <meta name="viewport" content="width=device-width, initial-scale=1" />\n    <meta name="color-scheme" content="light dark" />\n    <meta name="robots" content="noindex" />\n    <meta http-equiv="refresh" content="0; url=${to}" />\n    <title>${esc(d.title)}</title>\n  </head>\n  <body><main><p><a href="${to}">${esc(d.label)}</a></p></main></body>\n</html>\n`;
+}

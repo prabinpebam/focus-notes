@@ -1634,14 +1634,7 @@
   "site.footer.docs": "How it's built",
   "site.footer.app": "The author's notes",
   "site.footer.note": "Focus Notes is free and open source under the MIT license. This site doesn't track you.",
-  "help.title": "Help centre",
-  "help.home.intro": "Answers for writing with Focus Notes, in plain words. Pick what you want to do.",
-  "help.breadcrumb.home": "Help centre",
-  "help.category.empty": "Articles for this are on the way.",
-  "help.article.appliesTo": "Applies to: {value}",
-  "help.article.updated": "Updated {date, date, long}, for Focus Notes {release}",
   "site.landing.empty": "More about Focus Notes is on the way.",
-  "help.home.empty": "The help centre's articles are on the way.",
   "site.landing.headline": "Write. Nothing else.",
   "site.landing.learn": "Learn how it works",
   "site.tile.markdown": "Plain Markdown files",
@@ -1659,5 +1652,6 @@
   "demo.label": "Demo: notes stay in this browser",
   "demo.region": "Demo",
   "demo.resetting": "Putting the sample notes back…",
-  "demo.aboutText": "This is a demo. Your notes stay in this browser and nothing is sent anywhere. The desktop app saves notes as Markdown in your own GitHub repositories, publishes public ones, and seals private ones."
+  "demo.aboutText": "This is a demo. Your notes stay in this browser and nothing is sent anywhere. The desktop app saves notes as Markdown in your own GitHub repositories, publishes public ones, and seals private ones.",
+  "site.help.redirect": "Help is in the Focus Notes docs. Go to Help"
 }
