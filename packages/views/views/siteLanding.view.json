@@ -156,16 +156,6 @@
                 "role": "caption",
                 "tone": "muted"
               }
-            },
-            {
-              "type": "Text",
-              "props": {
-                "value": {
-                  "t": "site.footer.credit"
-                },
-                "role": "caption",
-                "tone": "muted"
-              }
             }
           ]
         }
@@ -325,16 +315,19 @@
             },
             {
               "switch": {
-                "get": "feature.hasDark"
+                "get": "feature.hasThemes"
               },
               "cases": {
                 "true": {
-                  "type": "SiteSceneToggle",
+                  "type": "SiteThemeShowcase",
                   "props": {
                     "name": {
                       "get": "feature.anchor"
                     },
-                    "label": {
+                    "themes": {
+                      "get": "feature.themes"
+                    },
+                    "schemeLabel": {
                       "t": "site.scheme.label"
                     },
                     "lightLabel": {
@@ -342,65 +335,13 @@
                     },
                     "darkLabel": {
                       "t": "site.scheme.dark"
+                    },
+                    "lightThemesLabel": {
+                      "t": "site.themes.light"
+                    },
+                    "darkThemesLabel": {
+                      "t": "site.themes.dark"
                     }
-                  },
-                  "slots": {
-                    "light": [
-                      {
-                        "type": "SiteFigure",
-                        "props": {
-                          "src": {
-                            "get": "feature.image.src"
-                          },
-                          "srcSet": {
-                            "get": "feature.image.srcSet"
-                          },
-                          "avifSet": {
-                            "get": "feature.image.avifSet"
-                          },
-                          "sizes": {
-                            "get": "feature.image.sizes"
-                          },
-                          "alt": {
-                            "get": "feature.image.alt"
-                          },
-                          "width": {
-                            "get": "feature.image.width"
-                          },
-                          "height": {
-                            "get": "feature.image.height"
-                          }
-                        }
-                      }
-                    ],
-                    "dark": [
-                      {
-                        "type": "SiteFigure",
-                        "props": {
-                          "src": {
-                            "get": "feature.dark.src"
-                          },
-                          "srcSet": {
-                            "get": "feature.dark.srcSet"
-                          },
-                          "avifSet": {
-                            "get": "feature.dark.avifSet"
-                          },
-                          "sizes": {
-                            "get": "feature.dark.sizes"
-                          },
-                          "alt": {
-                            "get": "feature.dark.alt"
-                          },
-                          "width": {
-                            "get": "feature.dark.width"
-                          },
-                          "height": {
-                            "get": "feature.dark.height"
-                          }
-                        }
-                      }
-                    ]
                   }
                 },
                 "false": {

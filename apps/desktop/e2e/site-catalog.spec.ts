@@ -140,3 +140,30 @@ for (const theme of ["light", "dark"] as const) {
     await quit(l);
   });
 }
+
+/** Every built-in theme (packages/tokens/src/themes), light and dark, for the landing page's theme swatches (D-176). */
+export const SITE_THEMES = {
+  light: ["paper", "sepia", "harbor-light", "forest-light", "contrast-light"],
+  dark: ["ink", "dusk", "harbor-dark", "forest-dark", "contrast-dark"],
+} as const;
+
+test("D-176: the same note in every built-in theme, light and dark", async () => {
+  test.setTimeout(300_000);
+  for (const mode of ["light", "dark"] as const) {
+    const l = await start(mode);
+    const { page } = l;
+    if (await focusMode(page)) await page.keyboard.press("F8");
+    await expect.poll(() => focusMode(page)).toBe(false);
+    // The theme gallery lists the light themes, then the dark ones, in SITE_THEMES' order.
+    for (const [i, id] of SITE_THEMES[mode].entries()) {
+      await openThemes(page);
+      const tiles = page.getByRole("complementary", { name: "Theme" }).getByRole("option");
+      await expect(tiles).toHaveCount(SITE_THEMES.light.length + SITE_THEMES.dark.length);
+      await tiles.nth(mode === "light" ? i : SITE_THEMES.light.length + i).click();
+      await reset(page);
+      await page.keyboard.press(`${mod}+Home`);
+      await capture(l, `theme-${id}`);
+    }
+    await quit(l);
+  }
+});

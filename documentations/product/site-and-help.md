@@ -102,15 +102,15 @@ The app links into the help centre wherever a setting, a step or a message needs
 
 Desktop scenes of the app with the demo workspace (D-169, D-176):
 
-- **A scene, not a cut-out:** a 1920 × 1080 desktop (a mountain photo by Cristina Gottardi on Unsplash) with the app's own window centred on it at its real size, about three quarters of its width, its drawn corners and shadow intact, so the window stands apart from the page's background.
-- **Light mode,** in every scene and for every visitor. Dark mode is shown as an option: a *Light / Dark* choice under the Themes scene switches it, with no script.
-- **The scenes:** the hero (an essay open in the editor, focus mode off), Spotlight finding a folder as you type, the Theme panel (light, and dark behind the choice), and the Files panel.
+- **The window alone:** the app's own window at its real size, its rounded corners kept, shown large, with a soft shadow under it, or a soft glow for a dark window on a dark page (D-176).
+- **No banding:** served as AVIF 4:4:4 with a WebP fallback, at 1440 and 720 pixels wide, with width and height set. Quality wins over size.
+- **Light mode,** in every scene but the themes.
+- **The scenes:** the hero (an essay open in the editor, focus mode off), Spotlight finding a folder as you type, the Files panel, and the same note in every built-in theme, chosen by swatches and a *Light / Dark* switch under it, with no script.
 - **No scrollbar** in any scene: each is captured at rest, the pointer away and nothing scrolling, when the app's minimal scrollbar is hidden.
-- **No banding:** composited at full precision and served as AVIF 4:4:4 with a WebP fallback, at 1920 and 960 pixels wide, with width and height set. Quality wins over size.
 - **The same sample notes** throughout: an essay, a reading list, a garden, a journal, projects and recipes, written for the demo and never anyone's own.
 - **At most one highlight** where the reader must look.
 - **Alt text** that says what the image shows, and a caption when it adds something.
-- **Kept current:** `apps/desktop/e2e/site-catalog.spec.ts` captures the window (`webContents.capturePage`, never the screen) and `tools/site/scenes.py` makes the scenes. On CI the screenshot catalogue can regenerate them for each release (`tools/review/catalogs.mjs`, a `site` catalogue). A check will fail if a view a screenshot shows changed after the screenshot was taken.
+- **Kept current:** `apps/desktop/e2e/site-catalog.spec.ts` captures the window (`webContents.capturePage`, never the screen) and `tools/site/scenes.py` cuts it out and encodes it. On CI the screenshot catalogue can regenerate them for each release (`tools/review/catalogs.mjs`, a `site` catalogue). A check will fail if a view a screenshot shows changed after the screenshot was taken.
 
 <h2 id="how-the-site-is-built">How the site is built</h2>
 

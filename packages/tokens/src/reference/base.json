@@ -807,6 +807,20 @@
     },
     "shadow": {
       "$type": "shadow",
+      "siteWindow": {
+        "$description": "A screenshot of the app's window on the product site (D-176): a soft drop shadow.",
+        "$value": [
+          { "color": "#0000001a", "offsetX": "0px", "offsetY": "2px", "blur": "6px", "spread": "0px" },
+          { "color": "#00000029", "offsetX": "0px", "offsetY": "24px", "blur": "64px", "spread": "0px" }
+        ]
+      },
+      "siteGlow": {
+        "$description": "A dark window on a dark page (D-176): a light, low-opacity, wide glow so it stands out.",
+        "$value": [
+          { "color": "#ffffff1f", "offsetX": "0px", "offsetY": "0px", "blur": "0px", "spread": "1px" },
+          { "color": "#ffffff1a", "offsetX": "0px", "offsetY": "0px", "blur": "96px", "spread": "8px" }
+        ]
+      },
       "0": {
         "$value": {
           "color": "#00000000",

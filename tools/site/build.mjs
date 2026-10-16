@@ -109,7 +109,9 @@ export function visibleText(html) {
   const decode = (s) => s.replace(/&#x27;|&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
   const blocks = main
     .replace(/<(svg|script|style)\b[\s\S]*?<\/\1>/g, " ")
-    .split(/<\/?(?:p|h[1-6]|li|a|section|div|ul|ol|blockquote|figure|picture|td|th)\b[^>]*>/)
+    // Text only a screen reader hears (data-sr-only: a group's name, a swatch's theme) isn't on the page.
+    .replace(/<(legend|span)\b[^>]*data-sr-only[^>]*>[\s\S]*?<\/\1>/g, " ")
+    .split(/<\/?(?:p|h[1-6]|li|a|section|div|ul|ol|blockquote|figure|picture|td|th|fieldset|legend|label)\b[^>]*>/)
     .map((b) => decode(b.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim())
     .filter(Boolean);
   return { words: blocks.reduce((n, b) => n + count(b), 0), blocks };

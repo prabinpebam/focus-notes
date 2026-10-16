@@ -13,6 +13,3 @@ Focus Notes collects nothing about you, and neither does this site.
 
 Questions about privacy? [Open an issue on GitHub](https://github.com/prabinpebam/focus-notes/issues).
 
-## Credits
-
-The desktop photo behind the screenshots is by Cristina Gottardi, from Unsplash, used under the Unsplash License.

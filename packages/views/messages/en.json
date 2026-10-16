@@ -1641,7 +1641,6 @@
   "site.tile.offline": "Works offline",
   "site.tile.open": "Free and open source",
   "site.tile.private": "Private notes stay private",
-  "site.footer.credit": "Desktop photo by Cristina Gottardi on Unsplash.",
   "site.tile.tracking": "Nothing tracked",
   "site.scheme.label": "Show the app in",
   "site.scheme.light": "Light",
@@ -1653,5 +1652,7 @@
   "demo.region": "Demo",
   "demo.resetting": "Putting the sample notes back…",
   "demo.aboutText": "This is a demo. Your notes stay in this browser and nothing is sent anywhere. The desktop app saves notes as Markdown in your own GitHub repositories, publishes public ones, and seals private ones.",
-  "site.help.redirect": "Help is in the Focus Notes docs. Go to Help"
+  "site.help.redirect": "Help is in the Focus Notes docs. Go to Help",
+  "site.themes.light": "Light themes",
+  "site.themes.dark": "Dark themes"
 }

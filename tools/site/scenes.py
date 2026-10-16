@@ -1,58 +1,72 @@
 """
-The product site's desktop scenes (D-176): each app capture from the site catalogue
-(apps/desktop/e2e/site-catalog.spec.ts, the app's own window with its drawn corners and shadow in
-an alpha margin) set on the wallpaper as a 1920 x 1080 desktop, at the window's real 1x size, centred.
+The product site's screenshots (D-169, D-176): the app's own window from the site catalogue
+(apps/desktop/e2e/site-catalog.spec.ts), cut out of its transparent shadow margin with its rounded
+corners kept as transparency, so the page draws the window's shadow (or, for a dark window on a dark
+page, its glow) from tokens.
 
-Compositing is in floating point; each scene is written once per width as AVIF (4:4:4, high
-quality: no chroma subsampling, so the sky and the focus-mode fades keep smooth gradients) and as
-WebP (quality 94) for browsers without AVIF, at 1920 and 960 pixels wide. Quality wins over size.
+Each is written once per width, 1440 (the window's real size) and 720, as AVIF (4:4:4, high quality:
+no chroma subsampling, so the focus-mode fades keep smooth gradients) and as WebP (quality 94) for
+browsers without AVIF, both with alpha. Quality wins over size.
 
     python tools/site/scenes.py [--captures test-results/site-capture] [--out site/media]
 
-The wallpaper is site/media/source/wallpaper-1920.webp: "Photo by Cristina Gottardi on Unsplash"
-(Unsplash License), cropped to 16:9 from the original and resized once with Lanczos (D-176).
+Only the scenes site/landing.json shows are written.
 """
 import argparse
 import json
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
-WIDTHS = (1920, 960)
-# The dark scenes' wallpaper is a little dimmer, so a dark window reads against it; the photo stays.
-DARK_DIM = 0.72
+WIDTHS = (1440, 720)
+# The window's drawn corner radius at 1x (the app's radius.window), and the supersampling for its edge.
+RADIUS = 20
+SUPER = 4
 
 
-def load(path: Path) -> np.ndarray:
-    return np.asarray(Image.open(path).convert("RGBA"), dtype=np.float64) / 255.0
+def window_only(capture: Image.Image) -> Image.Image:
+    """The window without its shadow margin: the opaque body's box, its corners rounded by alpha."""
+    rgba = capture.convert("RGBA")
+    alpha = np.asarray(rgba)[..., 3]
+    # The margin is the same on every side: where the opaque body starts across the middle row, past the
+    # window's hairline edge (the page's shadow draws the edge instead).
+    m = int(np.nonzero(alpha[alpha.shape[0] // 2] == 255)[0].min()) + 1
+    box = (m, m, rgba.width - m, rgba.height - m)
+    win = rgba.crop(box)
+    w, h = win.size
+    mask = Image.new("L", (w * SUPER, h * SUPER), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, w * SUPER - 1, h * SUPER - 1), radius=RADIUS * SUPER, fill=255)
+    mask = mask.resize((w, h), Image.Resampling.LANCZOS)
+    a = (np.asarray(win)[..., 3].astype(np.float64) * np.asarray(mask, dtype=np.float64) / 255.0).round().astype(np.uint8)
+    out = np.asarray(win).copy()
+    out[..., 3] = a
+    return Image.fromarray(out)
 
 
-def compose(wall: np.ndarray, window: np.ndarray, dark: bool) -> np.ndarray:
-    out = wall[..., :3] * (DARK_DIM if dark else 1.0)
-    h, w = window.shape[:2]
-    top = (out.shape[0] - h) // 2
-    left = (out.shape[1] - w) // 2
-    region = out[top : top + h, left : left + w]
-    alpha = window[..., 3:4]
-    # The capture is straight (not premultiplied) alpha.
-    out[top : top + h, left : left + w] = window[..., :3] * alpha + region * (1 - alpha)
-    return out
-
-
-def save(rgb: np.ndarray, out: Path, name: str) -> dict:
-    full = Image.fromarray(np.clip(np.rint(rgb * 255.0), 0, 255).astype(np.uint8))
+def save(img: Image.Image, out: Path, name: str) -> dict:
     sizes = {}
     for width in WIDTHS:
-        img = full if width == full.width else full.resize((width, round(full.height * width / full.width)), Image.Resampling.LANCZOS)
+        scaled = img if width == img.width else img.resize((width, round(img.height * width / img.width)), Image.Resampling.LANCZOS)
         avif = out / f"{name}-{width}.avif"
         webp = out / f"{name}-{width}.webp"
-        img.save(avif, "AVIF", quality=90, subsampling="4:4:4", speed=2)
-        img.save(webp, "WEBP", quality=94, method=6)
-        sizes[width] = {"avif": avif.stat().st_size, "webp": webp.stat().st_size}
-    full.save(ROOT / "test-results" / "site-scenes" / f"{name}.png")
+        scaled.save(avif, "AVIF", quality=90, subsampling="4:4:4", speed=2)
+        scaled.save(webp, "WEBP", quality=94, alpha_quality=100, method=6, exact=True)
+        sizes[width] = {"avif": avif.stat().st_size, "webp": webp.stat().st_size, "size": scaled.size}
+    img.save(ROOT / "test-results" / "site-scenes" / f"{name}.png")
     return sizes
+
+
+def scenes(landing: dict) -> set:
+    names = {landing["hero"]["scene"]}
+    for f in landing["features"]:
+        if f.get("image"):
+            names.add(f["image"]["scene"])
+        for mode in ("light", "dark"):
+            for t in f.get("themes", {}).get(mode, []):
+                names.add(f"theme-{t['id']}")
+    return names
 
 
 def main() -> None:
@@ -63,19 +77,13 @@ def main() -> None:
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     (ROOT / "test-results" / "site-scenes").mkdir(parents=True, exist_ok=True)
-    wall = load(ROOT / "site" / "media" / "source" / "wallpaper-1920.webp")
-    assert wall.shape[:2] == (1080, 1920), "the wallpaper is 1920 x 1080"
-    # Only the scenes the landing page shows (site/landing.json), so nothing unused is published.
-    landing = json.loads((ROOT / "site" / "landing.json").read_text(encoding="utf-8-sig"))
-    images = [landing["hero"]] + [i for f in landing["features"] for i in (f["image"], f.get("dark")) if i]
-    wanted = {i["scene"] for i in images}
+    wanted = scenes(json.loads((ROOT / "site" / "landing.json").read_text(encoding="utf-8-sig")))
     report = {}
-    for capture in sorted(Path(a.captures).glob("*.png")):
-        name = capture.stem
-        if name not in wanted:
-            continue
-        rgb = compose(wall, load(capture), dark=name.endswith("-dark"))
-        report[name] = save(rgb, out, name)
+    for name in sorted(wanted):
+        capture = Path(a.captures) / f"{name}.png"
+        if not capture.exists():
+            raise SystemExit(f"No capture for {name}: run the site catalogue (apps/desktop/e2e/site-catalog.spec.ts)")
+        report[name] = save(window_only(Image.open(capture)), out, name)
     print(json.dumps(report, indent=1))
 
 

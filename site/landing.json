@@ -1,11 +1,11 @@
 {
-  "$comment": "The landing page (D-174, D-176): visual first, a few words each. The hero, up to five featured sections, and the closing line; the tiles and the buttons are in the view document (packages/views/views/siteLanding.view.json). Each image is a desktop scene: the app's window (apps/desktop/e2e/site-catalog.spec.ts) on the wallpaper (tools/site/scenes.py), always in light mode; the Themes section offers the dark one behind a Light / Dark choice. WP-10.5 writes the final words.",
+  "$comment": "The landing page (D-174, D-176): visual first, a few words each. The hero, up to five featured sections, and the closing line; the tiles and the buttons are in the view document (packages/views/views/siteLanding.view.json). Each image is the app's own window (apps/desktop/e2e/site-catalog.spec.ts, cut out by tools/site/scenes.py), light mode unless a section says otherwise. The Themes section shows the same note in every built-in theme, chosen by swatches with a Light / Dark switch. WP-10.5 writes the final words.",
   "draft": "WP-10.5",
   "headline": "Write. Nothing else.",
   "line": "A calm writing app. Your notes stay plain files in your own GitHub.",
   "hero": {
     "scene": "note-light",
-    "alt": "Focus Notes on a mountain desktop: an essay, “On writing slowly”, open in the quiet, full-window editor."
+    "alt": "Focus Notes with an essay, “On writing slowly”, open in the quiet, full-window editor."
   },
   "features": [
     {
@@ -22,14 +22,52 @@
       "id": "themes",
       "eyebrow": "Themes",
       "headline": "Make it yours.",
-      "line": "Paper, Sepia, Harbor, Forest and more. Light by default, dark when you like.",
-      "image": {
-        "scene": "themes-light",
-        "alt": "The Theme panel beside a note, with light and dark themes to choose from and the text contrast shown."
-      },
-      "dark": {
-        "scene": "themes-dark",
-        "alt": "The same note and Theme panel in dark mode, with the Ink theme chosen."
+      "line": "Ten built-in themes, light and dark. Pick a swatch to see one.",
+      "themes": {
+        "light": [
+          {
+            "id": "paper",
+            "label": "Paper"
+          },
+          {
+            "id": "sepia",
+            "label": "Sepia"
+          },
+          {
+            "id": "harbor-light",
+            "label": "Harbor"
+          },
+          {
+            "id": "forest-light",
+            "label": "Forest"
+          },
+          {
+            "id": "contrast-light",
+            "label": "High contrast"
+          }
+        ],
+        "dark": [
+          {
+            "id": "ink",
+            "label": "Ink"
+          },
+          {
+            "id": "dusk",
+            "label": "Dusk"
+          },
+          {
+            "id": "harbor-dark",
+            "label": "Harbor"
+          },
+          {
+            "id": "forest-dark",
+            "label": "Forest"
+          },
+          {
+            "id": "contrast-dark",
+            "label": "High contrast"
+          }
+        ]
       }
     },
     {

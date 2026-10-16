@@ -120,13 +120,14 @@ export interface SitePageModel extends Record<string, unknown> { title: PMNode[]
 export const sitePageModel = (c: SiteContent): SitePageModel => ({ title: c.title, body: c.body });
 
 /**
- * A desktop scene on the site (D-176): the app's window, in light mode, on the wallpaper, made by
+ * A screenshot on the site (D-176): the app's own window, made by
  * tools/site/scenes.py as `media/<scene>-<width>.avif` and `.webp` at each of SCENE_WIDTHS, all
- * SCENE_SIZE. Every scene is light, whatever the visitor's own setting.
+ * SCENE_SIZE: the window alone, its corners kept, with no wallpaper (D-176). Light mode unless a
+ * section shows the themes.
  */
 export interface SiteImage { scene: string; alt: string }
-export const SCENE_WIDTHS = [960, 1920] as const;
-export const SCENE_SIZE = { width: 1920, height: 1080 } as const;
+export const SCENE_WIDTHS = [720, 1440] as const;
+export const SCENE_SIZE = { width: 1440, height: 900 } as const;
 /** What a SiteFigure is given: its sources at each width, and its size. */
 export interface SiteFigureModel { src: string; srcSet: string; avifSet: string; sizes: string; alt: string; width: number; height: number }
 const sceneSet = (scene: string, ext: string) => SCENE_WIDTHS.map((w) => `media/${scene}-${w}.${ext} ${w}w`).join(", ");
@@ -135,6 +136,9 @@ export const SCENE_SIZES = "(min-width: 1200px) 1200px, 100vw";
 export function sceneFigure(i: SiteImage): SiteFigureModel {
   return { src: `media/${i.scene}-${SCENE_WIDTHS[0]}.webp`, srcSet: sceneSet(i.scene, "webp"), avifSet: sceneSet(i.scene, "avif"), sizes: SCENE_SIZES, alt: i.alt, ...SCENE_SIZE };
 }
+export interface SiteThemeEntry { id: string; label: string }
+/** One theme in the Themes section's model: its swatch and its screenshot. */
+export interface SiteThemeModel extends SiteFigureModel { id: string; label: string; scheme: "light" | "dark" }
 /** site/landing.json (D-174): the hero, up to five featured sections, and the closing line. */
 export interface LandingContent {
   /** Which work package writes its final words. */
@@ -142,8 +146,11 @@ export interface LandingContent {
   headline: string;
   line: string;
   hero: SiteImage;
-  /** `dark`: the same scene in dark mode, behind a Light / Dark choice under it (D-176). */
-  features: { id: string; eyebrow?: string; headline: string; line: string; image: SiteImage; dark?: SiteImage }[];
+  /**
+   * `themes`: every built-in theme, light and dark, each shown by its swatch (D-176); its screenshot is
+   * the scene `theme-<id>`. A section has an image or themes.
+   */
+  features: { id: string; eyebrow?: string; headline: string; line: string; image?: SiteImage; themes?: { light: SiteThemeEntry[]; dark: SiteThemeEntry[] } }[];
   closing: string;
 }
 /** The landing page (`vm.siteLanding`, HLP-01, D-174): the hero, each feature with its anchor, and the closing line. */
@@ -152,7 +159,7 @@ export interface LandingModel extends Record<string, unknown> {
   headline: string;
   line: string;
   hero: SiteFigureModel;
-  features: { key: string; anchor: string; hasEyebrow: boolean; eyebrow: string; headline: string; line: string; image: SiteFigureModel; hasDark: boolean; dark: SiteFigureModel }[];
+  features: { key: string; anchor: string; hasEyebrow: boolean; eyebrow: string; headline: string; line: string; image: SiteFigureModel; hasThemes: boolean; themes: SiteThemeModel[] }[];
   closingAnchor: string;
   closing: string;
 }
@@ -177,8 +184,14 @@ export function landingModel(c: LandingContent): LandingModel {
     limit(`${f.id}'s headline`, f.headline, LANDING_LIMITS.featureHeadline);
     limit(`${f.id}'s line`, f.line, LANDING_LIMITS.line);
     limit(`${f.id}'s eyebrow`, f.eyebrow, LANDING_LIMITS.eyebrow);
-    const light = image(f.id, f.image);
-    return { key: f.id, anchor: f.id, hasEyebrow: Boolean(f.eyebrow), eyebrow: f.eyebrow ?? "", headline: f.headline, line: f.line, image: light, hasDark: Boolean(f.dark), dark: f.dark ? image(`${f.id}'s dark`, f.dark) : light };
+    const themes: SiteThemeModel[] = (["light", "dark"] as const).flatMap((scheme) => (f.themes?.[scheme] ?? []).map((t) => {
+      if (!ANCHOR.test(t.id) || !t.label?.trim()) over.push(`${f.id}'s theme "${t.id}" needs an ID and a name`);
+      return { ...image(t.id, { scene: `theme-${t.id}`, alt: `The same note in the ${t.label} theme, ${scheme}.` }), id: t.id, label: t.label, scheme };
+    }));
+    if (themes.length > 16) over.push(`${f.id} has ${themes.length} themes (at most 8 light and 8 dark)`);
+    if (!f.image && !themes.length) over.push(`${f.id} needs an image or themes`);
+    const shown = f.image ? image(f.id, f.image) : themes[0]!;
+    return { key: f.id, anchor: f.id, hasEyebrow: Boolean(f.eyebrow), eyebrow: f.eyebrow ?? "", headline: f.headline, line: f.line, image: shown, hasThemes: themes.length > 0, themes };
   });
   if (over.length) throw new Error(`site/landing.json: ${over.join("; ")} (D-174).`);
   return { heroAnchor: LANDING_HERO, headline: c.headline, line: c.line, hero, features, closingAnchor: LANDING_CLOSING, closing: c.closing };
@@ -197,7 +210,7 @@ export const SITE_VIEW_MODELS = [
     headline: { type: "string" },
     line: { type: "string" },
     hero: IMAGE,
-    features: { type: "array", items: { type: "object", properties: { key: { type: "string" }, anchor: { type: "string" }, hasEyebrow: { type: "boolean" }, eyebrow: { type: "string" }, headline: { type: "string" }, line: { type: "string" }, image: IMAGE, hasDark: { type: "boolean" }, dark: IMAGE } } },
+    features: { type: "array", items: { type: "object", properties: { key: { type: "string" }, anchor: { type: "string" }, hasEyebrow: { type: "boolean" }, eyebrow: { type: "string" }, headline: { type: "string" }, line: { type: "string" }, image: IMAGE, hasThemes: { type: "boolean" }, themes: { type: "array", items: { type: "object" } } } } },
     closingAnchor: { type: "string" },
     closing: { type: "string" },
   }),
