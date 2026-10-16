@@ -307,12 +307,18 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     const env = { FOCUS_NOTES_WARMUP: "1", FOCUS_NOTES_CHROMIUM_SWITCHES: "disable-features=CalculateNativeWinOcclusion,disable-backgrounding-occluded-windows" };
     // A throwaway launch and round of first uses first (D-178): on a fresh runner the very first app
     // launches pay for cold OS disk and font caches (long frames with no script and almost no
-    // rendering, D-151), which made this test pass or fail by where the shard put it. Logged, not gated,
-    // so a real cold-start regression stays visible.
+    // rendering, D-151), which made this test pass or fail by where the shard put it. Logged, and held
+    // to a loose ceiling below.
     const cold = await start(env);
     const c = await useRounds(cold.page, 1);
-    console.log(`[D-178] cold (not gated): input to next paint ${JSON.stringify(c.results)}; long tasks ${JSON.stringify(c.long)}; worst inputs ${JSON.stringify(c.worstOf)}`);
+    console.log(`[D-178] cold (ceiling 300 ms): input to next paint ${JSON.stringify(c.results)}; long tasks ${JSON.stringify(c.long)}; worst inputs ${JSON.stringify(c.worstOf)}`);
     await quit(cold);
+    // A loose ceiling on the cold round (D-178): about three times the cold first uses CI shows, so a
+    // real cold-start regression fails while a fresh runner's variance passes. Soft, so the warm
+    // numbers are still measured and logged.
+    const coldAll = Object.values(c.results).flat().sort((x, y) => x - y);
+    const coldP95 = coldAll[Math.min(coldAll.length - 1, Math.floor(coldAll.length * 0.95))]!;
+    expect.soft(coldP95, "cold first uses, input to next paint p95 (D-178 ceiling 300 ms)").toBeLessThanOrEqual(300);
     const l = await start(env);
     const { page } = l;
     const mod = process.platform === "darwin" ? "Meta" : "Control";
