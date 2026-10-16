@@ -2,6 +2,17 @@
 
 Instructions for AI coding agents working in this repository.
 
+## Project context: read this first (the owner, 16 Oct)
+
+- **This is a development-stage hobby project by one person.** It isn't a corporate project. Nobody but the owner looks at the code, the app or the websites.
+- **Everything here exists so the owner can move fast.** They review by hand and push several parts forward at once. Process is there to help that, never to slow it.
+- **Don't gate on artificial restrictions.** There's no audience, no press and no reputation to protect. Anything can go live; almost no one will visit.
+- **Do what the owner asks, directly.** When they ask for something (publish it, show it, change it), do that first and in the simplest way. Don't hold it behind checks that don't apply to it. If a rule below seems to block a direct request, the request wins; say what you skipped in one line.
+- **What still matters, because it's real:**
+  - the owner's own notes are never lost or overwritten (data safety);
+  - private notes and secrets never become public;
+  - the owner's computer isn't slowed down or taken over (close every app instance you start).
+
 ## What this repository is
 
 Focus Notes, a calm, Markdown-native writing app. **Status: M0 (walking skeleton) is built and being verified; M1 is next.** Work follows [the agentic loop](documentations/plan/agentic-loop.html) over [`work-graph.json`](documentations/plan/work-graph.json).
