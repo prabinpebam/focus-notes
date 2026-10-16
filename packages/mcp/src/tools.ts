@@ -7,6 +7,7 @@
 import { agentPath, rootOf, untrustedNote, withinSize, type AgentRoot } from "@focus-notes/core/agents";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
 import { parseAtx } from "@focus-notes/core/scan";
+import { headingAnchor } from "@focus-notes/core/deep-link";
 import { Call, Refusal, fsRefusal, type Entry, type McpEnv } from "./notes.ts";
 
 export interface ToolResult {
@@ -129,7 +130,7 @@ function headings(md: string): Heading[] {
     if (l.length > MAX_HEADING_LINE) return;
     const h = parseAtx(l);
     if (!h || h.text === undefined) return;
-    const base = h.text.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, "").trim().replace(/\s+/g, "-");
+    const base = headingAnchor(h.text);
     const n = seen.get(base) ?? 0;
     seen.set(base, n + 1);
     out.push({ level: h.level, text: h.text, anchor: n ? `${base}-${n}` : base, line });
