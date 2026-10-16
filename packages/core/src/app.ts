@@ -21,6 +21,7 @@ import { registerSync, NO_SYNC, SyncFailed, saveStateOf, syncProblemAction, type
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
+import { registerDeepLinks } from "./deep-link-app.ts";
 import { registerHeld, HELD_CLOSED, type HeldUiState } from "./held-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
@@ -988,6 +989,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const menuBar = registerMenuBar({ store, commands, catalog, platform: bridge.platform, ...(bridge.nativeWindow ? { bridge: bridge.nativeWindow } : {}) });
   const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now });
+  const deepLinks = registerDeepLinks({ bridge, commands, openAt: (path, at) => spotlight.openAt(path, at) });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
   registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
@@ -1313,6 +1315,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         const path = appState.lastNotePath ?? (await bridge.defaultNotePath());
         await load(path);
         if (store.state.note.status === "error" && appState.lastNotePath) await load(await bridge.defaultNotePath());
+        // A link the app was opened with goes on from the note it opened (D-165).
+        void deepLinks.take();
       }
       // What a crash left unsaved was put back before anything was read (QLT-03); say so, calmly.
       const restored = (await bridge.journal?.restored().catch(() => undefined)) ?? [];

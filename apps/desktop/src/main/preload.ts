@@ -142,6 +142,15 @@ contextBridge.exposeInMainWorld("focusNotes", {
     reportProblem: (timings: unknown) => ipcRenderer.invoke("diagnostics:reportProblem", timings),
   },
   // Save and sync with the user's own Git (WP-3.3): intent-level only, never a Git command.
+  // Read-only deep links (D-165): the main process checks and resolves them; the window only takes them.
+  deepLinks: {
+    take: () => ipcRenderer.invoke("deeplink:take"),
+    onArrive: (listener: () => void) => {
+      const handler = () => listener();
+      ipcRenderer.on("deeplink:arrived", handler);
+      return () => ipcRenderer.removeListener("deeplink:arrived", handler);
+    },
+  },
   sync: {
     now: (reason: "save" | "switch") => ipcRenderer.invoke("sync:now", reason),
     status: () => ipcRenderer.invoke("sync:status"),

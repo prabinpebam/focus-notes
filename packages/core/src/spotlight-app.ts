@@ -88,7 +88,7 @@ interface SettingDef {
 const next = <T,>(list: readonly T[], at: T) => list[(list.indexOf(at) + 1) % list.length]!;
 const ICON_OF_GROUP: Partial<Record<GroupId, string>> = { recent: "history", help: "info" };
 
-export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): void } {
+export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): void; openAt(path: string, at: { heading?: { index: number; text: string } }): Promise<void> } {
   const { store, commands, viewModels, catalog, bridge } = ctx;
   const sp = () => store.state.ui.spotlight;
   const set = (patch: Partial<SpotlightState>) => store.update((s) => ({ ...s, ui: { ...s.ui, spotlight: { ...s.ui.spotlight, ...patch } } }));
@@ -750,6 +750,8 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   });
 
   return {
+    /** Opens a note and then goes to a heading in it, once the editor is ready (deep links, D-165). */
+    openAt,
     attach(s: SpotlightSearch): void {
       search = s;
       s.setItems("command", commandItems());

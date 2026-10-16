@@ -46,3 +46,5 @@ export * from "./diagnostics.ts";
 export * from "./diagnostics-app.ts";
 export * from "./held.ts";
 export * from "./held-app.ts";
+export * from "./deep-link.ts";
+export * from "./deep-link-app.ts";

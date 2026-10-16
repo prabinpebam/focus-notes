@@ -7,6 +7,7 @@
  * hidden names, and resolves every folder it enters.
  */
 import { lstat, opendir, readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import {
   agentPath, agentSharing, checkAgent, readableRoots, rootDir, rootOf, withinFolder,
@@ -96,7 +97,8 @@ export class Call {
     if (folder !== undefined) return [folder];
     const out: string[] = [];
     for (const root of roots) {
-      if (!this.readable().includes(root)) continue;
+      // A root that isn't there (a clone without its private repository, FRE-06) has nothing to list.
+      if (!this.readable().includes(root) || !existsSync(join(this.env.workspace, ...rootDir(root).split("/")))) continue;
       const dir = rootDir(root);
       if (this.perms.folders === "all") out.push(dir);
       else for (const f of this.perms.folders) if (rootOf(f) === root) out.push(f === dir || withinFolder(f, dir) ? f : dir);

@@ -121,7 +121,7 @@ export async function setWindowActive(app: ElectronApplication, active: boolean)
  */
 /** Whether this worker printed the app's compositing yet (D-121). */
 let compositingShown = false;
-export async function launch(dirs: { userData: string; docs: string }, extraEnv: Record<string, string> = {}, opts: { firstRun?: boolean } = {}): Promise<Launched> {
+export async function launch(dirs: { userData: string; docs: string }, extraEnv: Record<string, string> = {}, opts: { firstRun?: boolean; args?: string[] } = {}): Promise<Launched> {
   const log: string[] = [];
   const stateFile = join(dirs.userData, "state.json");
   if (!opts.firstRun && !existsSync(stateFile)) writeFileSync(stateFile, JSON.stringify({ version: 1, firstRun: "done" }));
@@ -139,7 +139,8 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
   // FOCUS_NOTES_E2E_EXE runs the packaged app (release\win-unpacked\focus-notes.exe) instead of the build.
   const exe = process.env.FOCUS_NOTES_E2E_EXE ? await harnessExe(process.env.FOCUS_NOTES_E2E_EXE) : undefined;
   const app = await electron.launch({
-    ...(exe ? { executablePath: exe, args: [] } : { args: [join(import.meta.dirname, "..", "out", "main", "main.mjs")] }),
+    // Extra arguments: a deep link the app is opened with (D-165).
+    ...(exe ? { executablePath: exe, args: [...(opts.args ?? [])] } : { args: [join(import.meta.dirname, "..", "out", "main", "main.mjs"), ...(opts.args ?? [])] }),
     // The warm-up after start is off in journeys, so their timing and focus stay the same (PRF-10).
     // Never the computer's focus (D-104 (7)): the windows open inactive, and the app keeps its own "active".
     env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_WARMUP: "0", FOCUS_NOTES_E2E: "1", ...extraEnv },

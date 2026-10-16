@@ -5,7 +5,11 @@
  * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
-import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
+import { mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
+import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
+import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
+import type { ResolvedDeepLink } from "@focus-notes/core";
+import { runCli } from "../cli/run.ts";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -63,6 +67,28 @@ const dataFile = (f: DataFile) => join(app.getPath("userData"), f);
 app.setPath("sessionData", join(app.getPath("userData"), CHROMIUM_FOLDERS.session));
 // Chromium's crash database too (`Crashpad`, made on macOS and Linux): nothing in it is ever sent.
 app.setPath("crashDumps", join(app.getPath("sessionData"), "Crashpad"));
+
+// ---- the command-line tool (WP-7.3, D-165) ----
+// Released builds can't run Electron as Node, so the app's own executable runs the commands:
+// `focus-notes --cli <command> …` (the launcher in the app's resources adds `--cli`). Only as the very
+// first argument, and never alongside a deep link, so a link can't turn into a command. No window,
+// no single-instance lock, no watcher: the command runs, and the process exits with its code.
+{
+  const at = process.argv.indexOf("--cli");
+  if (at === (app.isPackaged ? 1 : 2) && !process.argv.some((a) => /^focus-notes:/i.test(a))) {
+    const code = await runCli(process.argv.slice(at + 1), {
+      dataDir: app.getPath("userData"),
+      defaultWorkspace: resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPath("documents"), "Focus Notes")),
+      stdin: process.stdin, stdout: process.stdout, stderr: process.stderr,
+      // `open`: the link goes to the app through the system, as any deep link does.
+      openUrl: (url) => shell.openExternal(url),
+    }).catch(() => 1);
+    await new Promise((r) => process.stdout.write("", r));
+    app.exit(code);
+    // Nothing below runs for a command.
+    await new Promise(() => {});
+  }
+}
 /** Where a new workspace goes unless another folder is chosen: Documents/Focus Notes. */
 const defaultHome = () => resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPath("documents"), "Focus Notes"));
 /** The workspace the first run opened (D-98), kept by the main process only: the renderer can't name a folder. */
@@ -900,6 +926,12 @@ async function slowSeam(channel: string): Promise<void> {
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("note:read", async (p) => (await readParsed(notePath(p))).text);
+  // The link the app was opened with (or the latest one), taken once (D-165).
+  handle("deeplink:take", async () => {
+    const l = pendingLink;
+    pendingLink = undefined;
+    return l ? resolveDeepLink(l) : undefined;
+  });
   // The search index's reads (D-107): a batch per call, past the snapshot, which is for opened notes.
   handle("notes:read", async (ps) => {
     if (!Array.isArray(ps) || ps.length > NOTES_PER_READ) throw new Error(`Up to ${NOTES_PER_READ} note paths are required`);
@@ -1517,6 +1549,33 @@ function watchWorkspace(win: () => BrowserWindow | undefined): TreeWatcher | und
 
 let mainWindow: BrowserWindow | undefined;
 let watcher: TreeWatcher | undefined;
+
+// ---- deep links (WP-7.3, AGT-06, D-165) ----
+// Read-only, and accepted only in their exact shape (`parseDeepLink`). Windows and Linux pass them
+// as arguments (at start, or a second instance's); macOS sends open-url. Only a packaged app
+// registers the scheme: never development builds or journeys, which mustn't change the computer.
+let pendingLink: DeepLink | undefined = process.argv.map(parseDeepLink).find((l): l is DeepLink => l !== undefined);
+const linkArrived = (l: DeepLink | undefined) => {
+  if (!l) return;
+  pendingLink = l;
+  mainWindow?.webContents.send("deeplink:arrived");
+};
+if (app.isPackaged && !journey && primary) app.setAsDefaultProtocolClient("focus-notes");
+app.on("open-url", (e, url) => {
+  e.preventDefault();
+  linkArrived(parseDeepLink(url));
+});
+/** A link's note, only if it's a note that's there in the open workspace's roots (never through a link out of them). */
+async function resolveDeepLink(l: DeepLink): Promise<ResolvedDeepLink | undefined> {
+  if (l.kind === "search") return l;
+  const id = agentRootOf(l.path);
+  const root = isWorkspace() ? roots().find((r) => r.id === id) : undefined;
+  if (!id || !root) return undefined;
+  const abs = join(root.path, ...l.path.slice(agentRootDir(id).length + 1).split("/"));
+  const [real, rootReal] = await Promise.all([realpath(abs).catch(() => undefined), realpath(root.path).catch(() => undefined)]);
+  if (!real || !rootReal || !inside(rootReal, real) || real === rootReal || !(await stat(real).then((s) => s.isFile(), () => false))) return undefined;
+  return { kind: "open", path: abs, ...(l.heading ? { heading: l.heading } : {}) };
+}
 app.whenReady().then(async () => {
   chosenHome = readChosenHome();
   readFirstRun();
@@ -1542,7 +1601,8 @@ app.whenReady().then(async () => {
   setTimeout(() => (startGit(), windowFrame?.ready()), 3000);
   // Fetching when the window becomes active (Desktop and Git → Save and sync, step 5).
   mainWindow.on("focus", () => gitSync?.focused());
-  app.on("second-instance", () => {
+  app.on("second-instance", (_e, argv) => {
+    linkArrived(argv.map(parseDeepLink).find((l): l is DeepLink => l !== undefined));
     if (mainWindow?.isMinimized()) mainWindow.restore();
     mainWindow?.focus();
   });
