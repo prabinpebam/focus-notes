@@ -50,6 +50,9 @@ importers:
       '@electron/fuses':
         specifier: 1.8.0
         version: 1.8.0
+      '@focus-notes/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
       '@focus-notes/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -126,6 +129,15 @@ importers:
       vite:
         specifier: 8.3.3
         version: 8.3.3(@types/node@24.19.1)(esbuild@0.28.2)(jiti@2.7.0)
+
+  packages/cli:
+    dependencies:
+      '@focus-notes/core':
+        specifier: workspace:*
+        version: link:../core
+      '@focus-notes/mcp':
+        specifier: workspace:*
+        version: link:../mcp
 
   packages/core:
     dependencies:

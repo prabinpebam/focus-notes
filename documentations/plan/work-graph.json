@@ -1626,7 +1626,7 @@
         "architecture/agents.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-7.4",
@@ -1654,7 +1654,7 @@
         "design/system/views-as-data.md"
       ],
       "lookahead": false,
-      "status": "planned"
+      "status": "verifying"
     },
     {
       "id": "WP-10.1",

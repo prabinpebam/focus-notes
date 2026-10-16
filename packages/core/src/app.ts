@@ -21,6 +21,8 @@ import { registerSync, NO_SYNC, SyncFailed, saveStateOf, syncProblemAction, type
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
+import { registerDeepLinks } from "./deep-link-app.ts";
+import { registerAgents, AGENTS_IDLE, type AgentsState } from "./agents-app.ts";
 import { registerHeld, HELD_CLOSED, type HeldUiState } from "./held-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
@@ -78,6 +80,8 @@ export interface AppState {
     conflict: ConflictState;
     /** A new public note held out of Git until the writer answers (D-158): its pill and its question. */
     held: HeldUiState;
+    /** Settings → Agents (WP-7.4, D-166). */
+    agents: AgentsState;
     /** Settings (IA-VIEW-SETTINGS): Account and Workspace, with signing out and removing the workspace (FRE-07). */
     settings: SettingsState;
     /** Settings → Sharing and its dialogs: audiences made, changed, and withdrawn (WP-5.3). */
@@ -270,7 +274,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
     focusMode: false,
     compositing: bridge.compositing?.initial === "software" ? "software" : "gpu",
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, held: HELD_CLOSED, settings: SETTINGS_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -1010,6 +1014,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const menuBar = registerMenuBar({ store, commands, catalog, platform: bridge.platform, ...(bridge.nativeWindow ? { bridge: bridge.nativeWindow } : {}) });
   const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now });
+  registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce });
+  const deepLinks = registerDeepLinks({ bridge, openAt: (path, at) => spotlight.openAt(path, at), searchNotes: (q) => spotlight.searchNotes(q) });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
   registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
@@ -1336,6 +1342,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         const path = appState.lastNotePath ?? (await bridge.defaultNotePath());
         await load(path);
         if (store.state.note.status === "error" && appState.lastNotePath) await load(await bridge.defaultNotePath());
+        // A link the app was opened with goes on from the note it opened (D-165).
+        void deepLinks.take();
       }
       // What a crash left unsaved was put back before anything was read (QLT-03); say so, calmly.
       const restored = (await bridge.journal?.restored().catch(() => undefined)) ?? [];

@@ -38,6 +38,11 @@ export interface SpotlightState {
   indexing?: { indexed: number; notes: number };
   /** The mode and query the rows answer (`answerKey`), so a caller can tell the answer is in. */
   answered: string;
+  /**
+   * The query came from a search link (D-165): results only, with no Create note or Find rows and
+   * no quick actions, so a link is never one Enter from a write. Typing makes it the person's own.
+   */
+  fromLink?: boolean;
 }
 export const SPOTLIGHT_CLOSED: SpotlightState = { open: false, mode: "all", everywhere: false, query: "", rows: [], activeId: "", focus: 0, busy: false, answered: "" };
 /** What a set of rows answers: the mode, `##` or not, and the query. */
@@ -88,7 +93,7 @@ interface SettingDef {
 const next = <T,>(list: readonly T[], at: T) => list[(list.indexOf(at) + 1) % list.length]!;
 const ICON_OF_GROUP: Partial<Record<GroupId, string>> = { recent: "history", help: "info" };
 
-export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): void } {
+export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): void; openAt(path: string, at: { heading?: { index: number; text: string } }): Promise<void>; searchNotes(query: string): void } {
   const { store, commands, viewModels, catalog, bridge } = ctx;
   const sp = () => store.state.ui.spotlight;
   const set = (patch: Partial<SpotlightState>) => store.update((s) => ({ ...s, ui: { ...s.ui, spotlight: { ...s.ui.spotlight, ...patch } } }));
@@ -297,7 +302,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     }
     const kinds: readonly SearchKind[] | undefined = s.mode === "notes" ? ["note"] : s.mode === "commands" ? ["command", "setting"] : s.mode === "headings" ? ["heading"] : filters.kinds;
     const top = s.mode === "all";
-    const actions = s.mode === "all" || s.mode === "notes";
+    const actions = (s.mode === "all" || s.mode === "notes") && !s.fromLink;
     if (!search) {
       const titles = s.mode === "notes" || s.mode === "headings" ? [] : localCommandHits(text, kinds);
       return setRows(mergeResults(titles, [], { query: text, top, actions }), false, false);
@@ -334,7 +339,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       dismissDialogs();
     }
     store.update((st) => ({ ...st, ui: { ...st.ui, toolbarOpen: false } }));
-    set({ open: true, mode, everywhere: false, query: s.open ? s.query : "", actions: undefined, focus: s.focus + 1, indexing: indexingOf() });
+    set({ open: true, mode, everywhere: false, query: s.open ? s.query : "", actions: undefined, fromLink: false, focus: s.focus + 1, indexing: indexingOf() });
     void refresh().then(() => measureOpen());
   };
   /**
@@ -353,7 +358,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   const close = () => {
     seq++;
     opening = undefined;
-    set({ open: false, actions: undefined, busy: false });
+    set({ open: false, actions: undefined, busy: false, fromLink: false });
   };
   /** Keypress to a visible panel with its results (SPT-07): from the command to the frame that shows them. */
   const measureOpen = () => {
@@ -399,7 +404,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       const s = sp();
       const query = typeof value === "string" ? value : "";
       const switched = prefixMode(s.mode, s.everywhere, query);
-      set({ ...(switched ?? { query }), actions: undefined });
+      set({ ...(switched ?? { query }), actions: undefined, fromLink: false });
       void refresh();
     },
   });
@@ -428,10 +433,10 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   commands.register({ id: "spotlight.prev", title: "command.spotlight.prev", shortcut: { default: "Up", handledBy: scope }, layer: "basic", group: "spotlight", run: step(-1) });
   commands.register({ id: "spotlight.run", title: "command.spotlight.run", shortcut: { default: "Enter", handledBy: scope }, layer: "basic", group: "spotlight", run: () => runActive(false) });
   commands.register({ id: "spotlight.runAlt", title: "command.spotlight.runAlt", shortcut: { default: "Mod+Enter", handledBy: scope }, layer: "power", group: "spotlight", run: () => runActive(true) });
-  const canShowActions = (s: AppState) => isOpen(s) && !s.ui.spotlight.actions && Boolean(s.ui.spotlight.rows.find((r) => r.id === s.ui.spotlight.activeId && actionsOf(r.kind)));
+  const canShowActions = (s: AppState) => isOpen(s) && !s.ui.spotlight.actions && !s.ui.spotlight.fromLink && Boolean(s.ui.spotlight.rows.find((r) => r.id === s.ui.spotlight.activeId && actionsOf(r.kind)));
   const showActions = () => {
     const row = activeRow();
-    if (!row || !actionsOf(row.kind)) return;
+    if (!row || !actionsOf(row.kind) || sp().fromLink) return;
     set({ actions: { row: row.id, activeId: actionList(row).find((a) => a.available)?.id ?? "" } });
   };
   commands.register({ id: "spotlight.actions", title: "command.spotlight.actions", shortcut: { default: "Mod+K", handledBy: scope, whenEnabled: true }, layer: "power", group: "spotlight", enabled: canShowActions, run: showActions });
@@ -793,6 +798,22 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   });
 
   return {
+    /** Opens a note and then goes to a heading in it, once the editor is ready (deep links, D-165). */
+    openAt,
+    /**
+     * Spotlight searching notes for a query that came from outside (a search link, D-165): in notes
+     * mode, with the query set as it is. Never read for prefixes (`>` commands, `#` headings, `?`
+     * help), so a link can't put a command one Enter away.
+     */
+    searchNotes(query: string): void {
+      if (!sp().open) {
+        opening = now();
+        dismissDialogs();
+      }
+      store.update((st) => ({ ...st, ui: { ...st.ui, toolbarOpen: false } }));
+      set({ open: true, mode: "notes", everywhere: false, query, actions: undefined, fromLink: true, focus: sp().focus + 1, indexing: indexingOf() });
+      void refresh().then(() => measureOpen());
+    },
     attach(s: SpotlightSearch): void {
       search = s;
       s.setItems("command", commandItems());

@@ -5,8 +5,19 @@
  * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
-import { mkdir, open, readdir, readFile, rename, rm, writeFile, stat } from "node:fs/promises";
+import { lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
+import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
+import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
+import type { ResolvedDeepLink } from "@focus-notes/core";
+import { runCli } from "../cli/run.ts";
+import { SWITCHES, connectionSnippets, type AgentsPage, type SwitchId } from "@focus-notes/core/agents-app";
+import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/agents-fs";
+import type { AgentPermissions } from "@focus-notes/core/agents";
+import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
+import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
@@ -63,6 +74,28 @@ const dataFile = (f: DataFile) => join(app.getPath("userData"), f);
 app.setPath("sessionData", join(app.getPath("userData"), CHROMIUM_FOLDERS.session));
 // Chromium's crash database too (`Crashpad`, made on macOS and Linux): nothing in it is ever sent.
 app.setPath("crashDumps", join(app.getPath("sessionData"), "Crashpad"));
+
+// ---- the command-line tool (WP-7.3, D-165) ----
+// Released builds can't run Electron as Node, so the app's own executable runs the commands:
+// `focus-notes --cli <command> …` (the launcher in the app's resources adds `--cli`). Only as the very
+// first argument, and never alongside a deep link, so a link can't turn into a command. No window,
+// no single-instance lock, no watcher: the command runs, and the process exits with its code.
+{
+  const at = process.argv.indexOf("--cli");
+  if (at === (app.isPackaged ? 1 : 2) && !process.argv.some((a) => /^focus-notes:/i.test(a))) {
+    const code = await runCli(process.argv.slice(at + 1), {
+      dataDir: app.getPath("userData"),
+      defaultWorkspace: resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPath("documents"), "Focus Notes")),
+      stdin: process.stdin, stdout: process.stdout, stderr: process.stderr,
+      // `open`: the link goes to the app through the system, as any deep link does.
+      openUrl: (url) => shell.openExternal(url),
+    }).catch(() => 1);
+    await new Promise((r) => process.stdout.write("", r));
+    app.exit(code);
+    // Nothing below runs for a command.
+    await new Promise(() => {});
+  }
+}
 /** Where a new workspace goes unless another folder is chosen: Documents/Focus Notes. */
 const defaultHome = () => resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPath("documents"), "Focus Notes"));
 /** The workspace the first run opened (D-98), kept by the main process only: the renderer can't name a folder. */
@@ -900,6 +933,67 @@ async function slowSeam(channel: string): Promise<void> {
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("note:read", async (p) => (await readParsed(notePath(p))).text);
+  // ---- Settings → Agents (WP-7.4, AGT-02, D-166) ----
+  // The main process reads and writes agents.json and builds every command line; the window only
+  // sees the page and asks for a switch by name.
+  const agentsData = () => app.getPath("userData");
+  const cliBin = () => join(process.resourcesPath, "bin");
+  /** Install command-line tool only in an installed app: never development builds or journeys. */
+  const cliAvailable = () => app.isPackaged && !journey && existsSync(cliBin());
+  const installHost = (): InstallHost => ({
+    platform: process.platform, binDir: cliBin(), home: app.getPath("home"), envPath: process.env.PATH ?? "",
+    // One of the two fixed scripts, from a temporary file of its own, by Windows PowerShell's absolute
+    // path (never a program found on the PATH), with its values in the environment (D-166 (5)).
+    powershell: async (script, env) => {
+      const exe = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+      const file = join(tmpdir(), `focus-notes-${randomBytes(8).toString("hex")}.ps1`);
+      await writeFile(file, script, { encoding: "utf8", flag: "wx" });
+      try {
+        return await new Promise<{ code: number; stdout: string }>((resolve) => {
+          const p = spawn(exe, ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", file], { env: { ...process.env, ...env }, stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
+          let stdout = "";
+          p.stdout.on("data", (d: Buffer) => void (stdout += d.toString("utf8")));
+          p.on("error", () => resolve({ code: -1, stdout: "" }));
+          p.on("exit", (code) => resolve({ code: code ?? -1, stdout }));
+        });
+      } finally {
+        await rm(file, { force: true });
+      }
+    },
+  });
+  async function agentsPage(): Promise<AgentsPage> {
+    const { permissions, changedOutside } = await readAgentPermissions(agentsData());
+    const g = await gitOpening;
+    const recent = g ? await g.agentChanges(50).catch(() => []) : [];
+    // The app's own executable runs the server (D-165): with the built main script in development.
+    const args = [...(app.isPackaged ? [] : [join(import.meta.dirname, "main.mjs")]), "--cli", "mcp", "--data", agentsData()];
+    const cli = cliAvailable() ? await cliInstallState(installHost()).catch(() => ({ installed: false, onPath: false })) : { installed: false, onPath: false };
+    return { permissions, changedOutside, snippets: connectionSnippets(process.execPath, args, process.platform === "win32" ? "windows" : "posix"), recent, cli: { available: cliAvailable(), ...cli } };
+  }
+  handle("agents:load", () => agentsPage());
+  handle("agents:set", async (raw) => {
+    // Exactly the five switches, each true or false; the folder limit is kept as the file has it.
+    const o = raw as Record<string, unknown>;
+    if (typeof o !== "object" || o === null || Object.keys(o).length !== SWITCHES.length || !SWITCHES.every((k) => typeof o[k] === "boolean")) throw new Error("Not agent switches");
+    const { permissions } = await readAgentPermissions(agentsData());
+    await writeAgentPermissions(agentsData(), { ...permissions, ...(Object.fromEntries(SWITCHES.map((k) => [k, o[k] === true])) as Pick<AgentPermissions, SwitchId>) });
+    return agentsPage();
+  });
+  handle("agents:undo", async (repo, commit) => {
+    if ((repo !== "notes" && repo !== "private") || typeof commit !== "string" || !/^([0-9a-f]{40}|[0-9a-f]{64})$/.test(commit)) return { problem: "notAgent" };
+    const g = await gitOpening;
+    return g ? g.undoAgentChange(repo, commit) : { problem: "failed" };
+  });
+  handle("agents:installCli", async () => {
+    if (!cliAvailable()) return { installed: false, onPath: false, problem: "unavailable" };
+    return installCli(installHost()).catch(() => ({ installed: false, onPath: false, problem: "failed" }));
+  });
+  // The link the app was opened with (or the latest one), taken once (D-165).
+  handle("deeplink:take", async () => {
+    const l = pendingLink;
+    pendingLink = undefined;
+    return l ? resolveDeepLink(l) : undefined;
+  });
   // The search index's reads (D-107): a batch per call, past the snapshot, which is for opened notes.
   handle("notes:read", async (ps) => {
     if (!Array.isArray(ps) || ps.length > NOTES_PER_READ) throw new Error(`Up to ${NOTES_PER_READ} note paths are required`);
@@ -1237,7 +1331,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // Copying a link's address (EDT-13). Text only, and never read back: the renderer can't read the clipboard.
   handle("clipboard:write", async (text) => {
     if (typeof text !== "string" || text.length > 10_000) throw new Error("Only text can be copied");
-    clipboard.writeText(text);
+    // Journeys copy into memory, never the computer's clipboard.
+    appClipboard().writeText(text);
   });
   // A link from a note (EDT-13): only http, https, and mailto, and only in the user's browser.
   ipcMain.on("link:open", (e, url: unknown) => {
@@ -1517,6 +1612,52 @@ function watchWorkspace(win: () => BrowserWindow | undefined): TreeWatcher | und
 
 let mainWindow: BrowserWindow | undefined;
 let watcher: TreeWatcher | undefined;
+
+// ---- deep links (WP-7.3, AGT-06, D-165) ----
+// Read-only, and accepted only in their exact shape (`parseDeepLink`). Windows and Linux pass them
+// as arguments (at start, or a second instance's); macOS sends open-url. Only a packaged app
+// registers the scheme: never development builds or journeys, which mustn't change the computer.
+let pendingLink: DeepLink | undefined = process.argv.map(parseDeepLink).find((l): l is DeepLink => l !== undefined);
+const linkArrived = (l: DeepLink | undefined) => {
+  if (!l) return;
+  pendingLink = l;
+  mainWindow?.webContents.send("deeplink:arrived");
+};
+if (app.isPackaged && !journey && primary) app.setAsDefaultProtocolClient("focus-notes");
+app.on("open-url", (e, url) => {
+  e.preventDefault();
+  linkArrived(parseDeepLink(url));
+});
+/**
+ * A link's note, only if it's there in the open workspace's roots, under the agents' rules
+ * (resolveAgentPath, D-145): every part of the path spelled exactly as on disk, none a symbolic
+ * link, a junction, or a short name (its real path is itself), and the note with no second hard
+ * link. The path it returns is the root's own path and those same checked names, so the note opened
+ * is the one checked; reading it goes through the app's own checks as any note does.
+ */
+async function resolveDeepLink(l: DeepLink): Promise<ResolvedDeepLink | undefined> {
+  if (l.kind === "search") return l;
+  const id = agentRootOf(l.path);
+  const root = isWorkspace() ? roots().find((r) => r.id === id) : undefined;
+  if (!id || !root) return undefined;
+  const fold = (p: string) => (process.platform === "win32" || process.platform === "darwin" ? p.toLowerCase() : p);
+  const segments = l.path.slice(agentRootDir(id).length + 1).split("/");
+  const rootReal = await realpath(root.path).catch(() => undefined);
+  if (!rootReal) return undefined;
+  let cur = rootReal;
+  for (const seg of segments) {
+    const next = join(cur, seg);
+    const st = await lstat(next).catch(() => undefined);
+    if (!st || st.isSymbolicLink()) return undefined;
+    if (!(await readdir(cur).catch(() => [] as string[])).includes(seg)) return undefined;
+    const real = await realpath(next).catch(() => undefined);
+    if (!real || fold(real) !== fold(next)) return undefined;
+    cur = next;
+  }
+  const st = await stat(cur).catch(() => undefined);
+  if (!st?.isFile() || st.nlink > 1) return undefined;
+  return { kind: "open", path: join(root.path, ...segments), ...(l.heading ? { heading: l.heading } : {}) };
+}
 app.whenReady().then(async () => {
   chosenHome = readChosenHome();
   readFirstRun();
@@ -1542,7 +1683,8 @@ app.whenReady().then(async () => {
   setTimeout(() => (startGit(), windowFrame?.ready()), 3000);
   // Fetching when the window becomes active (Desktop and Git → Save and sync, step 5).
   mainWindow.on("focus", () => gitSync?.focused());
-  app.on("second-instance", () => {
+  app.on("second-instance", (_e, argv) => {
+    linkArrived(argv.map(parseDeepLink).find((l): l is DeepLink => l !== undefined));
     if (mainWindow?.isMinimized()) mainWindow.restore();
     mainWindow?.focus();
   });

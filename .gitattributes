@@ -17,3 +17,4 @@
 
 # The round-trip corpus must stay byte-exact, including CRLF and BOM files (EDT-10).
 packages/markdown/test/corpus/** -text
+*.cmd text eol=crlf

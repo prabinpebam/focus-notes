@@ -249,6 +249,16 @@ describe("reading, within the permissions", () => {
     expect(((await c.call("recent_notes")).structuredContent.items as { path: string }[]).every((i) => i.path.startsWith("notes/"))).toBe(true);
   });
 
+  it("lists a clone without its private repository (FRE-06): the missing root has nothing in it", async () => {
+    const ws = workspace();
+    rmSync(join(ws, "private"), { recursive: true, force: true });
+    const c = await connect({ readPrivate: true }, { ws });
+    const r = await c.call("list_notes");
+    expect(error(r)).toBeUndefined();
+    expect((r.structuredContent.items as { path: string }[]).every((i) => i.path.startsWith("notes/"))).toBe(true);
+    expect(error(await c.call("search_notes", { query: "gardens" }))).toBeUndefined();
+  });
+
   it("refuses paths outside the notes, invalid paths, links, and bad arguments", async () => {
     const c = await connect({ readPrivate: true });
     for (const p of ["AGENTS.md", "private/access.json", ".focus-notes/workspace.json"]) expect(error(await c.call("read_note", { path: p }))).toMatch(/outsideNotes|invalidPath/);

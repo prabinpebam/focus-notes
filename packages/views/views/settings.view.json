@@ -12,7 +12,8 @@
     "vm.shareConfirm",
     "vm.diagnostics",
     "vm.shareTemplate",
-    "vm.shareNote"
+    "vm.shareNote",
+    "vm.agents"
   ],
   "focus": "settingsCategories",
   "overlay": true,
@@ -690,6 +691,300 @@
                             "on": {
                               "press": {
                                 "run": "share.manage.templateOpen"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "agents": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "when": {
+                          "get": "vm.agents.loading"
+                        },
+                        "props": {
+                          "value": {
+                            "t": "agents.loading"
+                          },
+                          "announce": true
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "when": {
+                          "get": "vm.agents.changedOutside"
+                        },
+                        "props": {
+                          "value": {
+                            "t": "agents.changedOutside"
+                          },
+                          "tone": "warning",
+                          "announce": true
+                        }
+                      },
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "agents.heading.permissions"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "each": {
+                              "get": "vm.agents.switches"
+                            },
+                            "as": "item",
+                            "key": "item.id",
+                            "render": {
+                              "type": "Stack",
+                              "props": {
+                                "gap": "xs",
+                                "align": "start"
+                              },
+                              "children": [
+                                {
+                                  "type": "Button",
+                                  "props": {
+                                    "label": {
+                                      "get": "item.label"
+                                    },
+                                    "toggle": true,
+                                    "pressed": {
+                                      "get": "item.pressed"
+                                    },
+                                    "disabled": {
+                                      "get": "item.disabled"
+                                    },
+                                    "disabledReason": {
+                                      "get": "item.reason"
+                                    }
+                                  },
+                                  "on": {
+                                    "press": {
+                                      "run": "agents.toggle",
+                                      "args": {
+                                        "id": {
+                                          "get": "item.id"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "Text",
+                                  "props": {
+                                    "value": {
+                                      "get": "item.note"
+                                    },
+                                    "tone": "muted"
+                                  }
+                                }
+                              ]
+                            },
+                            "empty": {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "t": "agents.loading"
+                                },
+                                "tone": "muted"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "when": {
+                          "get": "vm.agents.ready"
+                        },
+                        "props": {
+                          "value": {
+                            "get": "vm.agents.folders"
+                          },
+                          "tone": "muted"
+                        }
+                      },
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "agents.heading.connect"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "each": {
+                              "get": "vm.agents.snippets"
+                            },
+                            "as": "item",
+                            "key": "item.id",
+                            "render": {
+                              "type": "CodeBlock",
+                              "props": {
+                                "value": {
+                                  "get": "item.value"
+                                },
+                                "label": {
+                                  "get": "item.label"
+                                },
+                                "copyLabel": {
+                                  "get": "item.copyLabel"
+                                }
+                              },
+                              "on": {
+                                "copy": {
+                                  "run": "agents.copySnippet",
+                                  "args": {
+                                    "id": {
+                                      "get": "item.id"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "empty": {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "t": "agents.loading"
+                                },
+                                "tone": "muted"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "agents.heading.recent"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "each": {
+                              "get": "vm.agents.recent"
+                            },
+                            "as": "item",
+                            "key": "item.id",
+                            "render": {
+                              "type": "ItemCard",
+                              "props": {
+                                "title": {
+                                  "get": "item.title"
+                                },
+                                "detail": {
+                                  "get": "item.detail"
+                                },
+                                "icon": "history",
+                                "personal": "title"
+                              },
+                              "children": [
+                                {
+                                  "type": "Button",
+                                  "props": {
+                                    "label": {
+                                      "get": "item.undoLabel"
+                                    },
+                                    "size": "s",
+                                    "busy": {
+                                      "get": "item.busy"
+                                    }
+                                  },
+                                  "on": {
+                                    "press": {
+                                      "run": "agents.undo",
+                                      "args": {
+                                        "commit": {
+                                          "get": "item.id"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "empty": {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "t": "agents.recent.empty"
+                                },
+                                "tone": "muted"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Heading",
+                        "props": {
+                          "level": "3",
+                          "value": {
+                            "t": "agents.heading.cli"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "xs",
+                          "align": "start"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.agents.cli.status"
+                              },
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "when": {
+                              "get": "vm.agents.cli.canInstall"
+                            },
+                            "props": {
+                              "label": {
+                                "t": "command.agents.installCli"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "agents.installCli"
                               }
                             }
                           }

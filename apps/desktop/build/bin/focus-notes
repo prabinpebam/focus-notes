@@ -1,0 +1,8 @@
+#!/bin/sh
+# The focus-notes command (D-165): the app's own executable runs it with --cli.
+dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+for exe in "$dir/../../MacOS/Focus Notes" "$dir/../../focus-notes"; do
+  if [ -x "$exe" ]; then exec "$exe" --cli "$@"; fi
+done
+echo "focus-notes: the Focus Notes app wasn't found beside this launcher" >&2
+exit 1

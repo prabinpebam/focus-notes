@@ -5,6 +5,7 @@ import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
 import type { ConflictChoiceKind, DeletedNote } from "./history.ts";
 import type { HeldNotes } from "./held.ts";
+import type { AgentsBridge } from "./agents-app.ts";
 import type { NativeWindowBridge, WindowBridge } from "./window-app.ts";
 import type { AccessBridge } from "./share-manage.ts";
 import type { DiagnosticsPreview, TimingSummary } from "./diagnostics.ts";
@@ -58,6 +59,13 @@ export interface PlatformBridge {
   importNotes?(): Promise<{ added: number; renamed: number } | undefined>;
   /** The workspace: its notes and folders, its format, and changes made outside the app (WP-2.3). */
   workspace?: WorkspaceBridge;
+  /**
+   * Read-only deep links (WP-7.3, D-165): the link the shell was opened with, checked and resolved
+   * inside the workspace, taken once; and a signal when another arrives. The desktop's only.
+   */
+  deepLinks?: { take(): Promise<ResolvedDeepLink | undefined>; onArrive(listener: () => void): () => void };
+  /** Settings → Agents (WP-7.4, D-166): agents.json, the snippets, recent agent changes, and the command-line tool. The desktop's only. */
+  agents?: AgentsBridge;
   /** Commits and pushes with the user's own Git (the desktop, WP-3.3). Absent in the browser. */
   sync?: SyncBridge;
   /** Sets up the user's instance on GitHub and this computer (the desktop, FRE-08). Absent in the browser. */
@@ -91,6 +99,9 @@ export interface PlatformBridge {
    */
   diagnostics?: DiagnosticsBridge;
 }
+
+/** A deep link the shell resolved: an existing note's own path (and a heading anchor), or a search. */
+export type ResolvedDeepLink = { kind: "open"; path: string; heading?: string } | { kind: "search"; q: string };
 
 export interface DiagnosticsBridge {
   /** A summary of each part of the report, for the preview. */

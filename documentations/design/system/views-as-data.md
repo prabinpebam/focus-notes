@@ -237,6 +237,16 @@ The M0 runtime spike measures these before any view is built ([Roadmap](../../pl
 
 The component contracts, the UI schema, the token names, and the fragment list are published as JSON on the project's own Pages site, beside these docs (DSY-13), next to the other schemas ([Agents → Files and schemas](../../architecture/agents.md#files-and-schemas-for-agents)). A coding agent working on Focus Notes can read the exact vocabulary, write a view, and have `ui:check` tell it precisely what's wrong, the same way a person would.
 
+**As built (WP-7.4, D-166).** `ui-check --write` writes three files to `schemas/ui/`, and `pnpm check` fails while any is stale (D-138):
+
+| File | Holds |
+| --- | --- |
+| `view.v1.json` | The UI schema every view document validates against |
+| `contracts.v1.json` | Every component contract, in full |
+| `catalog.v1.json` | The catalog: each component's type, tier, description, props, events, slots, states, tokens, accessibility, and fixture names; every token group's names; the icons; each view's ID, IA ID, and view models; and the fragments |
+
+The *Pages* workflow copies `schemas/` beside the docs, so the catalog is at `/schemas/ui/catalog.v1.json`. Nothing is generated as HTML: agents read the JSON, and people read the gallery and these pages.
+
 <h2 data-reader-personas="product design engineering">Design decisions</h2>
 
 | ID | Decision | Serves | Rationale | Alternatives rejected |

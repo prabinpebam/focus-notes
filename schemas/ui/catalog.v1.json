@@ -1,0 +1,4070 @@
+{
+  "version": 1,
+  "files": {
+    "contracts": "contracts.v1.json",
+    "viewSchema": "view.v1.json"
+  },
+  "components": [
+    {
+      "type": "Text",
+      "tier": "primitive",
+      "description": "A run of interface text. Note text is never rendered with this; it lives in block components.",
+      "props": {
+        "value": {
+          "kind": "message",
+          "required": true
+        },
+        "role": {
+          "kind": "enum",
+          "values": [
+            "caption",
+            "secondary",
+            "body",
+            "label",
+            "emphasis",
+            "title",
+            "lead"
+          ],
+          "default": "body"
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "default",
+            "muted",
+            "accent",
+            "danger",
+            "warning",
+            "success"
+          ],
+          "default": "default"
+        },
+        "lines": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "one",
+            "two",
+            "three"
+          ],
+          "default": "none"
+        },
+        "announce": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A polite live region, for counts and results."
+        },
+        "personal": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The person's own words (their invite message), not the interface's: the visual score doesn't count them (D-127, D-143)."
+        },
+        "inset": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "control"
+          ],
+          "default": "none",
+          "description": "control: inset like a small button's label, so a text that leads a row of buttons (the link card) lines up with them (D-111)."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.text.*",
+      "a11y": {
+        "pattern": "text"
+      },
+      "fixtures": [
+        "role caption",
+        "role secondary",
+        "role body",
+        "role label",
+        "role emphasis",
+        "role title",
+        "role lead",
+        "tone default",
+        "tone muted",
+        "tone accent",
+        "tone danger",
+        "tone warning",
+        "tone success",
+        "lines none",
+        "lines one",
+        "lines two",
+        "lines three",
+        "inset none",
+        "inset control"
+      ]
+    },
+    {
+      "type": "Heading",
+      "tier": "primitive",
+      "description": "An interface heading for a sheet, dialog, or section.",
+      "props": {
+        "value": {
+          "kind": "message",
+          "required": true
+        },
+        "level": {
+          "kind": "enum",
+          "values": [
+            "1",
+            "2",
+            "3",
+            "display"
+          ],
+          "default": "2",
+          "description": "display: the interface ramp's largest size, a full-window onboarding step's title (D-126). It is an h1."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.heading.*",
+      "a11y": {
+        "pattern": "heading",
+        "name": "value"
+      },
+      "fixtures": [
+        "level 1",
+        "level 2",
+        "level 3",
+        "level display"
+      ]
+    },
+    {
+      "type": "Icon",
+      "tier": "primitive",
+      "description": "A Fluent UI System icon. Decorative unless it has a label.",
+      "props": {
+        "name": {
+          "kind": "icon",
+          "required": true
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "s",
+            "m",
+            "l"
+          ],
+          "default": "m"
+        },
+        "label": {
+          "kind": "message"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.icon.*",
+      "a11y": {
+        "pattern": "img",
+        "name": "label"
+      },
+      "fixtures": [
+        "size s",
+        "size m",
+        "size l",
+        "labelled"
+      ]
+    },
+    {
+      "type": "Button",
+      "tier": "primitive",
+      "description": "A labelled action. Its label says what it does.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "variant": {
+          "kind": "enum",
+          "values": [
+            "primary",
+            "secondary",
+            "subtle",
+            "danger"
+          ],
+          "default": "secondary"
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "s",
+            "m",
+            "l"
+          ],
+          "default": "m",
+          "description": "l: an onboarding step's main action (Get started, D-126)."
+        },
+        "icon": {
+          "kind": "icon"
+        },
+        "iconPosition": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "end"
+          ],
+          "default": "start"
+        },
+        "toggle": {
+          "kind": "boolean",
+          "default": false
+        },
+        "pressed": {
+          "kind": "boolean",
+          "default": false
+        },
+        "expanded": {
+          "kind": "boolean",
+          "description": "A disclosure button (More options, Having trouble?): whether what it shows is open (aria-expanded)."
+        },
+        "busy": {
+          "kind": "boolean",
+          "default": false
+        },
+        "disabled": {
+          "kind": "boolean",
+          "default": false
+        },
+        "disabledReason": {
+          "kind": "message",
+          "requiredWhen": "disabled"
+        },
+        "bleed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A subtle button at the start of the content (a first-run step's Back): its label lines up with the content's edge, and its hit area reaches into the padding (D-111)."
+        },
+        "autoFocus": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Takes focus when it appears: in a confirmation, the choice that changes nothing (APG alert dialog); in the first run, a step's primary action, so Enter continues."
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "selected",
+        "focusVisible",
+        "disabled",
+        "busy"
+      ],
+      "tokens": "cmp.button.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        "variant primary",
+        "variant secondary",
+        "variant subtle",
+        "variant danger",
+        "size s",
+        "size l",
+        "bleed",
+        "size m with icon",
+        "icon at end",
+        "busy",
+        "toggle off",
+        "toggle on",
+        "disabled with reason"
+      ]
+    },
+    {
+      "type": "IconButton",
+      "tier": "primitive",
+      "description": "An icon-only action with a required label, shown as its tooltip and accessible name.",
+      "props": {
+        "icon": {
+          "kind": "icon",
+          "required": true
+        },
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "shortcut": {
+          "kind": "text"
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "default",
+            "muted"
+          ],
+          "default": "default"
+        },
+        "toggle": {
+          "kind": "boolean",
+          "default": false
+        },
+        "pressed": {
+          "kind": "boolean",
+          "default": false
+        },
+        "mixed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A toggle that applies to only part of what it acts on (aria-pressed mixed)."
+        },
+        "disabled": {
+          "kind": "boolean",
+          "default": false
+        },
+        "disabledReason": {
+          "kind": "message",
+          "requiredWhen": "disabled"
+        },
+        "busy": {
+          "kind": "boolean",
+          "default": false
+        },
+        "busyLabel": {
+          "kind": "text"
+        },
+        "bleed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "At the edge of a panel's content (a dialog's close button): its icon lines up with the edge, and its hit area reaches into the padding (D-111)."
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "selected",
+        "mixed",
+        "focusVisible",
+        "disabled",
+        "busy"
+      ],
+      "tokens": "cmp.iconButton.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        "tone default",
+        "tone muted",
+        "toggle off",
+        "toggle on",
+        "toggle mixed",
+        "busy",
+        "bleed",
+        "disabled with reason"
+      ]
+    },
+    {
+      "type": "Tooltip",
+      "tier": "primitive",
+      "description": "Shows a control's name and shortcut. Never holds information you can't get another way.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "shortcut": {
+          "kind": "text"
+        },
+        "placement": {
+          "kind": "enum",
+          "values": [
+            "top",
+            "bottom",
+            "start",
+            "end"
+          ],
+          "default": "bottom"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": [
+            "Button",
+            "IconButton"
+          ],
+          "min": 1,
+          "max": 1
+        }
+      },
+      "states": [
+        "hidden",
+        "visible"
+      ],
+      "tokens": "cmp.tooltip.*",
+      "a11y": {
+        "pattern": "tooltip",
+        "name": "label"
+      },
+      "fixtures": [
+        "placement top",
+        "placement bottom",
+        "placement start",
+        "placement end"
+      ]
+    },
+    {
+      "type": "SignalDot",
+      "tier": "primitive",
+      "description": "The red dot. Its tone signals a save problem on the trigger.",
+      "props": {
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "warning",
+            "danger"
+          ],
+          "default": "red"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.signalDot.*",
+      "a11y": {
+        "pattern": "presentation"
+      },
+      "fixtures": [
+        "tone red",
+        "tone warning",
+        "tone danger"
+      ]
+    },
+    {
+      "type": "TriggerButton",
+      "tier": "primitive",
+      "description": "The frosted circle with the red dot. The Trigger compound places it and gives it behavior.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "shortcut": {
+          "kind": "text"
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "red",
+            "warning",
+            "danger"
+          ],
+          "default": "red"
+        },
+        "expanded": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focusVisible"
+      ],
+      "tokens": "cmp.triggerButton.*",
+      "a11y": {
+        "pattern": "menu button",
+        "name": "label"
+      },
+      "fixtures": [
+        "tone red",
+        "tone warning",
+        "tone danger"
+      ]
+    },
+    {
+      "type": "Divider",
+      "tier": "primitive",
+      "description": "Separates groups in menus and toolbars.",
+      "props": {
+        "orientation": {
+          "kind": "enum",
+          "values": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.divider.*",
+      "a11y": {
+        "pattern": "separator"
+      },
+      "fixtures": [
+        "orientation horizontal",
+        "orientation vertical"
+      ]
+    },
+    {
+      "type": "PopoverPanel",
+      "tier": "primitive",
+      "description": "A frosted panel anchored to its trigger. Esc and clicking outside close it.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "open": {
+          "kind": "boolean",
+          "default": false
+        },
+        "placement": {
+          "kind": "enum",
+          "values": [
+            "bottom",
+            "top",
+            "start",
+            "end"
+          ],
+          "default": "bottom"
+        }
+      },
+      "events": {
+        "openChange": {
+          "payload": {
+            "open": "boolean"
+          }
+        }
+      },
+      "slots": {
+        "trigger": {
+          "accepts": [
+            "Button",
+            "IconButton",
+            "TriggerButton"
+          ],
+          "min": 1,
+          "max": 1
+        },
+        "content": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "closed",
+        "open"
+      ],
+      "tokens": "cmp.popoverPanel.*",
+      "a11y": {
+        "pattern": "dialog (non-modal popover)",
+        "name": "label"
+      },
+      "fixtures": [
+        "placement bottom",
+        "placement top",
+        "placement start",
+        "placement end"
+      ]
+    },
+    {
+      "type": "MenuButton",
+      "tier": "primitive",
+      "description": "A button that opens a menu of commands, each showing its state and shortcut: an icon, a quiet text pill, or text with a chevron (Turn into).",
+      "props": {
+        "icon": {
+          "kind": "icon",
+          "description": "For the icon variant."
+        },
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "variant": {
+          "kind": "enum",
+          "values": [
+            "icon",
+            "pill",
+            "text",
+            "select"
+          ],
+          "default": "icon",
+          "description": "select: the current value and a chevron in a bordered box, as a form's field, lined up with the rows around it (D-111)."
+        },
+        "text": {
+          "kind": "text",
+          "description": "The pill and text variants' visible text."
+        },
+        "placement": {
+          "kind": "enum",
+          "values": [
+            "bottom end",
+            "bottom start",
+            "top start"
+          ],
+          "default": "bottom end"
+        },
+        "sections": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true
+        },
+        "shortcut": {
+          "kind": "text"
+        },
+        "bleed": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The text variant at the edge of a panel's content (the Files sheet's New): its text and chevron line up with the edge (D-111)."
+        }
+      },
+      "events": {
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "closed",
+        "open",
+        "itemFocused",
+        "itemDisabled",
+        "itemChecked"
+      ],
+      "tokens": "cmp.menuButton.*",
+      "a11y": {
+        "pattern": "menu button",
+        "name": "label"
+      },
+      "fixtures": [
+        "variant icon",
+        "variant pill",
+        "placement top start",
+        "variant text, placement bottom start",
+        "variant select",
+        "variant text, bleed"
+      ]
+    },
+    {
+      "type": "Shortcut",
+      "tier": "primitive",
+      "description": "A key chord drawn as key caps in the platform's symbols, read aloud in words.",
+      "props": {
+        "keys": {
+          "kind": "list",
+          "of": "keyCaps",
+          "required": true,
+          "description": "Key caps in display order, from a view model."
+        },
+        "label": {
+          "kind": "text",
+          "required": true,
+          "description": "The chord in words, for screen readers."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.shortcut.*",
+      "a11y": {
+        "pattern": "text; caps are hidden and the chord is read in words",
+        "name": "label"
+      },
+      "fixtures": [
+        "macOS chord",
+        "Windows chord"
+      ]
+    },
+    {
+      "type": "SearchField",
+      "tier": "primitive",
+      "description": "A search box with a clear button. Esc clears it, or passes on when it's already empty.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "bindable": true
+        },
+        "placeholder": {
+          "kind": "message"
+        },
+        "clearLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "autoFocus": {
+          "kind": "boolean",
+          "default": false
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus into the field."
+        },
+        "invalid": {
+          "kind": "boolean",
+          "default": false
+        },
+        "keyScope": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "findBar",
+            "findField",
+            "replaceField",
+            "pickerField",
+            "moveField",
+            "repoField",
+            "spotlightField",
+            "findAllField"
+          ],
+          "default": "none"
+        },
+        "chip": {
+          "kind": "message",
+          "description": "A mode shown before the text (Spotlight's All, Notes, Commands); the label says it in words."
+        },
+        "controls": {
+          "kind": "ref",
+          "description": "The ResultList this field drives."
+        },
+        "activeId": {
+          "kind": "text",
+          "description": "The active item in that list."
+        },
+        "icon": {
+          "kind": "icon",
+          "default": "search",
+          "description": "The icon before the text: another for a field that isn't a search (Replace with)."
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "l"
+          ],
+          "default": "l",
+          "description": "32 px tall in a bar of 32 px controls (the find bar), starting from the find field's width, without a clear button (Esc clears it, and the bar has its own ×); or 40 px, as wide as its container."
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "value"
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "focused",
+        "filled",
+        "invalid"
+      ],
+      "tokens": "cmp.searchField.*",
+      "a11y": {
+        "pattern": "search box",
+        "name": "label"
+      },
+      "fixtures": [
+        "empty",
+        "filled",
+        "with a mode chip",
+        "invalid",
+        "size m",
+        "another icon",
+        "keyScope none",
+        "keyScope findBar",
+        "keyScope findField",
+        "keyScope replaceField",
+        "keyScope pickerField",
+        "keyScope moveField",
+        "keyScope repoField",
+        "keyScope spotlightField",
+        "keyScope findAllField"
+      ]
+    },
+    {
+      "type": "SegmentedControl",
+      "tier": "primitive",
+      "description": "Two to five mutually exclusive choices drawn as segments, with a visible label.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "options": {
+          "kind": "list",
+          "of": "options",
+          "required": true,
+          "description": "2 to 5 options from a view model."
+        },
+        "value": {
+          "kind": "text",
+          "bindable": true
+        },
+        "orientation": {
+          "kind": "enum",
+          "values": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal",
+          "description": "vertical: one full-width row per choice, for choices whose labels don't fit side by side (the first run's Workspace, D-123)."
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "value"
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "selected",
+        "focusVisible"
+      ],
+      "tokens": "cmp.segmentedControl.*",
+      "a11y": {
+        "pattern": "radio group",
+        "name": "label"
+      },
+      "fixtures": [
+        "first selected",
+        "last selected",
+        "orientation vertical"
+      ]
+    },
+    {
+      "type": "DialogPanel",
+      "tier": "primitive",
+      "description": "The modal surface behind every dialog: scrim, raised or frosted panel, a title row, fixed controls, a scrolling body, and a footer.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "open": {
+          "kind": "boolean",
+          "default": false
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "s",
+            "m",
+            "l",
+            "xl"
+          ],
+          "default": "l",
+          "description": "m is Spotlight's 640 px."
+        },
+        "placement": {
+          "kind": "enum",
+          "values": [
+            "center",
+            "top"
+          ],
+          "default": "center",
+          "description": "top: about 20% down, as Spotlight opens."
+        },
+        "height": {
+          "kind": "enum",
+          "values": [
+            "stable",
+            "content"
+          ],
+          "default": "stable",
+          "description": "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)."
+        },
+        "material": {
+          "kind": "enum",
+          "values": [
+            "raised",
+            "frosted"
+          ],
+          "default": "raised",
+          "description": "frosted: the theme's frosted surface (Spotlight)."
+        }
+      },
+      "events": {
+        "openChange": {
+          "payload": {
+            "open": "boolean"
+          }
+        }
+      },
+      "slots": {
+        "header": {
+          "accepts": "any",
+          "max": 1
+        },
+        "fixed": {
+          "accepts": "any",
+          "max": 1
+        },
+        "default": {
+          "accepts": "any"
+        },
+        "footer": {
+          "accepts": "any",
+          "max": 1
+        }
+      },
+      "states": [
+        "open",
+        "entering",
+        "exiting"
+      ],
+      "tokens": "cmp.dialogPanel.*",
+      "a11y": {
+        "pattern": "modal dialog",
+        "name": "label"
+      },
+      "fixtures": [
+        "size s",
+        "height content",
+        "size l",
+        "size xl",
+        "size m, top, frosted, with footer"
+      ]
+    },
+    {
+      "type": "Spinner",
+      "tier": "primitive",
+      "description": "An indeterminate wait sign. Stands still with reduced motion.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "description": "What's being waited for; omit inside a control that says it."
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "s",
+            "m"
+          ],
+          "default": "m"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.spinner.*",
+      "a11y": {
+        "pattern": "progressbar (indeterminate)",
+        "name": "label"
+      },
+      "fixtures": [
+        "size s",
+        "size m"
+      ]
+    },
+    {
+      "type": "LiveRegion",
+      "tier": "primitive",
+      "description": "A polite screen-reader announcement with nothing on screen.",
+      "props": {
+        "message": {
+          "kind": "text",
+          "required": true
+        },
+        "announceKey": {
+          "kind": "number",
+          "min": 0,
+          "description": "Changes when the same words should be announced again."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.liveRegion.*",
+      "a11y": {
+        "pattern": "status (live region)"
+      },
+      "fixtures": [
+        "message"
+      ]
+    },
+    {
+      "type": "Toast",
+      "tier": "primitive",
+      "description": "A one-sentence confirmation with an optional action. Pauses while hovered or focused; Esc dismisses it.",
+      "props": {
+        "message": {
+          "kind": "text",
+          "required": true
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "info",
+            "error"
+          ],
+          "default": "info"
+        },
+        "actionLabel": {
+          "kind": "text"
+        },
+        "dismissLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0
+        }
+      },
+      "events": {
+        "action": {},
+        "dismiss": {},
+        "pausedChange": {
+          "payload": {
+            "paused": "boolean"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "paused",
+        "focusVisible"
+      ],
+      "tokens": "cmp.toast.*",
+      "a11y": {
+        "pattern": "status (errors: alert)",
+        "name": "message"
+      },
+      "fixtures": [
+        "tone info",
+        "tone error with action"
+      ]
+    },
+    {
+      "type": "ResultList",
+      "tier": "primitive",
+      "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant). Header items head labeled groups; highlights mark where the query matched; a row can show its state.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "resultItems",
+          "required": true
+        },
+        "activeId": {
+          "kind": "text"
+        },
+        "width": {
+          "kind": "enum",
+          "values": [
+            "fill",
+            "menu"
+          ],
+          "default": "fill",
+          "description": "Fills its container, or the slash menu's fixed width."
+        },
+        "height": {
+          "kind": "enum",
+          "values": [
+            "content",
+            "fill"
+          ],
+          "default": "content",
+          "description": "As tall as its items up to a popover's height, or as tall as all of them in a side sheet, whose body scrolls it."
+        }
+      },
+      "events": {
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "activeChange": {
+          "payload": {
+            "id": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "active",
+        "disabled"
+      ],
+      "tokens": "cmp.resultList.*",
+      "a11y": {
+        "pattern": "listbox with aria-activedescendant",
+        "name": "label"
+      },
+      "fixtures": [
+        "with active item",
+        "width fill",
+        "width menu",
+        "groups, matches, and states",
+        "groups with descriptions and matches, height fill",
+        "height content"
+      ]
+    },
+    {
+      "type": "Tabs",
+      "tier": "primitive",
+      "description": "A tab list and the selected tab's panel. The view switches the panel content on the value.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "options",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "bindable": true
+        },
+        "orientation": {
+          "kind": "enum",
+          "values": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal",
+          "description": "vertical puts the list on the inline start, as Settings' categories."
+        },
+        "autoFocus": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The selected tab takes focus when the tabs appear: Settings opens on its categories, so the arrow keys move between them at once."
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "value"
+        }
+      },
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest",
+        "hover",
+        "selected",
+        "focusVisible"
+      ],
+      "tokens": "cmp.tabs.*",
+      "a11y": {
+        "pattern": "tabs",
+        "name": "label"
+      },
+      "fixtures": [
+        "first selected",
+        "orientation vertical"
+      ]
+    },
+    {
+      "type": "MorphPanel",
+      "tier": "primitive",
+      "description": "A trigger that morphs into its panel: the circle grows into the panel's shape, and the content fades in after it.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "open": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "openChange": {
+          "payload": {
+            "open": "boolean"
+          }
+        }
+      },
+      "slots": {
+        "trigger": {
+          "accepts": "any",
+          "min": 1,
+          "max": 1
+        },
+        "content": {
+          "accepts": "any",
+          "min": 1,
+          "max": 1
+        }
+      },
+      "states": [
+        "closed",
+        "opening",
+        "open",
+        "closing"
+      ],
+      "tokens": "cmp.morphPanel.*",
+      "a11y": {
+        "pattern": "dialog (non-modal), opened by its trigger",
+        "name": "label"
+      },
+      "fixtures": [
+        "closed",
+        "open"
+      ]
+    },
+    {
+      "type": "TextField",
+      "tier": "primitive",
+      "description": "A labelled single-line field, with an optional description. Secrets use type password.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "bindable": true
+        },
+        "placeholder": {
+          "kind": "message"
+        },
+        "description": {
+          "kind": "message"
+        },
+        "type": {
+          "kind": "enum",
+          "values": [
+            "text",
+            "password",
+            "url"
+          ],
+          "default": "text"
+        },
+        "invalid": {
+          "kind": "boolean",
+          "default": false
+        },
+        "error": {
+          "kind": "message",
+          "description": "What's wrong, below the field while it's invalid, and read with it (D-135)."
+        },
+        "labelHidden": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The label is read by screen readers but not shown, for one-line editors whose placeholder and context say what goes in."
+        },
+        "autoFocus": {
+          "kind": "boolean",
+          "default": false
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "l"
+          ],
+          "default": "l",
+          "description": "32 px tall beside 32 px buttons in a bar (the link editor), or 40 px."
+        },
+        "multiline": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Several lines, growing from about six (the invite message, D-143): Enter starts a new line."
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "value"
+        },
+        "submit": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "focused",
+        "invalid"
+      ],
+      "tokens": "cmp.textField.*",
+      "a11y": {
+        "pattern": "text box",
+        "name": "label"
+      },
+      "fixtures": [
+        "type text",
+        "type password",
+        "type url",
+        "invalid",
+        "invalid with error",
+        "size m",
+        "label hidden",
+        "multiline"
+      ]
+    },
+    {
+      "type": "PillButton",
+      "tier": "primitive",
+      "description": "A small, quiet text button in a pill: muted until pointed at or focused.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focusVisible"
+      ],
+      "tokens": "cmp.pillButton.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        "unlock"
+      ]
+    },
+    {
+      "type": "FileTree",
+      "tier": "primitive",
+      "description": "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, an inline name field, and each row's menu (D-162).",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "treeItems",
+          "required": true
+        },
+        "focusId": {
+          "kind": "text",
+          "description": "The focused row, the tree's one tab stop."
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus into the tree."
+        },
+        "editValue": {
+          "kind": "text",
+          "bindable": true,
+          "description": "The text of the row being named."
+        },
+        "editLabel": {
+          "kind": "text",
+          "description": "The name field's label: Title or Folder name."
+        },
+        "editError": {
+          "kind": "text",
+          "description": "Why the name can't be used, under the field."
+        },
+        "menu": {
+          "kind": "list",
+          "of": "menuSections",
+          "description": "The focused row's menu (D-162): opened by right-click, the row's ⋯, Shift+F10, or the Menu key."
+        },
+        "menuLabel": {
+          "kind": "text",
+          "description": "The menu's name: Actions for “Ideas”."
+        }
+      },
+      "events": {
+        "select": {
+          "payload": {
+            "id": "text",
+            "mode": "text"
+          }
+        },
+        "expand": {
+          "payload": {
+            "id": "text",
+            "expanded": "boolean"
+          }
+        },
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "drop": {
+          "payload": {
+            "source": "text",
+            "target": "text"
+          }
+        },
+        "editChange": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "editValue"
+        },
+        "editBlur": {},
+        "menuAction": {
+          "payload": {
+            "id": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "focusVisible",
+        "selected",
+        "current",
+        "multiSelected",
+        "editing",
+        "invalid",
+        "dropTarget",
+        "pending",
+        "readOnly",
+        "menuOpen"
+      ],
+      "tokens": "cmp.fileTree.*",
+      "a11y": {
+        "pattern": "tree (multi-selectable) with type-ahead",
+        "name": "label"
+      },
+      "fixtures": [
+        "sections, folders, the current note, and a multiple selection",
+        "naming a folder, with an error"
+      ]
+    },
+    {
+      "type": "VersionPane",
+      "tier": "primitive",
+      "description": "One version of a note in the conflict resolver: its blocks as plain text, with the blocks that differ from the other version highlighted.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "Which version: This computer, or the other version and when it was made."
+        },
+        "blocks": {
+          "kind": "list",
+          "of": "versionBlocks",
+          "required": true
+        },
+        "emptyText": {
+          "kind": "message",
+          "required": true,
+          "description": "Shown when this version has no blocks (deleted, or empty)."
+        },
+        "changedLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "Said before each highlighted block, so the difference isn't only a color."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest",
+        "changed",
+        "empty"
+      ],
+      "tokens": "cmp.versionPane.*",
+      "a11y": {
+        "pattern": "region (labelled), changed blocks prefixed for screen readers",
+        "name": "label"
+      },
+      "fixtures": [
+        "with changed blocks",
+        "deleted version"
+      ]
+    },
+    {
+      "type": "WindowControls",
+      "tier": "primitive",
+      "description": "The app-drawn minimize, maximize or restore, and close buttons of the Windows and Linux window (D-15), shown on hover, keyboard focus, or while the window isn't active, with the Snap Layouts picker on the maximize button.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "minimizeLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "maximizeLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "restoreLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "closeLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "layoutsLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The Snap Layouts picker's name."
+        },
+        "maximized": {
+          "kind": "boolean",
+          "bindable": true,
+          "description": "Shows Restore instead of Maximize."
+        },
+        "reveal": {
+          "kind": "boolean",
+          "bindable": true,
+          "description": "Shows the buttons without hover: the window isn't active, or the toolbar is open."
+        },
+        "layouts": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true,
+          "description": "The picker's layouts (halves, thirds, quarters, maximize) and their zones, each a command."
+        }
+      },
+      "events": {
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "dismiss": {}
+      },
+      "slots": {},
+      "states": [
+        "hidden",
+        "shown",
+        "buttonHover",
+        "closeHover",
+        "focusVisible",
+        "layoutsOpen",
+        "zoneHover"
+      ],
+      "tokens": "cmp.windowControls.*",
+      "a11y": {
+        "pattern": "group of buttons; the picker is a non-modal dialog of zone buttons",
+        "name": "label"
+      },
+      "fixtures": [
+        "shown",
+        "maximized",
+        "hidden until hover"
+      ]
+    },
+    {
+      "type": "ThemeGallery",
+      "tier": "primitive",
+      "description": "The theme manager's gallery (IA-VIEW-THEME): a tile per theme with a sample of its colors. Arrow keys move in two dimensions and preview, Enter or a click chooses, and Esc stops a preview.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "themeTiles",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "description": "The theme showing on the note: the selected tile."
+        },
+        "previewing": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The tile showing is a preview, so Esc goes back to the chosen theme (and doesn't close the sheet)."
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus to the selected tile."
+        }
+      },
+      "events": {
+        "preview": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "choose": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "revert": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "selected",
+        "focusVisible",
+        "previewing"
+      ],
+      "tokens": "cmp.themeGallery.*",
+      "a11y": {
+        "pattern": "listbox",
+        "name": "label"
+      },
+      "fixtures": [
+        "first selected",
+        "previewing"
+      ]
+    },
+    {
+      "type": "Slider",
+      "tier": "primitive",
+      "description": "A labelled slider for a number on steps, showing its value in words (Theme manager → Reading).",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "number",
+          "bindable": true
+        },
+        "min": {
+          "kind": "number",
+          "required": true
+        },
+        "max": {
+          "kind": "number",
+          "required": true
+        },
+        "step": {
+          "kind": "number",
+          "required": true
+        },
+        "valueText": {
+          "kind": "text",
+          "description": "The value as shown: \"60 characters\"."
+        },
+        "format": {
+          "kind": "enum",
+          "values": [
+            "number",
+            "percent"
+          ],
+          "default": "number",
+          "description": "How the value is spoken: a number, or a percentage of 1."
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "number"
+          },
+          "binds": "value"
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "dragging",
+        "focusVisible"
+      ],
+      "tokens": "cmp.slider.*",
+      "a11y": {
+        "pattern": "slider",
+        "name": "label"
+      },
+      "fixtures": [
+        "at the middle",
+        "at the start",
+        "format percent"
+      ]
+    },
+    {
+      "type": "ColorField",
+      "tier": "primitive",
+      "description": "A labelled hex color field with a swatch (Theme manager → Edit colors). The value is committed on Enter or on leaving the field, so typing never applies half a color.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "description": "The color, or what was typed if it isn't one."
+        },
+        "swatch": {
+          "kind": "text",
+          "description": "The color the swatch shows: #rgb or #rrggbb, anything else shows none."
+        },
+        "description": {
+          "kind": "text",
+          "description": "Said with the field: the contrast it's checked against."
+        },
+        "invalid": {
+          "kind": "boolean",
+          "default": false
+        },
+        "error": {
+          "kind": "text",
+          "description": "Why the value isn't a color, shown instead of the description."
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus into the field (after Fix, whose button goes away)."
+        }
+      },
+      "events": {
+        "commit": {
+          "payload": {
+            "value": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "focused",
+        "invalid"
+      ],
+      "tokens": "cmp.colorField.*",
+      "a11y": {
+        "pattern": "text box",
+        "name": "label"
+      },
+      "fixtures": [
+        "with a swatch",
+        "invalid"
+      ]
+    },
+    {
+      "type": "AppMark",
+      "tier": "primitive",
+      "description": "The Focus Notes app icon (the red dot in a frosted circle, on paper), drawn from the brand tokens (a dark tile in a dark theme, D-135): the hero of the full-window setup (D-126). Decorative unless it has a label.",
+      "props": {
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "l"
+          ],
+          "default": "l"
+        },
+        "label": {
+          "kind": "message"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.appMark.*",
+      "a11y": {
+        "pattern": "img",
+        "name": "label"
+      },
+      "fixtures": [
+        "size m",
+        "size l",
+        "labelled"
+      ]
+    },
+    {
+      "type": "StepMark",
+      "tier": "primitive",
+      "description": "A setup step's hero: one icon in a large tile, the step's visual anchor (D-127, D-135). Toned for a problem or success; while the step waits, a ring turns around it (still with reduced motion). Decorative unless it has a label.",
+      "props": {
+        "icon": {
+          "kind": "icon",
+          "required": true
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "neutral",
+            "accent",
+            "danger",
+            "success"
+          ],
+          "default": "neutral"
+        },
+        "busy": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The step is waiting: a ring turns around the tile."
+        },
+        "label": {
+          "kind": "message"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.stepMark.*",
+      "a11y": {
+        "pattern": "img",
+        "name": "label"
+      },
+      "fixtures": [
+        "tone neutral",
+        "tone accent",
+        "tone danger",
+        "tone success",
+        "busy",
+        "labelled"
+      ]
+    },
+    {
+      "type": "ItemCard",
+      "tier": "primitive",
+      "description": "One thing, shown rather than described (D-126, D-127): an account (its picture or initials, name and @login), a workspace (an icon, its name, when it was updated and a Public or Private badge), or an option. Its actions go in its slot.",
+      "props": {
+        "title": {
+          "kind": "message",
+          "required": true
+        },
+        "detail": {
+          "kind": "message"
+        },
+        "badge": {
+          "kind": "message"
+        },
+        "icon": {
+          "kind": "icon",
+          "description": "Shown in a tile, the card's visual anchor. Without an icon, a picture or initials show instead."
+        },
+        "avatar": {
+          "kind": "text",
+          "description": "An account's picture: only a data URL the shell made (data:image/…), never an address. Missing, the initials show."
+        },
+        "initials": {
+          "kind": "text"
+        },
+        "mark": {
+          "kind": "boolean",
+          "default": false,
+          "description": "GitHub's mark beside the detail: an account on GitHub."
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "l"
+          ],
+          "default": "m",
+          "description": "l: an account's profile card, its name large."
+        },
+        "personal": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "title",
+            "all"
+          ],
+          "default": "none",
+          "description": "Which of its words are the person's own data (their name and @login, a workspace's name), not the interface's: the visual score doesn't count them (D-127)."
+        },
+        "label": {
+          "kind": "message",
+          "description": "The card's accessible name, when its title alone doesn't say it (This computer is connected to GitHub as …)."
+        },
+        "busy": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A pressable card's action is running."
+        },
+        "disabled": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A pressable card that can't run now (offline): it stays focusable, and its detail says why (D-135)."
+        },
+        "skeleton": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Its content is on its way (PRF-13): the card's shape with placeholders where its picture and words will be, named by its title (what it waits for). A profile card (size l) shows a round picture; a row, a tile."
+        },
+        "autoFocus": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A pressable card takes focus when it appears: a first-run step's main action, so Enter continues."
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.itemCard.*",
+      "a11y": {
+        "pattern": "group",
+        "name": "label"
+      },
+      "fixtures": [
+        "workspace",
+        "profile",
+        "github",
+        "option",
+        "option busy",
+        "skeleton",
+        "skeleton profile",
+        "option disabled"
+      ]
+    },
+    {
+      "type": "SaveState",
+      "tier": "primitive",
+      "description": "Where saving stands, as one muted icon in a quiet pill: its words are the tooltip and name, and pressing it backs up now (EDT-11, D-132).",
+      "props": {
+        "state": {
+          "kind": "enum",
+          "values": [
+            "savedLocal",
+            "pending",
+            "syncing",
+            "synced",
+            "offline",
+            "error"
+          ],
+          "required": true
+        },
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "text": {
+          "kind": "text",
+          "description": "Shown beside the icon for a moment after the person asked (Backing up…, Backed up)."
+        },
+        "interactive": {
+          "kind": "boolean",
+          "description": "Pressing backs up now. Off when there's nowhere to back up to: the icon is then a plain status image."
+        }
+      },
+      "events": {
+        "press": {}
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focusVisible",
+        "savedLocal",
+        "pending",
+        "syncing",
+        "synced",
+        "offline",
+        "error"
+      ],
+      "tokens": "cmp.saveState.*",
+      "a11y": {
+        "pattern": "button",
+        "name": "label"
+      },
+      "fixtures": [
+        "saved here",
+        "not backed up yet",
+        "backing up, asked",
+        "backed up",
+        "offline",
+        "problem"
+      ]
+    },
+    {
+      "type": "StepDots",
+      "tier": "primitive",
+      "description": "Where the setup is (D-142): one dot per step, the steps done filled, the current one a longer segment. Named as a whole (Step 2 of 4); the dots themselves are decorative.",
+      "props": {
+        "current": {
+          "kind": "number",
+          "min": 1,
+          "default": 1
+        },
+        "total": {
+          "kind": "number",
+          "min": 2,
+          "max": 8,
+          "default": 4
+        },
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "What a screen reader says: Step 2 of 4."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.stepDots.*",
+      "a11y": {
+        "pattern": "img",
+        "name": "label"
+      },
+      "fixtures": [
+        "first",
+        "middle",
+        "last"
+      ]
+    },
+    {
+      "type": "StatusRow",
+      "tier": "primitive",
+      "description": "One status, shown not told (D-142): an icon and one short sentence on a tinted row, near the top of what it's about. Every setup problem uses it; the field at fault also says why on itself. Announced politely when it appears.",
+      "props": {
+        "message": {
+          "kind": "message",
+          "required": true
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "danger",
+            "warning",
+            "info",
+            "success"
+          ],
+          "default": "danger"
+        },
+        "icon": {
+          "kind": "icon",
+          "description": "What happened (cloudOff for offline, history for a code that ran out). By default the tone's own icon."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.statusRow.*",
+      "a11y": {
+        "pattern": "status",
+        "name": "message"
+      },
+      "fixtures": [
+        "tone danger",
+        "tone warning",
+        "tone info",
+        "tone success",
+        "icon"
+      ]
+    },
+    {
+      "type": "CodeBlock",
+      "tier": "primitive",
+      "description": "Something to type or paste elsewhere, shown as itself (D-142): a command in a terminal, or a one-time code to enter on GitHub, in monospace with its own Copy. l: the code large, a step's focal point. Its label says where it goes, above it.",
+      "props": {
+        "value": {
+          "kind": "message",
+          "required": true,
+          "description": "The command or the code: data, read from a view model."
+        },
+        "label": {
+          "kind": "message",
+          "description": "Where it goes, above it: Run this in a terminal, Enter this code on GitHub."
+        },
+        "copyLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "m",
+            "l"
+          ],
+          "default": "m",
+          "description": "m: a command; l: a one-time code."
+        }
+      },
+      "events": {
+        "copy": {}
+      },
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.codeBlock.*",
+      "a11y": {
+        "pattern": "group",
+        "name": "label"
+      },
+      "fixtures": [
+        "size m",
+        "size l"
+      ]
+    },
+    {
+      "type": "VersionCompare",
+      "tier": "primitive",
+      "description": "A version found against the version needed (D-142): two small pills with an arrow between, the found one toned as a problem, instead of a sentence. Each pill says what it is.",
+      "props": {
+        "found": {
+          "kind": "message",
+          "required": true,
+          "description": "The version found: data, read from a view model."
+        },
+        "needed": {
+          "kind": "message",
+          "required": true
+        },
+        "foundLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "Found."
+        },
+        "neededLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "Needs."
+        },
+        "label": {
+          "kind": "message",
+          "description": "The whole comparison in words, for screen readers: Git 2.20.1 is too old: 2.31 or newer is needed."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.versionCompare.*",
+      "a11y": {
+        "pattern": "group",
+        "name": "label"
+      },
+      "fixtures": [
+        "too old"
+      ]
+    },
+    {
+      "type": "StrengthMeter",
+      "tier": "primitive",
+      "description": "How strong a passphrase is, shown under its field (D-142): four segments filled and toned by strength (weak, fair, strong), and one word or short phrase beside them. A meter to assistive technology.",
+      "props": {
+        "value": {
+          "kind": "number",
+          "min": 0,
+          "max": 4,
+          "default": 0,
+          "description": "0: nothing typed; 1 to 2: too weak; 3: fair; 4: strong."
+        },
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "The meter's name: Passphrase strength."
+        },
+        "valueText": {
+          "kind": "message",
+          "description": "What the strength means, shown beside the segments: Too easy to guess, Strong."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.strengthMeter.*",
+      "a11y": {
+        "pattern": "meter",
+        "name": "label"
+      },
+      "fixtures": [
+        "value 0",
+        "value 1",
+        "value 2",
+        "value 3",
+        "value 4"
+      ]
+    },
+    {
+      "type": "ProgressBar",
+      "tier": "primitive",
+      "description": "How far long work has got, when the work reports it (PRF-13, D-149): a thin determinate bar, its value read out as a percentage. The words beside it say what the work is; the bar never stands alone.",
+      "props": {
+        "value": {
+          "kind": "number",
+          "min": 0,
+          "max": 100,
+          "default": 0,
+          "description": "Percent done, from the work's own report (Git's download percentage)."
+        },
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "What's progressing: Downloading your notes."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.progressBar.*",
+      "a11y": {
+        "pattern": "progressbar",
+        "name": "label"
+      },
+      "fixtures": [
+        "value 0",
+        "value 45",
+        "value 100"
+      ]
+    },
+    {
+      "type": "DatePicker",
+      "tier": "primitive",
+      "description": "A day, typed segment by segment or picked on a calendar that opens from its button (an audience's last day, D-143). Every part works from the keyboard and is named in the locale's words.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "value": {
+          "kind": "text",
+          "bindable": true,
+          "description": "The day picked, YYYY-MM-DD, or empty."
+        },
+        "min": {
+          "kind": "text",
+          "description": "The first day that can be picked, YYYY-MM-DD."
+        },
+        "max": {
+          "kind": "text",
+          "description": "The last day that can be picked, YYYY-MM-DD (an audience's: a year from today)."
+        },
+        "description": {
+          "kind": "message"
+        },
+        "invalid": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          },
+          "binds": "value"
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "focused",
+        "open",
+        "invalid"
+      ],
+      "tokens": "cmp.datePicker.*",
+      "a11y": {
+        "pattern": "date picker (group of spin buttons, and a dialog with a grid)",
+        "name": "label"
+      },
+      "fixtures": [
+        "empty",
+        "with a description",
+        "invalid"
+      ]
+    },
+    {
+      "type": "Stack",
+      "tier": "layout",
+      "description": "Children in a column, spaced by a space token.",
+      "props": {
+        "gap": {
+          "kind": "token",
+          "group": "space",
+          "default": "none"
+        },
+        "padding": {
+          "kind": "token",
+          "group": "space",
+          "default": "none"
+        },
+        "shortGap": {
+          "kind": "token",
+          "group": "space",
+          "description": "The gap in a short window (below breakpoint.short): the full-window setup tightens up (D-131)."
+        },
+        "align": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ],
+          "default": "stretch"
+        },
+        "justify": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "center",
+            "end",
+            "between"
+          ],
+          "default": "start"
+        },
+        "grow": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "space.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        "gap none",
+        "gap xs",
+        "gap s",
+        "gap m",
+        "gap l",
+        "gap xl",
+        "gap xxl",
+        "gap xxxl",
+        "align start",
+        "align center",
+        "align end",
+        "align stretch",
+        "justify start",
+        "justify center",
+        "justify end",
+        "justify between"
+      ]
+    },
+    {
+      "type": "Inline",
+      "tier": "layout",
+      "description": "Children in a row, spaced by a space token.",
+      "props": {
+        "gap": {
+          "kind": "token",
+          "group": "space",
+          "default": "none"
+        },
+        "padding": {
+          "kind": "token",
+          "group": "space",
+          "default": "none"
+        },
+        "align": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ],
+          "default": "center"
+        },
+        "justify": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "center",
+            "end",
+            "between"
+          ],
+          "default": "start"
+        },
+        "wrap": {
+          "kind": "boolean",
+          "default": false
+        },
+        "grow": {
+          "kind": "boolean",
+          "default": false
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "space.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        "gap none",
+        "gap xs",
+        "gap s",
+        "gap m",
+        "gap l",
+        "gap xl",
+        "gap xxl",
+        "gap xxxl",
+        "align start",
+        "align center",
+        "align end",
+        "align stretch",
+        "justify start",
+        "justify center",
+        "justify end",
+        "justify between"
+      ]
+    },
+    {
+      "type": "Columns",
+      "tier": "layout",
+      "description": "Children side by side in equal columns while each has room (layout.sheetMin), one under the other when it doesn't (D-142): two short fields on one row, so a setup step fits the window.",
+      "props": {
+        "gap": {
+          "kind": "token",
+          "group": "space",
+          "default": "m"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "space.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        "two"
+      ]
+    },
+    {
+      "type": "Surface",
+      "tier": "layout",
+      "description": "A background, border, radius, and shadow. Frost works only inside a floating Layer.",
+      "props": {
+        "variant": {
+          "kind": "enum",
+          "values": [
+            "canvas",
+            "frost",
+            "raised",
+            "sunken",
+            "inverted"
+          ],
+          "default": "raised"
+        },
+        "shape": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "window",
+            "sheet",
+            "popover",
+            "control",
+            "round"
+          ],
+          "default": "none"
+        },
+        "elevation": {
+          "kind": "enum",
+          "values": [
+            "0",
+            "1",
+            "2",
+            "3"
+          ],
+          "default": "0"
+        },
+        "padding": {
+          "kind": "token",
+          "group": "space",
+          "default": "none"
+        },
+        "shortPadding": {
+          "kind": "token",
+          "group": "space",
+          "description": "The padding in a short window (below breakpoint.short): the full-window setup tightens up (D-131)."
+        },
+        "scroll": {
+          "kind": "boolean",
+          "default": false,
+          "description": "What it holds scrolls inside its padding when the surface is held shorter than its content: a dialog in the middle of a short window (D-123)."
+        },
+        "keyScope": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "findBar",
+            "findField",
+            "replaceField",
+            "pickerField",
+            "formatToolbar",
+            "linkEditor",
+            "firstRun"
+          ],
+          "default": "none",
+          "description": "Keys registered for this scope work while focus is inside."
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.surface.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        "scroll",
+        "variant canvas",
+        "variant frost",
+        "variant raised",
+        "variant sunken",
+        "variant inverted",
+        "shape none",
+        "shape window",
+        "shape sheet",
+        "shape popover",
+        "shape control",
+        "shape round",
+        "keyScope none",
+        "keyScope findBar",
+        "keyScope findField",
+        "keyScope replaceField",
+        "keyScope pickerField",
+        "keyScope formatToolbar",
+        "keyScope linkEditor",
+        "keyScope firstRun",
+        "elevation 0",
+        "elevation 1",
+        "elevation 2",
+        "elevation 3"
+      ]
+    },
+    {
+      "type": "Layer",
+      "tier": "layout",
+      "description": "Places content on a layer (trigger, panel, dialog, toast, tooltip) at a fixed position.",
+      "props": {
+        "layer": {
+          "kind": "enum",
+          "values": [
+            "contextual",
+            "trigger",
+            "panel",
+            "dialog",
+            "toast",
+            "tooltip"
+          ],
+          "default": "panel"
+        },
+        "position": {
+          "kind": "enum",
+          "values": [
+            "topBand",
+            "topEnd",
+            "belowTopBand",
+            "fill",
+            "window",
+            "center",
+            "bottomCenter",
+            "bottomStart"
+          ],
+          "default": "center",
+          "description": "window: the whole window below the title bar band, which stays the window's (dragging, the window controls): the full-window setup (D-126)."
+        },
+        "dragBand": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Puts the desktop title bar band under the layer: its top `layout.titleBar` (44 px), the window's drag region (DSK-02). The layer's own content is never part of it."
+        },
+        "landmark": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "banner",
+            "main",
+            "complementary",
+            "region"
+          ],
+          "default": "none"
+        },
+        "label": {
+          "kind": "message",
+          "requiredWhen": "landmark"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "layer.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        "layer contextual",
+        "layer trigger",
+        "layer panel",
+        "layer dialog",
+        "layer toast",
+        "layer tooltip",
+        "position topBand",
+        "position topEnd",
+        "position belowTopBand",
+        "position fill",
+        "position window",
+        "position center",
+        "position bottomCenter",
+        "position bottomStart",
+        "landmark none",
+        "landmark banner",
+        "landmark main",
+        "landmark complementary",
+        "landmark region"
+      ]
+    },
+    {
+      "type": "Center",
+      "tier": "layout",
+      "description": "Centers content up to a maximum width, with the page gutter.",
+      "props": {
+        "maxWidth": {
+          "kind": "enum",
+          "values": [
+            "measure",
+            "wideContent",
+            "popover",
+            "dialogS",
+            "dialogL",
+            "onboarding"
+          ],
+          "default": "measure"
+        },
+        "block": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "middle",
+            "anchored"
+          ],
+          "default": "start",
+          "description": "middle: centred in the height of a scroller while there's room (the full-window setup, D-126). anchored: placed as a block of layout.onboardingBlock would be centred, so content shorter than that changes height without moving (DSK-09, D-148)."
+        },
+        "gutter": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "regular"
+          ],
+          "default": "regular"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "layout.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        "max width measure",
+        "max width wideContent",
+        "max width popover",
+        "max width dialogS",
+        "max width dialogL",
+        "max width onboarding",
+        "block start",
+        "block middle",
+        "block anchored",
+        "gutter none",
+        "gutter regular"
+      ]
+    },
+    {
+      "type": "AppRoot",
+      "tier": "layout",
+      "description": "The root of every app view. Applies the theme and the token modes to the document.",
+      "props": {
+        "scheme": {
+          "kind": "enum",
+          "values": [
+            "light",
+            "dark"
+          ],
+          "required": true
+        },
+        "platform": {
+          "kind": "enum",
+          "values": [
+            "macos",
+            "windows",
+            "linux",
+            "web"
+          ],
+          "required": true
+        },
+        "contentSize": {
+          "kind": "number",
+          "min": 14,
+          "max": 32
+        },
+        "focusMode": {
+          "kind": "boolean",
+          "default": false
+        },
+        "theme": {
+          "kind": "enum",
+          "values": [
+            "paper",
+            "sepia",
+            "harbor-light",
+            "forest-light",
+            "contrast-light",
+            "ink",
+            "dusk",
+            "harbor-dark",
+            "forest-dark",
+            "contrast-dark"
+          ],
+          "description": "The theme to show (THM-08). Defaults to Paper or Ink."
+        },
+        "contentFont": {
+          "kind": "enum",
+          "values": [
+            "mono",
+            "sans",
+            "serif",
+            "hyperlegible",
+            "dyslexic",
+            "system"
+          ],
+          "default": "mono",
+          "description": "The content font (THM-03)."
+        },
+        "uiScale": {
+          "kind": "number",
+          "min": 0.9,
+          "max": 1.5,
+          "description": "Interface scale (DSY-03); note text is unaffected."
+        },
+        "lineHeight": {
+          "kind": "number",
+          "min": 1.3,
+          "max": 2,
+          "description": "Line spacing (Theme manager → Reading); unset is font.lineHeight."
+        },
+        "measure": {
+          "kind": "number",
+          "min": 50,
+          "max": 100,
+          "description": "Reading width in characters; unset is layout.measure."
+        },
+        "paragraphSpacing": {
+          "kind": "enum",
+          "values": [
+            "compact",
+            "comfortable",
+            "airy"
+          ],
+          "default": "comfortable",
+          "description": "Space between blocks: a token mode."
+        },
+        "focusDim": {
+          "kind": "number",
+          "min": 0.15,
+          "max": 0.6,
+          "description": "Focus mode's dim strength; unset is the theme's focus.dimOpacity."
+        },
+        "themeColors": {
+          "kind": "list",
+          "of": "colorValues",
+          "description": "An edited copy of the theme showing (Edit colors): color tokens and their hex values. Anything else is ignored."
+        },
+        "frame": {
+          "kind": "enum",
+          "values": [
+            "native",
+            "rounded",
+            "square"
+          ],
+          "default": "native",
+          "description": "The app-built window's shape on Windows and Linux (D-14): rounded with the drawn shadow, or square (maximized, snapped, full screen)."
+        },
+        "compositing": {
+          "kind": "enum",
+          "values": [
+            "gpu",
+            "software"
+          ],
+          "default": "gpu",
+          "description": "How the window is composited (D-121): software turns off the note's edge blur, too costly to draw without a GPU, and keeps its fade."
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.appRoot.*",
+      "a11y": {
+        "pattern": "application root"
+      },
+      "fixtures": [
+        "scheme light",
+        "scheme dark",
+        "platform linux",
+        "platform web",
+        "theme paper",
+        "theme sepia",
+        "theme harbor-light",
+        "theme forest-light",
+        "theme contrast-light",
+        "theme ink",
+        "theme dusk",
+        "theme harbor-dark",
+        "theme forest-dark",
+        "theme contrast-dark",
+        "contentFont mono",
+        "contentFont sans",
+        "contentFont serif",
+        "contentFont hyperlegible",
+        "contentFont dyslexic",
+        "contentFont system",
+        "uiScale 1.5",
+        "lineHeight 2, measure 50",
+        "paragraphSpacing compact",
+        "paragraphSpacing comfortable",
+        "paragraphSpacing airy",
+        "themeColors",
+        "frame rounded",
+        "frame square",
+        "compositing software"
+      ]
+    },
+    {
+      "type": "ToolbarRow",
+      "tier": "layout",
+      "description": "A row with the toolbar role: one tab stop, with arrow keys, Home, and End moving between its items.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus to its first item (Alt+F10)."
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": [
+            "IconButton",
+            "Button",
+            "MenuButton",
+            "Divider"
+          ]
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "space.*",
+      "a11y": {
+        "pattern": "toolbar",
+        "name": "label"
+      },
+      "fixtures": [
+        "with actions"
+      ]
+    },
+    {
+      "type": "Field",
+      "tier": "layout",
+      "description": "Label, control, description, and error in one arrangement; the group is named by the label.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "description": {
+          "kind": "message"
+        },
+        "error": {
+          "kind": "message"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any",
+          "max": 1
+        }
+      },
+      "states": [
+        "rest",
+        "error"
+      ],
+      "tokens": "cmp.field.*",
+      "a11y": {
+        "pattern": "group",
+        "name": "label"
+      },
+      "fixtures": [
+        "with description",
+        "with error"
+      ]
+    },
+    {
+      "type": "Positioner",
+      "tier": "layout",
+      "description": "Anchors floating content to a range in the note (the selection or a link): never covering it, kept on screen, and following it as it scrolls.",
+      "props": {
+        "anchor": {
+          "kind": "enum",
+          "values": [
+            "selection",
+            "link",
+            "caret"
+          ],
+          "default": "selection",
+          "description": "The selection, a link, or the `/` the slash menu opened at."
+        },
+        "placement": {
+          "kind": "enum",
+          "values": [
+            "above",
+            "below"
+          ],
+          "default": "above",
+          "description": "Above flips below near the top band; touch screens always use below."
+        },
+        "align": {
+          "kind": "enum",
+          "values": [
+            "center",
+            "start"
+          ],
+          "default": "center",
+          "description": "Centered on the anchor, or lined up with its start."
+        },
+        "offset": {
+          "kind": "token",
+          "group": "space",
+          "default": "s"
+        },
+        "landmark": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "region"
+          ],
+          "default": "none"
+        },
+        "label": {
+          "kind": "message",
+          "requiredWhen": "landmark"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any",
+          "max": 1
+        }
+      },
+      "states": [
+        "above",
+        "below",
+        "offscreen"
+      ],
+      "tokens": "cmp.positioner.*",
+      "a11y": {
+        "pattern": "none"
+      },
+      "fixtures": [
+        "anchor selection, above",
+        "anchor link, below",
+        "anchor caret, below, start",
+        "align center",
+        "landmark region"
+      ]
+    },
+    {
+      "type": "Sheet",
+      "tier": "layout",
+      "description": "A side sheet over the canvas (Files on the left, Theme and Find in all notes on the right). Not modal; closes on Esc or a click on the canvas.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "side": {
+          "kind": "enum",
+          "values": [
+            "start",
+            "end"
+          ],
+          "default": "start"
+        },
+        "width": {
+          "kind": "enum",
+          "values": [
+            "files",
+            "theme",
+            "find"
+          ],
+          "default": "files",
+          "description": "A layout.sheet* token."
+        },
+        "keyScope": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "files",
+            "findAll"
+          ],
+          "default": "none",
+          "description": "Keys registered for this scope work while focus is inside."
+        },
+        "pinned": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Pinned open (D-161): a click on the canvas doesn't close it, and a start sheet keeps the note's text clear of it. Still floating, never docked."
+        }
+      },
+      "events": {
+        "close": {}
+      },
+      "slots": {
+        "header": {
+          "accepts": "any"
+        },
+        "default": {
+          "accepts": "any"
+        },
+        "footer": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest",
+        "entering",
+        "pinned"
+      ],
+      "tokens": "cmp.sheet.*",
+      "a11y": {
+        "pattern": "complementary landmark",
+        "name": "label"
+      },
+      "fixtures": [
+        "start, files width",
+        "end, theme width",
+        "end, find width"
+      ]
+    },
+    {
+      "type": "ReaderPage",
+      "tier": "layout",
+      "description": "A published page (IA-VIEW-PUBLIC): a skip link, the reading column as the page's main landmark, and a quiet footer. It follows the reader's light or dark preference and reads from 320 px wide.",
+      "props": {
+        "skipLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The skip link to the note."
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        },
+        "footer": {
+          "accepts": "any",
+          "max": 1
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.readerPage.*",
+      "a11y": {
+        "pattern": "landmarks",
+        "name": "main and contentinfo; the skip link is the first focusable element."
+      },
+      "fixtures": [
+        "page"
+      ]
+    },
+    {
+      "type": "EditorSurface",
+      "tier": "host",
+      "description": "The writing surface (Tiptap and ProseMirror). It owns the note's DOM; views place it once.",
+      "props": {
+        "documentKey": {
+          "kind": "text",
+          "required": true
+        },
+        "initialValue": {
+          "kind": "text",
+          "required": true
+        },
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "placeholder": {
+          "kind": "message"
+        },
+        "emptyHeader": {
+          "kind": "message",
+          "description": "What an empty table header cell shows and is called, with {index} for its column's number."
+        },
+        "readOnly": {
+          "kind": "boolean",
+          "default": false
+        },
+        "focusMode": {
+          "kind": "boolean",
+          "default": false
+        },
+        "keymap": {
+          "kind": "list",
+          "of": "keyBindings",
+          "description": "Editor key bindings from the command registry."
+        },
+        "findOpen": {
+          "kind": "boolean",
+          "default": false
+        },
+        "findQuery": {
+          "kind": "text"
+        },
+        "findReplace": {
+          "kind": "text"
+        },
+        "findCase": {
+          "kind": "boolean",
+          "default": false
+        },
+        "findWord": {
+          "kind": "boolean",
+          "default": false
+        },
+        "findRegex": {
+          "kind": "boolean",
+          "default": false
+        },
+        "linkEditing": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The link editor is open: the selection stays highlighted and anchored."
+        },
+        "slashOpen": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The slash menu shows: arrows, Enter, and Tab drive it while focus stays in the note."
+        },
+        "slashActive": {
+          "kind": "text",
+          "description": "The slash menu's active row, which Enter inserts."
+        },
+        "slashList": {
+          "kind": "ref",
+          "description": "The slash menu's list, for aria-controls and aria-activedescendant."
+        }
+      },
+      "events": {
+        "change": {
+          "payload": {
+            "value": "text"
+          }
+        },
+        "ready": {},
+        "findResult": {
+          "payload": {
+            "count": "number",
+            "current": "number",
+            "invalid": "boolean",
+            "wrapped": "boolean",
+            "replaced": "number"
+          }
+        },
+        "findPrefill": {
+          "payload": {
+            "value": "text"
+          }
+        },
+        "format": {
+          "payload": {
+            "toolbar": "boolean",
+            "card": "boolean",
+            "bold": "text",
+            "italic": "text",
+            "strike": "text",
+            "code": "text",
+            "block": "text",
+            "codeBlock": "boolean",
+            "inlineCode": "boolean",
+            "oneBlock": "boolean",
+            "href": "text",
+            "table": "boolean"
+          }
+        },
+        "linkEdit": {
+          "payload": {
+            "href": "text",
+            "selected": "boolean"
+          }
+        },
+        "openLink": {
+          "payload": {
+            "href": "text"
+          }
+        },
+        "slash": {
+          "payload": {
+            "open": "boolean",
+            "query": "text",
+            "valid": "text"
+          }
+        },
+        "slashMove": {
+          "payload": {
+            "delta": "number"
+          }
+        },
+        "pasteNotice": {
+          "payload": {
+            "kind": "text",
+            "rows": "number",
+            "cols": "number",
+            "addedRows": "number",
+            "addedCols": "number"
+          }
+        },
+        "table": {
+          "payload": {
+            "inTable": "boolean",
+            "table": "number",
+            "row": "number",
+            "col": "number",
+            "rows": "number",
+            "cols": "number",
+            "header": "text",
+            "align": "text",
+            "insertAxis": "text",
+            "insertIndex": "number",
+            "selection": "text"
+          }
+        },
+        "tableChange": {
+          "payload": {
+            "kind": "text",
+            "index": "number",
+            "align": "text"
+          }
+        },
+        "tableCopy": {
+          "payload": {
+            "text": "text",
+            "format": "text"
+          }
+        },
+        "tableMenu": {}
+      },
+      "slots": {},
+      "states": [
+        "empty",
+        "editing",
+        "readOnly"
+      ],
+      "tokens": "cmp.editorSurface.*",
+      "a11y": {
+        "pattern": "textbox (multi-line)",
+        "name": "label"
+      },
+      "fixtures": []
+    },
+    {
+      "type": "TableControls",
+      "tier": "host",
+      "description": "Loop-style table controls drawn over the note from the editor's geometry: row and column handles with menus and drag to reorder, the + insertion point, New row and New column bars, the column tint, the range outline, and the cell menu.",
+      "props": {
+        "columnLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The column handle's name: \"Column 2, Owner, options\"."
+        },
+        "rowLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The row handle's name: \"Row 3 options\"."
+        },
+        "tableLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "insertLabel": {
+          "kind": "message",
+          "description": "The insertion point's name: \"Insert row between rows 2 and 3\"."
+        },
+        "newRowLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "newColumnLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "cellMenuLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "columnMenu": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true
+        },
+        "rowMenu": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true
+        },
+        "tableMenu": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true
+        },
+        "cellMenu": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true,
+          "description": "The context menu of the selected cells."
+        },
+        "menuRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value opens the context menu at the active cell."
+        }
+      },
+      "events": {
+        "action": {
+          "payload": {
+            "id": "text",
+            "table": "number",
+            "row": "number",
+            "col": "number",
+            "index": "number",
+            "from": "number",
+            "to": "number"
+          }
+        },
+        "close": {}
+      },
+      "slots": {},
+      "states": [
+        "hidden",
+        "hover",
+        "handleHover",
+        "menuOpen",
+        "insertPoint",
+        "dragging",
+        "rangeSelected"
+      ],
+      "tokens": "cmp.tableControls.*",
+      "a11y": {
+        "pattern": "buttons with menus (menu button)",
+        "name": "columnLabel"
+      },
+      "fixtures": []
+    },
+    {
+      "type": "WindowFrame",
+      "tier": "host",
+      "description": "The app-built window's behavior on Windows and Linux (D-14): moving by the title bar band (with double-click to maximize and right-click for the system menu), showing the window controls while the pointer is on the band (in full screen, once it reaches the top edge), the resize handles on every edge and corner (double-click the top or bottom one to maximize vertically), and the app-drawn system menu. The window's shape and shadow are AppRoot's `frame`.",
+      "props": {
+        "frame": {
+          "kind": "enum",
+          "values": [
+            "native",
+            "rounded",
+            "square"
+          ],
+          "default": "native",
+          "description": "Native draws nothing. Rounded puts the handles in the shadow margin; square puts them just inside the edges."
+        },
+        "resizable": {
+          "kind": "boolean",
+          "bindable": true,
+          "description": "Shows the resize handles: not while maximized or full screen."
+        },
+        "fullScreen": {
+          "kind": "boolean",
+          "bindable": true,
+          "description": "Full screen (DSK-04): the title bar band and its window controls hide until the pointer reaches the top edge. Keyboard focus still shows the controls."
+        },
+        "menu": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true,
+          "description": "The system menu: Restore, Move, Size, Minimize, Maximize, Snap left, Snap right, Close."
+        },
+        "menuLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "menuRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value opens the system menu."
+        },
+        "menuX": {
+          "kind": "number",
+          "description": "Where the menu opens, in the window; -1 opens it under the band's start (Alt+Space)."
+        },
+        "menuY": {
+          "kind": "number"
+        },
+        "keyboard": {
+          "kind": "enum",
+          "values": [
+            "none",
+            "move",
+            "size"
+          ],
+          "default": "none",
+          "description": "The system menu's Move or Size is running: the arrow keys, Enter, and Esc go to it."
+        }
+      },
+      "events": {
+        "drag": {
+          "payload": {
+            "phase": "text",
+            "kind": "text",
+            "x": "number",
+            "y": "number",
+            "shift": "boolean"
+          }
+        },
+        "toggleMaximize": {},
+        "toggleVertical": {},
+        "menu": {
+          "payload": {
+            "x": "number",
+            "y": "number"
+          }
+        },
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        },
+        "key": {
+          "payload": {
+            "key": "text",
+            "fine": "boolean"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "bandHover",
+        "fullScreenHidden",
+        "moving",
+        "resizing",
+        "menuOpen"
+      ],
+      "tokens": "cmp.windowFrame.*",
+      "a11y": {
+        "pattern": "menu (the system menu); the handles are pointer-only, with Move and Size in the menu for the keyboard",
+        "name": "menuLabel"
+      },
+      "fixtures": []
+    },
+    {
+      "type": "Trigger",
+      "tier": "compound",
+      "description": "The trigger at the top center. Opens the toolbar under itself, and shows a save problem in its dot.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "problemLabel": {
+          "kind": "message"
+        },
+        "problem": {
+          "kind": "boolean",
+          "default": false
+        },
+        "shortcut": {
+          "kind": "text"
+        },
+        "open": {
+          "kind": "boolean",
+          "default": false
+        },
+        "toolbarLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "commandItems",
+          "required": true
+        },
+        "more": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true
+        },
+        "moreLabel": {
+          "kind": "message",
+          "required": true
+        }
+      },
+      "events": {
+        "openChange": {
+          "payload": {
+            "open": "boolean"
+          }
+        },
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "pressed",
+        "focusVisible",
+        "open",
+        "problem"
+      ],
+      "tokens": "none (composes TriggerButton, MorphPanel, Toolbar)",
+      "a11y": {
+        "pattern": "button that morphs into a toolbar (non-modal dialog)",
+        "name": "label"
+      },
+      "fixtures": [
+        "rest",
+        "save problem"
+      ]
+    },
+    {
+      "type": "Toolbar",
+      "tier": "compound",
+      "description": "The trigger's toolbar: at most six command actions, then ⋯ with everything else (UI-04).",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "items": {
+          "kind": "list",
+          "of": "commandItems",
+          "required": true
+        },
+        "more": {
+          "kind": "list",
+          "of": "menuSections",
+          "required": true
+        },
+        "moreLabel": {
+          "kind": "message",
+          "required": true
+        }
+      },
+      "events": {
+        "action": {
+          "payload": {
+            "id": "text"
+          }
+        }
+      },
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "none (composes ToolbarRow, IconButton, Divider, MenuButton)",
+      "a11y": {
+        "pattern": "toolbar",
+        "name": "label"
+      },
+      "fixtures": [
+        "default actions"
+      ]
+    },
+    {
+      "type": "Dialog",
+      "tier": "compound",
+      "description": "A titled modal dialog with a close button, optional fixed controls, and a scrolling body.",
+      "props": {
+        "title": {
+          "kind": "message",
+          "required": true
+        },
+        "closeLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "open": {
+          "kind": "boolean",
+          "default": false
+        },
+        "height": {
+          "kind": "enum",
+          "values": [
+            "stable",
+            "content"
+          ],
+          "default": "stable",
+          "description": "stable: at least 400 px, and never shorter than it has been since it opened (D-111); content: as tall as its content (confirmations)."
+        },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "s",
+            "l",
+            "xl"
+          ],
+          "default": "l",
+          "description": "xl is the conflict resolver's: most of the window, up to layout.dialogXL."
+        }
+      },
+      "events": {
+        "openChange": {
+          "payload": {
+            "open": "boolean"
+          }
+        }
+      },
+      "slots": {
+        "toolbar": {
+          "accepts": "any"
+        },
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "open",
+        "entering",
+        "exiting"
+      ],
+      "tokens": "none (composes DialogPanel, Heading, IconButton, Inline)",
+      "a11y": {
+        "pattern": "modal dialog",
+        "name": "title"
+      },
+      "fixtures": [
+        "size s",
+        "height content",
+        "size l with toolbar",
+        "size xl"
+      ]
+    },
+    {
+      "type": "NoteContent",
+      "tier": "block",
+      "description": "A note's content through the block components (paragraphs, headings, lists, task lists, quotes, code, tables, rules, inline marks, and unknown syntax), read-only: the published reader page's note (IA-VIEW-PUBLIC).",
+      "props": {
+        "blocks": {
+          "kind": "list",
+          "of": "noteBlocks",
+          "required": true,
+          "description": "The note as the Markdown bridge parses it."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.noteContent.*",
+      "a11y": {
+        "pattern": "document",
+        "name": "The page's landmarks name it; headings keep their levels."
+      },
+      "fixtures": [
+        "every block"
+      ]
+    }
+  ],
+  "tokens": {
+    "space": [
+      "none",
+      "xxs",
+      "xs",
+      "s",
+      "m",
+      "l",
+      "xl",
+      "xxl",
+      "xxxl"
+    ],
+    "size": [
+      "hit",
+      "iconS",
+      "iconM",
+      "iconL",
+      "controlS",
+      "controlM",
+      "controlL",
+      "appMarkL",
+      "appMarkM",
+      "cardVisual",
+      "avatar",
+      "textArea",
+      "stepMark",
+      "stepMarkIcon",
+      "stepDot",
+      "stepDotCurrent",
+      "meter",
+      "triggerDot",
+      "triggerRing",
+      "scrollbar"
+    ],
+    "layout": [
+      "topBand",
+      "titleBar",
+      "measure",
+      "gutter",
+      "gutterCompact",
+      "wideContent",
+      "sheetFiles",
+      "sheetTheme",
+      "sheetFind",
+      "sheetMin",
+      "pinnedColumnMin",
+      "sheetMinWide",
+      "sheetShort",
+      "popover",
+      "menuMinWidth",
+      "slashMenu",
+      "dialogS",
+      "onboarding",
+      "onboardingBlock",
+      "dialogM",
+      "dialogL",
+      "dialogXL",
+      "versionPaneMin",
+      "categoryList",
+      "categoryPanelMin",
+      "dialogMinHeight",
+      "dialogTop",
+      "findBarClearance",
+      "themeTile",
+      "themeSwatch",
+      "blockGap",
+      "editorEndPadding",
+      "editorMinHeight",
+      "triggerTop",
+      "readingTop",
+      "listItemGap",
+      "scrollFade",
+      "triggerClear",
+      "scrollVeil",
+      "triggerVeil",
+      "scrollbarEnds",
+      "scrollBlur",
+      "scrollBands",
+      "fieldMin",
+      "findField"
+    ],
+    "radius": [
+      "window",
+      "sheet",
+      "popover",
+      "control",
+      "small",
+      "round"
+    ],
+    "shadow": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ],
+    "layer": [
+      "canvas",
+      "mask",
+      "contextual",
+      "trigger",
+      "panel",
+      "dialog",
+      "toast",
+      "tooltip"
+    ],
+    "motion": [
+      "micro",
+      "enter",
+      "sheet",
+      "exit",
+      "theme",
+      "spin",
+      "morph",
+      "grow",
+      "none",
+      "autoScroll"
+    ]
+  },
+  "icons": [
+    "open",
+    "save",
+    "darkTheme",
+    "lightTheme",
+    "more",
+    "search",
+    "add",
+    "dismiss",
+    "check",
+    "newNote",
+    "bold",
+    "italic",
+    "link",
+    "minimize",
+    "restore",
+    "maximize",
+    "fullScreen",
+    "exitFullScreen",
+    "focus",
+    "font",
+    "keyboard",
+    "settings",
+    "info",
+    "warning",
+    "error",
+    "sync",
+    "delete",
+    "rename",
+    "copy",
+    "folder",
+    "document",
+    "chevronRight",
+    "chevronDown",
+    "undo",
+    "redo",
+    "table",
+    "quote",
+    "code",
+    "bulletList",
+    "numberedList",
+    "heading1",
+    "heading2",
+    "heading3",
+    "color",
+    "share",
+    "history",
+    "matchCase",
+    "wholeWord",
+    "regex",
+    "arrowUp",
+    "arrowDown",
+    "lock",
+    "export",
+    "import",
+    "strikethrough",
+    "text",
+    "taskList",
+    "divider",
+    "moreVertical",
+    "newFolder",
+    "github",
+    "cloud",
+    "cloudUp",
+    "cloudCheck",
+    "cloudOff",
+    "download",
+    "circle",
+    "globe",
+    "calendar",
+    "chevronLeft",
+    "mail",
+    "pin",
+    "pinOff"
+  ],
+  "views": [
+    {
+      "id": "canvas",
+      "ia": "IA-VIEW-CANVAS",
+      "viewModels": [
+        "vm.app",
+        "vm.canvas",
+        "vm.toolbar",
+        "vm.shortcuts",
+        "vm.find",
+        "vm.format",
+        "vm.slash",
+        "vm.table",
+        "vm.feedback",
+        "vm.picker",
+        "vm.account",
+        "vm.saveState",
+        "vm.unlock",
+        "vm.about",
+        "vm.files",
+        "vm.findAll",
+        "vm.move",
+        "vm.confirm",
+        "vm.firstRun",
+        "vm.setup",
+        "vm.import",
+        "vm.conflict",
+        "vm.held",
+        "vm.deleted",
+        "vm.window",
+        "vm.spotlight"
+      ]
+    },
+    {
+      "id": "index",
+      "ia": "IA-VIEW-PUBLIC",
+      "viewModels": [
+        "vm.publicIndex"
+      ]
+    },
+    {
+      "id": "reader",
+      "ia": "IA-VIEW-PUBLIC",
+      "viewModels": [
+        "vm.reader"
+      ]
+    },
+    {
+      "id": "settings",
+      "ia": "IA-VIEW-SETTINGS",
+      "viewModels": [
+        "vm.settings",
+        "vm.signOut",
+        "vm.removeWorkspace",
+        "vm.shareManage",
+        "vm.shareEditor",
+        "vm.shareInvite",
+        "vm.shareConfirm",
+        "vm.diagnostics",
+        "vm.shareTemplate",
+        "vm.shareNote",
+        "vm.agents"
+      ]
+    },
+    {
+      "id": "share",
+      "ia": "IA-VIEW-PUBLIC",
+      "viewModels": [
+        "vm.share"
+      ]
+    },
+    {
+      "id": "theme",
+      "ia": "IA-VIEW-THEME",
+      "viewModels": [
+        "vm.themeManager"
+      ]
+    }
+  ],
+  "fragments": []
+}
