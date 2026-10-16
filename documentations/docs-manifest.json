@@ -468,6 +468,24 @@
       "status": "draft",
       "updated": "2026-10-14",
       "group": "Plan"
+    },
+    {
+      "path": "product/site-and-help.md",
+      "title": "Product site and help",
+      "order": 165,
+      "icon": "support",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Product"
+    },
+    {
+      "path": "design/help-writing.md",
+      "title": "Writing help articles",
+      "order": 308,
+      "icon": "edit_note",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Design/System"
     }
   ]
 }

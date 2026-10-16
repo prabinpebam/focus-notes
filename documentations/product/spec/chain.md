@@ -126,6 +126,7 @@ These are **working personas**: assumptions drawn from the seed spec and the own
 | **Tinkerer** | Enjoys making tools their own, and arrives with favorite color schemes and fonts. | Control and expression without breaking things. |
 | **Comfort-sensitive writer** | Low vision, light sensitivity, dyslexia, or very long writing sessions. | Size, contrast, font, and spacing control that can be trusted. |
 | **Reader** | Gets a public or private link and has no account. | Clean, readable page in their preferred light or dark mode. |
+| **Visitor** | Has heard of Focus Notes or found it by searching, and hasn't installed it. May not know what Git or Markdown are. | A quick, honest answer to "what is it, is it for me, can I try it?" |
 
 <h2 data-reader-personas="engineering">Checking the chain</h2>
 

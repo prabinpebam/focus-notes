@@ -147,13 +147,18 @@ Signing secrets will live only in the release workflow's `release` environment, 
 
 <h2 id="the-product-site">The project's own site</h2>
 
-There's no separate product site (D-54 is superseded). The project repository's GitHub Pages site is the owner's own instance (D-87), with these docs beside it (D-40):
+The project repository's GitHub Pages site is the **product site** (D-167): the landing page, the help centre and the demo, with the owner's own Focus Notes moved to `/app/` and these docs beside it (D-40). It still hosts nothing for anyone else (D-86). See [Product site and help](../product/site-and-help.md).
 
 | Path | Serves |
 | --- | --- |
-| `/` | The owner's Focus Notes. Until a browser unlocks the owner's private notes with the vault passphrase, it shows the visitor view: the owner's public notes, read-only, notes written in that browser, and [Use this app for yourself](../design/views/get-started.md) (PKG-09, DST-01). |
+| `/` | The landing page: what Focus Notes is, how it works, who it's for, downloads and *Try the demo* (HLP-01) |
+| `/help/` | The help centre, with *What's new* at `/help/whats-new/` (HLP-02) |
+| `/demo/` | The demo: the web app with sample notes, kept in the visitor's browser (HLP-05) |
+| `/download/` | Downloads for each system from the latest GitHub Release, with checksums |
+| `/app/` | The owner's Focus Notes. Until a browser unlocks the owner's private notes, it shows the visitor view (PKG-09, DST-01) |
+| `/n/` | The owner's public note pages, at unchanged addresses (D-139) |
 | `/documentations/` | This documentation |
-| `/schemas/` | The JSON Schemas, at stable `$id` URLs |
+| `/schemas/` | The JSON Schemas at stable `$id` URLs, and the design-system catalogue (DSY-13) |
 | `/llms.txt` | A map of these docs for language models |
 | `/privacy/` | The privacy statement (no data collected) |
 

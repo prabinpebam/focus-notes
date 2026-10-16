@@ -3,7 +3,7 @@
 The situations in which each [customer promise](customer-promises.md) matters, written as jobs to be done. Each scenario names the behavior people should see and the user-can capabilities that deliver it.
 
 > [!NOTE]
-> **TL;DR.** 47 scenarios in ten areas (writing, tables, files, sharing, find, theme, agents, setup, safety, ownership), plus 13 **unsupported boundaries** where we deliberately say no and offer something else instead. Each row reads *When ⟨situation⟩, I want to ⟨motivation⟩, so I can ⟨outcome⟩*. The column order (ID, promise, situation, persona, expected behavior, user can, views) follows the Slate spec convention. Personas are the working personas in [The articulation chain](chain.md#personas-used-in-scenarios).
+> **TL;DR.** 51 scenarios in eleven areas (writing, tables, files, sharing, find, theme, agents, setup, safety, ownership, discovering and getting help), plus 13 **unsupported boundaries** where we deliberately say no and offer something else instead. Each row reads *When ⟨situation⟩, I want to ⟨motivation⟩, so I can ⟨outcome⟩*. The column order (ID, promise, situation, persona, expected behavior, user can, views) follows the Slate spec convention. Personas are the working personas in [The articulation chain](chain.md#personas-used-in-scenarios).
 
 <h2 data-reader-personas="product design">Writing</h2>
 
@@ -93,6 +93,15 @@ These scenarios answer the owner's questions: **when and why** people change the
 | SC-AGENT-01 | CP-AGENT-01 | When I work with an AI agent, I want it to find and read my notes, so it has my context without me copying and pasting. | Power user, Writer | An agent connects to the local MCP server in a minute and searches and reads what I've allowed. Coding agents follow the workspace's AGENTS.md. | UC-AGENT-01, UC-AGENT-06 | IA-VIEW-SETTINGS |
 | SC-AGENT-02 | CP-AGENT-01 | When I let an agent draft or edit notes, I want its changes limited to what I allowed, clearly labeled, and easy to undo, so I stay in charge. | Writer | A separate permission for each capability. Each agent change is a labeled commit with Review and Undo. | UC-AGENT-02, UC-AGENT-03 | IA-VIEW-SETTINGS, IA-VIEW-HISTORY, IA-CMP-TOAST |
 | SC-AGENT-03 | CP-AGENT-01 | When I automate my workflow (scripts, launchers, other apps), I want a command-line tool and links that open notes, so Focus Notes fits my setup. | Power user | A `focus-notes` command with JSON output, and `focus-notes://` links that open notes. | UC-AGENT-04, UC-AGENT-05 | IA-VIEW-CANVAS |
+
+<h2 data-reader-personas="product design">Discovering and getting help</h2>
+
+| ID | Promise | Situation | Persona | Expected behavior | User can | Views |
+| --- | --- | --- | --- | --- | --- | --- |
+| SC-HELP-01 | CP-KNOW-01 | When I come across Focus Notes, I want to see what it does, how it looks, and whether it suits me, so I can decide before installing anything. | Visitor | The project's site opens on a page that says what it is in one sentence, shows real screenshots, explains how it works in three steps, says honestly who it isn't for, and offers a download for my system and a demo. | UC-HELP-01 | IA-VIEW-SITE |
+| SC-HELP-02 | CP-KNOW-01 | When I'm curious but not ready to install, I want to try it in my browser, so I can feel focus mode and the editor for myself. | Visitor | *Try the demo* opens the app in the browser with sample notes, no sign-in, nothing sent anywhere, and a clear way back to download. | UC-HELP-02 | IA-VIEW-DEMO |
+| SC-HELP-03 | CP-KNOW-01 | When I'm unsure how something works or what a choice means, I want a plain explanation one click from where I am, so I can carry on without searching the web. | Writer, Visitor | *Learn more* next to a setting, a step, or a message opens the exact article and section, written for people who've never used Git. | UC-HELP-03, UC-HELP-04 | IA-VIEW-HELP, IA-CMP-LEARNMORE |
+| SC-HELP-04 | CP-KNOW-01 | When something goes wrong (sign-in, saving to GitHub, sync, a warning on install), I want steps that fix it, so I'm not stuck or afraid I've lost my notes. | Writer | The message in the app links to a troubleshooting article that starts from what I see, lists the likely causes in order, and fixes each in numbered steps, with a way to report it if nothing works. | UC-HELP-05 | IA-VIEW-HELP, IA-CMP-LEARNMORE |
 
 <h2 id="unsupported-boundaries" data-reader-personas="product design">Unsupported boundaries</h2>
 

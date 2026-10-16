@@ -286,6 +286,37 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 - The MCP server passes the official MCP Inspector checks and the agent-safety tests (AGT-09).
 
+<h2 id="mh" data-reader-personas="product design engineering">MH: The product site and help</h2>
+
+**You can:** Find out what Focus Notes is, whether it suits you, and try it in your browser before installing; and, once you use it, open a plain-language article for any setting, step or problem straight from the app ([Product site and help](../product/site-and-help.md), D-167 to D-169).
+
+**Used by:** Visitors and every writer. **Delivered as:** the project's GitHub Pages site, updated with each release. It can run beside M7 and M8: it needs only what M5 already built.
+
+**Demo script** (run by the owner at the gate, then automated):
+
+1. Open `prabinpebam.github.io/focus-notes/` in a fresh browser: the first screen says what Focus Notes is, offers the download for this system and *Try the demo*, and its screenshots match the current release in light and dark.
+2. *Try the demo*: write in focus mode, open Files and Spotlight, reload, then *Reset demo*. No request leaves the site.
+3. In the desktop app, open *Learn more* next to the device code at Connect and *How to fix this* on a backup problem: each opens the right article at the right section.
+4. Search the help centre for "log in" and find *Connect your GitHub account*.
+5. Follow *Can't connect to GitHub* on a machine without Git: the article gets you to a working setup.
+
+**Work packages**
+
+| ID | Work package | Requirements | Depends on | Reviews |
+| --- | --- | --- | --- | --- |
+| WP-10.1 | **Site build and addresses**. The static site builder on the design system and the public pages' renderer; the new addresses (`/`, `/help/`, `/demo/`, `/download/`, `/privacy/`, the owner's app at `/app/`, `/n/` unchanged); light and dark; no other origins; the web vitals budgets. | HLP-08 | WP-5.1 | code, design-system, accessibility, security |
+| WP-10.2 | **Help centre**. Article front matter and content-type checks, reading level, link and anchor checks, the help home, category and article pages, *Was this helpful?*, *What's new* from release notes, and the in-browser search. | HLP-02, HLP-07, HLP-09 | WP-10.1 | code, design-system, accessibility |
+| WP-10.3 | **Articles**. The first set of about 40 articles in eight categories, troubleshooting for every problem message the app shows, each meeting the help article definition of done. | HLP-06 | WP-10.2, WP-10.4 | design-system, accessibility |
+| WP-10.4 | **Screenshots from the app**. The `site` capture catalogue on the release build with the demo workspace, light and dark at 2×, framing, alt text, the screen-level CI job, and the freshness check. | HLP-04 | WP-10.6 | code, design-system |
+| WP-10.5 | **Landing page and downloads**. The pitch, trust strip, how it works, features, *Is it for you?*, built in the open, questions, and downloads for each system from the latest release. | HLP-01 | WP-10.1, WP-10.4 | design-system, accessibility |
+| WP-10.6 | **Demo**. The demo workspace (the template's notes plus sample notes), the `/demo/` build kept in the browser, the banner with *Download* and *Reset demo*, and no route to GitHub. | HLP-05 | WP-10.1 | code, design-system, accessibility, security |
+| WP-10.7 | **Learn more links**. `help:` links in view documents, the ID registry, *How to fix this* on every problem message, Help → Help centre, and the CI check that every ID, anchor and link resolves. | HLP-03 | WP-10.2 | code, design-system, accessibility |
+
+**Exit criteria** (in addition to the [stage definition of done](definition-of-done.md#stage-definition-of-done)):
+
+- Every article meets the [help article definition of done](definition-of-done.md#help-article-definition-of-done).
+- A usability check with five people who have never used Git: at least four finish *Get started* and *Can't connect to GitHub* using only the articles.
+
 <h2 id="m8" data-reader-personas="product design engineering">M8: Polish and pro features</h2>
 
 **You can:** Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, signed builds with automatic updates and channels, store listings, and more interface languages.

@@ -3,7 +3,7 @@
 Every capability Focus Notes provides, written as what a person can do. Each one names the scenarios it serves, where it lives, the requirements that build it, and how we check it.
 
 > [!NOTE]
-> **TL;DR.** 81 user-can capabilities: 60 are P0 (the first release), 20 are P1, and 1 comes later. Every row traces up to at least one [scenario](scenarios.md) and down to the [views and components](../../design/information-architecture.html) that deliver it and the [requirements](../requirements.md) that make it testable. The column order (ID, user can, scenarios, priority, views, requirements, acceptance) follows the Slate spec convention. The acceptance column is the observable check: what a person sees, not how it's built.
+> **TL;DR.** 86 user-can capabilities: 65 are P0 (the first release), 20 are P1, and 1 comes later. Every row traces up to at least one [scenario](scenarios.md) and down to the [views and components](../../design/information-architecture.html) that deliver it and the [requirements](../requirements.md) that make it testable. The column order (ID, user can, scenarios, priority, views, requirements, acceptance) follows the Slate spec convention. The acceptance column is the observable check: what a person sees, not how it's built.
 
 <h2 data-reader-personas="product design">Canvas and focus</h2>
 
@@ -130,3 +130,13 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 | UC-SAFE-04 | receive app updates automatically, verified as genuine | SC-SAFE-04 | P1 | IA-VIEW-SETTINGS | DSK-07 | Updates install on quit. Settings → About shows the version and update status. |
 | UC-SAFE-05 | see earlier versions of a note, compare them, and restore one | SC-SAFE-05 | P1 | IA-VIEW-HISTORY | FIL-13 | Restoring makes a new commit, and the newer versions stay in history. |
 | UC-OWN-01 | open any note in another editor and find clean, unchanged Markdown | SC-OWN-01, SC-TABLE-05 | P0 | None (file format) | EDT-01, EDT-10, EXT-02, EXT-05, PKG-01 | The round-trip test corpus passes byte for byte. |
+
+<h2 data-reader-personas="product design">Discovering and getting help</h2>
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-HELP-01 | learn what Focus Notes is, see it, judge whether it suits them, and download it for their system, from the project's site | SC-HELP-01 | P0 | IA-VIEW-SITE | HLP-01, HLP-04, HLP-08 | From the site's first screen a visitor can say what the app does and who it's for, sees screenshots of the current release, and reaches the download for their system in one click. |
+| UC-HELP-02 | try Focus Notes in the browser with sample notes, with no sign-in and nothing sent anywhere | SC-HELP-02 | P0 | IA-VIEW-DEMO | HLP-05 | *Try the demo* opens the editor with sample notes in under 3 s; focus mode, Files and Spotlight work; *Reset* restores the samples; no request leaves the site. |
+| UC-HELP-03 | read plain, task-based help articles, organized by what they're trying to do, and find one by searching | SC-HELP-03 | P0 | IA-VIEW-HELP | HLP-02, HLP-07, HLP-09 | A writer new to Git completes the article's task using only the article; search finds it from everyday words. |
+| UC-HELP-04 | open the exact article and section for what they're looking at from *Learn more* in the app | SC-HELP-03 | P0 | IA-VIEW-HELP, IA-CMP-LEARNMORE | HLP-03 | Every *Learn more* in the app opens an existing article at the right heading, on the desktop and in the browser. |
+| UC-HELP-05 | fix a problem from the message they see, with steps that need no technical knowledge, or report it if nothing works | SC-HELP-04 | P0 | IA-VIEW-HELP, IA-CMP-LEARNMORE | HLP-06, HLP-07 | Each problem the app can show (sign-in, Git, saving to GitHub, sync, conflicts, install warnings) links to a troubleshooting article that starts from its exact words. |
