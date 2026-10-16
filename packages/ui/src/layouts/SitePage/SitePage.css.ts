@@ -59,7 +59,7 @@ export const main = style({
   paddingBlockEnd: t.sectionGap,
   outline: "none",
 });
-export const width = styleVariants({ reading: column(t.measure), wide: column(t.wide) });
+export const width = styleVariants({ reading: column(t.measure), wide: column(t.wide), showcase: column(t.showcase) });
 
 export const footer = style({
   ...column(t.wide),

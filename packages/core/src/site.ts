@@ -15,13 +15,17 @@ export const SITE_PATHS = {
 } as const;
 
 /**
- * The landing page's sections after the hero, in order, by their stable anchors (Product site and
- * help → The landing page). Each is one level-2 heading in `site/index.md`.
+ * The landing page's limits (D-174): visual first, a few words each. The site check also counts the
+ * rendered page: at most LANDING_WORDS of visible text outside the navigation and footer, and no
+ * text block over LANDING_BLOCK words.
  */
-export const LANDING_SECTIONS = ["trust", "how-it-works", "features", "is-it-for-you", "built-in-the-open", "developers", "questions", "get-focus-notes"] as const;
+export const LANDING_LIMITS = { headline: 6, line: 14, features: 5, featureHeadline: 5, eyebrow: 2, closing: 8 } as const;
+export const LANDING_WORDS = 120;
+export const LANDING_BLOCK = 20;
 
-/** The hero's anchor, before the sections. */
+/** The hero's anchor, and the closing call to action's. */
 export const LANDING_HERO = "start";
+export const LANDING_CLOSING = "get-focus-notes";
 
 export type FrontMatter = Record<string, string | string[]>;
 
@@ -110,22 +114,53 @@ export function siteMarkdown(markdown: string): SiteContent {
 export interface SitePageModel extends Record<string, unknown> { title: PMNode[]; body: PMNode[] }
 export const sitePageModel = (c: SiteContent): SitePageModel => ({ title: c.title, body: c.body });
 
-/** The landing page (`vm.siteLanding`, HLP-01): the hero, then each section with its anchor, alternating bands. */
+/** A screenshot on the site (D-169): light, and dark if there is one, with its size in CSS pixels. */
+export interface SiteImage { src: string; srcDark?: string; alt: string; width: number; height: number }
+/** site/landing.json (D-174): the hero, up to five featured sections, and the closing line. */
+export interface LandingContent {
+  /** Which work package writes its final words. */
+  draft?: string;
+  headline: string;
+  line: string;
+  hero: SiteImage;
+  features: { id: string; eyebrow?: string; headline: string; line: string; image: SiteImage }[];
+  closing: string;
+}
+/** The landing page (`vm.siteLanding`, HLP-01, D-174): the hero, each feature with its anchor, and the closing line. */
 export interface LandingModel extends Record<string, unknown> {
   heroAnchor: string;
-  hero: PMNode[];
-  sections: { key: string; anchor: string; tone: "band" | "plain"; body: PMNode[] }[];
+  headline: string;
+  line: string;
+  hero: Required<SiteImage>;
+  features: { key: string; anchor: string; hasEyebrow: boolean; eyebrow: string; headline: string; line: string; image: Required<SiteImage> }[];
+  closingAnchor: string;
+  closing: string;
 }
-export function landingModel(c: SiteContent): LandingModel {
-  const starts = c.body.flatMap((b, i) => (b.type === "heading" && b.attrs?.level === 2 ? [i] : []));
-  if (starts.length !== LANDING_SECTIONS.length) throw new Error(`The landing page needs ${LANDING_SECTIONS.length} sections (level-2 headings), in order: ${LANDING_SECTIONS.join(", ")}. It has ${starts.length}.`);
-  const sections = starts.map((start, i) => ({
-    key: LANDING_SECTIONS[i]!,
-    anchor: LANDING_SECTIONS[i]!,
-    tone: (i % 2 ? "plain" : "band") as "band" | "plain",
-    body: c.body.slice(start, starts[i + 1] ?? c.body.length),
-  }));
-  return { heroAnchor: LANDING_HERO, hero: [...c.title, ...c.body.slice(0, starts[0])], sections };
+export const countWords = (s: string): number => s.trim().split(/\s+/).filter(Boolean).length;
+const ANCHOR = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+/** The landing page's model, after checking it keeps to D-174's limits; a problem names what's over. */
+export function landingModel(c: LandingContent): LandingModel {
+  const over: string[] = [];
+  const limit = (what: string, text: string | undefined, max: number) => { if (text !== undefined && countWords(text) > max) over.push(`${what} has ${countWords(text)} words (at most ${max})`); };
+  const image = (what: string, i: SiteImage): Required<SiteImage> => {
+    if (!i?.src || !i.alt?.trim() || !(i.width > 0) || !(i.height > 0)) over.push(`${what}'s screenshot needs src, alt, width and height`);
+    return { src: i?.src ?? "", srcDark: i?.srcDark ?? "", alt: i?.alt ?? "", width: i?.width ?? 0, height: i?.height ?? 0 };
+  };
+  limit("The headline", c.headline, LANDING_LIMITS.headline);
+  limit("The hero's line", c.line, LANDING_LIMITS.line);
+  limit("The closing line", c.closing, LANDING_LIMITS.closing);
+  if (c.features.length > LANDING_LIMITS.features) over.push(`${c.features.length} featured sections (at most ${LANDING_LIMITS.features})`);
+  const hero = image("The hero", c.hero);
+  const features = c.features.map((f) => {
+    if (!ANCHOR.test(f.id)) over.push(`"${f.id}" isn't a usable anchor`);
+    limit(`${f.id}'s headline`, f.headline, LANDING_LIMITS.featureHeadline);
+    limit(`${f.id}'s line`, f.line, LANDING_LIMITS.line);
+    limit(`${f.id}'s eyebrow`, f.eyebrow, LANDING_LIMITS.eyebrow);
+    return { key: f.id, anchor: f.id, hasEyebrow: Boolean(f.eyebrow), eyebrow: f.eyebrow ?? "", headline: f.headline, line: f.line, image: image(f.id, f.image) };
+  });
+  if (over.length) throw new Error(`site/landing.json: ${over.join("; ")} (D-174).`);
+  return { heroAnchor: LANDING_HERO, headline: c.headline, line: c.line, hero, features, closingAnchor: LANDING_CLOSING, closing: c.closing };
 }
 
 export interface HelpCategory { id: string; title: string; summary: string }
@@ -172,6 +207,7 @@ export function helpArticleModel(c: SiteContent, category: HelpCategory): HelpAr
 }
 
 const BLOCKS: JsonSchema = { type: "array", items: { type: "object" } };
+const IMAGE: JsonSchema = { type: "object", properties: { src: { type: "string" }, srcDark: { type: "string" }, alt: { type: "string" }, width: { type: "number" }, height: { type: "number" } } };
 const vm = (id: string, properties: Record<string, JsonSchema>) => ({ id, schema: { type: "object" as const, properties } });
 /** The site's view models, filled by the site's renderer (WP-10.1), not the app. */
 export const SITE_VIEW_MODELS = [
@@ -180,8 +216,12 @@ export const SITE_VIEW_MODELS = [
   vm("vm.sitePage", { title: BLOCKS, body: BLOCKS }),
   vm("vm.siteLanding", {
     heroAnchor: { type: "string" },
-    hero: BLOCKS,
-    sections: { type: "array", items: { type: "object", properties: { key: { type: "string" }, anchor: { type: "string" }, tone: { type: "string" }, body: BLOCKS } } },
+    headline: { type: "string" },
+    line: { type: "string" },
+    hero: IMAGE,
+    features: { type: "array", items: { type: "object", properties: { key: { type: "string" }, anchor: { type: "string" }, hasEyebrow: { type: "boolean" }, eyebrow: { type: "string" }, headline: { type: "string" }, line: { type: "string" }, image: IMAGE } } },
+    closingAnchor: { type: "string" },
+    closing: { type: "string" },
   }),
   vm("vm.helpHome", {
     title: BLOCKS,

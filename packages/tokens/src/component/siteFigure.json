@@ -1,0 +1,4 @@
+{ "cmp": { "siteFigure": {
+  "$description": "A screenshot on the product site (D-174): as wide as the site's widest column, never wider than its own pixels at 1×.",
+  "maxWidth": { "$type": "dimension", "$value": "{layout.siteWide}" }
+} } }

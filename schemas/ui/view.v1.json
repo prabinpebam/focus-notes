@@ -320,6 +320,12 @@
           "$ref": "#/$defs/c_SiteLink"
         },
         {
+          "$ref": "#/$defs/c_SiteText"
+        },
+        {
+          "$ref": "#/$defs/c_SiteFigure"
+        },
+        {
           "$ref": "#/$defs/c_Stack"
         },
         {
@@ -360,6 +366,9 @@
         },
         {
           "$ref": "#/$defs/c_SiteSection"
+        },
+        {
+          "$ref": "#/$defs/c_SiteGrid"
         },
         {
           "$ref": "#/$defs/c_EditorSurface"
@@ -5757,6 +5766,204 @@
         }
       }
     },
+    "c_SiteText": {
+      "type": "object",
+      "description": "The product site's type (D-174): a few words in the display face at a large scale. The hero's headline (display), a section's headline, the one line under it (lead), an eyebrow, a tile's label, or a caption.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SiteText"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "as": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "h1",
+                    "h2",
+                    "h3",
+                    "p"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "look": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "display",
+                    "headline",
+                    "lead",
+                    "eyebrow",
+                    "tile",
+                    "caption"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_SiteFigure": {
+      "type": "object",
+      "description": "A screenshot on the product site (D-169, D-174): the app's own window, in the visitor's light or dark, with its width and height so nothing shifts as it loads (PRF-12). The first one on a page loads first; the rest when they're near.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SiteFigure"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "src": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "srcDark": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "alt": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "width": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "priority": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "src",
+            "alt"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
     "c_Stack": {
       "type": "object",
       "description": "Children in a column, spaced by a space token.",
@@ -7404,7 +7611,8 @@
                 {
                   "enum": [
                     "reading",
-                    "wide"
+                    "wide",
+                    "showcase"
                   ]
                 },
                 {
@@ -7454,10 +7662,9 @@
     },
     "c_SiteSection": {
       "type": "object",
-      "description": "A section of a product site page (WP-10.1): one job each on the landing page, with a stable anchor other pages link to. A band sets it on a raised background.",
+      "description": "A section of a product site page (WP-10.1, D-174), with a stable anchor other pages link to. plain and band hold words; hero and feature are the landing page's big, centred showcases (a headline, a line, a screenshot); tile is one small tile of a grid.",
       "required": [
-        "type",
-        "props"
+        "type"
       ],
       "additionalProperties": false,
       "properties": {
@@ -7497,7 +7704,10 @@
                 {
                   "enum": [
                     "plain",
-                    "band"
+                    "band",
+                    "hero",
+                    "feature",
+                    "tile"
                   ]
                 },
                 {
@@ -7509,9 +7719,54 @@
               ]
             }
           },
-          "required": [
-            "anchor"
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_SiteGrid": {
+      "type": "object",
+      "description": "The product site's grid of small tiles (D-174): as many columns as fit, each at least a tile wide.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SiteGrid"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
           ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
         },
         "on": {
           "type": "object",

@@ -4513,6 +4513,224 @@
       ]
     },
     {
+      "type": "SiteText",
+      "tier": "primitive",
+      "description": "The product site's type (D-174): a few words in the display face at a large scale. The hero's headline (display), a section's headline, the one line under it (lead), an eyebrow, a tile's label, or a caption.",
+      "props": {
+        "value": {
+          "kind": "message",
+          "required": true
+        },
+        "as": {
+          "kind": "enum",
+          "values": [
+            "h1",
+            "h2",
+            "h3",
+            "p"
+          ],
+          "default": "p",
+          "description": "The element: a heading level, or a paragraph."
+        },
+        "look": {
+          "kind": "enum",
+          "values": [
+            "display",
+            "headline",
+            "lead",
+            "eyebrow",
+            "tile",
+            "caption"
+          ],
+          "default": "lead"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.siteText.*",
+      "a11y": {
+        "pattern": "text",
+        "name": "Headings keep their levels; the look never changes the level."
+      },
+      "fixtures": [
+        {
+          "name": "look display",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "display"
+          }
+        },
+        {
+          "name": "look headline",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "headline"
+          }
+        },
+        {
+          "name": "look lead",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "lead"
+          }
+        },
+        {
+          "name": "look eyebrow",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "eyebrow"
+          }
+        },
+        {
+          "name": "look tile",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "tile"
+          }
+        },
+        {
+          "name": "look caption",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "caption"
+          }
+        },
+        {
+          "name": "as h1",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "as": "h1",
+            "look": "headline"
+          }
+        },
+        {
+          "name": "as h2",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "as": "h2",
+            "look": "headline"
+          }
+        },
+        {
+          "name": "as h3",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "as": "h3",
+            "look": "headline"
+          }
+        },
+        {
+          "name": "as p",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "as": "p",
+            "look": "headline"
+          }
+        }
+      ]
+    },
+    {
+      "type": "SiteFigure",
+      "tier": "primitive",
+      "description": "A screenshot on the product site (D-169, D-174): the app's own window, in the visitor's light or dark, with its width and height so nothing shifts as it loads (PRF-12). The first one on a page loads first; the rest when they're near.",
+      "props": {
+        "src": {
+          "kind": "text",
+          "required": true,
+          "description": "The light screenshot's address, relative to the page."
+        },
+        "srcDark": {
+          "kind": "text",
+          "description": "The dark screenshot, shown when the visitor's setting is dark."
+        },
+        "alt": {
+          "kind": "text",
+          "required": true,
+          "description": "What the screenshot shows (D-169)."
+        },
+        "width": {
+          "kind": "number",
+          "min": 1,
+          "description": "Its width in CSS pixels."
+        },
+        "height": {
+          "kind": "number",
+          "min": 1,
+          "description": "Its height in CSS pixels."
+        },
+        "priority": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The page's main image: loaded first, never lazily."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.siteFigure.*",
+      "a11y": {
+        "pattern": "img",
+        "name": "alt"
+      },
+      "fixtures": [
+        {
+          "name": "screenshot",
+          "props": {
+            "src": {
+              "get": "vm.gallery.href"
+            },
+            "alt": {
+              "get": "vm.gallery.query"
+            },
+            "width": 640,
+            "height": 400
+          }
+        },
+        {
+          "name": "priority, light and dark",
+          "props": {
+            "src": {
+              "get": "vm.gallery.href"
+            },
+            "srcDark": {
+              "get": "vm.gallery.href"
+            },
+            "alt": {
+              "get": "vm.gallery.query"
+            },
+            "width": 640,
+            "height": 400,
+            "priority": true
+          }
+        }
+      ]
+    },
+    {
       "type": "Stack",
       "tier": "layout",
       "description": "Children in a column, spaced by a space token.",
@@ -7937,10 +8155,11 @@
           "kind": "enum",
           "values": [
             "reading",
-            "wide"
+            "wide",
+            "showcase"
           ],
           "default": "reading",
-          "description": "reading: the editor's measure, for articles; wide: the landing page's sections."
+          "description": "reading: the editor's measure, for articles; wide: a page of sections; showcase: the landing page, as wide as its screenshots (D-174)."
         }
       },
       "events": {},
@@ -8092,24 +8311,89 @@
               }
             }
           ]
+        },
+        {
+          "name": "width showcase",
+          "props": {
+            "skipLabel": {
+              "t": "site.skip"
+            },
+            "navLabel": {
+              "t": "site.nav.label"
+            },
+            "width": "showcase"
+          },
+          "slots": {
+            "header": [
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.brand"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "brand"
+                }
+              },
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.nav.help"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "nav",
+                  "current": true
+                }
+              }
+            ],
+            "footer": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "site.footer.note"
+                  },
+                  "role": "caption",
+                  "tone": "muted"
+                }
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
         }
       ]
     },
     {
       "type": "SiteSection",
       "tier": "layout",
-      "description": "A section of a product site page (WP-10.1): one job each on the landing page, with a stable anchor other pages link to. A band sets it on a raised background.",
+      "description": "A section of a product site page (WP-10.1, D-174), with a stable anchor other pages link to. plain and band hold words; hero and feature are the landing page's big, centred showcases (a headline, a line, a screenshot); tile is one small tile of a grid.",
       "props": {
         "anchor": {
           "kind": "text",
-          "required": true,
-          "description": "The section's stable anchor (its element ID)."
+          "description": "The section's stable anchor (its element ID); a tile has none."
         },
         "tone": {
           "kind": "enum",
           "values": [
             "plain",
-            "band"
+            "band",
+            "hero",
+            "feature",
+            "tile"
           ],
           "default": "plain"
         }
@@ -8139,11 +8423,13 @@
           },
           "children": [
             {
-              "type": "NoteContent",
+              "type": "SiteText",
               "props": {
-                "blocks": {
-                  "get": "vm.gallery.noteBlocks"
-                }
+                "value": {
+                  "t": "site.landing.headline"
+                },
+                "as": "h2",
+                "look": "headline"
               }
             }
           ]
@@ -8158,12 +8444,155 @@
           },
           "children": [
             {
-              "type": "NoteContent",
+              "type": "SiteText",
               "props": {
-                "blocks": {
-                  "get": "vm.gallery.noteBlocks"
-                }
+                "value": {
+                  "t": "site.landing.headline"
+                },
+                "as": "h2",
+                "look": "headline"
               }
+            }
+          ]
+        },
+        {
+          "name": "tone hero",
+          "props": {
+            "anchor": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "hero"
+          },
+          "children": [
+            {
+              "type": "SiteText",
+              "props": {
+                "value": {
+                  "t": "site.landing.headline"
+                },
+                "as": "h2",
+                "look": "headline"
+              }
+            }
+          ]
+        },
+        {
+          "name": "tone feature",
+          "props": {
+            "anchor": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "feature"
+          },
+          "children": [
+            {
+              "type": "SiteText",
+              "props": {
+                "value": {
+                  "t": "site.landing.headline"
+                },
+                "as": "h2",
+                "look": "headline"
+              }
+            }
+          ]
+        },
+        {
+          "name": "tone tile",
+          "props": {
+            "anchor": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "tile"
+          },
+          "children": [
+            {
+              "type": "SiteText",
+              "props": {
+                "value": {
+                  "t": "site.landing.headline"
+                },
+                "as": "h2",
+                "look": "headline"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "SiteGrid",
+      "tier": "layout",
+      "description": "The product site's grid of small tiles (D-174): as many columns as fit, each at least a tile wide.",
+      "props": {},
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.siteGrid.*",
+      "a11y": {
+        "pattern": "list",
+        "name": "A list of its tiles."
+      },
+      "fixtures": [
+        {
+          "name": "tiles",
+          "children": [
+            {
+              "type": "SiteSection",
+              "props": {
+                "tone": "tile"
+              },
+              "children": [
+                {
+                  "type": "SiteText",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    },
+                    "look": "tile"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "SiteSection",
+              "props": {
+                "tone": "tile"
+              },
+              "children": [
+                {
+                  "type": "SiteText",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    },
+                    "look": "tile"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "SiteSection",
+              "props": {
+                "tone": "tile"
+              },
+              "children": [
+                {
+                  "type": "SiteText",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    },
+                    "look": "tile"
+                  }
+                }
+              ]
             }
           ]
         }

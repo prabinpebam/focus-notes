@@ -4,5 +4,11 @@
   "scrollMargin": { "$type": "dimension", "$value": "{space.xl}", "$description": "Room above a section a link jumps to." },
   "band": { "$type": "color", "$value": "{color.surface}" },
   "bandRadius": { "$type": "dimension", "$value": "{radius.sheet}" },
-  "bandPadding": { "$type": "dimension", "$value": "{space.xl}" }
+  "bandPadding": { "$type": "dimension", "$value": "{space.xl}" },
+  "heroGap": { "$type": "dimension", "$value": "{space.l}", "$description": "Between a hero's or feature's headline, its line, its buttons and its screenshot (D-174)." },
+  "showcaseBlock": { "$type": "dimension", "$value": "{space.xxxl}", "$description": "The room above and below a hero or featured section (D-174)." },
+  "tileRadius": { "$type": "dimension", "$value": "{radius.sheet}" },
+  "tilePadding": { "$type": "dimension", "$value": "{space.l}" },
+  "tileGap": { "$type": "dimension", "$value": "{space.s}" },
+  "tile": { "$type": "color", "$value": "{color.surface}" }
 } } }

@@ -1588,5 +1588,12 @@
   "help.article.appliesTo": "Applies to: {value}",
   "help.article.updated": "Updated {date, date, long}, for Focus Notes {release}",
   "site.landing.empty": "More about Focus Notes is on the way.",
-  "help.home.empty": "The help centre's articles are on the way."
+  "help.home.empty": "The help centre's articles are on the way.",
+  "site.landing.headline": "Write. Nothing else.",
+  "site.landing.learn": "Learn how it works",
+  "site.tile.markdown": "Plain Markdown files",
+  "site.tile.offline": "Works offline",
+  "site.tile.open": "Free and open source",
+  "site.tile.private": "Private notes, sealed",
+  "site.tile.themes": "Light and dark"
 }

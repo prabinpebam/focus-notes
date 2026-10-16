@@ -30,7 +30,7 @@ const isDir = (p) => stat(p).then((s) => s.isDirectory(), () => false);
 
 /** The site's content, read from its folder. */
 export async function readContent(dir) {
-  const landing = await readFile(join(dir, "index.md"), "utf8");
+  const landing = JSON.parse(await readFile(join(dir, "landing.json"), "utf8"));
   const pages = [];
   for (const name of SITE_PAGES) pages.push({ path: `${name}/`, markdown: await readFile(join(dir, `${name}.md`), "utf8") });
   const categories = JSON.parse(await readFile(join(dir, "help", "categories.json"), "utf8"));
@@ -80,7 +80,25 @@ export async function placeApp(app, out) {
   }
 }
 
-const HTML_REF = /\s(href|src)="([^"]*)"/g;
+const HTML_REF = /\s(href|src|srcset)="([^"]*)"/g;
+/** The landing page's word budget and its longest block (D-174; packages/core/src/site.ts says the same). */
+export const LANDING_WORDS = 120;
+export const LANDING_BLOCK = 20;
+const count = (s) => s.split(/\s+/).filter(Boolean).length;
+/**
+ * The visible text of a page's main landmark, outside the navigation and footer: its word count, and
+ * each block's text (an element's own text, by the elements that end a block).
+ */
+export function visibleText(html) {
+  const main = /<main\b[^>]*>([\s\S]*)<\/main>/.exec(html)?.[1] ?? "";
+  const decode = (s) => s.replace(/&#x27;|&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  const blocks = main
+    .replace(/<(svg|script|style)\b[\s\S]*?<\/\1>/g, " ")
+    .split(/<\/?(?:p|h[1-6]|li|a|section|div|ul|ol|blockquote|figure|picture|td|th)\b[^>]*>/)
+    .map((b) => decode(b.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  return { words: blocks.reduce((n, b) => n + count(b), 0), blocks };
+}
 const CSS_REF = /url\(\s*["']?([^"')]+)["']?\s*\)/g;
 const ANY_URL = /(?:https?:)?\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s"'<>)]*/gi;
 const ROOT_PAGES = new Set(["index.html", ...SITE_PAGES.map((p) => `${p}/index.html`)]);
@@ -114,7 +132,7 @@ export async function checkSite(out, { assume = [], siteUrl } = {}) {
     const css = rel.endsWith(".css");
     const refs = css
       ? [...body.matchAll(CSS_REF)].map((m) => ({ attr: "src", url: m[1] }))
-      : [...body.matchAll(HTML_REF)].map((m) => ({ attr: m[1], url: m[2].replace(/&amp;/g, "&") }));
+      : [...body.matchAll(HTML_REF)].map((m) => ({ attr: m[1] === "srcset" ? "src" : m[1], url: m[2].replace(/&amp;/g, "&").split(/\s+/)[0] }));
     const canonical = css ? undefined : /<link rel="canonical" href="([^"]*)"/.exec(body)?.[1];
     for (const { attr, url } of refs) {
       if (url === canonical) continue;
@@ -139,10 +157,23 @@ export async function checkSite(out, { assume = [], siteUrl } = {}) {
     }
     // Any other address in a page's or stylesheet's text: nothing may name another origin outside a link to one it may.
     const linked = new Set(refs.filter((r) => r.attr === "href").map((r) => r.url));
-    for (const [url] of body.matchAll(ANY_URL)) {
+    // An SVG's namespace names the W3C, but nothing is requested from it.
+    for (const [url] of body.replace(/\sxmlns(:\w+)?="[^"]*"/g, "").matchAll(ANY_URL)) {
       if (url === canonical || (siteUrl && url.startsWith(siteUrl.replace(/\/$/, "")))) continue;
       if (linked.has(url) && LINK_ORIGINS.includes(new URL(url, "https://site.invalid/").origin)) continue;
       problems.push(`${rel}: names another origin: ${url}`);
+    }
+    if (css) continue;
+    // Every image says what it shows and its size, so nothing shifts as it loads (D-174, PRF-12).
+    for (const [img] of body.matchAll(/<img\b[^>]*>/g)) {
+      if (!/\salt="[^"]+"/.test(img)) problems.push(`${rel}: an image has no alt text: ${img.slice(0, 80)}`);
+      if (!/\swidth="\d+"/.test(img) || !/\sheight="\d+"/.test(img)) problems.push(`${rel}: an image has no width and height: ${img.slice(0, 80)}`);
+    }
+    // The landing page is visual first (D-174): few words in all, and no block of text over the limit.
+    if (rel === "index.html") {
+      const { words, blocks } = visibleText(body);
+      if (words > LANDING_WORDS) problems.push(`index.html: ${words} words of visible text (at most ${LANDING_WORDS}, D-174)`);
+      for (const b of blocks) if (count(b) > LANDING_BLOCK) problems.push(`index.html: a text block of ${count(b)} words (at most ${LANDING_BLOCK}, D-174): "${b.slice(0, 60)}…"`);
     }
   }
   return problems;

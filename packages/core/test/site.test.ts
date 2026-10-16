@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  helpArticleModel, helpCategoryModel, helpHomeModel, landingModel, LANDING_SECTIONS, siteChrome, siteHref, siteMarkdown, sitePageModel, splitFrontMatter, SITE_REPOSITORY,
+  helpArticleModel, helpCategoryModel, helpHomeModel, landingModel, siteChrome, siteHref, siteMarkdown, sitePageModel, splitFrontMatter, SITE_REPOSITORY,
 } from "../src/site.ts";
 
 const plain = (nodes: { text?: string; content?: unknown[] }[] = []): string => nodes.map((n) => n.text ?? plain(n.content as never)).join("");
@@ -36,13 +36,15 @@ describe("HLP-08: the product site's content (WP-10.1)", () => {
     expect(sitePageModel(page)).toMatchObject({ title: [{ type: "heading", attrs: { level: 1 } }] });
   });
 
-  it("HLP-01: the landing page is the hero, then the spec's eight sections in order, each with its stable anchor", () => {
-    const md = ["---", "draft: WP-10.5", "---", "# A calm place to write", "", "Pitch.", ...LANDING_SECTIONS.flatMap((s) => ["", `## ${s}`, "", "Words."])].join("\n");
-    const m = landingModel(siteMarkdown(md));
-    expect(plain(m.hero as never)).toContain("A calm place to write");
-    expect(m.sections.map((s) => s.anchor)).toEqual([...LANDING_SECTIONS]);
-    expect(m.sections.map((s) => s.tone)).toEqual(LANDING_SECTIONS.map((_, i) => (i % 2 ? "plain" : "band")));
-    expect(() => landingModel(siteMarkdown("# Hi\n\n## Only one\n"))).toThrow(/sections/);
+  it("HLP-01, D-174: the landing page is a hero, a few featured sections and a closing line, each within its word limit, with screenshots sized and described", () => {
+    const image = { src: "media/a.webp", alt: "Focus mode", width: 1132, height: 812 };
+    const c = { headline: "Write. Nothing else.", line: "A calm writing app.", hero: { ...image, srcDark: "media/b.webp" }, features: [{ id: "spotlight", eyebrow: "Spotlight", headline: "Find anything. Instantly.", line: "One keystroke away.", image }], closing: "Start writing." };
+    const m = landingModel(c);
+    expect(m).toMatchObject({ heroAnchor: "start", headline: "Write. Nothing else.", closingAnchor: "get-focus-notes", hero: { srcDark: "media/b.webp" } });
+    expect(m.features).toEqual([{ key: "spotlight", anchor: "spotlight", hasEyebrow: true, eyebrow: "Spotlight", headline: "Find anything. Instantly.", line: "One keystroke away.", image: { ...image, srcDark: "" } }]);
+    expect(() => landingModel({ ...c, headline: "A calm place to write your notes in" })).toThrow(/headline has 8 words \(at most 6\)/);
+    expect(() => landingModel({ ...c, features: Array.from({ length: 6 }, (_, i) => ({ ...c.features[0]!, id: `f${i}` })) })).toThrow(/6 featured sections \(at most 5\)/);
+    expect(() => landingModel({ ...c, hero: { ...image, alt: "" } })).toThrow(/needs src, alt, width and height/);
   });
 
   it("HLP-02: the help home lists every category in order, with its articles linked by address", () => {

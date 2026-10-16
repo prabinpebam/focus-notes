@@ -6,7 +6,7 @@
  */
 import {
   helpArticleModel, helpCategoryModel, helpHomeModel, landingModel, MessageCatalog, siteChrome, siteHref, siteMarkdown, sitePageModel,
-  type HelpArticleEntry, type HelpCategory, type SiteContent,
+  type HelpArticleEntry, type HelpCategory, type LandingContent, type SiteContent,
 } from "@focus-notes/core";
 import { renderStaticView } from "@focus-notes/ui-runtime/static";
 import { renderSiteDocument, siteContracts, siteRegistry } from "@focus-notes/ui/site";
@@ -18,8 +18,8 @@ export interface SiteAssets {
   fonts: readonly string[];
 }
 export interface SiteSource {
-  /** site/index.md: the landing page. */
-  landing: string;
+  /** site/landing.json: the landing page (D-174). */
+  landing: LandingContent;
   /** Plain pages by their address (`download/`, `privacy/`, `demo/`), from site/<name>.md. */
   pages: readonly { path: string; markdown: string }[];
   /** site/help/categories.json, in order. */
@@ -49,14 +49,15 @@ export function renderSite(src: SiteSource, o: SiteOptions): SiteFile[] {
       ...(o.siteUrl ? { canonical: new URL(path, o.siteUrl.endsWith("/") ? o.siteUrl : `${o.siteUrl}/`).href } : {}),
       stylesheets: o.assets.css.map(asset),
       // The chrome is in the system's font; the content font's regular latin face is the one the first screen reads (PRF-12).
-      preload: o.assets.fonts.filter((f) => f.endsWith(".woff2") && f.includes("-latin-400-normal")).slice(0, 1).map(asset),
+      // The landing page sets no note text, so it preloads no font (D-174).
+      preload: home ? [] : o.assets.fonts.filter((f) => f.endsWith(".woff2") && f.includes("-latin-400-normal")).slice(0, 1).map(asset),
       body,
     });
     out.push({ file: `${path}index.html`, html, title });
   };
 
-  const landing = siteMarkdown(src.landing);
-  page("", "siteLanding", "vm.siteLanding", landingModel(landing), landing, true);
+  // The landing page's title is the product's name; its description, the hero's line.
+  page("", "siteLanding", "vm.siteLanding", landingModel(src.landing), { titleText: `${en.format("site.brand")}: ${src.landing.headline}`, description: src.landing.line }, true);
   for (const p of src.pages) {
     const c = siteMarkdown(p.markdown);
     page(p.path, "sitePage", "vm.sitePage", sitePageModel(c), c);

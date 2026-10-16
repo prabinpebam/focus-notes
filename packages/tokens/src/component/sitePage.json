@@ -14,6 +14,7 @@
   "skipRadius": { "$type": "dimension", "$value": "{radius.small}" },
   "skipLayer": { "$type": "number", "$value": "{layer.toast}" },
   "measure": { "$type": "dimension", "$value": "{layout.measure}" },
+  "showcase": { "$type": "dimension", "$value": "{layout.siteWide}", "$description": "The landing page's column, as wide as its screenshots (D-174)." },
   "wide": { "$type": "dimension", "$value": "{layout.wideContent}", "$description": "The header's, footer's and sections' width." },
   "gutter": { "$type": "dimension", "$value": "{layout.gutter}" },
   "gutterCompact": { "$type": "dimension", "$value": "{layout.gutterCompact}" },

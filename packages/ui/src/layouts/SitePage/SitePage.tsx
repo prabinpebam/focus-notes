@@ -11,7 +11,7 @@ import * as s from "./SitePage.css.ts";
 export interface SitePageProps {
   skipLabel: string;
   navLabel: string;
-  width?: "reading" | "wide";
+  width?: "reading" | "wide" | "showcase";
   header?: ReactNode;
   footer?: ReactNode;
   id?: string;

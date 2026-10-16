@@ -106,7 +106,7 @@ test("the site's navigation reaches each address, the skip link goes to the cont
   await page.getByRole("link", { name: "Focus Notes", exact: true }).click();
   await expect(page).toHaveURL(`${origin}/`);
   // The landing page's sections, in the specification's order, each with its anchor.
-  expect(await page.locator("main section").evaluateAll((s) => s.map((e) => e.id))).toEqual(["start", "trust", "how-it-works", "features", "is-it-for-you", "built-in-the-open", "developers", "questions", "get-focus-notes"]);
+  expect(await page.locator("main section[id]").evaluateAll((s) => s.map((e) => e.id))).toEqual(["start", "spotlight", "files", "get-focus-notes"]);
 });
 
 test("PRF-12: the landing page's LCP, INP and CLS on a throttled profile", async ({ page }) => {
@@ -118,7 +118,7 @@ test("PRF-12: the landing page's LCP, INP and CLS on a throttled profile", async
   await page.setViewportSize({ width: 412, height: 823 });
   await page.goto(`${origin}/`, { waitUntil: "load" });
   const preloads = await page.locator('link[rel="preload"][as="font"]').evaluateAll((ls) => ls.map((l) => (l as HTMLLinkElement).href.split("/").at(-1)!.replace(/-[\w-]{8}\.woff2$/, "")));
-  expect(preloads).toEqual(["roboto-mono-latin-400-normal"]);
+  expect(preloads).toEqual([]);
   await page.getByRole("heading", { level: 1 }).click();
   const m = await page.evaluate(() => new Promise<{ lcp: number; cls: number; inp: number }>((resolve) => {
     let lcp = 0, cls = 0, inp = 0;

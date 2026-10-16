@@ -10,9 +10,9 @@ import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import yaml from "js-yaml";
-import { buildSite, checkSite, placeApp, readContent } from "../site/build.mjs";
+import { buildSite, checkSite, LANDING_BLOCK, LANDING_WORDS, placeApp, readContent, visibleText } from "../site/build.mjs";
 import { renderSite } from "../../apps/web/site/render.ts";
-import { LANDING_HERO, LANDING_SECTIONS } from "../../packages/core/src/site.ts";
+import { LANDING_CLOSING, LANDING_HERO } from "../../packages/core/src/site.ts";
 
 const root = join(import.meta.dirname, "..", "..");
 const content = join(root, "site");
@@ -36,13 +36,30 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
     expect(categories.map((c) => c.title)).toEqual(["Get started", "Write", "Organize your notes", "Save and back up", "Private notes and sharing", "Fix a problem", "Reference", "For developers and AI agents"]);
   });
 
-  it("HLP-01: the landing page is the hero then the eight sections in the spec's order, its copy marked as a draft for WP-10.5", async () => {
+  it("HLP-01, D-174: the landing page is visual first: the hero, the featured sections and the closing line, 120 words at most, every screenshot sized and described", async () => {
     const html = await read(out, "index.html");
+    const landing = JSON.parse(await readFile(join(content, "landing.json"), "utf8"));
     const ids = [...html.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
-    expect(ids).toEqual([LANDING_HERO, ...LANDING_SECTIONS]);
-    expect(await readFile(join(content, "index.md"), "utf8")).toMatch(/^draft: WP-10\.5$/m);
+    expect(ids).toEqual([LANDING_HERO, ...landing.features.map((f) => f.id), LANDING_CLOSING]);
+    expect(landing.draft).toBe("WP-10.5");
+    expect(html).toMatch(/<h1 class="[^"]*">Write\. Nothing else\.<\/h1>/);
     expect(html).toMatch(/href="download\/"[^>]*>Download Focus Notes</);
     expect(html).toMatch(/href="demo\/"[^>]*>Try the demo</);
+    expect(html).toMatch(/<source srcSet="media\/focus-dark\.webp" media="\(prefers-color-scheme: dark\)"\/>/i);
+    const { words, blocks } = visibleText(html);
+    expect(words).toBeLessThanOrEqual(LANDING_WORDS);
+    for (const b of blocks) expect(b.split(/\s+/).length, b).toBeLessThanOrEqual(LANDING_BLOCK);
+    for (const [img] of html.matchAll(/<img\b[^>]*>/g)) expect(img).toMatch(/alt="[^"]+".*width="\d+".*height="\d+"/);
+    // Nothing from the help centre's prose is here: no lists, no paragraphs of explanation.
+    expect(html).not.toMatch(/<ul(?![^>]*class)|Is it for you|Questions/);
+  });
+
+  it("D-174: the site check fails a landing page over its word budget or with a long block", async () => {
+    const o = join(tmp, "wordy");
+    await mkdir(o, { recursive: true });
+    await writeFile(join(o, "index.html"), `<main><p>${"word ".repeat(21)}</p>${"<p>five words in a line</p>".repeat(30)}</main>`);
+    const problems = await checkSite(o);
+    expect(problems).toEqual(expect.arrayContaining([expect.stringMatching(/a text block of 21 words/), expect.stringMatching(/171 words of visible text \(at most 120/)]));
   });
 
   it("every page is the design system's document: light and dark by the visitor's setting, no script, one main heading, the site's links", async () => {

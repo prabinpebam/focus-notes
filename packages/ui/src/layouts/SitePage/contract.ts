@@ -7,7 +7,7 @@ export const contract = defineContract({
   props: {
     skipLabel: { kind: "message", required: true, description: "The skip link to the content." },
     navLabel: { kind: "message", required: true, description: "The site navigation's accessible name." },
-    width: { kind: "enum", values: ["reading", "wide"], default: "reading", description: "reading: the editor's measure, for articles; wide: the landing page's sections." },
+    width: { kind: "enum", values: ["reading", "wide", "showcase"], default: "reading", description: "reading: the editor's measure, for articles; wide: a page of sections; showcase: the landing page, as wide as its screenshots (D-174)." },
   },
   events: {},
   slots: { default: { accepts: "any" }, header: { accepts: ["SiteLink"] }, footer: { accepts: "any", max: 1 } },
@@ -15,7 +15,7 @@ export const contract = defineContract({
   tokens: "cmp.sitePage.*",
   a11y: { pattern: "landmarks", name: "banner with a labelled navigation, main, and contentinfo; the skip link is the first focusable element." },
   fixtures: [
-    ...["reading", "wide"].map((width) => ({
+    ...["reading", "wide", "showcase"].map((width) => ({
       name: `width ${width}`,
       props: { skipLabel: { t: "site.skip" }, navLabel: { t: "site.nav.label" }, width },
       slots: {

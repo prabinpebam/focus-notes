@@ -1,0 +1,18 @@
+{ "cmp": { "siteText": {
+  "$description": "The product site's type (D-174): the display face at a large scale, for the hero, headlines, the one line under them, eyebrows and tiles.",
+  "font": { "$type": "fontFamily", "$value": "{font.display}" },
+  "text": { "$type": "color", "$value": "{color.text}" },
+  "muted": { "$type": "color", "$value": "{color.textMuted}" },
+  "accent": { "$type": "color", "$value": "{color.accent}" },
+  "lineHeight": { "$type": "number", "$value": "{font.displayLineHeight}" },
+  "bodyLineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" },
+  "weightBold": { "$type": "fontWeight", "$value": "{font.weightBold}" },
+  "weightSemibold": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
+  "weightRegular": { "$type": "fontWeight", "$value": "{font.weightRegular}" },
+  "size": { "$type": "dimension",
+    "display": { "$value": "{font.siteDisplay}" }, "displayCompact": { "$value": "{font.siteDisplayCompact}" },
+    "headline": { "$value": "{font.siteHeadline}" }, "headlineCompact": { "$value": "{font.siteHeadlineCompact}" },
+    "lead": { "$value": "{font.siteLead}" }, "leadCompact": { "$value": "{font.siteLeadCompact}" },
+    "eyebrow": { "$value": "{font.siteEyebrow}" }, "tile": { "$value": "{font.uiLead}" }, "caption": { "$value": "{font.uiBody}" } },
+  "measure": { "$type": "dimension", "$value": "{layout.measure}" }
+} } }

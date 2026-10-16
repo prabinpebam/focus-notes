@@ -62,11 +62,14 @@ import { DatePicker } from "./primitives/DatePicker/DatePicker.tsx";
 import { SiteLink } from "./primitives/SiteLink/SiteLink.tsx";
 import { SitePage } from "./layouts/SitePage/SitePage.tsx";
 import { SiteSection } from "./layouts/SiteSection/SiteSection.tsx";
+import { SiteText } from "./primitives/SiteText/SiteText.tsx";
+import { SiteFigure } from "./primitives/SiteFigure/SiteFigure.tsx";
+import { SiteGrid } from "./layouts/SiteGrid/SiteGrid.tsx";
 
 /** The closed registry: the renderer can create these and nothing else (DSY-06). */
 export const registry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, SiteLink,
-  Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, SitePage, SiteSection, NoteContent,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, SiteLink, SiteText, SiteFigure,
+  Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, SitePage, SiteSection, SiteGrid, NoteContent,
   EditorSurface, TableControls, BlockHandle, WindowFrame,
   Trigger, Toolbar, Dialog,
 });

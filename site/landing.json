@@ -1,0 +1,30 @@
+{
+  "$comment": "The landing page (D-174): visual first, a few words each. The hero, up to five featured sections, and the closing line; the small tiles and the buttons are in the view document (packages/views/views/siteLanding.view.json). Screenshots come from the site catalogue (apps/desktop/e2e/site-catalog.spec.ts). WP-10.5 writes the final words.",
+  "draft": "WP-10.5",
+  "headline": "Write. Nothing else.",
+  "line": "A calm writing app. Your notes stay plain files in your own GitHub.",
+  "hero": {
+    "src": "media/focus-light.webp",
+    "srcDark": "media/focus-dark.webp",
+    "alt": "Focus Notes in focus mode: the line being written stays clear while the rest of the essay fades back.",
+    "width": 1132,
+    "height": 812
+  },
+  "features": [
+    {
+      "id": "spotlight",
+      "eyebrow": "Spotlight",
+      "headline": "Find anything. Instantly.",
+      "line": "Notes, commands and settings, one keystroke away.",
+      "image": { "src": "media/spotlight-light.webp", "srcDark": "media/spotlight-dark.webp", "alt": "Spotlight open over a note, finding the Garden folder and its notes as you type.", "width": 1132, "height": 812 }
+    },
+    {
+      "id": "files",
+      "eyebrow": "Files",
+      "headline": "Your notes, in folders.",
+      "line": "Plain Markdown files you can see, move and keep.",
+      "image": { "src": "media/files-light.webp", "srcDark": "media/files-dark.webp", "alt": "The Files panel beside a note, with folders for a garden, a journal, projects and recipes.", "width": 1132, "height": 812 }
+    }
+  ],
+  "closing": "Start writing."
+}

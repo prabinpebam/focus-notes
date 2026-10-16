@@ -7,6 +7,10 @@ import type { ComponentType } from "react";
 import type { Contract } from "./contract.ts";
 import { Text } from "./primitives/Text/Text.tsx";
 import { SiteLink } from "./primitives/SiteLink/SiteLink.tsx";
+import { SiteText } from "./primitives/SiteText/SiteText.tsx";
+import { SiteFigure } from "./primitives/SiteFigure/SiteFigure.tsx";
+import { Icon } from "./primitives/Icon/Icon.tsx";
+import { SiteGrid } from "./layouts/SiteGrid/SiteGrid.tsx";
 import { Stack } from "./layouts/Stack/Stack.tsx";
 import { Inline } from "./layouts/Inline/Inline.tsx";
 import { SitePage } from "./layouts/SitePage/SitePage.tsx";
@@ -14,7 +18,7 @@ import { SiteSection } from "./layouts/SiteSection/SiteSection.tsx";
 import { NoteContent } from "./blocks/NoteContent/NoteContent.tsx";
 import { contractByType } from "./contracts.ts";
 
-export const siteRegistry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({ Text, SiteLink, Stack, Inline, SitePage, SiteSection, NoteContent });
+export const siteRegistry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({ Text, SiteLink, SiteText, SiteFigure, Icon, Stack, Inline, SitePage, SiteSection, SiteGrid, NoteContent });
 export const siteContracts: ReadonlyMap<string, Contract> = new Map(Object.keys(siteRegistry).map((type) => [type, contractByType.get(type)!]));
 
 /** No script and no other origin (PRV-01, HLP-08): the site's own styles, fonts and images, nothing else. */
