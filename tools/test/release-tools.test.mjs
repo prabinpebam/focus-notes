@@ -21,9 +21,9 @@ const SHA = "ab".repeat(32);
 
 describe("DST-03: the version a release run builds", () => {
   const base = { packageVersion: "0.0.1", runNumber: "42" };
-  it("a v<x.y.z> tag releases that version; below 1.0.0 or with a suffix it's a pre-release", () => {
+  it("a v<x.y.z> tag releases that version, below 1.0.0 too (D-184); with a suffix it's a pre-release", () => {
     expect(releaseVersion({ ...base, refType: "tag", refName: "v1.2.3" })).toEqual({ version: "1.2.3", tag: "v1.2.3", dryRun: false, prerelease: false });
-    expect(releaseVersion({ ...base, refType: "tag", refName: "v0.5.1" })).toMatchObject({ version: "0.5.1", prerelease: true });
+    expect(releaseVersion({ ...base, refType: "tag", refName: "v0.5.1" })).toMatchObject({ version: "0.5.1", prerelease: false });
     expect(releaseVersion({ ...base, refType: "tag", refName: "v1.3.0-beta.2" })).toMatchObject({ version: "1.3.0-beta.2", prerelease: true, dryRun: false });
   });
   it("a -dryrun tag, or a manual run with dry run ticked, never publishes", () => {

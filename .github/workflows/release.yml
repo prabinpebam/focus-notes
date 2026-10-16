@@ -2,7 +2,7 @@
 # the web app bundle template instances deploy (D-98), the workspace template pinned to it, and an
 # SBOM; smoke-tests them; writes SHA256SUMS; attests every file's build provenance; and drafts a
 # GitHub Release with notes from the commits since the last tag. A person checks the draft and
-# publishes it. Versions below 1.0.0 (stage exits) and suffixed versions are pre-releases.
+# publishes it. Only suffixed versions are pre-releases; a plain version becomes the latest release (D-184).
 #
 # Dry run: a manual run (Actions -> release -> Run workflow, "dry run" ticked, the default) or a tag
 # v<x.y.z>-dryrun[.n] builds, smoke-tests and checksums everything, and stops before attesting, so a

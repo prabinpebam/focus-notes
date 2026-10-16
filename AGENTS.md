@@ -21,7 +21,7 @@ Focus Notes, a calm, Markdown-native writing app. **Status: M0 to M7 are built a
 - `packages/`: `tokens`, `ui` (the design system), `ui-runtime` (renderer and `ui:check`), `views` (view documents and messages), `core` (state, commands, view models), `markdown`, `editor`.
 - `tools/`: the repository checks and `bench/`. `schemas/`: JSON Schemas for every file format and the generated UI schema.
 - `templates/workspace/`: the source of the template repository people copy to make their instance (`focus-notes-workspace`).
-- `site/`: the product site's content (D-167): the landing page (`landing.json`, D-174), `download.md`, `privacy.md`, `demo.md` and `media/` (screenshots from the `site` catalogue). `tools/site/build.mjs` renders it through the design system; see [Product site and help](documentations/product/site-and-help.md#how-the-site-is-built).
+- `site/`: the product site's content (D-167): the landing page (`landing.json`, D-174, with the downloads as its last section, D-184), `privacy.md`, `demo.md` and `media/` (screenshots from the `site` catalogue). `tools/site/build.mjs` renders it through the design system; see [Product site and help](documentations/product/site-and-help.md#how-the-site-is-built).
 - `documentations/`: the spec, published as a [Slate](https://github.com/prabinpebam/slate) documentation site, and Help for people who write (`documentations/help/`, D-181).
 - `slate/`: the Slate system, pinned as a Git submodule. Don't edit it here.
 - `.github/skills/slate/`: the skill that loads Slate's rules.

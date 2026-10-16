@@ -15,15 +15,18 @@ describe("HLP-08: the product site's content (WP-10.1)", () => {
 
   it("addresses between pages are relative, so the site works at any GitHub Pages address", () => {
     expect(siteHref("", "help/")).toBe("help/");
-    expect(siteHref("help/write/", "download/")).toBe("../../download/");
+    expect(siteHref("help/write/", "privacy/")).toBe("../../privacy/");
+    expect(siteHref("privacy/", "#download")).toBe("../#download");
+    expect(siteHref("", "#download")).toBe("#download");
     expect(siteHref("help/", "")).toBe("../");
     expect(siteHref("", "")).toBe("./");
   });
 
-  it("the chrome links every page to the landing page, help in the docs (D-181), demo, download, privacy, the owner's app, and marks the current one", () => {
+  it("the chrome links every page to the landing page, help in the docs (D-181), demo, the landing page's downloads (D-184), the latest release, privacy, the owner's app, and marks the current one", () => {
     const c = siteChrome("help/write/");
-    expect(c).toMatchObject({ home: "../../", help: "../../documentations/#help/index.md", demo: "../../demo/", download: "../../download/", privacy: "../../privacy/", app: "../../app/", notes: "../../n/", docs: "../../documentations/", source: SITE_REPOSITORY });
-    expect(siteChrome("download/")).toMatchObject({ currentDownload: true, currentDemo: false });
+    expect(c).toMatchObject({ home: "../../", help: "../../documentations/#help/index.md", demo: "../../demo/", download: "../../#download", privacy: "../../privacy/", app: "../../app/", notes: "../../n/", docs: "../../documentations/", source: SITE_REPOSITORY, releases: `${SITE_REPOSITORY}/releases/latest` });
+    expect(siteChrome("demo/")).toMatchObject({ currentDemo: true });
+    expect(siteChrome("privacy/")).toMatchObject({ currentDemo: false });
     expect(helpDocsPath("fix-a-problem.md", "git-missing")).toBe("documentations/#help/fix-a-problem.md#git-missing");
   });
 

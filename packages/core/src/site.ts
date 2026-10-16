@@ -8,15 +8,17 @@ import type { JsonSchema } from "./view-models.ts";
 
 /** The project's repository, the only other site the product site links to (with GitHub's own help). */
 export const SITE_REPOSITORY = "https://github.com/prabinpebam/focus-notes";
+/** The newest release's installers and checksums: GitHub's stable address, so the site never needs updating for a release. */
+export const SITE_RELEASES = `${SITE_REPOSITORY}/releases/latest`;
 
 /** Help is a section of the Slate docs (D-181): its home, by the docs' hash route. */
 export const HELP_DOCS = "documentations/#help/index.md";
 /** A help page's address in the docs, from its file in documentations/help/ ("fix-a-problem.md"), with an optional anchor. */
 export const helpDocsPath = (page: string, anchor?: string): string => `documentations/#help/${page}${anchor ? `#${anchor}` : ""}`;
 
-/** The site's addresses (D-167), relative to its root. */
+/** The site's addresses (D-167), relative to its root. Downloads are the landing page's last section (D-184). */
 export const SITE_PATHS = {
-  home: "", help: HELP_DOCS, demo: "demo/", download: "download/", privacy: "privacy/", app: "app/", notes: "n/", docs: "documentations/",
+  home: "", help: HELP_DOCS, demo: "demo/", download: "#download", privacy: "privacy/", app: "app/", notes: "n/", docs: "documentations/",
 } as const;
 
 /**
@@ -28,9 +30,10 @@ export const LANDING_LIMITS = { headline: 6, line: 14, features: 5, featureHeadl
 export const LANDING_WORDS = 120;
 export const LANDING_BLOCK = 20;
 
-/** The hero's anchor, and the closing call to action's. */
+/** The hero's anchor, the closing call to action's, and the downloads' (D-184). */
 export const LANDING_HERO = "start";
 export const LANDING_CLOSING = "get-focus-notes";
+export const LANDING_DOWNLOAD = "download";
 
 export type FrontMatter = Record<string, string | string[]>;
 
@@ -64,15 +67,15 @@ export function siteHref(from: string, to: string): string {
 
 /** The chrome every site page shares (`vm.site`): its links, relative to the page, and which one is current. */
 export interface SiteChromeModel extends Record<string, unknown> {
-  home: string; help: string; demo: string; download: string; privacy: string; app: string; notes: string; docs: string; source: string;
-  currentDemo: boolean; currentDownload: boolean;
+  home: string; help: string; demo: string; download: string; privacy: string; app: string; notes: string; docs: string; source: string; releases: string;
+  currentDemo: boolean;
 }
 export function siteChrome(path: string): SiteChromeModel {
   const to = (p: string) => siteHref(path, p);
   return {
     home: to(SITE_PATHS.home), help: to(SITE_PATHS.help), demo: to(SITE_PATHS.demo), download: to(SITE_PATHS.download), privacy: to(SITE_PATHS.privacy),
-    app: to(SITE_PATHS.app), notes: to(SITE_PATHS.notes), docs: to(SITE_PATHS.docs), source: SITE_REPOSITORY,
-    currentDemo: path.startsWith(SITE_PATHS.demo), currentDownload: path.startsWith(SITE_PATHS.download),
+    app: to(SITE_PATHS.app), notes: to(SITE_PATHS.notes), docs: to(SITE_PATHS.docs), source: SITE_REPOSITORY, releases: SITE_RELEASES,
+    currentDemo: path.startsWith(SITE_PATHS.demo),
   };
 }
 
@@ -162,6 +165,7 @@ export interface LandingModel extends Record<string, unknown> {
   features: { key: string; anchor: string; hasEyebrow: boolean; eyebrow: string; headline: string; line: string; image: SiteFigureModel; hasThemes: boolean; themes: SiteThemeModel[] }[];
   closingAnchor: string;
   closing: string;
+  downloadAnchor: string;
 }
 export const countWords = (s: string): number => s.trim().split(/\s+/).filter(Boolean).length;
 const ANCHOR = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -194,7 +198,7 @@ export function landingModel(c: LandingContent): LandingModel {
     return { key: f.id, anchor: f.id, hasEyebrow: Boolean(f.eyebrow), eyebrow: f.eyebrow ?? "", headline: f.headline, line: f.line, image: shown, hasThemes: themes.length > 0, themes };
   });
   if (over.length) throw new Error(`site/landing.json: ${over.join("; ")} (D-174).`);
-  return { heroAnchor: LANDING_HERO, headline: c.headline, line: c.line, hero, features, closingAnchor: LANDING_CLOSING, closing: c.closing };
+  return { heroAnchor: LANDING_HERO, headline: c.headline, line: c.line, hero, features, closingAnchor: LANDING_CLOSING, closing: c.closing, downloadAnchor: LANDING_DOWNLOAD };
 }
 
 const BLOCKS: JsonSchema = { type: "array", items: { type: "object" } };
@@ -202,8 +206,8 @@ const IMAGE: JsonSchema = { type: "object", properties: Object.fromEntries(["src
 const vm = (id: string, properties: Record<string, JsonSchema>) => ({ id, schema: { type: "object" as const, properties } });
 /** The site's view models, filled by the site's renderer (WP-10.1), not the app. */
 export const SITE_VIEW_MODELS = [
-  vm("vm.site", Object.fromEntries([...Object.keys(SITE_PATHS), "source"].map((k) => [k, { type: "string", description: `The ${k} link, relative to the page.` } as JsonSchema])
-    .concat([["currentDemo", { type: "boolean" }], ["currentDownload", { type: "boolean" }]]))),
+  vm("vm.site", Object.fromEntries([...Object.keys(SITE_PATHS), "source", "releases"].map((k) => [k, { type: "string", description: `The ${k} link, relative to the page.` } as JsonSchema])
+    .concat([["currentDemo", { type: "boolean" }]]))),
   vm("vm.sitePage", { title: BLOCKS, body: BLOCKS }),
   vm("vm.siteLanding", {
     heroAnchor: { type: "string" },
@@ -213,5 +217,6 @@ export const SITE_VIEW_MODELS = [
     features: { type: "array", items: { type: "object", properties: { key: { type: "string" }, anchor: { type: "string" }, hasEyebrow: { type: "boolean" }, eyebrow: { type: "string" }, headline: { type: "string" }, line: { type: "string" }, image: IMAGE, hasThemes: { type: "boolean" }, themes: { type: "array", items: { type: "object" } } } } },
     closingAnchor: { type: "string" },
     closing: { type: "string" },
+    downloadAnchor: { type: "string" },
   }),
 ] as const;

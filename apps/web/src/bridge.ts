@@ -280,7 +280,7 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
           location.reload();
         },
         download() {
-          location.assign(new URL("../download/", document.baseURI).href);
+          location.assign(new URL("../#download", document.baseURI).href);
         },
       },
     } : {}),

@@ -4,7 +4,7 @@
  * renderer (apps/web/site/render.ts, built to apps/web/dist-site/), and assembles the site:
  *
  *   /            the landing page            /help/…     redirects to Help in the docs (D-181)
- *   /demo/       the demo (WP-10.6)          /download/, /privacy/
+ *   /demo/       the demo (WP-10.6)          /privacy/; /download/ redirects to /#download (D-184)
  *   /app/        the owner's Focus Notes, which / served before D-167
  *   /s/          the share reader, where share links have always pointed
  *
@@ -23,7 +23,7 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 /** Plain pages: site/<name>.md at /<name>/. */
-export const SITE_PAGES = ["download", "privacy", "demo"];
+export const SITE_PAGES = ["privacy", "demo"];
 /** The only other origin a site page may link to (help-writing.md → Links); nothing may be loaded from one. */
 export const LINK_ORIGINS = ["https://github.com"];
 
@@ -118,7 +118,7 @@ export function visibleText(html) {
 }
 const CSS_REF = /url\(\s*["']?([^"')]+)["']?\s*\)/g;
 const ANY_URL = /(?:https?:)?\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s"'<>)]*/gi;
-const ROOT_PAGES = new Set(["index.html", ...SITE_PAGES.map((p) => `${p}/index.html`)]);
+const ROOT_PAGES = new Set(["index.html", "download/index.html", ...SITE_PAGES.map((p) => `${p}/index.html`)]);
 
 async function* walk(dir) {
   for (const e of await readdir(dir, { withFileTypes: true })) {

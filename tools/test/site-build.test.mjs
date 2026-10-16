@@ -12,7 +12,7 @@ import { join } from "node:path";
 import yaml from "js-yaml";
 import { buildSite, checkSite, LANDING_BLOCK, LANDING_WORDS, placeApp, readContent, visibleText } from "../site/build.mjs";
 import { renderSite } from "../../apps/web/site/render.ts";
-import { LANDING_CLOSING, LANDING_HERO } from "../../packages/core/src/site.ts";
+import { LANDING_CLOSING, LANDING_DOWNLOAD, LANDING_HERO } from "../../packages/core/src/site.ts";
 
 const root = join(import.meta.dirname, "..", "..");
 const content = join(root, "site");
@@ -30,8 +30,9 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
     helpPages = (await readContent(content)).helpPages;
   });
 
-  it("renders the landing page, the demo, downloads and privacy; help is in the Slate docs, and its old addresses send visitors there (D-181)", async () => {
+  it("renders the landing page, the demo and privacy; the old download page sends visitors to the landing page's downloads (D-184); help is in the Slate docs, and its old addresses send visitors there (D-181)", async () => {
     for (const f of ["index.html", "demo/index.html", "download/index.html", "privacy/index.html"]) expect((await read(out, f)).length, f).toBeGreaterThan(0);
+    expect(await read(out, "download/index.html")).toMatch(/<meta http-equiv="refresh" content="0; url=\.\.\/#download" \/>/);
     expect(helpPages).toEqual(["get-started", "write", "organize", "save-and-back-up", "private-and-sharing", "fix-a-problem", "reference", "developers"]);
     const home = await read(out, "help/index.html");
     expect(home).toMatch(/<meta http-equiv="refresh" content="0; url=\.\.\/documentations\/#help\/index\.md" \/>/);
@@ -46,10 +47,13 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
     const html = await read(out, "index.html");
     const landing = JSON.parse(await readFile(join(content, "landing.json"), "utf8"));
     const ids = [...html.matchAll(/<section id="([^"]+)"/g)].map((m) => m[1]);
-    expect(ids).toEqual([LANDING_HERO, ...landing.features.map((f) => f.id), LANDING_CLOSING]);
+    expect(ids).toEqual([LANDING_HERO, ...landing.features.map((f) => f.id), LANDING_CLOSING, LANDING_DOWNLOAD]);
     expect(landing.draft).toBe("WP-10.5");
     expect(html).toMatch(/<h1 class="[^"]*">Write\. Nothing else\.<\/h1>/);
-    expect(html).toMatch(/href="download\/"[^>]*>Download Focus Notes</);
+    expect(html).toMatch(/href="#download"[^>]*>Download Focus Notes</);
+    // Downloads are the last section (D-184): each system's file, and the latest release on GitHub.
+    for (const os of ["Windows", "macOS", "Linux"]) expect(html).toMatch(new RegExp(`<h3[^>]*>${os}</h3>`));
+    expect(html).toMatch(/href="https:\/\/github\.com\/prabinpebam\/focus-notes\/releases\/latest"[^>]*>Download from GitHub</);
     expect(html).toMatch(/href="demo\/"[^>]*>Try the demo</);
     // Light scenes for everyone (D-176): nothing switches by the visitor's setting; dark is a choice, by radio buttons.
     expect(html).not.toMatch(/prefers-color-scheme/);
@@ -88,7 +92,7 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
   });
 
   it("every page is the design system's document: light and dark by the visitor's setting, no script, one main heading, the site's links", async () => {
-    for (const f of ["index.html", "download/index.html", "privacy/index.html"]) {
+    for (const f of ["index.html", "privacy/index.html"]) {
       const html = await read(out, f);
       expect(html, f).toMatch(/<html lang="en" data-theme="auto" data-page="site">/);
       expect(html, f).toMatch(/<meta name="color-scheme" content="light dark" \/>/);
@@ -99,7 +103,7 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
       expect(html, f).toMatch(/href="[./]*privacy\/"/);
       expect(html, f).toMatch(/href="[./]*app\/"/);
     }
-    expect(await read(out, "download/index.html")).toMatch(/aria-current="page"[^>]*>Download</);
+    expect(await read(out, "privacy/index.html")).toMatch(/href="\.\.\/#download"[^>]*>Download</);
     expect(await read(out, "index.html")).toMatch(/href="documentations\/#help\/index\.md"[^>]*>Help</);
   });
 
@@ -190,7 +194,7 @@ describe("D-167: the owner's app moves to /app/, and share links keep working at
 
   it("the content's folders: the landing page and plain pages; the help pages come from the docs", async () => {
     const c = await readContent(content);
-    expect(c.pages.map((p) => p.path)).toEqual(["download/", "privacy/", "demo/"]);
+    expect(c.pages.map((p) => p.path)).toEqual(["privacy/", "demo/"]);
     expect(c.helpPages).toHaveLength(8);
   });
 });

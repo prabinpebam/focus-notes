@@ -18,7 +18,7 @@ The public face of Focus Notes: the page a person lands on before they install a
 | Reader | Arrives from | Wants |
 | --- | --- | --- |
 | **Visitor** | A search, a shared link, the repository on GitHub | To know what it is, whether it suits them, and to try it before installing |
-| **New writer** | The download page, the installer, the first run | To get set up without knowing what Git is |
+| **New writer** | The downloads, the installer, the first run | To get set up without knowing what Git is |
 | **Writer** | *Learn more* in the app, a problem message, the Help menu | A plain answer for the thing in front of them, then back to writing |
 | **Power user** | The README, the help centre's *For developers and agents* | The CLI, the MCP server and keyboard reference, kept apart from the main path |
 
@@ -31,7 +31,7 @@ The specification under `/documentations/` stays for people building Focus Notes
 | `/` | [The landing page](#the-landing-page) | Was the owner's Focus Notes app until D-167 |
 | `/help/` | A redirect to [Help](../help/index.md) in these docs, at `/documentations/#help/index.md` (D-181) | `/help/<section>/` redirects to that section's page |
 | `/demo/` | [The demo](#the-demo) | The web app with sample notes |
-| `/download/` | Downloads for each system, with checksums | Links to the latest GitHub Release's assets |
+| `/#download` | Downloads for each system: the landing page's last section (D-184) | Links to the latest GitHub Release, with its checksums; the old `/download/` redirects here |
 | `/app/` | The owner's own Focus Notes, as `/` served before D-167 | Public note pages stay at `/n/` so their addresses don't change |
 | `/n/` | The owner's public notes (D-139) | Unchanged |
 | `/s/` | The share reader, where share links point | Unchanged: it reads the sealed files from the site's root, as before |
@@ -48,6 +48,7 @@ Visual first, in the manner of apple.com's product pages (D-174). Pictures carry
 | 2 | **Featured sections** | At most 5, the strongest first: focus mode, Spotlight, files and folders, private notes and sealed sharing, light and dark. Each has an optional eyebrow, a headline of at most 5 words, one line of at most 14 words, and a large screenshot, or a short loop if motion sells it. |
 | 3 | **Tiles** | One grid of small tiles, an icon and at most 4 words each: plain Markdown files, works offline, free and open source (MIT), private notes stay private, light and dark, nothing tracked, MCP for AI agents. |
 | 4 | **Closing** | One line, the downloads again, *Try the demo*, and one small *Learn how it works* link to the help centre. |
+| 5 | **Download** (`#download`, D-184) | An eyebrow, a headline, one tile per system (Windows, macOS, Linux) with its file, *Download from GitHub* to the latest release, and a caption that the builds aren't signed yet and list their checksums. Every *Download* on the site goes here. |
 
 **Not on the landing page:** prose paragraphs and bulleted prose. The questions people ask before installing, *Is it for you?* and how it works are help centre articles, reached through *Learn how it works*.
 
@@ -116,7 +117,7 @@ Desktop scenes of the app with the demo workspace (D-169, D-176):
 
 As built in WP-10.1 (HLP-08). The landing page's words are a draft for WP-10.5, the help centre has its categories but no articles yet (WP-10.2, WP-10.3), and `/demo/` is a placeholder until WP-10.6.
 
-- **Content in `site/`:** `landing.json` is the landing page (D-174): the headline, its line, the hero's screenshot, the featured sections with their stable anchors (`start`, then each feature's ID, then `get-focus-notes`), and the closing line. The tiles and buttons are in its view document. `download.md`, `privacy.md` and `demo.md` are plain pages. Help isn't here: it's a section of the Slate docs, in `documentations/help/` (D-181). Screenshots go in `media/`, from the `site` catalogue (`apps/desktop/e2e/site-catalog.spec.ts`): a curated demo workspace, the app's own window captured with `webContents.capturePage`, light and dark, as WebP.
+- **Content in `site/`:** `landing.json` is the landing page (D-174): the headline, its line, the hero's screenshot, the featured sections with their stable anchors (`start`, then each feature's ID, then `get-focus-notes`, then `download`), and the closing line. The tiles, buttons and downloads are in its view document. `privacy.md` and `demo.md` are plain pages; downloads are the landing page's last section, not a page (D-184). Help isn't here: it's a section of the Slate docs, in `documentations/help/` (D-181). Screenshots go in `media/`, from the `site` catalogue (`apps/desktop/e2e/site-catalog.spec.ts`): a curated demo workspace, the app's own window captured with `webContents.capturePage`, light and dark, as WebP.
 - **The design system, as the public pages use it (D-114):** core turns the Markdown into view models (`packages/core/src/site.ts`), and two view documents render them: `siteLanding` and `sitePage` (IA-VIEW-SITE). Their components are **SitePage**, **SiteSection**, **SiteLink**, **SiteText**, **SiteFigure** and **SiteGrid**, with **NoteContent** for the plain pages' words, and their words outside the content are messages. There's no hand-written HTML or CSS.
 - **The renderer and the builder:** `apps/web/site/render.ts` is built to `apps/web/dist-site/` with the site's stylesheet and fonts. `tools/site/build.mjs` renders every page at its address, writes the redirects from `/help/` to the docs' Help pages (from the docs' manifest), copies `media/`, and places the owner's app at `/app/` and the share reader at `/s/`.
 - **The owner's app at `/app/`:** the web app's build also makes `dist-app/`, the same app reading the notes and sealed files from the folder above it. They stay at the site's root, where `/n/` and `/s/` have always found them, so no published address changes. Notes written in the browser stay too, because the site's origin is the same. The app never had addresses of its own below `/` (no routes, no service worker), so nothing needs a redirect: a bookmark of `/` opens the landing page, whose footer links to `/app/`.

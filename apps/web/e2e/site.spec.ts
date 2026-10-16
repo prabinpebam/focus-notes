@@ -21,7 +21,7 @@ const TYPES: Record<string, string> = {
 };
 const web = join(import.meta.dirname, "..");
 const repo = join(web, "..", "..");
-const PAGES = ["", "demo/", "download/", "privacy/"];
+const PAGES = ["", "demo/", "privacy/"];
 const PASSPHRASE = "correct horse battery staple";
 let site = "";
 let server: Server;
@@ -98,14 +98,19 @@ test("the site's navigation reaches each address, the skip link goes to the cont
   await page.goto(`${origin}/help/fix-a-problem/`);
   await expect(page).toHaveURL(`${origin}/documentations/#help/fix-a-problem.md`);
   await page.goto(`${origin}/`);
+  // Downloads are the landing page's last section (D-184); the old page's address goes there.
   await nav.getByRole("link", { name: "Download" }).click();
-  await expect(page).toHaveURL(`${origin}/download/`);
+  await expect(page).toHaveURL(`${origin}/#download`);
+  await expect(page.locator("#download")).toBeInViewport();
+  await expect(page.getByRole("link", { name: "Download from GitHub" })).toHaveAttribute("href", "https://github.com/prabinpebam/focus-notes/releases/latest");
+  await page.goto(`${origin}/download/`);
+  await expect(page).toHaveURL(`${origin}/#download`);
   await page.getByRole("link", { name: "Privacy" }).click();
   await expect(page).toHaveURL(`${origin}/privacy/`);
   await page.getByRole("link", { name: "Focus Notes", exact: true }).click();
   await expect(page).toHaveURL(`${origin}/`);
   // The landing page's sections, in the specification's order, each with its anchor.
-  expect(await page.locator("main section[id]").evaluateAll((s) => s.map((e) => e.id))).toEqual(["start", "spotlight", "themes", "files", "get-focus-notes"]);
+  expect(await page.locator("main section[id]").evaluateAll((s) => s.map((e) => e.id))).toEqual(["start", "spotlight", "themes", "files", "get-focus-notes", "download"]);
 });
 
 test("PRF-12: the landing page's LCP, INP and CLS on a throttled profile", async ({ page }) => {

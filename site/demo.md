@@ -8,4 +8,4 @@ draft: WP-10.6
 
 Soon you'll be able to try Focus Notes here, in your browser, with sample notes and nothing to sign in to. Everything you write will stay in your browser.
 
-Until then, [download Focus Notes](../download/) or read the [help centre](../help/).
+Until then, [download Focus Notes](../#download) or read the [help centre](../help/).

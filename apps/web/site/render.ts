@@ -5,7 +5,7 @@
  * view documents in packages/views, the components in packages/ui, the tokens' CSS, no script.
  */
 import {
-  HELP_DOCS, landingModel, MessageCatalog, siteChrome, siteHref, siteMarkdown, sitePageModel, type LandingContent,
+  HELP_DOCS, landingModel, MessageCatalog, siteChrome, siteHref, siteMarkdown, sitePageModel, SITE_PATHS, type LandingContent,
 } from "@focus-notes/core";
 import { renderStaticView } from "@focus-notes/ui-runtime/static";
 import { renderRedirectDocument, renderSiteDocument, siteContracts, siteRegistry } from "@focus-notes/ui/site";
@@ -19,7 +19,7 @@ export interface SiteAssets {
 export interface SiteSource {
   /** site/landing.json: the landing page (D-174). */
   landing: LandingContent;
-  /** Plain pages by their address (`download/`, `privacy/`, `demo/`), from site/<name>.md. */
+  /** Plain pages by their address (`privacy/`, `demo/`), from site/<name>.md. */
   pages: readonly { path: string; markdown: string }[];
   /**
    * The help pages in the Slate docs (documentations/help/*.md, D-181): their old addresses on the site,
@@ -64,11 +64,13 @@ export function renderSite(src: SiteSource, o: SiteOptions): SiteFile[] {
   }
 
   // Help is a section of the Slate docs (D-181): its old addresses redirect there.
-  const redirect = (path: string, to: string) => {
-    const html = renderRedirectDocument({ to: siteHref(path, to), title: en.format("site.nav.help"), label: en.format("site.help.redirect") });
-    out.push({ file: `${path}index.html`, html, title: en.format("site.nav.help") });
+  const redirect = (path: string, to: string, title = en.format("site.nav.help"), label = en.format("site.help.redirect")) => {
+    const html = renderRedirectDocument({ to: siteHref(path, to), title, label });
+    out.push({ file: `${path}index.html`, html, title });
   };
   redirect("help/", HELP_DOCS);
   for (const page of src.helpPages) redirect(`help/${page}/`, `documentations/#help/${page}.md`);
+  // Downloads are the landing page's last section (D-184): the old page's address goes there.
+  redirect("download/", SITE_PATHS.download, en.format("site.nav.download"), en.format("site.download.redirect"));
   return out;
 }

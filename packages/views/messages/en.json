@@ -1764,6 +1764,17 @@
   "history.loadingMore": "Reading older versions…",
   "history.reading": "Reading that version…",
   "site.help.redirect": "Help is in the Focus Notes docs. Go to Help",
+  "site.download.eyebrow": "Download",
+  "site.download.headline": "Free on every desktop.",
+  "site.download.windows": "Windows",
+  "site.download.windowsFile": "Installer (.exe)",
+  "site.download.mac": "macOS",
+  "site.download.macFile": "Apple silicon (.dmg)",
+  "site.download.linux": "Linux",
+  "site.download.linuxFile": "AppImage or .deb",
+  "site.download.cta": "Download from GitHub",
+  "site.download.note": "Not yet signed. Checksums come with each release.",
+  "site.download.redirect": "Downloads are on the home page. Go to Download",
   "site.themes.light": "Light themes",
   "site.themes.dark": "Dark themes"
 }

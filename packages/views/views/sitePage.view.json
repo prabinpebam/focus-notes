@@ -68,10 +68,7 @@
             "href": {
               "get": "vm.site.download"
             },
-            "variant": "nav",
-            "current": {
-              "get": "vm.site.currentDownload"
-            }
+            "variant": "nav"
           }
         }
       ],
