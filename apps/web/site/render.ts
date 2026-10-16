@@ -63,6 +63,10 @@ export function renderSite(src: SiteSource, o: SiteOptions): SiteFile[] {
   }
 
   // The help centre: its home, each category, and each article at help/<category>/<id>/ (HLP-02, HLP-03).
+  // IDs are addresses that never change, in lowercase words joined by hyphens (help-writing.md → Every article).
+  const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+  for (const c of src.categories) if (!ID.test(c.id)) throw new Error(`help/categories.json: "${c.id}" isn't a usable category ID (lowercase words joined by hyphens)`);
+  for (const a of src.articles) if (!ID.test(a.id)) throw new Error(`help/${a.category}/${a.id}.md: "${a.id}" isn't a usable article ID (lowercase words joined by hyphens)`);
   const byCategory = new Map(src.categories.map((c) => [c.id, c]));
   const articles: { entry: HelpArticleEntry; content: SiteContent }[] = src.articles.map((a) => {
     const content = siteMarkdown(a.markdown);

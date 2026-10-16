@@ -82,6 +82,9 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
 
     await writeFile(join(src, "help", "get-started", "connect-github.md"), "---\nid: connect\n---\n# Hi\n");
     await expect(buildSite({ content: src, out: join(tmp, "bad"), renderer: { renderSite } })).rejects.toThrow(/its id is "connect"/);
+    await rm(join(src, "help", "get-started", "connect-github.md"));
+    await writeFile(join(src, "help", "get-started", "Connect GitHub.md"), "# Hi\n");
+    await expect(buildSite({ content: src, out: join(tmp, "bad2"), renderer: { renderSite } })).rejects.toThrow(/isn't a usable article ID/);
   });
 });
 
