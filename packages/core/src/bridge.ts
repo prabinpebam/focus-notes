@@ -323,6 +323,8 @@ export interface AppStateFile {
   appearance?: "system" | "light" | "dark";
   fontSize?: number;
   focusMode?: boolean;
+  /** The Files panel is pinned open on this device (D-161). */
+  filesPinned?: boolean;
   /** The chosen light and dark themes (THM-08). */
   lightTheme?: string;
   darkTheme?: string;

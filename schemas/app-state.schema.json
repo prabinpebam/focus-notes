@@ -37,6 +37,10 @@
     "focusMode": {
       "type": "boolean"
     },
+    "filesPinned": {
+      "type": "boolean",
+      "description": "The Files panel is pinned open on this device (D-161)."
+    },
     "lightTheme": {
       "enum": [
         "paper",

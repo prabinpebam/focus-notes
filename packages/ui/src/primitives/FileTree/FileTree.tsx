@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { Popover } from "react-aria-components";
+import { CommandMenu } from "../MenuButton/MenuButton.tsx";
+import * as menuStyles from "../MenuButton/MenuButton.css.ts";
+import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import { Icon } from "../Icon/Icon.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
-import type { TreeItem } from "../../data.ts";
+import type { MenuSection, TreeItem } from "../../data.ts";
 import * as s from "./FileTree.css.ts";
 import { typeAhead, type TypeAheadState } from "./typeAhead.ts";
 
@@ -16,6 +20,9 @@ export interface FileTreeProps {
   editValue?: string;
   editLabel?: string;
   editError?: string;
+  /** The focused row's menu (D-162): right-click, its ⋯, Shift+F10, or the Menu key. */
+  menu?: MenuSection[];
+  menuLabel?: string;
   id: string;
   onSelect?: (p: { id: string; mode: string }) => void;
   onExpand?: (p: { id: string; expanded: boolean }) => void;
@@ -23,8 +30,11 @@ export interface FileTreeProps {
   onDrop?: (p: { source: string; target: string }) => void;
   onEditChange?: (p: { value: string }) => void;
   onEditBlur?: () => void;
+  onMenuAction?: (p: { id: string }) => void;
 }
 
+/** A registered property's name, from the var() vanilla-extract gives. */
+const varName = (v: string) => v.replace(/^var\((.*)\)$/, "$1");
 /** A row's DOM ID: one-to-one with its item ID, whatever characters a path has. */
 export const treeRowId = (treeId: string, itemId: string) => `${treeId}-r-${itemId.replace(/[^\w-]/g, (c) => `_${c.codePointAt(0)!.toString(16)}`)}`;
 /** How long a collapsed folder is hovered while dragging before it opens (Files → Moving). */
@@ -39,7 +49,7 @@ const EXPAND_AFTER_MS = 600;
 /** The last focus request each tree met, by id, kept while it's re-created (DEF-20). */
 const metRequests = new Map<string, number>();
 
-export function FileTree({ label, items, focusId, focusRequest, editValue = "", editLabel, editError, id, onSelect, onExpand, onAction, onDrop, onEditChange, onEditBlur }: FileTreeProps) {
+export function FileTree({ label, items, focusId, focusRequest, editValue = "", editLabel, editError, menu = [], menuLabel = "", id, onSelect, onExpand, onAction, onDrop, onEditChange, onEditBlur, onMenuAction }: FileTreeProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
   const [dropId, setDropId] = useState("");
@@ -49,6 +59,33 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
   const byId = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
   const focused = byId.has(focusId ?? "") ? focusId! : items[0]?.id ?? "";
   const editing = items.find((i) => i.editing);
+
+  // ---- the row's menu (D-162) ----
+  const boundary = useWindowBoundary();
+  /** The open menu: its row, and where it opens: the pointer's place in the row, the row's ⋯, or the row itself (keys). */
+  const [menuAt, setMenuAt] = useState<{ id: string; at: "point" | "more" | "row"; x: number; y: number } | null>(null);
+  const anchor = useRef<HTMLElement | null>(null);
+  /** Open now, before the render that shows it: a key's echoed context-menu event finds it open. */
+  const menuOpen = useRef(false);
+  const hasMenu = Boolean(onMenuAction);
+  /** Opens the menu on a row: one outside the selection is selected first; on a selected row, the selection stays and focus moves there. */
+  const openMenu = (item: TreeItem, at: "point" | "more" | "row", x = 0, y = 0) => {
+    if (!hasMenu || item.editing) return;
+    select(item.id, item.selected ? "focus" : "replace");
+    menuOpen.current = true;
+    setMenuAt({ id: item.id, at, x, y });
+  };
+  /** Focus goes back to the row as the menu closes, unless what it ran took it (a name field, a dialog). */
+  const menuClosed = () => {
+    menuOpen.current = false;
+    setMenuAt(null);
+    requestAnimationFrame(() => {
+      const a = document.activeElement;
+      if (!a || a === document.body || !a.isConnected) focusRow(focusedRef.current);
+    });
+  };
+  const focusedRef = useRef("");
+  focusedRef.current = focused;
 
   const rowEl = (itemId: string) => document.getElementById(treeRowId(id, itemId));
   const focusRow = (itemId: string) => {
@@ -120,9 +157,18 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
 
   const select = (itemId: string, mode: string) => onSelect?.({ id: itemId, mode });
   const keyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.target instanceof HTMLInputElement || e.altKey) return;
+    // Keys in the row's menu reach here through React's tree, not the DOM's: they're the menu's.
+    if (e.target instanceof HTMLInputElement || e.altKey || !ref.current?.contains(e.target as Node)) return;
     const i = items.findIndex((x) => x.id === focused);
     const item = items[i];
+    // Shift+F10 and the Menu key open the focused row's menu, under it (IA-CMP-CONTEXTMENU).
+    if ((e.key === "F10" && e.shiftKey) || e.key === "ContextMenu") {
+      if (item && hasMenu) {
+        e.preventDefault();
+        openMenu(item, "row");
+      }
+      return;
+    }
     const mod = e.ctrlKey || e.metaKey;
     const moveTo = (j: number) => {
       const next = items[Math.max(0, Math.min(items.length - 1, j))];
@@ -158,6 +204,27 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
       }
     }
     e.preventDefault();
+  };
+  const contextMenu = (e: MouseEvent, item: TreeItem) => {
+    if (!hasMenu) return;
+    // Never the browser's own menu over the tree.
+    e.preventDefault();
+    if (item.editing) return;
+    // From the keyboard (not the secondary button): the key's own request, already open from its keydown,
+    // or under the row. Never a timer: an occluded window's timers are throttled.
+    if (e.button !== 2) {
+      if (!menuOpen.current) openMenu(item, "row");
+      return;
+    }
+    const r = e.currentTarget.getBoundingClientRect();
+    openMenu(item, "point", e.clientX - r.left, e.clientY - r.top);
+  };
+  /** The ⋯ answers on pointer-down, the way a menu button does (D-151). */
+  const morePress = (e: PointerEvent, item: TreeItem) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openMenu(item, "more");
   };
   const click = (e: MouseEvent, item: TreeItem) => {
     if (item.editing) return;
@@ -213,7 +280,10 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
           <div
             key={item.id}
             id={treeRowId(id, item.id)}
-            ref={(el) => el?.style.setProperty(s.depth.replace(/^var\((.*)\)$/, "$1"), String(Math.max(0, item.level - 1)))}
+            ref={(el) => {
+              el?.style.setProperty(varName(s.depth), String(Math.max(0, item.level - 1)));
+              if (el && menuAt?.id === item.id && menuAt.at === "row") anchor.current = el;
+            }}
             role="treeitem"
             aria-level={item.level}
             aria-selected={item.selected}
@@ -225,6 +295,8 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
             data-current={item.current ? "" : undefined}
             data-drop-target={dropId === item.id ? "" : undefined}
             data-kind={item.kind}
+            data-menu-open={menuAt?.id === item.id ? "" : undefined}
+            onContextMenu={(e) => contextMenu(e, item)}
             draggable={item.draggable && !item.editing}
             onClick={(e) => click(e, item)}
             onDoubleClick={() => !item.editing && onAction?.({ id: item.id })}
@@ -270,9 +342,58 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
             {/* The name is the row's text: "About, public" (Files → Accessibility). */}
             {item.description && !item.editing ? <span className={s.description}>{item.description}</span> : null}
             {item.pending ? <span className={s.pending}><Spinner size="s" /></span> : null}
+            {hasMenu && !item.editing && (!item.readOnly || item.kind === "note") ? (
+              <span
+                className={s.more}
+                aria-hidden="true"
+                data-row-more=""
+                ref={(el) => { if (el && menuAt?.id === item.id && menuAt.at === "more") anchor.current = el; }}
+                onPointerDown={(e) => morePress(e, item)}
+                onClick={(e) => e.stopPropagation()}
+                onDoubleClick={(e) => e.stopPropagation()}
+              >
+                <Icon name="more" size="s" />
+              </span>
+            ) : null}
+            {menuAt?.id === item.id && menuAt.at === "point" ? (
+              <span
+                className={s.anchor}
+                aria-hidden="true"
+                ref={(el) => {
+                  if (!el) return;
+                  el.style.setProperty(varName(s.anchorX), `${menuAt.x}px`);
+                  el.style.setProperty(varName(s.anchorY), `${menuAt.y}px`);
+                  anchor.current = el;
+                }}
+              />
+            ) : null}
           </div>
         );
       })}
+      {menuAt && menu.length ? (
+        <Popover
+          triggerRef={anchor}
+          isOpen
+          onOpenChange={(open) => { if (!open) menuClosed(); }}
+          placement="bottom start"
+          offset={4}
+          className={menuStyles.popover}
+          {...boundary}
+          data-surface="popover"
+          aria-label={menuLabel}
+          data-floating-child=""
+        >
+          <CommandMenu
+            label={menuLabel}
+            sections={menu}
+            autoFocus
+            onAction={({ id: command }) => {
+              onMenuAction?.({ id: command });
+              menuClosed();
+            }}
+          />
+        </Popover>
+      ) : null}
     </div>
   );
 }

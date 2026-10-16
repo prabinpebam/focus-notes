@@ -194,7 +194,7 @@ export type MenuEntry = string | { submenu: string; label: string; items: string
 export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
   {
     id: "view", label: "menu.view",
-    items: ["font.smaller", "font.larger", "font.reset", { submenu: "font.content", label: "menu.contentFont", items: CONTENT_FONTS.map((f) => `font.content.${f}`) }, "window.fullScreen"],
+    items: ["font.smaller", "font.larger", "font.reset", { submenu: "font.content", label: "menu.contentFont", items: CONTENT_FONTS.map((f) => `font.content.${f}`) }, "window.fullScreen", "files.togglePin"],
   },
   {
     id: "theme", label: "menu.theme",
@@ -953,7 +953,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const files = registerFiles({
     store, commands, viewModels, catalog, bridge, toast, announce, load, exclusive, setNote, persistAppState,
-    loaded: (path, md) => workspace.loaded(path, md), describeItem, itemSchema: ITEM_SCHEMA,
+    loaded: (path, md) => workspace.loaded(path, md), describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id),
   });
   const browser = registerBrowserFeatures({
     store, commands, viewModels, catalog, bridge, load, flush, toast, tracker, menu: extraMenu,
@@ -1303,6 +1303,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       if (copied) toast(catalog.format("toast.restoredCopy", { note: copied.title, copy: copied.copy!.title }));
       else if (restored.length) toast(catalog.format("toast.restored", { count: restored.length, note: restored[0]!.title }));
       workspace.start();
+      // A panel pinned on this device opens again, once the note is open (D-161).
+      if (store.state.note.path) files.restorePinned(appState.filesPinned);
       sync.start();
       setup.start();
       await browser.start();

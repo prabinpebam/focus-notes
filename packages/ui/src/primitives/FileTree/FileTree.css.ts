@@ -18,6 +18,7 @@ export const tree = style({
 });
 
 export const row = style({
+  position: "relative",
   display: "flex",
   alignItems: "center",
   gap: t.gap,
@@ -80,6 +81,21 @@ export const input = style({
     '&[aria-invalid="true"]': { borderColor: t.danger },
   },
 });
+/**
+ * The row's ⋯ (D-162): opens its menu with the pointer; the keyboard has Shift+F10 and the Menu key. Its
+ * place is kept, so showing it never moves the label; it shows on hover, focus, selection, and while open.
+ */
+export const more = style({
+  display: "inline-flex", flexShrink: 0, alignItems: "center", justifyContent: "center",
+  width: t.moreSize, height: t.moreSize, borderRadius: t.radius, color: t.textMuted, visibility: "hidden",
+  selectors: { "&:hover": { backgroundColor: t.moreHover } },
+});
+globalStyle(`${row}:hover ${more}, ${row}:focus-visible ${more}, ${row}[aria-selected="true"] ${more}, ${row}[data-menu-open] ${more}`, { visibility: "visible" });
+globalStyle(`${row}[aria-selected="true"] ${more}`, { color: t.selectionTextMuted });
+/** Where a right-click's menu opens: the pointer's place in the row, set as it opens. */
+export const anchorX = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const anchorY = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const anchor = style({ position: "absolute", left: anchorX, top: anchorY, width: 0, height: 0, pointerEvents: "none" });
 /** Read by screen readers, not shown: the comma between a row's name and its description. */
 // Inline and without size, so the name reads "About, public" with no space before the comma.
 export const srOnly = style({ display: "inline", fontSize: 0 });

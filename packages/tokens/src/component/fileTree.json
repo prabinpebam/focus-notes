@@ -129,6 +129,14 @@
         "$type": "duration",
         "$value": "{wait.signDelay}"
       },
+      "moreSize": {
+        "$type": "dimension",
+        "$value": "{size.iconL}"
+      },
+      "moreHover": {
+        "$type": "color",
+        "$value": "{color.pressed}"
+      },
       "scrollbarSize": {
         "$type": "dimension",
         "$value": "{size.scrollbar}"

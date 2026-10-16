@@ -3504,7 +3504,7 @@
     },
     "c_FileTree": {
       "type": "object",
-      "description": "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, and an inline name field.",
+      "description": "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, an inline name field, and each row's menu (D-162).",
       "required": [
         "type",
         "props"
@@ -3592,6 +3592,16 @@
                   "$ref": "#/$defs/read"
                 }
               ]
+            },
+            "menu": {
+              "$ref": "#/$defs/read"
+            },
+            "menuLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
             }
           },
           "required": [
@@ -3619,6 +3629,9 @@
               "$ref": "#/$defs/actions"
             },
             "editBlur": {
+              "$ref": "#/$defs/actions"
+            },
+            "menuAction": {
               "$ref": "#/$defs/actions"
             }
           }

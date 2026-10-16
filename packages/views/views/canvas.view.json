@@ -3440,9 +3440,23 @@
               },
               "editError": {
                 "get": "vm.files.editError"
+              },
+              "menu": {
+                "get": "vm.files.menu"
+              },
+              "menuLabel": {
+                "get": "vm.files.menuLabel"
               }
             },
             "on": {
+              "menuAction": {
+                "run": "command.run",
+                "args": {
+                  "id": {
+                    "get": "event.id"
+                  }
+                }
+              },
               "select": {
                 "run": "files.select",
                 "args": {
