@@ -68,6 +68,8 @@ interface Ctx {
   persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
   /** The open note was loaded again with this text (its title changed). */
   loaded: (path: string, markdown: string) => void;
+  /** The app wrote this text to the open note's file itself (a move, its links): the next save expects it there (DEF-24). */
+  sawOnDisk?: (path: string, text: string) => void;
   describeItem: (id: string) => Record<string, unknown>;
   itemSchema: Record<string, unknown>;
   /** Runs an editor action: `edit.focus` puts the caret back in the note. */
@@ -221,6 +223,7 @@ export function registerFiles(ctx: Ctx) {
     const w = writes.find((x) => x.path === n.path);
     if (!w) return;
     const same = n.markdown === w.before;
+    ctx.sawOnDisk?.(w.path, w.text);
     const text = same ? w.text : rewriteLinks(n.markdown, w.from, w.path, moves, sameRootOf(before)).text;
     ctx.setNote({ key: `${w.path}#links-${Date.now()}`, initialMarkdown: text, markdown: text, saveState: same ? "saved" : "unsaved" });
     ctx.loaded(w.path, text);
@@ -738,6 +741,7 @@ export function registerFiles(ctx: Ctx) {
         setFiles((f) => ({ selection: { selected: [to], anchor: to, focus: to } }));
         if (isOpen) {
           ctx.setNote({ path: to, key: `${to}#${Date.now()}`, initialMarkdown: own, markdown: own, saveState: "saved" });
+          ctx.sawOnDisk?.(to, own);
           ctx.loaded(to, own);
           if (sourceOf(to) !== "private") await ctx.persistAppState({ lastNotePath: to });
         } else followLinks(others, moves, before);

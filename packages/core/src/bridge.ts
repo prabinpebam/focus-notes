@@ -23,8 +23,13 @@ export interface PlatformBridge {
    * index reads with `readNote`.
    */
   readNotes?(paths: readonly string[]): Promise<(string | null)[]>;
-  /** Atomic write: temporary file, then rename. */
-  writeNote(path: string, content: string): Promise<void>;
+  /**
+   * Atomic write: temporary file, then rename. With `expected` (the text the app knows is on disk:
+   * what it last read or wrote there), the shell first checks the file still holds it and, when
+   * another program changed it meanwhile, writes nothing and resolves to the text it found
+   * (`{ outside }`, D-92, DEF-24). A missing file is written.
+   */
+  writeNote(path: string, content: string, expected?: string): Promise<void | { outside: string }>;
   /** Shows the open dialog. Resolves to undefined if cancelled. */
   chooseNote(): Promise<string | undefined>;
   /** A free path for a new untitled note next to the given note, or in the notes folder. */

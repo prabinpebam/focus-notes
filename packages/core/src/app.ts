@@ -387,7 +387,15 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     unsavedSince = undefined;
     setNote({ saveState: "saving" });
     try {
-      await bridge.writeNote(path, markdown);
+      // The shell writes only if the file still holds what this window knows is there: another
+      // program's change since then is never saved over, even one the watcher hasn't reported yet
+      // (D-92, DEF-24); the edits stay here and wait for a choice.
+      const found = await bridge.writeNote(path, markdown, workspace.onDisk(path));
+      if (found && typeof found === "object" && typeof found.outside === "string") {
+        setNote({ saveState: "unsaved" });
+        conflicts.outside(path, store.state.note.path === path ? store.state.note.markdown : markdown, found.outside);
+        return;
+      }
       timing.mark(SAVED_MARK);
       // The file name follows the title (FIL-07); a rename keeps the editor as it is.
       await workspace.written(path, markdown);
@@ -497,6 +505,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const md = await bridge.readNote(path);
       if (opts.accept && !opts.accept(md)) return false;
       setNote({ path, key: `${path}#${Date.now()}`, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
+      workspace.sawOnDisk(path, md);
       workspace.loaded(path, md);
       visited(path);
       // A note sync found changed elsewhere opens the resolver when it's opened (IA-CMP-CONFLICT).
@@ -1006,7 +1015,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const files = registerFiles({
     store, commands, viewModels, catalog, bridge, toast, announce, load, exclusive, setNote, persistAppState,
-    loaded: (path, md) => workspace.loaded(path, md), describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id),
+    loaded: (path, md) => workspace.loaded(path, md), sawOnDisk: (path, text) => workspace.sawOnDisk(path, text), describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id),
   });
   const browser = registerBrowserFeatures({
     store, commands, viewModels, catalog, bridge, load, flush, toast, tracker, menu: extraMenu,
@@ -1017,6 +1026,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const conflicts = registerConflicts({
     store, commands, viewModels, catalog, bridge, tracker, toast, announce, exclusive, setNote, flush,
     loaded: (path, md) => workspace.loaded(path, md),
+    sawOnDisk: (path, text) => workspace.sawOnDisk(path, text),
     ...(options.clock ? { now: options.clock.now } : {}),
   });
   const heldNotes = registerHeld({ store, commands, viewModels, catalog, bridge, toast, announce });

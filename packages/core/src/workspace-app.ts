@@ -114,7 +114,9 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
 
   // ---- the tree and outside changes (PRF-11) ----
   let queued: WorkspaceChange[] | undefined = [];
+  /** What the app knows is on disk for a note: what it last wrote, or read, there (D-92, DEF-24). */
   let lastWritten: { path: string; text: string } | undefined;
+  const onDisk = (path: string) => (lastWritten?.path === path ? lastWritten.text : store.state.note.path === path ? store.state.note.initialMarkdown : undefined);
   let outside = 0;
   const setTree = (tree: WorkspaceTree) => { if (tree !== store.state.workspace.tree) setWorkspace({ tree }); };
 
@@ -127,9 +129,10 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     if (n.path !== path || text === n.markdown) return;
     // What the app knows is on disk: its last save of the note, or the text it opened. The watcher
     // reports the app's own writes too (a save, or a new note's empty file): those changed nothing.
-    if (text === (lastWritten?.path === path ? lastWritten.text : n.initialMarkdown)) return;
+    if (text === onDisk(path)) return;
     if (n.saveState === "saved") {
       setNote({ key: `${path}#outside-${++outside}`, initialMarkdown: text, markdown: text });
+      lastWritten = { path, text };
       loaded(path, text);
       return;
     }
@@ -192,6 +195,12 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
   }
 
   return {
+    /** The text the app knows is on disk for a note, which a save expects to find there (DEF-24). */
+    onDisk,
+    /** The app read this text from disk, or the person saw it there and chose (a note opened, a conflict settled). */
+    sawOnDisk(path: string, text: string): void {
+      lastWritten = { path, text };
+    },
     /** Reads the format before the first note opens, so nothing is written to a workspace that mustn't be. */
     prepare: () => checkFormat(),
     /** Lists the tree and follows outside changes. Never makes the first note wait. */

@@ -15,6 +15,7 @@ import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/a
 import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { writeUnlessChanged } from "./note-write.ts";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -1006,14 +1007,17 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     }
     return out;
   });
-  handle("note:write", async (p, content) => {
+  handle("note:write", async (p, content, expected) => {
     if (typeof content !== "string") throw new Error("Content must be text");
+    if (expected !== undefined && typeof expected !== "string") throw new Error("Expected text must be text");
     const path = notePath(p);
     // The app saves its latest text: this supersedes every text the journal was sent before it (QLT-03).
     const upTo = journal?.mark();
     // How much changed decides when it's backed up (D-133): against the text last written here, or on disk.
     const before = lastWritten.get(path) ?? (await readFile(path, "utf8").catch(() => ""));
-    await atomicWrite(path, content);
+    // Never over another program's change: checked right before writing (D-92, DEF-24).
+    const outside = await writeUnlessChanged(path, content, expected, atomicWrite);
+    if (outside) return outside;
     lastWritten.set(path, content);
     void journal?.saved(path, content, upTo);
     withGit((g) => g.written(path, changedChars(before, content)));
