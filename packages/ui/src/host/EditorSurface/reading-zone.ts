@@ -38,7 +38,14 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   let repeating = false;
   const ease = cubicBezier(autoScroll.easing);
   const animator = createScrollAnimator(
-    { get: () => scroller.scrollTop, set: (v) => (scroller.scrollTop = v) },
+    {
+      get: () => scroller.scrollTop,
+      // Written in a frame's callback: a surface anchored to the note is placed again in this frame, not the next (DEF-25).
+      set: (v) => {
+        scroller.scrollTop = v;
+        if (anchors.anyOpen) anchors.moved();
+      },
+    },
     {
       // Read when a scroll starts (in the frame's callback, never on the keystroke): reduced motion makes it 0.
       duration: () => {

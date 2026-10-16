@@ -68,6 +68,11 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
     const closed = anchors.opening();
     measure();
     const off = anchors.subscribe(schedule);
+    // The note scrolled in a frame's callback (D-156's reading zone): placed again in that frame (DEF-25).
+    const offMoved = anchors.onMoved(() => {
+      cancelAnimationFrame(frame);
+      measure();
+    });
     const resize = new ResizeObserver(schedule);
     resize.observe(el);
     addEventListener("resize", schedule);
@@ -81,6 +86,7 @@ export function Positioner({ anchor = "selection", placement = "above", align = 
       closed();
       cancelAnimationFrame(frame);
       off();
+      offMoved();
       resize.disconnect();
       removeEventListener("resize", schedule);
       removeEventListener("scroll", onScroll, { capture: true });
