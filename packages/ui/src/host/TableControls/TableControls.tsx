@@ -4,7 +4,7 @@ import { CommandMenu } from "../../primitives/MenuButton/MenuButton.tsx";
 import * as menuStyles from "../../primitives/MenuButton/MenuButton.css.ts";
 import { Icon } from "../../primitives/Icon/Icon.tsx";
 import { tableGeometry, type Box, type TableGeometry } from "../../behaviors/table-geometry.ts";
-import { COMPANION_ATTR } from "../../behaviors/anchors.ts";
+import { anchors, COMPANION_ATTR } from "../../behaviors/anchors.ts";
 import { fixedBox } from "../../behaviors/frame.ts";
 import type { MenuSection } from "../../data.ts";
 import * as s from "./TableControls.css.ts";
@@ -133,6 +133,9 @@ export function TableControls({
   }, [menu, drag]);
   useEffect(() => () => { tableGeometry.held = false; }, []);
 
+  // A menu over the note ends its auto-scroll as it opens, so it's placed where the note stays (DEF-21).
+  const menuOpen = menu !== null;
+  useEffect(() => (menuOpen ? anchors.opening() : undefined), [menuOpen]);
   // The table went away (deleted, or the note changed) with a menu open: the menu goes too.
   useEffect(() => {
     if (!g && menu) close();
@@ -332,7 +335,17 @@ export function TableControls({
   );
 }
 
+/**
+ * Where the context menu opens: the active cell, kept inside the window. A cell scrolled out of view
+ * (below a small window) would place the menu against a box off the window, past its edge (D-111).
+ */
 function CellAnchor({ anchorRef, box }: { anchorRef: RefObject<HTMLDivElement | null>; box: Box }) {
-  usePlace(anchorRef, box.left, box.top, box.right - box.left, box.bottom - box.top);
+  const o = fixedBox(anchorRef.current);
+  const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+  const top = clamp(box.top, o.top, o.top + o.height);
+  const bottom = clamp(box.bottom, top, o.top + o.height);
+  const left = clamp(box.left, o.left, o.left + o.width);
+  const right = clamp(box.right, left, o.left + o.width);
+  usePlace(anchorRef, left, top, right - left, bottom - top);
   return <div ref={anchorRef} className={s.anchor} aria-hidden="true" />;
 }

@@ -471,11 +471,18 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
 
   let opening: number | undefined;
+  const slashed = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+  /** Whether a path is in the workspace's Public root (`notes/`). */
+  const publicInWorkspace = (path: string, folder: string) => slashed(path).startsWith(`${slashed(folder)}/notes/`);
+  /** Opens a note. `accept` may turn it down once read (the launch's last note, D-171): nothing shows then. */
   async function load(path: string): Promise<void> {
+    await openNote(path);
+  }
+  async function openNote(path: string, opts: { accept?: (markdown: string) => boolean } = {}): Promise<boolean> {
     opening = timing.mark("fn:note.open.start");
     // Never replace a note whose latest text isn't on disk (data safety, QLT-03).
     editorAction(FLUSH_EDITOR);
-    if (!(await flush())) return;
+    if (!(await flush())) return false;
     // Switching notes commits and pushes the one being left (D-23).
     const leaving = store.state.note.path;
     if (leaving && leaving !== path) {
@@ -488,6 +495,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store.update((s) => ({ ...s, ui: { ...s.ui, format: FORMAT_CLOSED } }));
     try {
       const md = await bridge.readNote(path);
+      if (opts.accept && !opts.accept(md)) return false;
       setNote({ path, key: `${path}#${Date.now()}`, initialMarkdown: md, markdown: md, status: "ready", saveState: "saved" });
       workspace.loaded(path, md);
       visited(path);
@@ -495,8 +503,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       conflicts.offer(path);
       // A private note's name is private: it's never written to this browser's storage (D-90).
       if (sourceOf(path) !== "private") await persistAppState({ lastNotePath: path });
+      return true;
     } catch {
       setNote({ status: "error" });
+      return false;
     }
   }
 
@@ -671,8 +681,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const current = store.state.note.path;
       // With the Files panel open, the note goes into the selected folder (Files → Creating); else
       // into the open note's folder if it's private, or the Private root: private by default (SHR-01).
-      const folder = newNoteFolder(store.state.workspace.tree, files.newNoteFolder(), isReadOnlyPath(current) ? undefined : current);
-      const near = folder !== undefined ? joinPath(folder, "untitled.md") : isReadOnlyPath(current) ? undefined : current;
+      // Before the tree has been read (just after launch), whether the open note is private isn't known:
+      // then only a chosen folder counts, and the shell puts it in the Private root (D-171).
+      const tree = store.state.workspace.tree;
+      const known = tree.roots.length > 0;
+      const folder = known ? newNoteFolder(tree, files.newNoteFolder(), isReadOnlyPath(current) ? undefined : current) : files.newNoteFolder();
+      const near = folder !== undefined ? joinPath(folder, "untitled.md") : known && !isReadOnlyPath(current) ? current : undefined;
       const path = await bridge.newNotePath(near);
       if (!(await flush())) return;
       files.created(path);
@@ -1339,9 +1353,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       if (!(await firstRun.begin(appState))) {
         // A panel pinned on this device is there from the first frame, so the text never jumps aside (D-161).
         files.restorePinned(appState.filesPinned);
-        const path = appState.lastNotePath ?? (await bridge.defaultNotePath());
-        await load(path);
-        if (store.state.note.status === "error" && appState.lastNotePath) await load(await bridge.defaultNotePath());
+        // Only the note the person last opened, and never an empty public file;
+        // else the app's own note, in the Private root (D-171, SHR-01).
+        const folder = store.state.workspace.folder;
+        const last = appState.lastNotePath;
+        const reopened = last !== undefined && (await openNote(last, { accept: (md) => !(folder && publicInWorkspace(last, folder) && !md.trim()) }));
+        if (!reopened) await load(await bridge.defaultNotePath());
         // A link the app was opened with goes on from the note it opened (D-165).
         void deepLinks.take();
       }
