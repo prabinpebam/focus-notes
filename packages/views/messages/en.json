@@ -786,6 +786,7 @@
   "files.reason.intoItself": "a folder can't go inside itself",
   "files.reason.trash": "the system trash refused it",
   "files.reason.failed": "the file system refused it, and nothing was changed",
+  "files.reason.changed": "a note it changes was changed outside Focus Notes, so nothing was changed",
   "files.nameError.notFound": "That folder is no longer there.",
   "files.nameError.taken": "That name is taken here.",
   "files.nameError.invalid": "That name can't be used. Avoid \\ / : * ? \" < > | and names that start with a dot.",

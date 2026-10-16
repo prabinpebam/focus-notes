@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createApp, type AppStateFile, type PlatformBridge, type WorkspaceBridge, type WorkspaceChange, type WorkspaceScan } from "../src/index.ts";
+import { checkingDisk } from "./checking-disk.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 const ROOT = "/w/private/notes";
@@ -35,7 +36,7 @@ function setup(opts: { files?: Record<string, string>; format?: string; open?: s
   const bridge: PlatformBridge = {
     platform: "windows",
     readNote: async (p) => { reads.push(p); if (!(p in files)) throw new Error("missing"); return files[p]!; },
-    writeNote: async (p, c) => { files[p] = c; writes.push(p); },
+    writeNote: checkingDisk(files, (p) => writes.push(p)).writeNote,
     chooseNote: async () => undefined, newNotePath: async () => `${ROOT}/untitled.md`,
     defaultNotePath: async () => `${ROOT}/welcome.md`,
     loadAppState: async () => state, saveAppState: async (s) => { state = s; },

@@ -76,7 +76,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
   warmUp: params.get("warmup") !== "0",
   readNote: (path: string) => ipcRenderer.invoke("note:read", path),
   readNotes: (paths: readonly string[]) => ipcRenderer.invoke("notes:read", paths),
-  writeNote: (path: string, content: string) => ipcRenderer.invoke("note:write", path, content),
+  writeNote: (path: string, content: string, expected?: string) => ipcRenderer.invoke("note:write", path, content, expected),
   chooseNote: () => ipcRenderer.invoke("note:choose"),
   newNotePath: (near?: string) => ipcRenderer.invoke("note:newPath", near),
   toggleFullScreen: () => void ipcRenderer.invoke("window:fullScreen"),

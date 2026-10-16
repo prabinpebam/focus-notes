@@ -47,6 +47,8 @@ interface Ctx {
   setNote: (patch: Partial<AppState["note"]>) => void;
   /** The open note was loaded again with this text. */
   loaded: (path: string, markdown: string) => void;
+  /** The person saw this text on disk and chose: the next save expects it there (DEF-26). */
+  sawOnDisk?: (path: string, text: string) => void;
   /** Writes the open note's unsaved text now. */
   flush: () => Promise<boolean>;
   now?: () => number;
@@ -123,7 +125,7 @@ export function registerConflicts(ctx: Ctx) {
   async function keepCopy(n: NoteConflict, text: string, title: string, recoverable: boolean): Promise<void> {
     const copy = conflictCopy({ path: n.path, text, title, taken: siblings(n.path) });
     const ws = bridge.workspace;
-    if (!ws?.apply) return bridge.writeNote(copy.path, copy.text);
+    if (!ws?.apply) return void (await bridge.writeNote(copy.path, copy.text));
     await ws.apply([{ op: "create", path: copy.path, text: copy.text }]);
     if (recoverable) await ws.apply([{ op: "delete", path: copy.path }]);
   }
@@ -145,6 +147,8 @@ export function registerConflicts(ctx: Ctx) {
     store.update((s) => ({ ...s, ui: { ...s.ui, conflict: { ...CONFLICT_CLOSED, focus: s.ui.conflict.focus } } }));
     const open = store.state.note;
     if (open.path === n.path) {
+      // The other program's text is what's on disk now, seen and chosen over: the save may replace it.
+      ctx.sawOnDisk?.(n.path, n.theirs);
       if (choice === "mine") await ctx.flush();
       else {
         // The other version replaces the text here; what was typed is in the copy.
@@ -243,6 +247,12 @@ export function registerConflicts(ctx: Ctx) {
       if (path === undefined) return;
       if (conflict().held === path && !conflict().open) set({ open: true, focus: conflict().focus + 1 });
       else if (known.includes(path) && !conflict().open) void openSync();
+    },
+    /** The app moved a note waiting for a choice (Files): the choice waits at its new path, saves still held (DEF-26). */
+    moved(from: string, to: string): void {
+      const c = conflict();
+      if (c.held !== from) return;
+      set({ held: to, notes: c.notes.map((n) => (n.path === from ? { ...n, path: to } : n)) });
     },
     /** The open note went away (deleted, or another note was opened after a choice): nothing is held for it. */
     release(path: string | undefined): void {

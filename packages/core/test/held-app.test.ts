@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createApp, NO_HELD, titleOfMarkdown, type HeldNotes, type PlatformBridge, type SyncReport } from "../src/index.ts";
+import { checkingDisk } from "./checking-disk.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 const PUB = "/w/notes";
@@ -23,7 +24,7 @@ function setup(opts: { privateRoot?: boolean } = {}) {
   const bridge: PlatformBridge = {
     platform: "windows",
     readNote: async (p) => files[p] ?? "",
-    writeNote: async (p, c) => { files[p] = c; },
+    writeNote: checkingDisk(files).writeNote,
     chooseNote: async () => undefined,
     // As the shell does (D-158): without a private root, a new note's path is held before it's written.
     newNotePath: async () => {

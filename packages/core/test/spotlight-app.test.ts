@@ -13,6 +13,7 @@ import {
 import { startSearch, type SearchService } from "../src/search/feed.ts";
 import { localSearch } from "../src/search/serve.ts";
 import type { IndexStatus, SearchHit, SearchQuery } from "../src/search/types.ts";
+import { checkingDisk } from "./checking-disk.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 const PRIV = "/w/private/notes";
@@ -35,7 +36,7 @@ function desktop(platform: PlatformBridge["platform"] = "windows", extra: Record
   const bridge: PlatformBridge = {
     platform,
     readNote: async (p) => { if (!(p in files)) throw new Error("missing"); return files[p]!; },
-    writeNote: async (p, c) => { files[p] = c; },
+    writeNote: checkingDisk(files).writeNote,
     chooseNote: async () => undefined,
     newNotePath: async (near) => {
       const dir = near ? near.slice(0, near.lastIndexOf("/")) : PRIV;
@@ -62,7 +63,7 @@ function desktop(platform: PlatformBridge["platform"] = "windows", extra: Record
         for (const op of ops) {
           if (op.op === "move") {
             for (const p of Object.keys(files)) if (under(op.from, p)) { files[op.to + p.slice(op.from.length)] = files[p]!; delete files[p]; }
-          } else if (op.op === "write") files[op.path] = op.text;
+          } else if (op.op === "write") checkingDisk(files).writeOp(op);
           else if (op.op === "delete") for (const p of Object.keys(files)) if (under(op.path, p)) delete files[p];
         }
       },

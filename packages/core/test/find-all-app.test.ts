@@ -11,6 +11,7 @@ import { createApp, MORE_MENU, type AppStateFile, type PlatformBridge, type Work
 import { parseFindQuery } from "../src/find-all-app.ts";
 import { startSearch, type SearchService } from "../src/search/feed.ts";
 import { localSearch } from "../src/search/serve.ts";
+import { checkingDisk } from "./checking-disk.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 const W = "/w";
@@ -31,7 +32,7 @@ function desktop(files: Record<string, string>) {
   const bridge: PlatformBridge = {
     platform: "windows",
     readNote: async (p) => { if (!(p in files)) throw new Error("missing"); return files[p]!; },
-    writeNote: async (p, c) => { files[p] = c; },
+    writeNote: checkingDisk(files).writeNote,
     chooseNote: async () => undefined, newNotePath: async () => `${PRIV}/untitled.md`,
     defaultNotePath: async () => `${PRIV}/start.md`,
     loadAppState: async () => state, saveAppState: async (s) => { state = s; },

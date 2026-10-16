@@ -114,7 +114,14 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
 
   // ---- the tree and outside changes (PRF-11) ----
   let queued: WorkspaceChange[] | undefined = [];
+  /**
+   * What the app knows is on disk for a note: what it last wrote, or read, there (D-92, DEF-26). Keyed
+   * by path, and only ever moved to another path explicitly (`movedOnDisk`, when the app itself moved
+   * the file): a note opened at another path never inherits it. A path the app hasn't recorded falls
+   * back to the open note's text as opened.
+   */
   let lastWritten: { path: string; text: string } | undefined;
+  const onDisk = (path: string) => (lastWritten?.path === path ? lastWritten.text : store.state.note.path === path ? store.state.note.initialMarkdown : undefined);
   let outside = 0;
   const setTree = (tree: WorkspaceTree) => { if (tree !== store.state.workspace.tree) setWorkspace({ tree }); };
 
@@ -127,9 +134,10 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     if (n.path !== path || text === n.markdown) return;
     // What the app knows is on disk: its last save of the note, or the text it opened. The watcher
     // reports the app's own writes too (a save, or a new note's empty file): those changed nothing.
-    if (text === (lastWritten?.path === path ? lastWritten.text : n.initialMarkdown)) return;
+    if (text === onDisk(path)) return;
     if (n.saveState === "saved") {
       setNote({ key: `${path}#outside-${++outside}`, initialMarkdown: text, markdown: text });
+      lastWritten = { path, text };
       loaded(path, text);
       return;
     }
@@ -174,7 +182,7 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
         // Links to it in other notes change in the same batch as the name (FIL-09).
         const writes = await planLinkWrites(store.state.workspace.tree, moves, (p) => (p === path ? Promise.resolve(markdown) : bridge.readNote(p)));
         own = writes.find((w) => w.from === path)?.text;
-        await ws.apply([{ op: "move", from: path, to: plan.to }, ...writes.map((w) => ({ op: "write" as const, path: w.path, text: w.text }))]);
+        await ws.apply([{ op: "move", from: path, to: plan.to }, ...writes.map((w) => ({ op: "write" as const, path: w.path, text: w.text, before: w.before }))]);
       } else await ws.renameNote(path, plan.to);
     } catch {
       return; // The name is taken or locked: it's tried again on the next save.
@@ -192,6 +200,16 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
   }
 
   return {
+    /** The text the app knows is on disk for a note, which a save expects to find there (DEF-26). */
+    onDisk,
+    /** The app read this text from disk, or the person saw it there and chose (a note opened, a conflict settled). */
+    sawOnDisk(path: string, text: string): void {
+      lastWritten = { path, text };
+    },
+    /** The app moved a note's file (Files, or a folder around it): what it knew was there is at `to` now. */
+    movedOnDisk(from: string, to: string): void {
+      if (lastWritten?.path === from) lastWritten = { path: to, text: lastWritten.text };
+    },
     /** Reads the format before the first note opens, so nothing is written to a workspace that mustn't be. */
     prepare: () => checkFormat(),
     /** Lists the tree and follows outside changes. Never makes the first note wait. */

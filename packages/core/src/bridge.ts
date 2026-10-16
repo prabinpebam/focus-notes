@@ -23,8 +23,13 @@ export interface PlatformBridge {
    * index reads with `readNote`.
    */
   readNotes?(paths: readonly string[]): Promise<(string | null)[]>;
-  /** Atomic write: temporary file, then rename. */
-  writeNote(path: string, content: string): Promise<void>;
+  /**
+   * Atomic write: temporary file, then rename. With `expected` (the text the app knows is on disk:
+   * what it last read or wrote there), the shell first checks the file still holds it and, when
+   * another program changed it meanwhile, writes nothing and resolves to the text it found
+   * (`{ outside }`, D-92, DEF-26). A missing file is written.
+   */
+  writeNote(path: string, content: string, expected?: string): Promise<void | { outside: string }>;
   /** Shows the open dialog. Resolves to undefined if cancelled. */
   chooseNote(): Promise<string | undefined>;
   /** A free path for a new untitled note next to the given note, or in the notes folder. */
@@ -285,12 +290,13 @@ export type WorkspaceOp =
   /** Desktop: to the system trash until Git keeps deletions (FIL-10). Browser: kept, marked deleted. */
   | { op: "delete"; path: string }
   /** A note's new text, at its path after the batch's moves: links that follow a rename or move (FIL-09, D-95). */
-  | { op: "write"; path: string; text: string }
+  /** `before`: the text the app read and rewrote; the shell writes nothing if the file holds anything else (DEF-26). */
+  | { op: "write"; path: string; text: string; before?: string }
   /** A new note, never over another: a copy the conflict resolver keeps (FIL-12). */
   | { op: "create"; path: string; text: string };
 
 /** Why a batch was refused. The shell's error message ends with one of these. */
-export const OP_ERROR_CODES = ["notFound", "taken", "readOnly", "invalid", "intoItself", "trash", "failed"] as const;
+export const OP_ERROR_CODES = ["notFound", "taken", "readOnly", "invalid", "intoItself", "trash", "failed", "changed"] as const;
 export type OpErrorCode = (typeof OP_ERROR_CODES)[number];
 /** The code at the end of a shell's error message (Electron prefixes its own words), or "failed". */
 export function opErrorCode(error: unknown): OpErrorCode {
