@@ -2,7 +2,8 @@
 title: Focus Notes
 summary: A calm place to write, with your notes kept as plain files in your own GitHub account.
 # Draft copy: the skeleton of every section, in the specification's order (Product site and help →
-# The landing page). WP-10.5 writes the final words, screenshots and downloads.
+# The landing page). WP-10.5 writes the final words, screenshots and downloads, and names the
+# command-line tool and focus-notes:// links once they ship (WP-7.3).
 draft: WP-10.5
 ---
 # A calm place to write, with your notes kept in your own GitHub account
@@ -42,7 +43,7 @@ Every change is in [the repository](https://github.com/prabinpebam/focus-notes),
 
 ## For developers and AI agents
 
-Underneath, your notes are Markdown files in a Git repository. Focus Notes also has an MCP server for AI agents, a command-line tool, and `focus-notes://` links. The help centre has a section for developers.
+Underneath, your notes are Markdown files in a Git repository, so other tools can read and edit them too. An MCP server lets the AI agents you choose work with your notes, with your permission. The help centre has [a section for developers and AI agents](help/developers/).
 
 ## Questions
 
