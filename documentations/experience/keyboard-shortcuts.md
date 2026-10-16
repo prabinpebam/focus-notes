@@ -232,6 +232,24 @@ The tree's keys work while focus is in the tree, and New folder and Move to… a
 
 On macOS the desktop app also has a full native **menu bar** (File, Edit, Format, View, Go, Window, Help) that lists every command with its shortcut. That gives macOS users the standard Help menu search for free. The menu bar sits at the top of the screen, so the window itself stays blank. It's generated from the command registry, so its keys are this page's keys ([Desktop app → macOS menu bar](desktop-app.html#macos-menu-bar), [D-106](../plan/decisions.md)). Keys of one focused control (the find bar's options, a table's cells, the Files tree) aren't in it; they're in the cheat sheet. Each key runs its command once, whether the page or the menu gets it first.
 
+## Custom keybindings as built
+
+**As built (WP-8.3, D-170).** `keybindings.json` is in the app's data folder, one per device, and follows `schemas/keybindings.schema.json`:
+
+```json
+[
+  { "command": "focus.toggle", "key": "Mod+J" },
+  { "command": "-note.save", "key": "Mod+S" },
+  { "command": "find.allNotes", "key": "Mod+Shift+G", "platform": "windows" }
+]
+```
+
+- **Layered over the defaults.** An entry adds its chord to the command, and wins over a default chord on the same key in the same context. A leading `-` removes that default chord instead. Menus, Spotlight, tooltips, the cheat sheet, and the editor's own keys show the effective keys.
+- **Checked, never fatal.** An entry that isn't an object, names no known command, has a chord the app can't read or a key the system keeps, or an unknown platform is skipped. Settings → Keyboard lists it by its position, and the rest apply.
+- **Conflicts** are listed in Settings → Keyboard and at the top of the cheat sheet, saying which command a key runs.
+- **Live.** Saving the file applies it within a second, without restarting.
+- **Settings → Keyboard** has *Edit keybindings.json*, *Reset keyboard shortcuts* (back to the defaults), and *Customize toolbar…* (UI-08).
+
 ## Conflict register
 
 These are the deliberate trade-offs. Each one is the choice the most popular precedent made.

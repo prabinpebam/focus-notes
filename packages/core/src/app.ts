@@ -23,6 +23,8 @@ import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, t
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
 import { registerDeepLinks } from "./deep-link-app.ts";
 import { registerAgents, AGENTS_IDLE, type AgentsState } from "./agents-app.ts";
+import { registerKeybindings, KEYBINDINGS_NONE, type KeybindingsState } from "./keybindings-app.ts";
+import { registerToolbarCustomize, TOOLBAR_CUSTOMIZE_CLOSED, validPinned, type ToolbarCustomizeState } from "./toolbar-customize.ts";
 import { registerHeld, HELD_CLOSED, type HeldUiState } from "./held-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
@@ -50,6 +52,10 @@ export interface AppState {
   /** Appearance and the reading settings (THM-08, THM-03, Theme manager → Reading). */
   appearance: Appearance;
   focusMode: boolean;
+  /** The toolbar's actions, in order: at most six (UI-08, D-170). */
+  toolbarPinned: string[];
+  /** keybindings.json as applied (KEY-07, D-170). */
+  keybindings: KeybindingsState;
   /** How the window is composited, as the shell reports it (D-121): in software the note's edges fade without the blur. */
   compositing: Compositing;
   ui: {
@@ -78,6 +84,8 @@ export interface AppState {
     importNotes: ImportState;
     /** The conflict resolver (FIL-12, IA-CMP-CONFLICT). */
     conflict: ConflictState;
+    /** Customize toolbar (UI-08, D-170). */
+    toolbarCustomize: ToolbarCustomizeState;
     /** A new public note held out of Git until the writer answers (D-158): its pill and its question. */
     held: HeldUiState;
     /** Settings → Agents (WP-7.4, D-166). */
@@ -219,7 +227,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
   { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
   { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
-  { id: "app", label: "menu.app", items: ["settings.open", "shortcuts.open", "help.open"] },
+  { id: "app", label: "menu.app", items: ["settings.open", "toolbar.customize", "shortcuts.open", "help.open"] },
 ];
 /**
  * ⋯ items whose feature arrives in a later work package: present now, disabled, and saying why
@@ -273,8 +281,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lineHeight: LINE_HEIGHT.default, measure: MEASURE.default, paragraphSpacing: "comfortable",
     },
     focusMode: false,
+    toolbarPinned: [...DEFAULT_TOOLBAR],
+    keybindings: KEYBINDINGS_NONE,
     compositing: bridge.compositing?.initial === "software" ? "software" : "gpu",
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, toolbarCustomize: TOOLBAR_CUSTOMIZE_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -495,7 +505,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     const leaving = store.state.note.path;
     if (leaving && leaving !== path) {
       // A new public note that waits is asked about before its first backup (D-158).
-      heldNotes.backingUp(leaving);
+      void heldNotes.backingUp(leaving);
       sync.switched();
     }
     setNote({ status: "loading" });
@@ -565,7 +575,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       await saving;
       if (store.state.note.saveState === "error") throw new Error("save failed");
       // A new public note that waits is asked about; the rest is backed up as usual (D-158).
-      heldNotes.backingUp(store.state.note.path);
+      await heldNotes.backingUp(store.state.note.path);
       await sync.saveNow();
     }, store.state.sync.git ? "task.synced" : "task.saved")).catch((e: unknown) => {
       const conflict = e instanceof SyncFailed && e.problem === "conflict";
@@ -1062,6 +1072,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     if ((c === "gpu" || c === "software") && c !== store.state.compositing) store.update((s) => ({ ...s, compositing: c }));
   });
   const menuBar = registerMenuBar({ store, commands, catalog, platform: bridge.platform, ...(bridge.nativeWindow ? { bridge: bridge.nativeWindow } : {}) });
+  // The actions that can be pinned (UI-08, D-170): the six defaults, then ⋯'s own commands.
+  const planned = new Set<string>(PLANNED_MENU_COMMANDS.map((c) => c.id));
+  const pinnable = () => [...new Set([...DEFAULT_TOOLBAR, ...[...MORE_MENU, ...extraMenu].flatMap((g) => g.items.filter((e): e is string => typeof e === "string"))])].filter((id) => commands.has(id) && !planned.has(id));
+  registerToolbarCustomize({ store, commands, viewModels, catalog, persistAppState, announce, pinnable, defaults: DEFAULT_TOOLBAR });
+  const keybindings = registerKeybindings({ store, commands, viewModels, catalog, bridge, toast });
   const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now });
   registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce });
   const deepLinks = registerDeepLinks({ bridge, openAt: (path, at) => spotlight.openAt(path, at), searchNotes: (q) => spotlight.searchNotes(q) });
@@ -1134,9 +1149,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     reads: "*",
     select: (s) => ({
       open: s.ui.toolbarOpen,
-      items: DEFAULT_TOOLBAR.map(describeItem),
+      // The six the writer pinned (UI-08, D-170); a pinned action leaves ⋯, and an unpinned default joins it.
+      items: s.toolbarPinned.map(describeItem),
       // Sync appearance joins the Theme group where there's a private repository to sync through (PRV-03).
-      more: [...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({
+      more: [
+        ...(DEFAULT_TOOLBAR.some((d) => !s.toolbarPinned.includes(d)) ? [{ id: "actions", label: "menu.actions", items: DEFAULT_TOOLBAR.filter((d) => !s.toolbarPinned.includes(d)) as MenuEntry[] }] : []),
+        ...[...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({ ...g, items: g.items.filter((e) => typeof e !== "string" || !s.toolbarPinned.includes(e)) })),
+      ].filter((g) => g.items.length).map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({
         id: g.id, label: catalog.format(g.label),
         items: g.items.map((e) => (typeof e === "string" ? describeItem(e) : { id: e.submenu, label: catalog.format(e.label), items: e.items.map(describeItem) })),
       })),
@@ -1183,8 +1202,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
   });
 
-  // The editor's keymap comes from the registry, so keys are defined once (KEY-02).
-  const editorKeymap = commands.bindings().filter((b) => b.handledBy === "editor" || b.handledBy === "table").flatMap((b) => b.chords.map((chord) => ({ id: b.id, chord })));
+  // The editor's keymap comes from the registry, so keys are defined once (KEY-02), with the
+  // person's own keys from keybindings.json (D-170): made again when the file changes.
+  let keymapMemo: { version: number; keymap: { id: string; chord: string }[] } | undefined;
+  const editorKeymapOf = (version: number) => {
+    if (keymapMemo?.version !== version) keymapMemo = { version, keymap: commands.bindings().filter((b) => b.handledBy === "editor" || b.handledBy === "table").flatMap((b) => b.chords.map((chord) => ({ id: b.id, chord }))) };
+    return keymapMemo.keymap;
+  };
   viewModels.register({
     id: "vm.app",
     schema: {
@@ -1209,14 +1233,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         editorKeymap: { type: "array", items: { type: "object", properties: { id: { type: "string" }, chord: { type: "string" } } } },
       },
     },
-    reads: ["appearance", "focusMode", "compositing", "ui.theme.preview", "ui.theme.draft"],
+    reads: ["appearance", "focusMode", "compositing", "ui.theme.preview", "ui.theme.draft", "keybindings.version"],
     select: (s) => {
       // The theme manager's keyboard preview shows on the real note (THM-07), and so does an edited copy.
       const theme = shownTheme(s);
       const a = s.appearance;
       return {
         scheme: themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode,
-        contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap, compositing: s.compositing,
+        contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap: editorKeymapOf(s.keybindings.version), compositing: s.compositing,
         lineHeight: a.lineHeight === LINE_HEIGHT.default ? undefined : a.lineHeight,
         measure: a.measure === MEASURE.default ? undefined : a.measure,
         paragraphSpacing: a.paragraphSpacing, focusDim: a.focusDim, themeColors: draftTokens(s),
@@ -1230,7 +1254,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
   const option = (id: string, label: string) => ({ id, label: catalog.format(label) });
   const CLOSED = { open: false, query: "", layer: "all", platform: "pc", layers: [], platforms: [], groups: [], count: 0, summary: "" };
-  let sheetMemo: { key: AppState["ui"]["shortcuts"]; value: Record<string, unknown> } | undefined;
+  let sheetMemo: { key: AppState["ui"]["shortcuts"]; version: number; value: Record<string, unknown> } | undefined;
   const KEY_SCHEMA = { type: "object" as const, properties: { id: { type: "string" as const }, text: { type: "string" as const }, spoken: { type: "string" as const }, keys: { type: "array" as const, items: { type: "string" as const } }, first: { type: "boolean" as const } } };
   const OPTION_SCHEMA = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const } } };
   viewModels.register({
@@ -1256,23 +1280,27 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         },
         count: { type: "number" },
         summary: { type: "string" },
+        conflicts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" } } } },
+        hasConflicts: { type: "boolean" },
       },
     },
     setters: { query: "shortcuts.setQuery", layer: "shortcuts.setLayer", platform: "shortcuts.setPlatform" },
-    reads: ["ui.shortcuts"],
+    reads: ["ui.shortcuts", "keybindings.version"],
     // Re-selected on every keystroke in the note, so it's cheap while closed and memoized while open.
     select: (s) => {
       const sh = s.ui.shortcuts;
       if (!sh.open) return CLOSED;
-      if (sheetMemo?.key === sh) return sheetMemo.value;
+      if (sheetMemo?.key === sh && sheetMemo.version === s.keybindings.version) return sheetMemo.value;
       const platform = displayPlatform(sh.platform, bridge.platform);
       const groups = cheatSheet(allBindings(platform), catalog, { query: sh.query, layer: sh.layer, platform });
       const count = groups.reduce((n, g) => n + g.rows.length, 0);
       const summary = count ? catalog.format("shortcuts.count", { count }) : catalog.format("shortcuts.empty", { query: sh.query.trim() });
       const layers = ["all", ...KEY_LAYERS].map((l) => option(l, `shortcuts.layer.${l}`));
       const platforms = [option("mac", "shortcuts.platform.mac"), option("pc", "shortcuts.platform.pc")];
-      const value = { ...sh, layers, platforms, groups, count, summary };
-      sheetMemo = { key: sh, value };
+      // Keys that run more than one command, from keybindings.json (D-170), at the top.
+      const conflicts = keybindings.conflictTexts(s).map((text, i) => ({ id: `c${i}`, text }));
+      const value = { ...sh, layers, platforms, groups, count, summary, conflicts, hasConflicts: conflicts.length > 0 };
+      sheetMemo = { key: sh, version: s.keybindings.version, value };
       return value;
     },
   });
@@ -1381,9 +1409,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         },
         // Focus mode is on for new installs: it's a signature feature (D-04).
         focusMode: appState.focusMode ?? true,
+        // The toolbar's six, as pinned on this device (UI-08, D-170).
+        toolbarPinned: validPinned(appState.toolbarPinned, pinnable(), DEFAULT_TOOLBAR),
       }));
       bridge.onSystemSchemeChange((system) => store.update((s) => ({ ...s, appearance: { ...s.appearance, system } })));
       await formatRead;
+      // The person's own keys, before the first key can be pressed (KEY-07, D-170).
+      await keybindings.load();
       // The desktop's first run shows over the blank canvas; the first note opens when it's done (FRE-01).
       if (!(await firstRun.begin(appState))) {
         // A panel pinned on this device is there from the first frame, so the text never jumps aside (D-161).

@@ -339,7 +339,8 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       dismissDialogs();
     }
     store.update((st) => ({ ...st, ui: { ...st.ui, toolbarOpen: false } }));
-    set({ open: true, mode, everywhere: false, query: s.open ? s.query : "", actions: undefined, fromLink: false, focus: s.focus + 1, indexing: indexingOf() });
+    // A link's query stays the link's through a change of mode, until the person types (D-165 (8e)).
+    set({ open: true, mode, everywhere: false, query: s.open ? s.query : "", actions: undefined, fromLink: s.open ? Boolean(s.fromLink) : false, focus: s.focus + 1, indexing: indexingOf() });
     void refresh().then(() => measureOpen());
   };
   /**

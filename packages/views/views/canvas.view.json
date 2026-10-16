@@ -30,7 +30,8 @@
     "vm.deleted",
     "vm.window",
     "vm.spotlight",
-    "vm.demo"
+    "vm.demo",
+    "vm.toolbarCustomize"
   ],
   "focus": "editor",
   "root": {
@@ -1869,6 +1870,51 @@
                     "tone": "muted",
                     "announce": true
                   }
+                },
+                {
+                  "type": "Stack",
+                  "when": {
+                    "get": "vm.shortcuts.hasConflicts"
+                  },
+                  "props": {
+                    "gap": "xs"
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "t": "shortcuts.conflictsHeading"
+                        },
+                        "role": "label"
+                      }
+                    },
+                    {
+                      "each": {
+                        "get": "vm.shortcuts.conflicts"
+                      },
+                      "as": "item",
+                      "key": "item.id",
+                      "empty": {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "keyboard.noConflicts"
+                          },
+                          "tone": "muted"
+                        }
+                      },
+                      "render": {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "get": "item.text"
+                          },
+                          "tone": "warning"
+                        }
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -2007,6 +2053,324 @@
                     "tone": "muted"
                   }
                 }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
+        "id": "toolbarCustomize",
+        "when": {
+          "get": "vm.toolbarCustomize.open"
+        },
+        "props": {
+          "title": {
+            "t": "toolbar.customize.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.toolbarCustomize.open"
+          },
+          "size": "s",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "toolbar.setCustomizeOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "l"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "level": "3",
+                      "value": {
+                        "t": "toolbar.customize.pinnedHeading"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.toolbarCustomize.count"
+                      },
+                      "tone": "muted",
+                      "announce": true
+                    }
+                  },
+                  {
+                    "each": {
+                      "get": "vm.toolbarCustomize.pinned"
+                    },
+                    "as": "item",
+                    "key": "item.id",
+                    "empty": {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "t": "toolbar.customize.nonePinned"
+                        },
+                        "tone": "muted"
+                      }
+                    },
+                    "render": {
+                      "type": "Inline",
+                      "props": {
+                        "gap": "xs",
+                        "justify": "between"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "value": {
+                              "get": "item.label"
+                            }
+                          }
+                        },
+                        {
+                          "type": "Inline",
+                          "props": {
+                            "gap": "xs"
+                          },
+                          "children": [
+                            {
+                              "type": "Button",
+                              "props": {
+                                "label": {
+                                  "get": "item.up"
+                                },
+                                "size": "s",
+                                "variant": "subtle",
+                                "disabled": {
+                                  "get": "item.first"
+                                },
+                                "disabledReason": {
+                                  "get": "item.up"
+                                }
+                              },
+                              "on": {
+                                "press": {
+                                  "run": "toolbar.move",
+                                  "args": {
+                                    "id": {
+                                      "get": "item.id"
+                                    },
+                                    "by": -1
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "Button",
+                              "props": {
+                                "label": {
+                                  "get": "item.down"
+                                },
+                                "size": "s",
+                                "variant": "subtle",
+                                "disabled": {
+                                  "get": "item.last"
+                                },
+                                "disabledReason": {
+                                  "get": "item.down"
+                                }
+                              },
+                              "on": {
+                                "press": {
+                                  "run": "toolbar.move",
+                                  "args": {
+                                    "id": {
+                                      "get": "item.id"
+                                    },
+                                    "by": 1
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "Button",
+                              "props": {
+                                "label": {
+                                  "get": "item.unpin"
+                                },
+                                "size": "s"
+                              },
+                              "on": {
+                                "press": {
+                                  "run": "toolbar.unpin",
+                                  "args": {
+                                    "id": {
+                                      "get": "item.id"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "level": "3",
+                      "value": {
+                        "t": "toolbar.customize.availableHeading"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "when": {
+                      "get": "vm.toolbarCustomize.full"
+                    },
+                    "props": {
+                      "value": {
+                        "t": "toolbar.customize.full"
+                      },
+                      "tone": "muted"
+                    }
+                  },
+                  {
+                    "each": {
+                      "get": "vm.toolbarCustomize.available"
+                    },
+                    "as": "item",
+                    "key": "item.id",
+                    "empty": {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "t": "toolbar.customize.empty"
+                        },
+                        "tone": "muted"
+                      }
+                    },
+                    "render": {
+                      "type": "Inline",
+                      "props": {
+                        "gap": "xs",
+                        "justify": "between"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "value": {
+                              "get": "item.label"
+                            }
+                          }
+                        },
+                        {
+                          "type": "Button",
+                          "props": {
+                            "label": {
+                              "get": "item.pin"
+                            },
+                            "size": "s",
+                            "disabled": {
+                              "get": "vm.toolbarCustomize.full"
+                            },
+                            "disabledReason": {
+                              "t": "toolbar.customize.full"
+                            }
+                          },
+                          "on": {
+                            "press": {
+                              "run": "toolbar.pin",
+                              "args": {
+                                "id": {
+                                  "get": "item.id"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "end",
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "command.toolbar.resetPinned"
+                      },
+                      "disabled": {
+                        "expr": {
+                          "!": {
+                            "get": "vm.toolbarCustomize.canReset"
+                          }
+                        }
+                      },
+                      "disabledReason": {
+                        "t": "command.toolbar.resetPinned"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "toolbar.resetPinned"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "toolbar.customize.done"
+                      },
+                      "variant": "primary",
+                      "autoFocus": true
+                    },
+                    "on": {
+                      "press": {
+                        "run": "toolbar.setCustomizeOpen",
+                        "args": {
+                          "open": false
+                        }
+                      }
+                    }
+                  }
+                ]
               }
             ]
           }

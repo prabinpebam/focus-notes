@@ -105,6 +105,16 @@
     },
     "webWelcomed": {
       "type": "boolean"
+    },
+    "toolbarPinned": {
+      "description": "The toolbar's actions, in order: command IDs, at most six (UI-08, D-170).",
+      "type": "array",
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*)+$"
+      }
     }
   },
   "additionalProperties": false
