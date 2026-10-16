@@ -81,6 +81,12 @@ describe("D-158: a new note in a workspace without a private repository", () => 
     expect(app.store.state.note.path).toBe(`${PUB}/Untitled 1.md`);
     expect(vm(app)).toMatchObject({ pill: true, pillText: "Public · not backed up", open: false });
     expect(vm(app).placeholder).toBe("Public note · start writing, type / for blocks, or press Ctrl+/");
+    // The Files panel says it the same way.
+    await app.commands.run("files.open");
+    await settle();
+    const items = (app.viewModels.select("vm.files", app.store.state) as { items: { label: string; description: string }[] }).items;
+    expect(items.find((i) => i.label === "Untitled 1")?.description).toBe("Public · not backed up");
+    expect(items.find((i) => i.label === "Hello")?.description).toBe("public");
   });
 
   it("Save to cloud asks once before its first backup; Keep it on this computer only answers for good", async () => {
@@ -89,6 +95,7 @@ describe("D-158: a new note in a workspace without a private repository", () => 
     await app.commands.run("note.new");
     await settle();
     const note = `${PUB}/Untitled 1.md`;
+    await app.commands.run("note.setContent", { value: "Words of mine." });
     await app.commands.run("note.save");
     await settle();
     expect(vm(app)).toMatchObject({ open: true, title: "Where should “Untitled 1” live?", local: false });
@@ -113,13 +120,19 @@ describe("D-158: a new note in a workspace without a private repository", () => 
   it("switching away asks once per session; dismissed, it waits, and the pill asks again", async () => {
     const f = setup();
     const app = await started(f);
+    // An empty new note left behind has nothing to ask about.
     await app.commands.run("note.new");
     await settle();
-    const note = `${PUB}/Untitled 1.md`;
-    await app.commands.run("note.openPath", { path: `${PUB}/hello.md` }).catch(() => {});
     await app.commands.run("files.activate", { id: `${PUB}/hello.md` });
     await settle();
-    expect(vm(app)).toMatchObject({ open: true, title: "Where should “Untitled 1” live?" });
+    expect(vm(app).open).toBe(false);
+    await app.commands.run("note.new");
+    await settle();
+    const note = `${PUB}/Untitled 2.md`;
+    await app.commands.run("note.setContent", { value: "Words of mine." });
+    await app.commands.run("files.activate", { id: `${PUB}/hello.md` });
+    await settle();
+    expect(vm(app)).toMatchObject({ open: true, title: "Where should “Untitled 2” live?" });
     await app.commands.run("held.setOpen", { open: false });
     expect(vm(app).open).toBe(false);
     expect(f.answers).toEqual([]);
@@ -142,6 +155,7 @@ describe("D-158: a new note in a workspace without a private repository", () => 
     await app.commands.run("note.new");
     await settle();
     expect(app.store.state.note.path?.startsWith(PRIV)).toBe(true);
+    await app.commands.run("note.setContent", { value: "Words of mine." });
     await app.commands.run("note.save");
     await settle();
     expect(vm(app)).toMatchObject({ pill: false, open: false });

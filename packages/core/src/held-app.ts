@@ -49,6 +49,20 @@ export function registerHeld(ctx: Ctx) {
     const held = await bridge.sync?.held?.().catch(() => undefined);
     if (held) set({ held });
   }
+  // A held note's line follows renames and moves in the shell: the lists are read again when the tree changes.
+  let tree = store.state.workspace.tree;
+  let pending: ReturnType<typeof setTimeout> | undefined;
+  store.subscribe(() => {
+    if (store.state.workspace.tree === tree) return;
+    tree = store.state.workspace.tree;
+    if (!bridge.sync?.held || pending) return;
+    pending = setTimeout(() => {
+      pending = undefined;
+      void refresh();
+    }, 0);
+  });
+  /** Notes written in this session: only a note with the writer's words in it is asked about. */
+  const edited = new Set<string>();
   function ask(path: string): void {
     set({ asking: path, asked: ui().asked.includes(path) ? ui().asked : [...ui().asked, path] });
   }
@@ -113,10 +127,19 @@ export function registerHeld(ctx: Ctx) {
     refresh,
     /**
      * A backup is about to include this note (Save to cloud, or switching away from it): a note that
-     * waits is asked about, once per session. Its text is saved here either way; Git leaves it out.
+     * waits and has the writer's words is asked about, once per session. Its text is saved here
+     * either way; Git leaves it out.
      */
     backingUp(path: string | undefined): void {
-      if (path && stateOf(store.state, path) === "waiting" && !ui().asked.includes(path)) ask(path);
+      if (path && edited.has(path) && stateOf(store.state, path) === "waiting" && !ui().asked.includes(path)) ask(path);
+    },
+    /** The app wrote a note's text, at `to` when its file name followed its title. */
+    written(from: string, to: string | undefined): void {
+      edited.add(from);
+      if (!to || to === from) return;
+      edited.add(to);
+      if (ui().asked.includes(from)) set({ asked: [...ui().asked, to] });
+      void refresh();
     },
   };
 }

@@ -932,6 +932,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("note:default", async () => {
     const p = isWorkspace() ? join(notesRoot(), "welcome.md") : join(notesHome(), "Welcome.md");
+    // Made here in a workspace without a private repository: held like any new public note (D-158).
+    if (!existsSync(p) && isWorkspace() && !hasPrivate()) await (await heldNotes())?.hold(p).catch(() => {});
     // Not written into a workspace this app mustn't write (DST-05): the app then shows it can't open it.
     if (!existsSync(p)) await atomicWrite(p, WELCOME).catch(() => {});
     return p;

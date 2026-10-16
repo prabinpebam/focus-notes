@@ -383,6 +383,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       timing.mark(SAVED_MARK);
       // The file name follows the title (FIL-07); a rename keeps the editor as it is.
       await workspace.written(path, markdown);
+      // A held note asks before its first backup only once it has the writer's words (D-158).
+      heldNotes.written(path, store.state.note.path);
       // Only mark saved if nothing changed while writing.
       if (store.state.note.markdown === markdown) setNote({ saveState: "saved" });
       else schedule();
@@ -530,13 +532,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     run: () => (conflicts.holds(store.state.note.path) ? Promise.resolve(conflicts.offer(store.state.note.path)) : tracker.run("note.save", "task.saving", async () => {
       // What's on screen is what's saved: the editor hands over text it hasn't sent yet.
       editorAction(FLUSH_EDITOR);
-      // A new public note that waits is asked about; the rest is backed up as usual (D-158).
-      heldNotes.backingUp(store.state.note.path);
       clearTimeout(saveTimer);
       saveTimer = undefined;
       saving = saving.then(writeNow);
       await saving;
       if (store.state.note.saveState === "error") throw new Error("save failed");
+      // A new public note that waits is asked about; the rest is backed up as usual (D-158).
+      heldNotes.backingUp(store.state.note.path);
       await sync.saveNow();
     }, store.state.sync.git ? "task.synced" : "task.saved")).catch((e: unknown) => {
       const conflict = e instanceof SyncFailed && e.problem === "conflict";
