@@ -106,7 +106,7 @@ test("the site's navigation reaches each address, the skip link goes to the cont
   await page.getByRole("link", { name: "Focus Notes", exact: true }).click();
   await expect(page).toHaveURL(`${origin}/`);
   // The landing page's sections, in the specification's order, each with its anchor.
-  expect(await page.locator("main section[id]").evaluateAll((s) => s.map((e) => e.id))).toEqual(["start", "spotlight", "themes", "light-and-dark", "files", "get-focus-notes"]);
+  expect(await page.locator("main section[id]").evaluateAll((s) => s.map((e) => e.id))).toEqual(["start", "spotlight", "themes", "files", "get-focus-notes"]);
 });
 
 test("PRF-12: the landing page's LCP, INP and CLS on a throttled profile", async ({ page }) => {
@@ -161,4 +161,26 @@ test("D-167: public note pages stay at /n/ and the share reader at /s/, where th
   await page.goto(`${origin}/s/`);
   await expect(page.getByRole("heading", { name: "This note is private" })).toBeVisible();
   expect(others).toEqual([]);
+});
+
+test("D-176: every scene is light, even on a dark page, and the Themes scene's Light / Dark choice works from the keyboard with no script", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto(`${origin}/`);
+  const shown = () => page.locator("main img").evaluateAll((imgs) => imgs.filter((i) => (i as HTMLImageElement).offsetParent !== null).map((i) => (i as HTMLImageElement).currentSrc.split("/").at(-1)!.replace(/-\d+\.\w+$/, "")));
+  // A lazy image picks its source once it's near: bring each into view.
+  for (const img of await page.locator("main img").all()) if (await img.isVisible()) await img.scrollIntoViewIfNeeded();
+  expect(await shown()).toEqual(["note-light", "spotlight-light", "themes-light", "files-light"]);
+  const choice = page.getByRole("group", { name: "Show the app in" });
+  const light = choice.getByRole("radio", { name: "Light" });
+  const dark = choice.getByRole("radio", { name: "Dark" });
+  await expect(light).toBeChecked();
+  await light.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(dark).toBeChecked();
+  await expect(dark).toBeFocused();
+  await expect(page.getByRole("img", { name: /in dark mode/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: /^The Theme panel/ })).toBeHidden();
+  expect(await axeViolations(page)).toEqual([]);
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.getByRole("img", { name: /^The Theme panel/ })).toBeVisible();
 });

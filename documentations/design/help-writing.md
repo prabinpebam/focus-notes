@@ -16,7 +16,7 @@ How every article in the Focus Notes help centre and every line on the product s
 - **Calm, direct and kind.** The way Focus Notes speaks in the app ([Foundations → Words](foundations.md#words)): short sentences, one idea each, no exclamation marks, no "please", no blame.
 - **Second person and present tense.** "You can pin the Files panel," "Focus Notes saves your note within a second."
 - **Name things as the app does,** with its exact labels in bold: **Save to cloud**, **Make public**, **Try again**. Keys use the key style: <kbd>Ctrl</kbd>+<kbd>K</kbd>, and the macOS keys alongside.
-- **Say what Focus Notes does with people's data, exactly.** "Your private notes are sealed before they leave your computer," never "your data is safe." Use *sealed* for private notes everywhere, not a mix of *encrypted*, *locked* and *protected*.
+- **Say what Focus Notes does with people's data, exactly.** "Your private notes stay in your own private repository, and only sealed copies are published," never "your data is safe." Use *sealed* for private notes everywhere, not a mix of *encrypted*, *locked* and *protected*.
 - **Be honest about limits.** If something isn't possible, say so and say what to do instead, as the app's [unsupported boundaries](../product/spec/scenarios.md#unsupported-boundaries) do.
 - **Don't market inside help.** Help articles explain and instruct. The landing page shows: it's visual first, with a headline of a few words and one line per section, about 120 words in all (D-174). Anything that needs a sentence of explanation belongs in a help article. The landing page may only claim what the release does.
 

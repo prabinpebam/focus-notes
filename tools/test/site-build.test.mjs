@@ -45,10 +45,13 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
     expect(html).toMatch(/<h1 class="[^"]*">Write\. Nothing else\.<\/h1>/);
     expect(html).toMatch(/href="download\/"[^>]*>Download Focus Notes</);
     expect(html).toMatch(/href="demo\/"[^>]*>Try the demo</);
-    expect(html).toMatch(/<source type="image\/avif" srcSet="media\/focus-dark-960\.avif 960w, media\/focus-dark-1920\.avif 1920w" sizes="[^"]+" media="\(prefers-color-scheme: dark\)"\/>/i);
+    // Light scenes for everyone (D-176): nothing switches by the visitor's setting; dark is a choice, by radio buttons.
+    expect(html).not.toMatch(/prefers-color-scheme/);
+    expect(html).toMatch(/<source type="image\/avif" srcSet="media\/note-light-960\.avif 960w, media\/note-light-1920\.avif 1920w" sizes="[^"]+"\/>/i);
+    expect(html).toMatch(/<fieldset[^>]*><legend[^>]*>Show the app in<\/legend><input[^>]*type="radio" id="themes-scheme-light" name="themes-scheme" checked="" value="light"\/><label[^>]*for="themes-scheme-light">Light<\/label><input[^>]*type="radio" id="themes-scheme-dark" name="themes-scheme" value="dark"\/><label[^>]*for="themes-scheme-dark">Dark<\/label><\/fieldset>/);
     expect(html).toMatch(/fetchPriority="high"/i);
     // D-176: every scene is in site/media at both widths, both formats, and the wallpaper's source isn't published.
-    for (const s of [landing.hero, ...landing.features.map((f) => f.image)].flatMap((i) => [i.scene, i.dark].filter(Boolean))) {
+    for (const s of [landing.hero, ...landing.features.flatMap((f) => [f.image, f.dark].filter(Boolean))].map((i) => i.scene)) {
       for (const f of [`${s}-960.avif`, `${s}-1920.avif`, `${s}-960.webp`, `${s}-1920.webp`]) expect((await readFile(join(out, "media", f))).length, f).toBeGreaterThan(0);
     }
     await expect(readFile(join(out, "media", "source", "wallpaper-1920.webp"))).rejects.toThrow();
@@ -148,6 +151,23 @@ describe("D-167: the owner's app moves to /app/, and share links keep working at
     expect(await read(out, "s/index.html")).toBe(`<link rel="icon" href="../app/favicon.svg"><script type="module" crossorigin src="../app/assets/share-2.js"></script>`);
   });
 
+  it("security review I2: the build fails without the share reader's page, or with a reference the move missed", async () => {
+    const app = join(tmp, "dist-no-s");
+    await mkdir(app, { recursive: true });
+    await writeFile(join(app, "index.html"), "");
+    await expect(placeApp(app, join(tmp, "placed-no-s"))).rejects.toThrow(/no s\/index\.html/);
+    await mkdir(join(app, "s"), { recursive: true });
+    await writeFile(join(app, "s", "index.html"), `<script src="../share/main.js"></script>`);
+    await expect(placeApp(app, join(tmp, "placed-left"))).rejects.toThrow(/still has a "\.\.\/" reference/);
+  });
+
+  it("security review I1: a category ID that isn't lowercase words joined by hyphens fails before it's used as a path", async () => {
+    const src = join(tmp, "bad-category");
+    await cp(content, src, { recursive: true });
+    await writeFile(join(src, "help", "categories.json"), JSON.stringify([{ id: "../../outside", title: "x", summary: "" }]));
+    await expect(readContent(src)).rejects.toThrow(/isn't a usable category ID/);
+  });
+
   it("the Deploy app workflow builds the app to read the notes from the site's root, builds the site, then publishes the notes at the root", () => {
     const wf = yaml.load(readFileSync(join(root, ".github", "workflows", "pages.yml"), "utf8"));
     const steps = wf.jobs.build.steps;
@@ -156,6 +176,12 @@ describe("D-167: the owner's app moves to /app/, and share links keep working at
     // The web app's build includes dist-app/: the app built to read the notes from the folder above it.
     expect(JSON.parse(readFileSync(join(root, "apps", "web", "package.json"), "utf8")).scripts.build).toMatch(/vite build --config vite\.config\.ts --mode app/);
     const site = steps[at(/Build the product site/)];
+    // Security review L2: only this repository publishes the product site; a fork's app is its whole site.
+    expect(site.if).toBe("github.repository == 'prabinpebam/focus-notes'");
+    const fork = steps[at(/Put the app at the root/)];
+    expect(fork.if).toBe("github.repository != 'prabinpebam/focus-notes'");
+    expect(fork.run).toBe("cp -r apps/web/dist/. _site/");
+    expect(at(/Copy the docs/)).toBeLessThan(at(/Build the product site/));
     expect(site.run).toMatch(/node tools\/site\/build\.mjs --out _site --app apps\/web\/dist-app /);
     expect(site.run).toMatch(/--site-url "\$SITE_URL\/"/);
     expect(at(/Build the product site/)).toBeGreaterThan(at(/Build the web app/));

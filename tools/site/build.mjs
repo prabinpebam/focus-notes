@@ -25,6 +25,8 @@ export const SITE_PAGES = ["download", "privacy", "demo"];
 /** The only other origin a site page may link to (help-writing.md → Links); nothing may be loaded from one. */
 export const LINK_ORIGINS = ["https://github.com"];
 
+/** Help category and article IDs (help-writing.md → Every article). */
+const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const exists = (p) => stat(p).then(() => true, () => false);
 const isDir = (p) => stat(p).then((s) => s.isDirectory(), () => false);
 
@@ -36,6 +38,8 @@ export async function readContent(dir) {
   const categories = JSON.parse(await readFile(join(dir, "help", "categories.json"), "utf8"));
   const articles = [];
   for (const c of categories) {
+    // An ID is part of an address and a path: lowercase words joined by hyphens, nothing else.
+    if (typeof c?.id !== "string" || !ID.test(c.id)) throw new Error(`help/categories.json: ${JSON.stringify(c?.id)} isn't a usable category ID (lowercase words joined by hyphens)`);
     const folder = join(dir, "help", c.id);
     if (!(await isDir(folder))) continue;
     for (const f of (await readdir(folder)).sort()) if (f.endsWith(".md")) articles.push({ category: c.id, id: f.slice(0, -3), markdown: await readFile(join(folder, f), "utf8") });
@@ -73,11 +77,12 @@ export async function buildSite({ content = "site", out, renderer = "apps/web/di
  */
 export async function placeApp(app, out) {
   await cp(app, join(out, "app"), { recursive: true, filter: (p) => relative(app, p).split(sep)[0] !== "s" });
-  if (await exists(join(app, "s", "index.html"))) {
-    const page = (await readFile(join(app, "s", "index.html"), "utf8")).replace(/(["'])\.\.\/(assets\/|favicon\.svg)/g, "$1../app/$2");
-    await mkdir(join(out, "s"), { recursive: true });
-    await writeFile(join(out, "s", "index.html"), page);
-  }
+  // Share links have always pointed at /s/: without its page, or with a reference the rewrite missed, they'd break.
+  if (!(await exists(join(app, "s", "index.html")))) throw new Error(`${app}: there's no s/index.html, the share reader that share links open`);
+  const page = (await readFile(join(app, "s", "index.html"), "utf8")).replace(/(["'])\.\.\/(assets\/|favicon\.svg)/g, "$1../app/$2");
+  if (/["'(]\.\.\/(?!app\/)/.test(page)) throw new Error(`${app}: s/index.html still has a "../" reference outside app/ after the move`);
+  await mkdir(join(out, "s"), { recursive: true });
+  await writeFile(join(out, "s", "index.html"), page);
 }
 
 const HTML_REF = /\s(href|src|srcset)="([^"]*)"/gi;

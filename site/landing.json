@@ -1,37 +1,46 @@
 {
-  "$comment": "The landing page (D-174, D-176): visual first, a few words each. The hero, up to five featured sections, and the closing line; the tiles and the buttons are in the view document (packages/views/views/siteLanding.view.json). Each image is a desktop scene: the app's window (apps/desktop/e2e/site-catalog.spec.ts) on the wallpaper (tools/site/scenes.py), light, and dark for visitors whose setting is dark. WP-10.5 writes the final words.",
+  "$comment": "The landing page (D-174, D-176): visual first, a few words each. The hero, up to five featured sections, and the closing line; the tiles and the buttons are in the view document (packages/views/views/siteLanding.view.json). Each image is a desktop scene: the app's window (apps/desktop/e2e/site-catalog.spec.ts) on the wallpaper (tools/site/scenes.py), always in light mode; the Themes section offers the dark one behind a Light / Dark choice. WP-10.5 writes the final words.",
   "draft": "WP-10.5",
   "headline": "Write. Nothing else.",
   "line": "A calm writing app. Your notes stay plain files in your own GitHub.",
-  "hero": { "scene": "focus-light", "dark": "focus-dark", "alt": "Focus Notes on a mountain desktop, in focus mode: the line being written stays clear while the rest of the essay fades back." },
+  "hero": {
+    "scene": "note-light",
+    "alt": "Focus Notes on a mountain desktop: an essay, “On writing slowly”, open in the quiet, full-window editor."
+  },
   "features": [
     {
       "id": "spotlight",
       "eyebrow": "Spotlight",
       "headline": "Find anything. Instantly.",
       "line": "Notes, commands and settings, one keystroke away.",
-      "image": { "scene": "spotlight-light", "dark": "spotlight-dark", "alt": "Spotlight open over a note, finding the Garden folder and its notes as you type." }
+      "image": {
+        "scene": "spotlight-light",
+        "alt": "Spotlight open over a note, finding the Garden folder and its notes as you type."
+      }
     },
     {
       "id": "themes",
       "eyebrow": "Themes",
       "headline": "Make it yours.",
-      "line": "Paper, Sepia, Harbor, Forest, Ink and more, light or dark.",
-      "image": { "scene": "themes-light", "dark": "themes-dark", "alt": "The Theme panel beside a note, with light and dark themes to choose from and the text contrast shown." }
-    },
-    {
-      "id": "light-and-dark",
-      "eyebrow": "Appearance",
-      "headline": "Day or night.",
-      "line": "Follows your system, or choose your own.",
-      "image": { "scene": "focus-dark", "dark": "focus-light", "alt": "The same note in focus mode in the other scheme: dark for a light page, light for a dark one." }
+      "line": "Paper, Sepia, Harbor, Forest and more. Light by default, dark when you like.",
+      "image": {
+        "scene": "themes-light",
+        "alt": "The Theme panel beside a note, with light and dark themes to choose from and the text contrast shown."
+      },
+      "dark": {
+        "scene": "themes-dark",
+        "alt": "The same note and Theme panel in dark mode, with the Ink theme chosen."
+      }
     },
     {
       "id": "files",
       "eyebrow": "Files",
       "headline": "Your notes, in folders.",
       "line": "Plain Markdown files you can see, move and keep.",
-      "image": { "scene": "files-light", "dark": "files-dark", "alt": "The Files panel beside a note, with folders for a garden, a journal, projects and recipes." }
+      "image": {
+        "scene": "files-light",
+        "alt": "The Files panel beside a note, with folders for a garden, a journal, projects and recipes."
+      }
     }
   ],
   "closing": "Start writing."

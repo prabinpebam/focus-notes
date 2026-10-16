@@ -36,17 +36,17 @@ describe("HLP-08: the product site's content (WP-10.1)", () => {
     expect(sitePageModel(page)).toMatchObject({ title: [{ type: "heading", attrs: { level: 1 } }] });
   });
 
-  it("HLP-01, D-174, D-176: the landing page is a hero, a few featured sections and a closing line, each within its word limit, with desktop scenes in AVIF and WebP, light and dark", () => {
+  it("HLP-01, D-174, D-176: the landing page is a hero, a few featured sections and a closing line, each within its word limit, with light desktop scenes in AVIF and WebP, and dark only behind a choice", () => {
     const image = { scene: "spotlight-light", alt: "Spotlight" };
-    const c = { headline: "Write. Nothing else.", line: "A calm writing app.", hero: { scene: "focus-light", dark: "focus-dark", alt: "Focus mode" }, features: [{ id: "spotlight", eyebrow: "Spotlight", headline: "Find anything. Instantly.", line: "One keystroke away.", image }], closing: "Start writing." };
+    const c = { headline: "Write. Nothing else.", line: "A calm writing app.", hero: { scene: "focus-light", alt: "Focus mode" }, features: [{ id: "spotlight", eyebrow: "Spotlight", headline: "Find anything. Instantly.", line: "One keystroke away.", image }, { id: "themes", headline: "Make it yours.", line: "Light or dark.", image: { scene: "themes-light", alt: "Themes" }, dark: { scene: "themes-dark", alt: "Themes, dark" } }], closing: "Start writing." };
     const m = landingModel(c);
     expect(m).toMatchObject({ heroAnchor: "start", headline: "Write. Nothing else.", closingAnchor: "get-focus-notes" });
     expect(m.hero).toEqual({
       src: "media/focus-light-960.webp", srcSet: "media/focus-light-960.webp 960w, media/focus-light-1920.webp 1920w", avifSet: "media/focus-light-960.avif 960w, media/focus-light-1920.avif 1920w",
-      darkSrcSet: "media/focus-dark-960.webp 960w, media/focus-dark-1920.webp 1920w", darkAvifSet: "media/focus-dark-960.avif 960w, media/focus-dark-1920.avif 1920w",
       sizes: "(min-width: 1200px) 1200px, 100vw", alt: "Focus mode", width: 1920, height: 1080,
     });
-    expect(m.features[0]).toMatchObject({ key: "spotlight", anchor: "spotlight", hasEyebrow: true, eyebrow: "Spotlight", image: { darkSrcSet: "", darkAvifSet: "" } });
+    expect(m.features[0]).toMatchObject({ key: "spotlight", anchor: "spotlight", hasEyebrow: true, eyebrow: "Spotlight", hasDark: false });
+    expect(m.features[1]).toMatchObject({ hasDark: true, image: { src: "media/themes-light-960.webp" }, dark: { src: "media/themes-dark-960.webp", alt: "Themes, dark" } });
     expect(() => landingModel({ ...c, headline: "A calm place to write your notes in" })).toThrow(/headline has 8 words \(at most 6\)/);
     expect(() => landingModel({ ...c, features: Array.from({ length: 6 }, (_, i) => ({ ...c.features[0]!, id: `f${i}` })) })).toThrow(/6 featured sections \(at most 5\)/);
     expect(() => landingModel({ ...c, hero: { scene: "focus-light", alt: "" } })).toThrow(/needs a scene and alt text/);

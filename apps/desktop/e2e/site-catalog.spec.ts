@@ -84,18 +84,15 @@ async function openNote(page: Page, title: string) {
   await expect(dialog).toBeHidden();
 }
 
-/** The caret at the end of the line that starts with `text`, so focus mode's band sits on it. */
-async function caretOn(page: Page, text: string) {
-  const line = page.getByRole("textbox", { name: "Note" }).getByText(text, { exact: false }).first();
-  await line.click();
-  await page.keyboard.press("End");
-}
-
 /**
  * The app's own window as lossless PNG with its alpha: the drawn corners and shadow in their
  * transparent margin (D-141: never the screen). tools/site/scenes.py sets it on the wallpaper.
+ * The scrollbars are at rest first: the pointer away, and no scroller marked as scrolling or hovered,
+ * so the design system's minimal scrollbar is hidden as it is whenever nobody scrolls (D-73, D-176).
  */
 async function capture(l: Launched, name: string) {
+  await l.page.mouse.move(1, 1);
+  await expect.poll(() => l.page.evaluate(() => document.querySelectorAll("[data-scrolling], [data-scrollbar-hover]").length), { timeout: 10_000 }).toBe(0);
   await settled(l.page);
   await l.page.waitForTimeout(500);
   const png = await l.app.evaluate(async ({ BrowserWindow }) => {
@@ -115,26 +112,29 @@ async function openThemes(page: Page) {
   await expect(page.getByRole("complementary", { name: "Theme" })).toBeVisible();
 }
 
+const focusMode = (page: Page) => page.evaluate(() => document.documentElement.dataset.focus !== undefined);
+
+// Light mode in every scene; the Themes scene also in dark, behind the page's Light / Dark choice (D-176).
 for (const theme of ["light", "dark"] as const) {
   test(`D-176: the landing page's scenes, ${theme}`, async () => {
     test.setTimeout(180_000);
     const l = await start(theme);
     const { page } = l;
-    // Focus mode, on the line being written.
-    if ((await page.evaluate(() => document.documentElement.dataset.focus)) === undefined) await page.keyboard.press("F8");
-    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.focus)).toBeDefined();
-    await caretOn(page, "Most of what I write well");
-    await capture(l, `focus-${theme}`);
-    await page.keyboard.press("F8");
-    await reset(page);
-    await spotlight(page, `${mod}+Slash`);
-    await page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox").fill("gar");
-    await page.waitForTimeout(600);
-    await capture(l, `spotlight-${theme}`);
-    await reset(page);
-    await files(page);
-    await capture(l, `files-${theme}`);
-    await reset(page);
+    // The whole note at full contrast: focus mode off, the caret at its start (the hero never uses focus mode).
+    if (await focusMode(page)) await page.keyboard.press("F8");
+    await expect.poll(() => focusMode(page)).toBe(false);
+    await page.keyboard.press(`${mod}+Home`);
+    if (theme === "light") {
+      await capture(l, `note-${theme}`);
+      await spotlight(page, `${mod}+Slash`);
+      await page.getByRole("dialog", { name: "Spotlight" }).getByRole("combobox").fill("gar");
+      await page.waitForTimeout(600);
+      await capture(l, `spotlight-${theme}`);
+      await reset(page);
+      await files(page);
+      await capture(l, `files-${theme}`);
+      await reset(page);
+    }
     await openThemes(page);
     await capture(l, `themes-${theme}`);
     await quit(l);

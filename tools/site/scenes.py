@@ -65,9 +65,15 @@ def main() -> None:
     (ROOT / "test-results" / "site-scenes").mkdir(parents=True, exist_ok=True)
     wall = load(ROOT / "site" / "media" / "source" / "wallpaper-1920.webp")
     assert wall.shape[:2] == (1080, 1920), "the wallpaper is 1920 x 1080"
+    # Only the scenes the landing page shows (site/landing.json), so nothing unused is published.
+    landing = json.loads((ROOT / "site" / "landing.json").read_text(encoding="utf-8-sig"))
+    images = [landing["hero"]] + [i for f in landing["features"] for i in (f["image"], f.get("dark")) if i]
+    wanted = {i["scene"] for i in images}
     report = {}
     for capture in sorted(Path(a.captures).glob("*.png")):
         name = capture.stem
+        if name not in wanted:
+            continue
         rgb = compose(wall, load(capture), dark=name.endswith("-dark"))
         report[name] = save(rgb, out, name)
     print(json.dumps(report, indent=1))

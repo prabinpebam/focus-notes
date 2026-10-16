@@ -4,7 +4,7 @@ The public face of Focus Notes: the page a person lands on before they install a
 
 > [!NOTE]
 > **TL;DR.** The project repository's GitHub Pages site becomes the product site (D-167).
-> - **`/` is the landing page,** visual first (D-174): a headline of a few words, a large screenshot of focus mode, up to five featured sections with a screenshot each, a grid of small tiles, downloads and *Try the demo*. The explanations live in the help centre.
+> - **`/` is the landing page,** visual first (D-174): a headline of a few words, a large scene of the app with a real note, up to five featured sections with a screenshot each, a grid of small tiles, downloads and *Try the demo*. The explanations live in the help centre.
 > - **`/help/` is the help centre:** about 40 articles in eight categories named by what the reader wants to do, each one a single content type from the [writing guide](../design/help-writing.md) (D-168).
 > - **`/demo/` is the web app** with sample notes, kept in the visitor's browser, with no sign-in.
 > - **The app links into the help centre** by article ID (*Learn more*, *How to fix this*). CI fails on any ID or anchor that doesn't exist.
@@ -45,9 +45,9 @@ Visual first, in the manner of apple.com's product pages (D-174). Pictures carry
 
 | # | Section | Content |
 | --- | --- | --- |
-| 1 | **Hero** | One headline of at most 6 words in large display type ("Write. Nothing else."), one line of at most 14 words, *Download* and *Try the demo*, and a large screenshot of focus mode on a real note, in the visitor's light or dark. |
+| 1 | **Hero** | One headline of at most 6 words in large display type ("Write. Nothing else."), one line of at most 14 words, *Download* and *Try the demo*, and a large scene of the app with a real note open, in light mode, with focus mode off so the whole note reads at full contrast. |
 | 2 | **Featured sections** | At most 5, the strongest first: focus mode, Spotlight, files and folders, private notes and sealed sharing, light and dark. Each has an optional eyebrow, a headline of at most 5 words, one line of at most 14 words, and a large screenshot, or a short loop if motion sells it. |
-| 3 | **Tiles** | One grid of small tiles, an icon and at most 4 words each: plain Markdown files, works offline, free and open source (MIT), private notes sealed, light and dark, nothing tracked, MCP for AI agents. |
+| 3 | **Tiles** | One grid of small tiles, an icon and at most 4 words each: plain Markdown files, works offline, free and open source (MIT), private notes stay private, light and dark, nothing tracked, MCP for AI agents. |
 | 4 | **Closing** | One line, the downloads again, *Try the demo*, and one small *Learn how it works* link to the help centre. |
 
 **Not on the landing page:** prose paragraphs and bulleted prose. The questions people ask before installing, *Is it for you?* and how it works are help centre articles, reached through *Learn how it works*.
@@ -100,7 +100,9 @@ The app links into the help centre wherever a setting, a step or a message needs
 Desktop scenes of the app with the demo workspace (D-169, D-176):
 
 - **A scene, not a cut-out:** a 1920 × 1080 desktop (a mountain photo by Cristina Gottardi on Unsplash) with the app's own window centred on it at its real size, about three quarters of its width, its drawn corners and shadow intact, so the window stands apart from the page's background.
-- **Light and dark:** each scene in both, and a visitor whose setting is dark sees the dark ones.
+- **Light mode,** in every scene and for every visitor. Dark mode is shown as an option: a *Light / Dark* choice under the Themes scene switches it, with no script.
+- **The scenes:** the hero (an essay open in the editor, focus mode off), Spotlight finding a folder as you type, the Theme panel (light, and dark behind the choice), and the Files panel.
+- **No scrollbar** in any scene: each is captured at rest, the pointer away and nothing scrolling, when the app's minimal scrollbar is hidden.
 - **No banding:** composited at full precision and served as AVIF 4:4:4 with a WebP fallback, at 1920 and 960 pixels wide, with width and height set. Quality wins over size.
 - **The same sample notes** throughout: an essay, a reading list, a garden, a journal, projects and recipes, written for the demo and never anyone's own.
 - **At most one highlight** where the reader must look.

@@ -249,12 +249,6 @@
               "avifSet": {
                 "get": "vm.siteLanding.hero.avifSet"
               },
-              "darkSrcSet": {
-                "get": "vm.siteLanding.hero.darkSrcSet"
-              },
-              "darkAvifSet": {
-                "get": "vm.siteLanding.hero.darkAvifSet"
-              },
               "sizes": {
                 "get": "vm.siteLanding.hero.sizes"
               },
@@ -333,34 +327,110 @@
               }
             },
             {
-              "type": "SiteFigure",
-              "props": {
-                "src": {
-                  "get": "feature.image.src"
+              "switch": {
+                "get": "feature.hasDark"
+              },
+              "cases": {
+                "true": {
+                  "type": "SiteSceneToggle",
+                  "props": {
+                    "name": {
+                      "get": "feature.anchor"
+                    },
+                    "label": {
+                      "t": "site.scheme.label"
+                    },
+                    "lightLabel": {
+                      "t": "site.scheme.light"
+                    },
+                    "darkLabel": {
+                      "t": "site.scheme.dark"
+                    }
+                  },
+                  "slots": {
+                    "light": [
+                      {
+                        "type": "SiteFigure",
+                        "props": {
+                          "src": {
+                            "get": "feature.image.src"
+                          },
+                          "srcSet": {
+                            "get": "feature.image.srcSet"
+                          },
+                          "avifSet": {
+                            "get": "feature.image.avifSet"
+                          },
+                          "sizes": {
+                            "get": "feature.image.sizes"
+                          },
+                          "alt": {
+                            "get": "feature.image.alt"
+                          },
+                          "width": {
+                            "get": "feature.image.width"
+                          },
+                          "height": {
+                            "get": "feature.image.height"
+                          }
+                        }
+                      }
+                    ],
+                    "dark": [
+                      {
+                        "type": "SiteFigure",
+                        "props": {
+                          "src": {
+                            "get": "feature.dark.src"
+                          },
+                          "srcSet": {
+                            "get": "feature.dark.srcSet"
+                          },
+                          "avifSet": {
+                            "get": "feature.dark.avifSet"
+                          },
+                          "sizes": {
+                            "get": "feature.dark.sizes"
+                          },
+                          "alt": {
+                            "get": "feature.dark.alt"
+                          },
+                          "width": {
+                            "get": "feature.dark.width"
+                          },
+                          "height": {
+                            "get": "feature.dark.height"
+                          }
+                        }
+                      }
+                    ]
+                  }
                 },
-                "srcSet": {
-                  "get": "feature.image.srcSet"
-                },
-                "avifSet": {
-                  "get": "feature.image.avifSet"
-                },
-                "darkSrcSet": {
-                  "get": "feature.image.darkSrcSet"
-                },
-                "darkAvifSet": {
-                  "get": "feature.image.darkAvifSet"
-                },
-                "sizes": {
-                  "get": "feature.image.sizes"
-                },
-                "alt": {
-                  "get": "feature.image.alt"
-                },
-                "width": {
-                  "get": "feature.image.width"
-                },
-                "height": {
-                  "get": "feature.image.height"
+                "false": {
+                  "type": "SiteFigure",
+                  "props": {
+                    "src": {
+                      "get": "feature.image.src"
+                    },
+                    "srcSet": {
+                      "get": "feature.image.srcSet"
+                    },
+                    "avifSet": {
+                      "get": "feature.image.avifSet"
+                    },
+                    "sizes": {
+                      "get": "feature.image.sizes"
+                    },
+                    "alt": {
+                      "get": "feature.image.alt"
+                    },
+                    "width": {
+                      "get": "feature.image.width"
+                    },
+                    "height": {
+                      "get": "feature.image.height"
+                    }
+                  }
                 }
               }
             }
