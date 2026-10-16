@@ -4,7 +4,7 @@
  * every title, file name, heading, snippet, and body as untrusted note content: marked in the
  * structured result, and between random markers in the text.
  */
-import { agentPath, rootOf, untrustedNote, withinSize, type AgentRoot } from "@focus-notes/core/agents";
+import { agentPath, rootOf, untrustedNote, withinSize, type AgentRoot, type TerminalPrincipal } from "@focus-notes/core/agents";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
 import { parseAtx } from "@focus-notes/core/scan";
 import { headingAnchor } from "@focus-notes/core/deep-link";
@@ -47,7 +47,7 @@ function plain(data: Record<string, unknown>, text: string): ToolResult {
   return { content: [{ type: "text", text }], structuredContent: data };
 }
 
-const MESSAGES: Record<string, string> = {
+export const MESSAGES: Record<string, string> = {
   notConnected: "Agents can't connect to these notes: the writer turns it on in Focus Notes → Settings → Agents.",
   notPermitted: "Not permitted: the writer hasn't allowed this in Settings → Agents.",
   outsideFolders: "Outside the folders the writer allows agents to use.",
@@ -377,9 +377,9 @@ async function move(call: Call, from: string, to: string, client: string): Promi
 }
 
 /** Runs a tool: its call's checks first, then the tool, with every refusal as a tool error. */
-export async function runTool(env: McpEnv, tool: Tool, args: Args, client: string): Promise<ToolResult> {
+export async function runTool(env: McpEnv, tool: Tool, args: Args, client: string, principal?: TerminalPrincipal): Promise<ToolResult> {
   try {
-    const call = await Call.start(env, tool.kind);
+    const call = await Call.start(env, tool.kind, principal);
     return await tool.run(call, args ?? {}, client);
   } catch (e) {
     return refusalResult(e);

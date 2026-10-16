@@ -25,6 +25,8 @@ await one("src/main/main.ts", "es", "main.mjs", true);
 await one("src/main/preload.ts", "cjs", "preload.cjs", false);
 // The MCP server (WP-7.2, D-159): a Node entry beside the main process, started on stdio.
 await one("src/mcp/main.ts", "es", "mcp.mjs", false);
+// The command-line tool under Node (WP-7.3, D-165); the packaged app runs it with --cli.
+await one("src/cli/main.ts", "es", "cli.mjs", false);
 // The window's icon (the taskbar's, on Windows and Linux), beside the main process in the package.
 copyFileSync(join(root, "build", "icon.png"), join(root, "out", "main", "icon.png"));
 console.log("Main and preload built.");

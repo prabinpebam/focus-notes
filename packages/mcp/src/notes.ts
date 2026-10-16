@@ -10,7 +10,7 @@ import { lstat, opendir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   agentPath, agentSharing, checkAgent, readableRoots, rootDir, rootOf, withinFolder,
-  type AgentDenial, type AgentOp, type AgentPermissions, type AgentRoot, type AgentSharing,
+  DEFAULT_AGENT_PERMISSIONS, type AgentDenial, type AgentOp, type AgentPermissions, type AgentRoot, type AgentSharing, type TerminalPrincipal,
 } from "@focus-notes/core/agents";
 import {
   AgentRefused, createAgentFolder, moveAgentFile, readAgentFile, readAgentPermissions, resolveAgentPath, takeAgentToken, writeAgentFile,
@@ -55,14 +55,22 @@ export class Call {
   readonly env: McpEnv;
   readonly perms: AgentPermissions;
   readonly sharing: AgentSharing;
-  private constructor(env: McpEnv, perms: AgentPermissions, sharing: AgentSharing) {
+  /** The person at the terminal (the command-line tool, D-165): both roots, any folder, the same checks otherwise. */
+  readonly principal: TerminalPrincipal | undefined;
+  private constructor(env: McpEnv, perms: AgentPermissions, sharing: AgentSharing, principal?: TerminalPrincipal) {
     this.env = env;
     this.perms = perms;
     this.sharing = sharing;
+    this.principal = principal;
   }
 
-  /** Reads the permissions again, and takes one read or write from the computer's allowance. */
-  static async start(env: McpEnv, kind: "read" | "write"): Promise<Call> {
+  /**
+   * Reads the permissions again, and takes one read or write from the computer's allowance. The
+   * terminal's calls (from `claimTerminal`, which `checkAgent` verifies) skip both: the switches
+   * and the limits are for agents.
+   */
+  static async start(env: McpEnv, kind: "read" | "write", principal?: TerminalPrincipal): Promise<Call> {
+    if (principal) return new Call(env, { ...DEFAULT_AGENT_PERMISSIONS, folders: "all" }, await sharingOf(env.workspace), principal);
     const token = await takeAgentToken(env.dataDir, kind, env.clock);
     if (!token.allowed) throw new Refusal("rateLimited", token.retryAfterMs);
     const { permissions } = await readAgentPermissions(env.dataDir);
@@ -72,7 +80,7 @@ export class Call {
 
   /** `checkAgent`, then `resolveAgentPath`: the only way to a file. */
   async resolve(op: AgentOp): Promise<ResolvedAgent> {
-    const check = checkAgent(this.perms, op, { sharing: this.sharing });
+    const check = checkAgent(this.perms, op, { sharing: this.sharing, ...(this.principal ? { principal: this.principal } : {}) });
     if (check.verdict === "denied") throw new Refusal(check.reason);
     const r = await resolveAgentPath(this.env.workspace, check.grant);
     if (r.verdict === "denied") throw new Refusal(r.reason);
@@ -80,7 +88,7 @@ export class Call {
   }
 
   readable(): AgentRoot[] {
-    return readableRoots(this.perms);
+    return this.principal ? ["public", "private"] : readableRoots(this.perms);
   }
 
   /** Where listing starts: a folder asked for, or each readable root (or the limited folders in it). */

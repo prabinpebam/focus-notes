@@ -1,0 +1,11 @@
+{
+  "name": "@focus-notes/cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The focus-notes command-line tool: the person at the terminal, through the agent checks (WP-7.3, D-165)",
+  "license": "MIT",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc -p tsconfig.json" },
+  "dependencies": { "@focus-notes/core": "workspace:*", "@focus-notes/mcp": "workspace:*" }
+}
