@@ -1188,7 +1188,72 @@
                               "press": {
                                 "run": "keybindings.reset"
                               }
+                            },
+                            "when": {
+                              "expr": {
+                                "!": {
+                                  "get": "vm.keyboard.confirmingReset"
+                                }
+                              }
                             }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "when": {
+                          "get": "vm.keyboard.confirmingReset"
+                        },
+                        "props": {
+                          "gap": "s",
+                          "align": "start"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "keyboard.resetAsk"
+                              },
+                              "tone": "warning",
+                              "announce": true
+                            }
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s"
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "command.keybindings.resetCancel"
+                                  },
+                                  "autoFocus": true
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "keybindings.resetCancel"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "command.keybindings.reset"
+                                  },
+                                  "variant": "danger"
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "keybindings.resetConfirm"
+                                  }
+                                }
+                              }
+                            ]
                           }
                         ]
                       },

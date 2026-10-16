@@ -87,6 +87,18 @@ describe("KEY-07: Settings → Keyboard and the cheat sheet", () => {
     expect(app.commands.describe("focus.toggle").shortcut).toBe("Mod+Shift+S");
     await app.commands.run("shortcuts.open");
     expect((app.viewModels.select("vm.shortcuts", app.store.state) as { conflicts: { text: string }[] }).conflicts).toHaveLength(1);
+    // Reset asks first, and Keep changes nothing (review of 8f4e900, LOW #5).
+    const kbc = () => app.viewModels.select("vm.keyboard", app.store.state) as { confirmingReset: boolean };
+    await app.commands.run("keybindings.reset");
+    expect(kbc().confirmingReset).toBe(true);
+    await app.commands.run("keybindings.resetCancel");
+    expect(kbc().confirmingReset).toBe(false);
+    expect(kb().status).toBe("1 custom key applies from keybindings.json.");
+    await app.commands.run("keybindings.reset");
+    await app.commands.run("keybindings.resetConfirm");
+    await settle();
+    expect(kbc().confirmingReset).toBe(false);
+    expect(app.store.state.ui.toasts.at(-1)?.message).toBe("Keyboard shortcuts are back to the defaults.");
     f.write("[]");
     await settle();
     expect(kb()).toMatchObject({ status: "No custom keys: every key is the default. Add some in keybindings.json.", problems: [], conflicts: [] });

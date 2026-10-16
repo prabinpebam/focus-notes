@@ -4096,7 +4096,8 @@
         "vm.held",
         "vm.deleted",
         "vm.window",
-        "vm.spotlight"
+        "vm.spotlight",
+        "vm.toolbarCustomize"
       ]
     },
     {
@@ -4127,7 +4128,8 @@
         "vm.diagnostics",
         "vm.shareTemplate",
         "vm.shareNote",
-        "vm.agents"
+        "vm.agents",
+        "vm.keyboard"
       ]
     },
     {

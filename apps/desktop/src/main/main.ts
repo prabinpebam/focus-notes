@@ -936,14 +936,19 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // keybindings.json (KEY-07, D-170): read as text, checked in the window; at most 256 KB.
   const keybindingsFile = () => dataFile(DATA_FILES.keybindings);
   handle("keybindings:load", async () => {
-    const text = await readFile(keybindingsFile(), "utf8").catch(() => undefined);
-    return text !== undefined && text.length > 256 * 1024 ? "too large" : text;
+    // The size first: a huge file is never read into memory (it's reported, and the defaults apply).
+    const st = await stat(keybindingsFile()).catch(() => undefined);
+    if (!st) return undefined;
+    if (!st.isFile() || st.size > 256 * 1024) return "too large";
+    return readFile(keybindingsFile(), "utf8").catch(() => undefined);
   });
   handle("keybindings:edit", async () => {
     // Made with an empty list when it's missing, never over one that's there.
     await writeFile(keybindingsFile(), "[]\n", { encoding: "utf8", flag: "wx" }).catch(() => {});
-    // Journeys never open another program over the owner's screen.
-    if (!journey) await shell.openPath(keybindingsFile());
+    // Journeys never open another program over the owner's screen. The system's reason is the window's to show.
+    if (journey) return;
+    const problem = await shell.openPath(keybindingsFile());
+    if (problem) throw new Error(problem);
   });
   handle("keybindings:reset", async () => {
     await writeFile(keybindingsFile(), "[]\n", "utf8");

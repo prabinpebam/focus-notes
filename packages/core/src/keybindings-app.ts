@@ -11,7 +11,7 @@ import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { keyConflicts, parseKeybindings, type KeyConflict, type KeybindingProblem } from "./keybindings.ts";
 
-export interface KeybindingsState { loaded: boolean; version: number; applied: number; problems: KeybindingProblem[]; conflicts: KeyConflict[] }
+export interface KeybindingsState { loaded: boolean; version: number; applied: number; problems: KeybindingProblem[]; conflicts: KeyConflict[]; /** Reset asks first: it replaces the file. */ confirmingReset?: boolean }
 export const KEYBINDINGS_NONE: KeybindingsState = { loaded: false, version: 0, applied: 0, problems: [], conflicts: [] };
 export interface KeybindingsBridge {
   /** The file's text, or undefined when there's none. */
@@ -44,17 +44,32 @@ export function registerKeybindings(ctx: Ctx) {
     const parsed = parseKeybindings(text, bridge.platform, (id) => commands.has(id));
     commands.setUserBindings(parsed.bindings);
     const conflicts = keyConflicts(commands.bindings(), bridge.platform, commands.userBound());
-    store.update((s) => ({ ...s, keybindings: { loaded: true, version: s.keybindings.version + 1, applied: parsed.applied, problems: parsed.problems, conflicts } }));
+    store.update((s) => ({ ...s, keybindings: { loaded: true, version: s.keybindings.version + 1, applied: parsed.applied, problems: parsed.problems, conflicts, confirmingReset: s.keybindings.confirmingReset } }));
   }
   kb?.onChange(() => void load());
 
+  // The system's own reason, when it gives one, is part of the message (an editor that isn't there).
+  const reasonOf = (e: unknown) => (e instanceof Error ? e.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, "").trim().slice(0, 200) : "");
   commands.register({
     id: "keybindings.edit", title: "command.keybindings.edit", enabled: () => Boolean(kb),
-    run: async () => { await kb?.edit().catch(() => ctx.toast(catalog.format("keyboard.editFailed"), { tone: "error" })); },
+    run: async () => {
+      await kb?.edit().catch((e: unknown) => {
+        const reason = reasonOf(e);
+        ctx.toast(reason ? catalog.format("keyboard.editFailedWhy", { reason }) : catalog.format("keyboard.editFailed"), { tone: "error" });
+      });
+    },
   });
+  const setConfirming = (confirmingReset: boolean) => store.update((s) => ({ ...s, keybindings: { ...s.keybindings, confirmingReset } }));
+  // Reset replaces keybindings.json, so it asks first (review of 8f4e900, LOW #5).
   commands.register({
     id: "keybindings.reset", title: "command.keybindings.reset", enabled: (s) => Boolean(kb) && (s.keybindings.applied > 0 || s.keybindings.problems.length > 0),
+    run: () => setConfirming(true),
+  });
+  commands.register({ id: "keybindings.resetCancel", title: "command.keybindings.resetCancel", run: () => setConfirming(false) });
+  commands.register({
+    id: "keybindings.resetConfirm", title: "command.keybindings.reset", enabled: (s) => Boolean(kb) && Boolean(s.keybindings.confirmingReset),
     run: async () => {
+      setConfirming(false);
       await kb?.reset().then(() => ctx.toast(catalog.format("keyboard.resetDone")), () => ctx.toast(catalog.format("keyboard.editFailed"), { tone: "error" }));
       await load();
     },
@@ -73,7 +88,7 @@ export function registerKeybindings(ctx: Ctx) {
     schema: {
       type: "object",
       properties: {
-        available: { type: "boolean" }, status: { type: "string" },
+        available: { type: "boolean" }, status: { type: "string" }, confirmingReset: { type: "boolean" },
         problems: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" } } } },
         conflicts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" } } } },
       },
@@ -83,6 +98,7 @@ export function registerKeybindings(ctx: Ctx) {
       const k = s.keybindings;
       return {
         available: Boolean(kb),
+        confirmingReset: Boolean(k.confirmingReset),
         status: catalog.format(k.applied ? "keyboard.status.some" : "keyboard.status.none", { count: k.applied }),
         problems: k.problems.map((p, i) => ({ id: `p${i}`, text: problemText(p) })),
         conflicts: k.conflicts.map((c, i) => ({ id: `c${i}`, text: conflictText(c) })),
