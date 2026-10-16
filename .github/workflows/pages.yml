@@ -46,6 +46,7 @@ jobs:
       - run: node packages/tokens/build.mjs
       # Both builds: dist/, the app as a whole site (a fork), and dist-app/, the owner's app at /app/ (D-167),
       # which reads the notes from the site's root, where the share reader (/s/) and /n/ have always found them.
+      # The demo (dist-demo/, D-177) goes to /demo/, from the same commit.
       - name: Build the web app
         run: pnpm --filter @focus-notes/web run build
       # The site's address, for canonical links (WP-5.1, WP-10.1). A third-party step, so it runs before
@@ -64,7 +65,7 @@ jobs:
         if: github.repository == 'prabinpebam/focus-notes'
         env:
           SITE_URL: ${{ steps.pages.outputs.base_url }}
-        run: node tools/site/build.mjs --out _site --app apps/web/dist-app --renderer apps/web/dist-site --site-url "$SITE_URL/"
+        run: node tools/site/build.mjs --out _site --app apps/web/dist-app --demo apps/web/dist-demo --renderer apps/web/dist-site --site-url "$SITE_URL/"
       - name: Put the app at the root (a fork, which has no product site)
         if: github.repository != 'prabinpebam/focus-notes'
         run: cp -r apps/web/dist/. _site/

@@ -93,4 +93,14 @@ export class WebDb {
   async deleteMeta(key: string): Promise<void> {
     await req(this.#store("meta", "readwrite").delete(key));
   }
+  /** Empties both stores in one transaction (the demo's Reset demo, D-177). */
+  async clear(): Promise<void> {
+    const tx = this.#db.transaction(["notes", "meta"], "readwrite");
+    tx.objectStore("notes").clear();
+    tx.objectStore("meta").clear();
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = tx.onabort = () => reject(tx.error);
+    });
+  }
 }
