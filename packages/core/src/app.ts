@@ -1015,7 +1015,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const files = registerFiles({
     store, commands, viewModels, catalog, bridge, toast, announce, load, exclusive, setNote, persistAppState,
-    loaded: (path, md) => workspace.loaded(path, md), sawOnDisk: (path, text) => workspace.sawOnDisk(path, text), holds: (path) => conflicts.holds(path), describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id),
+    loaded: (path, md) => workspace.loaded(path, md), sawOnDisk: (path, text) => workspace.sawOnDisk(path, text), holds: (path) => conflicts.holds(path),
+    moved: (from, to) => {
+      workspace.movedOnDisk(from, to);
+      conflicts.moved(from, to);
+    },
+    describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id),
   });
   const browser = registerBrowserFeatures({
     store, commands, viewModels, catalog, bridge, load, flush, toast, tracker, menu: extraMenu,

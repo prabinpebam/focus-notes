@@ -248,6 +248,12 @@ export function registerConflicts(ctx: Ctx) {
       if (conflict().held === path && !conflict().open) set({ open: true, focus: conflict().focus + 1 });
       else if (known.includes(path) && !conflict().open) void openSync();
     },
+    /** The app moved a note waiting for a choice (Files): the choice waits at its new path, saves still held (DEF-24). */
+    moved(from: string, to: string): void {
+      const c = conflict();
+      if (c.held !== from) return;
+      set({ held: to, notes: c.notes.map((n) => (n.path === from ? { ...n, path: to } : n)) });
+    },
     /** The open note went away (deleted, or another note was opened after a choice): nothing is held for it. */
     release(path: string | undefined): void {
       if (path !== undefined && conflict().held === path) set({ held: undefined, open: false });

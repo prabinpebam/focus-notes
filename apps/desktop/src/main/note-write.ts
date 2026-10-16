@@ -119,3 +119,10 @@ export function noteSave(d: NoteSaveDeps) {
     return undefined;
   };
 }
+
+/**
+ * A refused batch puts a note's text back (Files, D-94): only over the text the batch wrote, so a
+ * change made since (another program, a pull) is never written over by the rollback (DEF-24).
+ */
+export const writeBack = (write: (path: string, content: string, expected?: string) => Promise<{ outside: string } | undefined>, path: string, old: string, written: string) =>
+  write(path, old, written).then(() => {});

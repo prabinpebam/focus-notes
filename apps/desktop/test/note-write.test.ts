@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { NoteWriter, noteSave, retrying } from "../src/main/note-write.ts";
+import { NoteWriter, noteSave, retrying, writeBack } from "../src/main/note-write.ts";
 
 const dir = () => mkdtempSync(join(tmpdir(), "fn-def24-"));
 
@@ -82,6 +82,22 @@ describe("NoteWriter", () => {
     expect(await retrying(read)).toBe("text");
     expect(tries).toBe(3);
     await expect(retrying(() => Promise.reject(Object.assign(new Error("gone"), { code: "EISDIR" })))).rejects.toThrow("gone");
+  });
+});
+
+describe("a refused batch's rollback", () => {
+  it("puts the old text back over the batch's own text, and never over a change made since", async () => {
+    const d = dir();
+    const w = new NoteWriter();
+    const write = (p: string, c: string, e?: string) => w.write(p, c, e);
+    const kept = join(d, "kept.md");
+    writeFileSync(kept, "# A\n\n[b](drafts/b.md)\n"); // the batch's link rewrite landed
+    await writeBack(write, kept, "# A\n\n[b](b.md)\n", "# A\n\n[b](drafts/b.md)\n");
+    expect(readFileSync(kept, "utf8")).toBe("# A\n\n[b](b.md)\n");
+    const changed = join(d, "changed.md");
+    writeFileSync(changed, "# A\n\nWritten by another program after the batch.\n");
+    await writeBack(write, changed, "# A\n\n[b](b.md)\n", "# A\n\n[b](drafts/b.md)\n");
+    expect(readFileSync(changed, "utf8")).toBe("# A\n\nWritten by another program after the batch.\n");
   });
 });
 

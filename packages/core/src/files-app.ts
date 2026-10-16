@@ -72,6 +72,8 @@ interface Ctx {
   sawOnDisk?: (path: string, text: string) => void;
   /** Whether a note's saves wait for a conflict choice (FIL-12, D-92). */
   holds?: (path: string) => boolean;
+  /** The app moved the open note's file: what's known on disk, and a pending conflict, go with it (DEF-24). */
+  moved?: (from: string, to: string) => void;
   describeItem: (id: string) => Record<string, unknown>;
   itemSchema: Record<string, unknown>;
   /** Runs an editor action: `edit.focus` puts the caret back in the note. */
@@ -308,6 +310,7 @@ export function registerFiles(ctx: Ctx) {
       if (p && moves.length) {
         const to = rebase(p, moves);
         if (to !== p) {
+          ctx.moved?.(p, to);
           store.update((s) => ({ ...s, note: { ...s.note, path: to } }));
           if (sourceOf(to) !== "private") await ctx.persistAppState({ lastNotePath: to });
         }

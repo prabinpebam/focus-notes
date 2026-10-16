@@ -15,7 +15,7 @@ import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/a
 import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { NoteWriter, noteSave, readNow } from "./note-write.ts";
+import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -698,7 +698,8 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
         if (old === undefined) throw refuse("notFound");
         // Links rewritten from the text the app read: never over a change since (DEF-24).
         if (await atomicWrite(op.path, op.text, op.before)) throw refuse("changed");
-        undo.push(() => atomicWrite(op.path, old).then(() => {}));
+        // Put back only over this batch's own text: never over a change made since (DEF-24).
+        undo.push(() => writeBack(atomicWrite, op.path, old, op.text));
       } else if (op.op === "create") {
         // A new note, never over another (the conflict resolver's copies, FIL-12).
         if (existsSync(op.path)) throw refuse("taken");

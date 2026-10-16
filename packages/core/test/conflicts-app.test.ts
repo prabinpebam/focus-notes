@@ -293,6 +293,47 @@ describe("D-92 and FIL-12: a file changed outside while this window had unsaved 
     expect(lastToast(app)?.message).toBe("Couldn't move “B”: a note it changes was changed outside Focus Notes, so nothing was changed.");
   });
 
+  it("DEF-24: a note waiting for a conflict choice and moved in Files keeps waiting at its new path, its saves held", async () => {
+    const f = setup({ folders: [`${PRIV}/drafts`] });
+    const app = await started(f);
+    await app.commands.run("note.setContent", { value: "# Welcome\n\nTyped here.\n" });
+    f.outside(welcome, "# Welcome\n\nWritten elsewhere.\n");
+    await wait(10);
+    await done(app);
+    expect(app.store.state.ui.conflict.held).toBe(welcome);
+    await app.commands.run("files.open");
+    await app.commands.run("files.drop", { source: welcome, target: `${PRIV}/drafts` });
+    await done(app);
+    const moved = `${PRIV}/drafts/welcome.md`;
+    expect(app.store.state.note.path).toBe(moved);
+    expect(app.store.state.ui.conflict.held).toBe(moved);
+    expect(app.store.state.ui.conflict.notes[0]?.path).toBe(moved);
+    // Still never saved over: the other version stays on disk until a choice is made.
+    expect(await app.flush()).toBe(false);
+    expect(f.files[moved]).toBe("# Welcome\n\nWritten elsewhere.\n");
+    await app.commands.run("conflict.choose", { choice: "mine" });
+    await done(app);
+    expect(f.files[moved]).toBe("# Welcome\n\nTyped here.\n");
+  });
+
+  it("DEF-24: what's known on disk is keyed by path: a note opened at another path never inherits the last one's text", async () => {
+    const f = setup({ files: { [`${PRIV}/other.md`]: "# Other\n" } });
+    const app = await started(f);
+    await app.commands.run("note.setContent", { value: "# Welcome\n\nSaved here.\n" });
+    expect(await app.flush()).toBe(true);
+    // A path change that skips reading (as a future code path might): the expectation is the new
+    // note's text as opened, never the old note's saved text.
+    app.store.update((s) => ({ ...s, note: { ...s.note, path: `${PRIV}/other.md`, key: "other", initialMarkdown: "# Other\n", markdown: "# Other\n", saveState: "saved" } }));
+    await app.commands.run("note.setContent", { value: "# Other\n\nMine.\n" });
+    expect(await app.flush()).toBe(true); // no false conflict from the other note's text
+    expect(f.files[`${PRIV}/other.md`]).toBe("# Other\n\nMine.\n");
+    // And a change from outside there is still never saved over.
+    f.files[`${PRIV}/other.md`] = "# Other\n\nChanged by another program.\n";
+    await app.commands.run("note.setContent", { value: "# Other\n\nMine, again.\n" });
+    expect(await app.flush()).toBe(false);
+    expect(f.files[`${PRIV}/other.md`]).toBe("# Other\n\nChanged by another program.\n");
+  });
+
   it("DEF-24: a note opened again after switching away expects the text it read then, not an older save", async () => {
     const f = setup();
     f.files[`${PRIV}/other.md`] = "# Other\n";

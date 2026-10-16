@@ -114,19 +114,14 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
 
   // ---- the tree and outside changes (PRF-11) ----
   let queued: WorkspaceChange[] | undefined = [];
-  /** What the app knows is on disk for a note: what it last wrote, or read, there (D-92, DEF-24). */
+  /**
+   * What the app knows is on disk for a note: what it last wrote, or read, there (D-92, DEF-24). Keyed
+   * by path, and only ever moved to another path explicitly (`movedOnDisk`, when the app itself moved
+   * the file): a note opened at another path never inherits it. A path the app hasn't recorded falls
+   * back to the open note's text as opened.
+   */
   let lastWritten: { path: string; text: string } | undefined;
   const onDisk = (path: string) => (lastWritten?.path === path ? lastWritten.text : store.state.note.path === path ? store.state.note.initialMarkdown : undefined);
-  // The open note moved or renamed (Files, a title that names the file): its file, with the text it
-  // had, is at the new path now. Opening another note says what's on disk there itself.
-  let openPath = store.state.note.path;
-  store.subscribe(() => {
-    const now = store.state.note.path;
-    if (now === openPath) return;
-    const was = openPath;
-    openPath = now;
-    if (now && was && lastWritten?.path === was) lastWritten = { path: now, text: lastWritten.text };
-  });
   let outside = 0;
   const setTree = (tree: WorkspaceTree) => { if (tree !== store.state.workspace.tree) setWorkspace({ tree }); };
 
@@ -210,6 +205,10 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     /** The app read this text from disk, or the person saw it there and chose (a note opened, a conflict settled). */
     sawOnDisk(path: string, text: string): void {
       lastWritten = { path, text };
+    },
+    /** The app moved a note's file (Files, or a folder around it): what it knew was there is at `to` now. */
+    movedOnDisk(from: string, to: string): void {
+      if (lastWritten?.path === from) lastWritten = { path: to, text: lastWritten.text };
     },
     /** Reads the format before the first note opens, so nothing is written to a workspace that mustn't be. */
     prepare: () => checkFormat(),
