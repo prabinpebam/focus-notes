@@ -12,6 +12,8 @@ import { SealError, SiteReader, type OpenVault, type SiteFetch } from "@focus-no
 import { openTextFile, saveTextFile } from "@focus-notes/ui/files";
 import { WebDb } from "./idb.ts";
 import { WEB_META } from "@focus-notes/core/inventory";
+import { DEMO_DATABASE, resetDemo, seedDemo } from "./demo/seed.ts";
+import { DEMO_PRIVATE, DEMO_PUBLIC } from "./demo/notes.ts";
 
 const WELCOME = `# Welcome to Focus Notes
 
@@ -44,6 +46,11 @@ export interface WebBridge extends PlatformBridge {
 export interface WebBridgeOptions {
   /** Reads a file of the site; tests pass their own. */
   fetchSite?: SiteFetch;
+  /**
+   * The demo at /demo/ (WP-10.6, D-177): its own database, seeded with the sample notes on the first
+   * visit, in a Private and a Public root; nothing is read from the site (no /n/, no vault).
+   */
+  demo?: boolean;
 }
 
 /** The site's root from the app's page (vite.config.ts): "./", or "../" in dist-app/, the app at /app/ (D-167). */
@@ -58,11 +65,13 @@ const siteFetch: SiteFetch = async (path) => {
 };
 
 export async function createWebBridge(options: WebBridgeOptions = {}): Promise<WebBridge> {
-  const db = await WebDb.open();
+  const demo = options.demo === true;
+  const db = await WebDb.open(demo ? DEMO_DATABASE : undefined);
+  if (demo) await seedDemo(db);
   for (const k of RETIRED_META) await db.deleteMeta(k);
   void navigator.storage?.persist?.().catch(() => false);
   const dark = matchMedia("(prefers-color-scheme: dark)");
-  const reader = new SiteReader(options.fetchSite ?? siteFetch);
+  const reader = new SiteReader(demo ? async () => undefined : options.fetchSite ?? siteFetch);
 
   // ---- the instance's notes ----
   let open: OpenVault | undefined;
@@ -143,7 +152,7 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
       await ready;
       return {
         folder: "",
-        roots: [
+        roots: demo ? [{ id: "private" as const, path: DEMO_PRIVATE, readOnly: false }, { id: "public" as const, path: DEMO_PUBLIC, readOnly: false }] : [
           { id: "local", path: "", readOnly: false },
           ...(i ? [{ id: "public" as const, path: "public:", readOnly: true }] : []),
           ...(i?.manifest.vault ? [{ id: "private" as const, path: "private:", readOnly: true }] : []),
@@ -211,7 +220,8 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
       return [...mine, ...pub, ...priv];
     },
     async newNotePath(near) {
-      const dir = near && near.includes("/") ? near.slice(0, near.lastIndexOf("/") + 1) : "";
+      // In the demo a new note is private unless it goes next to another (SHR-01, D-171).
+      const dir = near && near.includes("/") ? near.slice(0, near.lastIndexOf("/") + 1) : demo ? `${DEMO_PRIVATE}/` : "";
       for (let i = 1; ; i++) {
         const p = `${dir}${i === 1 ? "Untitled" : `Untitled ${i}`}.md`;
         if (!(await db.getNote(p))) return p;
@@ -223,10 +233,12 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
       // A first visit to a site with public notes opens the newest one, read-only (FRE-09).
       const pub = (await info)?.publicNotes ?? [];
       if (pub.length) return `public:${[...pub].sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated))[0]!.path}`;
-      await db.putNote({ path: "Welcome.md", text: WELCOME, updated: Date.now() });
-      return "Welcome.md";
+      const welcome = demo ? `${DEMO_PRIVATE}/Welcome.md` : "Welcome.md";
+      await db.putNote({ path: welcome, text: WELCOME, updated: Date.now() });
+      return welcome;
     },
-    loadAppState: async () => (await db.getMeta<AppStateFile>(WEB_META.appState)) ?? { version: 1 },
+    // The demo opens light, as the owner prefers; the visitor can switch (D-177).
+    loadAppState: async () => (await db.getMeta<AppStateFile>(WEB_META.appState)) ?? (demo ? { version: 1, appearance: "light" } : { version: 1 }),
     saveAppState: (s) => db.setMeta(WEB_META.appState, s),
     systemScheme: () => (dark.matches ? "dark" : "light"),
     onSystemSchemeChange(listener) {
@@ -254,6 +266,17 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
       saveTextFile(bundleFileName(), JSON.stringify(makeBundle(notes), null, 2));
       return notes.length;
     },
+    ...(demo ? {
+      demo: {
+        async reset() {
+          await resetDemo(db);
+          location.reload();
+        },
+        download() {
+          location.assign(new URL("../download/", document.baseURI).href);
+        },
+      },
+    } : {}),
     async importNotes() {
       const text = await openTextFile(".json,application/json", BUNDLE_MAX_BYTES);
       if (text === undefined) return undefined;

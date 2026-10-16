@@ -29,7 +29,8 @@
     "vm.held",
     "vm.deleted",
     "vm.window",
-    "vm.spotlight"
+    "vm.spotlight",
+    "vm.demo"
   ],
   "focus": "editor",
   "root": {
@@ -3199,21 +3200,28 @@
         "id": "account",
         "when": {
           "expr": {
-            "and": [
+            "or": [
               {
-                "or": [
-                  {
-                    "get": "vm.account.visible"
-                  },
-                  {
-                    "get": "vm.saveState.visible"
-                  }
-                ]
+                "get": "vm.demo.on"
               },
               {
-                "!": {
-                  "get": "vm.firstRun.open"
-                }
+                "and": [
+                  {
+                    "or": [
+                      {
+                        "get": "vm.account.visible"
+                      },
+                      {
+                        "get": "vm.saveState.visible"
+                      }
+                    ]
+                  },
+                  {
+                    "!": {
+                      "get": "vm.firstRun.open"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -3234,6 +3242,57 @@
               "wrap": true
             },
             "children": [
+              {
+                "type": "PillButton",
+                "id": "demoAbout",
+                "when": {
+                  "get": "vm.demo.on"
+                },
+                "props": {
+                  "label": {
+                    "t": "demo.label"
+                  }
+                },
+                "on": {
+                  "press": {
+                    "run": "demo.about"
+                  }
+                }
+              },
+              {
+                "type": "PillButton",
+                "id": "demoDownload",
+                "when": {
+                  "get": "vm.demo.on"
+                },
+                "props": {
+                  "label": {
+                    "t": "command.demo.download"
+                  }
+                },
+                "on": {
+                  "press": {
+                    "run": "demo.download"
+                  }
+                }
+              },
+              {
+                "type": "PillButton",
+                "id": "demoReset",
+                "when": {
+                  "get": "vm.demo.on"
+                },
+                "props": {
+                  "label": {
+                    "t": "command.demo.reset"
+                  }
+                },
+                "on": {
+                  "press": {
+                    "run": "demo.reset"
+                  }
+                }
+              },
               {
                 "type": "SaveState",
                 "id": "saveState",

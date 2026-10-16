@@ -81,6 +81,11 @@ export interface PlatformBridge {
   /** False turns the warm-up after start off, as in end-to-end tests (PRF-10). */
   warmUp?: boolean;
   /**
+   * The demo at /demo/ (WP-10.6, D-177): the web app on sample notes kept in the visitor's browser.
+   * Present only there: its quiet banner says so, with Download and Reset demo.
+   */
+  demo?: DemoBridge;
+  /**
    * How the window is composited (D-121): in software the note's edges fade without the blur. The
    * desktop's; absent in the browser, which can't tell, and keeps the blur.
    */
@@ -325,6 +330,14 @@ export interface InstanceBridge {
 }
 
 /** Per-device app state, stored in the app's data folder (see the data inventory). */
+/** The demo's own actions (D-177). */
+export interface DemoBridge {
+  /** Puts the sample notes back, forgetting what the visitor changed, and starts the app again. */
+  reset(): Promise<void>;
+  /** Goes to the site's downloads. */
+  download(): void;
+}
+
 export interface AppStateFile {
   version: 1;
   lastNotePath?: string;

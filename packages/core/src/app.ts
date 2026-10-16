@@ -1001,6 +1001,26 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     loaded: (path, md) => workspace.loaded(path, md),
     ...(options.clock ? { now: options.clock.now } : {}),
   });
+  // The demo (WP-10.6, D-177): its banner's actions, and what the desktop app would do instead.
+  {
+    const isDemo = () => Boolean(bridge.demo);
+    commands.register({ id: "demo.download", title: "command.demo.download", icon: "download", enabled: isDemo, run: () => bridge.demo?.download() });
+    commands.register({
+      id: "demo.reset", title: "command.demo.reset", enabled: isDemo,
+      run: async () => {
+        if (!bridge.demo) return;
+        announce(catalog.format("demo.resetting"));
+        await bridge.demo.reset();
+      },
+    });
+    commands.register({ id: "demo.about", title: "command.demo.about", enabled: isDemo, run: () => void toast(catalog.format("demo.aboutText"), { action: { command: "demo.download", label: catalog.format("command.demo.download") } }) });
+  }
+  viewModels.register({
+    id: "vm.demo",
+    schema: { type: "object", properties: { on: { type: "boolean" } } },
+    reads: [],
+    select: () => ({ on: Boolean(bridge.demo) }),
+  });
   const heldNotes = registerHeld({ store, commands, viewModels, catalog, bridge, toast, announce });
   void heldNotes.refresh();
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });

@@ -8,7 +8,8 @@ import { createWebBridge } from "./bridge.ts";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root in the entry document");
-const bridge = await createWebBridge();
+// The demo build (`--mode demo`, D-177) runs on its own sample notes.
+const bridge = await createWebBridge({ demo: import.meta.env.FOCUS_NOTES_DEMO === true });
 const app = createApp(bridge, messages.en!);
 // The theme manager is a view document of its own, hosted beside the canvas (IA-VIEW-THEME).
 mountApp(root, { app, views, overlays: ["theme"] });

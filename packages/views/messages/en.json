@@ -1596,5 +1596,12 @@
   "site.tile.open": "Free and open source",
   "site.tile.private": "Private notes, sealed",
   "site.footer.credit": "Desktop photo by Cristina Gottardi on Unsplash.",
-  "site.tile.tracking": "Nothing tracked"
+  "site.tile.tracking": "Nothing tracked",
+  "command.demo.download": "Download",
+  "command.demo.reset": "Reset demo",
+  "command.demo.about": "About this demo",
+  "demo.label": "Demo: notes stay in this browser",
+  "demo.region": "Demo",
+  "demo.resetting": "Putting the sample notes back…",
+  "demo.aboutText": "This is a demo. Your notes stay in this browser and nothing is sent anywhere. The desktop app saves notes as Markdown in your own GitHub repositories, publishes public ones, and seals private ones."
 }

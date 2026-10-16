@@ -12,7 +12,9 @@
  * share reader and /app/ read them (the web app's dist-app/, built with `--mode app`).
  *
  *   node tools/site/build.mjs --out _site [--content site] [--renderer apps/web/dist-site]
- *     [--app apps/web/dist-app] [--site-url https://…/] [--assume documentations/ …]
+ *     [--app apps/web/dist-app] [--demo apps/web/dist-demo] [--site-url https://…/] [--assume documentations/ …]
+ *
+ * With --demo, the demo build of the web app (`--mode demo`, D-177) replaces site/demo.md's page at /demo/.
  *
  * It fails when a page links to an address the site doesn't have, or loads anything from another origin.
  */
@@ -47,7 +49,7 @@ export async function readContent(dir) {
  * Builds the site into `out`. `renderer` is the built module's folder (render.mjs and assets/), or,
  * in tests, `{ renderSite }` itself with no assets.
  */
-export async function buildSite({ content = "site", out, renderer = "apps/web/dist-site", app, siteUrl, log = () => {} }) {
+export async function buildSite({ content = "site", out, renderer = "apps/web/dist-site", app, demo, siteUrl, log = () => {} }) {
   const built = typeof renderer === "string";
   const render = built ? await import(pathToFileURL(resolve(renderer, "render.mjs")).href) : renderer;
   const assetFiles = built ? await readdir(join(renderer, "assets")) : [];
@@ -63,7 +65,8 @@ export async function buildSite({ content = "site", out, renderer = "apps/web/di
   }
   if (await isDir(join(content, "media"))) await cp(join(content, "media"), join(out, "media"), { recursive: true, filter: (p) => !p.endsWith(".gitkeep") && relative(join(content, "media"), p).split(sep)[0] !== "source" });
   if (app) await placeApp(app, out);
-  log(`Built ${files.length} site pages${app ? ", with the app at app/" : ""}.`);
+  if (demo) await placeDemo(demo, out);
+  log(`Built ${files.length} site pages${app ? ", with the app at app/" : ""}${demo ? ", with the demo at demo/" : ""}.`);
   return files;
 }
 
@@ -78,6 +81,15 @@ export async function placeApp(app, out) {
     await mkdir(join(out, "s"), { recursive: true });
     await writeFile(join(out, "s", "index.html"), page);
   }
+}
+
+/**
+ * The demo at /demo/ (WP-10.6, D-177): the web app built with `--mode demo`, on sample notes kept in
+ * the visitor's browser, in place of the placeholder page. Its share reader isn't needed there.
+ */
+export async function placeDemo(demo, out) {
+  await rm(join(out, "demo"), { recursive: true, force: true });
+  await cp(demo, join(out, "demo"), { recursive: true, filter: (p) => relative(demo, p).split(sep)[0] !== "s" });
 }
 
 const HTML_REF = /\s(href|src|srcset)="([^"]*)"/gi;
@@ -193,7 +205,7 @@ function parseArgs(argv) {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const o = parseArgs(process.argv.slice(2));
   if (!o.out) {
-    console.error("Usage: node tools/site/build.mjs --out <folder> [--clean] [--content site] [--renderer apps/web/dist-site] [--app apps/web/dist-app] [--site-url <url>] [--assume <path>]…");
+    console.error("Usage: node tools/site/build.mjs --out <folder> [--clean] [--content site] [--renderer apps/web/dist-site] [--app apps/web/dist-app] [--demo apps/web/dist-demo] [--site-url <url>] [--assume <path>]…");
     process.exit(2);
   }
   if (o.clean) await rm(o.out, { recursive: true, force: true });
