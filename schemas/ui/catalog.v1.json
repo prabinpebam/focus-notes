@@ -4301,7 +4301,6 @@
       "findBarClearance",
       "themeTile",
       "themeSwatch",
-      "blockGap",
       "editorEndPadding",
       "editorMinHeight",
       "triggerTop",
@@ -4317,7 +4316,8 @@
       "scrollBlur",
       "scrollBands",
       "fieldMin",
-      "findField"
+      "findField",
+      "headingAfter"
     ],
     "radius": [
       "window",

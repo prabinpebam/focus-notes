@@ -26,7 +26,7 @@
     },
     "contentH2": {
       "$type": "number",
-      "$value": 2.0
+      "$value": 2
     },
     "contentH3": {
       "$type": "number",
@@ -133,15 +133,18 @@
     },
     "contentH1Before": {
       "$type": "number",
-      "$value": 1.5
+      "$value": 2,
+      "$description": "The space before a level-1 heading beyond the paragraph gap, in the note's em (D-183): the bigger the heading, the more room before it, and always more than between two paragraphs."
     },
     "contentH2Before": {
       "$type": "number",
-      "$value": 1.2
+      "$value": 1.5,
+      "$description": "The space before a level-2 heading beyond the paragraph gap, in the note's em (D-183): the bigger the heading, the more room before it, and always more than between two paragraphs."
     },
     "contentH3Before": {
       "$type": "number",
-      "$value": 1.0
+      "$value": 1,
+      "$description": "The space before a level-3 heading beyond the paragraph gap, in the note's em (D-183): the bigger the heading, the more room before it, and always more than between two paragraphs."
     },
     "contentH4": {
       "$type": "number",
@@ -149,7 +152,8 @@
     },
     "contentH4Before": {
       "$type": "number",
-      "$value": 0.8
+      "$value": 0.75,
+      "$description": "The space before a level-4 heading beyond the paragraph gap, in the note's em (D-183): the bigger the heading, the more room before it, and always more than between two paragraphs."
     },
     "contentH5": {
       "$type": "number",
@@ -157,19 +161,26 @@
     },
     "contentH5Before": {
       "$type": "number",
-      "$value": 0.6
+      "$value": 0.5,
+      "$description": "The space before a level-5 heading beyond the paragraph gap, in the note's em (D-183): the bigger the heading, the more room before it, and always more than between two paragraphs."
     },
     "contentH6": {
       "$type": "number",
-      "$value": 1.0
+      "$value": 1
     },
     "contentH6Before": {
       "$type": "number",
-      "$value": 0.5
+      "$value": 0.25,
+      "$description": "The space before a level-6 heading beyond the paragraph gap, in the note's em (D-183): the bigger the heading, the more room before it, and always more than between two paragraphs."
     },
     "contentHeading": {
       "$type": "fontFamily",
       "$value": "{ref.font.mono}"
+    },
+    "blockGapLines": {
+      "$type": "number",
+      "$value": 1.25,
+      "$description": "Between consecutive blocks (paragraphs, lists, quotes, tables, code), in lines of the note's text (D-183): never less than one line, so blocks are clearly separated; never more than the space before any heading. Theme manager → Reading sets it: Compact 1, Comfortable 1.25, Airy 1.5."
     }
   },
   "space": {
@@ -224,8 +235,7 @@
       "$value": "{ref.size.32}"
     },
     "controlL": {
-      "$value": "{ref.size.44}",
-      "$description": "An onboarding step's main action (Get started), D-126."
+      "$value": "{ref.size.40}"
     },
     "appMarkL": {
       "$value": "{ref.size.112}",
@@ -253,9 +263,6 @@
     "stepMarkIcon": {
       "$value": "{ref.size.32}",
       "$description": "The icon inside a setup step's hero tile (D-135)."
-    },
-    "controlL": {
-      "$value": "{ref.size.40}"
     },
     "stepDot": {
       "$value": "{ref.size.8}",
@@ -386,9 +393,6 @@
     "themeSwatch": {
       "$value": "{ref.size.56}"
     },
-    "blockGap": {
-      "$value": "{ref.size.em150}"
-    },
     "editorEndPadding": {
       "$value": "{ref.size.35vh}"
     },
@@ -451,6 +455,10 @@
     "findField": {
       "$value": "{ref.size.200}",
       "$description": "The find bar's fields' starting width; the bar comes to about 480 px (Find and replace)."
+    },
+    "headingAfter": {
+      "$value": "{ref.size.em35}",
+      "$description": "Between a heading and the block after it (D-183): clearly less than the paragraph gap, so what follows reads as nested under the heading."
     }
   },
   "radius": {
@@ -493,13 +501,6 @@
     }
   },
   "shadow": {
-    "$type": "shadow",
-    "siteWindow": {
-      "$value": "{ref.shadow.siteWindow}"
-    },
-    "siteGlow": {
-      "$value": "{ref.shadow.siteGlow}"
-    },
     "0": {
       "$value": "{ref.shadow.0}"
     },
@@ -511,6 +512,13 @@
     },
     "3": {
       "$value": "{ref.shadow.3}"
+    },
+    "$type": "shadow",
+    "siteWindow": {
+      "$value": "{ref.shadow.siteWindow}"
+    },
+    "siteGlow": {
+      "$value": "{ref.shadow.siteGlow}"
     }
   },
   "frost": {

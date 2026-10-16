@@ -1,9 +1,9 @@
 {
-  "$description": "Paragraph spacing Compact (Theme manager \u2192 Reading).",
-  "layout": {
-    "$type": "dimension",
-    "blockGap": {
-      "$value": "{ref.size.em100}"
+  "$description": "Paragraph spacing Compact (Theme manager → Reading): 1 line between blocks (D-183).",
+  "font": {
+    "$type": "number",
+    "blockGapLines": {
+      "$value": 1
     }
   }
 }

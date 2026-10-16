@@ -1,9 +1,9 @@
 {
-  "$description": "Paragraph spacing Airy (Theme manager \u2192 Reading).",
-  "layout": {
-    "$type": "dimension",
-    "blockGap": {
-      "$value": "{ref.size.em200}"
+  "$description": "Paragraph spacing Airy (Theme manager → Reading): 1.5 lines between blocks (D-183).",
+  "font": {
+    "$type": "number",
+    "blockGapLines": {
+      "$value": 1.5
     }
   }
 }

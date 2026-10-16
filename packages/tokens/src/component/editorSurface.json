@@ -125,9 +125,9 @@
         "$type": "dimension",
         "$value": "{layout.topBand}"
       },
-      "blockGap": {
-        "$type": "dimension",
-        "$value": "{layout.blockGap}"
+      "blockGapLines": {
+        "$type": "number",
+        "$value": "{font.blockGapLines}"
       },
       "codeFont": {
         "$type": "fontFamily",
@@ -369,6 +369,10 @@
       "edgeShown": {
         "$type": "number",
         "$value": "{opacity.full}"
+      },
+      "headingAfter": {
+        "$type": "dimension",
+        "$value": "{layout.headingAfter}"
       }
     }
   }

@@ -79,17 +79,26 @@ The same rules apply on every platform. On macOS they match the system's overlay
 
 <h2 data-reader-personas="design">Type</h2>
 
-**Note text** follows the content font preset, **Roboto Mono** by default; headings use the preset's heading font (`font.contentHeading`), which differs only in the Serif preset (Fraunces over Newsreader, [D-79](../plan/decisions.md)) (see [Theming](../experience/theming.md#fonts) and [D-78](../plan/decisions.md)). Sizes are relative to `font.size`, default 16 px. Blocks are 1.5 em apart, and headings have their own space above them:
+**Note text** follows the content font preset, **Roboto Mono** by default; headings use the preset's heading font (`font.contentHeading`), which differs only in the Serif preset (Fraunces over Newsreader, [D-79](../plan/decisions.md)) (see [Theming](../experience/theming.md#fonts) and [D-78](../plan/decisions.md)). Sizes are relative to `font.size`, default 16 px.
 
-| Role | Size | Line height | Weight | Space above |
+**Spacing shows what belongs together ([D-183](../plan/decisions.md)).** All of it is in the note's em, so it scales with the text size (Mod+= and Mod+-):
+
+- **Between blocks** (paragraphs, lists, quotes, tables, code): the paragraph gap, `font.blockGapLines` lines of text, never less than one line. Comfortable is 1.25 lines (1.875 em at line height 1.5); Compact is 1 line, Airy 1.5 (Theme manager → Reading).
+- **Before a heading:** the paragraph gap plus more the bigger the heading (`font.contentH1Before` to `font.contentH6Before`), so two paragraphs are never further apart than two headings.
+- **After a heading:** `layout.headingAfter`, 0.35 em, the smallest space of all, so what follows reads as nested under the heading.
+- **Nothing above the first block.**
+
+The editor and published pages use the same tokens. A unit test (`packages/ui/test/block-spacing.test.ts`) holds these rules for every spacing setting and line height.
+
+| Role | Size | Line height | Weight | Space above (Comfortable, line height 1.5) |
 | --- | --- | --- | --- | --- |
-| Body | 1 em | 1.5 | Regular | 1.5 em |
-| Heading 1 | 2.5 em | 1.25 | Bold | 1.5 em |
-| Heading 2 | 2.0 em | 1.25 | Bold | 1.2 em |
-| Heading 3 | 1.6 em | 1.25 | Bold | 1.0 em |
-| Heading 4 | 1.3 em | 1.25 | Bold | 0.8 em |
-| Heading 5 | 1.1 em | 1.25 | Bold | 0.6 em |
-| Heading 6 | 1.0 em | 1.25 | Bold | 0.5 em |
+| Body | 1 em | 1.5 | Regular | 1.875 em (1.25 lines); 0.35 em after a heading |
+| Heading 1 | 2.5 em | 1.25 | Bold | gap + 2.0 em (3.875 em) |
+| Heading 2 | 2.0 em | 1.25 | Bold | gap + 1.5 em (3.375 em) |
+| Heading 3 | 1.6 em | 1.25 | Bold | gap + 1.0 em (2.875 em) |
+| Heading 4 | 1.3 em | 1.25 | Bold | gap + 0.75 em (2.625 em) |
+| Heading 5 | 1.1 em | 1.25 | Bold | gap + 0.5 em (2.375 em) |
+| Heading 6 | 1.0 em | 1.25 | Bold | gap + 0.25 em (2.125 em) |
 | Table cell | 0.94 em | 1.45 | Regular (header semibold) |
 | Code | 0.9 em, `font.mono` | 1.5 | Regular |
 

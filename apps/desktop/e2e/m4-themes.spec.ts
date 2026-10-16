@@ -239,7 +239,8 @@ test("Reading settings change the note live, apply to every theme, and are remem
 
   await sheet(page).getByRole("radio", { name: "Airy" }).focus();
   await page.keyboard.press("Space");
-  await expect.poll(gap).toBeCloseTo(2, 2);
+  // Airy is 1.5 lines of the text, at line height 1.8 (D-183).
+  await expect.poll(gap).toBeCloseTo(1.5 * 1.8, 2);
 
   const dim = sheet(page).getByRole("slider", { name: "Focus dim" });
   await dim.focus();

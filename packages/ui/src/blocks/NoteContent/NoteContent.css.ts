@@ -15,13 +15,21 @@ export const prose = style({
 });
 
 const p = (sel: string) => `${prose} ${sel}`;
-globalStyle(p("> * + *"), { marginTop: t.blockGap });
+// The paragraph gap: whole lines of the note's text, at least one (D-183).
+const blockGap = `calc(${t.blockGapLines} * ${t.lineHeight} * 1em)`;
+globalStyle(p("> * + *"), { marginTop: blockGap });
 globalStyle(`:where(${prose}) :where(p)`, { margin: 0, whiteSpace: "pre-wrap" });
 globalStyle(`:where(${prose}) :where(h1, h2, h3, h4, h5, h6)`, { margin: 0, fontFamily: t.headingFont, fontWeight: t.headingWeight, lineHeight: t.headingLineHeight });
+// Spacing shows what belongs together (D-183): consecutive blocks are a paragraph gap apart; the block
+// after a heading sits close under it, nested; and the space before a heading is the paragraph gap plus
+// more the bigger the heading, so two paragraphs are never further apart than two headings. All in the
+// note's em, so it scales with the text size. Each heading's margin is in its own em, so it's divided by
+// its size to be in the note's. Nothing above the first block.
+globalStyle(p("> :is(h1, h2, h3, h4, h5, h6) + *"), { marginTop: t.headingAfter });
 const ramp = [[t.h[1], t.hBefore[1]], [t.h[2], t.hBefore[2]], [t.h[3], t.hBefore[3]], [t.h[4], t.hBefore[4]], [t.h[5], t.hBefore[5]], [t.h[6], t.hBefore[6]]] as const;
 ramp.forEach(([size, before], i) => {
   globalStyle(p(`h${i + 1}`), { fontSize: `calc(${size} * 1em)` });
-  globalStyle(p(`> * + h${i + 1}`), { marginTop: `calc(${before} * 1em)` });
+  globalStyle(p(`> * + h${i + 1}`), { marginTop: `calc((${t.blockGapLines} * ${t.lineHeight} + ${before}) * 1em / ${size})` });
 });
 globalStyle(`:where(${prose}) :where(ul, ol)`, { margin: 0, paddingInlineStart: t.space.l });
 // Numbers are wider than bullets: an ordered list keeps "10." inside the column (D-111, inside its container).
