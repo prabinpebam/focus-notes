@@ -11,7 +11,7 @@ import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
-import { compareVersions, versionsByDay, type NoteVersion } from "./history.ts";
+import { compareVersions, NOTE_HISTORY_PAGE, versionsByDay, type NoteVersion } from "./history.ts";
 import { isReadOnlyPath } from "./notes.ts";
 
 export interface HistoryState {
@@ -27,8 +27,14 @@ export interface HistoryState {
   text?: string;
   /** The versions couldn't be read. */
   failed: boolean;
+  /** Older versions than those read are there: Show older versions reads the next page. */
+  more: boolean;
+  /** A version's text is being read. */
+  reading: boolean;
+  /** Bumped to move focus into the list of versions. */
+  focus: number;
 }
-export const HISTORY_CLOSED: HistoryState = { open: false, loading: false, versions: [], failed: false };
+export const HISTORY_CLOSED: HistoryState = { open: false, loading: false, versions: [], failed: false, more: false, reading: false, focus: 0 };
 
 interface Ctx {
   store: Store<AppState>;
@@ -55,12 +61,22 @@ export function registerNoteHistory(ctx: Ctx) {
 
   async function choose(commit: string): Promise<void> {
     const h = history();
-    if (!h.path || !h.versions.some((v) => v.commit === commit)) return;
-    set({ active: commit });
-    const text = await bridge.workspace?.version?.(h.path, commit).catch(() => undefined);
+    const v = h.versions.find((x) => x.commit === commit);
+    if (!h.path || !v) return;
+    set({ active: commit, reading: true });
+    const text = await bridge.workspace?.version?.(h.path, commit, v.file).catch(() => undefined);
     if (history().path !== h.path || !history().open) return;
-    set(text === undefined ? { chosen: undefined, text: undefined, failed: true } : { chosen: commit, text, failed: false });
+    set(text === undefined ? { chosen: undefined, text: undefined, failed: true, reading: false } : { chosen: commit, text, failed: false, reading: false });
   }
+
+  /**
+   * Reads a page of versions, newest first: from HEAD, or from the oldest one read (listed again, and
+   * dropped). One more than a page tells whether there are older ones.
+   */
+  const page = async (path: string, from?: NoteVersion): Promise<NoteVersion[] | undefined> => {
+    const read = await bridge.workspace?.versions?.(path, { limit: NOTE_HISTORY_PAGE + 1 + (from ? 1 : 0), ...(from ? { from: { commit: from.commit, file: from.file } } : {}) }).catch(() => undefined);
+    return from ? read?.filter((v) => v.commit !== from.commit) : read;
+  };
 
   commands.register({
     id: "history.open", title: "command.history.open", icon: "history", layer: "power", group: "app",
@@ -68,16 +84,33 @@ export function registerNoteHistory(ctx: Ctx) {
     run: async () => {
       const path = store.state.note.path;
       if (!path || !bridge.workspace?.versions) return;
-      set({ ...HISTORY_CLOSED, open: true, loading: true, path });
-      const versions = await bridge.workspace.versions(path).catch(() => undefined);
+      set({ ...HISTORY_CLOSED, open: true, loading: true, path, focus: history().focus + 1 });
+      // Read only now, as the sheet opens, a page at a time (D-175).
+      const read = await page(path);
       if (history().path !== path || !history().open) return;
-      set({ loading: false, versions: versions ?? [], failed: !versions, ...(versions?.[0] ? { active: versions[0].commit } : {}) });
+      const versions = read?.slice(0, NOTE_HISTORY_PAGE) ?? [];
+      set({ loading: false, versions, failed: !read, more: (read?.length ?? 0) > NOTE_HISTORY_PAGE, ...(versions[0] ? { active: versions[0].commit } : {}) });
     },
   });
-  commands.register({ id: "history.close", title: "command.history.close", run: () => set(HISTORY_CLOSED) });
+  commands.register({ id: "history.close", title: "command.history.close", run: () => set({ ...HISTORY_CLOSED, focus: history().focus }) });
+  commands.register({
+    id: "history.more", title: "command.history.more",
+    enabled: () => history().more && !history().loading,
+    run: async () => {
+      const h = history();
+      if (!h.path || !h.more || h.loading) return;
+      set({ loading: true });
+      const read = await page(h.path, h.versions.at(-1));
+      if (history().path !== h.path || !history().open) return;
+      const older = read?.slice(0, NOTE_HISTORY_PAGE) ?? [];
+      const known = new Set(h.versions.map((v) => v.commit));
+      set({ loading: false, versions: [...history().versions, ...older.filter((v) => !known.has(v.commit))], more: (read?.length ?? 0) > NOTE_HISTORY_PAGE, failed: !read });
+    },
+  });
   commands.register<{ id: string }>({ id: "history.setActive", title: "command.history.open", run: ({ id }) => { if (!id.startsWith(DAY)) set({ active: id }); } });
   commands.register<{ id: string }>({ id: "history.choose", title: "command.history.choose", run: ({ id }) => choose(id) });
-  commands.register({ id: "history.back", title: "command.history.back", run: () => set({ chosen: undefined, text: undefined }) });
+  // Back to current: the list again, where the version was chosen.
+  commands.register({ id: "history.back", title: "command.history.back", run: () => set({ chosen: undefined, text: undefined, focus: history().focus + 1 }) });
   commands.register({
     id: "history.restore", title: "command.history.restore",
     enabled: () => history().text !== undefined && history().path === store.state.note.path && !isReadOnlyPath(store.state.note.path),
@@ -87,7 +120,7 @@ export function registerNoteHistory(ctx: Ctx) {
       if (!v || h.text === undefined || !h.path || h.path !== store.state.note.path) return;
       replaced = { path: h.path, text: store.state.note.markdown };
       setNote({ key: `${h.path}#history-${v.commit}-${Date.now()}`, initialMarkdown: h.text, markdown: h.text, saveState: "unsaved" });
-      set(HISTORY_CLOSED);
+      set({ ...HISTORY_CLOSED, focus: h.focus });
       await flush();
       const done = catalog.format("history.restored", { at: v.at });
       announce(done);
@@ -123,7 +156,7 @@ export function registerNoteHistory(ctx: Ctx) {
       properties: {
         open: { type: "boolean" }, status: { type: "string" }, items: { type: "array", items: ITEM }, activeId: { type: "string" },
         showing: { type: "boolean" }, versionLabel: { type: "string" }, blocks: { type: "array", items: BLOCK }, emptyText: { type: "string" },
-        canRestore: { type: "boolean" },
+        canRestore: { type: "boolean" }, more: { type: "boolean" }, focus: { type: "number" },
       },
     },
     reads: ["ui.history", "note.path"],
@@ -142,7 +175,7 @@ export function registerNoteHistory(ctx: Ctx) {
         })),
       ]);
       const v = h.versions.find((x) => x.commit === h.chosen);
-      const status = !h.open ? "" : h.loading ? catalog.format("history.loading") : h.failed && !h.versions.length ? catalog.format("history.failed")
+      const status = !h.open ? "" : h.loading ? catalog.format(h.versions.length ? "history.loadingMore" : "history.loading") : h.reading ? catalog.format("history.reading") : h.failed && !h.versions.length ? catalog.format("history.failed")
         : !h.versions.length ? catalog.format("history.none") : h.failed ? catalog.format("history.versionFailed") : catalog.format("history.count", { count: h.versions.length });
       const vm = {
         open: h.open, status, items, activeId: h.active ?? "",
@@ -151,6 +184,7 @@ export function registerNoteHistory(ctx: Ctx) {
         blocks: v && h.text !== undefined ? compareVersions(h.text, md ?? "").mine : [],
         emptyText: catalog.format("conflict.emptyNote"),
         canRestore: Boolean(v && h.text !== undefined && h.path === s.note.path && !isReadOnlyPath(s.note.path)),
+        more: h.more && !h.loading, focus: h.focus,
       };
       memo = { h, md, vm };
       return vm;

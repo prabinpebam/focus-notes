@@ -2239,6 +2239,11 @@
           "default": "fill",
           "description": "Fills its container, or the slash menu's fixed width."
         },
+        "focusRequest": {
+          "kind": "number",
+          "min": 0,
+          "description": "Each new value moves focus to the list itself, where it's the owner (Note history, D-175)."
+        },
         "height": {
           "kind": "enum",
           "values": [

@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createApp, parseVersionLog, VERSION_LOG_ARGS, type NoteVersion, type PlatformBridge, type SyncReport } from "../src/index.ts";
+import { createApp, isVersionFile, NOTE_HISTORY_PAGE, parseVersionLog, VERSION_LOG_ARGS, type NoteVersion, type PlatformBridge, type SyncReport } from "../src/index.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 const PRIV = "/w/private/notes";
@@ -21,6 +21,14 @@ describe("the version log (FIL-13)", () => {
     expect(args).toContain("--follow");
     expect(args.at(-2)).toBe("--");
     expect(args.at(-1)).toBe("notes/-x.md");
+    // The next page starts at a commit already listed, before the --.
+    const next = VERSION_LOG_ARGS("notes/a.md", { from: "abc1234", limit: 51 });
+    expect(next.slice(-3)).toEqual(["abc1234", "--", "notes/a.md"]);
+    expect(next).toContain("-n51");
+  });
+  it("reads only a Markdown file's path in the repository", () => {
+    expect(isVersionFile("notes/a b.md")).toBe(true);
+    for (const bad of ["../a.md", "notes/../../a.md", "-a.md", "/a.md", "notes/a.txt", "a\\b.md", "c:a.md", 3]) expect(isVersionFile(bad)).toBe(false);
   });
   it("parses each commit with its time, author, message, and the note's path then", () => {
     const out = "\x01aaaaaaa1\x1f1792142341\x1fAnn\x1fAgent edit: notes/b.md\n\nFocus-Notes-Agent: Claude\n\x02\0\nnotes/b.md\0"
@@ -39,6 +47,7 @@ describe("the version log (FIL-13)", () => {
 });
 
 function setup(o: { git?: boolean; versions?: NoteVersion[]; texts?: Record<string, string>; failVersions?: boolean } = {}) {
+  const pages: { from?: { commit: string; file: string }; limit: number }[] = [];
   const files: Record<string, string> = { [NOTE]: "# Welcome\n\nNow.\n" };
   const writes: string[] = [];
   const asked: string[] = [];
@@ -54,11 +63,18 @@ function setup(o: { git?: boolean; versions?: NoteVersion[]; texts?: Record<stri
       info: async () => ({ folder: "/w", format: '{"formatVersion":1}' }),
       scan: async () => ({ folder: "/w", roots: [{ id: "private", path: PRIV, readOnly: false }], entries: [{ path: NOTE, kind: "note", title: "Welcome" }] }),
       writeFormat: async () => {}, renameNote: async () => {}, apply: async () => {},
-      versions: async (p) => { asked.push(p); if (o.failVersions) throw new Error("git"); return o.versions ?? []; },
-      version: async (_p, commit) => o.texts?.[commit],
+      versions: async (p, page) => {
+        asked.push(p);
+        if (page) pages.push(page);
+        if (o.failVersions) throw new Error("git");
+        const all = o.versions ?? [];
+        const start = page?.from ? all.findIndex((v) => v.commit === page.from!.commit) : 0;
+        return all.slice(Math.max(0, start), Math.max(0, start) + (page?.limit ?? all.length));
+      },
+      version: async (_p, commit, file) => (file.endsWith(".md") ? o.texts?.[commit] : undefined),
     },
   };
-  return { bridge, files, writes, asked };
+  return { bridge, files, writes, asked, pages };
 }
 const settle = async () => { for (let i = 0; i < 8; i++) await new Promise((r) => setTimeout(r, 0)); };
 async function started(f: ReturnType<typeof setup>) {
@@ -68,20 +84,20 @@ async function started(f: ReturnType<typeof setup>) {
   return app;
 }
 type Item = { id: string; label: string; description?: string; state?: string; header?: boolean };
-type HistoryVm = { open: boolean; status: string; items: Item[]; activeId: string; showing: boolean; versionLabel: string; blocks: { text: string; changed: boolean }[]; canRestore: boolean };
+type HistoryVm = { open: boolean; status: string; items: Item[]; activeId: string; showing: boolean; versionLabel: string; blocks: { text: string; changed: boolean }[]; canRestore: boolean; more: boolean };
 const vm = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.history", app.store.state) as HistoryVm;
 
 const VERSIONS: NoteVersion[] = [
-  { commit: "c0ffee3", at: T0, author: "Claude", agent: "Claude" },
-  { commit: "c0ffee2", at: T0 - 2 * H, author: "Ann" },
-  { commit: "c0ffee1", at: T0 - 26 * H, author: "Ann" },
+  { commit: "c0ffee3", at: T0, author: "Claude", agent: "Claude", file: "notes/welcome.md" },
+  { commit: "c0ffee2", at: T0 - 2 * H, author: "Ann", file: "notes/welcome.md" },
+  { commit: "c0ffee1", at: T0 - 26 * H, author: "Ann", file: "notes/hello.md" },
 ];
 const TEXTS = { c0ffee3: "# Welcome\n\nNow.\n", c0ffee2: "# Welcome\n\nEarlier.\n", c0ffee1: "# Welcome\n\nFirst.\n" };
 
 describe("Note history in the app (FIL-13)", () => {
   it("is offered for a note in a Git workspace, and not without Git", async () => {
-    expect((await started(setup())).commands.isEnabled("history.open")).toBe(true);
-    expect((await started(setup({ git: false }))).commands.isEnabled("history.open")).toBe(false);
+    expect((await started(setup())).commands.describe("history.open").enabled).toBe(true);
+    expect((await started(setup({ git: false }))).commands.describe("history.open").enabled).toBe(false);
   });
 
   it("lists the open note's versions newest first, grouped by day, with the agent labeled", async () => {
@@ -154,7 +170,27 @@ describe("Note history in the app (FIL-13)", () => {
     await settle();
     expect(f.files[NOTE]).toBe("# Welcome\n\nNow.\n");
     expect(app.store.state.note.markdown).toBe("# Welcome\n\nNow.\n");
-    expect(app.commands.isEnabled("history.undoRestore")).toBe(false);
+    expect(app.commands.describe("history.undoRestore").enabled).toBe(false);
+  });
+
+  it("reads only as the sheet opens, a page at a time; Show older versions reads the next from the oldest one read", async () => {
+    const many: NoteVersion[] = Array.from({ length: NOTE_HISTORY_PAGE + 20 }, (_, i) => ({ commit: `aa${String(i).padStart(5, "0")}`, at: T0 - i * H, author: "Ann", file: "notes/welcome.md" }));
+    const f = setup({ versions: many });
+    const app = await started(f);
+    // Nothing is read until Note history opens.
+    expect(f.asked).toEqual([]);
+    await app.commands.run("history.open");
+    await settle();
+    expect(f.pages[0]).toEqual({ limit: NOTE_HISTORY_PAGE + 1 });
+    expect(vm(app).items.filter((i) => !i.header)).toHaveLength(NOTE_HISTORY_PAGE);
+    expect(vm(app).more).toBe(true);
+    await app.commands.run("history.more");
+    await settle();
+    const last = many[NOTE_HISTORY_PAGE - 1]!;
+    expect(f.pages[1]).toEqual({ limit: NOTE_HISTORY_PAGE + 2, from: { commit: last.commit, file: last.file } });
+    const rows = vm(app).items.filter((i) => !i.header).map((i) => i.id);
+    expect(rows).toEqual(many.map((v) => v.commit));
+    expect(vm(app).more).toBe(false);
   });
 
   it("closes with Esc (history.close), forgetting the version shown", async () => {

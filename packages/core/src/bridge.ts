@@ -245,10 +245,14 @@ export interface WorkspaceBridge {
    * Resolves to where each went. Rejects like `apply`.
    */
   restore?(ids: string[], folder?: string): Promise<{ path: string; title: string }[]>;
-  /** A note's saved versions from Git, newest first, following renames (FIL-13, D-175). Absent without Git. */
-  versions?(path: string): Promise<NoteVersion[]>;
-  /** A note's text in one of its versions (a commit `versions` listed), or undefined if it can't be read. */
-  version?(path: string, commit: string): Promise<string | undefined>;
+  /**
+   * A note's saved versions from Git, newest first, following renames (FIL-13, D-175): a page at a
+   * time, at most `limit`, from HEAD or from a version already listed (`from`, which comes first again).
+   * Read only when Note history opens. Absent without Git.
+   */
+  versions?(path: string, page?: { from?: { commit: string; file: string }; limit: number }): Promise<NoteVersion[]>;
+  /** A note's text in one of its versions (a commit and file `versions` listed), or undefined if it can't be read. */
+  version?(path: string, commit: string, file: string): Promise<string | undefined>;
   /** Changes made outside the app, in batches (the desktop's file watcher). */
   onChange?(listener: (changes: WorkspaceChange[]) => void): () => void;
   /**

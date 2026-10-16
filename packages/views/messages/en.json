@@ -1643,5 +1643,8 @@
   "history.viewing": "Viewing the version from {at, date, medium}, {at, time, short}",
   "history.compared": "Blocks marked Changed differ from the note now.",
   "history.restored": "Restored the version from {at, date, medium}, {at, time, short}",
-  "history.restoreUndone": "Put back the text from before the restore."
+  "history.restoreUndone": "Put back the text from before the restore.",
+  "command.history.more": "Show older versions",
+  "history.loadingMore": "Reading older versions…",
+  "history.reading": "Reading that version…"
 }

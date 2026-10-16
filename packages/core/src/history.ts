@@ -114,12 +114,17 @@ export interface VersionEntry {
   path: string;
 }
 
-/** How many versions Note history lists: the newest. */
-export const NOTE_HISTORY_LIMIT = 200;
+/** How many versions Note history reads at a time: the newest first, then a page more on Show older versions. */
+export const NOTE_HISTORY_PAGE = 50;
 
 /** The log of one note's versions, following renames; the path comes last, after `--`, so it's never read as an option (SEC-03). */
-export const VERSION_LOG_ARGS = (rel: string, limit = NOTE_HISTORY_LIMIT) =>
-  ["log", "--follow", "-M", "--no-merges", "-z", "--name-only", `-n${limit}`, "--format=%x01%H%x1f%ct%x1f%an%x1f%B%x02", "--", rel] as const;
+/**
+ * The log of one note's versions, following renames: from HEAD, or from a commit already listed (the
+ * next page starts there, with the note's path at that commit; `--skip` doesn't mix with `--follow`).
+ * The path comes last, after `--`, so it's never read as an option (SEC-03).
+ */
+export const VERSION_LOG_ARGS = (rel: string, o: { from?: string; limit?: number } = {}) =>
+  ["log", "--follow", "-M", "--no-merges", "-z", "--name-only", `-n${Math.max(1, Math.floor(o.limit ?? NOTE_HISTORY_PAGE))}`, "--format=%x01%H%x1f%ct%x1f%an%x1f%B%x02", ...(o.from ? [o.from] : []), "--", rel] as const;
 
 /** Parses the output of {@link VERSION_LOG_ARGS}: one record per commit, newest first, with the note's path in that commit. */
 export function parseVersionLog(out: string): VersionEntry[] {
@@ -141,7 +146,13 @@ export interface NoteVersion {
   at: number;
   author: string;
   agent?: string;
+  /** The note's path in its repository at that commit (it may have been renamed since). */
+  file: string;
 }
+
+/** A note's version file as the shell may read it: a Markdown file's repository path, nothing that climbs out or reads as an option. */
+export const isVersionFile = (file: unknown): file is string =>
+  typeof file === "string" && file.length < 1024 && /\.(md|markdown)$/i.test(file) && !file.startsWith("-") && !file.startsWith("/") && !/(^|\/)\.\.(\/|$)/.test(file) && !/[\0\\:]/.test(file);
 
 /** Note history grouped by the day each version was saved (local time), newest first. */
 export function versionsByDay<T extends { at: number }>(versions: readonly T[]): { day: string; at: number; versions: T[] }[] {

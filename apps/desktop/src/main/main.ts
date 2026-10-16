@@ -1303,8 +1303,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("history:deleted", async () => (isWorkspace() ? (await gitOpening)?.deleted() ?? [] : []));
   handle("history:restore", (ids, folder) => restoreNotes(ids, folder));
   // Note history (FIL-13, D-175): a note in the workspace, its versions read from Git by the main process.
-  handle("history:versions", async (p) => (isWorkspace() ? (await gitOpening)?.versions(notePath(p)) ?? [] : []));
-  handle("history:version", async (p, commit) => (isWorkspace() && typeof commit === "string" ? (await gitOpening)?.readVersion(notePath(p), commit) : undefined));
+  handle("history:versions", async (p, page) => {
+    const o = page && typeof page === "object" ? page as { from?: unknown; limit?: unknown } : {};
+    const limit = typeof o.limit === "number" && Number.isFinite(o.limit) ? Math.min(500, Math.max(1, Math.floor(o.limit))) : undefined;
+    const f = o.from && typeof o.from === "object" ? o.from as { commit?: unknown; file?: unknown } : undefined;
+    const from = f && typeof f.commit === "string" && typeof f.file === "string" ? { commit: f.commit, file: f.file } : undefined;
+    return isWorkspace() ? (await gitOpening)?.versions(notePath(p), { ...(from ? { from } : {}), ...(limit ? { limit } : {}) }) ?? [] : [];
+  });
+  handle("history:version", async (p, commit, file) => (isWorkspace() && typeof commit === "string" && typeof file === "string" ? (await gitOpening)?.readVersion(notePath(p), commit, file) : undefined));
   windowFrame?.registerIpc(fromApp, win);
   // macOS's menu bar (DSK-05): the renderer builds it from its commands; choosing an item runs the command there.
   if (platform === "macos") {

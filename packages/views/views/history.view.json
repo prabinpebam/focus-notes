@@ -96,6 +96,9 @@
                   },
                   "activeId": {
                     "get": "vm.history.activeId"
+                  },
+                  "focusRequest": {
+                    "get": "vm.history.focus"
                   }
                 },
                 "on": {
@@ -114,6 +117,25 @@
                         "get": "event.id"
                       }
                     }
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "id": "historyMore",
+                "when": {
+                  "get": "vm.history.more"
+                },
+                "props": {
+                  "label": {
+                    "t": "command.history.more"
+                  },
+                  "variant": "subtle",
+                  "size": "s"
+                },
+                "on": {
+                  "press": {
+                    "run": "history.more"
                   }
                 }
               },

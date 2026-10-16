@@ -220,7 +220,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
     ],
   },
   { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
-  { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink"] },
+  { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink", "history.open"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "shortcuts.open", "help.open"] },
 ];

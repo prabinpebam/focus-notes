@@ -9,6 +9,7 @@ export const contract = defineContract({
     items: { kind: "list", of: "resultItems", required: true },
     activeId: { kind: "text" },
     width: { kind: "enum", values: ["fill", "menu"], default: "fill", description: "Fills its container, or the slash menu's fixed width." },
+    focusRequest: { kind: "number", min: 0, description: "Each new value moves focus to the list itself, where it's the owner (Note history, D-175)." },
     height: { kind: "enum", values: ["content", "fill"], default: "content", description: "As tall as its items up to a popover's height, or as tall as all of them in a side sheet, whose body scrolls it." },
   },
   events: { action: { payload: { id: "text" } }, activeChange: { payload: { id: "text" } } },

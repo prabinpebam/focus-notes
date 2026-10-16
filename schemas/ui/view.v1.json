@@ -3018,6 +3018,17 @@
                 }
               ]
             },
+            "focusRequest": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
             "height": {
               "anyOf": [
                 {
