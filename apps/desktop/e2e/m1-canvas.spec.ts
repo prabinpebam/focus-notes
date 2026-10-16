@@ -393,10 +393,14 @@ test("D-130: Ctrl and the wheel change the text size one step a notch, as Mod+= 
     await page.keyboard.up("Control");
   };
   expect(await size()).toBe("16px");
+  // The reading width follows the text size, as far as the window allows: a line keeps about its characters.
+  const columnWidth = () => editor.evaluate((el) => el.getBoundingClientRect().width);
+  const w16 = await columnWidth();
 
   // One notch, one step: up is larger, down is smaller, along the same steps as the keys.
   await wheel(-100);
   await expect.poll(size).toBe("17px");
+  await expect.poll(columnWidth).toBeCloseTo((w16 * 17) / 16, 0);
   await wheel(-100, 2);
   await expect.poll(size).toBe("20px");
   await wheel(100);
@@ -409,6 +413,10 @@ test("D-130: Ctrl and the wheel change the text size one step a notch, as Mod+= 
   expect(await size()).toBe("20px");
   await wheel(-10, 3);
   await expect.poll(size).toBe("22px");
+  // Wider, but never past the window: it narrows to the room there is.
+  const w22 = await columnWidth();
+  expect(w22).toBeGreaterThan(w16);
+  expect(w22).toBeLessThanOrEqual(Math.min((w16 * 22) / 16, width) + 1);
   // The page itself never zooms: the text size is the only zoom.
   expect(await zoom()).toEqual([1]);
   expect(await page.evaluate(() => [window.innerWidth, window.visualViewport?.scale ?? 1])).toEqual([width, 1]);
@@ -421,5 +429,6 @@ test("D-130: Ctrl and the wheel change the text size one step a notch, as Mod+= 
   await expect.poll(() => note.evaluate((el) => getComputedStyle(el).fontSize)).toBe("22px");
   await withMod(again.page, "Digit0");
   await expect.poll(() => note.evaluate((el) => getComputedStyle(el).fontSize)).toBe("16px");
+  await expect.poll(() => note.evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(w16, 0);
   await quit(again);
 });

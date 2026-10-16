@@ -64,6 +64,26 @@ const THEME_FOR = { light: "paper", dark: "ink" } as const;
 const COLOR_TOKEN = /^(color|trigger|code)\.[a-zA-Z]+$/;
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const inRange = (v: number | undefined, min: number, max: number) => typeof v === "number" && Number.isFinite(v) && v >= min && v <= max;
+/**
+ * The token defaults the note's reading width scales from, read once before any override: the note
+ * text size (font.size, px) and the reading width (layout.measure, ch).
+ */
+let defaults: { size: number; chars: number } | undefined;
+function tokenDefaults(html: HTMLElement): { size: number; chars: number } | undefined {
+  if (defaults) return defaults;
+  const size = cssVarName("font.size");
+  const measure = cssVarName("layout.measure");
+  const kept = [html.style.getPropertyValue(size), html.style.getPropertyValue(measure)];
+  html.style.removeProperty(size);
+  html.style.removeProperty(measure);
+  const cs = getComputedStyle(html);
+  const px = parseFloat(cs.getPropertyValue(size));
+  const ch = cs.getPropertyValue(measure).trim();
+  if (kept[0]) html.style.setProperty(size, kept[0]);
+  if (kept[1]) html.style.setProperty(measure, kept[1]);
+  if (px > 0 && ch.endsWith("ch") && parseFloat(ch) > 0) defaults = { size: px, chars: parseFloat(ch) };
+  return defaults;
+}
 
 /**
  * The root of every app view. Applies the theme and the token modes (DSY-03) to the document:
@@ -123,10 +143,17 @@ export function AppRoot({ scheme, theme, contentFont, uiScale, platform, content
     const set = (token: string, v: string | undefined) => (v === undefined ? html.style.removeProperty(cssVarName(token)) : html.style.setProperty(cssVarName(token), v));
     set("font.lineHeight", inRange(lineHeight, 1.3, 2) ? String(lineHeight) : undefined);
     set("layout.measure", inRange(measure, 50, 100) ? `${measure}ch` : undefined);
+    // The note's column grows and shrinks with its text size (Mod+= and Mod+-), so a line keeps about
+    // as many characters; the window still narrows it (the column's margins). One length, never a
+    // calc() over the measure: that made every keystroke lay out a long note again (PRF-01).
+    const d = tokenDefaults(html);
+    const scale = contentSize && d ? contentSize / d.size : 1;
+    const chars = inRange(measure, 50, 100) ? measure! : d?.chars;
+    set("cmp.editorSurface.measure", scale !== 1 && chars ? `${Math.round(chars * scale * 100) / 100}ch` : undefined);
     set("focus.dimOpacity", inRange(focusDim, 0.15, 0.6) ? String(focusDim) : undefined);
     if (paragraphSpacing && paragraphSpacing !== "comfortable") html.dataset.paragraphSpacing = paragraphSpacing;
     else delete html.dataset.paragraphSpacing;
-  }, [lineHeight, measure, focusDim, paragraphSpacing]);
+  }, [lineHeight, measure, focusDim, paragraphSpacing, contentSize]);
 
   const colorsKey = (themeColors ?? []).map((c) => `${c.id}=${c.value}`).join(";");
   useEffect(() => {
