@@ -109,6 +109,20 @@ The page also says that the command-line tool acts as you, and shows **Connect a
 
 The switches in Settings → Agents and the list of Recent agent changes are WP-7.4.
 
+### Settings → Agents as built
+
+**As built (WP-7.4, D-166).** The page reads and writes `agents.json` through the main process. Each switch is written at once and read back:
+
+| Part | Shows | Does |
+| --- | --- | --- |
+| Switches | *Agents can connect*, then *Read public notes*, *Read private and shared notes*, *Create and edit notes*, and *Create public notes*, each with one line on what it allows | Writes `agents.json`. The others are disabled while agents can't connect |
+| Folder limit | All folders, or the folders in the limit | Editing it is planned |
+| Changed outside the app | A warning that the file's check didn't match, so the defaults apply | Any switch writes a fresh file |
+| Connect an agent | Snippets for VS Code, Claude Desktop, and a generic stdio command: the app's own executable with `--cli mcp --data <data folder>` | Copy, then *Copied* |
+| Recent agent changes | The last 50: *⟨client⟩ (self-reported)*, the note, and when | *Undo*, by D-145's rules; a refusal says why |
+| Command-line tool | Whether `focus-notes` is installed | *Install command-line tool*: the user's `Path` on Windows, `~/.local/bin/focus-notes` elsewhere. Only in the installed app |
+
+
 ## Attribution and undo
 
 - Each agent write is one commit: `Agent edit: <note path>`, with the trailer `Focus-Notes-Agent: <client name>`. The client name comes from the MCP `initialize` handshake.
