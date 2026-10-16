@@ -126,3 +126,42 @@ test("THM-04, THM-13: edited colors are saved as a theme file, listed in the gal
   await expect(options.nth(1)).toContainText("Low contrast");
   await quit(l);
 });
+
+test("D-173: the gallery's Yours group, a theme added while the app runs, and a theme's options: duplicate, delete, and Undo", async () => {
+  const dirs = tempDirs();
+  mkdirSync(join(dirs.docs, ".focus-notes"), { recursive: true });
+  writeFileSync(join(dirs.docs, ".focus-notes", "workspace.json"), '{ "formatVersion": 1 }\n');
+  mkdirSync(join(dirs.docs, "notes"), { recursive: true });
+  mkdirSync(join(dirs.docs, "private", "notes"), { recursive: true });
+  writeFileSync(join(dirs.docs, "private", "notes", "welcome.md"), "# Morning pages\n\nWritten in my own colors.\n");
+  const themes = join(dirs.docs, "private", ".focus-notes", "themes");
+  mkdirSync(themes, { recursive: true });
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", appearance: "light", focusMode: false }));
+  const l = await launch(dirs);
+  const { page } = l;
+  await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+  // Added while the app runs: it shows when the theme manager opens.
+  writeFileSync(join(themes, "evening.json"), JSON.stringify({ name: "Sepia evening", kind: "light", base: "sepia", tokens: { "color.canvas": "#f4ecd8" } }));
+  await openThemeManager(page);
+  const yours = gallery(page).getByRole("group", { name: "Yours" });
+  await expect(yours.getByRole("option")).toHaveCount(1);
+  await expect(gallery(page).getByRole("group", { name: "Focus Notes" }).getByRole("option")).toHaveCount(10);
+  await yours.getByRole("option").first().click();
+  // The theme's options: Duplicate, then Delete with Undo.
+  const options = sheet(page).getByRole("button", { name: "Options for Sepia evening" });
+  await options.click();
+  await expect(page.getByRole("menuitem", { name: "Show file" })).toBeVisible();
+  await settled(page);
+  expect(await axeViolations(page)).toEqual([]);
+  await page.getByRole("menuitem", { name: "Duplicate" }).click();
+  await expect.poll(() => existsSync(join(themes, "sepia-evening-2.json"))).toBe(true);
+  await expect(yours.getByRole("option")).toHaveCount(2);
+  await sheet(page).getByRole("button", { name: "Options for Sepia evening 2" }).click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await expect.poll(() => existsSync(join(themes, "sepia-evening-2.json"))).toBe(false);
+  await expect(yours.getByRole("option")).toHaveCount(1);
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect.poll(() => existsSync(join(themes, "sepia-evening-2.json"))).toBe(true);
+  await expect(yours.getByRole("option")).toHaveCount(2);
+  await quit(l);
+});

@@ -37,6 +37,10 @@ export interface PlatformBridge {
     list(): Promise<{ file: string; text: string }[]>;
     /** Writes a new theme file (`<slug>.json`) there, never over another. Resolves to its file name. */
     save?(file: string, text: string): Promise<string>;
+    /** Deletes a theme file there. */
+    remove?(file: string): Promise<void>;
+    /** Shows a theme file in the system's file manager. */
+    reveal?(file: string): Promise<void>;
   };
   defaultNotePath(): Promise<string>;
   loadAppState(): Promise<AppStateFile>;

@@ -195,7 +195,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         versionBlocks: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
         noteBlocks: { type: "array", items: { type: "object" } },
         versionEmpty: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
-        themeTiles: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, kind: { type: "string" }, slot: { type: "string" }, badge: { type: "string" }, description: { type: "string" }, sample: { type: "string" }, colors: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } } } } },
+        themeTiles: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, kind: { type: "string" }, slot: { type: "string" }, badge: { type: "string" }, description: { type: "string" }, group: { type: "string" }, sample: { type: "string" }, colors: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } } } } },
         themeFirst: { type: "string" },
         themeDark: { type: "string" },
         colorHex: { type: "string" },

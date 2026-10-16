@@ -73,6 +73,8 @@ describe("custom themes in the app (THM-04, THM-13)", () => {
     expect(tiles[0]!.badge).toBe("Low contrast");
     expect(tiles[1]!.description).toMatch(/^Yours, light, AA/);
     expect(tiles.length).toBe(12);
+    // In two groups: Yours, then Focus Notes.
+    expect(tiles.map((t) => (t as { group?: string }).group)).toEqual([...Array(2).fill("Yours"), ...Array(10).fill("Focus Notes")]);
   });
   it("previewed and chosen, it shows on the note through its base's styles and its own colors, and is remembered", async () => {
     const s = setup([{ file: "evening.json", text: EVENING }]);
@@ -197,5 +199,60 @@ describe("reading theme files again, and syncing the slots (THM-04, THM-05)", ()
     expect(app.store.state.appearance).toMatchObject({ mode: "light", lightTheme: "custom:sepia-evening" });
     await app.commands.run("theme.choose", { id: "custom:sepia-evening" });
     expect(JSON.parse(settings).appearance.lightTheme).toBe("custom:sepia-evening");
+  });
+});
+
+describe("a theme's options: duplicate, show the file, delete with Undo (D-173)", () => {
+  function managed() {
+    const files = [{ file: "evening.json", text: EVENING }];
+    const revealed: string[] = [];
+    let saved: AppStateFile = { version: 1, firstRun: "done", appearance: "light", lightTheme: "custom:sepia-evening" };
+    const bridge: PlatformBridge = {
+      platform: "windows", readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/n/Untitled.md",
+      defaultNotePath: async () => "/n/a.md", loadAppState: async () => saved, saveAppState: async (s) => { saved = s; },
+      systemScheme: () => "light", onSystemSchemeChange: () => () => {},
+      themes: {
+        list: async () => [...files],
+        save: async (file, text) => { files.push({ file, text }); return file; },
+        remove: async (file) => { files.splice(files.findIndex((f) => f.file === file), 1); },
+        reveal: async (file) => { revealed.push(file); },
+      },
+    };
+    const app = createApp(bridge, messages);
+    const vm = () => app.viewModels.select("vm.themeManager", app.store.state) as { themeMenuLabel: string; themeMenu: { items: { id: string; label: string }[] }[] };
+    return { app, files, revealed, vm, saved: () => saved };
+  }
+  it("offers Duplicate for any theme; Show file and Delete for one of yours", async () => {
+    const s = managed();
+    await s.app.start();
+    await s.app.commands.run("theme.manager.open");
+    expect(s.vm().themeMenuLabel).toBe("Options for Sepia evening");
+    expect(s.vm().themeMenu.flatMap((g) => g.items.map((i) => i.id))).toEqual(["theme.duplicate", "theme.reveal", "theme.delete"]);
+    await s.app.commands.run("theme.choose", { id: "paper" });
+    expect(s.vm().themeMenu.flatMap((g) => g.items.map((i) => i.id))).toEqual(["theme.duplicate"]);
+  });
+  it("Duplicate saves a copy and chooses it; Show file shows its file", async () => {
+    const s = managed();
+    await s.app.start();
+    await s.app.commands.run("theme.manager.open");
+    await s.app.commands.run("theme.reveal");
+    expect(s.revealed).toEqual(["evening.json"]);
+    await s.app.commands.run("theme.duplicate");
+    expect(s.files.map((f) => f.file)).toEqual(["evening.json", "sepia-evening-2.json"]);
+    expect(s.app.store.state.appearance.lightTheme).toBe("custom:sepia-evening-2");
+  });
+  it("Delete removes the file, the slot goes back to its default, and Undo puts both back", async () => {
+    const s = managed();
+    await s.app.start();
+    await s.app.commands.run("theme.manager.open");
+    await s.app.commands.run("theme.delete");
+    expect(s.files).toEqual([]);
+    expect(s.app.store.state.appearance.lightTheme).toBe("paper");
+    const t = s.app.store.state.ui.toasts.at(-1)!;
+    expect(t.message).toBe("Deleted Sepia evening");
+    expect(t.action).toMatchObject({ command: "theme.restore", label: "Undo" });
+    await s.app.commands.run("toast.action", { id: t.id });
+    expect(s.files.map((f) => f.file)).toEqual(["evening.json"]);
+    expect(s.app.store.state.appearance.lightTheme).toBe("custom:sepia-evening");
   });
 });

@@ -23,8 +23,9 @@ export interface CustomTheme {
   ignored: string[];
   /** Every key pair passes the contrast guard (THM-13). */
   readable: boolean;
-  /** The file it came from. */
+  /** The file it came from, and its text (for Undo after deleting it). */
   file: string;
+  text: string;
 }
 
 const COLOR_TOKEN = /^(color|trigger|code)\.[a-zA-Z]+$/;
@@ -67,7 +68,7 @@ export function parseThemeFile(file: string, text: string): CustomTheme | undefi
   const colors = { ...own, ...tokens };
   return {
     id: `${CUSTOM_PREFIX}${themeSlug(name)}`, name, kind, base, tokens, ignored,
-    readable: checkBeforeSave(colors, themeById(base)?.contrast === "high").ok, file,
+    readable: checkBeforeSave(colors, themeById(base)?.contrast === "high").ok, file, text,
   };
 }
 

@@ -106,9 +106,14 @@ export function ThemeGallery({ label, items, value, previewing, focusRequest, id
     k();
   };
 
-  return (
-    <div ref={ref} role="listbox" aria-label={label} className={s.grid} onKeyDown={onKeyDown} {...(id ? { id } : {})}>
-      {items.map((t) => (
+  /** Tiles in their groups, in order: a run of tiles with one group label is one group. */
+  const groups: { key: number; label: string; items: ThemeTile[] }[] = [];
+  for (const t of items) {
+    const last = groups.at(-1);
+    if (last && last.label === (t.group ?? "")) last.items.push(t);
+    else groups.push({ key: groups.length, label: t.group ?? "", items: [t] });
+  }
+  const renderTile = (t: ThemeTile) => (
         <div
           key={t.id}
           role="option"
@@ -137,7 +142,18 @@ export function ThemeGallery({ label, items, value, previewing, focusRequest, id
           </span>
           {t.description ? <span id={`${baseId}-${t.id}`} hidden>{t.description}</span> : null}
         </div>
-      ))}
+  );
+
+  return (
+    <div ref={ref} role="listbox" aria-label={label} className={s.grid} onKeyDown={onKeyDown} {...(id ? { id } : {})}>
+      {groups.map((g) => (g.label
+        ? (
+          <div key={g.label} role="group" aria-labelledby={`${baseId}-g-${g.key}`} className={s.group}>
+            <div id={`${baseId}-g-${g.key}`} className={s.groupLabel}>{g.label}</div>
+            {g.items.map(renderTile)}
+          </div>
+        )
+        : g.items.map(renderTile)))}
     </div>
   );
 }

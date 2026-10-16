@@ -96,6 +96,8 @@ export interface ThemeTile {
   sample?: string;
   /** A custom theme's own colors over its sample's (THM-04): color tokens and hex values. */
   colors?: ColorValue[];
+  /** The group it's in ("Yours", "Focus Notes"): tiles of a group are next to each other, under its heading. */
+  group?: string;
 }
 
 /** A color token's value for the root (AppRoot's themeColors): an edited copy of a theme. */

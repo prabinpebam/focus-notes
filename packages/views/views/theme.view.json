@@ -139,46 +139,87 @@
                 },
                 "cases": {
                   "themes": {
-                    "type": "ThemeGallery",
-                    "id": "themeGallery",
+                    "type": "Stack",
                     "props": {
-                      "label": {
-                        "t": "theme.gallery"
-                      },
-                      "items": {
-                        "get": "vm.themeManager.tiles"
-                      },
-                      "value": {
-                        "get": "vm.themeManager.showing"
-                      },
-                      "previewing": {
-                        "get": "vm.themeManager.previewing"
-                      },
-                      "focusRequest": {
-                        "get": "vm.themeManager.focusRequest"
-                      }
+                      "gap": "s"
                     },
-                    "on": {
-                      "preview": {
-                        "run": "theme.preview",
-                        "args": {
-                          "id": {
-                            "get": "event.id"
+                    "children": [
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "justify": "end"
+                        },
+                        "children": [
+                          {
+                            "type": "MenuButton",
+                            "when": {
+                              "get": "vm.themeManager.hasThemeMenu"
+                            },
+                            "props": {
+                              "icon": "more",
+                              "label": {
+                                "get": "vm.themeManager.themeMenuLabel"
+                              },
+                              "sections": {
+                                "get": "vm.themeManager.themeMenu"
+                              }
+                            },
+                            "on": {
+                              "action": {
+                                "run": "command.run",
+                                "args": {
+                                  "id": {
+                                    "get": "event.id"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "ThemeGallery",
+                        "id": "themeGallery",
+                        "props": {
+                          "label": {
+                            "t": "theme.gallery"
+                          },
+                          "items": {
+                            "get": "vm.themeManager.tiles"
+                          },
+                          "value": {
+                            "get": "vm.themeManager.showing"
+                          },
+                          "previewing": {
+                            "get": "vm.themeManager.previewing"
+                          },
+                          "focusRequest": {
+                            "get": "vm.themeManager.focusRequest"
+                          }
+                        },
+                        "on": {
+                          "preview": {
+                            "run": "theme.preview",
+                            "args": {
+                              "id": {
+                                "get": "event.id"
+                              }
+                            }
+                          },
+                          "choose": {
+                            "run": "theme.choose",
+                            "args": {
+                              "id": {
+                                "get": "event.id"
+                              }
+                            }
+                          },
+                          "revert": {
+                            "run": "theme.previewEnd"
                           }
                         }
-                      },
-                      "choose": {
-                        "run": "theme.choose",
-                        "args": {
-                          "id": {
-                            "get": "event.id"
-                          }
-                        }
-                      },
-                      "revert": {
-                        "run": "theme.previewEnd"
                       }
-                    }
+                    ]
                   },
                   "reading": {
                     "type": "Stack",

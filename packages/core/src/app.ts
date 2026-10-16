@@ -1032,7 +1032,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce });
   const deepLinks = registerDeepLinks({ bridge, openAt: (path, at) => spotlight.openAt(path, at), searchNotes: (q) => spotlight.searchNotes(q) });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
-  registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce, ...(bridge.themes?.save ? { saveTheme: (file: string, text: string) => bridge.themes!.save!(file, text) } : {}), ...(bridge.themes ? { listThemes: () => bridge.themes!.list() } : {}) });
+  registerThemeManager({ store, commands, viewModels, catalog, persistAppState, announce, ...(bridge.themes?.save ? { saveTheme: (file: string, text: string) => bridge.themes!.save!(file, text) } : {}), ...(bridge.themes ? { listThemes: () => bridge.themes!.list() } : {}), ...(bridge.themes?.remove ? { removeTheme: (file: string) => bridge.themes!.remove!(file) } : {}), ...(bridge.themes?.reveal ? { revealTheme: (file: string) => bridge.themes!.reveal!(file) } : {}), toast,
+    // A workspace (its Private or Public root) holds theme files; a plain folder of notes doesn't (D-173).
+    themesAvailable: () => { const roots = store.state.workspace.tree.roots; return !roots.length || roots.some((r) => r.id === "private" || r.id === "public"); } });
   // Sync appearance (PRV-03, THM-05): on writes the synced settings to the private repository; off
   // keeps them on this device as they are now, and deletes the file.
   commands.register({

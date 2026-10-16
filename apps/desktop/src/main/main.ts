@@ -1080,6 +1080,20 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       return name;
     }
     throw new Error("No free theme file name");
+  });  // A theme file by its name in the themes folder (D-173): never a path, never outside it.
+  const themeFile = (file: unknown): string => {
+    if (!isWorkspace() || typeof file !== "string" || !/^[^\\/:*?"<>|]{1,120}\.json$/i.test(file) || file.startsWith(".")) throw new Error("Not a theme file");
+    const dir = hasPrivate() ? join(notesHome(), "private", ".focus-notes", "themes") : join(notesHome(), ".focus-notes", "themes");
+    return join(dir, file);
+  };
+  handle("themes:remove", async (file) => {
+    const p = themeFile(file);
+    await assertWritable(p);
+    await rm(p, { force: true });
+  });
+  handle("themes:reveal", async (file) => {
+    const p = themeFile(file);
+    if (existsSync(p)) shell.showItemInFolder(p);
   });  handle("workspace:info", async () => {
     const format = await readFormat();
     const site = await pagesSite().catch(() => undefined);
