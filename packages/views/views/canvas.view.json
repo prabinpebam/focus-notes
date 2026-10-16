@@ -560,6 +560,38 @@
                                     "run": "find.toggle.regex"
                                   }
                                 }
+                              },
+                              {
+                                "type": "IconButton",
+                                "props": {
+                                  "icon": "inSelection",
+                                  "label": {
+                                    "get": "vm.find.actions.inSelection.label"
+                                  },
+                                  "shortcut": {
+                                    "get": "vm.find.actions.inSelection.shortcut"
+                                  },
+                                  "tone": "muted",
+                                  "toggle": true,
+                                  "pressed": {
+                                    "get": "vm.find.inSelection"
+                                  },
+                                  "disabled": {
+                                    "expr": {
+                                      "!": {
+                                        "get": "vm.find.scoped"
+                                      }
+                                    }
+                                  },
+                                  "disabledReason": {
+                                    "t": "find.noScope"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "find.toggle.inSelection"
+                                  }
+                                }
                               }
                             ]
                           },
@@ -770,6 +802,9 @@
           "findRegex": {
             "get": "vm.find.regex"
           },
+          "findInSelection": {
+            "get": "vm.find.inSelection"
+          },
           "readOnly": {
             "get": "vm.canvas.readOnly"
           },
@@ -821,6 +856,14 @@
             "args": {
               "value": {
                 "get": "event.value"
+              }
+            }
+          },
+          "findScope": {
+            "run": "find.setScope",
+            "args": {
+              "scoped": {
+                "get": "event.scoped"
               }
             }
           },

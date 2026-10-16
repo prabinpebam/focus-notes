@@ -812,6 +812,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "inSelection",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -1017,6 +1018,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "inSelection",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -1268,6 +1270,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "inSelection",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -1950,6 +1953,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "inSelection",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -2349,6 +2353,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "inSelection",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -4391,6 +4396,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "inSelection",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -4601,6 +4607,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "inSelection",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -5078,6 +5085,7 @@
                     "matchCase",
                     "wholeWord",
                     "regex",
+                    "inSelection",
                     "arrowUp",
                     "arrowDown",
                     "lock",
@@ -7353,6 +7361,19 @@
                 }
               ]
             },
+            "findInSelection": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "linkEditing": {
               "anyOf": [
                 {
@@ -7411,6 +7432,9 @@
               "$ref": "#/$defs/actions"
             },
             "findPrefill": {
+              "$ref": "#/$defs/actions"
+            },
+            "findScope": {
               "$ref": "#/$defs/actions"
             },
             "format": {

@@ -7,7 +7,7 @@ export const ICON_NAMES = [
   "bold", "italic", "link", "minimize", "restore", "maximize", "fullScreen", "exitFullScreen", "focus",
   "font", "keyboard", "settings", "info", "warning", "error", "sync", "delete", "rename", "copy", "folder",
   "document", "chevronRight", "chevronDown", "undo", "redo", "table", "quote", "code", "bulletList",
-  "numberedList", "heading1", "heading2", "heading3", "color", "share", "history", "matchCase", "wholeWord", "regex",
+  "numberedList", "heading1", "heading2", "heading3", "color", "share", "history", "matchCase", "wholeWord", "regex", "inSelection",
   "arrowUp", "arrowDown", "lock", "export", "import", "strikethrough", "text", "taskList", "divider", "moreVertical", "newFolder", "github",
   "cloud", "cloudUp", "cloudCheck", "cloudOff", "download", "circle", "globe", "calendar", "chevronLeft", "mail",
 ] as const;
