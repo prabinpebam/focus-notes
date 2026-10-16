@@ -35,6 +35,8 @@ notes/                           # the user's instance repository (public, their
 The project repository has the same shape (it's the owner's own instance) plus the app's source and these docs, and its *Deploy app* workflow builds the app from source (D-87). Instances made from the template hold no app source.
 The two roots, `notes/` and `private/notes/`, are what the [Files panel](../experience/files-and-sharing.md) shows as *Public* and *Private*. Folder structure inside each root is entirely up to the writer.
 
+A clone without access to the private repository (FRE-06) has no `private/notes/`, so new notes go in `notes/`. They're marked *Public* from creation and stay out of Git until the writer chooses *Make it public* or *Keep it on this computer only*; a note kept on this computer stays in `notes/`, listed in the repository's local `info/exclude`, never committed ([Desktop and Git → New notes without a private repository](desktop-and-git.md#new-notes-without-a-private-repository), D-158).
+
 ## The workspace model
 
 The web app and the desktop app share one workspace model (`packages/core`, `workspace.ts`): the workspace's **roots** as one tree of notes and folders, and every operation on it as a pure plan (D-92).
