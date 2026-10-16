@@ -20,6 +20,8 @@ export * from "./paste.ts";
 export * from "./sanitize.ts";
 export * from "./table.ts";
 export * from "./blocks.ts";
+export * from "./expand.ts";
+import { EXPAND_ACTIONS, ExpandSelection } from "./expand.ts";
 import { Find, FIND_ACTIONS } from "./find.ts";
 import { BLOCK_ACTIONS } from "./blocks.ts";
 import { LinkOpen, LinkPaste, SelectionGhost, removeLink, selectLink } from "./format.ts";
@@ -200,6 +202,7 @@ export const EDITOR_ACTIONS: Readonly<Record<string, (editor: Editor, args?: Rec
   ...BLOCK_ACTIONS,
   ...FIND_ACTIONS,
   ...TABLE_ACTIONS,
+  ...EXPAND_ACTIONS,
   "task.toggle": (e) => {
     const { $from } = e.state.selection;
     for (let d = $from.depth; d > 0; d--) {
@@ -303,6 +306,7 @@ export const EDITOR_OPTIONS = { enablePasteRules: false } as const;
 export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions = {}): AnyExtension[] {
   return [
     SelectionSync,
+    ExpandSelection,
     // Strike and line-break keys follow the app keymap (KEY-02), not Tiptap's defaults.
     StarterKit.configure({ underline: false, link: false, trailingNode: false, strike: false, hardBreak: false }),
     Strike.extend({ addKeyboardShortcuts: () => ({}) }),

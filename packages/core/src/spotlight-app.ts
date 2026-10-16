@@ -446,6 +446,49 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     enabled: (s) => isOpen(s) && s.ui.spotlight.query === "" && s.ui.spotlight.mode !== "all",
     run: () => { set({ mode: "all", everywhere: false, actions: undefined }); void refresh(); },
   });
+  // ---- the Pro keys (KEY-04, D-160): the nth result, a note's link, and the next or previous group ----
+  const shown = () => sp().rows.filter(rowEnabled);
+  for (let n = 1; n <= 9; n++) {
+    commands.register({
+      id: `spotlight.run${n}`, title: `command.spotlight.run${n}`,
+      shortcut: { default: `Mod+${n}`, handledBy: scope, whenEnabled: true }, layer: "pro", group: "spotlight",
+      enabled: (s) => isOpen(s) && !s.ui.spotlight.actions && s.ui.spotlight.rows.filter(rowEnabled).length >= n,
+      run: () => {
+        const row = shown()[n - 1];
+        if (!row) return;
+        set({ activeId: row.id });
+        return runActive(false);
+      },
+    });
+  }
+  const linkable = (s: AppState) => {
+    const row = s.ui.spotlight.rows.find((r) => r.id === s.ui.spotlight.activeId);
+    return Boolean(isOpen(s) && !s.ui.spotlight.actions && row && actionsOf(row.kind) && actionList(row).some((a) => a.id === "copyLink" && a.available));
+  };
+  commands.register({
+    id: "spotlight.copyLink", title: "command.spotlight.copyLink",
+    shortcut: { default: "Mod+Shift+C", handledBy: scope, whenEnabled: true }, layer: "pro", group: "spotlight",
+    enabled: linkable,
+    run: () => { const row = activeRow(); return row ? perform(row, "copyLink") : undefined; },
+  });
+  const jumpGroup = (dir: 1 | -1) => () => {
+    const list = shown();
+    const i = list.findIndex((r) => r.id === sp().activeId);
+    const group = list[i]?.group;
+    // The first row of the next group down, or of the group above (the current group's first row first).
+    if (dir > 0) {
+      const next = list.slice(i + 1).find((r) => r.group !== group);
+      if (next) set({ activeId: next.id });
+      return;
+    }
+    const start = list.findIndex((r) => r.group === group);
+    if (i > start) return void set({ activeId: list[start]!.id });
+    const prev = list.slice(0, Math.max(0, start)).at(-1);
+    if (prev) set({ activeId: list.find((r) => r.group === prev.group)!.id });
+  };
+  const hasRows = (s: AppState) => isOpen(s) && !s.ui.spotlight.actions && s.ui.spotlight.rows.length > 0;
+  commands.register({ id: "spotlight.nextGroup", title: "command.spotlight.nextGroup", shortcut: { default: "Alt+Down", handledBy: scope, whenEnabled: true }, layer: "pro", group: "spotlight", enabled: hasRows, run: jumpGroup(1) });
+  commands.register({ id: "spotlight.prevGroup", title: "command.spotlight.prevGroup", shortcut: { default: "Alt+Up", handledBy: scope, whenEnabled: true }, layer: "pro", group: "spotlight", enabled: hasRows, run: jumpGroup(-1) });
   commands.register<{ id: string }>({
     id: "spotlight.setActive", title: "command.spotlight.next",
     run: ({ id }) => {

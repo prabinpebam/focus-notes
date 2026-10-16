@@ -52,8 +52,8 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
     id: "edit", label: "menu.edit",
     items: [
       { role: "undo", command: "edit.undo" }, { role: "redo", command: "edit.redo" }, "-",
-      { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "pasteAndMatchStyle" }, { role: "selectAll" }, "-",
-      { submenu: "menu.find", items: ["find.open", "find.replace", "find.next", "find.prev", "find.allNotes", "find.nextResult", "find.prevResult"] },
+      { role: "cut" }, { role: "copy" }, { role: "paste" }, { role: "pasteAndMatchStyle" }, { role: "selectAll" }, "edit.expandSelection", "edit.shrinkSelection", "-",
+      { submenu: "menu.find", items: ["find.open", "find.replace", "find.next", "find.prev", "find.toggle.inSelection", "find.allNotes", "find.nextResult", "find.prevResult"] },
     ],
   },
   {
@@ -98,7 +98,7 @@ export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
   // What views, the editor, and the shell send as things change: values, events, and their own steps.
   { why: "state", ids: /^(command\.run|app\.ready|note\.setContent|paste\.notice|toolbar\.setOpen|format\.setState|table\.(setState|changed|copied|action)|slash\..+|find\.(setQuery|setReplace|prefill|setResult)|toast\.setPaused|files\.(drop|editBlur|setEditValue|setExpanded|setFilter)|window\.(drag|key)|theme\.color\.set|.+\.set[A-Z]\w*)$/ },
   // Keys of one focused control, listed in the cheat sheet: the find bar, a picker's field, the Files tree, a table, a toolbar.
-  { why: "scoped key", ids: /^(find\.(nextInField|prevInField|replaceNext|replaceAll|close|historyOlder|historyNewer|toggle\..+|toggleReplace)|picker\.(next|prev|chooseActive)|move\.(next|prev|chooseActive)|files\.(selectAll|openItem|delete|rename|cancelEdit|commitEdit|moveTo|newFolder)|table\.(nextCell|prevCell|cellBelow|cellAbove|addRowBelow|addRowAbove|moveRowUp|moveRowDown|deleteRow|selectCells|contextMenu)|format\.exitToolbar|link\.cancel|spotlight\.(next|prev|run|runAlt|actions|actionsRight|back|all)|findAll\.(next|prev|openActive|toggle\..+))$/ },
+  { why: "scoped key", ids: /^(find\.(nextInField|prevInField|replaceNext|replaceAll|close|historyOlder|historyNewer|toggle\.(caseSensitive|wholeWord|regex)|toggleReplace)|picker\.(next|prev|chooseActive)|move\.(next|prev|chooseActive)|files\.(selectAll|openItem|delete|rename|cancelEdit|commitEdit|moveTo|newFolder)|table\.(nextCell|prevCell|cellBelow|cellAbove|addRowBelow|addRowAbove|moveRowUp|moveRowDown|deleteRow|selectCells|contextMenu)|format\.exitToolbar|link\.cancel|spotlight\.(next|prev|run|runAlt|run[1-9]|actions|actionsRight|copyLink|nextGroup|prevGroup|back|all)|findAll\.(next|prev|openActive|toggle\..+))$/ },
   // Buttons and items of an open panel, dialog, message, or context menu, which act on what they show.
   { why: "in a view", ids: /^(firstRun\..+|setup\..+|share\.manage\..+|account\..+|workspace\..+|note\.readOnlyAction|files\.(close|select|clearSelection|activate|undo|confirm|hideDeleted|toggleDeleted|restore|restoreTo|newNote)|move\.choose|picker\.choose|link\.(openEditor|apply|open|copy|remove)|table\..+|toast\.(dismiss|action)|unlock\..+|about\.(template|download)|import\.confirm|conflict\.(choose|later)|spotlight\.choose|findAll\.(close|choose)|theme\.(manager\.(close|revert)|preview|previewEnd|choose|color\.fix)|reading\.reset|diagnostics\.load)$/ },
   // The browser's own: its notes, the vault there, and the visitor's way to an instance of their own.
