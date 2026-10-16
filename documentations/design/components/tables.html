@@ -6,7 +6,7 @@
 
 <aside class="slate-tldr">
   <p class="slate-tldr__label">TL;DR</p>
-  <p>Insert with <code>/table</code>. Hover near a row or column boundary at the table's edge to get a <strong>+ insertion point</strong>. Hover a row or column to get its <strong>handle</strong>: click for a menu (insert, move, sort, align, clear, delete), or drag to reorder. Hover the bottom or right edge for <strong>+ New row</strong> and <strong>+ New column</strong>. Drag across cells to select a range, then format, clear, copy, or paste over it. Loop's interaction patterns are kept. Loop features that GFM can't store (column types, widths, formulas, views) are explicit boundaries. Component IA-CMP-TABLE serves UC-TABLE-01 to UC-TABLE-08. Built in WP-1.5; where it differs from this design, <a href="../../plan/decisions.md">D-96</a> says why.</p>
+  <p>Insert with <code>/table</code>. A table fills the text column in equal columns. Hover any inner row or column border to get a <strong>+ insertion point</strong> (D-182, as in Microsoft Loop). Hover a row or column to get its <strong>handle</strong>: click for a menu (insert, move, sort, align, clear, delete), or drag to reorder. Hover the bottom or right edge for <strong>+ New row</strong> and <strong>+ New column</strong>. Drag across cells to select a range, then format, clear, copy, or paste over it. Loop's interaction patterns are kept. Loop features that GFM can't store (column types, widths, formulas, views) are explicit boundaries. Component IA-CMP-TABLE serves UC-TABLE-01 to UC-TABLE-08. Built in WP-1.5; where it differs from this design, <a href="../../plan/decisions.md">D-96</a> says why.</p>
 </aside>
 
 <figure class="slate-figure">
@@ -53,7 +53,7 @@
       <text x="480" y="384" text-anchor="middle">Hover the bottom or right edge to add a row or column</text>
     </g>
   </svg>
-  <figcaption>Hover affordances. The hovered column is tinted. The + insertion point appears only at the boundary nearest the pointer, on the table's edge.</figcaption>
+  <figcaption>Hover affordances. The hovered column is tinted. Hovering an inner border highlights it, with the + insertion point at its left end (rows) or top end (columns).</figcaption>
 </figure>
 <details class="slate-figure-data">
   <summary>Data</summary>
@@ -62,7 +62,7 @@
     <tbody>
       <tr><td>Column handle</td><td>Above the hovered column</td><td>Click: column menu and select column. Drag: reorder.</td></tr>
       <tr><td>Row handle</td><td>Left of the hovered row</td><td>Click: row menu and select row. Drag: reorder.</td></tr>
-      <tr><td>+ insertion point</td><td>On the left or top edge, at the boundary nearest the pointer</td><td>Inserts a row or column at that boundary.</td></tr>
+      <tr><td>+ insertion point</td><td>At the left end (rows) or top end (columns) of the inner border the pointer is on</td><td>Inserts a row or column at that border; so does a click on the highlighted line.</td></tr>
       <tr><td>+ New row / + New column</td><td>Along the bottom and right edges</td><td>Appends a row or column.</td></tr>
     </tbody>
   </table>
@@ -88,7 +88,7 @@
   <dt>Table handle</dt>
   <dd>At the top-left corner where the handles meet. Opens the table menu and selects the whole table.</dd>
   <dt>+ insertion point</dt>
-  <dd>A 22 px accent circle with a plus, on the left edge (rows) or top edge (columns). It appears when the pointer is within 8 px of an inner boundary at the table's edge, and is drawn together with a 3 px accent line across the table at that boundary.</dd>
+  <dd>A 22 px accent circle with a plus, at the left end (rows) or top end (columns) of the border. It appears at once when the pointer is within a 12 px band centred on any inner border (<code>table.insertZone</code>), anywhere along it or on the handles' side of it, and is drawn together with a 3 px accent line across the table at that border. A press on the + inserts in that frame; a click (press and release without moving) on the line, whose hit area is 4 px (<code>table.insertLineHit</code>), inserts too, and a click beside it still places the caret. Shown over the note, so it never shifts the text.</dd>
   <dt>Edge bars</dt>
   <dd>Dashed bars along the bottom edge ("+ New row", 30 px tall) and right edge ("+", 28 px wide), shown while the pointer is over the table or within 24 px below or right of it.</dd>
   <dt>Cell selection</dt>
@@ -100,8 +100,8 @@
   <thead><tr><th>Do this</th><th>Get this</th><th>Serves</th></tr></thead>
   <tbody>
     <tr><td>Hover a row or column</td><td>Its handle fades in (80 ms) and the column gets a faint tint. Only one row handle and one column handle show at a time.</td><td>UC-TABLE-03, UC-TABLE-04</td></tr>
-    <tr><td>Hover near a boundary on the left or top edge for 150 ms</td><td>A + insertion point and an accent line at that boundary.</td><td>UC-TABLE-03</td></tr>
-    <tr><td>Click a + insertion point</td><td>A new empty row or column at exactly that boundary. The caret moves into its first cell. One undo step.</td><td>UC-TABLE-03</td></tr>
+    <tr><td>Hover an inner border (within 6 px of it)</td><td>The border highlights as an accent line, with a + at its left or top end.</td><td>UC-TABLE-03</td></tr>
+    <tr><td>Press a + insertion point, or click the highlighted line</td><td>A new empty row or column at exactly that boundary. The caret moves into its first cell. One undo step.</td><td>UC-TABLE-03</td></tr>
     <tr><td>Click + New row or + New column</td><td>Appends one, with the caret in its first cell.</td><td>UC-TABLE-03</td></tr>
     <tr><td>Click a handle</td><td>Selects that whole row or column and opens its menu below the handle.</td><td>UC-TABLE-03, UC-TABLE-07</td></tr>
     <tr><td>Drag a handle</td><td>The row or column lifts (in the build, a selection-colored tint over it), and an accent drop line follows the nearest boundary. Release to move it, or <kbd>Esc</kbd> to cancel. The header row can't move, and nothing can be dropped above it. The moved row or column stays selected.</td><td>UC-TABLE-04</td></tr>

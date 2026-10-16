@@ -23,14 +23,13 @@ export interface TablePayload {
 }
 const NONE: TablePayload = { inTable: false, table: -1, row: 0, col: 0, rows: 0, cols: 0, header: "", align: "", insertAxis: "", insertIndex: 0, selection: "none" };
 
-/** The insertion point waits this long at a boundary (DD-TABLE-02); hover lingers this long after leaving. */
-const INSERT_DELAY_MS = 150;
+/** Hover lingers this long after leaving. The insertion point shows at once (D-182). */
 const LEAVE_DELAY_MS = 200;
 
 export interface TableVars {
   /** How far outside the table's left and top edges the handles and insertion points reach. */
   gutter: string;
-  /** How close to an inner boundary the pointer must be for the insertion point (8 px). */
+  /** The band centred on an inner border where the insertion point shows (12 px, D-182). */
   boundary: string;
   /** How far below and right of the table the edge bars stay (24 px). */
   reach: string;
@@ -51,6 +50,37 @@ function indexAt(count: number, v: number, start: (i: number) => number): number
   return Math.max(0, lo);
 }
 
+/**
+ * The inner border the pointer is on, if any (D-182): within `half` of a column's left border along
+ * the table's height (or above it, where the column handles are), or of a row's top border along its
+ * width (or left of it, where the row handles are). Only the borders next to the hovered row and
+ * column are measured; the header row's top and the first column's left edge aren't inner borders.
+ */
+export function borderAt(
+  p: { x: number; y: number }, f: Box,
+  rows: ArrayLike<{ getBoundingClientRect(): { top: number } }>, header: ArrayLike<{ getBoundingClientRect(): { left: number } }>,
+  row: number, col: number, half: number, gutter: number,
+): TableGeometry["insert"] {
+  let best: { axis: "row" | "column"; index: number; at: number; d: number } | null = null;
+  if (p.y >= f.top - gutter && p.y <= f.bottom) {
+    for (const i of [col, col + 1]) {
+      if (i < 1 || i >= header.length) continue;
+      const x = header[i]!.getBoundingClientRect().left;
+      const d = Math.abs(p.x - x);
+      if (d <= half && x >= f.left && x <= f.right && (!best || d < best.d)) best = { axis: "column", index: i, at: x, d };
+    }
+  }
+  if (p.x >= f.left - gutter && p.x <= f.right) {
+    for (const i of [row, row + 1]) {
+      if (i < 1 || i >= rows.length) continue;
+      const y = rows[i]!.getBoundingClientRect().top;
+      const d = Math.abs(p.y - y);
+      if (d <= half && (!best || d < best.d)) best = { axis: "row", index: i, at: y, d };
+    }
+  }
+  return best ? { axis: best.axis, index: best.index, at: best.at } : null;
+}
+
 export interface TableTracker {
   /** The context menu was asked for: the controls follow the caret's cell until the pointer moves. */
   menu(): void;
@@ -67,16 +97,14 @@ export function trackTables(editor: Editor, scroller: HTMLElement, vars: TableVa
   let leaveTimer: ReturnType<typeof setTimeout> | undefined;
   let leaving = false;
   let insert: TableGeometry["insert"] = null;
-  let candidate = "";
-  let insertTimer: ReturnType<typeof setTimeout> | undefined;
   let frame = 0;
   let last = "";
-  const px = { gutter: 40, boundary: 8, reach: 24 };
+  const px = { gutter: 40, boundary: 12, reach: 24 };
   const readVars = () => {
     const cs = getComputedStyle(scroller);
     const read = (v: string, d: number) => parseFloat(cs.getPropertyValue(varName(v))) || d;
     px.gutter = read(vars.gutter, 40);
-    px.boundary = read(vars.boundary, 8);
+    px.boundary = read(vars.boundary, 12);
     px.reach = read(vars.reach, 24);
   };
   const coarse = () => globalThis.matchMedia?.("(pointer: coarse)").matches ?? false;
@@ -165,32 +193,10 @@ export function trackTables(editor: Editor, scroller: HTMLElement, vars: TableVa
     const rb = rowsEl[Math.min(row, rowsEl.length - 1)]!.getBoundingClientRect();
     const cb = header[Math.min(col, header.length - 1)]!.getBoundingClientRect();
 
-    // The + insertion point: near an inner boundary, on the left edge (rows) or top edge (columns).
-    let want: TableGeometry["insert"] = null;
-    if (hovering && pointer && over) {
-      if (pointer.x >= f.left - px.gutter && pointer.x <= f.left + px.boundary && row >= 0) {
-        for (const i of [row, row + 1]) {
-          if (i < 1 || i >= rowsEl.length) continue;
-          const y = rowsEl[i]!.getBoundingClientRect().top;
-          if (Math.abs(pointer.y - y) <= px.boundary) want = { axis: "row", index: i, at: y };
-        }
-      } else if (pointer.y >= f.top - px.gutter && pointer.y <= f.top + px.boundary) {
-        for (const i of [col, col + 1]) {
-          if (i < 1 || i >= header.length) continue;
-          const x = header[i]!.getBoundingClientRect().left;
-          if (Math.abs(pointer.x - x) <= px.boundary && x >= f.left && x <= f.right) want = { axis: "column", index: i, at: x };
-        }
-      }
-    }
-    const wantKey = want ? `${want.axis}:${want.index}` : "";
-    if (!want) { candidate = ""; insert = null; clearTimeout(insertTimer); }
-    else if (insert && `${insert.axis}:${insert.index}` === wantKey) insert = want;
-    else if (candidate !== wantKey) {
-      candidate = wantKey;
-      insert = null;
-      clearTimeout(insertTimer);
-      insertTimer = setTimeout(() => { insertTimer = undefined; insert = { ...want!, at: want!.at }; candidate = ""; schedule(); }, INSERT_DELAY_MS);
-    }
+    // The + insertion point (D-182, as in Microsoft Loop): anywhere along an inner border, within the
+    // insert zone centred on it (12 px), or on the handles' side of it, the border is offered at once;
+    // the nearer border wins where a column's and a row's meet.
+    insert = hovering && pointer && over ? borderAt(pointer, f, rowsEl, header, row, col, px.boundary / 2, px.gutter) : null;
 
     // The selected range's outline and the active cell, from the cells' own boxes.
     let selection: Box | null = null;
@@ -232,6 +238,8 @@ export function trackTables(editor: Editor, scroller: HTMLElement, vars: TableVa
   };
   const onLeave = (e: PointerEvent) => {
     if (e.pointerType === "touch") return;
+    // Onto the table's own controls (the offered border, a handle): still where it was over the table.
+    if (e.relatedTarget instanceof Element && e.relatedTarget.closest("[data-table-controls]")) return;
     pointer = null;
     schedule();
   };
@@ -270,7 +278,6 @@ export function trackTables(editor: Editor, scroller: HTMLElement, vars: TableVa
     dispose() {
       cancelAnimationFrame(frame);
       clearTimeout(leaveTimer);
-      clearTimeout(insertTimer);
       tableGeometry.refresh = () => {};
       editor.off("transaction", onTransaction);
       editor.off("focus", onTransaction);

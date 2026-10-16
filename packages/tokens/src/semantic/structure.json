@@ -768,6 +768,16 @@
     "boundaryReach": {
       "$type": "dimension",
       "$value": "{ref.size.8}"
+    },
+    "insertZone": {
+      "$type": "dimension",
+      "$value": "{ref.size.12}",
+      "$description": "The band centred on an inner column or row border where hovering offers to insert there (D-182): the line is highlighted, and a + shows at its top or left end."
+    },
+    "insertLineHit": {
+      "$type": "dimension",
+      "$value": "{ref.size.4}",
+      "$description": "How wide the highlighted border takes a click (D-182): narrower than the hover band, so a click near a cell's edge still places the caret."
     }
   }
 }

@@ -20,7 +20,7 @@ export const pinnedGapVar = createVar({ syntax: "<length>", inherits: false, ini
 export const pinnedMinVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 
 export const scroller = style({
-  vars: { [tableGutterVar]: t.tableGutter, [tableReachVar]: t.tableEdgeReach, [tableBoundaryVar]: t.tableBoundaryReach, [pinnedGapVar]: t.pinnedGap, [pinnedMinVar]: t.pinnedColumnMin },
+  vars: { [tableGutterVar]: t.tableGutter, [tableReachVar]: t.tableEdgeReach, [tableBoundaryVar]: t.tableInsertZone, [pinnedGapVar]: t.pinnedGap, [pinnedMinVar]: t.pinnedColumnMin },
   transitionProperty: pinnedClearVar.slice(4, -1),
   transitionDuration: t.pinnedDuration,
   transitionTimingFunction: t.pinnedEasing,
@@ -244,7 +244,11 @@ globalStyle(p("::selection"), { backgroundColor: t.selection });
 // a header row on the surface color in semibold. The frame scrolls sideways when the table is wide.
 // Room below for the New row bar, so it never covers the next line while the pointer is near.
 globalStyle(p("[data-table]"), { overflowX: "auto", maxWidth: "100%", paddingBlockEnd: `calc(${t.tableBarSpace} + ${t.tableBarGap})` });
+// Fit to column (D-182): a table spans the text column in equal columns, as in Microsoft Loop; its
+// text wraps inside them.
 globalStyle(p("table"), {
+  width: "100%",
+  tableLayout: "fixed",
   borderCollapse: "separate",
   borderSpacing: 0,
   borderStyle: "solid",

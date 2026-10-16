@@ -205,6 +205,10 @@ export function EditorSurface({
           onTableChange: (c) => tableRef.current.onTableChange?.({ kind: c.kind, index: c.index ?? 0, align: c.align ?? "" }),
           onTableCopy: (text, format) => tableRef.current.onTableCopy?.({ text, format }),
           onTableMenu: () => {
+            // The caret's cell is brought into view first (at once, never animated: a key, not a caret
+            // move), so the menu opens beside it rather than against the window's edge (D-111).
+            const ed = editorRef.current;
+            if (ed && !ed.isDestroyed) ed.view.dispatch(ed.state.tr.scrollIntoView());
             // The controls follow the caret's cell while the menu is open, wherever the pointer is.
             tables.current?.menu();
             tableRef.current.onTableMenu?.();

@@ -33,6 +33,14 @@
         "$type": "dimension",
         "$value": "{table.insertLine}"
       },
+      "insertZone": {
+        "$type": "dimension",
+        "$value": "{table.insertZone}"
+      },
+      "insertLineHit": {
+        "$type": "dimension",
+        "$value": "{table.insertLineHit}"
+      },
       "newRowHeight": {
         "$type": "dimension",
         "$value": "{table.newRowHeight}"
