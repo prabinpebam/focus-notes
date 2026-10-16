@@ -3943,6 +3943,8 @@
       "triggerClear",
       "scrollVeil",
       "triggerVeil",
+      "triggerVeilPlain",
+      "scrollBlurTop",
       "scrollbarEnds",
       "scrollBlur",
       "scrollBands",

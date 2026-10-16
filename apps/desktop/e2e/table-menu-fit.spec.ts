@@ -24,8 +24,8 @@ test("TBL-09, D-111: the cell menu fits the smallest window, wherever the cell i
       const pop = document.querySelector('[role="menu"][aria-label="Cell options"]')!.closest("[data-surface]")!.getBoundingClientRect();
       return { win: [win.top, win.bottom, win.left, win.right], pop: [pop.top, pop.bottom, pop.left, pop.right] };
     });
-    expect(fit.pop[0], `${where}: top ${JSON.stringify(fit)}`).toBeGreaterThanOrEqual(fit.win[0]);
-    expect(fit.pop[1], `${where}: bottom ${JSON.stringify(fit)}`).toBeLessThanOrEqual(fit.win[1]);
+    expect(fit.pop[0], `${where}: top ${JSON.stringify(fit)}`).toBeGreaterThanOrEqual(fit.win[0]!);
+    expect(fit.pop[1], `${where}: bottom ${JSON.stringify(fit)}`).toBeLessThanOrEqual(fit.win[1]!);
     // Every item is there, Sort included: the list scrolls to reach them.
     await expect(menu.getByRole("menuitem", { name: "Sort column A→Z" })).toHaveCount(1);
     await expect(menu.getByRole("menuitem", { name: /^Delete table/ })).toHaveCount(1);
