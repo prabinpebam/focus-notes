@@ -334,6 +334,10 @@
         "$type": "dimension",
         "$value": "{table.boundaryReach}"
       },
+      "tableInsertZone": {
+        "$type": "dimension",
+        "$value": "{table.insertZone}"
+      },
       "tableBarSpace": {
         "$type": "dimension",
         "$value": "{table.newRowHeight}"

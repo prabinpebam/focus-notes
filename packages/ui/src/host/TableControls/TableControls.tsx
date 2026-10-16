@@ -64,6 +64,36 @@ function Area({ className, box }: { className: string; box: Box }) {
   return <div ref={ref} className={className} aria-hidden="true" />;
 }
 
+/**
+ * The highlighted border (D-182): a press and release on it without moving inserts there, as the +
+ * does. Pointer only; the + is the control the keyboard and screen readers reach.
+ */
+function Strip({ className, box, onInsert }: { className: string; box: Box; onInsert: () => void }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  usePlace(ref, box.left, box.top, box.right - box.left, box.bottom - box.top);
+  const down = useRef<{ x: number; y: number } | null>(null);
+  return (
+    <div
+      ref={ref}
+      className={className}
+      aria-hidden="true"
+      data-table-insert-line=""
+      // Never takes focus from the note.
+      onMouseDown={(e) => e.preventDefault()}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        down.current = { x: e.clientX, y: e.clientY };
+      }}
+      onPointerUp={(e) => {
+        const d = down.current;
+        down.current = null;
+        if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 4) onInsert();
+      }}
+      onPointerLeave={() => { down.current = null; }}
+    />
+  );
+}
+
 interface ButtonProps {
   className: string;
   label: string;
@@ -152,6 +182,13 @@ export function TableControls({
     if (now) setMenu({ kind: "cell", table: now.table, row: now.row, col: now.col });
   }, [menuRequest]);
 
+  const pressed = useRef(false);
+  /** Inserts a row or column at the offered border (D-182). */
+  const insertHere = () => {
+    if (!g?.insert) return;
+    act(g.insert.axis === "row" ? "table.insertRowAt" : "table.insertColumnAt", { index: g.insert.index });
+    requestAnimationFrame(() => onClose?.());
+  };
   const act = (id: string, extra: Partial<TableAction> = {}) => {
     const at = menu ?? (g ? { table: g.table, row: g.row, col: g.col } : null);
     if (!at) return;
@@ -252,18 +289,25 @@ export function TableControls({
       {drag ? <Area className={`${s.line} ${drag.axis === "row" ? s.lineRow : s.lineColumn}`} box={drag.box} /> : null}
       {show(g) && g.insert && !drag ? (
         <>
-          <Area
-            className={`${s.line} ${g.insert.axis === "row" ? s.lineRow : s.lineColumn}`}
+          <Strip
+            className={g.insert.axis === "row" ? s.stripRow : s.stripColumn}
             box={g.insert.axis === "row" ? { top: g.insert.at, bottom: g.insert.at, left: g.frame.left, right: g.frame.right } : { top: g.frame.top, bottom: g.frame.bottom, left: g.insert.at, right: g.insert.at }}
+            onInsert={insertHere}
           />
           <Control
             className={`${s.insert} ${g.insert.axis === "row" ? s.insertRow : s.insertColumn}`}
             label={insertLabel}
             x={g.insert.axis === "row" ? g.frame.left : g.insert.at}
             y={g.insert.axis === "row" ? g.insert.at : g.frame.top}
+            // The press inserts, in the frame it's pressed (PRF-14); Enter and Space too.
+            onDragStart={(e) => {
+              if (e.button !== 0) return;
+              pressed.current = true;
+              insertHere();
+            }}
             onPress={() => {
-              act(g.insert!.axis === "row" ? "table.insertRowAt" : "table.insertColumnAt", { index: g.insert!.index });
-              requestAnimationFrame(() => onClose?.());
+              if (pressed.current) { pressed.current = false; return; }
+              insertHere();
             }}
           >
             <Icon name="add" size="s" />
@@ -306,7 +350,7 @@ export function TableControls({
           </Control>
         </>
       ) : null}
-      {cell ? <CellAnchor anchorRef={cellRef} box={cell} /> : null}
+      {cell ? <CellAnchor anchorRef={cellRef} box={cell} inset={boundary.containerPadding ?? 0} /> : null}
       {menu ? (
         <Popover
           triggerRef={trigger}
@@ -336,14 +380,15 @@ export function TableControls({
 }
 
 /**
- * Where the context menu opens: the active cell, kept inside the window. A cell scrolled out of view
- * (below a small window) would place the menu against a box off the window, past its edge (D-111).
+ * Where the context menu opens: the active cell, kept inside the room menus have in the window (its
+ * box less the popovers' padding). A cell scrolled out of view (below a small window) would place the
+ * menu against a box off the window, or at its very edge, and the menu past it (D-111).
  */
-function CellAnchor({ anchorRef, box }: { anchorRef: RefObject<HTMLDivElement | null>; box: Box }) {
+function CellAnchor({ anchorRef, box, inset }: { anchorRef: RefObject<HTMLDivElement | null>; box: Box; inset: number }) {
   const o = fixedBox(anchorRef.current);
   const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
-  const top = clamp(box.top, o.top, o.top + o.height);
-  const bottom = clamp(box.bottom, top, o.top + o.height);
+  const top = clamp(box.top, o.top + inset, o.top + o.height - inset);
+  const bottom = clamp(box.bottom, top, o.top + o.height - inset);
   const left = clamp(box.left, o.left, o.left + o.width);
   const right = clamp(box.right, left, o.left + o.width);
   usePlace(anchorRef, left, top, right - left, bottom - top);

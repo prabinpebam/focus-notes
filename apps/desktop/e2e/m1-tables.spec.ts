@@ -414,7 +414,8 @@ test("TBL-10: a spreadsheet range fills from the active cell and grows the table
 test("TBL-05, TBL-11: formatting in a cell and across a range; the toolbar has marks only in tables", async () => {
   const l = await start(SAMPLE);
   const { page } = l;
-  await cell(page, 1, 0).dblclick();
+  // On the word: a table fills the column (D-182), so the cell's middle can be past its text.
+  await cell(page, 1, 0).dblclick({ position: { x: 24, y: 12 } });
   const toolbar = page.getByRole("region", { name: "Formatting" });
   await expect(toolbar).toBeVisible();
   await expect(toolbar.getByRole("button", { name: /Turn into/ })).toHaveCount(0);

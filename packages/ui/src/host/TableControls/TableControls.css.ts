@@ -89,6 +89,31 @@ export const insert = style([control, {
 }]);
 export const insertRow = style({ transform: `translate(calc(-100% - ${t.rowGap}), -50%)` });
 export const insertColumn = style({ transform: `translate(-50%, calc(-100% - ${t.columnGap}))` });
+/**
+ * The border offered for an insertion (D-182): a narrow band centred on the border that takes the
+ * pointer (a click there inserts, as the + does; a click beside it still places the caret), with the
+ * 3 px accent line drawn in its middle. Fixed over the note, so showing it shifts nothing.
+ */
+const strip = style([placed, {
+  pointerEvents: "auto",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  selectors: { "&::before": { content: '""', display: "block", backgroundColor: t.color.accent } },
+}]);
+export const stripRow = style([strip, {
+  width: wVar,
+  height: t.insertLineHit,
+  transform: "translateY(-50%)",
+  selectors: { "&::before": { width: "100%", height: t.insertLine } },
+}]);
+export const stripColumn = style([strip, {
+  width: t.insertLineHit,
+  height: hVar,
+  transform: "translateX(-50%)",
+  selectors: { "&::before": { width: t.insertLine, height: "100%" } },
+}]);
 /** The 3 px accent line across the table at that boundary, and the drop line while dragging. */
 export const line = style([area, { backgroundColor: t.color.accent }]);
 export const lineRow = style({ height: t.insertLine, transform: "translateY(-50%)" });
