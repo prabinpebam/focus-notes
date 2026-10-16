@@ -2,27 +2,29 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://prabinpebam.github.io/focus-notes/schemas/keybindings.v1.json",
   "title": "keybindings.json",
+  "description": "The person's own keys, layered over the defaults (KEY-07, D-170). In the app's data folder, one per device.",
   "type": "array",
+  "maxItems": 1000,
   "items": {
+    "type": "object",
     "properties": {
       "command": {
-        "description": "A leading minus removes a default binding",
+        "description": "A command's ID. A leading minus removes that default chord from the command instead of adding one.",
         "type": "string",
-        "pattern": "^-?[a-z][A-Za-z]*(\\.[a-z][A-Za-z]*)+$"
+        "pattern": "^-?[a-z][A-Za-z0-9]*(\\.[a-z][A-Za-z0-9]*)+$"
       },
       "key": {
-        "pattern": "^((Mod|Ctrl|Alt|Shift|Meta)\\+)*[^+\\s]+$",
-        "type": "string"
+        "description": "A chord: modifiers (Mod is Cmd on macOS and Ctrl elsewhere), then one key, joined with +.",
+        "type": "string",
+        "maxLength": 64,
+        "pattern": "^((Mod|Ctrl|Alt|Shift|Meta)\\+)*[^+\\s]+$"
       },
-      "when": {
-        "type": "string"
+      "platform": {
+        "description": "Only on this platform. Without it, everywhere.",
+        "enum": ["macos", "windows", "linux"]
       }
     },
-    "type": "object",
     "additionalProperties": false,
-    "required": [
-      "command",
-      "key"
-    ]
+    "required": ["command", "key"]
   }
 }

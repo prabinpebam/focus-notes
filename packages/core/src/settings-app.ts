@@ -22,7 +22,7 @@ import { DIAGNOSTICS_IDLE, registerDiagnostics, type DiagnosticsState } from "./
 
 /** Settings' categories, in order, as built so far. */
 // Sharing only where the shell keeps access.json (the desktop, WP-5.3); About only where it builds diagnostics (WP-5.7).
-export const SETTINGS_SECTIONS = ["account", "workspace", "sharing", "agents", "appearance", "about"] as const;
+export const SETTINGS_SECTIONS = ["account", "workspace", "sharing", "agents", "appearance", "keyboard", "about"] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 
 export interface SettingsState {
@@ -121,7 +121,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
       await commands.run("share.manage.noteOpen");
     },
   });
-  const sections = () => SETTINGS_SECTIONS.filter((id) => (id !== "sharing" || bridge.access) && (id !== "agents" || bridge.agents) && (id !== "about" || bridge.diagnostics));
+  const sections = () => SETTINGS_SECTIONS.filter((id) => (id !== "sharing" || bridge.access) && (id !== "agents" || bridge.agents) && (id !== "keyboard" || bridge.keybindings) && (id !== "about" || bridge.diagnostics));
   reg<{ value: string }>("settings.setSection", async (a) => {
     const v = value(a);
     if (!sections().includes(v as SettingsSection)) return;

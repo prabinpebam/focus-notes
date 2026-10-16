@@ -45,9 +45,18 @@ export function registerHeld(ctx: Ctx) {
     return node?.kind === "note" && node.title ? node.title : titleOrName(s.note.path === path ? s.note.markdown : undefined, path);
   };
 
-  async function refresh(): Promise<void> {
-    const held = await bridge.sync?.held?.().catch(() => undefined);
-    if (held) set({ held });
+  /** The shell's lists being read now: a backup about to start waits for them (a rename just made). */
+  let reading: Promise<void> | undefined;
+  function refresh(): Promise<void> {
+    const now = (async () => {
+      const held = await bridge.sync?.held?.().catch(() => undefined);
+      if (held) set({ held });
+    })();
+    reading = now;
+    void now.finally(() => {
+      if (reading === now) reading = undefined;
+    });
+    return now;
   }
   // A held note's line follows renames and moves in the shell: the lists are read again when the tree changes.
   let tree = store.state.workspace.tree;
@@ -130,8 +139,17 @@ export function registerHeld(ctx: Ctx) {
      * waits and has the writer's words is asked about, once per session. Its text is saved here
      * either way; Git leaves it out.
      */
-    backingUp(path: string | undefined): void {
-      if (path && edited.has(path) && stateOf(store.state, path) === "waiting" && !ui().asked.includes(path)) ask(path);
+    async backingUp(path: string | undefined): Promise<void> {
+      if (!path || !edited.has(path)) return;
+      // A save that renamed the note after its title has the shell's lists read again: the renamed
+      // note is asked about only once they've come back (candidate Y: the backup went ahead unasked).
+      if (pending) {
+        clearTimeout(pending);
+        pending = undefined;
+        void refresh();
+      }
+      if (reading) await reading;
+      if (stateOf(store.state, path) === "waiting" && !ui().asked.includes(path)) ask(path);
     },
     /** The app wrote a note's text, at `to` when its file name followed its title. */
     written(from: string, to: string | undefined): void {

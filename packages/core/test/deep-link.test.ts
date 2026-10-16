@@ -100,6 +100,12 @@ describe("a search link in the app (security review of d8cdb0c, #1)", () => {
     await app.commands.run("spotlight.choose").catch(() => {});
     for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
     expect(writes).toEqual([]);
+    // Switching Spotlight's mode keeps the link's query, and it stays the link's (review of 0e44978 + ba5dcb9, LOW #1).
+    await app.commands.run("spotlight.open");
+    for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0));
+    expect(app.store.state.ui.spotlight).toMatchObject({ open: true, mode: "all", query: "zzz no such note", fromLink: true });
+    expect(app.store.state.ui.spotlight.rows.filter((r) => r.group === "actions")).toEqual([]);
+    expect(app.commands.describe("spotlight.actions").enabled).toBe(false);
     // Typing makes the query the person's own: Create note comes back.
     await app.commands.run("spotlight.setQuery", { value: "zzz no such notes" });
     for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0));

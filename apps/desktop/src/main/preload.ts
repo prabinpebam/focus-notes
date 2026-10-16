@@ -142,6 +142,17 @@ contextBridge.exposeInMainWorld("focusNotes", {
     reportProblem: (timings: unknown) => ipcRenderer.invoke("diagnostics:reportProblem", timings),
   },
   // Save and sync with the user's own Git (WP-3.3): intent-level only, never a Git command.
+  // keybindings.json (D-170): the main process reads, makes, and resets it, and says when it changed.
+  keybindings: {
+    load: () => ipcRenderer.invoke("keybindings:load"),
+    edit: () => ipcRenderer.invoke("keybindings:edit"),
+    reset: () => ipcRenderer.invoke("keybindings:reset"),
+    onChange: (listener: () => void) => {
+      const handler = () => listener();
+      ipcRenderer.on("keybindings:changed", handler);
+      return () => ipcRenderer.removeListener("keybindings:changed", handler);
+    },
+  },
   // Settings → Agents (D-166): the main process reads and writes agents.json; the window asks by name.
   agents: {
     load: () => ipcRenderer.invoke("agents:load"),

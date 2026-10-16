@@ -49,3 +49,6 @@ export * from "./held-app.ts";
 export * from "./deep-link.ts";
 export * from "./deep-link-app.ts";
 export * from "./agents-app.ts";
+export * from "./keybindings.ts";
+export * from "./keybindings-app.ts";
+export * from "./toolbar-customize.ts";
