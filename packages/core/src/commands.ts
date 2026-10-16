@@ -244,11 +244,10 @@ export class CommandRegistry<S> {
   #matchIn(event: KeyEventLike, scopes: readonly string[], user: boolean): string | undefined {
     // With AltGr held the key types a character, so only that character can match.
     for (const byCode of event.altGraph ? [false] : [false, true]) {
-      // The person's own keys: only the commands that have some (D-170).
-      const entries: Iterable<[string, CommandDef<S, any>]> = user
-        ? [...this.#user.add.keys()].flatMap((id): [string, CommandDef<S, any>][] => (this.#commands.has(id) ? [[id, this.#commands.get(id)!]] : []))
-        : this.#commands;
-      for (const [id, def] of entries) {
+      // In the order the commands were registered, as before D-170; the person's own keys are asked
+      // only of the commands that have some.
+      for (const [id, def] of this.#commands) {
+        if (user && !this.#user.add.has(id)) continue;
         const where = def.shortcut?.handledBy;
         if (scopes.length ? !where || !scopes.includes(where) : where) continue;
         if (def.shortcut?.atFieldEnd && event.caretAtEnd === false) continue;

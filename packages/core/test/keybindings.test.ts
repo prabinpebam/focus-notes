@@ -136,4 +136,33 @@ describe("PRF-14: custom keys add no work while nothing changes (candidate X)", 
     expect(r.match(key("D", { ctrlKey: true, shiftKey: true }))).toBe("focus.toggle");
     expect(asked).toEqual(["hold:focus.toggle", "focus.toggle"]);
   });
+
+  it("a held or disabled command passes its key on to the next command with it, in registration order and then app-wide (candidate Y)", () => {
+    let state = { firstOn: false, held: "" };
+    const r = new CommandRegistry<typeof state>(() => state, () => {}, "windows");
+    const reg = (id: string, extra: Record<string, unknown> = {}) =>
+      r.register({ id, title: "t", layer: "basic", group: "app", run: () => {}, ...extra } as Parameters<typeof r.register>[0]);
+    reg("table.save", { shortcut: { default: "Mod+S", handledBy: "table", whenEnabled: true }, enabled: () => false });
+    reg("first.save", { shortcut: { default: "Mod+S", whenEnabled: true }, enabled: (s: typeof state) => s.firstOn });
+    reg("note.save", { shortcut: { default: "Mod+S" } });
+    reg("later.save", { shortcut: { default: "Mod+S" } });
+    r.setHold((id, s) => (id === s.held ? "held" : undefined));
+    const save = key("s", { ctrlKey: true });
+    // The disabled scoped command and the disabled first one pass it on: the next one runs.
+    expect(r.match(save, ["table"])).toBe("note.save");
+    expect(r.match(save)).toBe("note.save");
+    state = { firstOn: true, held: "" };
+    expect(r.match(save)).toBe("first.save");
+    // Held (the first run, D-126): the same.
+    state = { firstOn: true, held: "first.save" };
+    expect(r.match(save)).toBe("note.save");
+    state = { firstOn: false, held: "note.save" };
+    expect(r.match(save)).toBe("later.save");
+    // With custom keys, the person's own key on a held command passes it on too.
+    r.setUserBindings(parseKeybindings(JSON.stringify([{ command: "later.save", key: "Mod+S" }, { command: "note.save", key: "Mod+S" }]), "windows", (id) => r.has(id)).bindings);
+    state = { firstOn: false, held: "" };
+    expect(r.match(save)).toBe("note.save");
+    state = { firstOn: false, held: "note.save" };
+    expect(r.match(save)).toBe("later.save");
+  });
 });

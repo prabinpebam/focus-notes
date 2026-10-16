@@ -497,7 +497,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     const leaving = store.state.note.path;
     if (leaving && leaving !== path) {
       // A new public note that waits is asked about before its first backup (D-158).
-      heldNotes.backingUp(leaving);
+      void heldNotes.backingUp(leaving);
       sync.switched();
     }
     setNote({ status: "loading" });
@@ -566,7 +566,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       await saving;
       if (store.state.note.saveState === "error") throw new Error("save failed");
       // A new public note that waits is asked about; the rest is backed up as usual (D-158).
-      heldNotes.backingUp(store.state.note.path);
+      await heldNotes.backingUp(store.state.note.path);
       await sync.saveNow();
     }, store.state.sync.git ? "task.synced" : "task.saved")).catch((e: unknown) => {
       const conflict = e instanceof SyncFailed && e.problem === "conflict";

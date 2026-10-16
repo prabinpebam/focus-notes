@@ -149,6 +149,36 @@ describe("D-158: a new note in a workspace without a private repository", () => 
     expect(f.answers).toEqual([[note, "public"]]);
   });
 
+  it("Save to cloud asks even when the save renames the note after its title and the shell's lists come back late (candidate Y)", async () => {
+    const f = setup();
+    // As the shell does: a held note's line follows its rename; reading the lists takes a while.
+    let slow = false;
+    const held = f.bridge.sync!.held!;
+    f.bridge.sync!.held = async () => {
+      const lists = structuredClone(await held());
+      if (slow) await new Promise((r) => setTimeout(r, 30));
+      return lists;
+    };
+    f.bridge.workspace!.apply = async (ops) => {
+      for (const op of ops) {
+        if (op.op !== "move") continue;
+        f.files[op.to] = f.files[op.from] ?? "";
+        delete f.files[op.from];
+        const lists = await held();
+        (lists.waiting as string[]).splice(lists.waiting.indexOf(op.from), 1, op.to);
+      }
+    };
+    const app = await started(f);
+    await app.commands.run("note.new");
+    await settle();
+    slow = true;
+    await app.commands.run("note.setContent", { value: "# Plan quince-58\n\nA thought that isn't public yet." });
+    await app.commands.run("note.save");
+    await new Promise((r) => setTimeout(r, 100));
+    expect(app.store.state.note.path).toBe(`${PUB}/plan-quince-58.md`);
+    expect(vm(app)).toMatchObject({ open: true, title: "Where should “Plan quince-58” live?" });
+  });
+
   it("with a private repository nothing is held: new notes are private, with no pill and no question", async () => {
     const f = setup({ privateRoot: true });
     const app = await started(f);
