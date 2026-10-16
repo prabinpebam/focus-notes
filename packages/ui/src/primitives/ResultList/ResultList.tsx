@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import { Icon } from "../Icon/Icon.tsx";
 import type { ResultItem } from "../../data.ts";
@@ -20,7 +20,20 @@ export interface ResultListProps {
 }
 
 /** The rows a long list shows in its first frame, about what Spotlight shows on a 1080p screen; the rest follow a frame later. */
-const FIRST_ROWS = 24;
+export const FIRST_ROWS = 24;
+
+/**
+ * How many rows a list draws in the frame its items arrive in, or null for all of them (PRF-14,
+ * D-151 (12)). `before` is how many rows it drew last (0 when it's new or was empty), `activeAt`
+ * the active row's index (-1 for none). A new list draws a screen and never stops short of its
+ * active row; a list that grows (Spotlight's query cleared: a few matches back to every action)
+ * keeps every row it had and adds a screen past them and past the active row, so whatever the
+ * person could see stays; the rest follow a frame later, past the end of what can be seen.
+ */
+export function rowsInFirstFrame(total: number, before: number, activeAt: number): number | null {
+  const rows = before > 0 ? Math.max(before, activeAt + 1) + FIRST_ROWS : Math.max(FIRST_ROWS, activeAt + 1);
+  return total > rows ? rows : null;
+}
 
 /** The DOM ID of an item, for aria-activedescendant on the element that keeps focus. Distinct IDs stay distinct. */
 export const resultItemId = (listId: string, itemId: string) => `${listId}-opt-${itemId.replace(/[^\w-]|_/g, (c) => `_${c.charCodeAt(0).toString(16)}_`)}`;
@@ -59,20 +72,32 @@ export function ResultList({ label, items, activeId, width = "fill", height = "c
   // the rest once that frame is drawn. Spotlight opens on every action the app has (about 180 rows,
   // over 1,200 elements), and making, styling and laying them all out before its first frame put
   // its opening over 50 ms on a slower computer; the rows past the first screen can't be seen yet.
-  const [whole, setWhole] = useState(() => items.length <= FIRST_ROWS);
+  // The same when it grows to a long list from a short one (Spotlight's query cleared by Escape or
+  // Backspace): all 180 rows were made, styled and laid out in the frame of that key.
+  const activeAt = items.length > FIRST_ROWS ? items.findIndex((i) => i.id === activeId) : -1;
+  const [cap, setCap] = useState(() => rowsInFirstFrame(items.length, 0, activeAt));
+  // The rows drawn last, and the items they were drawn for.
+  const drawn = useRef({ items, rows: 0 });
+  if (drawn.current.items !== items && cap === null && items.length > drawn.current.rows) {
+    const next = rowsInFirstFrame(items.length, drawn.current.rows, activeAt);
+    // Set while rendering, as React allows for its own state: it renders again at once, never drawn.
+    if (next !== null) setCap(next);
+  }
   useEffect(() => {
-    if (whole) return;
+    if (cap === null) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     // After the next frame is drawn: a frame callback runs before it, a task after it.
-    const frame = requestAnimationFrame(() => (timer = setTimeout(() => setWhole(true))));
+    const frame = requestAnimationFrame(() => (timer = setTimeout(() => setCap(null))));
     return () => {
       cancelAnimationFrame(frame);
       clearTimeout(timer);
     };
-  }, [whole]);
+  }, [cap]);
   // Never short of the active row (End, or a row chosen before the rest came).
-  const activeAt = whole ? -1 : items.findIndex((i) => i.id === activeId);
-  const shown = whole ? items : items.slice(0, Math.max(FIRST_ROWS, activeAt + 1));
+  const shown = cap === null ? items : items.slice(0, Math.max(cap, activeAt + 1));
+  useLayoutEffect(() => {
+    drawn.current = { items, rows: shown.length };
+  });
   useEffect(() => {
     if (!activeId) return;
     ref.current?.querySelector(`#${CSS.escape(resultItemId(id, activeId))}`)?.scrollIntoView({ block: "nearest" });
