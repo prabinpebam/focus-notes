@@ -1246,6 +1246,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         count: { type: "number" },
         summary: { type: "string" },
         conflicts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" } } } },
+        hasConflicts: { type: "boolean" },
       },
     },
     setters: { query: "shortcuts.setQuery", layer: "shortcuts.setLayer", platform: "shortcuts.setPlatform" },
@@ -1263,7 +1264,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const platforms = [option("mac", "shortcuts.platform.mac"), option("pc", "shortcuts.platform.pc")];
       // Keys that run more than one command, from keybindings.json (D-170), at the top.
       const conflicts = keybindings.conflictTexts(s).map((text, i) => ({ id: `c${i}`, text }));
-      const value = { ...sh, layers, platforms, groups, count, summary, conflicts };
+      const value = { ...sh, layers, platforms, groups, count, summary, conflicts, hasConflicts: conflicts.length > 0 };
       sheetMemo = { key: sh, version: s.keybindings.version, value };
       return value;
     },

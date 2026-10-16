@@ -38,7 +38,8 @@ export function registerToolbarCustomize(ctx: Ctx) {
   const { store, commands, viewModels, catalog } = ctx;
   const pinned = () => store.state.toolbarPinned;
   const label = (id: string) => catalog.format(commands.describe(id).title);
-  const setOpen = (open: boolean) => store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, toolbarCustomize: { open, focus: s.ui.toolbarCustomize.focus + (open ? 1 : 0) } } }));
+  // Opening it closes Settings (one dialog at a time), as other settings dialogs do.
+  const setOpen = (open: boolean) => store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, ...(open ? { settings: { ...s.ui.settings, open: false } } : {}), toolbarCustomize: { open, focus: s.ui.toolbarCustomize.focus + (open ? 1 : 0) } } }));
   async function save(next: string[], said: string): Promise<void> {
     store.update((s) => ({ ...s, toolbarPinned: next }));
     ctx.announce(said);

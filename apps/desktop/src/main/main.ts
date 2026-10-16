@@ -14,7 +14,7 @@ import { SWITCHES, connectionSnippets, type AgentsPage, type SwitchId } from "@f
 import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/agents-fs";
 import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, watchFile } from "node:fs";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -933,6 +933,22 @@ async function slowSeam(channel: string): Promise<void> {
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("note:read", async (p) => (await readParsed(notePath(p))).text);
+  // keybindings.json (KEY-07, D-170): read as text, checked in the window; at most 256 KB.
+  const keybindingsFile = () => dataFile(DATA_FILES.keybindings);
+  handle("keybindings:load", async () => {
+    const text = await readFile(keybindingsFile(), "utf8").catch(() => undefined);
+    return text !== undefined && text.length > 256 * 1024 ? "too large" : text;
+  });
+  handle("keybindings:edit", async () => {
+    // Made with an empty list when it's missing, never over one that's there.
+    await writeFile(keybindingsFile(), "[]\n", { encoding: "utf8", flag: "wx" }).catch(() => {});
+    // Journeys never open another program over the owner's screen.
+    if (!journey) await shell.openPath(keybindingsFile());
+  });
+  handle("keybindings:reset", async () => {
+    await writeFile(keybindingsFile(), "[]\n", "utf8");
+    mainWindow?.webContents.send("keybindings:changed");
+  });
   // ---- Settings → Agents (WP-7.4, AGT-02, D-166) ----
   // The main process reads and writes agents.json and builds every command line; the window only
   // sees the page and asks for a switch by name.
@@ -1677,6 +1693,11 @@ app.whenReady().then(async () => {
   if (journal) restored = await restoreUnsaved(journal);
   if (restored.length) process.stdout.write(`[focus-notes] journal: restored ${restored.length}\n`);
   mainWindow = createWindow(windowFrame);
+  // keybindings.json changes (saved in an editor) apply at once, without a restart (D-170).
+  // One small file, polled twice a second: reliable on every system, editors that replace the file included.
+  watchFile(dataFile(DATA_FILES.keybindings), { interval: 500 }, (now, before) => {
+    if (now.mtimeMs !== before.mtimeMs || now.size !== before.size) mainWindow?.webContents.send("keybindings:changed");
+  });
   watcher = watchWorkspace(() => mainWindow);
   // Never on the path of the first frame: Git answers when it answers (PRF-07).
   // Git opens once the caret is ready, or after 3 s if the note never becomes ready.
