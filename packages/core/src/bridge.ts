@@ -4,6 +4,7 @@ import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
 import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
 import type { ConflictChoiceKind, DeletedNote } from "./history.ts";
+import type { KeybindingsBridge } from "./keybindings-app.ts";
 import type { HeldNotes } from "./held.ts";
 import type { AgentsBridge } from "./agents-app.ts";
 import type { NativeWindowBridge, WindowBridge } from "./window-app.ts";
@@ -66,6 +67,8 @@ export interface PlatformBridge {
   deepLinks?: { take(): Promise<ResolvedDeepLink | undefined>; onArrive(listener: () => void): () => void };
   /** Settings → Agents (WP-7.4, D-166): agents.json, the snippets, recent agent changes, and the command-line tool. The desktop's only. */
   agents?: AgentsBridge;
+  /** keybindings.json in the app's data folder (KEY-07, D-170). The desktop's only. */
+  keybindings?: KeybindingsBridge;
   /** Commits and pushes with the user's own Git (the desktop, WP-3.3). Absent in the browser. */
   sync?: SyncBridge;
   /** Sets up the user's instance on GitHub and this computer (the desktop, FRE-08). Absent in the browser. */
@@ -342,6 +345,8 @@ export interface AppStateFile {
   appearance?: "system" | "light" | "dark";
   fontSize?: number;
   focusMode?: boolean;
+  /** The toolbar's actions, in order, as pinned on this device (UI-08, D-170). */
+  toolbarPinned?: string[];
   /** The Files panel is pinned open on this device (D-161). */
   filesPinned?: boolean;
   /** The chosen light and dark themes (THM-08). */

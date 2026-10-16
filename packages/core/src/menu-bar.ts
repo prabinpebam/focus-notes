@@ -42,7 +42,7 @@ const themes = (kind: "light" | "dark") => BUILT_IN_THEMES.filter((t) => t.kind 
 export const MENU_BAR: readonly MenuBarMenu[] = [
   {
     id: "app", label: "menu.appName", kind: "app",
-    items: [{ role: "about" }, "-", "settings.open", "-", { role: "services" }, "-", { role: "hide" }, { role: "hideOthers" }, { role: "unhide" }, "-", { role: "quit" }],
+    items: [{ role: "about" }, "-", "settings.open", "toolbar.customize", "-", { role: "services" }, "-", { role: "hide" }, { role: "hideOthers" }, { role: "unhide" }, "-", { role: "quit" }],
   },
   {
     id: "file", label: "menu.file",
@@ -100,7 +100,7 @@ export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
   // Keys of one focused control, listed in the cheat sheet: the find bar, a picker's field, the Files tree, a table, a toolbar.
   { why: "scoped key", ids: /^(find\.(nextInField|prevInField|replaceNext|replaceAll|close|historyOlder|historyNewer|toggle\.(caseSensitive|wholeWord|regex)|toggleReplace)|picker\.(next|prev|chooseActive)|move\.(next|prev|chooseActive)|files\.(selectAll|openItem|delete|rename|cancelEdit|commitEdit|moveTo|newFolder|focusNote)|table\.(nextCell|prevCell|cellBelow|cellAbove|addRowBelow|addRowAbove|moveRowUp|moveRowDown|deleteRow|selectCells|contextMenu)|format\.exitToolbar|link\.cancel|spotlight\.(next|prev|run|runAlt|run[1-9]|actions|actionsRight|copyLink|nextGroup|prevGroup|back|all)|findAll\.(next|prev|openActive|toggle\..+))$/ },
   // Buttons and items of an open panel, dialog, message, or context menu, which act on what they show.
-  { why: "in a view", ids: /^(firstRun\..+|setup\..+|share\.manage\..+|account\..+|workspace\..+|note\.readOnlyAction|files\.(close|select|clearSelection|activate|undo|confirm|hideDeleted|toggleDeleted|restore|restoreTo|newNote|duplicate|copyPublicLink)|move\.choose|picker\.choose|link\.(openEditor|apply|open|copy|remove)|table\..+|block\.(action|openMenu|closeMenu|selected)|toast\.(dismiss|action)|unlock\..+|about\.(template|download)|import\.confirm|conflict\.(choose|later)|held\.(ask|answer)|spotlight\.choose|findAll\.(close|choose)|theme\.(manager\.(close|revert)|preview|previewEnd|choose|color\.fix)|reading\.reset|diagnostics\.load|agents\..+)$/ },
+  { why: "in a view", ids: /^(firstRun\..+|setup\..+|share\.manage\..+|account\..+|workspace\..+|note\.readOnlyAction|files\.(close|select|clearSelection|activate|undo|confirm|hideDeleted|toggleDeleted|restore|restoreTo|newNote|duplicate|copyPublicLink)|move\.choose|picker\.choose|link\.(openEditor|apply|open|copy|remove)|table\..+|block\.(action|openMenu|closeMenu|selected)|toast\.(dismiss|action)|unlock\..+|about\.(template|download)|import\.confirm|conflict\.(choose|later)|held\.(ask|answer)|toolbar\.(setCustomizeOpen|pin|unpin|move|resetPinned)|keybindings\.(edit|reset)|spotlight\.choose|findAll\.(close|choose)|theme\.(manager\.(close|revert)|preview|previewEnd|choose|color\.fix)|reading\.reset|diagnostics\.load|agents\..+)$/ },
   // The browser's own: its notes, the vault there, and the visitor's way to an instance of their own.
   { why: "browser", ids: /^(notes\.export|note\.copyToLocal|vault\.(unlock|lock|forget)|about\.open)$/ },
   // The old note list, which Spotlight's quick open replaced (D-109): File's Quick open is Spotlight's.
