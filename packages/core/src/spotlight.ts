@@ -292,12 +292,14 @@ export interface ActionContext {
   publicLink?: string;
   /** A command or setting that can be reset to its default. */
   resettable?: boolean;
+  /** The shell opens notes in windows of their own (desktop, DSK-06, D-179). */
+  newWindow?: boolean;
 }
 
 const action = (id: ActionId, available: boolean, reason?: string, shortcut?: string): QuickAction => ({
   id, title: `spotlight.action.${id}`, available, ...(!available && reason ? { reason } : {}), ...(shortcut ? { shortcut } : {}),
 });
-/** New windows arrive with WP-8.5 (multiple windows); until then the action says so. */
+/** Only the desktop app opens a note in a window of its own (DSK-06, D-179); elsewhere the action says so. */
 export const NEW_WINDOW_REASON = "spotlight.reason.newWindow";
 
 /** Everything that applies to a result, available or saying why not (Spotlight → Quick actions). */
@@ -308,7 +310,7 @@ export function actionsFor(row: Pick<SpotlightRow, "kind" | "root">, ctx: Action
   switch (row.kind) {
     case "note":
     case "text": {
-      const out = [action("open", true), action("openWindow", false, NEW_WINDOW_REASON)];
+      const out = [action("open", true), action("openWindow", Boolean(ctx.newWindow), NEW_WINDOW_REASON)];
       out.push(action("copyLink", ctx.clipboard && !ctx.linkRefused, ctx.linkRefused ?? "spotlight.reason.noClipboard"));
       if (ctx.visibility === "public") out.push(action("copyPublicLink", !ctx.publicLink && ctx.clipboard, ctx.publicLink ?? "spotlight.reason.noClipboard"));
       if (ctx.copyToLocal) out.push(action("copyToLocal", true));
@@ -319,7 +321,7 @@ export function actionsFor(row: Pick<SpotlightRow, "kind" | "root">, ctx: Action
       return out;
     }
     case "heading":
-      return [action("goTo", true), action("openWindow", false, NEW_WINDOW_REASON), action("copyLink", ctx.clipboard && !ctx.linkRefused, ctx.linkRefused ?? "spotlight.reason.noClipboard")];
+      return [action("goTo", true), action("openWindow", Boolean(ctx.newWindow), NEW_WINDOW_REASON), action("copyLink", ctx.clipboard && !ctx.linkRefused, ctx.linkRefused ?? "spotlight.reason.noClipboard")];
     case "folder":
       return [
         action("showInFiles", !files, files), action("newNoteHere", write, readOnly ?? files),

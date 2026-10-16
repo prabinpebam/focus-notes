@@ -160,8 +160,12 @@ export class CustomWindow {
   notify(): void {
     if (!this.#win.isDestroyed()) this.#o.notify(this.report());
   }
+  /** Its normal size and place: where it is now, or where Restore puts it when it fills or snaps. */
+  normalBounds(): Rect {
+    return this.#mode === "normal" && !this.#full ? this.content() : this.#restore;
+  }
   memory(): WindowMemory {
-    const bounds = this.#mode === "normal" && !this.#full ? this.content() : this.#restore;
+    const bounds = this.normalBounds();
     return {
       version: 1,
       bounds,

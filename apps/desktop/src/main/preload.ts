@@ -80,6 +80,12 @@ contextBridge.exposeInMainWorld("focusNotes", {
   chooseNote: () => ipcRenderer.invoke("note:choose"),
   newNotePath: (near?: string) => ipcRenderer.invoke("note:newPath", near),
   toggleFullScreen: () => void ipcRenderer.invoke("window:fullScreen"),
+  // Notes in windows of their own (DSK-06, D-179): this window's note, if it was opened for one.
+  windows: {
+    open: (path: string) => ipcRenderer.invoke("window:open", path),
+    ...(params.get("note") ? { initialNote: params.get("note")! } : {}),
+    secondary: params.has("note"),
+  },
   defaultNotePath: () => ipcRenderer.invoke("note:default"),
   loadAppState: () => ipcRenderer.invoke("state:load"),
   saveAppState: (state: unknown) => ipcRenderer.invoke("state:save", state),

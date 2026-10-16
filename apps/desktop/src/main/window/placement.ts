@@ -97,3 +97,25 @@ export function initialPlacement(m: WindowMemory, displays: readonly DisplayInfo
     fullScreen: m.fullScreen === true,
   };
 }
+
+/** How far a new window opens from the one it was opened from, right and down (DSK-06, D-179). */
+export const CASCADE_PX = 32;
+/**
+ * A new window's place (DSK-06, D-179): the size of the window it was opened from (its restore size
+ * when that one fills its display), `CASCADE_PX` right and down from it so both show, back at the
+ * work area's top left when that would leave it; never maximized, snapped, or full screen.
+ */
+export function cascadePlacement(from: Rect, displays: readonly DisplayInfo[]): Placement {
+  const display = displayFor(from, displays);
+  const wa = display.workArea;
+  const width = Math.min(from.width, wa.width);
+  const height = Math.min(from.height, wa.height);
+  let x = from.x + CASCADE_PX;
+  let y = from.y + CASCADE_PX;
+  if (x + width > wa.x + wa.width || y + height > wa.y + wa.height) {
+    x = wa.x;
+    y = wa.y;
+  }
+  const rect = clampToDisplays({ x, y, width, height }, displays, MIN_SIZE);
+  return { content: rect, mode: "normal", restore: rect, fullScreen: false };
+}

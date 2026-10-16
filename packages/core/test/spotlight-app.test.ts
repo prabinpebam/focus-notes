@@ -374,7 +374,8 @@ describe("SPT-03: quick actions (→ or Mod+K)", () => {
     expect(vm(app).items.map((i) => `${i.label}${i.disabled ? " (unavailable)" : ""}`)).toEqual([
       "Open", "Open in new window (unavailable)", "Copy Markdown link", "Rename", "Move to…", "Make public", "Show in Files", "Delete",
     ]);
-    expect(vm(app).items[1]!.description).toBe("New windows arrive in a later preview");
+    // Without windows of their own (this shell has none), it says why.
+    expect(vm(app).items[1]!.description).toBe("Only the desktop app opens a note in a new window");
     // ← goes back to the results; → again, then down to Make public.
     await app.commands.run("spotlight.back");
     expect(sp(app).actions).toBeUndefined();
@@ -434,6 +435,59 @@ describe("SPT-03: quick actions (→ or Mod+K)", () => {
     await app.commands.run("spotlight.setActive", { id: "reset" });
     await app.commands.run("spotlight.run");
     expect(app.store.state.appearance.fontSize).toBe(16);
+  });
+});
+
+describe("DSK-06 (D-179): a note in a new window from Spotlight", () => {
+  const withWindows = () => {
+    const d = desktop();
+    const opened: string[] = [];
+    d.bridge.windows = { open: async (p) => { opened.push(p); }, secondary: false };
+    return { d, opened };
+  };
+  it("Mod+Enter on a note, a heading, or a match opens it in a new window, and this window keeps its note", async () => {
+    const { d, opened } = withWindows();
+    const { app } = await started(d);
+    expect(app.commands.match(key("Enter", { ctrlKey: true }), ["spotlightField"])).toBe("spotlight.runAlt");
+    await app.commands.run("spotlight.open");
+    await type(app, "ideas");
+    await app.commands.run("spotlight.runAlt");
+    expect(opened).toEqual([`${PRIV}/ideas.md`]);
+    expect(sp(app).open).toBe(false);
+    expect(app.store.state.note.path).toBe(`${PRIV}/welcome.md`);
+  });
+  it("Open in new window is a quick action there, and a command for the open note", async () => {
+    const { d, opened } = withWindows();
+    const { app } = await started(d);
+    await app.commands.run("spotlight.open");
+    await type(app, "ideas");
+    await app.commands.run("spotlight.actions");
+    expect(vm(app).items.find((i) => i.id === "openWindow")).toMatchObject({ label: "Open in new window" });
+    expect(vm(app).items.find((i) => i.id === "openWindow")?.disabled).toBeFalsy();
+    await app.commands.run("spotlight.setActive", { id: "openWindow" });
+    await app.commands.run("spotlight.run");
+    expect(opened).toEqual([`${PRIV}/ideas.md`]);
+    expect(app.commands.describe("note.openInNewWindow")).toMatchObject({ enabled: true, title: "command.note.openInNewWindow" });
+    await app.commands.run("note.openInNewWindow");
+    expect(opened).toEqual([`${PRIV}/ideas.md`, `${PRIV}/welcome.md`]);
+  });
+  it("without windows of its own the shell offers neither", async () => {
+    const { app } = await started(desktop(), { search: false });
+    expect(app.commands.describe("note.openInNewWindow").enabled).toBe(false);
+  });
+});
+
+describe("DSK-06 (D-179): a window opened for a note", () => {
+  it("opens that note, not the last one, and never changes which note the app reopens at launch", async () => {
+    const d = desktop();
+    d.bridge.windows = { open: async () => {}, initialNote: `${PRIV}/ideas.md`, secondary: true };
+    const { app } = await started(d, { search: false });
+    expect(app.store.state.note.path).toBe(`${PRIV}/ideas.md`);
+    await app.commands.run("files.reveal", { path: `${PRIV}/journal/focus-sessions.md` });
+    await app.commands.run("files.openItem");
+    await vi.waitFor(() => expect(app.store.state.note.path).toBe(`${PRIV}/journal/focus-sessions.md`));
+    const saved = await d.bridge.loadAppState();
+    expect(saved.lastNotePath).toBe(`${PRIV}/welcome.md`);
   });
 });
 

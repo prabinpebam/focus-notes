@@ -349,6 +349,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
   const saveSettings = () => bridge.settings!.save(`${JSON.stringify(settingsFile, null, 2)}\n`);
   const persistAppState = async (patch: Partial<AppStateFile>) => {
+    // A window opened for a note never changes which note the app reopens at launch (DSK-06, D-179).
+    if (bridge.windows?.secondary && "lastNotePath" in patch) {
+      const { lastNotePath: _, ...rest } = patch;
+      if (!Object.keys(rest).length) return;
+      patch = rest;
+    }
     appState = merge(appState, patch);
     const { device, synced } = splitAppState(patch);
     // While syncing, the synced settings go to the private repository and the rest stays here (D-46).
@@ -693,6 +699,19 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const on = !ctx.state.focusMode;
       ctx.update((s) => ({ ...s, focusMode: on }));
       await persistAppState({ focusMode: on });
+    },
+  });
+  // A note in a window of its own, side by side with this one (DSK-06, D-179): this window keeps its
+  // note. Saved first, so the new window reads what's on screen here.
+  commands.register({
+    id: "note.openInNewWindow", title: "command.note.openInNewWindow", icon: "fullScreen", layer: "power", group: "app",
+    enabled: (s) => Boolean(bridge.windows) && Boolean(s.note.path) && s.note.status === "ready",
+    run: async () => {
+      const path = store.state.note.path;
+      if (!path || !bridge.windows) return;
+      editorAction(FLUSH_EDITOR);
+      await flush();
+      await bridge.windows.open(path);
     },
   });
   commands.register({
@@ -1439,7 +1458,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         // Only the note the person last opened, and never an empty public file;
         // else the app's own note, in the Private root (D-171, SHR-01).
         const folder = store.state.workspace.folder;
-        const last = appState.lastNotePath;
+        // A window opened for a note opens that note (DSK-06, D-179); the first window, the last one.
+        const last = bridge.windows?.initialNote ?? appState.lastNotePath;
         const reopened = last !== undefined && (await openNote(last, { accept: (md) => !(folder && publicInWorkspace(last, folder) && !md.trim()) }));
         if (!reopened) await load(await bridge.defaultNotePath());
         // A link the app was opened with goes on from the note it opened (D-165).
