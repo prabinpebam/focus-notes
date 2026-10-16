@@ -4394,6 +4394,462 @@
       ]
     },
     {
+      "type": "SiteLink",
+      "tier": "primitive",
+      "description": "A link on the product site (WP-10.1): inline, one of the site's navigation links, the brand, or a call to action (primary or secondary). A plain anchor, so it works with no script.",
+      "props": {
+        "label": {
+          "kind": "message",
+          "required": true
+        },
+        "href": {
+          "kind": "text",
+          "required": true,
+          "description": "Where it goes: a relative address on the site, or GitHub."
+        },
+        "variant": {
+          "kind": "enum",
+          "values": [
+            "inline",
+            "nav",
+            "brand",
+            "primary",
+            "secondary"
+          ],
+          "default": "inline"
+        },
+        "current": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The page this navigation link names (aria-current)."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest",
+        "hover",
+        "focus"
+      ],
+      "tokens": "cmp.siteLink.*",
+      "a11y": {
+        "pattern": "link",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "variant inline",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "inline"
+          }
+        },
+        {
+          "name": "variant nav",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "nav"
+          }
+        },
+        {
+          "name": "variant brand",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "brand"
+          }
+        },
+        {
+          "name": "variant primary",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "primary"
+          }
+        },
+        {
+          "name": "variant secondary",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "secondary"
+          }
+        },
+        {
+          "name": "current",
+          "props": {
+            "label": {
+              "t": "site.nav.help"
+            },
+            "href": {
+              "get": "vm.gallery.href"
+            },
+            "variant": "nav",
+            "current": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "SiteText",
+      "tier": "primitive",
+      "description": "The product site's type (D-174): a few words in the display face at a large scale. The hero's headline (display), a section's headline, the one line under it (lead), an eyebrow, a tile's label, or a caption.",
+      "props": {
+        "value": {
+          "kind": "message",
+          "required": true
+        },
+        "as": {
+          "kind": "enum",
+          "values": [
+            "h1",
+            "h2",
+            "h3",
+            "p"
+          ],
+          "default": "p",
+          "description": "The element: a heading level, or a paragraph."
+        },
+        "look": {
+          "kind": "enum",
+          "values": [
+            "display",
+            "headline",
+            "lead",
+            "eyebrow",
+            "tile",
+            "caption"
+          ],
+          "default": "lead"
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.siteText.*",
+      "a11y": {
+        "pattern": "text",
+        "name": "Headings keep their levels; the look never changes the level."
+      },
+      "fixtures": [
+        {
+          "name": "look display",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "display"
+          }
+        },
+        {
+          "name": "look headline",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "headline"
+          }
+        },
+        {
+          "name": "look lead",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "lead"
+          }
+        },
+        {
+          "name": "look eyebrow",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "eyebrow"
+          }
+        },
+        {
+          "name": "look tile",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "tile"
+          }
+        },
+        {
+          "name": "look caption",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "look": "caption"
+          }
+        },
+        {
+          "name": "as h1",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "as": "h1",
+            "look": "headline"
+          }
+        },
+        {
+          "name": "as h2",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "as": "h2",
+            "look": "headline"
+          }
+        },
+        {
+          "name": "as h3",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "as": "h3",
+            "look": "headline"
+          }
+        },
+        {
+          "name": "as p",
+          "props": {
+            "value": {
+              "t": "site.landing.headline"
+            },
+            "as": "p",
+            "look": "headline"
+          }
+        }
+      ]
+    },
+    {
+      "type": "SiteFigure",
+      "tier": "primitive",
+      "description": "A screenshot on the product site (D-169, D-176): a desktop scene, AVIF where the browser takes it and WebP otherwise, at the width the page shows it, in the visitor's light or dark, with its width and height so nothing shifts as it loads (PRF-12). The first one on a page loads first; the rest when they're near.",
+      "props": {
+        "src": {
+          "kind": "text",
+          "required": true,
+          "description": "The fallback image's address, relative to the page."
+        },
+        "srcSet": {
+          "kind": "text",
+          "description": "WebP at each width (`media/x-1280.webp 1280w, …`)."
+        },
+        "avifSet": {
+          "kind": "text",
+          "description": "AVIF at each width."
+        },
+        "darkSrcSet": {
+          "kind": "text",
+          "description": "The dark scene's WebP, for a visitor whose setting is dark."
+        },
+        "darkAvifSet": {
+          "kind": "text",
+          "description": "The dark scene's AVIF."
+        },
+        "sizes": {
+          "kind": "text",
+          "description": "How wide the page shows it, for choosing a width."
+        },
+        "alt": {
+          "kind": "text",
+          "required": true,
+          "description": "What the screenshot shows (D-169)."
+        },
+        "width": {
+          "kind": "number",
+          "min": 1,
+          "description": "Its width in pixels (its aspect ratio, before CSS scales it)."
+        },
+        "height": {
+          "kind": "number",
+          "min": 1,
+          "description": "Its height in pixels."
+        },
+        "priority": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The page's main image: loaded first, never lazily."
+        }
+      },
+      "events": {},
+      "slots": {},
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.siteFigure.*",
+      "a11y": {
+        "pattern": "img",
+        "name": "alt"
+      },
+      "fixtures": [
+        {
+          "name": "screenshot",
+          "props": {
+            "src": {
+              "get": "vm.gallery.href"
+            },
+            "alt": {
+              "get": "vm.gallery.query"
+            },
+            "width": 640,
+            "height": 360
+          }
+        },
+        {
+          "name": "priority, light and dark",
+          "props": {
+            "src": {
+              "get": "vm.gallery.href"
+            },
+            "darkSrcSet": {
+              "get": "vm.gallery.href"
+            },
+            "alt": {
+              "get": "vm.gallery.query"
+            },
+            "width": 640,
+            "height": 360,
+            "priority": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "SiteSceneToggle",
+      "tier": "primitive",
+      "description": "One desktop scene with a Light / Dark choice under it (D-176): two radio buttons switch which of its two screenshots shows, with no script. Light is chosen first. The radios are a labelled group, so arrow keys move between them and a screen reader names the choice.",
+      "props": {
+        "name": {
+          "kind": "text",
+          "required": true,
+          "description": "The radio group's name, unique on the page (the section's anchor)."
+        },
+        "label": {
+          "kind": "message",
+          "required": true,
+          "description": "The group's accessible name."
+        },
+        "lightLabel": {
+          "kind": "message",
+          "required": true
+        },
+        "darkLabel": {
+          "kind": "message",
+          "required": true
+        }
+      },
+      "events": {},
+      "slots": {
+        "light": {
+          "accepts": [
+            "SiteFigure"
+          ],
+          "min": 1,
+          "max": 1
+        },
+        "dark": {
+          "accepts": [
+            "SiteFigure"
+          ],
+          "min": 1,
+          "max": 1
+        }
+      },
+      "states": [
+        "light",
+        "dark",
+        "focus"
+      ],
+      "tokens": "cmp.siteSceneToggle.*",
+      "a11y": {
+        "pattern": "radiogroup",
+        "name": "label"
+      },
+      "fixtures": [
+        {
+          "name": "light and dark",
+          "props": {
+            "name": {
+              "get": "vm.gallery.query"
+            },
+            "label": {
+              "t": "site.scheme.label"
+            },
+            "lightLabel": {
+              "t": "site.scheme.light"
+            },
+            "darkLabel": {
+              "t": "site.scheme.dark"
+            }
+          },
+          "slots": {
+            "light": [
+              {
+                "type": "SiteFigure",
+                "props": {
+                  "src": {
+                    "get": "vm.gallery.href"
+                  },
+                  "alt": {
+                    "get": "vm.gallery.query"
+                  },
+                  "width": 640,
+                  "height": 360
+                }
+              }
+            ],
+            "dark": [
+              {
+                "type": "SiteFigure",
+                "props": {
+                  "src": {
+                    "get": "vm.gallery.href"
+                  },
+                  "alt": {
+                    "get": "vm.gallery.query"
+                  },
+                  "width": 640,
+                  "height": 360
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
       "type": "Stack",
       "tier": "layout",
       "description": "Children in a column, spaced by a space token.",
@@ -7796,6 +8252,468 @@
               }
             ]
           }
+        }
+      ]
+    },
+    {
+      "type": "SitePage",
+      "tier": "layout",
+      "description": "A page of the product site (IA-VIEW-SITE, IA-VIEW-HELP, WP-10.1): a skip link, a header with the site's navigation, the content as the page's main landmark, and a footer. It follows the visitor's light or dark preference and reads from 320 px wide.",
+      "props": {
+        "skipLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The skip link to the content."
+        },
+        "navLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The site navigation's accessible name."
+        },
+        "width": {
+          "kind": "enum",
+          "values": [
+            "reading",
+            "wide",
+            "showcase"
+          ],
+          "default": "reading",
+          "description": "reading: the editor's measure, for articles; wide: a page of sections; showcase: the landing page, as wide as its screenshots (D-174)."
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        },
+        "header": {
+          "accepts": [
+            "SiteLink"
+          ]
+        },
+        "footer": {
+          "accepts": "any",
+          "max": 1
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.sitePage.*",
+      "a11y": {
+        "pattern": "landmarks",
+        "name": "banner with a labelled navigation, main, and contentinfo; the skip link is the first focusable element."
+      },
+      "fixtures": [
+        {
+          "name": "width reading",
+          "props": {
+            "skipLabel": {
+              "t": "site.skip"
+            },
+            "navLabel": {
+              "t": "site.nav.label"
+            },
+            "width": "reading"
+          },
+          "slots": {
+            "header": [
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.brand"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "brand"
+                }
+              },
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.nav.help"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "nav",
+                  "current": true
+                }
+              }
+            ],
+            "footer": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "site.footer.note"
+                  },
+                  "role": "caption",
+                  "tone": "muted"
+                }
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "width wide",
+          "props": {
+            "skipLabel": {
+              "t": "site.skip"
+            },
+            "navLabel": {
+              "t": "site.nav.label"
+            },
+            "width": "wide"
+          },
+          "slots": {
+            "header": [
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.brand"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "brand"
+                }
+              },
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.nav.help"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "nav",
+                  "current": true
+                }
+              }
+            ],
+            "footer": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "site.footer.note"
+                  },
+                  "role": "caption",
+                  "tone": "muted"
+                }
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "width showcase",
+          "props": {
+            "skipLabel": {
+              "t": "site.skip"
+            },
+            "navLabel": {
+              "t": "site.nav.label"
+            },
+            "width": "showcase"
+          },
+          "slots": {
+            "header": [
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.brand"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "brand"
+                }
+              },
+              {
+                "type": "SiteLink",
+                "props": {
+                  "label": {
+                    "t": "site.nav.help"
+                  },
+                  "href": {
+                    "get": "vm.gallery.href"
+                  },
+                  "variant": "nav",
+                  "current": true
+                }
+              }
+            ],
+            "footer": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "site.footer.note"
+                  },
+                  "role": "caption",
+                  "tone": "muted"
+                }
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "SiteSection",
+      "tier": "layout",
+      "description": "A section of a product site page (WP-10.1, D-174), with a stable anchor other pages link to. plain and band hold words; hero and feature are the landing page's big, centred showcases (a headline, a line, a screenshot); tile is one small tile of a grid.",
+      "props": {
+        "anchor": {
+          "kind": "text",
+          "description": "The section's stable anchor (its element ID); a tile has none."
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "plain",
+            "band",
+            "hero",
+            "feature",
+            "tile"
+          ],
+          "default": "plain"
+        }
+      },
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.siteSection.*",
+      "a11y": {
+        "pattern": "region",
+        "name": "Its heading, the first child's."
+      },
+      "fixtures": [
+        {
+          "name": "tone plain",
+          "props": {
+            "anchor": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "plain"
+          },
+          "children": [
+            {
+              "type": "SiteText",
+              "props": {
+                "value": {
+                  "t": "site.landing.headline"
+                },
+                "as": "h2",
+                "look": "headline"
+              }
+            }
+          ]
+        },
+        {
+          "name": "tone band",
+          "props": {
+            "anchor": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "band"
+          },
+          "children": [
+            {
+              "type": "SiteText",
+              "props": {
+                "value": {
+                  "t": "site.landing.headline"
+                },
+                "as": "h2",
+                "look": "headline"
+              }
+            }
+          ]
+        },
+        {
+          "name": "tone hero",
+          "props": {
+            "anchor": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "hero"
+          },
+          "children": [
+            {
+              "type": "SiteText",
+              "props": {
+                "value": {
+                  "t": "site.landing.headline"
+                },
+                "as": "h2",
+                "look": "headline"
+              }
+            }
+          ]
+        },
+        {
+          "name": "tone feature",
+          "props": {
+            "anchor": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "feature"
+          },
+          "children": [
+            {
+              "type": "SiteText",
+              "props": {
+                "value": {
+                  "t": "site.landing.headline"
+                },
+                "as": "h2",
+                "look": "headline"
+              }
+            }
+          ]
+        },
+        {
+          "name": "tone tile",
+          "props": {
+            "anchor": {
+              "get": "vm.gallery.query"
+            },
+            "tone": "tile"
+          },
+          "children": [
+            {
+              "type": "SiteText",
+              "props": {
+                "value": {
+                  "t": "site.landing.headline"
+                },
+                "as": "h2",
+                "look": "headline"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "SiteGrid",
+      "tier": "layout",
+      "description": "The product site's grid of small tiles (D-174): as many columns as fit, each at least a tile wide.",
+      "props": {},
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.siteGrid.*",
+      "a11y": {
+        "pattern": "list",
+        "name": "A list of its tiles."
+      },
+      "fixtures": [
+        {
+          "name": "tiles",
+          "children": [
+            {
+              "type": "SiteSection",
+              "props": {
+                "tone": "tile"
+              },
+              "children": [
+                {
+                  "type": "SiteText",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    },
+                    "look": "tile"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "SiteSection",
+              "props": {
+                "tone": "tile"
+              },
+              "children": [
+                {
+                  "type": "SiteText",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    },
+                    "look": "tile"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "SiteSection",
+              "props": {
+                "tone": "tile"
+              },
+              "children": [
+                {
+                  "type": "SiteText",
+                  "props": {
+                    "value": {
+                      "t": "gallery.sample"
+                    },
+                    "look": "tile"
+                  }
+                }
+              ]
+            }
+          ]
         }
       ]
     },

@@ -6,8 +6,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { contracts, ICON_NAMES } from "@focus-notes/ui/contracts";
-import { createApp, PUBLIC_INDEX_VIEW_MODEL, READER_VIEW_MODEL, SHARE_COMMANDS, SHARE_VIEW_MODEL, type PlatformBridge } from "@focus-notes/core";
-import { views, pages, fragments, messages } from "@focus-notes/views";
+import { createApp, PUBLIC_INDEX_VIEW_MODEL, READER_VIEW_MODEL, SHARE_COMMANDS, SHARE_VIEW_MODEL, SITE_VIEW_MODELS, type PlatformBridge } from "@focus-notes/core";
+import { views, pages, sitePages, fragments, messages } from "@focus-notes/views";
 import { tokenGroups } from "@focus-notes/tokens";
 import { checkUi, checkFixtureCoverage } from "../check.ts";
 import { staleFiles, staleMessage, uiSchemaFiles } from "../generated.ts";
@@ -31,7 +31,7 @@ const inputs = {
   contracts,
   icons: ICON_NAMES,
   tokenGroups: tokenGroups as unknown as Record<string, readonly string[]>,
-  views: { ...views, ...pages, ...galleryViews(contracts) },
+  views: { ...views, ...pages, ...sitePages, ...galleryViews(contracts) },
   fragments,
   // The share reader's page has its own commands and view model, outside the app (WP-5.4).
   commands: new Set([...app.commands.ids(), ...SHARE_COMMANDS]),
@@ -41,6 +41,8 @@ const inputs = {
     [READER_VIEW_MODEL.id, { schema: READER_VIEW_MODEL.schema }] as const,
     [PUBLIC_INDEX_VIEW_MODEL.id, { schema: PUBLIC_INDEX_VIEW_MODEL.schema }] as const,
     [SHARE_VIEW_MODEL.id, { schema: SHARE_VIEW_MODEL.schema }] as const,
+    // The product site's pages are filled by the site's renderer (WP-10.1).
+    ...SITE_VIEW_MODELS.map((v) => [v.id, { schema: v.schema }] as const),
   ]),
   messages: app.messages,
 };

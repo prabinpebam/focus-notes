@@ -202,6 +202,9 @@ export function checkUi(inputs: CheckInputs): Problem[] {
     } else if (doc.ia === "IA-VIEW-PUBLIC") {
       // A published page (WP-5.1) is a document of its own, without the app: its root is ReaderPage.
       if (!isComponent(doc.root) || doc.root.type !== "ReaderPage") add("design", "/root", "a published page's root is ReaderPage");
+    } else if (doc.ia === "IA-VIEW-SITE" || doc.ia === "IA-VIEW-HELP") {
+      // A page of the product site (WP-10.1), rendered at build time like a published page: its root is SitePage.
+      if (!isComponent(doc.root) || doc.root.type !== "SitePage") add("design", "/root", "a site page's root is SitePage");
     } else if (!isComponent(doc.root) || doc.root.type !== "AppRoot") add("design", "/root", "a view's root is AppRoot");
     if (!doc.focus) add("accessibility", "/focus", "every view says where focus goes when it opens");
     else if (!ids.has(doc.focus)) add("references", "/focus", `focus target "${doc.focus}" isn't an id in this view`);

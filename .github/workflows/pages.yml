@@ -1,10 +1,13 @@
-# Deploy app (D-80, D-90): builds the web app and publishes it to this repository's own GitHub Pages,
-# with the public notes in notes/ and, when the instance has a private repository at private/ and the
+# Deploy app (D-80, D-90, D-167): builds the web app and publishes it to this repository's own GitHub
+# Pages. In prabinpebam/focus-notes the site's root is the product site (the landing page, help centre
+# and docs) with the owner's web app at /app/; in any other copy (a fork) the app is the whole site,
+# as before, so a fork never publishes this project's landing page. Either way the site gets
+# the public notes in notes/ and, when the instance has a private repository at private/ and the
 # read-only deploy key PRIVATE_CONTENT_KEY, the owner's private notes sealed as the vault and shared
 # notes sealed for their audiences (WP-5.2). The leak
 # check fails the deploy if any private text or file name would reach the site (SEC-06).
-# Every copy of the repository (Use this template, or a fork) gets its own instance this way:
-# Settings -> Pages -> Source: GitHub Actions, then run this workflow.
+# A fork gets its own instance this way: Settings -> Pages -> Source: GitHub Actions, then run this
+# workflow. (Template instances use the template's own Deploy app, which deploys the released bundle.)
 name: Deploy app
 on:
   push:
@@ -41,21 +44,30 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: node packages/tokens/build.mjs
+      # Both builds: dist/, the app as a whole site (a fork), and dist-app/, the owner's app at /app/ (D-167),
+      # which reads the notes from the site's root, where the share reader (/s/) and /n/ have always found them.
       - name: Build the web app
         run: pnpm --filter @focus-notes/web run build
-      - name: Assemble the site (the app at the root, the docs beside it)
+      # The site's address, for canonical links (WP-5.1, WP-10.1). A third-party step, so it runs before
+      # private/ is checked out.
+      - id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Copy the docs
         run: |
           mkdir -p _site
-          cp -r apps/web/dist/. _site/
           cp -r documentations _site/documentations
           # The JSON Schemas and the design system's catalog, at their published $id addresses (AGT-08, DSY-13, D-166).
           cp -r schemas _site/schemas
           if [ -d slate ]; then cp -r slate _site/slate; fi
           touch _site/.nojekyll
-      # The site's address, for public pages' canonical links (WP-5.1). A third-party step, so it
-      # runs before private/ is checked out.
-      - id: pages
-        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Build the product site (the landing page and help at the root, the app at /app/)
+        if: github.repository == 'prabinpebam/focus-notes'
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+        run: node tools/site/build.mjs --out _site --app apps/web/dist-app --renderer apps/web/dist-site --site-url "$SITE_URL/"
+      - name: Put the app at the root (a fork, which has no product site)
+        if: github.repository != 'prabinpebam/focus-notes'
+        run: cp -r apps/web/dist/. _site/
       # Only now, after every third-party build step, is private plaintext on the runner.
       - name: Check out the private repository with the read-only deploy key
         if: env.HAS_PRIVATE_KEY == 'true' && (github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch))

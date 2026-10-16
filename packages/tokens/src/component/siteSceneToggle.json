@@ -1,0 +1,20 @@
+{ "cmp": { "siteSceneToggle": {
+  "$description": "The Light / Dark choice under a scene on the product site (D-176): a small segmented control of two radio buttons.",
+  "gap": { "$type": "dimension", "$value": "{space.l}" },
+  "padding": { "$type": "dimension", "$value": "{space.xxs}" },
+  "paddingInline": { "$type": "dimension", "$value": "{space.l}" },
+  "height": { "$type": "dimension", "$value": "{size.hit}" },
+  "radius": { "$type": "dimension", "$value": "{radius.round}" },
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "border": { "$type": "color", "$value": "{color.borderStrong}" },
+  "background": { "$type": "color", "$value": "{color.surface}" },
+  "text": { "$type": "color", "$value": "{color.text}" },
+  "selected": { "$type": "color", "$value": "{color.text}" },
+  "selectedText": { "$type": "color", "$value": "{color.canvas}" },
+  "font": { "$type": "fontFamily", "$value": "{font.ui}" },
+  "fontSize": { "$type": "dimension", "$value": "{font.uiBody}" },
+  "weight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
+  "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
+  "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
+  "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" }
+} } }

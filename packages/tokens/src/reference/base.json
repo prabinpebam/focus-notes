@@ -660,6 +660,9 @@
       "1040": {
         "$value": "1040px"
       },
+      "1200": {
+        "$value": "1200px"
+      },
       "70ch": {
         "$value": "70ch"
       },
@@ -916,6 +919,10 @@
       "$type": "fontFamily",
       "system": {
         "$value": "system-ui, -apple-system, \"Segoe UI Variable\", \"Segoe UI\", Ubuntu, Cantarell, sans-serif"
+      },
+      "siteDisplay": {
+        "$value": "\"Segoe UI Variable Display\", \"SF Pro Display\", system-ui, -apple-system, \"Segoe UI Variable\", \"Segoe UI\", Ubuntu, Cantarell, sans-serif",
+        "$description": "The product site's large type (D-174): the system's display face, never the note font."
       },
       "sans": {
         "$value": "Inter, system-ui, -apple-system, \"Segoe UI\", sans-serif"

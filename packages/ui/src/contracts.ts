@@ -60,10 +60,17 @@ import { contract as VersionCompare } from "./primitives/VersionCompare/contract
 import { contract as StrengthMeter } from "./primitives/StrengthMeter/contract.ts";
 import { contract as ProgressBar } from "./primitives/ProgressBar/contract.ts";
 import { contract as DatePicker } from "./primitives/DatePicker/contract.ts";
+import { contract as SiteLink } from "./primitives/SiteLink/contract.ts";
+import { contract as SitePage } from "./layouts/SitePage/contract.ts";
+import { contract as SiteSection } from "./layouts/SiteSection/contract.ts";
+import { contract as SiteText } from "./primitives/SiteText/contract.ts";
+import { contract as SiteFigure } from "./primitives/SiteFigure/contract.ts";
+import { contract as SiteGrid } from "./layouts/SiteGrid/contract.ts";
+import { contract as SiteSceneToggle } from "./primitives/SiteSceneToggle/contract.ts";
 
 export const contracts: readonly Contract[] = [
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker,
-  Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, SiteLink, SiteText, SiteFigure, SiteSceneToggle,
+  Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, SitePage, SiteSection, SiteGrid,
   EditorSurface, TableControls, BlockHandle, WindowFrame,
   Trigger, Toolbar, Dialog,
   NoteContent,

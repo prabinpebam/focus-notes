@@ -1,0 +1,6 @@
+{ "cmp": { "siteGrid": {
+  "$description": "The product site's grid of small tiles (D-174).",
+  "min": { "$type": "dimension", "$value": "{layout.siteTile}" },
+  "gap": { "$type": "dimension", "$value": "{space.l}" },
+  "maxWidth": { "$type": "dimension", "$value": "{layout.wideContent}" }
+} } }

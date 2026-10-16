@@ -4,11 +4,13 @@ A calm, Markdown-native writing app: a blank canvas, a single red trigger at the
 
 **Status:** M1 (writing) is nearly done, and the web app runs on GitHub Pages (stage MW). See the [roadmap](documentations/plan/roadmap.md) and [AGENTS.md](AGENTS.md) for building and testing.
 
+**Live site:** [prabinpebam.github.io/focus-notes](https://prabinpebam.github.io/focus-notes/): what Focus Notes is, the help centre, downloads and the demo (D-167). The repository's *About → Website* field points there: `gh repo edit prabinpebam/focus-notes --homepage https://prabinpebam.github.io/focus-notes/`.
+
 **License:** [MIT](LICENSE). Security reports: see [SECURITY.md](SECURITY.md). Instructions for AI agents: [AGENTS.md](AGENTS.md).
 
 ## Use Focus Notes yourself
 
-This repository is the app's source, and its GitHub Pages site is the owner's own instance. To use Focus Notes, get **your own** instance; nothing is shared with anyone else's:
+This repository is the app's source, and its GitHub Pages site is the product site, with the owner's own instance at `/app/` (D-167). To use Focus Notes, get **your own** instance; nothing is shared with anyone else's:
 
 1. Make your instance from the Focus Notes **template repository**, [`focus-notes-workspace`](https://github.com/prabinpebam/focus-notes-workspace) (*Use this template*). Keep it public: GitHub Pages on free plans serves only public repositories. Private notes go in a private repository linked to it.
 2. In your instance, open **Settings → Pages** and set **Source** to **GitHub Actions**, then run **Actions → Deploy app**. It deploys the released app, so you never build the app yourself.

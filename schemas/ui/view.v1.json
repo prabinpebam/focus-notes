@@ -317,6 +317,18 @@
           "$ref": "#/$defs/c_DatePicker"
         },
         {
+          "$ref": "#/$defs/c_SiteLink"
+        },
+        {
+          "$ref": "#/$defs/c_SiteText"
+        },
+        {
+          "$ref": "#/$defs/c_SiteFigure"
+        },
+        {
+          "$ref": "#/$defs/c_SiteSceneToggle"
+        },
+        {
           "$ref": "#/$defs/c_Stack"
         },
         {
@@ -351,6 +363,15 @@
         },
         {
           "$ref": "#/$defs/c_ReaderPage"
+        },
+        {
+          "$ref": "#/$defs/c_SitePage"
+        },
+        {
+          "$ref": "#/$defs/c_SiteSection"
+        },
+        {
+          "$ref": "#/$defs/c_SiteGrid"
         },
         {
           "$ref": "#/$defs/c_EditorSurface"
@@ -5650,6 +5671,442 @@
         }
       }
     },
+    "c_SiteLink": {
+      "type": "object",
+      "description": "A link on the product site (WP-10.1): inline, one of the site's navigation links, the brand, or a call to action (primary or secondary). A plain anchor, so it works with no script.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SiteLink"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "href": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "variant": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "inline",
+                    "nav",
+                    "brand",
+                    "primary",
+                    "secondary"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "current": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "href"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_SiteText": {
+      "type": "object",
+      "description": "The product site's type (D-174): a few words in the display face at a large scale. The hero's headline (display), a section's headline, the one line under it (lead), an eyebrow, a tile's label, or a caption.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SiteText"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "value": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "as": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "h1",
+                    "h2",
+                    "h3",
+                    "p"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "look": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "display",
+                    "headline",
+                    "lead",
+                    "eyebrow",
+                    "tile",
+                    "caption"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_SiteFigure": {
+      "type": "object",
+      "description": "A screenshot on the product site (D-169, D-176): a desktop scene, AVIF where the browser takes it and WebP otherwise, at the width the page shows it, in the visitor's light or dark, with its width and height so nothing shifts as it loads (PRF-12). The first one on a page loads first; the rest when they're near.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SiteFigure"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "src": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "srcSet": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "avifSet": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "darkSrcSet": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "darkAvifSet": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "sizes": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "alt": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "width": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 1
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "priority": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "src",
+            "alt"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_SiteSceneToggle": {
+      "type": "object",
+      "description": "One desktop scene with a Light / Dark choice under it (D-176): two radio buttons switch which of its two screenshots shows, with no script. Light is chosen first. The radios are a labelled group, so arrow keys move between them and a screen reader names the choice.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SiteSceneToggle"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "lightLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "darkLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "label",
+            "lightLabel",
+            "darkLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "light": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "dark": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        }
+      }
+    },
     "c_Stack": {
       "type": "object",
       "description": "Children in a column, spaced by a space token.",
@@ -7229,6 +7686,240 @@
                 "$ref": "#/$defs/node"
               }
             }
+          }
+        }
+      }
+    },
+    "c_SitePage": {
+      "type": "object",
+      "description": "A page of the product site (IA-VIEW-SITE, IA-VIEW-HELP, WP-10.1): a skip link, a header with the site's navigation, the content as the page's main landmark, and a footer. It follows the visitor's light or dark preference and reads from 320 px wide.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SitePage"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "skipLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "navLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "width": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "reading",
+                    "wide",
+                    "showcase"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "skipLabel",
+            "navLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "header": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "footer": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        }
+      }
+    },
+    "c_SiteSection": {
+      "type": "object",
+      "description": "A section of a product site page (WP-10.1, D-174), with a stable anchor other pages link to. plain and band hold words; hero and feature are the landing page's big, centred showcases (a headline, a line, a screenshot); tile is one small tile of a grid.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SiteSection"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "anchor": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "plain",
+                    "band",
+                    "hero",
+                    "feature",
+                    "tile"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
+    "c_SiteGrid": {
+      "type": "object",
+      "description": "The product site's grid of small tiles (D-174): as many columns as fit, each at least a tile wide.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "SiteGrid"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
           }
         }
       }

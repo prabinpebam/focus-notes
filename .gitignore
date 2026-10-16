@@ -15,4 +15,6 @@ apps/desktop/src/renderer/index.html
 apps/desktop/src/gallery/index.html
 
 dist-reader/
+dist-site/
+dist-app/
 dist-publish/

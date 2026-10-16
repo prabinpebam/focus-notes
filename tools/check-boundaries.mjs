@@ -4,7 +4,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 const root = join(import.meta.dirname, "..");
-const SKIP = new Set(["node_modules", "dist", "dist-reader", "dist-publish", "out", "release", ".git", "documentations", "slate", "test-results", ".vite"]);
+const SKIP = new Set(["node_modules", "dist", "dist-reader", "dist-publish", "dist-site", "dist-app", "out", "release", ".git", "documentations", "slate", "test-results", ".vite"]);
 const walk = (d) => (existsSync(d) ? readdirSync(d) : []).flatMap((f) => {
   if (SKIP.has(f)) return [];
   const p = join(d, f);

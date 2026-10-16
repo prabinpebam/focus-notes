@@ -1,0 +1,22 @@
+{ "cmp": { "siteLink": {
+  "$description": "A link on the product site (WP-10.1): inline, in the site's navigation, the brand, and the two call-to-action looks.",
+  "text": { "$type": "color", "$value": "{color.link}" },
+  "nav": { "$type": "color", "$value": "{color.text}" },
+  "navCurrent": { "$type": "color", "$value": "{color.accent}" },
+  "font": { "$type": "fontFamily", "$value": "{font.ui}" },
+  "fontSize": { "$type": "dimension", "$value": "{font.uiBody}" },
+  "brandSize": { "$type": "dimension", "$value": "{font.uiEmphasis}" },
+  "weight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
+  "underline": { "$type": "dimension", "$value": "{border.hairline}" },
+  "currentBar": { "$type": "dimension", "$value": "{border.selectedBar}" },
+  "radius": { "$type": "dimension", "$value": "{radius.control}" },
+  "height": { "$type": "dimension", "$value": "{size.controlL}" },
+  "hit": { "$type": "dimension", "$value": "{size.hit}" },
+  "paddingInline": { "$type": "dimension", "$value": "{space.xl}" },
+  "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+  "focusRing": { "$type": "color", "$value": "{color.focusRing}" },
+  "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
+  "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" },
+  "primary": { "$type": "color", "background": { "$value": "{color.accent}" }, "text": { "$value": "{color.onAccent}" } },
+  "secondary": { "$type": "color", "background": { "$value": "{color.surface}" }, "hover": { "$value": "{color.hover}" }, "text": { "$value": "{color.text}" }, "border": { "$value": "{color.borderStrong}" } }
+} } }
