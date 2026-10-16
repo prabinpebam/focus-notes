@@ -73,18 +73,23 @@ function runHere(s: Spawn): Promise<GitResult> {
   });
 }
 
-/** One worker for every Git command, started on the first; it never keeps the app running. */
+/**
+ * One worker for every Git command, started on the first. It keeps the process running only while a
+ * command is under way, as a process started on this thread would: ref'd from a post until the last
+ * answer, unref'd when idle. (Ref'd for good, a Node process that ran Git never exited, the bench's
+ * hang on CI, QLT-05; unref'd for good, it exited with a command still running.)
+ */
 let spawner: { post(s: Spawn): Promise<GitResult> } | undefined | null;
 function gitSpawner(): { post(s: Spawn): Promise<GitResult> } | undefined {
   if (spawner !== undefined) return spawner ?? undefined;
   try {
     const worker = new Worker(WORKER_SOURCE, { eval: true });
-    worker.unref();
     const waiting = new Map<number, { s: Spawn; resolve: (r: GitResult) => void }>();
     let next = 0;
     worker.on("message", (m: GitResult & { id: number }) => {
       const w = waiting.get(m.id);
       waiting.delete(m.id);
+      if (!waiting.size) worker.unref();
       w?.resolve({ code: m.code, stdout: m.stdout, stderr: m.stderr });
     });
     // A worker that fails hands its calls back to this thread, and isn't used again.
@@ -95,9 +100,12 @@ function gitSpawner(): { post(s: Spawn): Promise<GitResult> } | undefined {
     };
     worker.on("error", fail);
     worker.on("exit", fail);
+    // Idle from the start. (After the listeners: adding a 'message' listener refs the worker's port.)
+    worker.unref();
     spawner = {
       post: (s) => new Promise((resolve) => {
         const id = next++;
+        if (!waiting.size) worker.ref();
         waiting.set(id, { s, resolve });
         worker.postMessage({ id, ...s });
       }),

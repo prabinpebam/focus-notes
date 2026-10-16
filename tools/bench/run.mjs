@@ -23,6 +23,44 @@ function throwawayWorkspace() {
   return docs;
 }
 
+// A hang fails fast, with the step's name and what was still running (QLT-05): each step has a
+// hard time limit (10 minutes; the longest, the 10,000-note workspace, takes about 3), and once the
+// report is out the bench must end on its own. It once printed its report on CI and then waited an
+// hour for a Git worker that held the process open.
+const STEP_TIMEOUT_MS = Number(process.env.FOCUS_NOTES_BENCH_STEP_TIMEOUT_MS ?? 10 * 60_000);
+const EXIT_TIMEOUT_MS = 15_000;
+/** What still holds the bench: its handles and its own child processes, which it then ends. */
+function stillRunning() {
+  const children = (process.platform === "win32"
+    ? spawnSync("powershell", ["-NoProfile", "-Command", `Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq ${process.pid} } | ForEach-Object { \"$($_.ProcessId) $($_.Name)\" }`], { encoding: "utf8", timeout: 15_000 }).stdout
+    : spawnSync("ps", ["-o", "pid=,comm=", "--ppid", String(process.pid)], { encoding: "utf8", timeout: 15_000 }).stdout) ?? "";
+  const listed = children.trim().split(/\r?\n/).filter(Boolean);
+  for (const line of listed) {
+    const pid = Number(line.trim().split(/\s+/)[0]);
+    if (!pid || /powershell|ps$/i.test(line)) continue;
+    if (process.platform === "win32") spawnSync("taskkill", ["/T", "/F", "/PID", String(pid)], { timeout: 15_000 });
+    else try { process.kill(pid, "SIGKILL"); } catch { /* gone already */ }
+  }
+  return `handles ${JSON.stringify(process.getActiveResourcesInfo())}; child processes (ended): ${listed.join(", ") || "none"}`;
+}
+async function step(name, fn) {
+  const started = performance.now();
+  console.log(`bench: ${name}…`);
+  let timer;
+  const limit = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`bench: "${name}" took over ${STEP_TIMEOUT_MS / 1000} s, so it was stopped; ${stillRunning()}`)), STEP_TIMEOUT_MS);
+  });
+  try {
+    const result = await Promise.race([fn(), limit]);
+    console.log(`bench: ${name} done in ${((performance.now() - started) / 1000).toFixed(1)} s`);
+    return result;
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : e);
+    process.exit(1);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 const electronPath = createRequire(join(root, "apps", "desktop", "package.json"))("electron");
 const mainEntry = join(root, "apps", "desktop", "out", "main", "main.mjs");
 
@@ -56,8 +94,9 @@ async function startTimes() {
 
 function rendererOverhead() {
   const out = spawnSync("npx vitest run packages/ui-runtime/test/render.test.ts -t \"renderer overhead\" --silent=false", {
-    cwd: root, shell: true, encoding: "utf8", env: { ...process.env, NODE_ENV: "production" },
+    cwd: root, shell: true, encoding: "utf8", env: { ...process.env, NODE_ENV: "production" }, timeout: STEP_TIMEOUT_MS,
   });
+  if (out.error) throw new Error(`The renderer benchmark didn't finish: ${out.error.message}`);
   const m = `${out.stdout}${out.stderr}`.match(/DSY-11: overhead (-?[\d.]+)%/);
   if (!m) throw new Error("The renderer benchmark produced no result");
   return { "DSY-11.rendererOverheadPct": Number(m[1]) };
@@ -224,7 +263,16 @@ async function publishTimes() {
 }
 
 // PRF-04 and PRF-10: memory and idle CPU with 10,000 notes, and reopening an unchanged note.
-const report = { at: new Date().toISOString(), platform: process.platform, measures: { ...(await startTimes()), ...rendererOverhead(), ...(await gitStatus()), ...(await noteTimes()), ...(await largeWorkspace({ root, mainEntry })), ...(await spotlightTimes()), ...(await searchTimes()), ...(await publishTimes()) } };
+const report = { at: new Date().toISOString(), platform: process.platform, measures: {
+  ...(await step("start times (PRF-02)", startTimes)),
+  ...(await step("renderer overhead (DSY-11)", async () => rendererOverhead())),
+  ...(await step("Git status (PRF-07)", gitStatus)),
+  ...(await step("opening and saving notes (PRF-03, PRF-14)", noteTimes)),
+  ...(await step("the 10,000-note workspace (PRF-04, PRF-10)", () => largeWorkspace({ root, mainEntry }))),
+  ...(await step("Spotlight in the app (SPT-07)", spotlightTimes)),
+  ...(await step("the search index (SPT-07, FND-04)", searchTimes)),
+  ...(await step("publishing (PRF-06)", publishTimes)),
+} };
 mkdirSync(join(root, "test-results"), { recursive: true });
 writeFileSync(join(root, "test-results", "bench.json"), JSON.stringify(report, null, 2));
 
@@ -251,3 +299,8 @@ if (arg("--write-baseline")) {
   console.log("Baselines written to tools/bench/budgets.json.");
 }
 if (arg("--check") && failed) process.exit(1);
+// Nothing may hold the bench open once its report is out.
+setTimeout(() => {
+  console.error(`bench: the report is out but the bench didn't end within ${EXIT_TIMEOUT_MS / 1000} s; ${stillRunning()}`);
+  process.exit(1);
+}, EXIT_TIMEOUT_MS).unref();
