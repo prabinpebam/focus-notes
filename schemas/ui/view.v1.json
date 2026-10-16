@@ -326,7 +326,7 @@
           "$ref": "#/$defs/c_SiteFigure"
         },
         {
-          "$ref": "#/$defs/c_SiteSceneToggle"
+          "$ref": "#/$defs/c_SiteThemeShowcase"
         },
         {
           "$ref": "#/$defs/c_Stack"
@@ -6000,6 +6000,22 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "tone": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "light",
+                    "dark"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -6014,9 +6030,9 @@
         }
       }
     },
-    "c_SiteSceneToggle": {
+    "c_SiteThemeShowcase": {
       "type": "object",
-      "description": "One desktop scene with a Light / Dark choice under it (D-176): two radio buttons switch which of its two screenshots shows, with no script. Light is chosen first. The radios are a labelled group, so arrow keys move between them and a screen reader names the choice.",
+      "description": "Every built-in theme, one screenshot each, on the product site (D-176): a large screenshot, a Light / Dark switch, and a row of swatches (each theme's background and accent) that shows that theme's screenshot. Radio buttons and CSS alone, as the site has no script: labelled groups, arrow keys between swatches, a visible focus ring. The first light theme shows first; the rest load when chosen.",
       "required": [
         "type",
         "props"
@@ -6024,7 +6040,7 @@
       "additionalProperties": false,
       "properties": {
         "type": {
-          "const": "SiteSceneToggle"
+          "const": "SiteThemeShowcase"
         },
         "id": {
           "type": "string",
@@ -6054,7 +6070,10 @@
                 }
               ]
             },
-            "label": {
+            "themes": {
+              "$ref": "#/$defs/read"
+            },
+            "schemeLabel": {
               "anyOf": [
                 {
                   "$ref": "#/$defs/message"
@@ -6092,37 +6111,48 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "lightThemesLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "darkThemesLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
             "name",
-            "label",
+            "themes",
+            "schemeLabel",
             "lightLabel",
-            "darkLabel"
+            "darkLabel",
+            "lightThemesLabel",
+            "darkThemesLabel"
           ]
         },
         "on": {
           "type": "object",
           "additionalProperties": false,
           "properties": {}
-        },
-        "slots": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "light": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/node"
-              }
-            },
-            "dark": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/node"
-              }
-            }
-          }
         }
       }
     },

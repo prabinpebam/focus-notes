@@ -53,15 +53,24 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
     expect(html).toMatch(/href="demo\/"[^>]*>Try the demo</);
     // Light scenes for everyone (D-176): nothing switches by the visitor's setting; dark is a choice, by radio buttons.
     expect(html).not.toMatch(/prefers-color-scheme/);
-    expect(html).toMatch(/<source type="image\/avif" srcSet="media\/note-light-960\.avif 960w, media\/note-light-1920\.avif 1920w" sizes="[^"]+"\/>/i);
-    expect(html).toMatch(/<fieldset[^>]*><legend[^>]*>Show the app in<\/legend><input[^>]*type="radio" id="themes-scheme-light" name="themes-scheme" checked="" value="light"\/><label[^>]*for="themes-scheme-light">Light<\/label><input[^>]*type="radio" id="themes-scheme-dark" name="themes-scheme" value="dark"\/><label[^>]*for="themes-scheme-dark">Dark<\/label><\/fieldset>/);
-    expect(html).toMatch(/fetchPriority="high"/i);
-    // D-176: every scene is in site/media at both widths, both formats, and the wallpaper's source isn't published.
-    for (const s of [landing.hero, ...landing.features.flatMap((f) => [f.image, f.dark].filter(Boolean))].map((i) => i.scene)) {
-      for (const f of [`${s}-960.avif`, `${s}-1920.avif`, `${s}-960.webp`, `${s}-1920.webp`]) expect((await readFile(join(out, "media", f))).length, f).toBeGreaterThan(0);
+    expect(html).toMatch(/<source type="image\/avif" srcSet="media\/note-light-720\.avif 720w, media\/note-light-1440\.avif 1440w" sizes="[^"]+"\/>/i);
+    // Every theme (D-176): a swatch each, by its own tokens, in a labelled group per scheme, and its screenshot.
+    const themes = [...landing.features.find((f) => f.themes).themes.light.map((t) => ({ ...t, scheme: "light" })), ...landing.features.find((f) => f.themes).themes.dark.map((t) => ({ ...t, scheme: "dark" }))];
+    expect(themes).toHaveLength(10);
+    expect(html).toMatch(/<legend[^>]*>Show the app in<\/legend><input[^>]*type="radio" id="themes-scheme-light" name="themes-scheme" checked="" value="light"\/>/);
+    expect(html).toMatch(/<legend[^>]*>Light themes<\/legend>/);
+    expect(html).toMatch(/<legend[^>]*>Dark themes<\/legend>/);
+    for (const t of themes) {
+      expect(html, t.id).toMatch(new RegExp(`<label[^>]*for="themes-${t.id}" data-theme-sample="${t.id}" title="${t.label}">`));
+      expect(html, t.id).toMatch(new RegExp(`srcSet="media/theme-${t.id}-720\\.avif 720w, media/theme-${t.id}-1440\\.avif 1440w"`));
     }
-    await expect(readFile(join(out, "media", "source", "wallpaper-1920.webp"))).rejects.toThrow();
-    expect(html).toMatch(/Desktop photo by Cristina Gottardi on Unsplash/);
+    expect(html).toMatch(/data-tone="dark"/);
+    expect(html).toMatch(/fetchPriority="high"/i);
+    // D-176: every screenshot is in site/media at both widths, both formats; no wallpaper.
+    for (const s of [landing.hero.scene, ...landing.features.filter((f) => f.image).map((f) => f.image.scene), ...themes.map((t) => `theme-${t.id}`)]) {
+      for (const f of [`${s}-720.avif`, `${s}-1440.avif`, `${s}-720.webp`, `${s}-1440.webp`]) expect((await readFile(join(out, "media", f))).length, f).toBeGreaterThan(0);
+    }
+    expect(html).not.toMatch(/Unsplash|wallpaper/i);
     const { words, blocks } = visibleText(html);
     expect(words).toBeLessThanOrEqual(LANDING_WORDS);
     for (const b of blocks) expect(b.split(/\s+/).length, b).toBeLessThanOrEqual(LANDING_BLOCK);

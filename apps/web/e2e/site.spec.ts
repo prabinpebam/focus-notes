@@ -162,24 +162,37 @@ test("D-167: public note pages stay at /n/ and the share reader at /s/, where th
   expect(others).toEqual([]);
 });
 
-test("D-176: every scene is light, even on a dark page, and the Themes scene's Light / Dark choice works from the keyboard with no script", async ({ page }) => {
+test("D-176: the scenes are light, even on a dark page, and every theme shows by its swatch, from the keyboard, with no script", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto(`${origin}/`);
   const shown = () => page.locator("main img").evaluateAll((imgs) => imgs.filter((i) => (i as HTMLImageElement).offsetParent !== null).map((i) => (i as HTMLImageElement).currentSrc.split("/").at(-1)!.replace(/-\d+\.\w+$/, "")));
-  // A lazy image picks its source once it's near: bring each into view.
-  for (const img of await page.locator("main img").all()) if (await img.isVisible()) await img.scrollIntoViewIfNeeded();
-  expect(await shown()).toEqual(["note-light", "spotlight-light", "themes-light", "files-light"]);
-  const choice = page.getByRole("group", { name: "Show the app in" });
-  const light = choice.getByRole("radio", { name: "Light" });
-  const dark = choice.getByRole("radio", { name: "Dark" });
-  await expect(light).toBeChecked();
-  await light.focus();
+  const load = async () => { for (const img of await page.locator("main img").all()) if (await img.isVisible()) await img.scrollIntoViewIfNeeded(); };
+  await load();
+  expect(await shown()).toEqual(["note-light", "spotlight-light", "theme-paper", "files-light"]);
+  const scheme = page.getByRole("group", { name: "Show the app in" });
+  const light = page.getByRole("group", { name: "Light themes" });
+  const dark = page.getByRole("group", { name: "Dark themes" });
+  await expect(dark).toBeHidden();
+  // A light swatch, by arrow key: its theme's screenshot shows.
+  await light.getByRole("radio", { name: "Paper" }).focus();
   await page.keyboard.press("ArrowRight");
-  await expect(dark).toBeChecked();
-  await expect(dark).toBeFocused();
-  await expect(page.getByRole("img", { name: /in dark mode/ })).toBeVisible();
-  await expect(page.getByRole("img", { name: /^The Theme panel/ })).toBeHidden();
+  await expect(light.getByRole("radio", { name: "Sepia" })).toBeChecked();
+  await load();
+  expect(await shown()).toContain("theme-sepia");
+  // Dark: the dark swatches and their first theme; a dark window on this dark page glows.
+  await scheme.getByRole("radio", { name: "Light" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(scheme.getByRole("radio", { name: "Dark" })).toBeChecked();
+  await expect(dark).toBeVisible();
+  await expect(light).toBeHidden();
+  await load();
+  expect(await shown()).toContain("theme-ink");
+  await dark.getByRole("radio", { name: "Ink" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(dark.getByRole("radio", { name: "Dusk" })).toBeChecked();
+  await load();
+  expect(await shown()).toContain("theme-dusk");
+  const glow = await page.locator('picture[data-tone="dark"]').filter({ visible: true }).first().evaluate((e) => getComputedStyle(e).boxShadow);
+  expect(glow).toMatch(/rgba\(255, 255, 255/);
   expect(await axeViolations(page)).toEqual([]);
-  await page.keyboard.press("ArrowLeft");
-  await expect(page.getByRole("img", { name: /^The Theme panel/ })).toBeVisible();
 });

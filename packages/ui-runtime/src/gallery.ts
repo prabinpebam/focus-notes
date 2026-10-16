@@ -159,6 +159,12 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     colorHex: "#2f5fd0",
     // A link's address (the product site's SiteLink, WP-10.1): the gallery itself, so following it goes nowhere new.
     href: "#gallery",
+    // The product site's theme swatches (SiteThemeShowcase, D-176).
+    siteThemes: [
+      { id: "paper", label: "Paper", scheme: "light", src: "#gallery", alt: "Paper" },
+      { id: "sepia", label: "Sepia", scheme: "light", src: "#gallery", alt: "Sepia" },
+      { id: "ink", label: "Ink", scheme: "dark", src: "#gallery", alt: "Ink" },
+    ],
     colorValues: [{ id: "color.accent", value: "#9a3412" }, { id: "color.link", value: "#9a3412" }],
     snapLayouts: [
       { id: "halves", label: "Halves", items: [{ id: "g.left", label: "Left half" }, { id: "g.right", label: "Right half" }] },
@@ -202,6 +208,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         themeDark: { type: "string" },
         colorHex: { type: "string" },
         href: { type: "string" },
+        siteThemes: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, scheme: { type: "string" }, src: { type: "string" }, alt: { type: "string" } } } },
         colorValues: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } },
         snapLayouts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
       },

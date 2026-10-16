@@ -494,6 +494,12 @@
   },
   "shadow": {
     "$type": "shadow",
+    "siteWindow": {
+      "$value": "{ref.shadow.siteWindow}"
+    },
+    "siteGlow": {
+      "$value": "{ref.shadow.siteGlow}"
+    },
     "0": {
       "$value": "{ref.shadow.0}"
     },

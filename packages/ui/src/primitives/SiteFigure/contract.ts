@@ -15,6 +15,7 @@ export const contract = defineContract({
     width: { kind: "number", min: 1, description: "Its width in pixels (its aspect ratio, before CSS scales it)." },
     height: { kind: "number", min: 1, description: "Its height in pixels." },
     priority: { kind: "boolean", default: false, description: "The page's main image: loaded first, never lazily." },
+    tone: { kind: "enum", values: ["light", "dark"], default: "light", description: "The app's scheme in the screenshot: a dark one glows on a dark page instead of casting a shadow (D-176)." },
   },
   events: {},
   slots: {},
@@ -24,5 +25,6 @@ export const contract = defineContract({
   fixtures: [
     { name: "screenshot", props: { src: { get: "vm.gallery.href" }, alt: { get: "vm.gallery.query" }, width: 640, height: 360 } },
     { name: "priority, light and dark", props: { src: { get: "vm.gallery.href" }, darkSrcSet: { get: "vm.gallery.href" }, alt: { get: "vm.gallery.query" }, width: 640, height: 360, priority: true } },
+    { name: "tone dark", props: { src: { get: "vm.gallery.href" }, alt: { get: "vm.gallery.query" }, width: 640, height: 360, tone: "dark" } },
   ],
 });

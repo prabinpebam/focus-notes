@@ -4706,6 +4706,15 @@
           "kind": "boolean",
           "default": false,
           "description": "The page's main image: loaded first, never lazily."
+        },
+        "tone": {
+          "kind": "enum",
+          "values": [
+            "light",
+            "dark"
+          ],
+          "default": "light",
+          "description": "The app's scheme in the screenshot: a dark one glows on a dark page instead of casting a shadow (D-176)."
         }
       },
       "events": {},
@@ -4748,23 +4757,43 @@
             "height": 360,
             "priority": true
           }
+        },
+        {
+          "name": "tone dark",
+          "props": {
+            "src": {
+              "get": "vm.gallery.href"
+            },
+            "alt": {
+              "get": "vm.gallery.query"
+            },
+            "width": 640,
+            "height": 360,
+            "tone": "dark"
+          }
         }
       ]
     },
     {
-      "type": "SiteSceneToggle",
+      "type": "SiteThemeShowcase",
       "tier": "primitive",
-      "description": "One desktop scene with a Light / Dark choice under it (D-176): two radio buttons switch which of its two screenshots shows, with no script. Light is chosen first. The radios are a labelled group, so arrow keys move between them and a screen reader names the choice.",
+      "description": "Every built-in theme, one screenshot each, on the product site (D-176): a large screenshot, a Light / Dark switch, and a row of swatches (each theme's background and accent) that shows that theme's screenshot. Radio buttons and CSS alone, as the site has no script: labelled groups, arrow keys between swatches, a visible focus ring. The first light theme shows first; the rest load when chosen.",
       "props": {
         "name": {
           "kind": "text",
           "required": true,
-          "description": "The radio group's name, unique on the page (the section's anchor)."
+          "description": "The radio groups' name, unique on the page (the section's anchor)."
         },
-        "label": {
+        "themes": {
+          "kind": "list",
+          "of": "siteThemes",
+          "required": true,
+          "description": "Each theme: its ID (for its swatch's colours), name, light or dark, and its screenshot."
+        },
+        "schemeLabel": {
           "kind": "message",
           "required": true,
-          "description": "The group's accessible name."
+          "description": "The Light / Dark switch's name."
         },
         "lightLabel": {
           "kind": "message",
@@ -4773,43 +4802,41 @@
         "darkLabel": {
           "kind": "message",
           "required": true
+        },
+        "lightThemesLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The light swatches' name."
+        },
+        "darkThemesLabel": {
+          "kind": "message",
+          "required": true,
+          "description": "The dark swatches' name."
         }
       },
       "events": {},
-      "slots": {
-        "light": {
-          "accepts": [
-            "SiteFigure"
-          ],
-          "min": 1,
-          "max": 1
-        },
-        "dark": {
-          "accepts": [
-            "SiteFigure"
-          ],
-          "min": 1,
-          "max": 1
-        }
-      },
+      "slots": {},
       "states": [
         "light",
         "dark",
         "focus"
       ],
-      "tokens": "cmp.siteSceneToggle.*",
+      "tokens": "cmp.siteThemeShowcase.*",
       "a11y": {
         "pattern": "radiogroup",
-        "name": "label"
+        "name": "schemeLabel, lightThemesLabel and darkThemesLabel"
       },
       "fixtures": [
         {
-          "name": "light and dark",
+          "name": "themes",
           "props": {
             "name": {
               "get": "vm.gallery.query"
             },
-            "label": {
+            "themes": {
+              "get": "vm.gallery.siteThemes"
+            },
+            "schemeLabel": {
               "t": "site.scheme.label"
             },
             "lightLabel": {
@@ -4817,39 +4844,13 @@
             },
             "darkLabel": {
               "t": "site.scheme.dark"
+            },
+            "lightThemesLabel": {
+              "t": "site.themes.light"
+            },
+            "darkThemesLabel": {
+              "t": "site.themes.dark"
             }
-          },
-          "slots": {
-            "light": [
-              {
-                "type": "SiteFigure",
-                "props": {
-                  "src": {
-                    "get": "vm.gallery.href"
-                  },
-                  "alt": {
-                    "get": "vm.gallery.query"
-                  },
-                  "width": 640,
-                  "height": 360
-                }
-              }
-            ],
-            "dark": [
-              {
-                "type": "SiteFigure",
-                "props": {
-                  "src": {
-                    "get": "vm.gallery.href"
-                  },
-                  "alt": {
-                    "get": "vm.gallery.query"
-                  },
-                  "width": 640,
-                  "height": 360
-                }
-              }
-            ]
           }
         }
       ]

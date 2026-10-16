@@ -11,14 +11,15 @@ export interface SiteFigureProps {
   width?: number;
   height?: number;
   priority?: boolean;
+  tone?: "light" | "dark";
 }
 
 const DARK = "(prefers-color-scheme: dark)";
 
 /** A desktop scene, AVIF or WebP, light or dark by the visitor's setting, sized before it loads (D-176, PRF-12). */
-export function SiteFigure({ src, srcSet, avifSet, darkSrcSet, darkAvifSet, sizes, alt, width, height, priority }: SiteFigureProps) {
+export function SiteFigure({ src, srcSet, avifSet, darkSrcSet, darkAvifSet, sizes, alt, width, height, priority, tone = "light" }: SiteFigureProps) {
   return (
-    <picture className={s.root}>
+    <picture className={s.root} data-tone={tone}>
       {darkAvifSet ? <source type="image/avif" srcSet={darkAvifSet} sizes={sizes} media={DARK} /> : null}
       {darkSrcSet ? <source type="image/webp" srcSet={darkSrcSet} sizes={sizes} media={DARK} /> : null}
       {avifSet ? <source type="image/avif" srcSet={avifSet} sizes={sizes} /> : null}

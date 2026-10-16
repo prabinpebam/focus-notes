@@ -1710,7 +1710,6 @@
   "site.tile.offline": "Works offline",
   "site.tile.open": "Free and open source",
   "site.tile.private": "Private notes stay private",
-  "site.footer.credit": "Desktop photo by Cristina Gottardi on Unsplash.",
   "site.tile.tracking": "Nothing tracked",
   "site.scheme.label": "Show the app in",
   "site.scheme.light": "Light",
@@ -1750,5 +1749,7 @@
   "command.history.more": "Show older versions",
   "history.loadingMore": "Reading older versions…",
   "history.reading": "Reading that version…",
-  "site.help.redirect": "Help is in the Focus Notes docs. Go to Help"
+  "site.help.redirect": "Help is in the Focus Notes docs. Go to Help",
+  "site.themes.light": "Light themes",
+  "site.themes.dark": "Dark themes"
 }

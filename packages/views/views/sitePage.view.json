@@ -155,16 +155,6 @@
                 "role": "caption",
                 "tone": "muted"
               }
-            },
-            {
-              "type": "Text",
-              "props": {
-                "value": {
-                  "t": "site.footer.credit"
-                },
-                "role": "caption",
-                "tone": "muted"
-              }
             }
           ]
         }

@@ -1,5 +1,7 @@
 { "cmp": { "siteFigure": {
-  "$description": "A screenshot on the product site (D-174): as wide as the site's widest column, never wider than its own pixels at 1×.",
+  "$description": "A screenshot of the app's window on the product site (D-174, D-176): as wide as the site's widest column, with the window's corners and a shadow, or a glow for a dark window on a dark page.",
   "maxWidth": { "$type": "dimension", "$value": "{layout.siteWide}" },
-  "radius": { "$type": "dimension", "$value": "{radius.sheet}", "$description": "A desktop scene's corners (D-176)." }
+  "radius": { "$type": "dimension", "$value": "{radius.window}", "$description": "The window's own corners (D-176)." },
+  "shadow": { "$type": "shadow", "$value": "{shadow.siteWindow}" },
+  "glow": { "$type": "shadow", "$value": "{shadow.siteGlow}", "$description": "Under a dark window on a dark page (D-176)." }
 } } }
