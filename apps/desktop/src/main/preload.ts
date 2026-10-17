@@ -104,6 +104,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
   // The workspace (WP-2.3): its tree, its format, renames that follow titles, and outside changes.
   workspace: {
     info: () => ipcRenderer.invoke("workspace:info"),
+    reveal: () => ipcRenderer.invoke("workspace:reveal"),
     scan: () => ipcRenderer.invoke("workspace:scan"),
     writeFormat: (text: string) => ipcRenderer.invoke("workspace:writeFormat", text),
     renameNote: (from: string, to: string) => ipcRenderer.invoke("workspace:rename", from, to),

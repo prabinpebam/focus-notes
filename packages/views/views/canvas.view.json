@@ -3960,6 +3960,89 @@
           }
         },
         "slots": {
+          "band": [
+            {
+              "type": "Inline",
+              "when": {
+                "get": "vm.files.source.visible"
+              },
+              "props": {
+                "justify": "between",
+                "gap": "s",
+                "grow": true
+              },
+              "children": [
+                {
+                  "type": "Inline",
+                  "props": {
+                    "gap": "s",
+                    "grow": true
+                  },
+                  "children": [
+                    {
+                      "type": "Icon",
+                      "props": {
+                        "name": {
+                          "get": "vm.files.source.icon"
+                        }
+                      }
+                    },
+                    {
+                      "type": "Stack",
+                      "props": {
+                        "gap": "none"
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "value": {
+                              "get": "vm.files.source.title"
+                            },
+                            "role": "emphasis",
+                            "lines": "one"
+                          }
+                        },
+                        {
+                          "type": "Text",
+                          "when": {
+                            "get": "vm.files.source.hasLogin"
+                          },
+                          "props": {
+                            "value": {
+                              "get": "vm.files.source.login"
+                            },
+                            "role": "caption",
+                            "tone": "muted",
+                            "lines": "one"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "IconButton",
+                  "when": {
+                    "get": "vm.files.source.revealable"
+                  },
+                  "props": {
+                    "icon": "open",
+                    "label": {
+                      "t": "command.files.revealFolder"
+                    },
+                    "tone": "muted",
+                    "bleed": true
+                  },
+                  "on": {
+                    "press": {
+                      "run": "files.revealFolder"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
           "header": [
             {
               "type": "Inline",

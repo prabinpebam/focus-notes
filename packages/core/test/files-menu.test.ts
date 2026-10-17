@@ -254,4 +254,25 @@ describe("pinning the panel (D-161)", () => {
     expect(vm(app).width).toBe(242);
     expect(f.saved.at(-1)?.filesWidth).toBe(242);
   });
+  it("says where the notes come from (D-188): the repository (its name alone when the account owns it), @login, and Open local folder", async () => {
+    const f = setup(notes);
+    const revealed: number[] = [];
+    f.bridge.workspace!.info = async () => ({ folder: "C:\\Notes\\my-notes", format: '{"formatVersion":1}', repo: "ada/my-notes" });
+    f.bridge.workspace!.reveal = async () => { revealed.push(1); };
+    const app = await started(f);
+    app.store.update((s) => ({ ...s, account: { login: "Ada" } }));
+    await app.commands.run("files.open");
+    const where = () => (app.viewModels.select("vm.files", app.store.state) as { source: Record<string, unknown> }).source;
+    expect(where()).toEqual({ visible: true, icon: "github", title: "my-notes", login: "@Ada", hasLogin: true, label: "Notes from ada/my-notes, signed in as @Ada", revealable: true });
+    await app.commands.run("files.revealFolder");
+    expect(revealed).toEqual([1]);
+    // Someone else's repository keeps its owner; signed out, no login.
+    app.store.update((s) => ({ ...s, account: { login: "" }, workspace: { ...s.workspace, repo: "team/shared" } }));
+    expect(where()).toMatchObject({ title: "team/shared", login: "", hasLogin: false, label: "Notes from team/shared" });
+    // No GitHub repository: the folder's name; no folder (the browser): nothing to show or open.
+    app.store.update((s) => ({ ...s, workspace: { ...s.workspace, repo: undefined } }));
+    expect(where()).toMatchObject({ visible: true, icon: "folder", title: "my-notes" });
+    app.store.update((s) => ({ ...s, workspace: { ...s.workspace, folder: "" } }));
+    expect(where()).toMatchObject({ visible: false, revealable: false });
+  });
 });

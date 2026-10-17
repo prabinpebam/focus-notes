@@ -23,6 +23,8 @@ export interface SheetProps {
   dockWidth?: number;
   /** The resize handle's name ("Resize Files"). */
   resizeLabel?: string;
+  /** Where the notes come from (D-188): first, above a hairline; docked, in the title band. */
+  band?: ReactNode;
   /** What stays above the scrolling body: the title, actions, a filter. */
   header?: ReactNode;
   /** What stays below it: Recently deleted in Files. */
@@ -50,7 +52,7 @@ function placed(el: HTMLElement, side: "start" | "end") {
  * A side sheet (IA → Surface types): floats over the canvas without moving the reading column,
  * and closes on Esc or a click on the canvas. It isn't modal: the note stays readable beside it.
  */
-export function Sheet({ label, side = "start", width = "files", keyScope = "none", pinned = false, docked = false, dockWidth = 0, resizeLabel, header, footer, id, children, onClose, onResize }: SheetProps) {
+export function Sheet({ label, side = "start", width = "files", keyScope = "none", pinned = false, docked = false, dockWidth = 0, resizeLabel, band, header, footer, id, children, onClose, onResize }: SheetProps) {
   const ref = useRef<HTMLElement | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   useAutoHideScrollbar(bodyRef);
@@ -165,6 +167,7 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
         data-key-scope={keyScope === "none" ? undefined : keyScope}
         onKeyDown={keyDown}
       >
+        {band ? <div className={s.band} data-sheet-band="">{band}</div> : null}
         {/* The header and the body: the body scrolls, or in a short sheet both do (Sheet.css.ts). */}
         <div className={s.main} ref={mainRef}>
           {header ? <div className={s.header} data-sheet-header="">{header}</div> : null}

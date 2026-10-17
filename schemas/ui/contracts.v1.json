@@ -8228,6 +8228,9 @@
         }
       },
       "slots": {
+        "band": {
+          "accepts": "any"
+        },
         "header": {
           "accepts": "any"
         },
@@ -8372,6 +8375,54 @@
             }
           },
           "slots": {
+            "band": [
+              {
+                "type": "Inline",
+                "props": {
+                  "justify": "between",
+                  "gap": "s",
+                  "grow": true
+                },
+                "children": [
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "s",
+                      "grow": true
+                    },
+                    "children": [
+                      {
+                        "type": "Icon",
+                        "props": {
+                          "name": "github"
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "gallery.sample"
+                          },
+                          "role": "emphasis",
+                          "lines": "one"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "IconButton",
+                    "props": {
+                      "icon": "open",
+                      "label": {
+                        "t": "command.files.revealFolder"
+                      },
+                      "tone": "muted",
+                      "bleed": true
+                    }
+                  }
+                ]
+              }
+            ],
             "header": [
               {
                 "type": "Heading",

@@ -146,6 +146,12 @@
         "handleHover": { "$type": "color", "$value": "{color.borderStrong}" },
         "handleActive": { "$type": "color", "$value": "{color.accent}" },
         "focusRing": { "$type": "color", "$value": "{color.focusRing}" }
+      },
+      "band": {
+        "$description": "Where the notes come from, leading Files above a hairline (D-188): in the title band when docked; on macOS clear of the traffic lights.",
+        "border": { "$type": "color", "$value": "{color.border}" },
+        "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+        "macStart": { "$type": "dimension", "$value": "{window.trafficLightRoom}" }
       }
     }
   }

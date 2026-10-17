@@ -3434,6 +3434,9 @@
         }
       },
       "slots": {
+        "band": {
+          "accepts": "any"
+        },
         "header": {
           "accepts": "any"
         },

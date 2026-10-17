@@ -201,6 +201,18 @@ export function registerFiles(ctx: Ctx) {
       announce(catalog.format(on ? "files.pinnedNow" : "files.unpinnedNow"));
     },
   });
+  // Open local folder (D-188): where the notes are saved, in the system's file manager.
+  commands.register({
+    id: "files.revealFolder", title: "command.files.revealFolder", icon: "open", group: "files",
+    enabled: (s) => Boolean(ws?.reveal) && Boolean(s.workspace.folder),
+    run: async () => {
+      try {
+        await ws!.reveal!();
+      } catch {
+        toast(catalog.format("toast.revealFolderFailed"), { tone: "error" });
+      }
+    },
+  });
   // The window narrowed past what Files, the docked contents and the note's narrowest text need: Files
   // undocks first, closing as an undocked panel does; with room again, it docks and opens on its own,
   // without taking the caret (D-187). The canvas measures the room and says so.
@@ -843,7 +855,26 @@ export function registerFiles(ctx: Ctx) {
     ]),
   };
   const NO_ITEM = { id: "", label: "", shortcut: "", disabled: false };
-  const CLOSED = { open: false, pinned: false, docked: false, width: 0, pinIcon: "pin", pinLabel: "", pinShortcut: "", menu: [], menuLabel: "", focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
+  const NO_SOURCE = { visible: false, icon: "folder", title: "", login: "", hasLogin: false, label: "", revealable: false };
+  /**
+   * Where the notes come from (D-188): the notes repository (its name alone when the signed-in account owns it), the account
+   * as @login, and whether its folder can be opened. A folder without a GitHub repository shows the folder's name.
+   */
+  const whereFrom = (s: AppState) => {
+    const login = s.account.login;
+    const repo = s.workspace.repo ?? "";
+    const [owner = "", name = ""] = repo.split("/");
+    const folder = (s.workspace.folder ?? "").split(/[\\/]/).filter(Boolean).pop() ?? "";
+    const title = repo ? (login && owner.toLowerCase() === login.toLowerCase() ? name : repo) : folder;
+    if (!title) return NO_SOURCE;
+    const at = login ? catalog.format("files.source.login", { login }) : "";
+    return {
+      visible: true, icon: repo ? "github" : "folder", title, login: at, hasLogin: Boolean(at),
+      label: catalog.format(at ? "files.source.label" : "files.source.labelLocal", { where: repo || folder, login: at }),
+      revealable: Boolean(ws?.reveal) && Boolean(s.workspace.folder),
+    };
+  };
+  const CLOSED = { source: NO_SOURCE, open: false, pinned: false, docked: false, width: 0, pinIcon: "pin", pinLabel: "", pinShortcut: "", menu: [], menuLabel: "", focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
   const newNoteShortcut = () => (ctx.describeItem("note.new").shortcut as string | undefined) ?? "";
   /** The focused row's menu (D-162): its items as the ⋯ menu shows commands, and its name. */
   const menuOf = (s: AppState, rows: readonly FileRow[]) => {
@@ -869,6 +900,7 @@ export function registerFiles(ctx: Ctx) {
     schema: {
       type: "object",
       properties: {
+        source: { type: "object", properties: { visible: { type: "boolean" }, icon: { type: "string", enum: ["github", "folder"] }, title: { type: "string" }, login: { type: "string" }, hasLogin: { type: "boolean" }, label: { type: "string" }, revealable: { type: "boolean" } } },
         open: { type: "boolean" }, pinned: { type: "boolean" }, docked: { type: "boolean" }, width: { type: "number" }, pinIcon: { type: "string", enum: ["pin", "pinOff"] }, pinLabel: { type: "string" }, pinShortcut: { type: "string" },
         menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } }, menuLabel: { type: "string" },
         focusRequest: { type: "number" }, items: { type: "array", items: TREE_ITEM }, focusId: { type: "string" },
@@ -882,7 +914,7 @@ export function registerFiles(ctx: Ctx) {
     },
     setters: { filter: "files.setFilter", editValue: "files.setEditValue" },
     // The tree, the open note, and whether the workspace can be written (PRF-11). Cheap while closed.
-    reads: ["ui.files", "workspace", "note.path", "ui.held"],
+    reads: ["ui.files", "workspace", "note.path", "ui.held", "account.login"],
     shows: (s) => (s.ui.files.open ? [{ kind: "tree" }] : []),
     select: (s) => {
       const f = s.ui.files;
@@ -914,6 +946,7 @@ export function registerFiles(ctx: Ctx) {
       const notes = rows.filter((r) => r.kind !== "root").length;
       const pin = ctx.describeItem("files.togglePin");
       return {
+        source: whereFrom(s),
         open: true, pinned: f.pinned, docked: f.pinned && f.fits, width: f.width ?? 0, pinIcon: f.pinned ? "pinOff" : "pin", pinLabel: catalog.format(f.pinned ? "files.unpin" : "files.pin"), pinShortcut: (pin.shortcut as string | undefined) ?? "",
         ...menuOf(s, rows),
         focusRequest: f.focusRequest, items, focusId: f.edit ? f.edit.id : f.selection.focus,

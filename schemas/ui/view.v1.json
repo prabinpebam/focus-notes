@@ -7745,6 +7745,12 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "band": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
             "header": {
               "type": "array",
               "items": {

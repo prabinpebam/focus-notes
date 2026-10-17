@@ -1,4 +1,4 @@
-import { createVar, fallbackVar, keyframes, style, styleVariants } from "@vanilla-extract/css";
+import { createVar, fallbackVar, globalStyle, keyframes, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 import { minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
@@ -110,6 +110,25 @@ export const main = style({
 });
 minimalScrollbar(main, t);
 export const header = style({ display: "flex", flexDirection: "column", gap: t.gap, flexShrink: 0 });
+// Where the notes come from (D-188): leads the sheet above a hairline that runs edge to edge. Docked,
+// it sits in the title band, which stays the window's drag region (its buttons don't drag).
+export const band = style({
+  display: "flex",
+  alignItems: "center",
+  flexShrink: 0,
+  minWidth: 0,
+  marginInline: `calc(-1 * ${t.padding})`,
+  paddingInline: t.padding,
+  paddingBlockEnd: t.gap,
+  borderBlockEndStyle: "solid",
+  borderBlockEndWidth: t.band.borderWidth,
+  borderBlockEndColor: t.band.border,
+  selectors: {
+    "[data-docked] > &": { position: "absolute", top: 0, left: 0, right: 0, height: t.dock.top, marginInline: 0, paddingBlockEnd: 0, boxSizing: "border-box" },
+    ":root[data-platform=macos] [data-docked][data-side=start] > &": { paddingInlineStart: t.band.macStart },
+  },
+});
+globalStyle(`${band} button`, { WebkitAppRegion: "no-drag" } as Record<string, string>);
 // The scrolling part. Its scrollbar's space is reserved in the sheet's padding at the end, so content
 // keeps the same inset on both sides whether or not it scrolls (UI-09, D-111).
 export const body = style({

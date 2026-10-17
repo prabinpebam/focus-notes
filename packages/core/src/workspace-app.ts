@@ -25,6 +25,8 @@ export interface WorkspaceState {
   found?: number;
   /** The Pages site the public root publishes to, once known: public links need it (SHR-03, D-139). */
   site?: string;
+  /** The notes repository on GitHub, as owner/name: Files says where the notes come from (D-188). */
+  repo?: string;
   tree: WorkspaceTree;
 }
 export const NO_WORKSPACE: WorkspaceState = { access: "write", tree: EMPTY_TREE };
@@ -81,9 +83,10 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
     const before = store.state.workspace;
     const found = f.access === "newer" ? f.found : undefined;
     const site = info?.site;
-    if (before.access === f.access && before.found === found && before.folder === info?.folder && before.site === site) return;
+    const repo = info?.repo;
+    if (before.access === f.access && before.found === found && before.folder === info?.folder && before.site === site && before.repo === repo) return;
     const explainNow = before.access !== f.access || before.found !== found;
-    setWorkspace({ access: f.access, found, site, ...(info ? { folder: info.folder } : {}) });
+    setWorkspace({ access: f.access, found, site, repo, ...(info ? { folder: info.folder } : {}) });
     if (explainNow || before.folder !== info?.folder) explain();
   }
   commands.register({

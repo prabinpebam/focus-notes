@@ -238,8 +238,11 @@ export interface WorkspaceBridge {
   /**
    * Where the workspace is, and the text of its format file if it has one (DST-05). Quick: read before the first note opens.
    * `site` is the GitHub Pages address the public root publishes to, once it's known (SHR-03, D-139).
+   * `repo` is the notes repository on GitHub, as owner/name, read from its origin (D-188).
    */
-  info(): Promise<{ folder: string; format?: string; site?: string }>;
+  info(): Promise<{ folder: string; format?: string; site?: string; repo?: string }>;
+  /** Opens the workspace's folder in the system's file manager (D-188). Desktop only. */
+  reveal?(): Promise<void>;
   /** Every note and folder in the workspace's roots. */
   scan(): Promise<WorkspaceScan>;
   /** Writes the format file, after a migration the person agreed to. */

@@ -30,7 +30,7 @@ import { BUNDLE_MAX_BYTES, parseBundle, planImport, safeWorkspacePath, type Bund
 import { parseSettings } from "@focus-notes/core/settings";
 import { restorePlace, titleOrName } from "@focus-notes/core/history";
 import { GitSync, NO_GIT } from "./git/sync.ts";
-import { TemplateGuard } from "./git/template-guard.ts";
+import { remoteRepo, TemplateGuard } from "./git/template-guard.ts";
 import { HeldFile, excludeFileOf } from "./git/held.ts";
 import { changedChars, type BackupPolicy } from "./git/cadence.ts";
 import { createRunner, type GitRunner } from "./git/run.ts";
@@ -1109,10 +1109,24 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("themes:reveal", async (file) => {
     const p = themeFile(file);
     if (existsSync(p)) shell.showItemInFolder(p);
-  });  handle("workspace:info", async () => {
-    const format = await readFormat();
-    const site = await pagesSite().catch(() => undefined);
-    return { folder: notesHome(), ...(format !== undefined ? { format } : {}), ...(site ? { site } : {}) };
+  });
+  // The notes repository on GitHub (D-188): read from the clone's own config, no Git process and no network.
+  const notesRepo = async () => {
+    const config = await readFile(join(notesHome(), ".git", "config"), "utf8");
+    const raw = /\[remote "origin"\][^[]*?url\s*=\s*([^\r\n]+)/.exec(config)?.[1]?.trim();
+    // A config value may be quoted, with \\ and \" escaped (Git writes a Windows path's backslashes so).
+    const url = raw?.replace(/^"(.*)"$/, "$1").replace(/\\([\\"])/g, "$1");
+    const r = url ? remoteRepo(url, localRemotes) : undefined;
+    return r ? `${r.owner}/${r.name}` : undefined;
+  };
+  handle("workspace:info", async () => {
+    const [format, site, repo] = await Promise.all([readFormat(), pagesSite().catch(() => undefined), notesRepo().catch(() => undefined)]);
+    return { folder: notesHome(), ...(format !== undefined ? { format } : {}), ...(site ? { site } : {}), ...(repo ? { repo } : {}) };
+  });
+  // Open local folder (D-188): the workspace's folder in the system's file manager, nothing else.
+  handle("workspace:reveal", async () => {
+    const problem = await shell.openPath(notesHome());
+    if (problem) throw new Error(problem);
   });
   handle("workspace:scan", async () => {
     const rs = roots();

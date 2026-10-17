@@ -725,6 +725,10 @@
     "trafficLightY": {
       "$type": "dimension",
       "$value": "{ref.size.14}"
+    },
+    "trafficLightRoom": {
+      "$type": "dimension",
+      "$value": "{ref.size.80}"
     }
   },
   "wait": {
