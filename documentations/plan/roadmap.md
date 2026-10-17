@@ -32,6 +32,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
   - **WP-8.2 custom themes:** rename, import, generate from one color, shuffle, export.
   - **WP-8.4 workspace pro:** last-changed time on rows, replace across notes (FND-05), Spotlight filters and a preview pane (SPT-06).
   - **WP-8.5 multiple windows:** <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd>, reopening the same windows at launch, the macOS Window menu.
+  - **WP-8.8 document minimap (D-185):** built on the `fix-state-note` branch (17 October), waiting for its Windows CI run and the owner's look; a setting to turn it off is a possible follow-up.
   - **WP-5.6, WP-5.7, WP-6.2:** loose ends.
 - **Not started:**
   - WP-8.6 signing, updates, channels and stores (needs the owner's certificates);
@@ -113,7 +114,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M8: Polish and pro features (Make it yours, fully)</p>
-<p>Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, signed builds with automatic updates and channels, store listings, and more interface languages. <a href="implementation-plan.md#m8">Details</a>. DSK-06, DSK-07, DST-04, DST-07, EDT-07, FIL-11, FIL-13, FND-03, FND-05, I18N-03, KEY-04, KEY-07, SPT-06, TBL-04, TBL-09, THM-04, THM-05, THM-09 to THM-12, UI-08.</p>
+<p>Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, a document minimap, signed builds with automatic updates and channels, store listings, and more interface languages. <a href="implementation-plan.md#m8">Details</a>. DSK-06, DSK-07, DST-04, DST-07, EDT-07, FIL-11, FIL-13, FND-03, FND-05, I18N-03, KEY-04, KEY-07, SPT-06, TBL-04, TBL-09, THM-04, THM-05, THM-09 to THM-12, UI-08, UI-13.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>

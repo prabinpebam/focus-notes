@@ -1,0 +1,167 @@
+<header class="slate-hero">
+  <p class="slate-hero__eyebrow">Design · Components</p>
+  <h1 class="slate-hero__title">Document minimap</h1>
+  <p class="slate-hero__summary">A quiet rail of heading bars on the note's right edge that shows where you are, and expands on hover into a contents card you can jump from, modeled on Notion's floating table of contents.</p>
+</header>
+
+<aside class="slate-tldr">
+  <p class="slate-tldr__label">TL;DR</p>
+  <p>When a note has <strong>two or more headings</strong>, a column of short bars sits on its right edge, clear of the scrollbar: one bar per heading, shorter for deeper levels, the <strong>current section's bar bright</strong>. <strong>Hovering</strong> the rail expands it into a <strong>contents card</strong>: every heading, indented by level, at most two lines each, the current one in the accent color. Clicking a heading moves the caret to it and scrolls it to the reading zone's top. From the keyboard, Spotlight's <em>Show contents</em> opens the same card with focus on the current heading. It hides in focus mode and when the window has no room beside the text. Component IA-CMP-MINIMAP serves UC-FIND-06, requirement UI-13, work package WP-8.8, decision D-185.</p>
+</aside>
+
+<figure class="slate-figure">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" role="img"
+       aria-labelledby="mmap-title mmap-desc" preserveAspectRatio="xMidYMid meet"
+       data-slate-svg-motion="viewport">
+    <title id="mmap-title">The minimap at rest and expanded on hover</title>
+    <desc id="mmap-desc">Left: a note's text column with a rail of nine short horizontal bars beside the scrollbar on the right edge. Bars are longer for top-level headings and shorter for deeper ones; the third bar, for the section being read, is brighter. Right: the same rail expanded on hover into a rounded card that lists the nine headings indented by level, with the current heading in the accent color.</desc>
+    <g id="mmap-rest" data-slate-svg-step="0" data-slate-svg-effect="fade">
+      <rect id="mmap-note" x="40" y="30" width="400" height="380" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5"/>
+      <g fill="var(--color-neutral-stroke-1)">
+        <rect x="80" y="80" width="220" height="10" rx="5"/><rect x="80" y="104" width="250" height="8" rx="4"/>
+        <rect x="80" y="122" width="230" height="8" rx="4"/><rect x="80" y="152" width="160" height="10" rx="5"/>
+        <rect x="80" y="176" width="250" height="8" rx="4"/><rect x="80" y="194" width="210" height="8" rx="4"/>
+        <rect x="80" y="224" width="140" height="10" rx="5"/><rect x="80" y="248" width="250" height="8" rx="4"/>
+        <rect x="80" y="266" width="240" height="8" rx="4"/><rect x="80" y="284" width="190" height="8" rx="4"/>
+      </g>
+      <rect x="418" y="60" width="6" height="120" rx="3" fill="var(--color-neutral-stroke-1)"/>
+      <g stroke-linecap="round" stroke-width="3">
+        <path d="M386 150 H404" stroke="var(--color-neutral-fg-3)"/>
+        <path d="M391 162 H404" stroke="var(--color-neutral-fg-3)"/>
+        <path d="M391 174 H404" stroke="var(--color-neutral-fg-1)"/>
+        <path d="M391 186 H404" stroke="var(--color-neutral-fg-3)"/>
+        <path d="M395 198 H404" stroke="var(--color-neutral-fg-3)"/>
+        <path d="M395 210 H404" stroke="var(--color-neutral-fg-3)"/>
+        <path d="M386 222 H404" stroke="var(--color-neutral-fg-3)"/>
+        <path d="M391 234 H404" stroke="var(--color-neutral-fg-3)"/>
+        <path d="M395 246 H404" stroke="var(--color-neutral-fg-3)"/>
+      </g>
+    </g>
+    <g id="mmap-card" data-slate-svg-step="1" data-slate-svg-effect="fade-rise" font-family="var(--font-family-base)" font-size="16">
+      <rect id="mmap-cardbox" x="560" y="70" width="320" height="300" rx="14" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5"/>
+      <g fill="var(--color-neutral-fg-1)">
+        <text x="584" y="104">Launch plan</text>
+        <text x="600" y="134">Why now</text>
+        <text x="600" y="194">Risks</text>
+        <text x="616" y="224">Technical</text>
+        <text x="616" y="254">People</text>
+        <text x="584" y="284">Timeline</text>
+        <text x="600" y="314">First week</text>
+        <text x="616" y="344">Open questions</text>
+      </g>
+      <rect x="590" y="146" width="270" height="30" rx="8" fill="var(--color-neutral-bg-3)"/>
+      <text x="600" y="166" fill="var(--color-brand-fg-1)" font-weight="700">Audience and reach</text>
+    </g>
+    <g id="mmap-labels" data-slate-svg-step="2" data-slate-svg-effect="fade" font-family="var(--font-family-base)" font-size="15" fill="var(--color-neutral-fg-2)">
+      <text x="240" y="430" text-anchor="middle">At rest: one bar per heading, the current one bright</text>
+      <text x="720" y="400" text-anchor="middle">On hover: the contents card</text>
+    </g>
+  </svg>
+  <figcaption>The rail sits just left of the scrollbar and stays out of the text column. Hovering it opens the contents card in the same place; the current section is bright on the rail and accented in the card.</figcaption>
+</figure>
+<details class="slate-figure-data">
+  <summary>Data</summary>
+  <table>
+    <thead><tr><th>State</th><th>What shows</th></tr></thead>
+    <tbody>
+      <tr><td>At rest</td><td>One 2 px bar per heading, right-aligned, 20 px (top level), 16 px (one level deeper), 12 px (two deeper), 8 px (deeper still). The current section's bar uses the text color; the rest are muted.</td></tr>
+      <tr><td>Hover or <em>Show contents</em></td><td>A card listing every heading, indented 12 px per level below the shallowest, each at most two lines with an ellipsis; the current heading in the accent color.</td></tr>
+    </tbody>
+  </table>
+</details>
+
+<h2 data-reader-personas="design product">When it shows</h2>
+<p>The rail shows in any note, editable or read-only, on the desktop and in the browser, while all of these hold:</p>
+<ul>
+  <li>The note has <strong>two or more headings</strong> at its top level (Notion's threshold). Headings are the only structure Markdown gives a note, so the rail lists exactly what a GitHub viewer would see as sections.</li>
+  <li><strong>Focus mode is off</strong>. Focus mode promises that everything but the current line recedes (CP-FOCUS-01); the rail comes back when it's turned off, and <em>Show contents</em> still opens the card.</li>
+  <li><strong>There's room beside the text</strong>: the space between the text column's right edge and the scrollbar holds the rail (32 px), 8 px between the rail and the scrollbar, and 16 px between the rail and the text. Otherwise the rail hides rather than covering words, for example in a narrow window or beside a pinned Files panel (D-161). The card can still be opened with <em>Show contents</em>, over the text.</li>
+</ul>
+<p>It shows even when the note fits the window: the rail then works as a map of the note's structure, as in Notion. Nothing about it is stored, and no setting turns it off yet (a follow-up, if the owner wants one).</p>
+
+<h2 data-reader-personas="design">Anatomy</h2>
+<dl class="slate-defs">
+  <dt>Rail</dt>
+  <dd>A 32 px wide column (<code>size.hit</code>), its right edge 8 px (<code>space.s</code>) left of the scrollbar's reserved gutter, vertically centered in the note's visible area and never higher than the trigger's band. It is one button: the whole column is its hit area. No fill or border at rest.</dd>
+  <dt>Bars</dt>
+  <dd>One per heading, in note order, 2 px thick (<code>border.focus</code>) with round ends, right-aligned 4 px inside the rail. Their length shows depth below the note's shallowest heading: 20, 16, 12 and 8 px. Bars are evenly spaced, not placed by where the heading falls in the note, so short and long sections read alike. Spacing is 16 px, shrinking so the rail stays within 70% of the visible height, down to 4 px; past that, evenly chosen headings stand for the rest and the current one is always drawn. Rest color <code>color.textMuted</code>; the current section's bar <code>color.text</code>.</dd>
+  <dt>Contents card</dt>
+  <dd>Opens in the rail's place, its right edge on the rail's right edge, centered on the rail and kept inside the note's visible area. The popover surface (frost, 1 px <code>color.border</code>, <code>shadow.2</code>, <code>radius.popover</code>), 16 px padding (<code>space.l</code>), between 240 and 320 px wide, at most 70% of the visible height and then scrolling, the current heading scrolled into view as it opens. No title: the headings are the content.</dd>
+  <dt>Heading items</dt>
+  <dd>The UI font at body size (14 px), indented 12 px (<code>space.m</code>) per level, 4 &times; 8 px padding, <code>radius.control</code>, 2 px apart. At most two lines, then an ellipsis; the full text is the item's accessible name. Hover and keyboard focus use <code>color.hover</code>; the current heading uses <code>color.accent</code>. An empty heading reads <em>Untitled heading</em>.</dd>
+</dl>
+
+<h2 data-reader-personas="design product">Interactions</h2>
+<table>
+  <thead><tr><th>Do this</th><th>Get this</th><th>Serves</th></tr></thead>
+  <tbody>
+    <tr><td>Read or scroll</td><td>The current section's bar is bright, live as the note scrolls.</td><td>UC-FIND-06</td></tr>
+    <tr><td>Type</td><td>The bar follows the caret's section; a new or renamed heading appears on the rail a moment after typing pauses (150 ms), never on the keystroke itself.</td><td>UC-FIND-06</td></tr>
+    <tr><td>Point at the rail for 150 ms</td><td>The contents card opens in its place. Focus stays where it was, so typing carries on in the note.</td><td>UC-FIND-06</td></tr>
+    <tr><td>Move from the rail onto the card</td><td>It stays open; it closes 200 ms after the pointer leaves both, or on <kbd>Esc</kbd>, without the pointer moving (WCAG 1.4.13). <kbd>Esc</kbd> that closes the card does nothing else.</td><td>UC-FIND-06</td></tr>
+    <tr><td>Click or tap the rail</td><td>Opens or closes the card at once (touch has no hover).</td><td>UC-FIND-06</td></tr>
+    <tr><td>Click a heading in the card</td><td>The caret goes to the heading's start, focus goes to the note, and the heading is scrolled to the reading zone's top (25% down), in one step. The card closes.</td><td>UC-FIND-06</td></tr>
+    <tr><td>Scroll the wheel over the card</td><td>Scrolls the card's list, not the note.</td><td>UC-FIND-06</td></tr>
+  </tbody>
+</table>
+
+<h3>Which section is current</h3>
+<ol>
+  <li>While the note has focus and the caret is in view, the current section is the <strong>caret's</strong>: the last heading at or before it. Writing in a section lights its bar.</li>
+  <li>Otherwise (reading, scrolling away from the caret), it's the last heading whose top is at or above the <strong>reading zone's top line</strong>, 25% down the note (UI-11). That's where a jump puts a heading, so a heading jumped to is current at once.</li>
+  <li>Scrolled to the very end, it's the last heading whose top is in view: a short last section can't reach the 25% line, and would otherwise never be current.</li>
+  <li>Above the first heading, no bar is current.</li>
+</ol>
+
+<h3>Keyboard</h3>
+<ul>
+  <li><strong>Show contents</strong> (Spotlight, and on macOS the menu bar's Go menu) opens the card with focus on the current heading, or the first. Available when the note has two or more headings; otherwise it says why.</li>
+  <li>In the card: <kbd>↓</kbd> and <kbd>↑</kbd> move between headings, <kbd>Home</kbd> and <kbd>End</kbd> go to the first and last, <kbd>Enter</kbd> or <kbd>Space</kbd> jumps, <kbd>Esc</kbd> closes it and puts the caret back where it was, and <kbd>Tab</kbd> leaves it (it closes).</li>
+  <li>The rail is a button in the tab order after the note: <kbd>Enter</kbd> or <kbd>Space</kbd> opens the card with focus inside.</li>
+</ul>
+
+<h2 data-reader-personas="design engineering">Accessibility</h2>
+<ul>
+  <li>A <code>nav</code> landmark named <em>Contents</em> holds the rail and the card, as in the WAI-ARIA disclosure navigation pattern: the rail is a button with <code>aria-expanded</code> (and <code>aria-controls</code> while open), the card a list of buttons.</li>
+  <li>Items are buttons, not links: choosing one moves the caret and focus in the note, which is an action the app takes, and the editor has no anchors to link to. The current heading's item carries <code>aria-current="location"</code>, so screen readers say where you are, not only sighted people.</li>
+  <li>The bars are decorative (<code>aria-hidden</code>): the card, the command, and the button's state say everything they show.</li>
+  <li>Hover content is dismissible (<kbd>Esc</kbd>), hoverable (the card overlaps the rail) and persistent (no timer closes it while pointed at or focused), per WCAG 1.4.13. A hover-opened card never takes focus.</li>
+  <li>With reduced motion, the card appears and disappears without its fade.</li>
+</ul>
+
+<h2 data-reader-personas="design">With focus mode, find, Files, and tables</h2>
+<ul>
+  <li><strong>Focus mode</strong> hides the rail; <em>Show contents</em> still works.</li>
+  <li><strong>Find</strong> sits at the top; the rail is centered below it and never overlaps the bar.</li>
+  <li><strong>Pinned Files</strong> moves the text right; when that leaves no room on the right, the rail hides until there is.</li>
+  <li><strong>Tables</strong> keep their own controls in the column. A table set to <em>Bleed to edge</em> (D-182) can pass under the rail, which stays above it and takes only its own thin column.</li>
+  <li>Side sheets on the right (the theme manager, note history) float over the rail.</li>
+</ul>
+
+<h2 data-reader-personas="engineering">Performance</h2>
+<p>The heading list is read from the note 150 ms after the last change, never on the keystroke (PRF-01); the caret's section is found from document positions only. Layout is measured on scroll (once a frame), on resize, and when the card opens, and nothing runs on a timer at rest (PRF-04). Opening the card or jumping is instant: no new wait for the wait inventory.</p>
+
+<h2 data-reader-personas="product design">Benchmark</h2>
+<table>
+  <thead><tr><th>Product</th><th>How it does it</th><th>What we take</th></tr></thead>
+  <tbody>
+    <tr><td>Notion (floating table of contents)</td><td>Right-side bars for pages with two or more headings, following the scroll; hover expands them to the headings. On by default, a per-page toggle turns it off; nested headings are left out (<a href="https://www.notion.com/help/columns-headings-and-dividers">Notion Help</a>). Sizes, delays and the current-section rule aren't documented.</td><td>The model, the two-heading threshold, and the look from the owner's screenshots. Sizes, delays and the current-section rule are ours, below.</td></tr>
+    <tr><td>Word and Pages navigation panes; Google Docs outline</td><td>A persistent left sidebar tree; click to jump; Word highlights the current section. Google Docs isn't confirmed to expose the current item or a <code>nav</code> landmark to screen readers.</td><td>Click moves the caret, as Word does. A landmark and <code>aria-current</code>, which Docs lacks.</td></tr>
+    <tr><td>Craft, Bear, Obsidian</td><td>An outline in a sidebar or info panel: always there, or easy to miss.</td><td>Neither: the rail is visible at rest without taking a sidebar's space.</td></tr>
+    <tr><td>VS Code minimap</td><td>A scaled-down render of the file with a viewport slider, shown always or on hover.</td><td>Not a render of the text: bars per heading read faster and stay calm.</td></tr>
+    <tr><td>GitHub and Confluence</td><td>A table of contents block in the document, or a generated anchor list.</td><td>Nothing is added to the Markdown: the rail is app chrome, so the file stays as written (CP-OWN-01).</td></tr>
+  </tbody>
+</table>
+<p>Accessibility follows the <a href="https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/examples/disclosure-navigation/">WAI-ARIA disclosure navigation example</a>, <a href="https://developer.mozilla.org/docs/Web/Accessibility/ARIA/Attributes/aria-current"><code>aria-current="location"</code></a>, and <a href="https://www.w3.org/WAI/WCAG21/Understanding/content-on-hover-or-focus.html">WCAG 1.4.13</a>. Bar sizes, the 150 and 200 ms delays and the 70% caps are design choices informed by common hover-card practice, not documented Notion values.</p>
+
+<h2 data-reader-personas="product design">Design decisions</h2>
+<table>
+  <thead><tr><th>ID</th><th>Decision</th><th>Serves</th><th>Rationale</th><th>Alternatives rejected</th></tr></thead>
+  <tbody>
+    <tr><td>DD-MAP-01</td><td>Follow Notion: bars on the right for two or more headings, expanding on hover into the headings.</td><td>UC-FIND-06</td><td>The owner asked for Notion's behavior. A glanceable map keeps your place in a long note without a sidebar (CP-REACH-01).</td><td>A left outline sidebar (permanent chrome); a scaled render of the text like VS Code (busy).</td></tr>
+    <tr><td>DD-MAP-02</td><td>The current section follows the caret while it's in view, and the reading zone's top line otherwise.</td><td>UC-FIND-06</td><td>In a writing app the section you're writing in is the one that matters; when reading, the reading zone line is where the app already keeps your eyes and where jumps land.</td><td>Top of the viewport (short sections never register); scroll position alone (the bright bar disagrees with where you type).</td></tr>
+    <tr><td>DD-MAP-03</td><td>A jump moves the caret to the heading and scrolls it to the reading zone's top in one step.</td><td>UC-FIND-06</td><td>Matches Spotlight's Go to heading and Word. One step keeps a long jump from painting every page on the way (PRF-01), and the reading zone then has nothing to correct.</td><td>Smooth scrolling (fights the reading zone, and is slow over long notes); scrolling without moving the caret (typing would jump back).</td></tr>
+    <tr><td>DD-MAP-04</td><td>Hide the rail in focus mode and wherever it would cover text; keep <em>Show contents</em> available.</td><td>UC-FIND-06, UC-FOCUS-02</td><td>The rail never competes with the words (CP-CALM-01, CP-FOCUS-01), and the keyboard path never disappears.</td><td>Shrinking the text column to make room (moves what you're reading).</td></tr>
+    <tr><td>DD-MAP-05</td><td>A <code>nav</code> landmark with a disclosure button and a list of buttons, the current one <code>aria-current="location"</code>.</td><td>UC-FIND-06</td><td>The APG disclosure navigation pattern; screen readers learn where they are, which Google Docs' outline doesn't offer.</td><td>A menu role (wrong semantics for navigation); links to anchors the editor doesn't have.</td></tr>
+  </tbody>
+</table>

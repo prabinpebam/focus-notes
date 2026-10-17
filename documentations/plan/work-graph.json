@@ -2048,6 +2048,35 @@
       "status": "planned"
     },
     {
+      "id": "WP-8.8",
+      "stage": "M8",
+      "title": "Document minimap",
+      "summary": "A Notion-style heading rail on the note's right edge that expands on hover into a contents card, with Show contents from the keyboard (D-185).",
+      "requirements": [
+        "UI-13"
+      ],
+      "dependsOn": [
+        "WP-1.7",
+        "WP-4.2"
+      ],
+      "touches": [
+        "ui",
+        "core",
+        "views",
+        "tokens"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/components/document-minimap.html"
+      ],
+      "lookahead": false,
+      "status": "building"
+    },
+    {
       "id": "WP-9.1",
       "stage": "Later",
       "title": "Image block",

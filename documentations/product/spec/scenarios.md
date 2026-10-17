@@ -55,6 +55,7 @@ The situations in which each [customer promise](customer-promises.md) matters, w
 | SC-FIND-03 | CP-REACH-01 | When a word must change everywhere in a note or across notes, I want to find and replace it with a preview, so nothing changes by surprise. | Writer, Power user | The find bar in a note. Replace across notes previews every change and makes one commit that can be reverted. | UC-FIND-04, UC-FIND-05 | IA-CMP-FINDBAR, IA-VIEW-SPOTLIGHT |
 | SC-FIND-04 | CP-REACH-01 | When I work from the keyboard, I want every action to have the shortcut I already know from other apps, so I never have to reach for the mouse. | Power user | A platform-correct keymap in four layers. Every pointer action has a keyboard path. | UC-KEY-02, UC-KEY-03, UC-FMT-04 | All views |
 | SC-FIND-05 | CP-REACH-01 | When I use a few actions all the time, I want them pinned to the toolbar, so they're always one click away. | Power user | The six toolbar actions can be chosen. Everything else moves into ⋯ automatically. | UC-CANVAS-05 | IA-CMP-TOOLBAR, IA-CMP-OVERFLOW |
+| SC-FIND-06 | CP-REACH-01 | When a note grows long, I want to see its sections and where I am, and jump to one, so I never lose my place. | Writer, Power user | A quiet rail of heading bars on the right shows the current section; hovering it lists the headings, and choosing one goes there. | UC-FIND-06 | IA-CMP-MINIMAP |
 
 <h2 data-reader-personas="product design">Theme and comfort</h2>
 

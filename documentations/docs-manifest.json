@@ -290,6 +290,15 @@
       "group": "Design/Components"
     },
     {
+      "path": "design/components/document-minimap.html",
+      "title": "Document minimap",
+      "order": 365,
+      "icon": "toc",
+      "status": "draft",
+      "updated": "2026-10-17",
+      "group": "Design/Components"
+    },
+    {
       "path": "design/components/feedback-and-dialogs.md",
       "title": "Feedback and dialogs",
       "order": 370,

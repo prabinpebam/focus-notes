@@ -12,7 +12,7 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | `CP-CALM-01` | Nothing competes with your words | Seed: blank UI with one trigger | SC-WRITE-01 |
 | `CP-FOCUS-01` | Your eye stays on the line you're writing | Seed: focus mode | SC-WRITE-02 |
 | `CP-FLOW-01` | Shaping text and tables feels fluid | Seed: Notion/Loop editing, tables; owner: Loop tables, contextual toolbar | SC-WRITE-03 to SC-WRITE-07, SC-TABLE-01 to SC-TABLE-04 |
-| `CP-REACH-01` | Anything is a few keystrokes away | Owner: Spotlight, find, keyboard | SC-FIND-01 to SC-FIND-05 |
+| `CP-REACH-01` | Anything is a few keystrokes away | Owner: Spotlight, find, keyboard | SC-FIND-01 to SC-FIND-06 |
 | `CP-ORDER-01` | Organized your way, safely reorganized | Seed: file and folder CRUD with moves | SC-FILE-01 to SC-FILE-04 |
 | `CP-SAFE-01` | Never lose, never leak | Seed: public/private; derived from Git storage | SC-FILE-05, SC-SAFE-01 to SC-SAFE-05 |
 | `CP-OWN-01` | Yours to keep | Seed: Markdown in a GitHub repo; owner: no hosting, no registration | SC-TABLE-05, SC-OWN-01, SC-SETUP-04 |
@@ -62,7 +62,7 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | Why it matters | A blank canvas only works if hidden things are easy to summon. |
 | Breaks when | Something can only be reached by browsing, or a common action has no familiar shortcut. |
 | Signals | Share of note opens through Spotlight. Keystrokes from intent to action. |
-| Scenarios | SC-FIND-01, SC-FIND-02, SC-FIND-03, SC-FIND-04, SC-FIND-05 |
+| Scenarios | SC-FIND-01, SC-FIND-02, SC-FIND-03, SC-FIND-04, SC-FIND-05, SC-FIND-06 |
 
 ### CP-ORDER-01 — Organized your way
 
