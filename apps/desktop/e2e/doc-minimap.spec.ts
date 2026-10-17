@@ -5,7 +5,7 @@
  * does the same from the keyboard. Screenshots go to test-results/screens for review.
  */
 import { test, expect, type Page } from "./fixtures.ts";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
@@ -23,8 +23,7 @@ const NOTE = [
 ].join("\n\n") + "\n";
 const TITLES = ["Launch plan", "Why now", "Audience and reach, with a long heading that wraps onto a second line in the card", "Technical", "People", "Timeline"];
 
-async function start(markdown = NOTE, state: Record<string, unknown> = {}): Promise<Launched> {
-  const dirs = tempDirs();
+async function start(markdown = NOTE, state: Record<string, unknown> = {}, dirs = tempDirs()): Promise<Launched> {
   writeFileSync(join(dirs.docs, "Welcome.md"), markdown);
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", ...state }));
   // Wide enough for the rail beside the text, as on a laptop.
@@ -36,7 +35,7 @@ async function start(markdown = NOTE, state: Record<string, unknown> = {}): Prom
 const rail = (page: Page) => page.locator("[data-doc-minimap-rail]");
 const bars = (page: Page) => rail(page).locator("span");
 const card = (page: Page) => page.locator("[data-doc-minimap-card]");
-const items = (page: Page) => card(page).getByRole("button");
+const items = (page: Page) => card(page).locator("li > button");
 const currentBar = (page: Page) => bars(page).evaluateAll((els) => els.findIndex((e) => e.hasAttribute("data-current")));
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
 /** The rail's centre, where a pointer rests to open the card. */
@@ -100,7 +99,7 @@ test("UI-13: hovering opens the contents card without taking focus; it stays whi
     await hoverRail(page);
     await expect(card(page)).toBeVisible();
     await expect(editor).toBeFocused();
-    await expect(page.getByRole("button", { name: "Contents" })).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByRole("button", { name: "Contents", exact: true })).toHaveAttribute("aria-expanded", "true");
     await expect(items(page)).toHaveText(TITLES);
     await expect(items(page).nth(5)).toHaveAttribute("aria-current", "location");
     // Indented by depth below the shallowest heading.
@@ -210,14 +209,14 @@ test("UI-13: the rail by keyboard: Enter opens the card on the current heading, 
   const l = await start();
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
-  const railButton = page.getByRole("button", { name: "Contents" });
+  const railButton = page.getByRole("button", { name: "Contents", exact: true });
   try {
     // The headings nest by level, so a screen reader hears them.
     await railButton.focus();
     await page.keyboard.press("Enter");
     await expect(card(page)).toBeVisible();
     await expect(items(page).nth(5)).toBeFocused();
-    expect(await card(page).evaluate((c) => [...c.querySelectorAll("button")].map((b) => b.closest("ul")!.parentElement!.closest("li")?.querySelector(":scope > button")?.textContent ?? null))).toEqual([null, "Launch plan", "Launch plan", TITLES[2], TITLES[2], "Launch plan"]);
+    expect(await card(page).evaluate((c) => [...c.querySelectorAll("li > button")].map((b) => b.closest("ul")!.parentElement!.closest("li")?.querySelector(":scope > button")?.textContent ?? null))).toEqual([null, "Launch plan", "Launch plan", TITLES[2], TITLES[2], "Launch plan"]);
     // The rail under the card is out of the tab order while it's covered (2.4.11).
     await expect(railButton).toHaveAttribute("tabindex", "-1");
     await page.keyboard.press("Escape");
@@ -226,6 +225,9 @@ test("UI-13: the rail by keyboard: Enter opens the card on the current heading, 
     await page.keyboard.press("Space");
     await expect(items(page).nth(5)).toBeFocused();
     await page.keyboard.press("Home");
+    // Shift+Tab: the pin, at the card's top, then out of the card, which closes.
+    await page.keyboard.press("Shift+Tab");
+    await expect(card(page).getByRole("button", { name: "Keep contents open" })).toBeFocused();
     await page.keyboard.press("Shift+Tab");
     await expect(card(page)).toBeHidden();
     // Hovered open, then tabbed into: it's the keyboard's now, and stays as the pointer leaves.
@@ -249,6 +251,99 @@ test("UI-13: the rail by keyboard: Enter opens the card on the current heading, 
     await expect(spotlight).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(spotlight).toBeHidden();
+  } finally { await quit(l); }
+});
+
+test("D-186: the pin keeps the card open beside the text in the rail's place, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning puts it back", async () => {
+  const dirs = tempDirs();
+  let l = await start(NOTE, {}, dirs);
+  let page = l.page;
+  const editor = () => page.getByRole("textbox", { name: "Note" });
+  const pin = () => card(page).getByRole("button", { name: /^(Keep contents open|Unpin contents)$/ });
+  const stateFile = () => readFileSync(join(dirs.userData, "state.json"), "utf8");
+  try {
+    // Pinned from the hover card with the pointer: the caret stays in the note.
+    await page.mouse.move(500, 400);
+    await hoverRail(page);
+    await expect(card(page)).toBeVisible();
+    await expect(pin()).toHaveAccessibleName("Keep contents open");
+    await expect(pin()).toHaveAttribute("aria-pressed", "false");
+    await pin().click();
+    await expect(pin()).toHaveAttribute("aria-pressed", "true");
+    await expect(pin()).toHaveAccessibleName("Unpin contents");
+    await expect(editor()).toBeFocused();
+    await expect.poll(stateFile).toContain('"outlinePinned": true');
+    // It stays as the pointer leaves, in the rail's place: no rail, beside the text, clear of the scrollbar.
+    await page.mouse.move(500, 400, { steps: 4 });
+    await page.waitForTimeout(500);
+    await expect(card(page)).toBeVisible();
+    await expect(card(page)).toHaveAttribute("data-pinned", "");
+    await expect(rail(page)).toHaveCount(0);
+    const geo = await page.evaluate(() => {
+      const c = document.querySelector("[data-doc-minimap-card]")!.getBoundingClientRect();
+      const sc = document.querySelector("[data-editor-scroller]") as HTMLElement;
+      const s = sc.getBoundingClientRect();
+      return { left: c.left, right: c.right, width: c.width, textRight: document.querySelector(".ProseMirror")!.getBoundingClientRect().right, contentRight: s.left + sc.clientLeft + sc.clientWidth };
+    });
+    expect(geo.left).toBeGreaterThanOrEqual(geo.textRight + 16 - 1);
+    expect(Math.round(geo.contentRight - geo.right)).toBe(8);
+    expect(geo.width).toBeGreaterThanOrEqual(240);
+    expect(geo.width).toBeLessThanOrEqual(320);
+    // Esc in the note: nothing closes. A heading: the caret goes there, the card stays.
+    await page.keyboard.press("Escape");
+    await expect(card(page)).toBeVisible();
+    await items(page).nth(1).click();
+    await expect(editor()).toBeFocused();
+    expect(await page.evaluate(() => window.getSelection()!.anchorNode?.textContent)).toBe("Why now");
+    await expect(card(page)).toBeVisible();
+    // Live: the current heading follows the caret.
+    await expect(items(page).nth(1)).toHaveAttribute("aria-current", "location");
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowDown" : "Control+End");
+    await expect(items(page).nth(5)).toHaveAttribute("aria-current", "location");
+    // Esc in the card: the caret back to the note, the card kept.
+    await items(page).nth(2).focus();
+    await page.keyboard.press("Escape");
+    await expect(editor()).toBeFocused();
+    await expect(card(page)).toBeVisible();
+    // Show contents: focus on its current heading; Esc back to the note, still pinned.
+    await page.keyboard.press(`${mod}+/`);
+    const spotlight = page.getByRole("dialog", { name: "Spotlight" });
+    await spotlight.getByRole("combobox").fill("Show contents");
+    await expect(spotlight.locator("[role=option][aria-selected=true]")).toContainText("Show contents");
+    await page.keyboard.press("Enter");
+    await expect(items(page).nth(5)).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(editor()).toBeFocused();
+    await expect(card(page)).toBeVisible();
+    await settled(page);
+    expect(await axeViolations(page)).toEqual([]);
+    await page.screenshot({ path: `${shots}/minimap-pinned-light.png` });
+    // Not enough room beside the text for the card: the rail comes back, its card's pin still pressed.
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(900, 700));
+    await expect(rail(page)).toHaveCount(1);
+    await expect(card(page)).toBeHidden();
+    await page.mouse.move(300, 300);
+    await hoverRail(page);
+    await expect(pin()).toHaveAttribute("aria-pressed", "true");
+    await page.mouse.move(300, 300);
+    await expect(card(page)).toBeHidden();
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(1200, 800));
+    await expect(card(page)).toHaveAttribute("data-pinned", "");
+    await quit(l);
+    // The next launch: there from the start, without a hover.
+    l = await start(NOTE, { outlinePinned: true }, dirs);
+    page = l.page;
+    await expect(card(page)).toHaveAttribute("data-pinned", "");
+    await expect(editor()).toBeFocused();
+    // Unpinned from the card: a hover card again, closing as the pointer leaves; the rail is back.
+    await pin().click();
+    await expect(pin()).toHaveAttribute("aria-pressed", "false");
+    await expect(editor()).toBeFocused();
+    await expect(card(page)).toBeVisible();
+    await page.mouse.move(500, 400, { steps: 4 });
+    await expect(card(page)).toBeHidden();
+    await expect(rail(page)).toHaveCount(1);
+    await expect.poll(stateFile).not.toContain("outlinePinned");
   } finally { await quit(l); }
 });
 

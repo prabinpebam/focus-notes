@@ -774,6 +774,15 @@
           "outlineUntitled": {
             "t": "outline.untitled"
           },
+          "outlinePinned": {
+            "get": "vm.app.outlinePinned"
+          },
+          "outlinePinLabel": {
+            "t": "outline.pin"
+          },
+          "outlineUnpinLabel": {
+            "t": "outline.unpin"
+          },
           "focusMode": {
             "get": "vm.app.focusMode"
           },
@@ -931,6 +940,9 @@
                 "get": "event.href"
               }
             }
+          },
+          "outlinePin": {
+            "run": "outline.togglePin"
           },
           "slash": {
             "run": "slash.setState",

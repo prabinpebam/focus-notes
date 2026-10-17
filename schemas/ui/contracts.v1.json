@@ -8952,6 +8952,19 @@
         "outlineUntitled": {
           "kind": "message",
           "description": "What an empty heading reads as in the minimap's contents card."
+        },
+        "outlinePinned": {
+          "kind": "boolean",
+          "default": false,
+          "description": "The minimap's contents card is kept open beside the text, where it fits (D-186)."
+        },
+        "outlinePinLabel": {
+          "kind": "message",
+          "description": "The contents card's pin button, unpinned: Keep contents open."
+        },
+        "outlineUnpinLabel": {
+          "kind": "message",
+          "description": "The contents card's pin button, pinned: Unpin contents."
         }
       },
       "events": {
@@ -9073,7 +9086,8 @@
           "payload": {
             "count": "number"
           }
-        }
+        },
+        "outlinePin": {}
       },
       "slots": {},
       "states": [

@@ -55,6 +55,8 @@ export interface AppState {
   /** Appearance and the reading settings (THM-08, THM-03, Theme manager → Reading). */
   appearance: Appearance;
   focusMode: boolean;
+  /** The document minimap's card kept open beside the text, on this device (D-186). */
+  outlinePinned: boolean;
   /** The toolbar's actions, in order: at most six (UI-08, D-170). */
   toolbarPinned: string[];
   /** keybindings.json as applied (KEY-07, D-170). */
@@ -218,7 +220,7 @@ export type MenuEntry = string | { submenu: string; label: string; items: string
 export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
   {
     id: "view", label: "menu.view",
-    items: ["font.smaller", "font.larger", "font.reset", { submenu: "font.content", label: "menu.contentFont", items: CONTENT_FONTS.map((f) => `font.content.${f}`) }, "window.fullScreen", "files.togglePin"],
+    items: ["font.smaller", "font.larger", "font.reset", { submenu: "font.content", label: "menu.contentFont", items: CONTENT_FONTS.map((f) => `font.content.${f}`) }, "window.fullScreen", "files.togglePin", "outline.togglePin"],
   },
   {
     id: "theme", label: "menu.theme",
@@ -286,6 +288,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       lineHeight: LINE_HEIGHT.default, measure: MEASURE.default, paragraphSpacing: "comfortable",
     },
     focusMode: false,
+    outlinePinned: false,
     toolbarPinned: [...DEFAULT_TOOLBAR],
     keybindings: KEYBINDINGS_NONE,
     compositing: bridge.compositing?.initial === "software" ? "software" : "gpu",
@@ -864,6 +867,16 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     enabled: (s) => ready(s) && headingCount(s.note.markdown) >= 2, disabledReason: "command.outline.show.reason",
     run: () => editorAction("outline.show"),
   });
+  // Pinned open beside the text (D-186): the card stays wherever it fits; kept on this device.
+  commands.register({
+    id: "outline.togglePin", title: "command.outline.togglePin", icon: "pin", group: "app",
+    checked: (s) => s.outlinePinned,
+    run: async (_a, ctx) => {
+      const on = !ctx.state.outlinePinned;
+      ctx.update((s) => ({ ...s, outlinePinned: on }));
+      await persistAppState({ outlinePinned: on ? true : undefined });
+    },
+  });
   // Find in selection (FND-03, D-160): opens the bar scoped to the selection, or toggles the scope.
   commands.register({
     id: "find.toggle.inSelection", title: "command.find.inSelection",
@@ -1251,6 +1264,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         platform: { type: "string", enum: ["macos", "windows", "linux", "web"] },
         fontSize: { type: "number" },
         focusMode: { type: "boolean" },
+        /** The document minimap's card pinned open (D-186). */
+        outlinePinned: { type: "boolean" },
         theme: { type: "string", enum: BUILT_IN_THEMES.map((t) => t.id) },
         contentFont: { type: "string", enum: [...CONTENT_FONTS] },
         // Reading settings (Theme manager → Reading): unset where they're the token's own value.
@@ -1266,7 +1281,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         editorKeymap: { type: "array", items: { type: "object", properties: { id: { type: "string" }, chord: { type: "string" } } } },
       },
     },
-    reads: ["appearance", "focusMode", "compositing", "ui.theme.preview", "ui.theme.draft", "keybindings.version"],
+    reads: ["appearance", "focusMode", "outlinePinned", "compositing", "ui.theme.preview", "ui.theme.draft", "keybindings.version"],
     select: (s) => {
       // The theme manager's keyboard preview shows on the real note (THM-07), and so does an edited copy.
       // A custom theme shows through its base's styles with its own colors over them (D-173).
@@ -1274,7 +1289,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const theme = root.theme;
       const a = s.appearance;
       return {
-        scheme: root.scheme ?? themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode,
+        scheme: root.scheme ?? themeById(theme)?.kind ?? resolvedScheme(s), theme, platform: bridge.platform, fontSize: a.fontSize, focusMode: s.focusMode, outlinePinned: s.outlinePinned,
         contentFont: a.contentFont, uiScale: a.uiScale, editorKeymap: editorKeymapOf(s.keybindings.version), compositing: s.compositing,
         lineHeight: a.lineHeight === LINE_HEIGHT.default ? undefined : a.lineHeight,
         measure: a.measure === MEASURE.default ? undefined : a.measure,
@@ -1463,6 +1478,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         },
         // Focus mode is on for new installs: it's a signature feature (D-04).
         focusMode: appState.focusMode ?? true,
+        outlinePinned: appState.outlinePinned === true,
         // The toolbar's six, as pinned on this device (UI-08, D-170).
         toolbarPinned: validPinned(appState.toolbarPinned, pinnable(), DEFAULT_TOOLBAR),
       }));

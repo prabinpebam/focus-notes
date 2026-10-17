@@ -8288,6 +8288,45 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "outlinePinned": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "outlinePinLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "outlineUnpinLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -8352,6 +8391,9 @@
               "$ref": "#/$defs/actions"
             },
             "blockSelect": {
+              "$ref": "#/$defs/actions"
+            },
+            "outlinePin": {
               "$ref": "#/$defs/actions"
             }
           }

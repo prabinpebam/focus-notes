@@ -26,6 +26,9 @@ export const contract = defineContract({
     slashList: { kind: "ref", description: "The slash menu's list, for aria-controls and aria-activedescendant." },
     outlineLabel: { kind: "message", description: "The document minimap's name, Contents (UI-13, D-185). The minimap shows only when it's given." },
     outlineUntitled: { kind: "message", description: "What an empty heading reads as in the minimap's contents card." },
+    outlinePinned: { kind: "boolean", default: false, description: "The minimap's contents card is kept open beside the text, where it fits (D-186)." },
+    outlinePinLabel: { kind: "message", description: "The contents card's pin button, unpinned: Keep contents open." },
+    outlineUnpinLabel: { kind: "message", description: "The contents card's pin button, pinned: Unpin contents." },
   },
   events: {
     change: { payload: { value: "text" } },
@@ -52,6 +55,7 @@ export const contract = defineContract({
     block: { payload: { visible: "boolean", block: "number", kind: "text", level: "number", first: "boolean", last: "boolean", text: "text" } },
     blockMenu: {},
     blockSelect: { payload: { count: "number" } },
+    outlinePin: {},
   },
   slots: {},
   states: ["empty", "editing", "readOnly"],

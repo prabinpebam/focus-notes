@@ -5,7 +5,8 @@ import { tokens } from "@focus-notes/tokens";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import { pinnedSheet } from "../../behaviors/pinned-sheet.ts";
-import { caretSection, cardTop, depthsOf, MIN_HEADINGS, outlineOf, railLayout, nestOutline, railShows, scrollSection, type OutlineHeading, type OutlineNode } from "./doc-outline.ts";
+import { IconButton } from "../../primitives/IconButton/IconButton.tsx";
+import { caretSection, cardTop, depthsOf, MIN_HEADINGS, outlineOf, railLayout, nestOutline, pinnedWidth, railShows, scrollSection, type OutlineHeading, type OutlineNode } from "./doc-outline.ts";
 import * as s from "./DocMinimap.css.ts";
 
 const t = tokens.cmp.editorSurface.minimap;
@@ -59,18 +60,23 @@ interface DocMinimapProps {
   label: string;
   /** What an empty heading reads as. */
   untitled: string;
+  /** The card kept open beside the text, where it fits (D-186). */
+  pinned?: boolean;
+  pinLabel?: string;
+  unpinLabel?: string;
+  onPin?: () => void;
 }
 
 type Open = null | "hover" | "click" | "keyboard";
-interface Layout { room: boolean; top: number; pitch: number; indices: number[]; center: number; height: number }
-const NO_LAYOUT: Layout = { room: false, top: 0, pitch: 0, indices: [], center: 0, height: 0 };
-const sameLayout = (a: Layout, b: Layout) => a.room === b.room && a.top === b.top && a.pitch === b.pitch && a.center === b.center && a.height === b.height && a.indices.join() === b.indices.join();
+interface Layout { room: boolean; top: number; pitch: number; indices: number[]; center: number; height: number; pinRoom: boolean; cardWidth: number }
+const NO_LAYOUT: Layout = { room: false, top: 0, pitch: 0, indices: [], center: 0, height: 0, pinRoom: false, cardWidth: 0 };
+const sameLayout = (a: Layout, b: Layout) => a.room === b.room && a.top === b.top && a.pitch === b.pitch && a.center === b.center && a.height === b.height && a.pinRoom === b.pinRoom && a.cardWidth === b.cardWidth && a.indices.join() === b.indices.join();
 
 /**
  * The document minimap (UI-13, D-185): a rail of heading bars on the note's right edge, the current
  * section bright, that expands on hover (or *Show contents*) into a card of the note's headings.
  */
-export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function DocMinimap({ editor, scroller, label, untitled }, ref) {
+export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function DocMinimap({ editor, scroller, label, untitled, pinned = false, pinLabel = "", unpinLabel = "", onPin }, ref) {
   const [headings, setHeadings] = useState<OutlineHeading[]>(() => outlineOf(editor.state.doc));
   const [current, setCurrent] = useState(-1);
   const [layout, setLayout] = useState<Layout>(NO_LAYOUT);
@@ -86,6 +92,8 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   /** The caret's section as the note lost focus, kept while focus is in Spotlight or the card. */
   const held = useRef<number | null>(null);
   const railFocused = useRef(false);
+  /** A pointer press on the pin began with the caret in the note (D-186). */
+  const noteHadFocus = useRef(false);
   const returnTo = useRef<"note" | "rail">("note");
   /** Until when the card takes focus back from a closing dialog (Spotlight ran Show contents). */
   const claimUntil = useRef(0);
@@ -159,12 +167,11 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     const lay = railLayout(hs.length, maxHeight, px(t.pitch), px(t.pitchMin), cur);
     const height = lay.indices.length * lay.pitch;
     const railTop = Math.round(Math.max(edgeTop, (h - height) / 2));
-    const room = railShows({
-      textRight: view.dom.getBoundingClientRect().right,
-      contentRight: box.left + sc.clientLeft + sc.clientWidth,
-      railWidth: px(t.railWidth), railInset: px(t.railInset), clearance: px(t.clearance),
-    });
-    const next: Layout = { room, top: railTop, pitch: lay.pitch, indices: lay.indices, center: railTop + height / 2, height: h };
+    const textRight = view.dom.getBoundingClientRect().right;
+    const contentRight = box.left + sc.clientLeft + sc.clientWidth;
+    const room = railShows({ textRight, contentRight, railWidth: px(t.railWidth), railInset: px(t.railInset), clearance: px(t.clearance) });
+    const cardWidth = pinnedWidth({ textRight, contentRight, railInset: px(t.railInset), clearance: px(t.clearance), min: px(t.cardMinWidth), max: px(t.cardMaxWidth) });
+    const next: Layout = { room, top: railTop, pitch: lay.pitch, indices: lay.indices, center: railTop + height / 2, height: h, pinRoom: cardWidth > 0, cardWidth };
     setLayout((prev) => (sameLayout(prev, next) ? prev : next));
     setCurrent(cur);
   }, [editor, scroller]);
@@ -195,7 +202,9 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     // Typing: the caret's section from document positions alone, no layout (PRF-01).
     const onSelection = () => {
       if (!caretInView.current || !editor.view.hasFocus()) return schedule();
-      setCurrent(caretSection(headingsRef.current, editor.state.selection.$head.index(0)));
+      const cur = caretSection(headingsRef.current, editor.state.selection.$head.index(0));
+      held.current = cur;
+      setCurrent(cur);
     };
     editor.on("update", onUpdate);
     editor.on("selectionUpdate", onSelection);
@@ -252,8 +261,13 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   }, []);
 
   const enough = headings.length >= MIN_HEADINGS;
+  // Pinned, the card stays in the rail's place wherever it fits beside the text (D-186).
+  const pinnedShown = pinned && enough && layout.pinRoom;
+  const pinnedRef = useRef(pinnedShown);
+  pinnedRef.current = pinnedShown;
   // Focus mode is on by default, so the rail stays: it sits beside the text, never on it (D-185).
-  const railShown = enough && layout.room;
+  const railShown = enough && layout.room && !pinnedShown;
+  const cardShown = Boolean(open) || pinnedShown;
   // Nothing left to show: a card opened from the rail goes with it.
   useEffect(() => {
     if (!enough || (!railShown && open !== "keyboard")) {
@@ -325,20 +339,27 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     const nav = navRef.current;
     const card = cardRef.current;
     const sc = scroller.current;
-    if (!nav || !card || !sc || !open) return;
+    if (!nav || !card || !sc || !cardShown) return;
     const h = sc.clientHeight;
     const edgeTop = px(t.edgeTop);
     const edgeBottom = px(t.edgeBottom);
     const max = Math.max(0, Math.min(h * (parseFloat(read(sc, t.cardMax)) || 0), h - edgeTop - edgeBottom));
     nav.style.setProperty(varName(s.cardMaxVar), `${Math.round(max)}px`);
+    if (pinnedShown) nav.style.setProperty(varName(s.cardWidthVar), `${layout.cardWidth}px`);
     const center = railShown ? layout.center : h / 2;
     nav.style.setProperty(varName(s.cardTopVar), `${Math.round(cardTop(center, card.offsetHeight, edgeTop, h - edgeBottom))}px`);
     const list = listRef.current;
     const items = list ? [...list.querySelectorAll<HTMLButtonElement>("button")] : [];
     const target = items[current >= 0 ? current : 0];
-    if (list && target) list.scrollTop = Math.max(0, target.offsetTop - (list.clientHeight - target.offsetHeight) / 2);
+    // Kept in view, scrolling only when it would leave the list (pinned, it follows the reading).
+    if (list && target) {
+      const top = target.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop;
+      if (top < list.scrollTop || top + target.offsetHeight > list.scrollTop + list.clientHeight) {
+        list.scrollTop = Math.max(0, top - (list.clientHeight - target.offsetHeight) / 2);
+      }
+    }
     if (open === "keyboard" && target && !card.contains(document.activeElement) && !document.querySelector("[data-dialog-modal]")) target.focus();
-  }, [open, layout, railShown, scroller, current, headings]);
+  }, [open, cardShown, pinnedShown, layout, railShown, scroller, current, headings]);
 
   useLayoutEffect(() => {
     const nav = navRef.current;
@@ -372,7 +393,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   const pointerIn = (e: ReactPointerEvent) => {
     if (e.pointerType === "touch") return;
     clearTimeout(timers.current.close);
-    if (openRef.current) return;
+    if (openRef.current || pinnedRef.current) return;
     clearTimeout(timers.current.open);
     timers.current.open = setTimeout(() => {
       if (!openRef.current) setOpen("hover");
@@ -445,13 +466,41 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   // behave as they do for Show contents, and it no longer closes as the pointer leaves.
   const onFocus = (e: ReactFocusEvent) => {
     if (e.target === railRef.current) railFocused.current = true;
+    // (Not for a pointer press on the pin from the note: the caret goes straight back.)
+    if (noteHadFocus.current) return;
     if ((openRef.current === "hover" || openRef.current === "click") && cardRef.current?.contains(e.target)) {
       returnTo.current = "note";
       setOpen("keyboard");
     }
   };
+  // Esc in a pinned card: the caret back to the note, the card kept (as pinned Files, D-161).
+  const onNavKey = (e: ReactKeyboardEvent) => {
+    if (e.key !== "Escape" || e.nativeEvent.isComposing || openRef.current || !pinnedRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    backToNote();
+  };
 
-  if (!enough || (!railShown && !open)) return null;
+  // The pin (D-186). A pointer press leaves the caret in the note; unpinned from the card, it stays
+  // as a hover card (or the keyboard's, with focus in it) until it's left.
+  const pinDown = () => {
+    noteHadFocus.current = !editor.isDestroyed && editor.view.hasFocus();
+  };
+  const togglePin = () => {
+    const unpinning = pinned;
+    const focusIn = Boolean(cardRef.current?.contains(document.activeElement)) && !noteHadFocus.current;
+    onPin?.();
+    if (unpinning) {
+      returnTo.current = "note";
+      setOpen(focusIn ? "keyboard" : "hover");
+    }
+    if (noteHadFocus.current) {
+      noteHadFocus.current = false;
+      backToNote();
+    }
+  };
+
+  if (!enough || (!railShown && !cardShown)) return null;
   const depths = depthsOf(headings);
   const focusIndex = current >= 0 ? current : 0;
   // Nested by level: a heading's subsections are a list inside its item.
@@ -475,7 +524,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     );
   });
   return (
-    <nav ref={navRef} className={s.nav} aria-label={label} data-doc-minimap="" onBlur={onBlur} onFocus={onFocus}>
+    <nav ref={navRef} className={s.nav} aria-label={label} data-doc-minimap="" onBlur={onBlur} onFocus={onFocus} onKeyDown={onNavKey}>
       {railShown ? (
         <button
           ref={railRef}
@@ -501,8 +550,17 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
           ))}
         </button>
       ) : null}
-      {open ? (
-        <div ref={cardRef} id={cardId} className={s.card} data-doc-minimap-card="" data-surface="popover" onPointerEnter={pointerIn} onPointerLeave={pointerOut}>
+      {cardShown ? (
+        <div
+          ref={cardRef} id={cardId} className={s.card} data-doc-minimap-card="" data-surface="popover"
+          data-pinned={pinnedShown ? "" : undefined}
+          onPointerEnter={pointerIn} onPointerLeave={pointerOut}
+        >
+          {onPin ? (
+            <div className={s.head} onPointerDownCapture={pinDown}>
+              <IconButton icon={pinned ? "pinOff" : "pin"} label={pinned ? unpinLabel : pinLabel} toggle pressed={pinned} tone="muted" onPress={togglePin} />
+            </div>
+          ) : null}
           <ul ref={listRef} className={s.list} onKeyDown={onListKey}>
             {entries(nestOutline(depths))}
           </ul>

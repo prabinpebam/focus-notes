@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { Editor } from "@tiptap/react";
 import { coreExtensions, MarkdownSession } from "@focus-notes/editor";
-import { caretSection, cardTop, depthsOf, MIN_HEADINGS, nestOutline, outlineOf, railLayout, railShows, scrollSection } from "../src/host/EditorSurface/doc-outline.ts";
+import { caretSection, cardTop, depthsOf, MIN_HEADINGS, nestOutline, outlineOf, pinnedWidth, railLayout, railShows, scrollSection } from "../src/host/EditorSurface/doc-outline.ts";
 
 const doc = (markdown: string) => new Editor({ extensions: coreExtensions(), content: new MarkdownSession(markdown).doc as object }).state.doc;
 
@@ -105,5 +105,12 @@ describe("where it shows", () => {
     expect(cardTop(650, 200, 60, 700)).toBe(500);
     // Taller than the room: pinned to the top; it scrolls inside.
     expect(cardTop(300, 900, 60, 700)).toBe(60);
+  });
+  it("pinned, the card takes the room beside the text up to its maximum, and nothing where its minimum doesn't fit (D-186)", () => {
+    const o = { contentRight: 1200, railInset: 8, clearance: 16, min: 240, max: 320 };
+    expect(pinnedWidth({ ...o, textRight: 800 })).toBe(320);
+    expect(pinnedWidth({ ...o, textRight: 900.5 })).toBe(275);
+    expect(pinnedWidth({ ...o, textRight: 936 })).toBe(240);
+    expect(pinnedWidth({ ...o, textRight: 937 })).toBe(0);
   });
 });

@@ -56,6 +56,11 @@ export interface EditorSurfaceProps {
   outlineLabel?: string;
   /** What an empty heading reads as in the minimap's card. */
   outlineUntitled?: string;
+  /** The minimap's card kept open beside the text, where it fits (D-186). */
+  outlinePinned?: boolean;
+  outlinePinLabel?: string;
+  outlineUnpinLabel?: string;
+  onOutlinePin?: () => void;
   id?: string;
   onChange?: (payload: { value: string }) => void;
   onFindResult?: (payload: { count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }) => void;
@@ -137,7 +142,7 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 export function EditorSurface({
   documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
-  slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled,
+  slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
   id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onFormat, onLinkEdit, onOpenLink, onSlash, onSlashMove, onPasteNotice,
   onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
 }: EditorSurfaceProps) {
@@ -610,7 +615,12 @@ export function EditorSurface({
           <EditorContent editor={editor} />
         </div>
       </main>
-      {editor && outlineLabel ? <DocMinimap ref={minimapRef} editor={editor} scroller={scrollerRef} label={outlineLabel} untitled={outlineUntitled ?? ""} /> : null}
+      {editor && outlineLabel ? (
+        <DocMinimap
+          ref={minimapRef} editor={editor} scroller={scrollerRef} label={outlineLabel} untitled={outlineUntitled ?? ""}
+          pinned={outlinePinned} pinLabel={outlinePinLabel} unpinLabel={outlineUnpinLabel} onPin={onOutlinePin}
+        />
+      ) : null}
       {/* The scroll edges' blur and fade, over the scroller's edges where there's more to scroll to (D-111). */}
       <div className={`${s.edge} ${s.edgeSide.top}`} aria-hidden="true" data-scroll-edge="top">
         {s.blurTop.map((c, k) => <div key={k} className={c} />)}

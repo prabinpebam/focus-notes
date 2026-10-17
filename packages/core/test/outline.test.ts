@@ -20,7 +20,8 @@ describe("headingCount", () => {
   });
 });
 
-function setup(markdown: string) {
+function setup(markdown: string, onSave?: (s: Record<string, unknown>) => void, state: Record<string, unknown> = {}) {
+  let appState: Record<string, unknown> = { version: 1, lastNotePath: "/n/a.md", firstRun: "done", ...state };
   const bridge: PlatformBridge = {
     platform: "windows",
     readNote: async () => markdown,
@@ -28,8 +29,11 @@ function setup(markdown: string) {
     chooseNote: async () => "/n/b.md",
     newNotePath: async () => "/n/new.md",
     defaultNotePath: async () => "/n/a.md",
-    loadAppState: async () => ({ version: 1, lastNotePath: "/n/a.md", firstRun: "done" }),
-    saveAppState: async () => {},
+    loadAppState: async () => appState as never,
+    saveAppState: async (s) => {
+      appState = s as unknown as Record<string, unknown>;
+      onSave?.(appState);
+    },
     systemScheme: () => "light",
     onSystemSchemeChange: () => () => {},
   };
@@ -49,5 +53,26 @@ describe("Show contents", () => {
     app.onEditorAction((id) => asked.push(id));
     await app.commands.run("outline.show");
     expect(asked).toEqual(["outline.show"]);
+  });
+});
+
+describe("Keep contents open (D-186)", () => {
+  it("pins the card, kept on this device, and unpins it again", async () => {
+    const saved: Record<string, unknown>[] = [];
+    const app = setup("# One\n\n## Two\n", (s) => saved.push(s));
+    await app.start();
+    expect(app.commands.describe("outline.togglePin")).toMatchObject({ enabled: true, checked: false });
+    expect(app.messages.format(app.commands.describe("outline.togglePin").title)).toBe("Keep contents open");
+    await app.commands.run("outline.togglePin");
+    expect(app.commands.describe("outline.togglePin").checked).toBe(true);
+    expect(saved.at(-1)?.outlinePinned).toBe(true);
+    await app.commands.run("outline.togglePin");
+    expect(app.commands.describe("outline.togglePin").checked).toBe(false);
+    expect(saved.at(-1)?.outlinePinned).toBeUndefined();
+  });
+  it("starts pinned when this device kept it so", async () => {
+    const app = setup("# One\n\n## Two\n", undefined, { outlinePinned: true });
+    await app.start();
+    expect(app.commands.describe("outline.togglePin").checked).toBe(true);
   });
 });

@@ -11,6 +11,8 @@ export const railHeightVar = createVar();
 export const pitchVar = createVar();
 export const cardTopVar = createVar();
 export const cardMaxVar = createVar();
+/** The pinned card's width: the room beside the text, up to its maximum (D-186). */
+export const cardWidthVar = createVar();
 
 /** Covers the note's frame so the rail and card place against it; only they take the pointer. */
 export const nav = style({ position: "absolute", inset: 0, pointerEvents: "none" });
@@ -89,8 +91,15 @@ export const card = style({
   animationName: enter,
   animationDuration: t.duration,
   animationTimingFunction: t.easing,
-  selectors: { ':root[data-transparency="reduced"] &, :root[data-compositing="software"] &': { backdropFilter: "none", backgroundColor: t.cardBackground } },
+  selectors: {
+    ':root[data-transparency="reduced"] &, :root[data-compositing="software"] &': { backdropFilter: "none", backgroundColor: t.cardBackground },
+    // Pinned: as wide as the room allows, and there from the first frame, without the opening fade.
+    "&[data-pinned]": { width: cardWidthVar, animationName: "none" },
+  },
 });
+
+/** The pin's corner: above the list, aligned to the card's end. */
+export const head = style({ display: "flex", justifyContent: "flex-end", padding: t.cardPadding, paddingBlockEnd: 0, flexShrink: 0 });
 
 /** The list scrolls inside the card's padding, so its edges fade within the rounded card. */
 export const list = style({

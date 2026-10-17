@@ -110,6 +110,15 @@ export function railShows(o: { textRight: number; contentRight: number; railWidt
   return o.textRight + o.clearance + o.railWidth + o.railInset <= o.contentRight;
 }
 
+/**
+ * The pinned card's width (D-186): the room between the text and the scrollbar, less the rail's gaps,
+ * up to `max`; 0 when even `min` doesn't fit, so it never covers text.
+ */
+export function pinnedWidth(o: { textRight: number; contentRight: number; railInset: number; clearance: number; min: number; max: number }): number {
+  const room = o.contentRight - o.railInset - (o.textRight + o.clearance);
+  return room >= o.min ? Math.floor(Math.min(o.max, room)) : 0;
+}
+
 /** The card's top: centred on the rail, kept between `minTop` and `maxBottom` (top first, if it can't fit). */
 export function cardTop(railCenter: number, height: number, minTop: number, maxBottom: number): number {
   return Math.max(minTop, Math.min(railCenter - height / 2, maxBottom - height));
