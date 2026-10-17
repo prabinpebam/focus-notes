@@ -118,6 +118,13 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     if (!sc || editor.isDestroyed) return;
     const { view } = editor;
     const hs = outlineOf(editor.state.doc);
+    // Nothing to show: no layout to read.
+    if (hs.length < MIN_HEADINGS) {
+      held.current = null;
+      setLayout((prev) => (prev.room ? NO_LAYOUT : prev));
+      setCurrent(-1);
+      return;
+    }
     const box = sc.getBoundingClientRect();
     const h = sc.clientHeight;
     const top = box.top + sc.clientTop;
@@ -192,8 +199,15 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     };
     editor.on("update", onUpdate);
     editor.on("selectionUpdate", onSelection);
-    editor.on("focus", schedule);
-    editor.on("blur", schedule);
+    // Focus moving (Spotlight, a menu, the toolbar) changes little here, and its frame belongs to
+    // what's opening (PRF-14): measured once things settle, not in that frame.
+    let settle: ReturnType<typeof setTimeout> | undefined;
+    const later = () => {
+      clearTimeout(settle);
+      settle = setTimeout(schedule, OUTLINE_DELAY_MS);
+    };
+    editor.on("focus", later);
+    editor.on("blur", later);
     sc.addEventListener("scroll", schedule, { passive: true });
     // The scroller's size, or the text column's width (the scale, a pinned panel): lengths re-read.
     // The text growing taller as you type is left to the pause after it (onUpdate).
@@ -217,12 +231,13 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     schedule();
     return () => {
       clearTimeout(pending);
+      clearTimeout(settle);
       cancelAnimationFrame(frame.current);
       frame.current = 0;
       editor.off("update", onUpdate);
       editor.off("selectionUpdate", onSelection);
-      editor.off("focus", schedule);
-      editor.off("blur", schedule);
+      editor.off("focus", later);
+      editor.off("blur", later);
       sc.removeEventListener("scroll", schedule);
       ro.disconnect();
       offPinned();
