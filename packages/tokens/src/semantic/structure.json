@@ -729,6 +729,14 @@
     },
     "toastUndoDuration": {
       "$value": "{ref.duration.10000}"
+    },
+    "hoverOpen": {
+      "$description": "Hover intent before content shown on hover opens (WCAG 1.4.13): not motion, so reduced motion keeps it.",
+      "$value": "{ref.duration.150}"
+    },
+    "hoverClose": {
+      "$description": "How long content shown on hover stays after the pointer leaves, so it can be reached (WCAG 1.4.13).",
+      "$value": "{ref.duration.200}"
     }
   },
   "readingZone": {
@@ -738,6 +746,13 @@
     },
     "bottom": {
       "$value": 0.65
+    }
+  },
+  "minimap": {
+    "$type": "number",
+    "$description": "The document minimap's largest share of the note's visible height, for its rail and its card (D-185).",
+    "share": {
+      "$value": 0.7
     }
   },
   "table": {

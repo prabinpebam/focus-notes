@@ -37,6 +37,7 @@ import { registerFindAll, FIND_ALL_CLOSED, type FindAllState, type FindJump } fr
 import type { SearchService } from "./search/feed.ts";
 import { registerThemeManager, THEME_MANAGER_CLOSED, kindOf, rootTheme, type Appearance, type ThemeManagerState } from "./theme-manager-app.ts";
 import { customThemesOf, isCustomId } from "./custom-themes.ts";
+import { headingCount } from "./outline.ts";
 
 export type SaveState = "saved" | "saving" | "unsaved" | "error";
 export type Scheme = "light" | "dark";
@@ -856,6 +857,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   findCmd("find.close", "command.find.close", { shortcut: { default: "Escape", handledBy: "findBar" }, layer: "basic", group: "find" }, () => {
     remember();
     setFind({ open: false, notice: "", inSelection: false, scoped: false });
+  });
+  // The document minimap's contents card from the keyboard (UI-13, D-185): the editor opens it.
+  commands.register({
+    id: "outline.show", title: "command.outline.show",
+    enabled: (s) => ready(s) && headingCount(s.note.markdown) >= 2, disabledReason: "command.outline.show.reason",
+    run: () => editorAction("outline.show"),
   });
   // Find in selection (FND-03, D-160): opens the bar scoped to the selection, or toggles the scope.
   commands.register({

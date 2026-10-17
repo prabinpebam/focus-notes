@@ -72,7 +72,7 @@ export function PopoverPanel({ label, open, placement = "bottom", hoverOpen = fa
   const children = (
     <>
       {trigger}
-      <Popover className={`${s.popover}${padding === "comfortable" ? ` ${s.comfortable}` : ""}`} placement={placement} offset={8} shouldFlip {...boundary} isNonModal={hoverOpen} aria-label={label} data-surface="popover">
+      <Popover className={s.popover} data-padding={padding} placement={placement} offset={8} shouldFlip {...boundary} isNonModal={hoverOpen} aria-label={label} data-surface="popover">
         {hoverOpen
           ? <div className={s.dialog} role="dialog" aria-label={label} tabIndex={-1} ref={dialogRef as RefObject<HTMLDivElement>}>{content}</div>
           : <Dialog aria-label={label} className={s.dialog} ref={dialogRef as RefObject<HTMLElement>}>{content}</Dialog>}

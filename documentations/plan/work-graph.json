@@ -2074,7 +2074,7 @@
         "design/components/document-minimap.html"
       ],
       "lookahead": false,
-      "status": "building"
+      "status": "verifying"
     },
     {
       "id": "WP-9.1",

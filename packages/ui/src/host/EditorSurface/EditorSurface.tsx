@@ -10,6 +10,7 @@ import { trackFocusBand } from "./focus-band.ts";
 import { keepInReadingZone } from "./reading-zone.ts";
 import { keepClearOfPinned } from "./pinned-column.ts";
 import { trackViewportPointer } from "./viewport-pointer.ts";
+import { DocMinimap, type DocMinimapHandle } from "./DocMinimap.tsx";
 import { trackFormatting, type FormatPayload, type FormatTracker } from "./formatting.ts";
 import { trackSlash, type SlashPayload } from "./slash-menu.ts";
 import { measureColumns, tableView } from "./table-view.ts";
@@ -51,6 +52,10 @@ export interface EditorSurfaceProps {
   slashActive?: string;
   /** The ID of its list, for aria-controls and aria-activedescendant. */
   slashList?: string;
+  /** The document minimap's name, "Contents" (UI-13, D-185). Without it there's no minimap. */
+  outlineLabel?: string;
+  /** What an empty heading reads as in the minimap's card. */
+  outlineUntitled?: string;
   id?: string;
   onChange?: (payload: { value: string }) => void;
   onFindResult?: (payload: { count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }) => void;
@@ -132,12 +137,13 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 export function EditorSurface({
   documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
-  slashOpen, slashActive = "", slashList,
+  slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled,
   id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onFormat, onLinkEdit, onOpenLink, onSlash, onSlashMove, onPasteNotice,
   onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
+  const minimapRef = useRef<DocMinimapHandle | null>(null);
   useAutoHideScrollbar(scrollerRef);
   useFadingEdges(scrollerRef);
   const session = useMemo(() => new MarkdownSession(initialValue), [documentKey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -456,6 +462,10 @@ export function EditorSurface({
       const id = String(detail?.id);
       const args = detail?.args ?? {};
       if (!editor || editor.isDestroyed) return;
+      if (id === "outline.show") {
+        minimapRef.current?.openFromKeyboard();
+        return;
+      }
       syncSelection(editor);
       if (id === "find.prefill") {
         // The selection is find in selection's scope (FND-03), whatever its size.
@@ -600,6 +610,7 @@ export function EditorSurface({
           <EditorContent editor={editor} />
         </div>
       </main>
+      {editor && outlineLabel ? <DocMinimap ref={minimapRef} editor={editor} scroller={scrollerRef} label={outlineLabel} untitled={outlineUntitled ?? ""} /> : null}
       {/* The scroll edges' blur and fade, over the scroller's edges where there's more to scroll to (D-111). */}
       <div className={`${s.edge} ${s.edgeSide.top}`} aria-hidden="true" data-scroll-edge="top">
         {s.blurTop.map((c, k) => <div key={k} className={c} />)}

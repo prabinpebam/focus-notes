@@ -21,6 +21,7 @@ export const popover = style({
   transitionDuration: t.duration,
   transitionTimingFunction: t.easing,
   selectors: {
+    "&[data-padding=comfortable]": { padding: t.paddingComfortable },
     "&[data-entering]": { opacity: 0, transform: "scale(0.98)" },
     "&[data-exiting]": { opacity: 0, transitionDuration: t.exitDuration },
   },
@@ -28,4 +29,3 @@ export const popover = style({
 
 export const dialog = style({ outline: "none" });
 export const previewTrigger = style({ display: "inline-flex" });
-export const comfortable = style({ padding: t.paddingComfortable });

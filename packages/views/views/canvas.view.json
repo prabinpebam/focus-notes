@@ -768,6 +768,12 @@
           "label": {
             "t": "canvas.editorLabel"
           },
+          "outlineLabel": {
+            "t": "outline.label"
+          },
+          "outlineUntitled": {
+            "t": "outline.untitled"
+          },
           "focusMode": {
             "get": "vm.app.focusMode"
           },

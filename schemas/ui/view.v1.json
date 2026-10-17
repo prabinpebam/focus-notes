@@ -8262,6 +8262,32 @@
             "slashList": {
               "type": "string",
               "pattern": "^[a-z][A-Za-z0-9-]*$"
+            },
+            "outlineLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "outlineUntitled": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [

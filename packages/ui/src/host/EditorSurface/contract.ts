@@ -24,6 +24,8 @@ export const contract = defineContract({
     slashOpen: { kind: "boolean", default: false, description: "The slash menu shows: arrows, Enter, and Tab drive it while focus stays in the note." },
     slashActive: { kind: "text", description: "The slash menu's active row, which Enter inserts." },
     slashList: { kind: "ref", description: "The slash menu's list, for aria-controls and aria-activedescendant." },
+    outlineLabel: { kind: "message", description: "The document minimap's name, Contents (UI-13, D-185). The minimap shows only when it's given." },
+    outlineUntitled: { kind: "message", description: "What an empty heading reads as in the minimap's contents card." },
   },
   events: {
     change: { payload: { value: "text" } },
