@@ -21,8 +21,6 @@ const NOTE = [
   "### People", para(10),
   "## Timeline", para(11), para(12), para(13), para(14), para(15), para(16),
 ].join("\n\n") + "\n";
-/** Shorter headings: the card at its own width fits beside the text on a 1024 px screen (D-186). */
-const PIN_NOTE = NOTE.replace("Audience and reach, with a long heading that wraps onto a second line in the card", "Audience");
 const TITLES = ["Launch plan", "Why now", "Audience and reach, with a long heading that wraps onto a second line in the card", "Technical", "People", "Timeline"];
 
 async function start(markdown = NOTE, state: Record<string, unknown> = {}, dirs = tempDirs()): Promise<Launched> {
@@ -80,6 +78,26 @@ test("UI-13: one bar per heading beside the text and clear of the scrollbar, len
     expect(Math.abs(geo.top - geo.bottom)).toBeLessThan(2);
     await page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowUp" : "Control+Home");
     await expect.poll(() => currentBar(page)).toBe(0);
+    // Scrolling with the wheel shows the heading in view, even with the caret still in view in another
+    // section; the caret moving makes its section current again.
+    await page.getByText("Paragraph 5 carries").click();
+    await expect.poll(() => currentBar(page)).toBe(1);
+    const wheel = await page.evaluate(() => {
+      const sc = document.querySelector("[data-editor-scroller]") as HTMLElement;
+      const h = document.querySelectorAll(".ProseMirror > h2")[1] as HTMLElement;
+      return Math.round(h.getBoundingClientRect().top - sc.getBoundingClientRect().top - sc.clientHeight * 0.25 + 6);
+    });
+    expect(wheel).toBeGreaterThan(0);
+    await page.mouse.move(500, 400);
+    await page.mouse.wheel(0, wheel);
+    await expect.poll(() => currentBar(page)).toBe(2);
+    expect(await page.evaluate(() => {
+      const sc = document.querySelector("[data-editor-scroller]")!.getBoundingClientRect();
+      const c = window.getSelection()!.getRangeAt(0).getBoundingClientRect();
+      return c.top > sc.top && c.bottom < sc.bottom;
+    }), "the caret still in view").toBe(true);
+    await page.keyboard.press("ArrowLeft");
+    await expect.poll(() => currentBar(page)).toBe(1);
     // Reading away from the caret: the last heading at or above the reading line.
     await scrollTo(page, 3, 4);
     await expect.poll(() => currentBar(page)).toBe(3);
@@ -270,10 +288,10 @@ test("UI-13: the rail by keyboard: Enter opens the card on the current heading, 
   } finally { await quit(l); }
 });
 
-test("D-186: the pin keeps the card open beside the text in the rail's place, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning puts it back", async () => {
+test("D-186: the pin keeps the card open in a column of its own, the text moved clear of it, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning gives the room back", async () => {
   const dirs = tempDirs();
-  // The narrowest reading width, so the card fits beside the text even on a 1024 px screen (CI).
-  let l = await start(PIN_NOTE, { measure: 50 }, dirs);
+  // The default reading width and a long heading, so the card is at its widest (320 px).
+  let l = await start(NOTE, {}, dirs);
   // As on CI's 1024 px screen.
   const laptop = (x: Launched) => x.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(1024, 720));
   await laptop(l);
@@ -281,7 +299,13 @@ test("D-186: the pin keeps the card open beside the text in the rail's place, li
   const editor = () => page.getByRole("textbox", { name: "Note" });
   const pin = () => card(page).getByRole("button", { name: /^(Keep contents open|Unpin contents)$/ });
   const stateFile = () => readFileSync(join(dirs.userData, "state.json"), "utf8");
+  const textRight = () => page.evaluate(() => Math.round(document.querySelector(".ProseMirror")!.getBoundingClientRect().right));
+  const gap = () => page.evaluate(() => {
+    const c = document.querySelector("[data-doc-minimap-card]");
+    return c ? Math.round(c.getBoundingClientRect().left - document.querySelector(".ProseMirror")!.getBoundingClientRect().right) : null;
+  });
   try {
+    const unpinnedRight = await textRight();
     // Pinned from the hover card with the pointer: the caret stays in the note.
     await page.mouse.move(500, 400);
     await hoverRail(page);
@@ -304,10 +328,13 @@ test("D-186: the pin keeps the card open beside the text in the rail's place, li
     await expect(pin()).toHaveAccessibleName("Unpin contents");
     await expect(editor()).toBeFocused();
     await expect.poll(stateFile).toContain('"outlinePinned": true');
-    // It stays as the pointer leaves, in the rail's place: no rail, beside the text, clear of the scrollbar.
+    // It stays as the pointer leaves, in the rail's place: no rail, clear of the scrollbar; the text
+    // glides left to keep 16 px from it, never under it.
     await page.mouse.move(500, 400, { steps: 4 });
     await page.waitForTimeout(500);
     await expect(card(page)).toBeVisible();
+    await expect.poll(gap).toBeGreaterThanOrEqual(15);
+    expect(await textRight()).toBeLessThan(unpinnedRight);
     await expect(card(page)).toHaveAttribute("data-pinned", "");
     await expect(rail(page)).toHaveCount(0);
     const geo = await page.evaluate(() => {
@@ -351,8 +378,9 @@ test("D-186: the pin keeps the card open beside the text in the rail's place, li
     await settled(page);
     expect(await axeViolations(page)).toEqual([]);
     await page.screenshot({ path: `${shots}/minimap-pinned-light.png` });
-    // Not enough room beside the text for the card: the rail comes back, its card's pin still pressed.
-    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(760, 600));
+    // Not enough room beside the text for the card and the narrowest text: the rail comes back, its
+    // card's pin still pressed.
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(680, 600));
     await expect(rail(page)).toHaveCount(1);
     await expect(card(page)).toBeHidden();
     await page.mouse.move(300, 300);
@@ -364,7 +392,7 @@ test("D-186: the pin keeps the card open beside the text in the rail's place, li
     await expect(card(page)).toHaveAttribute("data-pinned", "");
     await quit(l);
     // The next launch: there from the start, without a hover.
-    l = await start(PIN_NOTE, { measure: 50, outlinePinned: true }, dirs);
+    l = await start(NOTE, { outlinePinned: true }, dirs);
     await laptop(l);
     page = l.page;
     await expect(card(page)).toHaveAttribute("data-pinned", "");
@@ -378,6 +406,8 @@ test("D-186: the pin keeps the card open beside the text in the rail's place, li
     await expect(card(page)).toBeHidden();
     await expect(rail(page)).toHaveCount(1);
     await expect.poll(stateFile).not.toContain("outlinePinned");
+    // The text has its room back.
+    await expect.poll(textRight).toBe(unpinnedRight);
   } finally { await quit(l); }
 });
 

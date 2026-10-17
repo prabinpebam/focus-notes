@@ -111,11 +111,17 @@ export function railShows(o: { textRight: number; contentRight: number; railWidt
 }
 
 /**
- * Whether the pinned card fits beside the text (D-186): its own width, the same as unpinned, with the
- * rail's gaps between the text and the scrollbar, so it never covers a word.
+ * The room a pinned card keeps on the note's right (D-186): the text column's margin is held clear of
+ * the card plus the gap between them (less the column's own gutter, which is already empty). 0 when
+ * the text left of it would be narrower than `minText`: the card then doesn't pin, and the rail is back.
+ * Positions are window pixels; the card's right edge is `cardRight`, the scroller's content box spans
+ * `contentLeft` to `contentRight`, and `leftClear` is what a pinned Files sheet already takes (D-161).
  */
-export function pinnedFits(o: { textRight: number; contentRight: number; railInset: number; clearance: number; width: number }): boolean {
-  return o.width > 0 && o.textRight + o.clearance + o.width + o.railInset <= o.contentRight;
+export function pinnedReserve(o: { contentLeft: number; contentRight: number; cardRight: number; width: number; clearance: number; gutter: number; leftClear: number; minText: number }): number {
+  if (o.width <= 0) return 0;
+  const keep = Math.max(0, o.contentRight - (o.cardRight - o.width - o.clearance) - o.gutter);
+  const text = o.contentRight - o.contentLeft - o.leftClear - keep - 2 * o.gutter;
+  return text >= o.minText ? Math.ceil(keep) : 0;
 }
 
 /** The card's top: centred on the rail, kept between `minTop` and `maxBottom` (top first, if it can't fit). */

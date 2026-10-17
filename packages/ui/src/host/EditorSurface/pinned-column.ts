@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/react";
-import { clearance, pinnedSheet } from "../../behaviors/pinned-sheet.ts";
+import { clearance, pinnedRight, pinnedSheet } from "../../behaviors/pinned-sheet.ts";
 import * as s from "./EditorSurface.css.ts";
 
 const varName = (v: string) => v.slice(4, -1);
@@ -18,8 +18,9 @@ const seconds = (v: string) => {
  * reflow every frame, before it's drawn. Returns a cleanup function.
  */
 export function keepClearOfPinned(scroller: HTMLElement, column: HTMLElement, editor: Editor): () => void {
-  let current: number | undefined;
+  let current: string | undefined;
   let pinned = pinnedSheet.get() !== undefined;
+  let pinnedOnRight = pinnedRight.get() > 0;
   let frame = 0;
   /** A glide is running: held until it ends (its transitionend), however few frames the window draws. */
   let gliding = false;
@@ -45,18 +46,22 @@ export function keepClearOfPinned(scroller: HTMLElement, column: HTMLElement, ed
   };
   const apply = (glide: boolean) => {
     const box = scroller.getBoundingClientRect();
+    // A pinned contents card keeps its room on the right (D-186); the sheet's clearance is what's left.
+    const keep = pinnedRight.get();
     const next = clearance({
-      edge: pinnedSheet.get(), left: box.left + scroller.clientLeft, width: scroller.clientWidth,
+      edge: pinnedSheet.get(), left: box.left + scroller.clientLeft, width: scroller.clientWidth - keep,
       gap: px(s.pinnedGapVar), gutter: parseFloat(getComputedStyle(column).paddingLeft) || 0, minText: px(s.pinnedMinVar),
     });
-    if (next === current) return;
+    const key = `${next}|${keep}`;
+    if (key === current) return;
     const first = current === undefined;
-    current = next;
+    current = key;
     anchor ??= caretTop();
     // Only pinning and unpinning glide; the first layout and a resize are at once.
     if (first || !glide) scroller.dataset.pinnedInstant = "";
     else delete scroller.dataset.pinnedInstant;
     scroller.style.setProperty(varName(s.pinnedClearVar), `${next}px`);
+    scroller.style.setProperty(varName(s.pinnedRightVar), `${keep}px`);
     const ms = first || !glide ? 0 : seconds(getComputedStyle(scroller).transitionDuration) || 0;
     gliding = ms > 0;
     // A safety net only: the glide's end is its transitionend.
@@ -68,7 +73,7 @@ export function keepClearOfPinned(scroller: HTMLElement, column: HTMLElement, ed
   };
   /** The glide ended: the caret's line is put back once more, then left alone. A glide replaced midway ends with its replacement. */
   const ended = (e: TransitionEvent) => {
-    if (e.target !== scroller || e.propertyName !== varName(s.pinnedClearVar)) return;
+    if (e.target !== scroller || (e.propertyName !== varName(s.pinnedClearVar) && e.propertyName !== varName(s.pinnedRightVar))) return;
     gliding = false;
     until = 0;
     if (frame) cancelAnimationFrame(frame);
@@ -81,13 +86,21 @@ export function keepClearOfPinned(scroller: HTMLElement, column: HTMLElement, ed
     apply(now !== pinned);
     pinned = now;
   });
+  // The contents card pinned or unpinned glides; its width changing (a new note) is at once.
+  const offRight = pinnedRight.subscribe((width) => {
+    const now = width > 0;
+    apply(now !== pinnedOnRight);
+    pinnedOnRight = now;
+  });
   const ro = new ResizeObserver(() => apply(false));
   ro.observe(scroller);
   return () => {
     off();
+    offRight();
     ro.disconnect();
     scroller.removeEventListener("transitionend", ended);
     if (frame) cancelAnimationFrame(frame);
     scroller.style.removeProperty(varName(s.pinnedClearVar));
+    scroller.style.removeProperty(varName(s.pinnedRightVar));
   };
 }

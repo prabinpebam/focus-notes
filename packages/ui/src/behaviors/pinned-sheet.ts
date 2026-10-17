@@ -20,6 +20,24 @@ export const pinnedSheet = {
   },
 };
 
+/** The width a pinned contents card keeps on the note's right (D-186), in pixels; 0 when nothing is pinned there. */
+let right = 0;
+const rightListeners = new Set<(width: number) => void>();
+
+export const pinnedRight = {
+  get: () => right,
+  set(next: number): void {
+    const v = Math.max(0, Math.round(next));
+    if (v === right) return;
+    right = v;
+    for (const l of rightListeners) l(v);
+  },
+  subscribe(listener: (width: number) => void): () => void {
+    rightListeners.add(listener);
+    return () => rightListeners.delete(listener);
+  },
+};
+
 /** A corner control sits after a pinned sheet, or above it when the side has no room. */
 export function cornerClearance(edge: number | undefined, left: number, width: number, controlWidth: number, gap: number): number | undefined {
   const x = edge === undefined ? gap : Math.max(gap, edge - left + gap);
