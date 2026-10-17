@@ -59,6 +59,8 @@ export const sheet = style({
     },
     "&[data-docked][data-side=start]": { left: 0, borderInlineEndStyle: "solid", borderInlineEndWidth: t.dock.borderWidth, borderInlineEndColor: t.dock.border },
     "&[data-docked][data-side=end]": { right: 0, borderInlineStartStyle: "solid", borderInlineStartWidth: t.dock.borderWidth, borderInlineStartColor: t.dock.border },
+    // Led by where the notes come from (D-188): that band starts at the top edge itself.
+    "&[data-docked]:has(> [data-sheet-band])": { paddingTop: 0 },
   },
 });
 
@@ -111,7 +113,8 @@ export const main = style({
 minimalScrollbar(main, t);
 export const header = style({ display: "flex", flexDirection: "column", gap: t.gap, flexShrink: 0 });
 // Where the notes come from (D-188): leads the sheet above a hairline that runs edge to edge. Docked,
-// it sits in the title band, which stays the window's drag region (its buttons don't drag).
+// it starts at the window's top edge, so its upper part is in the title band, which stays the window's
+// drag region (its buttons don't drag).
 export const band = style({
   display: "flex",
   alignItems: "center",
@@ -124,7 +127,8 @@ export const band = style({
   borderBlockEndWidth: t.band.borderWidth,
   borderBlockEndColor: t.band.border,
   selectors: {
-    "[data-docked] > &": { position: "absolute", top: 0, left: 0, right: 0, height: t.dock.top, marginInline: 0, paddingBlockEnd: 0, boxSizing: "border-box" },
+    // Docked, it leads from the window's top edge with the sheet's own padding around it, rather than fitted into the title band (the sheet drops its top padding for it).
+    "[data-docked] > &": { paddingBlock: t.padding, minHeight: t.dock.top, boxSizing: "border-box" },
     ":root[data-platform=macos] [data-docked][data-side=start] > &": { paddingInlineStart: t.band.macStart },
   },
 });

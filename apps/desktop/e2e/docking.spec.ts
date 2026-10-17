@@ -82,12 +82,13 @@ test("D-187: Files and the contents dock flush to the window's edges, the note's
     // Their content starts below the title band (44 px), which stays the window's drag region.
     expect(await page.evaluate(() => Math.round(document.querySelector('aside[aria-label="Files"] [data-sheet-header]')!.getBoundingClientRect().top - document.querySelector("[data-app-root]")!.getBoundingClientRect().top))).toBeGreaterThanOrEqual(44);
     expect(await page.evaluate(() => Math.round(document.querySelector("[data-doc-minimap-card] ul")!.getBoundingClientRect().top - document.querySelector("[data-app-root]")!.getBoundingClientRect().top))).toBeGreaterThanOrEqual(44);
-    // D-188: where the notes come from fills Files' title band (the folder's name here: no GitHub repository), a hairline below it, with Open local folder.
+    // D-188: where the notes come from leads Files from the window's top edge, padded as the sheet is (the folder's name here: no GitHub repository), a hairline below it, with Open local folder.
     const band = files(page).locator("[data-sheet-band]");
     await expect(band).toContainText(dirs.docs.split(/[\\/]/).filter(Boolean).pop()!);
     await expect(band.getByRole("button", { name: "Open local folder" })).toBeVisible();
     const bb = await band.evaluate((el) => { const r = el.getBoundingClientRect(), w = document.querySelector("[data-app-root]")!.getBoundingClientRect(); return { top: Math.round(r.top - w.top), height: Math.round(r.height), left: Math.round(r.left - w.left), border: getComputedStyle(el).borderBottomWidth }; });
-    expect(bb).toMatchObject({ top: 0, height: 44, left: 0 });
+    expect(bb).toMatchObject({ top: 0, left: 0 });
+    expect(bb.height).toBeGreaterThan(44);
     expect(parseFloat(bb.border)).toBeGreaterThan(0);
     // The window's controls show at the top of the docked contents, on it (Windows and Linux draw them).
     if (process.platform !== "darwin") {
