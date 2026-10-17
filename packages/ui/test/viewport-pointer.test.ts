@@ -38,18 +38,44 @@ function setup() {
   return { editor, hit, click };
 }
 
-it("projects a margin click onto the corresponding visual row and selects the right-margin block", () => {
+it("projects a margin click onto the corresponding visual row: left selects its block, right puts the caret at the row's end", () => {
   const { editor, hit, click } = setup();
   expect(click(40, 220).defaultPrevented).toBe(true);
   expect(hit).toHaveBeenLastCalledWith({ left: 201, top: 220 });
   expect(editor.state.selection.head).toBe(6);
-  expect(selectedBlocks(editor.state)).toBeNull();
+  expect(selectedBlocks(editor.state)?.blocks).toEqual([5]);
+  click(40, 120);
+  expect(selectedBlocks(editor.state)?.blocks).toEqual([0]);
   expect(click(760, 220).defaultPrevented).toBe(true);
   expect(hit).toHaveBeenLastCalledWith({ left: 599, top: 220 });
   expect(editor.state.selection.head).toBe(9);
-  expect(selectedBlocks(editor.state)?.blocks).toEqual([5]);
-  click(760, 120);
+  expect(selectedBlocks(editor.state)).toBeNull();
+});
+
+it("drags a text selection from where the press landed beside the column to the row under the pointer", () => {
+  const { editor, click } = setup();
+  const move = (x: number, y: number, type = "pointermove") => scroller!.dispatchEvent(new PointerEvent(type, { bubbles: true, button: 0, pointerType: "mouse", clientX: x, clientY: y }));
+  // From the left margin: the block on the press, then text from the row's start as the pointer moves.
+  click(40, 120);
   expect(selectedBlocks(editor.state)?.blocks).toEqual([0]);
+  move(42, 121);
+  expect(selectedBlocks(editor.state)?.blocks).toEqual([0]);
+  move(760, 220);
+  expect(editor.state.selection.anchor).toBe(1);
+  expect(editor.state.selection.head).toBe(9);
+  expect(selectedBlocks(editor.state)).toBeNull();
+  move(760, 220, "pointerup");
+  move(300, 120);
+  expect(editor.state.selection.head).toBe(9);
+  // From the right margin, and from below the last row.
+  click(760, 120);
+  move(40, 220);
+  expect([editor.state.selection.anchor, editor.state.selection.head]).toEqual([4, 6]);
+  move(40, 220, "pointerup");
+  click(300, 500);
+  move(40, 120);
+  expect([editor.state.selection.anchor, editor.state.selection.head]).toEqual([9, 1]);
+  move(40, 120, "pointerup");
 });
 
 it("clamps above and below the document without creating a new block", () => {
@@ -76,6 +102,7 @@ it("keeps an empty document editable without inserting paragraphs for blank-spac
 it("extends text selection with Shift instead of selecting a block", () => {
   const { editor, click } = setup();
   click(40, 120);
+  expect(selectedBlocks(editor.state)?.blocks).toEqual([0]);
   click(760, 220, { shiftKey: true });
   expect(editor.state.selection.anchor).toBe(1);
   expect(editor.state.selection.head).toBe(9);

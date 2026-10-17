@@ -12,14 +12,15 @@ The blank canvas around the text is part of the document's interaction area (UC-
 | Click | Result |
 | --- | --- |
 | Inside the text | Normal editor caret placement and text selection |
-| Left margin, level with text | Caret at the beginning of the corresponding visual row |
-| Right margin, level with a text block | Caret at the end of the corresponding visual row, with that block selected in block-selection mode |
+| Left margin, level with a text block | That block selected in block-selection mode, the caret at the start of the corresponding visual row (as Word's selection bar) |
+| Right margin, level with text | Caret at the end of the corresponding visual row; nothing selected |
 | Above the document | Caret at the document's start |
 | Below the document | Caret at the end of its last row; no extra paragraph is created |
+| Drag starting in a margin, above or below the document | A text selection from where the press landed (that row's start or end, or the document's start or end) to the row under the pointer, as a drag in the text does; the note scrolls along past its top or bottom edge. A left-margin press selects its block at once and turns into the text selection as the pointer moves |
 | Shift+click in a margin | Extend the current text selection to that visual row, rather than enter block-selection mode |
 | Controls, links, scrollbars or touch scrolling | Their existing behavior; no viewport click is synthesized |
 
-Right-margin selection uses the existing block-selection mode (D-160, KEY-04): the block is highlighted; block commands act on it; typing resumes at its caret without replacing the block. Tables retain their own cell-selection controls.
+Left-margin selection uses the existing block-selection mode (D-160, KEY-04): the block is highlighted; block commands act on it; typing resumes at its caret without replacing the block. Tables retain their own cell-selection controls. (The owner, 17 October: left selects the block and right places the caret, the other way round from the first build.)
 
 ## Blocks and their Markdown
 

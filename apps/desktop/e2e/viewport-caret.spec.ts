@@ -41,7 +41,7 @@ test("EDT-02: the blank viewport places the caret at the first or last document 
   } finally { await quit(l); }
 });
 
-test("EDT-02: right-margin clicks target a wrapped visual row and select its whole block", async () => {
+test("EDT-02: right-margin clicks put the caret at the end of that wrapped visual row, selecting nothing", async () => {
   const text = "A wrapped paragraph with enough words to span several visual rows. ".repeat(5).trim();
   const l = await start(text + "\n\nLast paragraph.\n");
   const { page } = l;
@@ -59,7 +59,7 @@ test("EDT-02: right-margin clicks target a wrapped visual row and select its who
     });
     expect(point.x).toBeGreaterThan(point.right);
     await page.mouse.click(point.x, point.y);
-    await expect(page.locator("[data-block-selected]")).toHaveText(text);
+    await expect(page.locator("[data-block-selected]")).toHaveCount(0);
     const caret = await selection(page);
     expect(caret.collapsed).toBe(true);
     expect(caret.offset).toBeGreaterThan(0);
@@ -75,12 +75,11 @@ test("EDT-02: right-margin clicks target a wrapped visual row and select its who
     });
     expect(row.sameRow).toBe(true);
     await page.keyboard.type("!");
-    await expect(page.locator("[data-block-selected]")).toHaveCount(0);
     expect((await page.locator(".ProseMirror > :first-child").innerText()).replace("!", "")).toBe(text);
   } finally { await quit(l); }
 });
 
-test("EDT-02: left-margin and Shift-click selection preserve normal text and checkbox behavior", async () => {
+test("EDT-02: a left-margin click selects that row's whole block; Shift-click and checkboxes behave as before", async () => {
   const l = await start("First paragraph.\n\nSecond paragraph.\n\n- [ ] Task\n");
   const { page } = l;
   try {
@@ -92,7 +91,7 @@ test("EDT-02: left-margin and Shift-click selection preserve normal text and che
       return { x: s.left + 35, first: a.top + a.height / 2, second: b.top + b.height / 2 };
     });
     await page.mouse.click(points.x, points.first);
-    await expect.poll(() => selection(page)).toMatchObject({ text: "First paragraph.", offset: 0, collapsed: true });
+    await expect(page.locator("[data-block-selected]")).toHaveText("First paragraph.");
     await page.keyboard.down("Shift");
     await page.mouse.click(points.x, points.second);
     await page.keyboard.up("Shift");
@@ -102,5 +101,43 @@ test("EDT-02: left-margin and Shift-click selection preserve normal text and che
     expect(await checkbox.evaluate((el) => getComputedStyle(el).cursor)).toBe("pointer");
     await checkbox.check();
     await expect(checkbox).toBeChecked();
+  } finally { await quit(l); }
+});
+
+test("EDT-02: a drag that starts beside or below the column selects text from the row where it started", async () => {
+  const l = await start("First paragraph.\n\nSecond paragraph.\n\nThird paragraph.\n");
+  const { page } = l;
+  const selected = () => page.evaluate(() => window.getSelection()!.toString().replace(/\s+/g, " ").trim());
+  try {
+    const p = await page.evaluate(() => {
+      const scroller = document.querySelector("[data-editor-scroller]")!;
+      const s = scroller.getBoundingClientRect();
+      const doc = document.querySelector(".ProseMirror")!;
+      const d = doc.getBoundingClientRect();
+      const mid = (i: number) => { const r = doc.children[i]!.getBoundingClientRect(); return r.top + r.height / 2; };
+      return { left: s.left + 35, right: (d.right + s.left + scroller.clientWidth) / 2, rows: [mid(0), mid(1), mid(2)], below: Math.min(s.bottom - 30, doc.lastElementChild!.getBoundingClientRect().bottom + 40) };
+    });
+    // From the left margin of the first row to the right margin of the second: whole rows of text.
+    await page.mouse.move(p.left, p.rows[0]!);
+    await page.mouse.down();
+    await page.mouse.move(p.right, p.rows[1]!, { steps: 6 });
+    await page.mouse.up();
+    expect(await selected()).toBe("First paragraph. Second paragraph.");
+    await expect(page.locator("[data-block-selected]")).toHaveCount(0);
+    // From the right margin of the third row up to the left margin of the second.
+    await page.mouse.move(p.right, p.rows[2]!);
+    await page.mouse.down();
+    await page.mouse.move(p.left, p.rows[1]!, { steps: 6 });
+    await page.mouse.up();
+    expect(await selected()).toBe("Second paragraph. Third paragraph.");
+    // From below the last row: from the note's end.
+    await page.mouse.move(p.right, p.below);
+    await page.mouse.down();
+    await page.mouse.move(p.left, p.rows[2]!, { steps: 6 });
+    await page.mouse.up();
+    expect(await selected()).toBe("Third paragraph.");
+    // A press with no drag in the left margin still selects the block.
+    await page.mouse.click(p.left, p.rows[1]!);
+    await expect(page.locator("[data-block-selected]")).toHaveText("Second paragraph.");
   } finally { await quit(l); }
 });
