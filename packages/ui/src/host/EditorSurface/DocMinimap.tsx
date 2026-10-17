@@ -4,9 +4,11 @@ import { focusAtPosition } from "@focus-notes/editor";
 import { tokens } from "@focus-notes/tokens";
 import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import { useFadingEdges } from "../../behaviors/fading-edges.ts";
-import { pinnedRight, pinnedSheet } from "../../behaviors/pinned-sheet.ts";
+import { allocateDocks, dockLeft, dockMaxWidth, pinnedRight } from "../../behaviors/pinned-sheet.ts";
+import { useResizeHandle } from "../../behaviors/resize-handle.ts";
+import { fixedBox } from "../../behaviors/frame.ts";
 import { IconButton } from "../../primitives/IconButton/IconButton.tsx";
-import { caretSection, cardTop, depthsOf, MIN_HEADINGS, outlineOf, railLayout, nestOutline, pinnedReserve, railShows, scrollSection, type OutlineHeading, type OutlineNode } from "./doc-outline.ts";
+import { caretSection, cardTop, depthsOf, MIN_HEADINGS, outlineOf, railLayout, nestOutline, railShows, scrollSection, type OutlineHeading, type OutlineNode } from "./doc-outline.ts";
 import { glideTo } from "./reading-zone.ts";
 import * as s from "./DocMinimap.css.ts";
 
@@ -61,23 +63,33 @@ interface DocMinimapProps {
   label: string;
   /** What an empty heading reads as. */
   untitled: string;
-  /** The card kept open beside the text, where it fits (D-186). */
+  /** Docked on the right (D-186, D-187), where the window has room for it and the note's narrowest area. */
   pinned?: boolean;
   pinLabel?: string;
   unpinLabel?: string;
   onPin?: () => void;
+  /** Its docked width in px, as resized; 0: the token's default. */
+  dockWidth?: number;
+  /** The resize handle's name ("Resize contents"). */
+  resizeLabel?: string;
+  onResize?: (width: number) => void;
+  /** Files docked on the left, as kept on this device, and its width (0: its default): the docks are arbitrated here (D-187). */
+  filesDock?: boolean;
+  filesWidth?: number;
+  /** Whether docked Files fits beside the docked contents and the note's narrowest area; Files is first to undock. */
+  onFilesFit?: (fits: boolean) => void;
 }
 
 type Open = null | "hover" | "click" | "keyboard";
-interface Layout { room: boolean; top: number; pitch: number; indices: number[]; center: number; height: number; pinKeep: number }
-const NO_LAYOUT: Layout = { room: false, top: 0, pitch: 0, indices: [], center: 0, height: 0, pinKeep: 0 };
-const sameLayout = (a: Layout, b: Layout) => a.room === b.room && a.top === b.top && a.pitch === b.pitch && a.center === b.center && a.height === b.height && a.pinKeep === b.pinKeep && a.indices.join() === b.indices.join();
+interface Layout { room: boolean; top: number; pitch: number; indices: number[]; center: number; height: number }
+const NO_LAYOUT: Layout = { room: false, top: 0, pitch: 0, indices: [], center: 0, height: 0 };
+const sameLayout = (a: Layout, b: Layout) => a.room === b.room && a.top === b.top && a.pitch === b.pitch && a.center === b.center && a.height === b.height && a.indices.join() === b.indices.join();
 
 /**
  * The document minimap (UI-13, D-185): a rail of heading bars on the note's right edge, the current
  * section bright, that expands on hover (or *Show contents*) into a card of the note's headings.
  */
-export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function DocMinimap({ editor, scroller, label, untitled, pinned = false, pinLabel = "", unpinLabel = "", onPin }, ref) {
+export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function DocMinimap({ editor, scroller, label, untitled, pinned = false, pinLabel = "", unpinLabel = "", onPin, dockWidth = 0, resizeLabel, onResize, filesDock = false, filesWidth = 0, onFilesFit }, ref) {
   const [headings, setHeadings] = useState<OutlineHeading[]>(() => outlineOf(editor.state.doc));
   const [current, setCurrent] = useState(-1);
   const [layout, setLayout] = useState<Layout>(NO_LAYOUT);
@@ -97,8 +109,6 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   const railFocused = useRef(false);
   /** A pointer press on the pin began with the caret in the note (D-186). */
   const noteHadFocus = useRef(false);
-  /** The card's width as last drawn, for whether it fits pinned (D-186). */
-  const cardWidth = useRef(0);
   const returnTo = useRef<"note" | "rail">("note");
   /** Until when the card takes focus back from a closing dialog (Spotlight ran Show contents). */
   const claimUntil = useRef(0);
@@ -134,7 +144,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     // Nothing to show: no layout to read.
     if (hs.length < MIN_HEADINGS) {
       held.current = null;
-      setLayout((prev) => (prev.room || prev.pinKeep ? NO_LAYOUT : prev));
+      setLayout((prev) => (prev.room ? NO_LAYOUT : prev));
       setCurrent(-1);
       return;
     }
@@ -177,21 +187,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     const contentLeft = box.left + sc.clientLeft;
     const contentRight = contentLeft + sc.clientWidth;
     const room = railShows({ textRight, contentRight, railWidth: px(t.railWidth), railInset: px(t.railInset), clearance: px(t.clearance) });
-    // Pinned, the card keeps its column (D-186), at its own width (as drawn, or its minimum before it
-    // has been): the text is laid out left of it, unless that would leave less than the narrowest text.
-    const e = tokens.cmp.editorSurface;
-    const frameRight = (sc.parentElement ?? sc).getBoundingClientRect().right;
-    const filesEdge = pinnedSheet.get();
-    const gutter = px(e.gutter);
-    const pinKeep = pinnedReserve({
-      contentLeft, contentRight,
-      cardRight: frameRight - px(e.scrollbarSize) - px(t.railInset),
-      width: cardWidth.current || px(t.cardMinWidth),
-      clearance: px(t.clearance), gutter,
-      leftClear: filesEdge === undefined ? 0 : Math.max(0, filesEdge + px(e.pinnedGap) - gutter - contentLeft),
-      minText: px(e.pinnedColumnMin),
-    });
-    const next: Layout = { room, top: railTop, pitch: lay.pitch, indices: lay.indices, center: railTop + height / 2, height: h, pinKeep };
+    const next: Layout = { room, top: railTop, pitch: lay.pitch, indices: lay.indices, center: railTop + height / 2, height: h };
     setLayout((prev) => (sameLayout(prev, next) ? prev : next));
     setCurrent(cur);
   }, [editor, scroller]);
@@ -269,7 +265,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     });
     ro.observe(sc);
     ro.observe(editor.view.dom);
-    const offPinned = pinnedSheet.subscribe(schedule);
+    const offPinned = dockLeft.subscribe(schedule);
     schedule();
     return () => {
       clearTimeout(pending);
@@ -296,15 +292,69 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   }, []);
 
   const enough = headings.length >= MIN_HEADINGS;
-  // Pinned, the card stays in the rail's place wherever it fits beside the text (D-186).
-  const pinnedShown = pinned && enough && layout.pinKeep > 0;
-  // The text's column keeps clear of the pinned card (D-186), and gets the room back when it goes.
+  // Docking (D-187): the contents ask with their width while pinned and showing; docked Files asks with
+  // its own. The window decides what docks, keeping the note's narrowest area: Files is first to undock.
+  const outlineAsk = pinned && enough;
+  const [dockAllowed, setDockAllowed] = useState(false);
+  const [live, setLive] = useState<number | null>(null);
+  const dockLengths = () => ({ def: px(t.dock.width), files: px(t.dock.filesWidth), min: px(t.dock.min), max: px(t.dock.max), content: px(t.dock.contentMin) });
+  const clampWidth = (w: number, l: { min: number; max: number }) => Math.max(l.min, Math.min(l.max, w));
+  const filesFit = useRef<boolean | null>(null);
+  const onFilesFitRef = useRef(onFilesFit);
+  onFilesFitRef.current = onFilesFit;
   useEffect(() => {
-    pinnedRight.set(pinnedShown ? layout.pinKeep : 0);
-  }, [pinnedShown, layout.pinKeep]);
+    const sc = scroller.current;
+    if (!sc) return;
+    const arbitrate = () => {
+      const l = dockLengths();
+      if (!l.max) return;
+      const files = filesDock ? clampWidth(filesWidth || l.files, l) : undefined;
+      const outline = outlineAsk ? clampWidth(dockWidth || l.def, l) : undefined;
+      const a = allocateDocks({ width: fixedBox(sc).width, files, outline, contentMin: l.content });
+      setDockAllowed(a.outline);
+      const fits = filesDock ? a.files : true;
+      if (filesFit.current !== fits) {
+        filesFit.current = fits;
+        onFilesFitRef.current?.(fits);
+      }
+    };
+    arbitrate();
+    addEventListener("resize", arbitrate);
+    return () => removeEventListener("resize", arbitrate);
+  }, [scroller, filesDock, filesWidth, outlineAsk, dockWidth]); // eslint-disable-line react-hooks/exhaustive-deps
+  const docked = outlineAsk && dockAllowed;
+  const dockedWidth = live ?? (lengths.current ? clampWidth(dockWidth || px(t.dock.width), dockLengths()) : 0);
+  // The note's area keeps clear of the docked contents, and gets the room back when they go.
+  useEffect(() => {
+    pinnedRight.set(docked && dockedWidth ? dockedWidth : 0);
+  }, [docked, dockedWidth]);
+  // The window's controls stay shown at the top of the docked contents (D-187).
+  useEffect(() => {
+    if (!docked) return;
+    document.documentElement.dataset.dockRight = "";
+    return () => {
+      delete document.documentElement.dataset.dockRight;
+    };
+  }, [docked]);
   useEffect(() => () => pinnedRight.set(0), []);
-  const pinnedRef = useRef(pinnedShown);
-  pinnedRef.current = pinnedShown;
+  const pinnedRef = useRef(docked);
+  pinnedRef.current = docked;
+  const pinnedShown = docked;
+  const handle = useResizeHandle({
+    width: dockedWidth,
+    min: px(t.dock.min),
+    max: () => dockMaxWidth({ window: scroller.current ? fixedBox(scroller.current).width : innerWidth, other: dockLeft.get(), contentMin: px(t.dock.contentMin), min: px(t.dock.min), max: px(t.dock.max) }),
+    edge: "start",
+    onResize: (w) => setLive(w),
+    onCommit: (w) => {
+      setLive(null);
+      onResize?.(w);
+    },
+    onReset: () => {
+      setLive(null);
+      onResize?.(px(t.dock.width));
+    },
+  });
   // Focus mode is on by default, so the rail stays: it sits beside the text, never on it (D-185).
   const railShown = enough && layout.room && !pinnedShown;
   const cardShown = Boolean(open) || pinnedShown;
@@ -385,11 +435,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     const edgeBottom = px(t.edgeBottom);
     const max = Math.max(0, Math.min(h * (parseFloat(read(sc, t.cardMax)) || 0), h - edgeTop - edgeBottom));
     nav.style.setProperty(varName(s.cardMaxVar), `${Math.round(max)}px`);
-    // Drawn at a new width (its headings changed, or a first pinned frame): check the fit again.
-    if (card.offsetWidth !== cardWidth.current) {
-      cardWidth.current = card.offsetWidth;
-      schedule();
-    }
+    if (pinnedShown && dockedWidth) nav.style.setProperty(varName(s.dockWidthVar), `${dockedWidth}px`);
     const center = railShown ? layout.center : h / 2;
     nav.style.setProperty(varName(s.cardTopVar), `${Math.round(cardTop(center, card.offsetHeight, edgeTop, h - edgeBottom))}px`);
     const list = listRef.current;
@@ -403,7 +449,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
       }
     }
     if (open === "keyboard" && target && !card.contains(document.activeElement) && !document.querySelector("[data-dialog-modal]")) target.focus();
-  }, [open, cardShown, pinnedShown, layout, railShown, scroller, current, headings]);
+  }, [open, cardShown, pinnedShown, dockedWidth, layout, railShown, scroller, current, headings]);
 
   useLayoutEffect(() => {
     const nav = navRef.current;
@@ -541,6 +587,13 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   const togglePin = () => {
     const unpinning = pinned;
     const focusIn = Boolean(cardRef.current?.contains(document.activeElement)) && !noteHadFocus.current;
+    // Docked the first time, it keeps the card's width (the owner: pinning doesn't change it); resized
+    // later, that width is what it keeps (D-187).
+    const card = cardRef.current;
+    if (!unpinning && !dockWidth && card && !card.hasAttribute("data-docked")) {
+      const l = dockLengths();
+      onResize?.(clampWidth(card.offsetWidth, l));
+    }
     onPin?.();
     if (unpinning) {
       returnTo.current = "note";
@@ -606,6 +659,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
         <div
           ref={cardRef} id={cardId} className={s.card} data-doc-minimap-card="" data-surface="popover"
           data-pinned={pinnedShown ? "" : undefined}
+          data-docked={pinnedShown ? "" : undefined}
           onPointerEnter={pointerIn} onPointerLeave={pointerOut}
         >
           {onPin ? (
@@ -616,6 +670,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
           <ul ref={listRef} className={s.list} data-pin={onPin ? "" : undefined} onKeyDown={onListKey}>
             {entries(nestOutline(depths))}
           </ul>
+          {pinnedShown && onResize && dockedWidth ? <div className={s.handle} aria-label={resizeLabel ?? label} data-dock-handle="" {...handle} /> : null}
         </div>
       ) : null}
     </nav>

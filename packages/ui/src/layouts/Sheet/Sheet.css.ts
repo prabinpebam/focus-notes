@@ -17,6 +17,8 @@ export const shortVar = createVar({ syntax: "<length>", inherits: false, initial
 export const limitVar = createVar();
 /** The inset it has: the token's, or more to keep the trigger and the window's controls clear (Sheet.tsx). */
 export const insetVar = createVar();
+/** A docked sheet's width (Sheet.tsx); below, the lengths its resizing reads: its default, minimum, maximum, and the note's narrowest area (D-187). */
+export const dockWidthVar = createVar();
 
 // Floats with the same inset from the window's top, side, and bottom, so it's vertically centered and
 // the window's corners stay clean (DD-FILES-01, D-111). It never covers the trigger or the window's
@@ -46,8 +48,43 @@ export const sheet = style({
   animationTimingFunction: t.easing,
   animationFillMode: "both",
   outline: "none",
+  selectors: {
+    // Docked (D-187): flush to the window's edge from its top to its bottom, a hairline on the inner
+    // side; opaque and without a shadow, so the note's area beside it reads as the page. Its content
+    // starts below the title band, which stays the window's drag region.
+    "&[data-docked]": {
+      top: 0, bottom: 0, width: dockWidthVar, maxWidth: "none", paddingTop: `calc(${t.dock.top} + ${t.padding})`,
+      borderRadius: 0, borderWidth: 0, boxShadow: "none", backdropFilter: "none",
+      backgroundColor: t.dock.background, animationName: "none",
+    },
+    "&[data-docked][data-side=start]": { left: 0, borderInlineEndStyle: "solid", borderInlineEndWidth: t.dock.borderWidth, borderInlineEndColor: t.dock.border },
+    "&[data-docked][data-side=end]": { right: 0, borderInlineStartStyle: "solid", borderInlineStartWidth: t.dock.borderWidth, borderInlineStartColor: t.dock.border },
+  },
 });
-export const side = styleVariants({
+
+export const dockDefaultVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const dockMinVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const dockMaxVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const dockContentMinVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const dockLengths = style({ vars: { [dockDefaultVar]: t.dock.width, [dockMinVar]: t.dock.min, [dockMaxVar]: t.dock.max, [dockContentMinVar]: t.dock.contentMin } });
+
+/** The resize handle on a docked sheet's inner edge: a thin line on hover, focus, or while dragged. */
+export const handle = style({
+  position: "absolute",
+  top: 0,
+  bottom: 0,
+  width: t.dock.handleWidth,
+  cursor: "col-resize",
+  touchAction: "none",
+  outline: "none",
+  selectors: {
+    "[data-side=start] > &": { right: `calc(-1 * ${t.dock.handleWidth} / 2)` },
+    "[data-side=end] > &": { left: `calc(-1 * ${t.dock.handleWidth} / 2)` },
+    "&::after": { content: '""', position: "absolute", top: 0, bottom: 0, left: `calc(50% - ${t.dock.handleLine} / 2)`, width: t.dock.handleLine, backgroundColor: t.dock.handleIdle },
+    "&:hover::after": { backgroundColor: t.dock.handleHover },
+    "&:focus-visible::after, &:active::after": { backgroundColor: t.dock.handleActive },
+  },
+});export const side = styleVariants({
   start: { left: insetVar, animationName: slideStart },
   end: { right: insetVar, animationName: slideEnd },
 });

@@ -11,6 +11,8 @@ export const railHeightVar = createVar();
 export const pitchVar = createVar();
 export const cardTopVar = createVar();
 export const cardMaxVar = createVar();
+/** The docked card's width (D-187), set from DocMinimap. */
+export const dockWidthVar = createVar();
 
 /** Covers the note's frame so the rail and card place against it; only they take the pointer. */
 export const nav = style({ position: "absolute", inset: 0, pointerEvents: "none" });
@@ -93,6 +95,31 @@ export const card = style({
     ':root[data-transparency="reduced"] &, :root[data-compositing="software"] &': { backdropFilter: "none", backgroundColor: t.cardBackground },
     // Pinned: there from the first frame, without the opening fade; the same width as unpinned.
     "&[data-pinned]": { animationName: "none" },
+    // Docked (D-187): flush to the window's right edge from its top to its bottom, opaque, a hairline on
+    // its inner side, as wide as it was resized, the whole height for the list. Its content starts below
+    // the title band, where the window's controls sit on it.
+    "&[data-docked]": {
+      top: 0, bottom: 0, right: 0, width: dockWidthVar, minWidth: 0, maxWidth: "none", maxHeight: "none", paddingTop: t.dock.top,
+      borderRadius: 0, borderWidth: 0, borderInlineStartStyle: "solid", borderInlineStartWidth: t.dock.borderWidth, borderInlineStartColor: t.dock.border,
+      boxShadow: "none", backdropFilter: "none", backgroundColor: t.dock.background,
+    },
+  },
+});
+
+/** The resize handle on the docked card's inner edge: a thin line on hover, focus, or while dragged (D-187). */
+export const handle = style({
+  position: "absolute",
+  top: 0,
+  bottom: 0,
+  left: `calc(-1 * ${t.dock.handleWidth} / 2)`,
+  width: t.dock.handleWidth,
+  cursor: "col-resize",
+  touchAction: "none",
+  outline: "none",
+  selectors: {
+    "&::after": { content: '""', position: "absolute", top: 0, bottom: 0, left: `calc(50% - ${t.dock.handleLine} / 2)`, width: t.dock.handleLine, backgroundColor: t.transparent },
+    "&:hover::after": { backgroundColor: t.dock.handleHover },
+    "&:focus-visible::after, &:active::after": { backgroundColor: t.dock.handleActive },
   },
 });
 
@@ -107,6 +134,10 @@ export const head = style({
   display: "flex",
   borderRadius: t.itemRadius,
   backgroundColor: `color-mix(in srgb, ${t.cardBackground} calc(${t.cardOpacity} * 100%), transparent)`,
+  selectors: {
+    // Docked, the list starts below the title band: the button stays on its first row.
+    "[data-docked] > &": { top: `calc(${t.dock.top} + ${t.cardPadding} + (${firstRow} - ${t.pinSize}) / 2)` },
+  },
 });
 
 /** The list scrolls inside the card's padding, so its edges fade within the rounded card. */

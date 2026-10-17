@@ -8202,11 +8202,30 @@
         "pinned": {
           "kind": "boolean",
           "default": false,
-          "description": "Pinned open (D-161): a click on the canvas doesn't close it, and a start sheet keeps the note's text clear of it. Still floating, never docked."
+          "description": "Pinned open (D-161): a click on the canvas doesn't close it."
+        },
+        "docked": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Docked (D-187): flush to the window's edge below the title band and to its bottom, opaque, a hairline on its inner side, the note's area beside it; resizable from its inner edge."
+        },
+        "dockWidth": {
+          "kind": "number",
+          "default": 0,
+          "description": "Its docked width in px, as the person resized it; 0: the token's default (cmp.sheet.dock.width)."
+        },
+        "resizeLabel": {
+          "kind": "message",
+          "description": "The resize handle's name, \"Resize Files\"."
         }
       },
       "events": {
-        "close": {}
+        "close": {},
+        "resize": {
+          "payload": {
+            "width": "number"
+          }
+        }
       },
       "slots": {
         "header": {
@@ -8222,7 +8241,8 @@
       "states": [
         "rest",
         "entering",
-        "pinned"
+        "pinned",
+        "docked"
       ],
       "tokens": "cmp.sheet.*",
       "a11y": {
@@ -8331,6 +8351,46 @@
                   "get": "vm.gallery.matches"
                 },
                 "height": "fill"
+              }
+            }
+          ]
+        },
+        {
+          "name": "start, docked",
+          "props": {
+            "label": {
+              "t": "files.heading"
+            },
+            "side": "start",
+            "width": "files",
+            "keyScope": "files",
+            "pinned": true,
+            "docked": true,
+            "dockWidth": 0,
+            "resizeLabel": {
+              "t": "files.resize"
+            }
+          },
+          "slots": {
+            "header": [
+              {
+                "type": "Heading",
+                "props": {
+                  "level": "2",
+                  "value": {
+                    "t": "files.heading"
+                  }
+                }
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.long"
+                }
               }
             }
           ]
@@ -8965,6 +9025,25 @@
         "outlineUnpinLabel": {
           "kind": "message",
           "description": "The contents card's pin button, pinned: Unpin contents."
+        },
+        "outlineWidth": {
+          "kind": "number",
+          "default": 0,
+          "description": "The docked contents' width in px, as resized; 0: the token's default (D-187)."
+        },
+        "outlineResizeLabel": {
+          "kind": "message",
+          "description": "The docked contents' resize handle: Resize contents."
+        },
+        "filesDock": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Files is docked on this device (D-187): the canvas decides whether the window has room for it, beside the docked contents and the note's narrowest area."
+        },
+        "filesWidth": {
+          "kind": "number",
+          "default": 0,
+          "description": "Docked Files' width in px, as resized; 0: its default."
         }
       },
       "events": {
@@ -9087,7 +9166,17 @@
             "count": "number"
           }
         },
-        "outlinePin": {}
+        "outlinePin": {},
+        "outlineResize": {
+          "payload": {
+            "width": "number"
+          }
+        },
+        "filesFit": {
+          "payload": {
+            "fits": "boolean"
+          }
+        }
       },
       "slots": {},
       "states": [

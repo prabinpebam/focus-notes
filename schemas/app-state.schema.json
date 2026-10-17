@@ -43,7 +43,17 @@
     },
     "outlinePinned": {
       "type": "boolean",
-      "description": "The document minimap's contents card is pinned open on this device (D-186)."
+      "description": "The document minimap's contents card is docked on this device (D-186, D-187)."
+    },
+    "outlineWidth": {
+      "type": "number",
+      "minimum": 1,
+      "description": "The docked contents card's width in px, as resized on this device (D-187)."
+    },
+    "filesWidth": {
+      "type": "number",
+      "minimum": 1,
+      "description": "The docked Files panel's width in px, as resized on this device (D-187)."
     },
     "filesSort": {
       "enum": ["changed"],

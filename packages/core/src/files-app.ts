@@ -24,8 +24,12 @@ import {
 
 export interface FilesState {
   open: boolean;
-  /** Pinned open (D-161): opening a note, a click on the canvas, and Esc leave it open. */
+  /** Docked (D-187, was pinned in D-161): flush to the window's left edge, the text beside it; opening a note, a click on the canvas, and Esc leave it open. */
   pinned: boolean;
+  /** Whether the window has room to dock it beside the note's narrowest text (D-187); docked = pinned and fits. */
+  fits: boolean;
+  /** Its docked width in px, as the person resized it; undefined: the token's default (D-187). */
+  width?: number;
   /** Open folders, by path, and collapsed root sections, by row ID. */
   expanded: readonly string[];
   collapsed: readonly string[];
@@ -50,7 +54,7 @@ export interface FilesState {
   recent: { open: boolean; loading: boolean; notes?: readonly DeletedNote[]; focus: number };
 }
 export const FILES_CLOSED: FilesState = {
-  open: false, pinned: false, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", focusRequest: 0, pending: [],
+  open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", focusRequest: 0, pending: [],
   move: { open: false, query: "", activeId: "", paths: [], focus: 0 },
   recent: { open: false, loading: false, focus: 0 },
 };
@@ -139,8 +143,9 @@ export function registerFiles(ctx: Ctx) {
     const path = target ?? store.state.note.path;
     const add = path && findNode(tree(), path) ? ancestorsOf(tree(), path) : [];
     setFiles((f) => ({
-      // Revealed again once listed, what the person did meanwhile (a filter typed) stays.
-      open: true, ...(focus ? { filter: "", edit: undefined, focusRequest: f.focusRequest + 1 } : {}),
+      // Revealed again once listed, what the person did meanwhile (a filter typed) stays. Opened
+      // without focus (docking again, D-187), no earlier request is left for its tree to meet.
+      open: true, ...(focus ? { filter: "", edit: undefined, focusRequest: f.focusRequest + 1 } : f.open ? {} : { focusRequest: 0 }),
       expanded: [...new Set([...f.expanded, ...add])],
       collapsed: f.collapsed.filter((c) => !path || c !== rootRowId(rootOf(tree(), path)?.id ?? "local")),
       selection: path && findNode(tree(), path) ? { selected: [path], anchor: path, focus: path } : f.selection,
@@ -150,12 +155,14 @@ export function registerFiles(ctx: Ctx) {
     setFiles((f) => ({ selection: keepShowing(f.selection, rowsOf(store.state)) }));
   };
   const close = () => setFiles((f) => ({ open: false, edit: undefined, confirm: undefined, move: { ...f.move, open: false }, recent: { ...f.recent, open: false } }));
-  /** What would close an unpinned panel (opening a note, a new note): pinned, it stays (D-161). */
-  const dismiss = () => { if (!files().pinned) close(); };
-  /** Pinned, Mod+O moves focus into the tree rather than closing it (D-161). */
+  /** Docked: pinned, with room beside the note (D-187). Undocked for room, it behaves as an unpinned panel. */
+  const docked = () => files().pinned && files().fits;
+  /** What would close an undocked panel (opening a note, a new note): docked, it stays (D-161, D-187). */
+  const dismiss = () => { if (!docked()) close(); };
+  /** Docked, Mod+O moves focus into the tree rather than closing it (D-161). */
   commands.register({
     id: "files.open", title: "command.files.open", icon: "open", enabled: () => Boolean(ws),
-    run: () => (files().pinned && files().open ? setFiles((f) => ({ focusRequest: f.focusRequest + 1 })) : files().open ? close() : reveal()),
+    run: () => (docked() && files().open ? setFiles((f) => ({ focusRequest: f.focusRequest + 1 })) : files().open ? close() : reveal()),
   });
   commands.register<{ path: string }>({
     id: "files.reveal", title: "command.files.reveal", shortcut: { default: "Mod+Shift+E" }, layer: "power", group: "files",
@@ -172,14 +179,14 @@ export function registerFiles(ctx: Ctx) {
       },
     });
   }
-  // Esc in the panel: pinned, the caret goes back to the note and the panel stays (D-161).
-  commands.register({ id: "files.close", title: "command.files.close", run: () => (files().pinned ? ctx.editorAction("edit.focus") : close()) });
-  // Mod+O in the panel: back to the note when pinned; closes it otherwise, as Mod+O always has.
+  // Esc in the panel: docked, the caret goes back to the note and the panel stays (D-161).
+  commands.register({ id: "files.close", title: "command.files.close", run: () => (docked() ? ctx.editorAction("edit.focus") : close()) });
+  // Mod+O in the panel: back to the note when docked; closes it otherwise, as Mod+O always has.
   commands.register({
     id: "files.focusNote", title: "command.files.focusNote", shortcut: { default: "Mod+O", handledBy: "files" }, layer: "basic", group: "files",
-    run: () => (files().pinned ? ctx.editorAction("edit.focus") : close()),
+    run: () => (docked() ? ctx.editorAction("edit.focus") : close()),
   });
-  // ---- pinning (D-161): kept on this device ----
+  // ---- docking (D-161, D-187): kept on this device ----
   const setPinned = (pinned: boolean) => {
     setFiles(() => ({ pinned }));
     void ctx.persistAppState({ filesPinned: pinned ? true : undefined });
@@ -192,6 +199,30 @@ export function registerFiles(ctx: Ctx) {
       if (on && !files().open) reveal();
       setPinned(on);
       announce(catalog.format(on ? "files.pinnedNow" : "files.unpinnedNow"));
+    },
+  });
+  // The window narrowed past what Files, the docked contents and the note's narrowest text need: Files
+  // undocks first, closing as an undocked panel does; with room again, it docks and opens on its own,
+  // without taking the caret (D-187). The canvas measures the room and says so.
+  commands.register<{ fits: boolean }>({
+    id: "files.setFits", title: "files.resize",
+    run: ({ fits }) => {
+      const next = fits !== false;
+      if (next === files().fits) return;
+      setFiles(() => ({ fits: next }));
+      if (!files().pinned || !ws) return;
+      if (!next && files().open) close();
+      else if (next && !files().open) reveal(undefined, false);
+    },
+  });
+  // Resized by dragging its edge or with the arrow keys on it (D-187): kept on this device.
+  commands.register<{ width: number }>({
+    id: "files.setWidth", title: "files.resize",
+    run: ({ width }) => {
+      if (typeof width !== "number" || !Number.isFinite(width) || width <= 0) return;
+      const w = Math.round(width);
+      setFiles(() => ({ width: w }));
+      void ctx.persistAppState({ filesWidth: w });
     },
   });
 
@@ -812,7 +843,7 @@ export function registerFiles(ctx: Ctx) {
     ]),
   };
   const NO_ITEM = { id: "", label: "", shortcut: "", disabled: false };
-  const CLOSED = { open: false, pinned: false, pinIcon: "pin", pinLabel: "", pinShortcut: "", menu: [], menuLabel: "", focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
+  const CLOSED = { open: false, pinned: false, docked: false, width: 0, pinIcon: "pin", pinLabel: "", pinShortcut: "", menu: [], menuLabel: "", focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
   const newNoteShortcut = () => (ctx.describeItem("note.new").shortcut as string | undefined) ?? "";
   /** The focused row's menu (D-162): its items as the ⋯ menu shows commands, and its name. */
   const menuOf = (s: AppState, rows: readonly FileRow[]) => {
@@ -838,7 +869,7 @@ export function registerFiles(ctx: Ctx) {
     schema: {
       type: "object",
       properties: {
-        open: { type: "boolean" }, pinned: { type: "boolean" }, pinIcon: { type: "string", enum: ["pin", "pinOff"] }, pinLabel: { type: "string" }, pinShortcut: { type: "string" },
+        open: { type: "boolean" }, pinned: { type: "boolean" }, docked: { type: "boolean" }, width: { type: "number" }, pinIcon: { type: "string", enum: ["pin", "pinOff"] }, pinLabel: { type: "string" }, pinShortcut: { type: "string" },
         menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } }, menuLabel: { type: "string" },
         focusRequest: { type: "number" }, items: { type: "array", items: TREE_ITEM }, focusId: { type: "string" },
         editValue: { type: "string" }, editError: { type: "string" }, editLabel: { type: "string" },
@@ -883,7 +914,7 @@ export function registerFiles(ctx: Ctx) {
       const notes = rows.filter((r) => r.kind !== "root").length;
       const pin = ctx.describeItem("files.togglePin");
       return {
-        open: true, pinned: f.pinned, pinIcon: f.pinned ? "pinOff" : "pin", pinLabel: catalog.format(f.pinned ? "files.unpin" : "files.pin"), pinShortcut: (pin.shortcut as string | undefined) ?? "",
+        open: true, pinned: f.pinned, docked: f.pinned && f.fits, width: f.width ?? 0, pinIcon: f.pinned ? "pinOff" : "pin", pinLabel: catalog.format(f.pinned ? "files.unpin" : "files.pin"), pinShortcut: (pin.shortcut as string | undefined) ?? "",
         ...menuOf(s, rows),
         focusRequest: f.focusRequest, items, focusId: f.edit ? f.edit.id : f.selection.focus,
         editValue: f.edit?.value ?? "", editError: f.edit?.error ?? "",
@@ -991,8 +1022,9 @@ export function registerFiles(ctx: Ctx) {
     restoreSort(sort: unknown): void {
       if (sort === "changed") setFiles(() => ({ sort: "changed" }));
     },
-    /** At launch: a panel pinned on this device opens, without taking the caret (D-161). */
-    restorePinned(pinned: boolean | undefined): void {
+    /** At launch: a panel docked on this device opens, without taking the caret, at its width (D-161, D-187). */
+    restorePinned(pinned: boolean | undefined, width?: number): void {
+      if (typeof width === "number" && Number.isFinite(width) && width > 0) setFiles(() => ({ width: Math.round(width) }));
       if (!pinned || !ws) return;
       setFiles(() => ({ pinned: true }));
       reveal(undefined, false);

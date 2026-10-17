@@ -61,6 +61,13 @@ export interface EditorSurfaceProps {
   outlinePinLabel?: string;
   outlineUnpinLabel?: string;
   onOutlinePin?: () => void;
+  /** Docking (D-187): the docked contents' width and its handle's name; docked Files and its width, arbitrated here. */
+  outlineWidth?: number;
+  outlineResizeLabel?: string;
+  filesDock?: boolean;
+  filesWidth?: number;
+  onOutlineResize?: (payload: { width: number }) => void;
+  onFilesFit?: (payload: { fits: boolean }) => void;
   id?: string;
   onChange?: (payload: { value: string }) => void;
   onFindResult?: (payload: { count: number; current: number; invalid: boolean; wrapped: boolean; replaced: number }) => void;
@@ -143,6 +150,7 @@ export function EditorSurface({
   documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
+  outlineWidth = 0, outlineResizeLabel, filesDock = false, filesWidth = 0, onOutlineResize, onFilesFit,
   id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onFormat, onLinkEdit, onOpenLink, onSlash, onSlashMove, onPasteNotice,
   onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
 }: EditorSurfaceProps) {
@@ -619,6 +627,8 @@ export function EditorSurface({
         <DocMinimap
           ref={minimapRef} editor={editor} scroller={scrollerRef} label={outlineLabel} untitled={outlineUntitled ?? ""}
           pinned={outlinePinned} pinLabel={outlinePinLabel} unpinLabel={outlineUnpinLabel} onPin={onOutlinePin}
+          dockWidth={outlineWidth} resizeLabel={outlineResizeLabel} onResize={(width) => onOutlineResize?.({ width })}
+          filesDock={filesDock} filesWidth={filesWidth} onFilesFit={(fits) => onFilesFit?.({ fits })}
         />
       ) : null}
       {/* The scroll edges' blur and fade, over the scroller's edges where there's more to scroll to (D-111). */}

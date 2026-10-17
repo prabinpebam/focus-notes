@@ -62,7 +62,7 @@ describe("Keep contents open (D-186)", () => {
     const app = setup("# One\n\n## Two\n", (s) => saved.push(s));
     await app.start();
     expect(app.commands.describe("outline.togglePin")).toMatchObject({ enabled: true, checked: false });
-    expect(app.messages.format(app.commands.describe("outline.togglePin").title)).toBe("Keep contents open");
+    expect(app.messages.format(app.commands.describe("outline.togglePin").title)).toBe("Dock contents");
     await app.commands.run("outline.togglePin");
     expect(app.commands.describe("outline.togglePin").checked).toBe(true);
     expect(saved.at(-1)?.outlinePinned).toBe(true);

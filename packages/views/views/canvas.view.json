@@ -783,6 +783,18 @@
           "outlineUnpinLabel": {
             "t": "outline.unpin"
           },
+          "outlineWidth": {
+            "get": "vm.app.outlineWidth"
+          },
+          "outlineResizeLabel": {
+            "t": "outline.resize"
+          },
+          "filesDock": {
+            "get": "vm.app.filesDock"
+          },
+          "filesWidth": {
+            "get": "vm.app.filesWidth"
+          },
           "focusMode": {
             "get": "vm.app.focusMode"
           },
@@ -943,6 +955,22 @@
           },
           "outlinePin": {
             "run": "outline.togglePin"
+          },
+          "outlineResize": {
+            "run": "outline.setWidth",
+            "args": {
+              "width": {
+                "get": "event.width"
+              }
+            }
+          },
+          "filesFit": {
+            "run": "files.setFits",
+            "args": {
+              "fits": {
+                "get": "event.fits"
+              }
+            }
           },
           "slash": {
             "run": "slash.setState",
@@ -3906,12 +3934,29 @@
           "width": "files",
           "keyScope": "files",
           "pinned": {
-            "get": "vm.files.pinned"
+            "get": "vm.files.docked"
+          },
+          "docked": {
+            "get": "vm.files.docked"
+          },
+          "dockWidth": {
+            "get": "vm.files.width"
+          },
+          "resizeLabel": {
+            "t": "files.resize"
           }
         },
         "on": {
           "close": {
             "run": "files.close"
+          },
+          "resize": {
+            "run": "files.setWidth",
+            "args": {
+              "width": {
+                "get": "event.width"
+              }
+            }
           }
         },
         "slots": {

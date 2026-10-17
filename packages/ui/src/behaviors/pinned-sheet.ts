@@ -20,7 +20,7 @@ export const pinnedSheet = {
   },
 };
 
-/** The width a pinned contents card keeps on the note's right (D-186), in pixels; 0 when nothing is pinned there. */
+/** The width a docked contents panel takes on the note's right (D-186, D-187), in pixels; 0 when nothing is docked there. */
 let right = 0;
 const rightListeners = new Set<(width: number) => void>();
 
@@ -38,33 +38,44 @@ export const pinnedRight = {
   },
 };
 
+/** The width docked Files takes on the window's left (D-187), live as it's resized; 0 when it isn't docked. */
+let left = 0;
+const leftListeners = new Set<(width: number) => void>();
+
+export const dockLeft = {
+  get: () => left,
+  set(next: number): void {
+    const v = Math.max(0, Math.round(next));
+    if (v === left) return;
+    left = v;
+    for (const l of leftListeners) l(v);
+  },
+  subscribe(listener: (width: number) => void): () => void {
+    leftListeners.add(listener);
+    return () => leftListeners.delete(listener);
+  },
+};
+
+/**
+ * Which panels dock (D-187): each asks with its width (undefined: not asking); the note's area keeps
+ * at least `contentMin` between them. When the window can't hold them all, Files undocks first, then
+ * the contents.
+ */
+export function allocateDocks(o: { width: number; files?: number; outline?: number; contentMin: number }): { files: boolean; outline: boolean } {
+  const asksOutline = o.outline !== undefined;
+  const outline = asksOutline && o.outline! + o.contentMin <= o.width;
+  // Files is first to go: it never stays docked where the contents asking to dock couldn't.
+  const files = o.files !== undefined && (!asksOutline || outline) && o.files + (outline ? o.outline! : 0) + o.contentMin <= o.width;
+  return { files, outline };
+}
+
+/** The widest a docked panel may be resized to: its own maximum, and no more than leaves the note its narrowest. */
+export function dockMaxWidth(o: { window: number; other: number; contentMin: number; min: number; max: number }): number {
+  return Math.max(o.min, Math.min(o.max, o.window - o.other - o.contentMin));
+}
+
 /** A corner control sits after a pinned sheet, or above it when the side has no room. */
 export function cornerClearance(edge: number | undefined, left: number, width: number, controlWidth: number, gap: number): number | undefined {
   const x = edge === undefined ? gap : Math.max(gap, edge - left + gap);
   return x + controlWidth + gap <= width ? x : undefined;
-}
-
-export interface ClearanceInput {
-  /** Where the sheet ends, in window pixels (undefined: nothing pinned). */
-  edge: number | undefined;
-  /** The scroller's content box: where the column is laid out. */
-  left: number;
-  width: number;
-  /** The space kept after the sheet (`space.l`), and the column's own padding on each side (its gutter). */
-  gap: number;
-  gutter: number;
-  /** The narrowest the text may get (`cmp.editorSurface.pinnedColumnMin`). */
-  minText: number;
-}
-
-/**
- * How far the column's box starts from the scroller's left (0: centred as always): far enough that the
- * text, inside the gutter, starts `gap` after the sheet. When what's left can't hold `minText` of text,
- * nothing moves and the sheet floats over the text, as an unpinned one does.
- */
-export function clearance({ edge, left, width, gap, gutter, minText }: ClearanceInput): number {
-  if (edge === undefined) return 0;
-  const clear = Math.max(0, edge + gap - gutter - left);
-  if (clear === 0) return 0;
-  return width - clear - 2 * gutter >= minText ? Math.round(clear) : 0;
 }

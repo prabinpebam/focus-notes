@@ -1,9 +1,6 @@
-/** D-161: the note's text clear of a pinned Files sheet, narrower down to a minimum, else under it as before. */
+/** D-161, D-187: corner controls beside docked Files, and which panels dock as the window narrows. */
 import { describe, expect, it } from "vitest";
-import { clearance, cornerClearance, pinnedSheet } from "../src/behaviors/pinned-sheet.ts";
-
-// A 1200 px window whose scroller starts at 16 (the frame's margin); the sheet ends at 16 + 16 + 320.
-const base = { left: 16, width: 1168, gap: 16, gutter: 48, minText: 360 };
+import { allocateDocks, cornerClearance, dockMaxWidth, pinnedSheet } from "../src/behaviors/pinned-sheet.ts";
 
 describe("corner controls beside pinned Files", () => {
   it("stays in the corner without a sheet, and moves a gap past its edge when pinned", () => {
@@ -15,24 +12,29 @@ describe("corner controls beside pinned Files", () => {
   });
 });
 
-describe("clearance (D-161)", () => {
-  it("nothing pinned: the column stays centred", () => {
-    expect(clearance({ ...base, edge: undefined })).toBe(0);
+describe("docking (D-187)", () => {
+  const ask = { files: 280, outline: 280, contentMin: 400 };
+  it("docks both while the window holds them and the note's narrowest area", () => {
+    expect(allocateDocks({ ...ask, width: 960 })).toEqual({ files: true, outline: true });
+    expect(allocateDocks({ ...ask, width: 1400 })).toEqual({ files: true, outline: true });
   });
-  it("puts the text a gap after the sheet: the column's box starts gutter before it", () => {
-    const edge = 352;
-    const clear = clearance({ ...base, edge });
-    expect(clear).toBe(352 + 16 - 48 - 16);
-    // The text's left edge, in the window: the scroller's left, the clearance, the gutter.
-    expect(base.left + clear + base.gutter).toBe(edge + base.gap);
+  it("narrower, Files undocks first, then the contents", () => {
+    expect(allocateDocks({ ...ask, width: 959 })).toEqual({ files: false, outline: true });
+    expect(allocateDocks({ ...ask, width: 680 })).toEqual({ files: false, outline: true });
+    expect(allocateDocks({ ...ask, width: 679 })).toEqual({ files: false, outline: false });
   });
-  it("a narrower window narrows the text down to the minimum, then lets the sheet float over it", () => {
-    // 352 + 16 - 48 - 16 = 304 clear; text = width - 304 - 96 must be ≥ 360: width ≥ 760.
-    expect(clearance({ ...base, edge: 352, width: 760 })).toBe(304);
-    expect(clearance({ ...base, edge: 352, width: 759 })).toBe(0);
+  it("Files never stays where the contents asking to dock couldn't, even when it's the narrower", () => {
+    expect(allocateDocks({ files: 200, outline: 360, contentMin: 400, width: 700 })).toEqual({ files: false, outline: false });
   });
-  it("a sheet that already ends before the text needs nothing", () => {
-    expect(clearance({ ...base, edge: 20 })).toBe(0);
+  it("a panel that doesn't ask takes no room", () => {
+    expect(allocateDocks({ files: 280, contentMin: 400, width: 680 })).toEqual({ files: true, outline: false });
+    expect(allocateDocks({ outline: 280, contentMin: 400, width: 680 })).toEqual({ files: false, outline: true });
+    expect(allocateDocks({ contentMin: 400, width: 300 })).toEqual({ files: false, outline: false });
+  });
+  it("resizing stops where the note keeps its narrowest area, and never below the minimum", () => {
+    expect(dockMaxWidth({ window: 1200, other: 280, contentMin: 400, min: 200, max: 480 })).toBe(480);
+    expect(dockMaxWidth({ window: 1000, other: 280, contentMin: 400, min: 200, max: 480 })).toBe(320);
+    expect(dockMaxWidth({ window: 700, other: 280, contentMin: 400, min: 200, max: 480 })).toBe(200);
   });
 });
 

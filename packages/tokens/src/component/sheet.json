@@ -129,6 +129,23 @@
       "ringRoom": {
         "$type": "dimension",
         "$value": "{space.xs}"
+      },
+      "dock": {
+        "$description": "Docked Files (D-187): flush to the window's left edge below the title band, a hairline on its inner side, resized from that side.",
+        "width": { "$type": "dimension", "$value": "{layout.dockFiles}" },
+        "min": { "$type": "dimension", "$value": "{layout.dockMin}" },
+        "max": { "$type": "dimension", "$value": "{layout.dockMax}" },
+        "contentMin": { "$type": "dimension", "$value": "{layout.dockContentMin}" },
+        "top": { "$type": "dimension", "$value": "{layout.titleBar}" },
+        "background": { "$type": "color", "$value": "{color.surface}" },
+        "border": { "$type": "color", "$value": "{color.border}" },
+        "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
+        "handleWidth": { "$type": "dimension", "$value": "{space.s}" },
+        "handleLine": { "$type": "dimension", "$value": "{border.focus}" },
+        "handleIdle": { "$type": "color", "$value": "{color.none}" },
+        "handleHover": { "$type": "color", "$value": "{color.borderStrong}" },
+        "handleActive": { "$type": "color", "$value": "{color.accent}" },
+        "focusRing": { "$type": "color", "$value": "{color.focusRing}" }
       }
     }
   }

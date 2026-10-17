@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { Editor } from "@tiptap/react";
 import { coreExtensions, MarkdownSession } from "@focus-notes/editor";
-import { caretSection, cardTop, depthsOf, MIN_HEADINGS, nestOutline, outlineOf, pinnedReserve, railLayout, railShows, scrollSection } from "../src/host/EditorSurface/doc-outline.ts";
+import { caretSection, cardTop, depthsOf, MIN_HEADINGS, nestOutline, outlineOf, railLayout, railShows, scrollSection } from "../src/host/EditorSurface/doc-outline.ts";
 
 const doc = (markdown: string) => new Editor({ extensions: coreExtensions(), content: new MarkdownSession(markdown).doc as object }).state.doc;
 
@@ -105,16 +105,5 @@ describe("where it shows", () => {
     expect(cardTop(650, 200, 60, 700)).toBe(500);
     // Taller than the room: pinned to the top; it scrolls inside.
     expect(cardTop(300, 900, 60, 700)).toBe(60);
-  });
-  it("pinned, the card reserves its column: the text keeps clear of it while at least the minimum is left (D-186)", () => {
-    // Content box 0 to 1000, the card's right edge 992 (the rail's inset), 260 wide, 16 to the text, a 24 px gutter.
-    const o = { contentLeft: 0, contentRight: 1000, cardRight: 992, width: 260, clearance: 16, gutter: 24, leftClear: 0, minText: 360 };
-    // The column's right margin: 1000 - (992 - 260 - 16) - 24 = 260.
-    expect(pinnedReserve(o)).toBe(260);
-    // Text left: 1000 - 260 - 48 = 692; with Files taking 340 on the left, 352 < 360: no pinning.
-    expect(pinnedReserve({ ...o, leftClear: 330 })).toBe(260);
-    expect(pinnedReserve({ ...o, leftClear: 340 })).toBe(0);
-    expect(pinnedReserve({ ...o, contentRight: 600, cardRight: 592 })).toBe(0);
-    expect(pinnedReserve({ ...o, width: 0 })).toBe(0);
   });
 });

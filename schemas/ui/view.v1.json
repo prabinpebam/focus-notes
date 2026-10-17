@@ -7681,6 +7681,42 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "docked": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "dockWidth": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "resizeLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
             }
           },
           "required": [
@@ -7692,6 +7728,9 @@
           "additionalProperties": false,
           "properties": {
             "close": {
+              "$ref": "#/$defs/actions"
+            },
+            "resize": {
               "$ref": "#/$defs/actions"
             }
           }
@@ -8327,6 +8366,52 @@
                   "$ref": "#/$defs/expr"
                 }
               ]
+            },
+            "outlineWidth": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "outlineResizeLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "filesDock": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "filesWidth": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
             }
           },
           "required": [
@@ -8394,6 +8479,12 @@
               "$ref": "#/$defs/actions"
             },
             "outlinePin": {
+              "$ref": "#/$defs/actions"
+            },
+            "outlineResize": {
+              "$ref": "#/$defs/actions"
+            },
+            "filesFit": {
               "$ref": "#/$defs/actions"
             }
           }

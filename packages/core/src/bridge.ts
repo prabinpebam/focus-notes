@@ -388,8 +388,11 @@ export interface AppStateFile {
   toolbarPinned?: string[];
   /** The Files panel is pinned open on this device (D-161). */
   filesPinned?: boolean;
-  /** The document minimap's card is pinned open on this device (D-186). */
+  /** The document minimap's card is docked on this device (D-186, D-187), and its docked width. */
   outlinePinned?: boolean;
+  outlineWidth?: number;
+  /** The docked Files panel's width (D-187). */
+  filesWidth?: number;
   /** The Files tree sorted by last change (FIL-11, D-175); absent: by name. */
   filesSort?: "changed";
   /** The chosen light and dark themes (THM-08). */

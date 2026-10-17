@@ -10,24 +10,23 @@ export const tableReachVar = createVar({ syntax: "<length>", inherits: false, in
 export const tableBoundaryVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 
 /**
- * Beside a pinned Files sheet (D-161): how far the column's box starts from the scroller's left, set by
- * EditorSurface from the sheet's edge (0: centred). Registered and inherited, so it glides over
- * motion.sheet on the scroller while the column's margins follow it; a window resize moves nothing late.
+ * Docked panels (D-187): the width docked Files takes on the left and the docked contents on the right,
+ * set on the scroller by keepClearOfPinned. They're the scroller's own margins, so the note's area, its
+ * scrollbar with it, sits between the panels. Registered and inherited, so docking glides over
+ * motion.sheet; resizing a panel or the window moves nothing late.
  */
 export const pinnedClearVar = createVar({ syntax: "<length>", inherits: true, initialValue: "0px" });
-/** The room kept on the right for a pinned contents card (D-186), gliding as pinnedClearVar does. */
 export const pinnedRightVar = createVar({ syntax: "<length>", inherits: true, initialValue: "0px" });
-/** The gap after the sheet and the narrowest text, read in pixels (pinned-sheet.ts). */
-export const pinnedGapVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
-export const pinnedMinVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
 
 export const scroller = style({
-  vars: { [tableGutterVar]: t.tableGutter, [tableReachVar]: t.tableEdgeReach, [tableBoundaryVar]: t.tableInsertZone, [pinnedGapVar]: t.pinnedGap, [pinnedMinVar]: t.pinnedColumnMin },
+  vars: { [tableGutterVar]: t.tableGutter, [tableReachVar]: t.tableEdgeReach, [tableBoundaryVar]: t.tableInsertZone },
   transitionProperty: `${pinnedClearVar.slice(4, -1)}, ${pinnedRightVar.slice(4, -1)}`,
   transitionDuration: t.pinnedDuration,
   transitionTimingFunction: t.pinnedEasing,
-  // The first layout and a window resize move the column at once; only pinning and unpinning glide.
+  // The first layout, resizing and a window resize move the column at once; only docking and undocking glide.
   selectors: { "&[data-pinned-instant]": { transitionDuration: t.pinnedInstant } },
+  marginInlineStart: pinnedClearVar,
+  marginInlineEnd: pinnedRightVar,
   flexGrow: 1,
   minHeight: 0,
   overflowY: "auto",
@@ -158,11 +157,10 @@ export const fade = styleVariants({
 export const column = style({
   position: "relative",
   maxWidth: `calc(${t.measure} + 2 * ${t.gutter})`,
-  // Centred, in what's right of a pinned Files sheet when there is one (D-161) and left of a pinned
-  // contents card (D-186): with neither, the same as auto margins; the column narrows when the space
+  // Centred in the note's area, which docked panels narrow (D-187); the column narrows when the area
   // is less than its measure.
-  marginInlineStart: `calc(${pinnedClearVar} + max(0px, (100% - ${pinnedClearVar} - ${pinnedRightVar} - ${t.measure} - 2 * ${t.gutter}) / 2))`,
-  marginInlineEnd: `calc(${pinnedRightVar} + max(0px, (100% - ${pinnedClearVar} - ${pinnedRightVar} - ${t.measure} - 2 * ${t.gutter}) / 2))`,
+  marginInlineStart: `max(0px, (100% - ${t.measure} - 2 * ${t.gutter}) / 2)`,
+  marginInlineEnd: `max(0px, (100% - ${t.measure} - 2 * ${t.gutter}) / 2)`,
   paddingInline: t.gutter,
   // The reading zone (UI-11): the note starts 25% down the window (never under the trigger band)
   // and its last line can scroll up to leave 35% below it.
@@ -294,7 +292,7 @@ globalStyle(p("tr:first-child > th:last-child"), { borderStartEndRadius: t.table
 // Bleed to edge (D-182): the table may be as wide as the note's area (less the gutters, and right of a
 // pinned Files sheet), centred on the text column, never stretched: as wide as its columns, each
 // aiming for at most 75 characters a line, and narrower columns where the room runs out.
-const bleedRoom = `calc(100cqi - ${pinnedClearVar} - ${pinnedRightVar} - 2 * ${t.gutter})`;
+const bleedRoom = `calc(100cqi - 2 * ${t.gutter})`;
 globalStyle(p('[data-table][data-layout="bleed"]'), {
   width: bleedRoom,
   maxWidth: "none",

@@ -134,7 +134,7 @@ test("UI-12: the circular backup control stays outside pinned Files and returns 
     const mod = process.platform === "darwin" ? "Meta" : "Control";
     await page.keyboard.press(`${mod}+O`);
     const files = page.getByRole("complementary", { name: "Files" });
-    await files.getByRole("button", { name: "Keep Files open" }).click();
+    await files.getByRole("button", { name: "Dock Files" }).click();
     await expect.poll(async () => {
       const s = (await files.boundingBox())!;
       const i = (await icon.boundingBox())!;
@@ -150,7 +150,7 @@ test("UI-12: the circular backup control stays outside pinned Files and returns 
     }).toBeLessThan(1);
     await page.mouse.move(500, 300);
     await page.keyboard.press("Escape");
-    await files.getByRole("button", { name: "Unpin Files" }).click();
+    await files.getByRole("button", { name: "Undock Files" }).click();
     await expect.poll(async () => (await icon.boundingBox())!.x).toBe(before.x);
   } finally { await quit(l); }
 });

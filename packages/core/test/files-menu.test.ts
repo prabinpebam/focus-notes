@@ -119,7 +119,7 @@ async function started(f: ReturnType<typeof setup>) {
 }
 type Menu = { id: string; items: { id: string; label: string; shortcut?: string; disabled?: boolean; reason?: string }[] }[];
 const vm = (app: ReturnType<typeof createApp>) => app.viewModels.select("vm.files", app.store.state) as {
-  open: boolean; pinned: boolean; pinLabel: string; menu: Menu; menuLabel: string; focusId: string; items: { id: string; label: string; selected: boolean }[];
+  open: boolean; pinned: boolean; docked: boolean; width: number; pinLabel: string; menu: Menu; menuLabel: string; focusId: string; items: { id: string; label: string; selected: boolean }[];
 };
 const menuIds = (app: ReturnType<typeof createApp>) => vm(app).menu.map((s) => s.items.map((i) => i.id));
 
@@ -198,9 +198,9 @@ describe("pinning the panel (D-161)", () => {
     const f = setup(notes);
     const app = await started(f);
     await app.commands.run("files.open");
-    expect(vm(app)).toMatchObject({ pinned: false, pinLabel: "Keep Files open" });
+    expect(vm(app)).toMatchObject({ pinned: false, pinLabel: "Dock Files" });
     await app.commands.run("files.togglePin");
-    expect(vm(app)).toMatchObject({ open: true, pinned: true, pinLabel: "Unpin Files" });
+    expect(vm(app)).toMatchObject({ open: true, pinned: true, docked: true, pinLabel: "Undock Files" });
     expect(f.saved.at(-1)?.filesPinned).toBe(true);
     await app.commands.run("files.select", { id: "private:ideas.md", mode: "replace" });
     await app.commands.run("files.openItem");
@@ -231,5 +231,27 @@ describe("pinning the panel (D-161)", () => {
     await app.commands.run("files.open");
     expect(vm(app).open).toBe(true);
     expect(app.store.state.ui.files.focusRequest).toBe(asked + 1);
+  });
+  it("docked (D-187): too little room closes it as an undocked panel; room again docks and opens it without focus; its width is kept", async () => {
+    const f = setup(notes, { filesPinned: true, filesWidth: 320 });
+    const app = await started(f);
+    expect(vm(app)).toMatchObject({ open: true, docked: true, width: 320 });
+    const asked = app.store.state.ui.files.focusRequest;
+    await app.commands.run("files.setFits", { fits: false });
+    expect(vm(app).open).toBe(false);
+    // Undocked for room, it's an ordinary panel: opened, it closes as a note opens.
+    await app.commands.run("files.open");
+    expect(vm(app)).toMatchObject({ open: true, docked: false, pinned: true });
+    await app.commands.run("files.select", { id: "private:ideas.md", mode: "replace" });
+    await app.commands.run("files.openItem");
+    expect(vm(app).open).toBe(false);
+    await app.commands.run("files.setFits", { fits: true });
+    expect(vm(app)).toMatchObject({ open: true, docked: true });
+    // Opened without taking focus: no request for its tree to meet.
+    expect(app.store.state.ui.files.focusRequest).toBe(0);
+    expect(asked).toBe(0);
+    await app.commands.run("files.setWidth", { width: 241.6 });
+    expect(vm(app).width).toBe(242);
+    expect(f.saved.at(-1)?.filesWidth).toBe(242);
   });
 });

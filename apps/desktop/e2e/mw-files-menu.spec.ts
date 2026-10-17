@@ -180,14 +180,14 @@ test("D-161: pinned, Files stays open while notes open; the text moves clear of 
     return page.evaluate(() => (window as unknown as { tops: number[] }).tops);
   };
   await page.keyboard.press(`${mod}+O`);
-  const pin = files.getByRole("button", { name: "Keep Files open" });
+  const pin = files.getByRole("button", { name: "Dock Files" });
   await expect(pin).toHaveAttribute("aria-pressed", "false");
   // The auto-scroll to the end is a script, not an animation: wait for the note to be still.
   await expect.poll(async () => { const a = (await where()).line; await page.waitForTimeout(150); return a === (await where()).line; }).toBe(true);
   const before = await where();
   await sample();
   await pin.click();
-  const unpin = files.getByRole("button", { name: "Unpin Files" });
+  const unpin = files.getByRole("button", { name: "Undock Files" });
   await expect(unpin).toHaveAttribute("aria-pressed", "true");
   const tops = await sampled();
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
@@ -235,7 +235,7 @@ test("D-161: pinned, Files stays open while notes open; the text moves clear of 
   // Reduced motion: pinned at once.
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.keyboard.press(`${mod}+O`);
-  await files.getByRole("button", { name: "Keep Files open" }).click();
+  await files.getByRole("button", { name: "Dock Files" }).click();
   const moved = await page.evaluate(() => new Promise<number>((done) => requestAnimationFrame(() => done((document.querySelector('[contenteditable="true"]') as HTMLElement).getBoundingClientRect().left))));
   expect(moved).toBeGreaterThanOrEqual(sheet.x + sheet.width + 16 - 1);
   await quit(l);

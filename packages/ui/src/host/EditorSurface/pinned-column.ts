@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/react";
-import { clearance, pinnedRight, pinnedSheet } from "../../behaviors/pinned-sheet.ts";
+import { dockLeft, pinnedRight } from "../../behaviors/pinned-sheet.ts";
 import * as s from "./EditorSurface.css.ts";
 
 const varName = (v: string) => v.slice(4, -1);
@@ -11,22 +11,22 @@ const seconds = (v: string) => {
 };
 
 /**
- * The note's text beside a pinned Files sheet (D-161): the column is laid out right of the sheet, a gap
- * after it, centred in what's left, narrower down to the minimum, else under the sheet as before.
- * Pinning and unpinning glide over motion.sheet (reduced motion: at once); a window resize follows at
- * once. Throughout, the line with the caret keeps its height in the window: the scroll follows the
- * reflow every frame, before it's drawn. Returns a cleanup function.
+ * The note between docked panels (D-187): the scroller, its scrollbar with it, is laid out between
+ * docked Files on the left and the docked contents on the right, and the text column is centred in it.
+ * Docking and undocking glide over motion.sheet (reduced motion: at once); resizing a panel and a
+ * window resize follow at once. Throughout, the line with the caret keeps its height in the window:
+ * the scroll follows the reflow every frame, before it's drawn. Returns a cleanup function.
  */
 export function keepClearOfPinned(scroller: HTMLElement, column: HTMLElement, editor: Editor): () => void {
+  void column;
   let current: string | undefined;
-  let pinned = pinnedSheet.get() !== undefined;
+  let dockedLeft = dockLeft.get() > 0;
   let pinnedOnRight = pinnedRight.get() > 0;
   let frame = 0;
   /** A glide is running: held until it ends (its transitionend), however few frames the window draws. */
   let gliding = false;
   let until = 0;
   let anchor: number | undefined;
-  const px = (v: string) => parseFloat(getComputedStyle(scroller).getPropertyValue(varName(v))) || 0;
   const caretTop = () => {
     if (editor.isDestroyed) return undefined;
     try {
@@ -45,22 +45,17 @@ export function keepClearOfPinned(scroller: HTMLElement, column: HTMLElement, ed
     else anchor = undefined;
   };
   const apply = (glide: boolean) => {
-    const box = scroller.getBoundingClientRect();
-    // A pinned contents card keeps its room on the right (D-186); the sheet's clearance is what's left.
+    const leftWidth = dockLeft.get();
     const keep = pinnedRight.get();
-    const next = clearance({
-      edge: pinnedSheet.get(), left: box.left + scroller.clientLeft, width: scroller.clientWidth - keep,
-      gap: px(s.pinnedGapVar), gutter: parseFloat(getComputedStyle(column).paddingLeft) || 0, minText: px(s.pinnedMinVar),
-    });
-    const key = `${next}|${keep}`;
+    const key = `${leftWidth}|${keep}`;
     if (key === current) return;
     const first = current === undefined;
     current = key;
     anchor ??= caretTop();
-    // Only pinning and unpinning glide; the first layout and a resize are at once.
+    // Only docking and undocking glide; the first layout, resizing a panel and a window resize are at once.
     if (first || !glide) scroller.dataset.pinnedInstant = "";
     else delete scroller.dataset.pinnedInstant;
-    scroller.style.setProperty(varName(s.pinnedClearVar), `${next}px`);
+    scroller.style.setProperty(varName(s.pinnedClearVar), `${leftWidth}px`);
     scroller.style.setProperty(varName(s.pinnedRightVar), `${keep}px`);
     const ms = first || !glide ? 0 : seconds(getComputedStyle(scroller).transitionDuration) || 0;
     gliding = ms > 0;
@@ -81,23 +76,21 @@ export function keepClearOfPinned(scroller: HTMLElement, column: HTMLElement, ed
   };
   scroller.addEventListener("transitionend", ended);
   apply(false);
-  const off = pinnedSheet.subscribe((edge) => {
-    const now = edge !== undefined;
-    apply(now !== pinned);
-    pinned = now;
+  // Docking or undocking Files glides; resizing it follows the pointer at once.
+  const off = dockLeft.subscribe((width) => {
+    const now = width > 0;
+    apply(now !== dockedLeft);
+    dockedLeft = now;
   });
-  // The contents card pinned or unpinned glides; its width changing (a new note) is at once.
+  // The contents docking or undocking glides; resizing it, or its width changing, is at once.
   const offRight = pinnedRight.subscribe((width) => {
     const now = width > 0;
     apply(now !== pinnedOnRight);
     pinnedOnRight = now;
   });
-  const ro = new ResizeObserver(() => apply(false));
-  ro.observe(scroller);
   return () => {
     off();
     offRight();
-    ro.disconnect();
     scroller.removeEventListener("transitionend", ended);
     if (frame) cancelAnimationFrame(frame);
     scroller.style.removeProperty(varName(s.pinnedClearVar));

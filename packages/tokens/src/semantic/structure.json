@@ -335,6 +335,26 @@
       "$value": "{ref.size.360}",
       "$description": "The narrowest the note's text gets beside a pinned Files panel; narrower, the panel floats over the text (D-161)."
     },
+    "dockFiles": {
+      "$value": "{ref.size.280}",
+      "$description": "A docked Files panel's width until it's resized (D-187)."
+    },
+    "dockOutline": {
+      "$value": "{ref.size.280}",
+      "$description": "The docked contents panel's width until it's resized (D-187)."
+    },
+    "dockMin": {
+      "$value": "{ref.size.200}",
+      "$description": "The narrowest a docked panel can be resized to (D-187)."
+    },
+    "dockMax": {
+      "$value": "{ref.size.480}",
+      "$description": "The widest a docked panel can be resized to (D-187)."
+    },
+    "dockContentMin": {
+      "$value": "{ref.size.400}",
+      "$description": "The narrowest the note's area between docked panels gets, its gutters included: narrower, Files undocks first, then the contents (D-187)."
+    },
     "sheetMinWide": {
       "$value": "{ref.size.280}",
       "$description": "The narrowest the theme manager and find in all notes get to keep the trigger clear: room for their segmented control and tabs (D-111)."

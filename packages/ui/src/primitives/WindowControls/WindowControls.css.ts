@@ -14,7 +14,8 @@ export const root = style({
   transitionProperty: "opacity",
   transitionDuration: t.revealDuration,
   selectors: {
-    "&[data-reveal], &:hover, &:focus-within, :root[data-window-band] &": { opacity: t.shown },
+    // Shown at the top of the docked contents too, which they sit on (D-187).
+    "&[data-reveal], &:hover, &:focus-within, :root[data-window-band] &, :root[data-dock-right] &": { opacity: t.shown },
   },
 });
 

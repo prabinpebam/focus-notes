@@ -261,7 +261,7 @@ test("UI-13: the rail by keyboard: Enter opens the card on the current heading, 
     await page.keyboard.press("Home");
     // Shift+Tab: the pin, at the card's top, then out of the card, which closes.
     await page.keyboard.press("Shift+Tab");
-    await expect(card(page).getByRole("button", { name: "Keep contents open" })).toBeFocused();
+    await expect(card(page).getByRole("button", { name: "Dock contents" })).toBeFocused();
     await page.keyboard.press("Shift+Tab");
     await expect(card(page)).toBeHidden();
     // Hovered open, then tabbed into: it's the keyboard's now, and stays as the pointer leaves.
@@ -297,7 +297,7 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
   await laptop(l);
   let page = l.page;
   const editor = () => page.getByRole("textbox", { name: "Note" });
-  const pin = () => card(page).getByRole("button", { name: /^(Keep contents open|Unpin contents)$/ });
+  const pin = () => card(page).getByRole("button", { name: /^(Dock contents|Undock contents)$/ });
   const stateFile = () => readFileSync(join(dirs.userData, "state.json"), "utf8");
   const textRight = () => page.evaluate(() => Math.round(document.querySelector(".ProseMirror")!.getBoundingClientRect().right));
   const gap = () => page.evaluate(() => {
@@ -310,7 +310,7 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
     await page.mouse.move(500, 400);
     await hoverRail(page);
     await expect(card(page)).toBeVisible();
-    await expect(pin()).toHaveAccessibleName("Keep contents open");
+    await expect(pin()).toHaveAccessibleName("Dock contents");
     await expect(pin()).toHaveAttribute("aria-pressed", "false");
     // The pin is on the first heading's row, at its end, and the heading's text stays clear of it.
     const row = await page.evaluate(() => {
@@ -325,26 +325,27 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
     const widthBefore = await card(page).evaluate((c) => (c as HTMLElement).offsetWidth);
     await pin().click();
     await expect(pin()).toHaveAttribute("aria-pressed", "true");
-    await expect(pin()).toHaveAccessibleName("Unpin contents");
+    await expect(pin()).toHaveAccessibleName("Undock contents");
     await expect(editor()).toBeFocused();
     await expect.poll(stateFile).toContain('"outlinePinned": true');
-    // It stays as the pointer leaves, in the rail's place: no rail, clear of the scrollbar; the text
-    // glides left to keep 16 px from it, never under it.
+    // It stays as the pointer leaves, docked in the rail's place (D-187): no rail, flush to the window's
+    // right edge, the note's area (its scrollbar with it) ending where it starts; the text glides left.
     await page.mouse.move(500, 400, { steps: 4 });
     await page.waitForTimeout(500);
     await expect(card(page)).toBeVisible();
     await expect.poll(gap).toBeGreaterThanOrEqual(15);
     expect(await textRight()).toBeLessThan(unpinnedRight);
-    await expect(card(page)).toHaveAttribute("data-pinned", "");
+    await expect(card(page)).toHaveAttribute("data-docked", "");
     await expect(rail(page)).toHaveCount(0);
     const geo = await page.evaluate(() => {
       const c = document.querySelector("[data-doc-minimap-card]")!.getBoundingClientRect();
       const sc = document.querySelector("[data-editor-scroller]") as HTMLElement;
       const s = sc.getBoundingClientRect();
-      return { left: c.left, right: c.right, width: (document.querySelector("[data-doc-minimap-card]") as HTMLElement).offsetWidth, textRight: document.querySelector(".ProseMirror")!.getBoundingClientRect().right, contentRight: s.left + sc.clientLeft + sc.clientWidth };
+      return { left: c.left, right: c.right, width: (document.querySelector("[data-doc-minimap-card]") as HTMLElement).offsetWidth, textRight: document.querySelector(".ProseMirror")!.getBoundingClientRect().right, areaRight: s.right, win: document.querySelector("[data-app-root]")!.getBoundingClientRect().right };
     });
     expect(geo.left).toBeGreaterThanOrEqual(geo.textRight + 16 - 1);
-    expect(Math.round(geo.contentRight - geo.right)).toBe(8);
+    expect(Math.round(geo.right)).toBe(Math.round(geo.win));
+    await expect.poll(() => page.evaluate(() => Math.round(document.querySelector("[data-editor-scroller]")!.getBoundingClientRect().right))).toBe(Math.round(geo.left));
     expect(geo.width).toBeGreaterThanOrEqual(240);
     expect(geo.width).toBeLessThanOrEqual(320);
     // The same width as before pinning.
@@ -380,7 +381,7 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
     await page.screenshot({ path: `${shots}/minimap-pinned-light.png` });
     // Not enough room beside the text for the card and the narrowest text: the rail comes back, its
     // card's pin still pressed.
-    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(680, 600));
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(700, 600));
     await expect(rail(page)).toHaveCount(1);
     await expect(card(page)).toBeHidden();
     await page.mouse.move(300, 300);
