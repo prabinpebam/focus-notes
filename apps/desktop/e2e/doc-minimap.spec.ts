@@ -256,7 +256,11 @@ test("UI-13: the rail by keyboard: Enter opens the card on the current heading, 
 
 test("D-186: the pin keeps the card open beside the text in the rail's place, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning puts it back", async () => {
   const dirs = tempDirs();
-  let l = await start(NOTE, {}, dirs);
+  // The narrowest reading width, so the card fits beside the text even on a 1024 px screen (CI).
+  let l = await start(NOTE, { measure: 50 }, dirs);
+  // As on CI's 1024 px screen.
+  const laptop = (x: Launched) => x.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(1024, 720));
+  await laptop(l);
   let page = l.page;
   const editor = () => page.getByRole("textbox", { name: "Note" });
   const pin = () => card(page).getByRole("button", { name: /^(Keep contents open|Unpin contents)$/ });
@@ -319,7 +323,7 @@ test("D-186: the pin keeps the card open beside the text in the rail's place, li
     expect(await axeViolations(page)).toEqual([]);
     await page.screenshot({ path: `${shots}/minimap-pinned-light.png` });
     // Not enough room beside the text for the card: the rail comes back, its card's pin still pressed.
-    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(900, 700));
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(760, 600));
     await expect(rail(page)).toHaveCount(1);
     await expect(card(page)).toBeHidden();
     await page.mouse.move(300, 300);
@@ -327,11 +331,12 @@ test("D-186: the pin keeps the card open beside the text in the rail's place, li
     await expect(pin()).toHaveAttribute("aria-pressed", "true");
     await page.mouse.move(300, 300);
     await expect(card(page)).toBeHidden();
-    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(1200, 800));
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(1024, 720));
     await expect(card(page)).toHaveAttribute("data-pinned", "");
     await quit(l);
     // The next launch: there from the start, without a hover.
-    l = await start(NOTE, { outlinePinned: true }, dirs);
+    l = await start(NOTE, { measure: 50, outlinePinned: true }, dirs);
+    await laptop(l);
     page = l.page;
     await expect(card(page)).toHaveAttribute("data-pinned", "");
     await expect(editor()).toBeFocused();
