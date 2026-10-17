@@ -297,6 +297,7 @@
         "cardMinWidth": { "$type": "dimension", "$value": "{layout.menuMinWidth}" },
         "cardMaxWidth": { "$type": "dimension", "$value": "{layout.slashMenu}" },
         "cardPadding": { "$type": "dimension", "$value": "{space.xs}" },
+        "pinSize": { "$type": "dimension", "$value": "{size.controlM}" },
         "cardFade": { "$type": "dimension", "$value": "{space.l}" },
         "cardRadius": { "$type": "dimension", "$value": "{radius.popover}" },
         "cardBackground": { "$type": "color", "$value": "{color.surface}" },

@@ -6,7 +6,8 @@ import { useAutoHideScrollbar } from "../../behaviors/auto-hide-scrollbar.ts";
 import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import { pinnedSheet } from "../../behaviors/pinned-sheet.ts";
 import { IconButton } from "../../primitives/IconButton/IconButton.tsx";
-import { caretSection, cardTop, depthsOf, MIN_HEADINGS, outlineOf, railLayout, nestOutline, pinnedWidth, railShows, scrollSection, type OutlineHeading, type OutlineNode } from "./doc-outline.ts";
+import { caretSection, cardTop, depthsOf, MIN_HEADINGS, outlineOf, railLayout, nestOutline, pinnedFits, railShows, scrollSection, type OutlineHeading, type OutlineNode } from "./doc-outline.ts";
+import { glideTo } from "./reading-zone.ts";
 import * as s from "./DocMinimap.css.ts";
 
 const t = tokens.cmp.editorSurface.minimap;
@@ -68,9 +69,9 @@ interface DocMinimapProps {
 }
 
 type Open = null | "hover" | "click" | "keyboard";
-interface Layout { room: boolean; top: number; pitch: number; indices: number[]; center: number; height: number; pinRoom: boolean; cardWidth: number }
-const NO_LAYOUT: Layout = { room: false, top: 0, pitch: 0, indices: [], center: 0, height: 0, pinRoom: false, cardWidth: 0 };
-const sameLayout = (a: Layout, b: Layout) => a.room === b.room && a.top === b.top && a.pitch === b.pitch && a.center === b.center && a.height === b.height && a.pinRoom === b.pinRoom && a.cardWidth === b.cardWidth && a.indices.join() === b.indices.join();
+interface Layout { room: boolean; top: number; pitch: number; indices: number[]; center: number; height: number; pinRoom: boolean }
+const NO_LAYOUT: Layout = { room: false, top: 0, pitch: 0, indices: [], center: 0, height: 0, pinRoom: false };
+const sameLayout = (a: Layout, b: Layout) => a.room === b.room && a.top === b.top && a.pitch === b.pitch && a.center === b.center && a.height === b.height && a.pinRoom === b.pinRoom && a.indices.join() === b.indices.join();
 
 /**
  * The document minimap (UI-13, D-185): a rail of heading bars on the note's right edge, the current
@@ -94,6 +95,8 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   const railFocused = useRef(false);
   /** A pointer press on the pin began with the caret in the note (D-186). */
   const noteHadFocus = useRef(false);
+  /** The card's width as last drawn, for whether it fits pinned (D-186). */
+  const cardWidth = useRef(0);
   const returnTo = useRef<"note" | "rail">("note");
   /** Until when the card takes focus back from a closing dialog (Spotlight ran Show contents). */
   const claimUntil = useRef(0);
@@ -170,8 +173,10 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     const textRight = view.dom.getBoundingClientRect().right;
     const contentRight = box.left + sc.clientLeft + sc.clientWidth;
     const room = railShows({ textRight, contentRight, railWidth: px(t.railWidth), railInset: px(t.railInset), clearance: px(t.clearance) });
-    const cardWidth = pinnedWidth({ textRight, contentRight, railInset: px(t.railInset), clearance: px(t.clearance), min: px(t.cardMinWidth), max: px(t.cardMaxWidth) });
-    const next: Layout = { room, top: railTop, pitch: lay.pitch, indices: lay.indices, center: railTop + height / 2, height: h, pinRoom: cardWidth > 0, cardWidth };
+    // The card's own width (as drawn, or its minimum before it has been): pinning never resizes it.
+    const width = cardWidth.current || px(t.cardMinWidth);
+    const pinRoom = pinnedFits({ textRight, contentRight, railInset: px(t.railInset), clearance: px(t.clearance), width });
+    const next: Layout = { room, top: railTop, pitch: lay.pitch, indices: lay.indices, center: railTop + height / 2, height: h, pinRoom };
     setLayout((prev) => (sameLayout(prev, next) ? prev : next));
     setCurrent(cur);
   }, [editor, scroller]);
@@ -345,7 +350,11 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     const edgeBottom = px(t.edgeBottom);
     const max = Math.max(0, Math.min(h * (parseFloat(read(sc, t.cardMax)) || 0), h - edgeTop - edgeBottom));
     nav.style.setProperty(varName(s.cardMaxVar), `${Math.round(max)}px`);
-    if (pinnedShown) nav.style.setProperty(varName(s.cardWidthVar), `${layout.cardWidth}px`);
+    // Drawn at a new width (its headings changed, or a first pinned frame): check the fit again.
+    if (card.offsetWidth !== cardWidth.current) {
+      cardWidth.current = card.offsetWidth;
+      schedule();
+    }
     const center = railShown ? layout.center : h / 2;
     nav.style.setProperty(varName(s.cardTopVar), `${Math.round(cardTop(center, card.offsetHeight, edgeTop, h - edgeBottom))}px`);
     const list = listRef.current;
@@ -435,11 +444,19 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     // Focus to the note first, so closing the card has nothing to hand back.
     focusAtPosition(editor, h.pos + 1);
     setOpen(null);
-    // In one step, to the reading zone's top: the reading zone then has nothing to correct (D-185).
+    // To the reading zone's top, gliding as the reading zone's own scrolls do (200 ms, D-156). The
+    // caret is aimed just inside the band, so the reading zone, checking where the scroll is heading,
+    // has nothing to correct (D-185); aiming the heading's box left the caret a pixel above it, and
+    // the correction cut the glide short.
+    let caretTop: number | undefined;
+    try {
+      caretTop = view.coordsAtPos(h.pos + 1).top;
+    } catch { /* not drawn yet */ }
     const dom = view.nodeDOM(h.pos);
-    if (dom instanceof HTMLElement) {
+    if (caretTop === undefined && dom instanceof HTMLElement) caretTop = dom.getBoundingClientRect().top;
+    if (caretTop !== undefined) {
       const line = sc.clientHeight * (parseFloat(read(sc, tokens.cmp.editorSurface.zoneTop)) || 0);
-      sc.scrollTop += dom.getBoundingClientRect().top - (sc.getBoundingClientRect().top + sc.clientTop) - line;
+      glideTo(sc, sc.scrollTop + caretTop - (sc.getBoundingClientRect().top + sc.clientTop) - line - 0.5);
     }
     caretInView.current = true;
     setCurrent(fresh.indexOf(h));
@@ -561,7 +578,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
               <IconButton icon={pinned ? "pinOff" : "pin"} label={pinned ? unpinLabel : pinLabel} toggle pressed={pinned} tone="muted" onPress={togglePin} />
             </div>
           ) : null}
-          <ul ref={listRef} className={s.list} onKeyDown={onListKey}>
+          <ul ref={listRef} className={s.list} data-pin={onPin ? "" : undefined} onKeyDown={onListKey}>
             {entries(nestOutline(depths))}
           </ul>
         </div>

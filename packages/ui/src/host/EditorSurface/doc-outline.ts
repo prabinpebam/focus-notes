@@ -111,12 +111,11 @@ export function railShows(o: { textRight: number; contentRight: number; railWidt
 }
 
 /**
- * The pinned card's width (D-186): the room between the text and the scrollbar, less the rail's gaps,
- * up to `max`; 0 when even `min` doesn't fit, so it never covers text.
+ * Whether the pinned card fits beside the text (D-186): its own width, the same as unpinned, with the
+ * rail's gaps between the text and the scrollbar, so it never covers a word.
  */
-export function pinnedWidth(o: { textRight: number; contentRight: number; railInset: number; clearance: number; min: number; max: number }): number {
-  const room = o.contentRight - o.railInset - (o.textRight + o.clearance);
-  return room >= o.min ? Math.floor(Math.min(o.max, room)) : 0;
+export function pinnedFits(o: { textRight: number; contentRight: number; railInset: number; clearance: number; width: number }): boolean {
+  return o.width > 0 && o.textRight + o.clearance + o.width + o.railInset <= o.contentRight;
 }
 
 /** The card's top: centred on the rail, kept between `minTop` and `maxBottom` (top first, if it can't fit). */

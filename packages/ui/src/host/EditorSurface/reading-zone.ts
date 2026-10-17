@@ -14,6 +14,21 @@ const TYPING = /^(insertText|insertCompositionText|insertParagraph|insertLineBre
 /** The CSS custom property name inside a token reference such as "var(--fn-x)". */
 const varName = (ref: string) => ref.slice(4, -1);
 
+/** Each note's scroller's animated scroll, while its reading zone is kept. */
+const glides = new WeakMap<HTMLElement, (dest: number) => void>();
+
+/**
+ * Scrolls the note to `dest` with the reading zone's own animation (D-156): motion.autoScroll (200 ms)
+ * on easing.inOut, at once with reduced motion. The reading zone checks the caret where the scroll is
+ * heading, so a jump that puts the caret inside the band runs undisturbed (the minimap, D-185).
+ */
+export function glideTo(scroller: HTMLElement, dest: number): void {
+  const to = Math.max(0, Math.min(scroller.scrollHeight - scroller.clientHeight, dest));
+  const glide = glides.get(scroller);
+  if (glide) glide(to);
+  else scroller.scrollTop = to;
+}
+
 /**
  * Keeps the line being edited inside the reading zone (UI-11, D-78): the band between
  * readingZone.top and readingZone.bottom of the editor's height. ProseMirror's own scrolling uses
@@ -204,6 +219,8 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
     keep();
   };
   const offOpen = anchors.onOpen(settleNow);
+  const glide = (dest: number) => animator.to(dest, "animate");
+  glides.set(scroller, glide);
 
   measure();
   const dom = editor.view.dom;
@@ -222,6 +239,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   window.addEventListener("pointercancel", onUp);
   return () => {
     offOpen();
+    if (glides.get(scroller) === glide) glides.delete(scroller);
     ro.disconnect();
     animator.cancel();
     if (frame) cancelAnimationFrame(frame);

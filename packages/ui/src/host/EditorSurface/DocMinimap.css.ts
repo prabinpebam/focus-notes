@@ -1,4 +1,4 @@
-import { createVar, keyframes, style, styleVariants } from "@vanilla-extract/css";
+import { createVar, globalStyle, keyframes, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 import { fadingEdges, minimalScrollbar } from "../../behaviors/scrollbar-styles.ts";
 
@@ -11,8 +11,6 @@ export const railHeightVar = createVar();
 export const pitchVar = createVar();
 export const cardTopVar = createVar();
 export const cardMaxVar = createVar();
-/** The pinned card's width: the room beside the text, up to its maximum (D-186). */
-export const cardWidthVar = createVar();
 
 /** Covers the note's frame so the rail and card place against it; only they take the pointer. */
 export const nav = style({ position: "absolute", inset: 0, pointerEvents: "none" });
@@ -93,13 +91,23 @@ export const card = style({
   animationTimingFunction: t.easing,
   selectors: {
     ':root[data-transparency="reduced"] &, :root[data-compositing="software"] &': { backdropFilter: "none", backgroundColor: t.cardBackground },
-    // Pinned: as wide as the room allows, and there from the first frame, without the opening fade.
-    "&[data-pinned]": { width: cardWidthVar, animationName: "none" },
+    // Pinned: there from the first frame, without the opening fade; the same width as unpinned.
+    "&[data-pinned]": { animationName: "none" },
   },
 });
 
-/** The pin's corner: above the list, aligned to the card's end. */
-export const head = style({ display: "flex", justifyContent: "flex-end", padding: t.cardPadding, paddingBlockEnd: 0, flexShrink: 0 });
+/** The first row's height: where the pin sits, beside the note's first heading. */
+const firstRow = `calc(2 * ${t.itemPaddingBlock} + ${t.itemSize} * ${t.itemLineHeight})`;
+
+/** The pin: on the first heading's row, at the card's end, over the list (D-186). */
+export const head = style({
+  position: "absolute",
+  top: `calc(${t.cardPadding} + (${firstRow} - ${t.pinSize}) / 2)`,
+  insetInlineEnd: t.cardPadding,
+  display: "flex",
+  borderRadius: t.itemRadius,
+  backgroundColor: `color-mix(in srgb, ${t.cardBackground} calc(${t.cardOpacity} * 100%), transparent)`,
+});
 
 /** The list scrolls inside the card's padding, so its edges fade within the rounded card. */
 export const list = style({
@@ -115,6 +123,8 @@ export const list = style({
 });
 minimalScrollbar(list, { scrollbarSize: e.scrollbarSize, scrollbarInset: e.scrollbarInset, scrollbarThumb: e.scrollbarThumb, scrollbarThumbHover: e.scrollbarThumbHover, scrollbarTrack: e.scrollbarTrack });
 fadingEdges(list, { scrollFade: t.cardFade });
+// The first heading's row leaves room for the pin at its end.
+globalStyle(`${list}[data-pin] > li:first-child > button`, { paddingInlineEnd: `calc(${t.itemPaddingInline} + ${t.pinSize})` });
 
 export const entry = style({ display: "flex", flexDirection: "column", gap: t.itemGap });
 /** A heading's subsections: indented by their buttons, so nesting adds no space of its own. */
