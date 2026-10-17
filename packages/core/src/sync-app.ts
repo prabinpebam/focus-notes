@@ -33,9 +33,9 @@ export type SaveStateKind = "savedLocal" | "pending" | "syncing" | "synced" | "o
 /** Where saving stands, from the note's own save and the shell's report. */
 export function saveStateOf(sync: SyncState, noteSaving: boolean): SaveStateKind {
   if (!sync.git) return "savedLocal";
+  if (sync.syncing || sync.asked === "syncing") return "syncing";
   if (sync.problem === "offline") return "offline";
   if (sync.problem) return "error";
-  if (sync.syncing || sync.asked === "syncing") return "syncing";
   if (sync.waiting) return "pending";
   if (noteSaving) return "savedLocal";
   return sync.edited ? "pending" : "synced";
@@ -76,7 +76,7 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
     const waiting = r.waiting ?? 0;
     // A problem stays shown until a sync ends without one.
     const keep = r.state === "syncing" && before;
-    const syncing = !keep && r.state === "syncing" && waiting > 0;
+    const syncing = r.state === "syncing" && waiting > 0;
     const backedUp = r.state === "idle" && waiting === 0 && r.git && (was.syncing || Boolean(was.waiting) || Boolean(before));
     const nextProblem = keep ? before : problem;
     if (was.git === r.git && before === nextProblem && (was.waiting ?? 0) === waiting && Boolean(was.syncing) === syncing && !backedUp) return;
@@ -117,6 +117,10 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
       if (r.state === "problem") {
         set({ asked: undefined });
         throw new SyncFailed(describe(r.problem ?? "failed"), r.problem ?? "failed");
+      }
+      if (!r.git) {
+        set({ asked: undefined });
+        return;
       }
       // The label says it's done for a moment, and screen readers hear it once (D-132).
       set({ asked: "done", edited: undefined, ...(store.state.sync.waiting ? {} : { backedUpAt: now() }) });

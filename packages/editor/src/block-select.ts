@@ -59,7 +59,7 @@ function caretInto(tr: Transaction, pos: number): Transaction {
   return tr.setSelection(text !== null ? TextSelection.create(tr.doc, text) : Selection.near(tr.doc.resolve(pos)));
 }
 
-function enter(editor: Editor): boolean {
+export function selectBlock(editor: Editor): boolean {
   const { state } = editor;
   if (!editor.isEditable || inTable(state) || key.getState(state)) return false;
   const info = blockInfo(state);
@@ -177,4 +177,4 @@ export const BlockSelection = Extension.create<{ className: string }>({
   },
 });
 
-export const BLOCK_SELECT: Readonly<Record<string, (editor: Editor) => boolean>> = { "block.select": enter };
+export const BLOCK_SELECT: Readonly<Record<string, (editor: Editor) => boolean>> = { "block.select": selectBlock };

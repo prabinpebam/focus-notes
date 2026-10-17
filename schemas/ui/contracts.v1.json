@@ -1067,11 +1067,26 @@
           "kind": "boolean",
           "default": false
         },
+        "hoverOpen": {
+          "kind": "boolean",
+          "default": false,
+          "description": "An accessible preview card: opens on hover without moving focus, supports entering its content by keyboard, and stays open while pointed at."
+        },
+        "padding": {
+          "kind": "enum",
+          "values": [
+            "normal",
+            "comfortable"
+          ],
+          "default": "normal",
+          "description": "The existing compact popover padding, or 16px on every side for a details card."
+        },
         "placement": {
           "kind": "enum",
           "values": [
             "bottom",
             "top",
+            "top start",
             "start",
             "end"
           ],
@@ -1090,7 +1105,8 @@
           "accepts": [
             "Button",
             "IconButton",
-            "TriggerButton"
+            "TriggerButton",
+            "SaveState"
           ],
           "min": 1,
           "max": 1
@@ -1174,6 +1190,38 @@
           }
         },
         {
+          "name": "placement top start",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "placement": "top start",
+            "open": false
+          },
+          "slots": {
+            "trigger": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "gallery.action"
+                  }
+                }
+              }
+            ],
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "gallery.sample"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
           "name": "placement start",
           "props": {
             "label": {
@@ -1212,6 +1260,70 @@
               "t": "gallery.sample"
             },
             "placement": "end",
+            "open": false
+          },
+          "slots": {
+            "trigger": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "gallery.action"
+                  }
+                }
+              }
+            ],
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "gallery.sample"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "padding normal",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "padding": "normal",
+            "open": false
+          },
+          "slots": {
+            "trigger": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "gallery.action"
+                  }
+                }
+              }
+            ],
+            "content": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "gallery.sample"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "padding comfortable",
+          "props": {
+            "label": {
+              "t": "gallery.sample"
+            },
+            "padding": "comfortable",
             "open": false
           },
           "slots": {
@@ -3503,6 +3615,15 @@
           ],
           "default": "neutral"
         },
+        "size": {
+          "kind": "enum",
+          "values": [
+            "hero",
+            "compact"
+          ],
+          "default": "hero",
+          "description": "The setup hero, or a 36px status tile for details cards."
+        },
         "busy": {
           "kind": "boolean",
           "default": false,
@@ -3523,6 +3644,20 @@
         "name": "label"
       },
       "fixtures": [
+        {
+          "name": "size hero",
+          "props": {
+            "icon": "cloudCheck",
+            "size": "hero"
+          }
+        },
+        {
+          "name": "size compact",
+          "props": {
+            "icon": "cloudCheck",
+            "size": "compact"
+          }
+        },
         {
           "name": "tone neutral",
           "props": {
@@ -3778,7 +3913,7 @@
     {
       "type": "SaveState",
       "tier": "primitive",
-      "description": "Where saving stands, as one muted icon in a quiet pill: its words are the tooltip and name, and pressing it backs up now (EDT-11, D-132).",
+      "description": "An always-outlined circular save indicator, with a spinning border while backing up. It can trigger the backup-details card (EDT-11, UI-12, D-132).",
       "props": {
         "state": {
           "kind": "enum",
@@ -3802,7 +3937,7 @@
         },
         "interactive": {
           "kind": "boolean",
-          "description": "Pressing backs up now. Off when there's nowhere to back up to: the icon is then a plain status image."
+          "description": "A pressable trigger, such as the backup-details card. When off it is a plain status image."
         }
       },
       "events": {
@@ -6262,6 +6397,11 @@
           "kind": "boolean",
           "default": false,
           "description": "Puts the desktop title bar band under the layer: its top `layout.titleBar` (44 px), the window's drag region (DSK-02). The layer's own content is never part of it."
+        },
+        "avoidPinned": {
+          "kind": "boolean",
+          "default": false,
+          "description": "A bottomStart control follows the pinned Files edge; without side clearance it moves above the sheet."
         },
         "landmark": {
           "kind": "enum",

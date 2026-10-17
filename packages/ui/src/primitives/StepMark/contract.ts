@@ -7,6 +7,7 @@ export const contract = defineContract({
   props: {
     icon: { kind: "icon", required: true },
     tone: { kind: "enum", values: ["neutral", "accent", "danger", "success"], default: "neutral" },
+    size: { kind: "enum", values: ["hero", "compact"], default: "hero", description: "The setup hero, or a 36px status tile for details cards." },
     busy: { kind: "boolean", default: false, description: "The step is waiting: a ring turns around the tile." },
     label: { kind: "message" },
   },
@@ -16,6 +17,7 @@ export const contract = defineContract({
   tokens: "cmp.stepMark.*",
   a11y: { pattern: "img", name: "label" },
   fixtures: [
+    ...["hero", "compact"].map((size) => ({ name: `size ${size}`, props: { icon: "cloudCheck", size } })),
     ...["neutral", "accent", "danger", "success"].map((tone) => ({ name: `tone ${tone}`, props: { icon: tone === "danger" ? "warning" : tone === "success" ? "cloudCheck" : "github", tone } })),
     { name: "busy", props: { icon: "github", busy: true } },
     { name: "labelled", props: { icon: "cloudUp", tone: "accent", busy: true, label: { t: "gallery.sample" } } },

@@ -1,4 +1,4 @@
-import { style, styleVariants } from "@vanilla-extract/css";
+import { createVar, fallbackVar, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 export const base = style({ position: "fixed", display: "flex", pointerEvents: "none" });
@@ -27,6 +27,13 @@ export const position = styleVariants({
   center: { inset: 0, alignItems: "center", justifyContent: "center", padding: tokens.layout.gutterCompact, boxSizing: "border-box" },
   bottomCenter: { left: 0, right: 0, bottom: tokens.space.xl, alignItems: "flex-end", justifyContent: "center" },
   bottomStart: { left: tokens.space.l, bottom: tokens.space.l, alignItems: "flex-end", justifyContent: "flex-start" },
+});
+export const cornerLeft = createVar();
+export const cornerGap = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
+export const avoidPinned = style({
+  vars: { [cornerGap]: tokens.space.l },
+  left: fallbackVar(cornerLeft, tokens.space.l),
+  selectors: { "&[data-pinned-overflow]": { top: tokens.space.l, bottom: "auto" } },
 });
 // Never wider than its layer: what it holds shrinks or wraps inside the window (D-111). In the
 // middle, never taller either.

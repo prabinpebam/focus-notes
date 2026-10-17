@@ -31,6 +31,7 @@ export const scroller = style({
   overflowY: "auto",
   backgroundColor: t.background,
   color: t.text,
+  cursor: "text",
   // Space for the scrollbar is always reserved, so nothing moves when it appears (UI-09).
   scrollbarGutter: "stable",
   // A table bled to the edge measures the note's width against this (D-182).
@@ -243,7 +244,7 @@ globalStyle(p("p.is-editor-empty:first-child::before"), {
 globalStyle(p('ul[data-type="taskList"]'), { listStyle: "none", paddingInlineStart: 0 });
 globalStyle(p('ul[data-type="taskList"] li'), { display: "flex", alignItems: "flex-start", gap: t.space.s });
 globalStyle(p('ul[data-type="taskList"] li > label'), { flexShrink: 0, userSelect: "none", display: "inline-flex", alignItems: "center", height: `calc(${t.lineHeight} * 1em)` });
-globalStyle(p('ul[data-type="taskList"] li > label input'), { width: t.checkboxSize, height: t.checkboxSize, margin: 0, accentColor: t.checkbox });
+globalStyle(p('ul[data-type="taskList"] li > label input'), { width: t.checkboxSize, height: t.checkboxSize, margin: 0, accentColor: t.checkbox, cursor: "pointer" });
 // The text sits beside the checkbox, never below it: the space between a list item's blocks isn't for
 // it, so the checkbox stays centered on the first line (D-111, aligned rows).
 globalStyle(p('ul[data-type="taskList"] li > div'), { flexGrow: 1, minWidth: 0, marginTop: 0 });

@@ -16,6 +16,12 @@ Every assumption and design choice these docs make beyond the literal [seed spec
 
 ## Implementation updates
 
+**Compact backup-card icon and spacing, 17 October 2026 (D-132 implementation; owner request).** The status tile inside the backup card is 36 px square at the default UI scale, using a compact `StepMark` variant. Internal padding is 16 px on all sides, using the popover's comfortable-padding variant. Setup's larger hero marks, their responsive sizing and other popovers' padding are unchanged. Affects [User can](../product/spec/user-can.md) and [Main UI](../experience/main-ui.html).
+
+**Save indicator, 17 October 2026 (D-132 and D-161 implementation; owner request).** Remove the desktop corner's username, retain an always-visible circular save control, and show backup details in an accessible hover card. Its border spins while backup runs, with live status in the card; reduced motion keeps the ring still. Reuse the existing recorded backup timestamp without inventing a historical time when it is unavailable. The control follows the pinned Files edge, falling back above the sheet when the window has no side room. Browser vault controls remain unchanged. Affects [Requirements](../product/requirements.md), [User can](../product/spec/user-can.md) and [Main UI](../experience/main-ui.html).
+
+**Viewport interaction, 17 October 2026 (D-160 implementation; owner request, built).** Treat the visible document canvas as a click target, not only its narrow text column. A plain right-margin click places the caret at the aligned row's end and enters the existing block-selection mode; Shift+click extends text selection, and a click below the note goes to its end without adding content. This interprets the owner's request for both row-based caret placement and whole-block selection on the right as one block-selection action, retaining the caret for typing. Controls, scrolling and touch gestures are excluded. Affects [Editing](../experience/editing.md), [User can](../product/spec/user-can.md) and [Requirements](../product/requirements.md).
+
 | Update (17 October 2026) | Status | Implementation | Affected pages |
 | --- | --- | --- | --- |
 | Window input (D-147) | Proposed; built | Window move and resize pointer events are captured before a surface can stop them from bubbling. Tests cover moving and all eight resize handles while an account check is pending. | [Perceived performance](../architecture/perceived-performance.md) |

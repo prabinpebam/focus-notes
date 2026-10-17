@@ -87,8 +87,8 @@ const CATALOG: [string, string, string, boolean?][] = [
   ["creating-failed-offline", "Creating your notes, GitHub unreachable", "GitHub can't be reached in the middle of setup."],
   ["creating-retried", "Creating your notes, after Try again", "Try again on the failed step (starter notes missing), once GitHub has them: the rest of setup runs to the end, its parts shown."],
   ["ready-ready", "Ready", "After Continue: the window starts again in the new notes, at the last step.", true],
-  ["ready-canvas", "The app after Start writing", "Writing, with the account pill and the save state.", true],
-  ["ready-canvas-account", "The app, account pill menu", "The account pill opened: Save to cloud and Sign out."],
+  ["ready-canvas", "The app after Start writing", "Writing, with the circular save indicator.", true],
+  ["ready-canvas-account", "The app, backup details", "The save indicator's hover card: status, last backup and Backup to GitHub."],
   ["local-canvas", "Just use this computer for now: the app", "Welcome → Just use this computer for now: writing at once, with no account and no Ready step.", true],
   ["settings-workspace", "Settings → Workspace", "Settings, Workspace, for someone already set up: the way back into the picker."],
   ["settings-found", "Open another workspace: We found your notes", "Settings → Open another workspace from GitHub: the same picker, without the steps."],
@@ -476,11 +476,11 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     await button(page, "Start writing").click();
     await expect(card(page)).toHaveCount(0);
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
-    const pill = page.getByRole("button", { name: /Signed in to GitHub as @ada/ });
+    const pill = page.locator("#saveState");
     await expect(pill).toBeVisible({ timeout: 15_000 });
     await shot(l, "ready-canvas");
-    await pill.click();
-    await expect(page.getByRole("menuitem", { name: "Save to cloud" })).toBeVisible();
+    await pill.hover();
+    await expect(page.getByRole("dialog", { name: "Backup", exact: true }).getByRole("button", { name: "Backup to GitHub", exact: true })).toBeVisible();
     await shot(l, "ready-canvas-account");
     await page.keyboard.press("Escape");
   } finally {
@@ -829,7 +829,7 @@ test("Settings → Workspace → Open another workspace from GitHub: the same pi
   try {
     await theme(l, "light");
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Signed in to GitHub as @ada/ })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("#saveState")).toBeVisible({ timeout: 15_000 });
     await page.keyboard.press(`${mod}+,`);
     const settings = page.getByRole("dialog", { name: "Settings" });
     await expect(settings).toBeVisible();

@@ -5,6 +5,7 @@ import * as s from "./StepMark.css.ts";
 export interface StepMarkProps {
   icon: IconName;
   tone?: keyof typeof s.tone;
+  size?: "hero" | "compact";
   /** The step is waiting: a ring turns around the tile. */
   busy?: boolean;
   /** Only where the mark carries meaning on its own. */
@@ -12,11 +13,11 @@ export interface StepMarkProps {
 }
 
 /** A setup step's hero (D-135): one icon in a large round tile, the step's visual anchor (D-127). */
-export function StepMark({ icon, tone = "neutral", busy, label }: StepMarkProps) {
+export function StepMark({ icon, tone = "neutral", size = "hero", busy, label }: StepMarkProps) {
   const Glyph = ICONS[icon];
   return (
-    <span className={s.base} data-visual-anchor="" data-step-mark={tone} {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}>
-      <span className={`${s.tile} ${s.tone[tone]}`}><Glyph className={s.icon} aria-hidden="true" /></span>
+    <span className={`${s.base}${size === "compact" ? ` ${s.compact}` : ""}`} data-visual-anchor="" data-step-mark={tone} data-step-mark-size={size} {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}>
+      <span className={`${s.tile} ${s.tone[tone]}${size === "compact" ? ` ${s.compactTile}` : ""}`}><Glyph className={`${s.icon}${size === "compact" ? ` ${s.compactIcon}` : ""}`} aria-hidden="true" /></span>
       {busy ? <span className={s.ring} data-busy="" /> : null}
     </span>
   );

@@ -1,6 +1,8 @@
 { "cmp": { "stepMark": {
   "size": { "$type": "dimension", "$value": "{size.stepMark}", "$description": "A setup step's hero icon, its ring's room included: the step's visual anchor when nothing else on it is (D-127, D-135)." },
   "sizeCompact": { "$type": "dimension", "$value": "{size.cardVisual}", "$description": "In a short window (D-131)." },
+  "sizeSmall": { "$type": "dimension", "$value": "{size.statusMark}", "$description": "A compact status tile in a details card; independent of the setup hero." },
+  "iconSmall": { "$type": "dimension", "$value": "{size.iconM}" },
   "icon": { "$type": "dimension", "$value": "{size.stepMarkIcon}" },
   "iconCompact": { "$type": "dimension", "$value": "{size.iconL}" },
   "radius": { "$type": "dimension", "$value": "{radius.round}" },

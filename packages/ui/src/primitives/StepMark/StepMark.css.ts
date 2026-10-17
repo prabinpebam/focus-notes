@@ -21,6 +21,15 @@ export const tone = styleVariants({
   success: { backgroundColor: t.success.background, color: t.success.color },
 });
 export const icon = style({ width: t.icon, height: t.icon, "@media": { [short]: { width: t.iconCompact, height: t.iconCompact } } });
+export const compact = style({
+  width: t.sizeSmall, height: t.sizeSmall,
+  "@media": { [short]: { width: t.sizeSmall, height: t.sizeSmall } },
+});
+export const compactTile = style({ inset: 0 });
+export const compactIcon = style({
+  width: t.iconSmall, height: t.iconSmall,
+  "@media": { [short]: { width: t.iconSmall, height: t.iconSmall } },
+});
 // The wait: an arc turning around the tile, the same sign as the Spinner's.
 export const ring = style({
   position: "absolute", inset: 0, borderRadius: t.radius,

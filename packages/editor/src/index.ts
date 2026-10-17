@@ -4,7 +4,7 @@
  * Rendering lives in packages/ui (block components and the EditorSurface host).
  */
 import { Extension, Node, mergeAttributes, type AnyExtension, type CommandProps, type Editor } from "@tiptap/core";
-import { Selection } from "@tiptap/pm/state";
+import { Selection, TextSelection } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import Strike from "@tiptap/extension-strike";
 import HardBreak from "@tiptap/extension-hard-break";
@@ -240,6 +240,16 @@ export { syncSelection };
 export function focusAtEnd(editor: Editor): void {
   if (editor.isDestroyed) return;
   editor.view.dispatch(editor.state.tr.setSelection(Selection.atEnd(editor.state.doc)).scrollIntoView());
+  editor.view.focus();
+}
+
+/** A viewport click: resolve leaf blocks to a valid caret, without scrolling before pointer-up. */
+export function focusAtPosition(editor: Editor, pos: number, anchor?: number): void {
+  if (editor.isDestroyed) return;
+  const { doc } = editor.state;
+  const $pos = doc.resolve(Math.max(0, Math.min(pos, doc.content.size)));
+  const selection = anchor === undefined ? Selection.near($pos) : TextSelection.between(doc.resolve(anchor), $pos);
+  editor.view.dispatch(editor.state.tr.setSelection(selection));
   editor.view.focus();
 }
 

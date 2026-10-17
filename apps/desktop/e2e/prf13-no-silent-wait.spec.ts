@@ -12,7 +12,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { bandProblems, quit, type Launched } from "./helpers.ts";
-import { card, existingInstance, heading, press, start, world, type World } from "./github-world.ts";
+import { card, existingInstance, heading, openAccountSettings, press, start, world, type World } from "./github-world.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -172,7 +172,7 @@ async function workspace(): Promise<{ w: World; l: Launched }> {
   writeFileSync(join(w.dirs.userData, DATA_FILES.setup), JSON.stringify({ version: 1, steps: {} }));
   const l = await start(w, false);
   await expect(l.page.getByRole("textbox", { name: "Note" })).toBeVisible();
-  await expect(l.page.getByRole("button", { name: /Signed in to GitHub as @ada/ })).toBeVisible({ timeout: 15_000 });
+  await expect(l.page.locator("#saveState")).toBeVisible({ timeout: 15_000 });
   return { w, l };
 }
 const settings = (page: Page) => page.getByRole("dialog", { name: "Settings" });
@@ -204,8 +204,8 @@ test("PRF-13: Open another workspace from GitHub shows skeleton rows while it lo
     await expect(card(page)).toHaveCount(0);
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible({ timeout: 15_000 });
 
-    await page.getByRole("button", { name: /Signed in to GitHub as @ada/ }).click();
-    await page.getByRole("menuitem", { name: "Sign out of GitHub" }).click();
+    const accountSettings = await openAccountSettings(page);
+    await accountSettings.getByRole("button", { name: "Sign out…" }).click();
     const confirm = page.getByRole("dialog", { name: "Sign out of GitHub?" });
     const t2 = Date.now();
     await confirm.getByRole("button", { name: "Sign out", exact: true }).click();

@@ -27,3 +27,5 @@ export const popover = style({
 });
 
 export const dialog = style({ outline: "none" });
+export const previewTrigger = style({ display: "inline-flex" });
+export const comfortable = style({ padding: t.paddingComfortable });

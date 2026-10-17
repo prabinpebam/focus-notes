@@ -5,12 +5,12 @@ export const SAVE_STATES = ["savedLocal", "pending", "syncing", "synced", "offli
 export const contract = defineContract({
   type: "SaveState",
   tier: "primitive",
-  description: "Where saving stands, as one muted icon in a quiet pill: its words are the tooltip and name, and pressing it backs up now (EDT-11, D-132).",
+  description: "An always-outlined circular save indicator, with a spinning border while backing up. It can trigger the backup-details card (EDT-11, UI-12, D-132).",
   props: {
     state: { kind: "enum", values: [...SAVE_STATES], required: true },
     label: { kind: "message", required: true },
     text: { kind: "text", description: "Shown beside the icon for a moment after the person asked (Backing up…, Backed up)." },
-    interactive: { kind: "boolean", description: "Pressing backs up now. Off when there's nowhere to back up to: the icon is then a plain status image." },
+    interactive: { kind: "boolean", description: "A pressable trigger, such as the backup-details card. When off it is a plain status image." },
   },
   events: { press: {} },
   slots: {},

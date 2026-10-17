@@ -13,7 +13,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { quit, windowBox, type Launched } from "./helpers.ts";
-import { card, existingInstance, heading, press, start, world } from "./github-world.ts";
+import { card, existingInstance, heading, openAccountSettings, press, start, world } from "./github-world.ts";
 import { frameProblems, recordFrames, watchMotion, watchShifts, type Frame } from "./frames.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -202,10 +202,10 @@ test("DSK-09: light, the window's first frame is the light theme's and finished;
     await expect(page.locator("html")).toHaveAttribute("data-theme", "paper");
     await settle(page);
 
-    // Signing out (D-148: a transition that never reloads): the app stays in place, the account pill signed out.
+    // Signing out (D-148: a transition that never reloads) stays in the same app.
     await mark("signing out");
-    await page.getByRole("button", { name: /Signed in to GitHub as @ada/ }).click({ timeout: 20_000 });
-    await page.getByRole("menuitem", { name: "Sign out of GitHub" }).click();
+    const accountSettings = await openAccountSettings(page);
+    await accountSettings.getByRole("button", { name: "Sign out…" }).click();
     const confirm = page.getByRole("dialog", { name: "Sign out of GitHub?" });
     await confirm.getByRole("button", { name: "Sign out", exact: true }).click();
     await expect(confirm).toBeHidden({ timeout: 45_000 });

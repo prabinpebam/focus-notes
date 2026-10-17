@@ -3,16 +3,16 @@ import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.saveState;
 
-// The quiet pill of UI-12: muted, no fill or border until pointed at or focused. The icon carries
-// the state; its words are the tooltip, or open beside it for a moment after Save to cloud.
+// The circular wrapper stays visible at rest; the details card carries its words.
 export const pill = style({
+  position: "relative",
   display: "inline-flex",
   alignItems: "center",
   gap: t.gap,
   height: t.height,
   minWidth: t.height,
   justifyContent: "center",
-  paddingInline: t.paddingInline,
+  paddingInline: 0,
   borderRadius: t.radius,
   borderStyle: "solid",
   borderWidth: t.borderWidth,
@@ -40,9 +40,15 @@ export const tone = styleVariants({
 
 export const glyph = style({ position: "relative", display: "inline-flex" });
 
-// The arrow rises gently while backing up; with reduced motion the duration is zero, so it stays still.
-const rise = keyframes({ "0%, 100%": { transform: "translateY(0)" }, "50%": { transform: `translateY(calc(-1 * ${t.rise}))` } });
-export const moving = style({ animationName: rise, animationDuration: t.cycle, animationTimingFunction: t.easing, animationIterationCount: "infinite" });
+const spin = keyframes({ to: { transform: "rotate(1turn)" } });
+export const moving = style({
+  position: "absolute", inset: 0, borderRadius: t.radius,
+  borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.transparent, borderTopColor: t.dotColor,
+  pointerEvents: "none", animationName: spin, animationDuration: t.cycle,
+  animationTimingFunction: "linear", animationIterationCount: "infinite",
+  selectors: { ':root[data-motion="reduced"] &': { animationName: "none" } },
+  "@media": { "(prefers-reduced-motion: reduce)": { animationName: "none" } },
+});
 
 export const dot = style({
   position: "absolute",

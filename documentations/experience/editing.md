@@ -5,6 +5,22 @@ Editing works like Notion or Microsoft Loop: a WYSIWYG, block-based surface wher
 > [!NOTE]
 > **TL;DR.** Documents are a sequence of **blocks** (paragraph, heading, list, task, quote, code, divider, table, and future components). Formatting comes from shortcuts, Markdown input rules, a selection **bubble**, and a **slash menu**. Tables get real row and column editing but always save as GFM pipe tables. Every block type is a registered plugin, so images and galleries can be added later without touching the editor core. Covers EDT-*, TBL-*, and EXT-* in the [requirements](../product/requirements.md).
 
+## Clicking the document viewport
+
+The blank canvas around the text is part of the document's interaction area (UC-CANVAS-01, EDT-02). Its pointer is an I-beam; controls, window handles and the scrollbar keep their own pointers and actions.
+
+| Click | Result |
+| --- | --- |
+| Inside the text | Normal editor caret placement and text selection |
+| Left margin, level with text | Caret at the beginning of the corresponding visual row |
+| Right margin, level with a text block | Caret at the end of the corresponding visual row, with that block selected in block-selection mode |
+| Above the document | Caret at the document's start |
+| Below the document | Caret at the end of its last row; no extra paragraph is created |
+| Shift+click in a margin | Extend the current text selection to that visual row, rather than enter block-selection mode |
+| Controls, links, scrollbars or touch scrolling | Their existing behavior; no viewport click is synthesized |
+
+Right-margin selection uses the existing block-selection mode (D-160, KEY-04): the block is highlighted; block commands act on it; typing resumes at its caret without replacing the block. Tables retain their own cell-selection controls.
+
 ## Blocks and their Markdown
 
 Every block maps to exactly one Markdown construct. That mapping is the contract that keeps notes portable (EDT-01, EDT-10).

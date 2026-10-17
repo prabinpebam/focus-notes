@@ -110,6 +110,13 @@ export async function start(w: World, firstRun = true): Promise<Launched> {
 }
 export const opened = (l: Launched) => l.app.evaluate(() => (globalThis as { opened?: string[] }).opened ?? []);
 export const card = (page: Page) => page.getByRole("main", { name: "Set up Focus Notes" });
+export async function openAccountSettings(page: Page) {
+  await page.keyboard.press(`${process.platform === "darwin" ? "Meta" : "Control"}+,`);
+  const dialog = page.getByRole("dialog", { name: "Settings", exact: true });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("tab", { name: "Account", exact: true }).click();
+  return dialog;
+}
 export const heading = (page: Page, name: string) => expect(card(page).getByRole("heading", { name })).toBeVisible({ timeout: 20_000 });
 /** Moves focus with Tab only (Shift+Tab with `back`), until this control has it. */
 export async function tabTo(page: Page, target: Locator, back = false) {

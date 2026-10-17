@@ -1,6 +1,5 @@
 import { Button } from "react-aria-components";
 import { Icon } from "../Icon/Icon.tsx";
-import { Tooltip } from "../Tooltip/Tooltip.tsx";
 import type { IconName } from "../../icon-names.ts";
 import type { SAVE_STATES } from "./contract.ts";
 import * as s from "./SaveState.css.ts";
@@ -13,23 +12,22 @@ const ICON: Record<SaveStateKind, IconName> = {
 
 export interface SaveStateProps {
   state: SaveStateKind;
-  /** The state in words: the tooltip and the accessible name. */
+  /** The state in words: the accessible name. */
   label: string;
   /** Shown beside the icon for a moment after the person asked. */
   text?: string;
   id?: string;
-  /** Pressing backs up now; off when there's nowhere to back up to (no Git), so it's only a status. */
+  /** A pressable trigger for details, or a plain status image when off. */
   interactive?: boolean;
   onPress?: () => void;
 }
 
 /**
- * The save state at the leading edge of the bottom-left pill (UI-12, D-132): one calm icon that never
- * pops up and never takes focus from the note when pressed. Pressing it backs up now.
+ * The circular save indicator (UI-12, D-132). Views may use it as the backup-details trigger.
  */
 export function SaveState({ state, label, text, id, interactive = true, onPress }: SaveStateProps) {
   const glyph = (
-    <span className={`${s.glyph}${state === "syncing" ? ` ${s.moving}` : ""}`}>
+    <span className={s.glyph}>
       <Icon name={ICON[state]} size="s" />
       {state === "pending" ? <span className={s.dot} aria-hidden="true" /> : null}
     </span>
@@ -43,18 +41,16 @@ export function SaveState({ state, label, text, id, interactive = true, onPress 
     );
   }
   return (
-    <Tooltip label={label} placement="top">
       <Button
         className={`${s.pill} ${s.tone[state]}`}
         {...(id ? { id } : {})}
         aria-label={text || label}
         data-state={state}
-        preventFocusOnPress
         {...(onPress ? { onPress } : {})}
       >
+        {state === "syncing" ? <span className={s.moving} aria-hidden="true" data-backup-ring="" /> : null}
         {glyph}
         {text ? <span className={s.text}>{text}</span> : null}
       </Button>
-    </Tooltip>
   );
 }

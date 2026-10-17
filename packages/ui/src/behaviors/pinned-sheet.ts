@@ -20,6 +20,12 @@ export const pinnedSheet = {
   },
 };
 
+/** A corner control sits after a pinned sheet, or above it when the side has no room. */
+export function cornerClearance(edge: number | undefined, left: number, width: number, controlWidth: number, gap: number): number | undefined {
+  const x = edge === undefined ? gap : Math.max(gap, edge - left + gap);
+  return x + controlWidth + gap <= width ? x : undefined;
+}
+
 export interface ClearanceInput {
   /** Where the sheet ends, in window pixels (undefined: nothing pinned). */
   edge: number | undefined;

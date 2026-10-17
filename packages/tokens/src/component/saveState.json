@@ -10,7 +10,7 @@
   "dot": { "$type": "dimension", "$value": "{space.xs}" },
   "rise": { "$type": "dimension", "$value": "{space.xxs}" },
   "hover": { "$type": "color", "$value": "{color.hover}" },
-  "border": { "$type": "color", "$value": "{color.none}" },
+  "border": { "$type": "color", "$value": "{color.border}" },
   "borderHover": { "$type": "color", "$value": "{color.border}" },
   "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "font": { "$type": "fontFamily", "$value": "{font.ui}" },

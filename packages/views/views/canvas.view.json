@@ -3610,6 +3610,7 @@
         "props": {
           "layer": "panel",
           "position": "bottomStart",
+          "avoidPinned": true,
           "landmark": "region",
           "label": {
             "t": "account.region"
@@ -3686,29 +3687,79 @@
                 ]
               },
               {
-                "type": "SaveState",
-                "id": "saveState",
+                "type": "PopoverPanel",
+                "id": "backupDetails",
                 "when": {
                   "get": "vm.saveState.visible"
                 },
                 "props": {
-                  "state": {
-                    "get": "vm.saveState.state"
-                  },
                   "label": {
-                    "get": "vm.saveState.label"
+                    "t": "save.backup.title"
                   },
-                  "text": {
-                    "get": "vm.saveState.text"
-                  },
-                  "interactive": {
-                    "get": "vm.saveState.interactive"
-                  }
+                  "placement": "top start",
+                  "padding": "comfortable",
+                  "hoverOpen": true
                 },
-                "on": {
-                  "press": {
-                    "run": "note.save"
-                  }
+                "slots": {
+                  "trigger": [
+                    {
+                      "type": "SaveState",
+                      "id": "saveState",
+                      "props": {
+                        "state": { "get": "vm.saveState.state" },
+                        "label": { "get": "vm.saveState.label" },
+                        "interactive": { "get": "vm.saveState.interactive" }
+                      }
+                    }
+                  ],
+                  "content": [
+                    {
+                      "type": "Stack",
+                      "props": { "gap": "m" },
+                      "children": [
+                        {
+                          "type": "Inline",
+                          "props": { "gap": "m" },
+                          "children": [
+                            {
+                              "type": "StepMark",
+                              "props": {
+                                "icon": { "get": "vm.saveState.icon" },
+                                "size": "compact",
+                                "tone": { "get": "vm.saveState.tone" },
+                                "busy": { "get": "vm.saveState.backingUp" }
+                              }
+                            },
+                            {
+                              "type": "Stack",
+                              "props": { "gap": "xs" },
+                              "children": [
+                                { "type": "Heading", "props": { "value": { "t": "save.backup.title" }, "level": "2" } },
+                                { "type": "Text", "props": { "value": { "get": "vm.saveState.label" } } }
+                              ]
+                            }
+                          ]
+                        },
+                        { "type": "Text", "props": { "value": { "get": "vm.saveState.backupTime" }, "tone": "muted" } },
+                        { "type": "Text", "props": { "value": { "get": "vm.saveState.waitingText" } } },
+                        {
+                          "type": "Button",
+                          "props": {
+                            "label": { "t": "save.backup.action" },
+                            "icon": "cloudUp",
+                            "variant": "secondary",
+                            "busy": { "get": "vm.saveState.backingUp" },
+                            "disabled": { "expr": { "and": [
+                              { "!": { "get": "vm.saveState.canBackUp" } },
+                              { "!": { "get": "vm.saveState.backingUp" } }
+                            ] } },
+                            "disabledReason": { "get": "vm.saveState.backupReason" }
+                          },
+                          "on": { "press": { "run": "note.save" } }
+                        }
+                      ]
+                    }
+                  ]
                 }
               },
               {

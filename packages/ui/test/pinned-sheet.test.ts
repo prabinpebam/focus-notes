@@ -1,9 +1,19 @@
 /** D-161: the note's text clear of a pinned Files sheet, narrower down to a minimum, else under it as before. */
 import { describe, expect, it } from "vitest";
-import { clearance, pinnedSheet } from "../src/behaviors/pinned-sheet.ts";
+import { clearance, cornerClearance, pinnedSheet } from "../src/behaviors/pinned-sheet.ts";
 
 // A 1200 px window whose scroller starts at 16 (the frame's margin); the sheet ends at 16 + 16 + 320.
 const base = { left: 16, width: 1168, gap: 16, gutter: 48, minText: 360 };
+
+describe("corner controls beside pinned Files", () => {
+  it("stays in the corner without a sheet, and moves a gap past its edge when pinned", () => {
+    expect(cornerClearance(undefined, 16, 1168, 32, 24)).toBe(24);
+    expect(cornerClearance(352, 16, 1168, 32, 24)).toBe(360);
+  });
+  it("uses the above-sheet fallback rather than hiding under Files or leaving a narrow viewport", () => {
+    expect(cornerClearance(352, 16, 360, 32, 24)).toBeUndefined();
+  });
+});
 
 describe("clearance (D-161)", () => {
   it("nothing pinned: the column stays centred", () => {

@@ -16,6 +16,9 @@ const messages = {
   "save.state.savedLocal": "Saved on this computer", "save.state.pending": "Saved here · not backed up yet", "save.state.syncing": "Backing up…",
   "save.state.synced": "Backed up at {time}", "save.state.syncedNow": "Backed up", "save.state.offline": "Offline", "save.state.error": "Couldn't back up",
   "save.label.syncing": "Backing up…", "save.label.done": "Backed up",
+  "save.backup.unknown": "No backup recorded in this session", "save.backup.last": "Last backup: {time}",
+  "save.backup.progress": "Backing up your changes to GitHub", "save.backup.waiting": "{count} changes waiting for backup",
+  "save.backup.current": "No changes waiting for backup", "save.backup.local": "Connect a GitHub workspace to back up your notes",
 };
 
 function setup(withSync = true, opening = false) {
@@ -60,12 +63,38 @@ function setup(withSync = true, opening = false) {
     willReturn: (r: SyncReport) => void (next = r),
     canvas: () => app.viewModels.select("vm.canvas", app.store.state) as { problem: boolean; problemLabel: string },
     toasts: () => app.store.state.ui.toasts.map((t) => t.message),
-    save: () => app.viewModels.select("vm.saveState", app.store.state) as { visible: boolean; state: string; label: string; text: string },
+    save: () => app.viewModels.select("vm.saveState", app.store.state) as { visible: boolean; state: string; label: string; text: string; backingUp: boolean; canBackUp: boolean; backupTime: string; waitingText: string },
   };
 }
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
 describe("EDT-11: save and sync", () => {
+  it("saving a local-only note never records or announces a GitHub backup", async () => {
+    const t = setup();
+    await t.app.start();
+    await settle();
+    t.report({ git: false, state: "idle", waiting: 0 });
+    t.willReturn({ git: false, state: "idle", waiting: 0 });
+    await t.app.commands.run("note.save");
+    expect(t.app.store.state.sync.backedUpAt).toBeUndefined();
+    expect(t.app.store.state.sync.asked).toBeUndefined();
+    expect(t.save()).toMatchObject({ state: "savedLocal", backupTime: "No backup recorded in this session" });
+  });
+
+  it("the details card distinguishes unknown backup time, waiting changes, retries in progress and a completed backup", async () => {
+    const t = setup();
+    await t.app.start();
+    await settle();
+    expect(t.save()).toMatchObject({ backingUp: false, canBackUp: true, backupTime: "No backup recorded in this session" });
+    t.report({ git: true, state: "problem", problem: "offline", waiting: 2 });
+    expect(t.save()).toMatchObject({ state: "offline", waitingText: "2 changes waiting for backup" });
+    t.report({ git: true, state: "syncing", waiting: 2 });
+    expect(t.save()).toMatchObject({ state: "syncing", backingUp: true, canBackUp: false, waitingText: "Backing up your changes to GitHub" });
+    t.report({ git: true, state: "idle", waiting: 0 });
+    expect(t.save()).toMatchObject({ state: "synced", backingUp: false, canBackUp: true });
+    expect(t.save().backupTime).toMatch(/^Last backup: /);
+  });
+
   it("Mod+S writes the note, then commits and pushes at once, and shows nothing when it worked", async () => {
     const t = setup();
     await t.app.start();

@@ -9,6 +9,7 @@ import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
 import { keepInReadingZone } from "./reading-zone.ts";
 import { keepClearOfPinned } from "./pinned-column.ts";
+import { trackViewportPointer } from "./viewport-pointer.ts";
 import { trackFormatting, type FormatPayload, type FormatTracker } from "./formatting.ts";
 import { trackSlash, type SlashPayload } from "./slash-menu.ts";
 import { measureColumns, tableView } from "./table-view.ts";
@@ -298,6 +299,11 @@ export function EditorSurface({
     const onDown = () => setTimeout(() => { if (!editor.isDestroyed) syncSelection(editor); }, 0);
     dom.addEventListener("mousedown", onDown, true);
     return () => dom.removeEventListener("mousedown", onDown, true);
+  }, [editor]);
+
+  useEffect(() => {
+    if (!editor || !scrollerRef.current) return;
+    return trackViewportPointer(editor, scrollerRef.current);
   }, [editor]);
 
   // The slash menu (EDT-06): the editor reports the query; the menu is a view node under the `/`.

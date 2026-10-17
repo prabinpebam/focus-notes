@@ -1851,12 +1851,42 @@
                 }
               ]
             },
+            "hoverOpen": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "padding": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "normal",
+                    "comfortable"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "placement": {
               "anyOf": [
                 {
                   "enum": [
                     "bottom",
                     "top",
+                    "top start",
                     "start",
                     "end"
                   ]
@@ -4516,6 +4546,22 @@
                 }
               ]
             },
+            "size": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "hero",
+                    "compact"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "busy": {
               "anyOf": [
                 {
@@ -4862,7 +4908,7 @@
     },
     "c_SaveState": {
       "type": "object",
-      "description": "Where saving stands, as one muted icon in a quiet pill: its words are the tooltip and name, and pressing it backs up now (EDT-11, D-132).",
+      "description": "An always-outlined circular save indicator, with a spinning border while backing up. It can trigger the backup-details card (EDT-11, UI-12, D-132).",
       "required": [
         "type",
         "props"
@@ -6786,6 +6832,19 @@
               ]
             },
             "dragBand": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "avoidPinned": {
               "anyOf": [
                 {
                   "type": "boolean"

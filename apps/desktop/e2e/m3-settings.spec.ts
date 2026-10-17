@@ -56,7 +56,7 @@ async function setUp(opts: { note?: string } = {}) {
   writeFileSync(join(w.dirs.userData, DATA_FILES.setup), JSON.stringify({ version: 1, steps: {} }));
   const l = await start(w, false);
   await expect(l.page.getByRole("textbox", { name: "Note" })).toBeVisible();
-  await expect(l.page.getByRole("button", { name: /Signed in to GitHub as @ada/ })).toBeVisible({ timeout: 15_000 });
+  await expect(l.page.locator("#saveState")).toBeVisible({ timeout: 15_000 });
   return { w, l, note };
 }
 const settings = (page: Page) => page.getByRole("dialog", { name: "Settings" });
@@ -180,7 +180,7 @@ test("IA-VIEW-SETTINGS, FRE-07: Settings opens with Mod+, and from ⋯; signing 
     await press(page, "Enter");
     await expect(card(page)).toHaveCount(0);
     await toast(page, "Signed in to GitHub as @ada.");
-    await expect(page.getByRole("button", { name: /Signed in to GitHub as @ada/ })).toBeVisible();
+    await expect(page.locator("#saveState")).toBeVisible();
     expect(top(w.dirs.userData)).not.toContain(DATA_FILES.account);
     // The note is back as it was.
     await expect(page.getByRole("textbox", { name: "Note" })).toContainText("Only mine.");
@@ -205,7 +205,7 @@ test("FRE-07: Switch account signs in again through the same helper; the termina
     await expect(page.getByRole("button", { name: "Connect to GitHub" })).toBeFocused({ timeout: 15_000 });
     await press(page, "Escape");
     await expect(card(page)).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /Signed in to GitHub as @ada/ })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("#saveState")).toBeVisible({ timeout: 15_000 });
     expect(terminal(w)).toBe(w.gh.token);
 
     await openSettings(page);
@@ -215,7 +215,7 @@ test("FRE-07: Switch account signs in again through the same helper; the termina
     await expect(page.getByRole("button", { name: "Continue as Grace" })).toBeFocused({ timeout: 20_000 });
     await press(page, "Enter");
     await toast(page, "Signed in to GitHub as @grace.");
-    await expect(page.getByRole("button", { name: /Signed in to GitHub as @grace/ })).toBeVisible();
+    await expect(page.locator("#saveState")).toBeVisible();
     expect(terminal(w)).toBe(GRACE.token);
     noTokenInArgs(w, l);
   } finally {
@@ -235,9 +235,8 @@ test("PRV-02, FRE-07: signing out with Git's credential deletes exactly what the
     for (const f of [DATA_FILES.state, DATA_FILES.workspace, DATA_FILES.firstRun, DATA_FILES.setup, CHROMIUM_FOLDERS.session]) expect(before).toContain(f);
     expect(state(w).lastNotePath).toBe(note);
 
-    // From the account pill, as before Settings existed: now it asks first.
-    await page.getByRole("button", { name: /Signed in to GitHub as @ada/ }).click();
-    await page.getByRole("menuitem", { name: "Sign out of GitHub" }).click();
+    await openSettings(page);
+    await settings(page).getByRole("button", { name: "Sign out…" }).click();
     const confirm = page.getByRole("dialog", { name: "Sign out of GitHub?" });
     await expect(confirm.getByRole("radio", { name: "Remove it too" })).toBeChecked();
     await confirm.getByRole("button", { name: "Sign out", exact: true }).click();

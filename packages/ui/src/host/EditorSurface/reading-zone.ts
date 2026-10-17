@@ -20,7 +20,7 @@ const varName = (ref: string) => ref.slice(4, -1);
  * the band as its threshold and margin, so typing and arrow keys land inside it; clicks, focus, and
  * other selection moves are checked after the frame. A drag-selection waits for the pointer to lift.
  * Scrolling never brings the caret back: not the wheel, nor pressing, dragging, or clicking the
- * scrollbar (or the scroller around the note), nor the focus that such a press moves.
+ * scrollbar, nor the focus that such a press moves. Blank canvas clicks place the caret too.
  * A caret move from typing, a key, or a click in the note animates the scroll over motion.autoScroll
  * with easing.inOut (D-156); every other scroll is ProseMirror's own, instant, as before. The animator
  * only writes scrollTop. The wheel or the scrollbar stops it. Reduced motion (a duration of 0) makes it instant.
@@ -29,7 +29,7 @@ const varName = (ref: string) => ref.slice(4, -1);
 export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column: HTMLElement, findOpen: boolean): () => void {
   let band = { top: 0, bottom: 0 };
   let pointerDown = false;
-  /** A press on the scrollbar or the scroller itself (not the note) is scrolling: it moves no caret. */
+  /** A press on the scrollbar is scrolling: it moves no caret. */
   let scrollPress = false;
   let frame = 0;
   /** Whether the person's key, input, or pointer release came since the last check (D-156). */
@@ -134,9 +134,8 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   const schedule = () => {
     if (!frame) frame = requestAnimationFrame(keep);
   };
-  /** Whether a press lands on the scrollbar, or on the scroller rather than the note in it. */
+  /** Blank canvas clicks move the caret too; only the scrollbar is a scrolling press. */
   const onScrollbar = (e: PointerEvent) => {
-    if (e.target === scroller) return true;
     const box = scroller.getBoundingClientRect();
     const x = e.clientX - box.left - scroller.clientLeft;
     const y = e.clientY - box.top - scroller.clientTop;

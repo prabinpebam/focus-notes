@@ -12,7 +12,7 @@ import { delimiter, dirname, join } from "node:path";
 import type { Page } from "@playwright/test";
 import { quit } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
-import { card, existingInstance, heading, noTokenInArgs, opened, press, start, tabTo, world } from "./github-world.ts";
+import { card, existingInstance, heading, noTokenInArgs, openAccountSettings, opened, press, start, tabTo, world } from "./github-world.ts";
 
 test.describe.configure({ mode: "serial" });
 
@@ -83,13 +83,12 @@ test("FRE-01, FRE-04, FRE-05, FRE-08: the short path: a new install connects wit
     expect(w.gh.repo("notes")?.pages?.build_type).toBe("workflow");
     expect(JSON.parse(readFileSync(join(w.dirs.userData, "workspace.json"), "utf8")).folder).toBe(ws);
 
-    // UI-12: the account pill shows the login with Save to cloud and Sign out (D-132).
-    const pill = page.getByRole("button", { name: /Signed in to GitHub as @ada/ });
+    // UI-12: the corner is icon-only; backup options live in its hover card.
+    const pill = page.locator("#saveState");
     await expect(pill).toBeVisible({ timeout: 15_000 });
-    await expect(pill).toHaveText("@ada");
-    await pill.click();
-    await expect(page.getByRole("menuitem", { name: "Save to cloud" })).toBeVisible();
-    await expect(page.getByRole("menuitem", { name: "Sign out of GitHub" })).toBeVisible();
+    await expect(pill).toHaveText("");
+    await pill.hover();
+    await expect(page.getByRole("dialog", { name: "Backup", exact: true }).getByRole("button", { name: "Backup to GitHub", exact: true })).toBeVisible();
     await press(page, "Escape");
     expect(await axeViolations(page)).toEqual([]);
     noTokenInArgs(w, l);
@@ -435,7 +434,7 @@ test("FRE-01: Git missing: one free helper app to install and Check again, in pl
   }
 });
 
-test("UI-12: once set up, the next start shows the writing canvas and the account pill, and Sign out signs Git out", async () => {
+test("UI-12: once set up, the next start shows the save indicator, and Settings signs Git out", async () => {
   test.setTimeout(90_000);
   const w = await world({ gcm: true });
   const { notes } = existingInstance(w);
@@ -447,14 +446,14 @@ test("UI-12: once set up, the next start shows the writing canvas and the accoun
   try {
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
     await expect(card(page)).toHaveCount(0);
-    const pill = page.getByRole("button", { name: /Signed in to GitHub as @ada/ });
+    const pill = page.locator("#saveState");
     await expect(pill).toBeVisible({ timeout: 15_000 });
-    await pill.click();
-    await page.getByRole("menuitem", { name: "Sign out of GitHub" }).click();
+    const settings = await openAccountSettings(page);
+    await settings.getByRole("button", { name: "Sign out…" }).click();
     // It asks first (FRE-07, WP-3.6); Git's sign-in goes too by default.
     await page.getByRole("dialog", { name: "Sign out of GitHub?" }).getByRole("button", { name: "Sign out", exact: true }).click();
     await expect(page.getByText("Signed out of GitHub on this computer, in the app and in the terminal.")).toBeVisible({ timeout: 15_000 });
-    await expect(pill).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Signed in to GitHub as @ada/ })).toHaveCount(0);
     expect(w.fakes.stored()).toBe("{}");
     expect(existsSync(join(w.dirs.userData, "workspace.json"))).toBe(false);
     noTokenInArgs(w, l);

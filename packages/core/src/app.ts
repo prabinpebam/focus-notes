@@ -1369,6 +1369,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   // The time of day, not "2 min ago": nothing repeats on a timer at rest to keep a relative time true (PRF-04).
   const timeOfDay = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
   const when = (at: number) => timeOfDay.format(at);
+  const backupDate = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
   viewModels.register({
     id: "vm.saveState",
     schema: {
@@ -1378,6 +1379,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         interactive: { type: "boolean" },
         state: { type: "string", enum: ["savedLocal", "pending", "syncing", "synced", "offline", "error"] },
         label: { type: "string" }, text: { type: "string" },
+        backingUp: { type: "boolean" }, canBackUp: { type: "boolean" },
+        backupTime: { type: "string" }, waitingText: { type: "string" }, backupReason: { type: "string" },
+        icon: { type: "string" }, tone: { type: "string", enum: ["neutral", "accent", "danger", "success"] },
       },
     },
     reads: ["sync", "note.saveState", "note.path", "note.status"],
@@ -1387,9 +1391,18 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         : state === "synced" ? (s.sync.backedUpAt !== undefined ? catalog.format("save.state.synced", { time: when(s.sync.backedUpAt) }) : catalog.format("save.state.syncedNow"))
           : catalog.format(`save.state.${state}`);
       const text = !s.sync.asked || !catalog.has("save.label.done") ? "" : catalog.format(s.sync.asked === "done" ? "save.label.done" : "save.label.syncing");
-      // On the desktop, wherever a note is open; the browser keeps its notes itself (D-90). Without Git
-      // there's no cloud to save to, so the icon only says the note is saved here and can't be pressed.
-      return { visible: Boolean(bridge.sync) && Boolean(s.note.path) && s.note.status === "ready", interactive: Boolean(s.sync.git), state, label, text };
+      // The card opens even for local-only notes; its backup action explains when Git is unavailable.
+      const backingUp = state === "syncing";
+      return {
+        visible: Boolean(bridge.sync) && Boolean(s.note.path) && s.note.status === "ready", interactive: Boolean(bridge.sync), state, label, text,
+        backingUp, canBackUp: s.sync.git && !backingUp,
+        backupTime: s.sync.backedUpAt === undefined ? catalog.format("save.backup.unknown")
+          : catalog.format("save.backup.last", { time: backupDate.format(s.sync.backedUpAt) }),
+        waitingText: catalog.format(backingUp ? "save.backup.progress" : s.sync.waiting ? "save.backup.waiting" : "save.backup.current", { count: s.sync.waiting ?? 0 }),
+        backupReason: catalog.format(backingUp ? "save.backup.progress" : "save.backup.local"),
+        icon: state === "error" ? "warning" : state === "offline" ? "cloudOff" : backingUp ? "cloudUp" : state === "synced" ? "cloudCheck" : "cloud",
+        tone: state === "error" || state === "offline" ? "danger" : backingUp ? "accent" : state === "synced" ? "success" : "neutral",
+      };
     },
   });
 

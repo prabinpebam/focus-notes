@@ -298,8 +298,8 @@ export function registerBrowserFeatures(ctx: BrowserContext): { start(): Promise
       const why = isReadOnlyPath(s.note.path) ? "account.readOnly" : s.workspace.access === "migrate" ? "account.readOnlyOlder"
         : s.workspace.access === "newer" ? "account.readOnlyNewer" : "account.readOnlyUnreadable";
       const base = { about, readOnly, readOnlyText: readOnly ? catalog.format(why) : "" };
-      // The desktop: the GitHub login Git is signed in as, with the save state, Save to cloud, and Sign out (UI-12, D-89, D-132).
-      if (s.account.login) {
+      // The desktop uses the icon-only save control; browser account controls keep their existing menu.
+      if (s.account.login && bridge.platform === "web") {
         const save = viewModels.select("vm.saveState", s) as { label?: string } | undefined;
         const status = save?.label || catalog.format(s.sync.problem ? "account.syncProblem" : "account.synced");
         return {
