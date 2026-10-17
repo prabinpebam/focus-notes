@@ -81,12 +81,12 @@ test("EDT-11: typing shows saved here at once, then not backed up yet; Mod+Shift
   expect(changes.slice(0, 2), "saved here at once, then not backed up yet").toEqual(["savedLocal", "pending"]);
   await expect(saveIcon(page)).toHaveAccessibleName("Saved here · not backed up yet");
   await page.keyboard.press(`${mod}+Shift+S`);
-  await expect(saveIcon(page)).toContainText(/Backing up…|Backed up/, PROMPTLY);
+  // Icon only (UI-12): the state and the name say it, no label.
+  await expect.poll(() => stateOf(page), PROMPTLY).toMatch(/^(syncing|synced)$/);
   await expect.poll(() => remoteText(privateRemote), { timeout: 15_000 }).toBe("# Welcome\n\nFirst line. Cloud");
   await expect.poll(() => stateOf(page), PROMPTLY).toBe("synced");
   await noteFocused(page);
-  // The label closes again after a moment; the tooltip keeps the words.
-  await expect(saveIcon(page)).toHaveText("", { timeout: 5_000 });
+  await expect(saveIcon(page)).toHaveText("");
   await expect(saveIcon(page)).toHaveAccessibleName(/^Backed up at /);
   await noteFocused(page);
   await quit(l);

@@ -86,7 +86,14 @@ test("EDT-11: the open card and border ring track backup, including reopening mi
     const card = page.getByRole("dialog", { name: "Backup", exact: true });
     await expect(card).toBeVisible();
     const backup = card.getByRole("button", { name: "Backup to GitHub", exact: true });
-    await expect(backup).toBeEnabled();
+    // The app's own first status (no Git in this throwaway folder) can land after ours: say it again until it holds.
+    await expect(async () => {
+      await app.evaluate(({ BrowserWindow }) => {
+        const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
+        win.webContents.send("sync:status", { git: true, state: "idle", waiting: 0 });
+      });
+      await expect(backup).toBeEnabled({ timeout: 500 });
+    }).toPass({ timeout: 10_000 });
     await backup.click();
     await expect(icon).toHaveAttribute("data-state", "syncing");
     await expect(icon.locator("[data-backup-ring]")).toBeVisible();
