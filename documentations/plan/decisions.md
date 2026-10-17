@@ -14,6 +14,14 @@ Every assumption and design choice these docs make beyond the literal [seed spec
 | **Proposed** | Proposed in these docs to close a gap. Treated as the plan until the owner changes it. |
 | **Superseded** | Replaced by a later decision, kept for history. |
 
+## Implementation updates
+
+| Update (17 October 2026) | Status | Implementation | Affected pages |
+| --- | --- | --- | --- |
+| Window input (D-147) | Proposed; built | Window move and resize pointer events are captured before a surface can stop them from bubbling. Tests cover moving and all eight resize handles while an account check is pending. | [Perceived performance](../architecture/perceived-performance.md) |
+| Bounded account checks (D-149) | Proposed; built | Desktop GitHub API requests have a 10-second deadline, including response bodies, while preserving caller cancellation. A stalled account check shows the existing offline problem and can be retried, instead of waiting indefinitely. | [Desktop and Git](../architecture/desktop-and-git.md), [Perceived performance](../architecture/perceived-performance.md) |
+| Portable IPC identity (D-147, D-149) | Proposed; built | The portable's short temporary path exposed a raw URL comparison: Chromium's literal `~` did not equal Node's `%7E`, so both setup and window IPC were rejected. Compare the decoded path with the exact renderer entry file, preserving Windows path case rules and refusing every other file or protocol. Verify packaged setup and frame commands from a tilde-containing path, not just development journeys or CLI smoke tests. | [Desktop and Git](../architecture/desktop-and-git.md) |
+
 ## Owner decisions
 
 | ID | Decision | Status | Affects |

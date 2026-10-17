@@ -5,6 +5,8 @@
  * (`electronFuses` in package.json) and read back from the packaged executable by the tests.
  */
 
+import { fileURLToPath } from "node:url";
+
 /** The renderer's web preferences: isolated, sandboxed, no Node, the web's own security on. */
 export const HARDENED_WEB_PREFERENCES = {
   contextIsolation: true,
@@ -20,6 +22,16 @@ export const HARDENED_WEB_PREFERENCES = {
 /** No network: only the app's own files, inline data, and DevTools may load (PRV-01, PKG-06). */
 export function allowedRequest(url: string): boolean {
   return url.startsWith("file:") || url.startsWith("devtools:") || url.startsWith("data:");
+}
+
+/** Compare file identities, not URL spellings: Chromium leaves "~" literal, Node encodes it as "%7E". */
+export function isAppPage(url: string, pagePath: string, windows = process.platform === "win32"): boolean {
+  try {
+    const path = fileURLToPath(url, { windows });
+    return windows ? path.toLowerCase() === pagePath.toLowerCase() : path === pagePath;
+  } catch {
+    return false;
+  }
 }
 
 /** Addresses a note's link may open in the browser: http, https, and mailto, well formed (EDT-13). */

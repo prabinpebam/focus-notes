@@ -17,8 +17,12 @@ export async function githubToken(git: GitRunner, cwd: string): Promise<string |
 }
 
 /** The API's fetch: requests may go only to api.github.com, whatever a caller asks (PRV-01). */
+export const GITHUB_TIMEOUT_MS = 10_000;
+
 export const githubFetch = (base: (input: string, init?: RequestInit) => Promise<Response> = (i, init) => fetch(i, init)) =>
   (input: string, init?: RequestInit): Promise<Response> => {
     if (!input.startsWith("https://api.github.com/")) return Promise.reject(new Error("Only api.github.com may be called"));
-    return base(input, { ...init, redirect: "error" });
+    const timeout = AbortSignal.timeout(GITHUB_TIMEOUT_MS);
+    const signal = init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+    return base(input, { ...init, redirect: "error", signal });
   };

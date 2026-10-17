@@ -488,6 +488,41 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
   }
 });
 
+test("Connect: a stalled account request times out, keeps the frame usable, and can be retried", async () => {
+  const w = await world({ gcm: true });
+  w.fakes.store(w.gh.token);
+  const user = network(w).hold("GET /user");
+  const l = await begin(w);
+  const { page } = l;
+  try {
+    await getStarted(page);
+    await user.reached;
+    await heading(page, "Checking this computer");
+    if (process.platform !== "darwin") {
+      expect(await bandStartsMove(l.app, page)).toEqual(["start:move", "end:move"]);
+      for (const edge of ["n", "s", "e", "w", "ne", "nw", "se", "sw"]) {
+        const handle = page.locator(`[data-window-handle="${edge}"]`);
+        await handle.dispatchEvent("pointerdown", { pointerId: 47, button: 0, buttons: 1, screenX: 200, screenY: 100 });
+        await handle.dispatchEvent("pointerup", { pointerId: 47, button: 0, buttons: 0, screenX: 200, screenY: 100 });
+      }
+      await expect.poll(() => l.app.evaluate(() => (globalThis as unknown as { bandMoves: string[] }).bandMoves.slice())).toEqual([
+        "start:move", "end:move", ...["n", "s", "e", "w", "ne", "nw", "se", "sw"].flatMap((edge) => [`start:${edge}`, `end:${edge}`]),
+      ]);
+    }
+    await expect(page.getByText("Can't reach GitHub. Check your internet connection, then try again.", { exact: true })).toBeVisible({ timeout: 15_000 });
+    user.release();
+    await page.keyboard.press("Escape");
+    await heading(page, "A quiet place to write");
+    await getStarted(page);
+    await expect(button(page, "Continue as Ada")).toBeVisible({ timeout: 15_000 });
+  } finally {
+    user.release();
+    await quit(l);
+    w.server.closeAllConnections();
+    w.server.close();
+  }
+});
+
 test("existing notes: checking, initials, We found your notes with several, More options, Open from GitHub, Open a folder", async () => {
   test.setTimeout(300_000);
   const w = await world({ gcm: true });
@@ -505,6 +540,7 @@ test("existing notes: checking, initials, We found your notes with several, More
     await getStarted(page);
     await heading(page, "Checking this computer");
     await shot(l, "connect-checking");
+    if (process.platform !== "darwin") expect(await bandStartsMove(l.app, page)).toEqual(["start:move", "end:move"]);
     user.release();
     await expect(button(page, "Continue as Ada")).toBeFocused({ timeout: 20_000 });
     await shot(l, "connect-found-initials");

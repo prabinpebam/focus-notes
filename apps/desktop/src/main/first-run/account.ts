@@ -113,7 +113,10 @@ export class Account {
       const avatar = await this.#d.avatar?.(u.avatar_url, u.id).catch(() => undefined);
       return { ...toAccount(u), ...(avatar ? { avatar } : {}) };
     } catch (e) {
-      if (e instanceof GitHubError && e.status === 0) return "offline";
+      if (e instanceof GitHubError && e.status === 0) {
+        this.#d.log?.("account: verify offline");
+        return "offline";
+      }
       if (e instanceof GitHubError && (e.unauthorized || e.status === 403)) return "invalid";
       return "failed";
     }

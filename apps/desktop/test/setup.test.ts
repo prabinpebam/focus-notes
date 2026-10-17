@@ -14,7 +14,7 @@ import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 import { SetupEngine, SECRET_NAME, TEMPLATE, checkOptions, notesRepos, problemOf, type SetupDeps } from "../src/main/setup/engine.ts";
 import { GitHubApi, GitHubError } from "@focus-notes/github";
 import { DEPLOY_KEY_TITLE, deployKeyPair } from "../src/main/setup/deploy-key.ts";
-import { CREDENTIAL_QUERY, githubFetch, githubToken } from "../src/main/setup/credential.ts";
+import { CREDENTIAL_QUERY, GITHUB_TIMEOUT_MS, githubFetch, githubToken } from "../src/main/setup/credential.ts";
 import type { GitCall } from "../src/main/git/run.ts";
 
 const OPTIONS = (folder = join(tmpdir(), "fn-setup-unused")): SetupOptions => ({ instance: "notes", private: "notes-private", folder, publish: true });
@@ -132,6 +132,37 @@ describe("SEC-03: the token comes from Git's credential helper, in memory only",
     await expect(f("https://example.com/user")).rejects.toThrow(/api\.github\.com/);
     await expect(f("http://api.github.com/user")).rejects.toThrow();
     expect(seen).toHaveLength(1);
+  });
+
+  it("preserves caller cancellation alongside the API timeout", async () => {
+    const controller = new AbortController();
+    let signal: AbortSignal | null | undefined;
+    const f = githubFetch(async (_i, init) => {
+      signal = init?.signal;
+      return new Response("{}");
+    });
+    await f("https://api.github.com/user", { signal: controller.signal });
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal).not.toBe(controller.signal);
+    controller.abort();
+    expect(signal?.aborted).toBe(true);
+
+    await f("https://api.github.com/user");
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal?.aborted).toBe(false);
+  });
+
+  it("stops a stalled response body within the API deadline", { timeout: 15_000 }, async () => {
+    const f = githubFetch(async (_i, init) => new Response(new ReadableStream({
+      start(stream) {
+        init?.signal?.addEventListener("abort", () => stream.error(init.signal?.reason), { once: true });
+      },
+    })));
+    const start = Date.now();
+    const response = await f("https://api.github.com/user");
+    await expect(response.text()).rejects.toMatchObject({ name: "TimeoutError" });
+    expect(Date.now() - start).toBeGreaterThanOrEqual(GITHUB_TIMEOUT_MS);
+    expect(Date.now() - start).toBeLessThan(GITHUB_TIMEOUT_MS + 3_000);
   });
 });
 

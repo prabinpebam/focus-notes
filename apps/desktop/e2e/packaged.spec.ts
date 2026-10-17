@@ -5,8 +5,9 @@
  * Skipped without it, so the suite runs on the build as usual.
  */
 import { test, expect } from "./fixtures.ts";
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
 import { FuseV1Options, getCurrentFuseWire } from "@electron/fuses";
 // The wire's bytes: '1' a fuse turned on, '0' turned off (@electron/fuses doesn't export its FuseState).
 const FuseState = { ENABLE: 0x31, DISABLE: 0x30 } as const;
@@ -47,4 +48,37 @@ test("SEC-01: the packaged executable's Electron fuses: no Node mode, no NODE_OP
   expect(wire[FuseV1Options.EnableCookieEncryption]).toBe(FuseState.ENABLE);
   expect(wire[FuseV1Options.EnableEmbeddedAsarIntegrityValidation]).toBe(FuseState.ENABLE);
   expect(wire[FuseV1Options.OnlyLoadAppFromAsar]).toBe(FuseState.ENABLE);
+});
+
+test("packaged: setup and window IPC work from a portable-style path containing a tilde", async () => {
+  test.skip(process.platform !== "win32", "Windows portable extraction paths");
+  test.setTimeout(90_000);
+  const original = process.env.FOCUS_NOTES_E2E_EXE!;
+  const folder = mkdtempSync(join(tmpdir(), "fn-portable~"));
+  cpSync(dirname(original), folder, { recursive: true });
+  process.env.FOCUS_NOTES_E2E_EXE = join(folder, "focus-notes.exe");
+  const dirs = tempDirs();
+  let l: Awaited<ReturnType<typeof launch>> | undefined;
+  try {
+    l = await launch(dirs, {}, { firstRun: true });
+    const { page } = l;
+    // The packaged app ignores fake-API environment variables: keep this sender-identity test offline.
+    await l.app.evaluate(({ ipcMain }) => {
+      ipcMain.removeHandler("firstRun:account");
+      ipcMain.handle("firstRun:account", () => ({ gcm: false, gh: true }));
+    });
+    await expect(page.getByRole("button", { name: "Get started", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => window.focusNotes.firstRun!.git())).toMatchObject({ installed: true, ok: true });
+    for (const mode of ["move", "size"] as const) {
+      await page.evaluate((m) => window.focusNotes.window!.keyboard(m), mode);
+      await expect.poll(() => page.evaluate(() => window.focusNotes.window!.state())).toMatchObject({ keyboard: mode });
+      await page.evaluate(() => window.focusNotes.window!.key("Escape", false));
+    }
+    await page.getByRole("button", { name: "Get started", exact: true }).click();
+    await expect(page.getByRole("main", { name: "Set up Focus Notes" }).getByRole("heading")).toHaveText(/^(Connect your GitHub account|Install the sign-in helper)$/, { timeout: 20_000 });
+    expect(JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8")).firstRun).toBe("connect");
+  } finally {
+    process.env.FOCUS_NOTES_E2E_EXE = original;
+    if (l) await quit(l);
+  }
 });

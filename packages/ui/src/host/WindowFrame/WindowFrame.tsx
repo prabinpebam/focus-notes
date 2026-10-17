@@ -150,11 +150,12 @@ export function WindowFrame({ frame = "native", resizable, fullScreen = false, m
       events.current.onMenu?.({ x: -1, y: -1 });
     };
     document.addEventListener("keydown", keydown, true);
-    document.addEventListener("pointerdown", down);
-    document.addEventListener("pointermove", move);
-    document.addEventListener("pointerup", end);
-    document.addEventListener("pointercancel", end);
-    document.addEventListener("lostpointercapture", end);
+    // Window manipulation must reach the frame even when a surface stops its own pointer events.
+    document.addEventListener("pointerdown", down, true);
+    document.addEventListener("pointermove", move, true);
+    document.addEventListener("pointerup", end, true);
+    document.addEventListener("pointercancel", end, true);
+    document.addEventListener("lostpointercapture", end, true);
     document.addEventListener("dblclick", dblclick);
     document.addEventListener("contextmenu", contextmenu);
     document.addEventListener("pointerover", over);
@@ -163,11 +164,11 @@ export function WindowFrame({ frame = "native", resizable, fullScreen = false, m
     return () => {
       cancelAnimationFrame(frameId);
       document.removeEventListener("keydown", keydown, true);
-      document.removeEventListener("pointerdown", down);
-      document.removeEventListener("pointermove", move);
-      document.removeEventListener("pointerup", end);
-      document.removeEventListener("pointercancel", end);
-      document.removeEventListener("lostpointercapture", end);
+      document.removeEventListener("pointerdown", down, true);
+      document.removeEventListener("pointermove", move, true);
+      document.removeEventListener("pointerup", end, true);
+      document.removeEventListener("pointercancel", end, true);
+      document.removeEventListener("lostpointercapture", end, true);
       document.removeEventListener("dblclick", dblclick);
       document.removeEventListener("contextmenu", contextmenu);
       document.removeEventListener("pointerover", over);

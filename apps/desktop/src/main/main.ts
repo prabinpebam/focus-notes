@@ -22,7 +22,6 @@ import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import { release as osRelease } from "node:os";
 import { readWorkspaceFormat } from "@focus-notes/core/workspace-format";
@@ -63,7 +62,7 @@ import { RecoveryJournal, restoreJournal } from "./journal.ts";
 import { watchTree, type TreeWatcher } from "./watch-tree.ts";
 import { JOURNEY_WINDOW_OPTIONS, keepOutOfTheWay } from "./window/journey-window.ts";
 import { watchCompositing } from "./window/compositing.ts";
-import { allowedRequest, HARDENED_WEB_PREFERENCES, isWebLink } from "./hardening.ts";
+import { allowedRequest, HARDENED_WEB_PREFERENCES, isAppPage, isWebLink } from "./hardening.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
 /** Windows and Linux: the transparent window with app-built window management; macOS: the system's (D-14). */
@@ -877,10 +876,10 @@ const settingsFile = () => join(privateDir(), ".focus-notes", "settings.json");
 const settingsAvailable = () => isWorkspace() && existsSync(privateDir());
 
 /** The renderer page every IPC request must come from (review issue 4). */
-const appPageUrl = () => pathToFileURL(join(import.meta.dirname, "..", "renderer", "index.html")).href;
+const appPagePath = join(import.meta.dirname, "..", "renderer", "index.html");
 function fromApp(e: IpcMainInvokeEvent | IpcMainEvent): boolean {
   const url = e.senderFrame?.url ?? "";
-  return url.split("?")[0]!.split("#")[0] === appPageUrl();
+  return isAppPage(url, appPagePath);
 }
 /**
  * The strings no diagnostic report may hold (D-140): Git's user.name and user.email and each

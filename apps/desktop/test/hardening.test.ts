@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { FuseV1Options, getCurrentFuseWire } from "@electron/fuses";
 // The wire's bytes: '1' a fuse turned on, '0' turned off (@electron/fuses doesn't export its FuseState).
 const FuseState = { ENABLE: 0x31, DISABLE: 0x30 } as const;
-import { allowedRequest, HARDENED_WEB_PREFERENCES, isWebLink } from "../src/main/hardening.ts";
+import { allowedRequest, HARDENED_WEB_PREFERENCES, isAppPage, isWebLink } from "../src/main/hardening.ts";
 // The CSP every generated entry page carries (packages/ui/entry/template.mjs, plain JavaScript).
 const template = "../../../packages/ui/entry/template.mjs";
 const { DEFAULT_CSP } = (await import(template)) as { DEFAULT_CSP: string };
@@ -32,6 +32,27 @@ const FUSES = [
 ] as const;
 
 describe("SEC-01: the Electron hardening checklist", () => {
+  it("accepts the same app file when Chromium and Node spell a portable short-path URL differently", () => {
+    const path = "C:\\Users\\PRABIN~2\\AppData\\Local\\Temp\\portable\\resources\\app.asar\\out\\renderer\\index.html";
+    for (const user of ["PRABIN~2", "PRABIN%7E2", "PRABIN%7e2"]) {
+      expect(isAppPage(`file:///C:/Users/${user}/AppData/Local/Temp/portable/resources/app.asar/out/renderer/index.html?platform=windows#setup`, path, true)).toBe(true);
+    }
+    expect(isAppPage("file:///c:/users/prabin~2/appdata/local/temp/portable/resources/app.asar/out/renderer/index.html", path, true)).toBe(true);
+    expect(isAppPage("file:///C:/Users/Prabin%20Pebam/app/index.html", "C:\\Users\\Prabin Pebam\\app\\index.html", true)).toBe(true);
+    expect(isAppPage("file:///tmp/app/index.html?platform=linux", "/tmp/app/index.html", false)).toBe(true);
+    expect(isAppPage("file:///tmp/App/index.html", "/tmp/app/index.html", false)).toBe(false);
+  });
+
+  it("still refuses requests from any other file, host, protocol or malformed file URL", () => {
+    const path = "C:\\app\\out\\renderer\\index.html";
+    for (const url of [
+      "", "not a URL", "https://example.com/out/renderer/index.html",
+      "file:///C:/other/out/renderer/index.html", "file:///C:/app/out/renderer/index.html/other",
+      "file://server/app/out/renderer/index.html", "file:///C:/app/out/renderer/index%2F.html",
+      "file:///C:/app/out/renderer/index.html%00", "file:///C:/app/out/renderer/%",
+    ]) expect(isAppPage(url, path, true), url).toBe(false);
+  });
+
   it("SEC-01: the renderer is isolated and sandboxed, with no Node and the web's security on", () => {
     expect(HARDENED_WEB_PREFERENCES).toMatchObject({
       contextIsolation: true,
