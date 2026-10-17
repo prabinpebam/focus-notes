@@ -263,7 +263,11 @@ describe("pinning the panel (D-161)", () => {
     app.store.update((s) => ({ ...s, account: { login: "Ada" } }));
     await app.commands.run("files.open");
     const where = () => (app.viewModels.select("vm.files", app.store.state) as { source: Record<string, unknown> }).source;
-    expect(where()).toEqual({ visible: true, icon: "github", title: "my-notes", login: "@Ada", hasLogin: true, label: "Notes from ada/my-notes, signed in as @Ada", revealable: true });
+    // Without a browser to open links in, the name and @login are plain text.
+    expect(where()).toEqual({
+      visible: true, icon: "github", title: "my-notes", login: "@Ada", hasLogin: true, label: "Notes from ada/my-notes, signed in as @Ada", revealable: true,
+      repoLink: false, repoLabel: "Open ada/my-notes on GitHub", profileLink: false, profileLabel: "Open @Ada's profile on GitHub", titlePlain: true, loginPlain: true,
+    });
     await app.commands.run("files.revealFolder");
     expect(revealed).toEqual([1]);
     // Someone else's repository keeps its owner; signed out, no login.
@@ -274,5 +278,36 @@ describe("pinning the panel (D-161)", () => {
     expect(where()).toMatchObject({ visible: true, icon: "folder", title: "my-notes" });
     app.store.update((s) => ({ ...s, workspace: { ...s.workspace, folder: "" } }));
     expect(where()).toMatchObject({ visible: false, revealable: false });
+  });
+});
+
+describe("Files opens the repository and the profile on GitHub, and Browse files leaves Recently deleted (D-189)", () => {
+  it("the name opens the repository, @login the profile, only through the shell", async () => {
+    const f = setup({ "private:welcome.md": "# Welcome\n" });
+    const opened: string[] = [];
+    f.bridge.openLink = (url) => void opened.push(url);
+    f.bridge.workspace!.info = async () => ({ folder: "C:\\Notes\\notes", format: '{"formatVersion":1}', repo: "ada/notes" });
+    const app = await started(f);
+    app.store.update((s) => ({ ...s, account: { login: "ada" } }));
+    await app.commands.run("files.open");
+    expect((app.viewModels.select("vm.files", app.store.state) as { source: Record<string, unknown> }).source).toMatchObject({ repoLink: true, titlePlain: false, profileLink: true, loginPlain: false });
+    await app.commands.run("files.openRepo");
+    await app.commands.run("files.openProfile");
+    expect(opened).toEqual(["https://github.com/ada/notes", "https://github.com/ada"]);
+  });
+  it("while Recently deleted shows, its footer reads Browse files and goes back to the tree", async () => {
+    const f = setup({ "private:welcome.md": "# Welcome\n" });
+    f.bridge.workspace!.deleted = async () => [];
+    f.bridge.workspace!.restore = async () => [];
+    const app = await started(f);
+    app.store.update((s) => ({ ...s, sync: { ...s.sync, git: true } }));
+    await app.commands.run("files.open");
+    const deleted = () => app.viewModels.select("vm.deleted", app.store.state) as { open: boolean; footer: string; footerIcon: string };
+    expect(deleted()).toMatchObject({ open: false, footerIcon: "history" });
+    expect(deleted().footer).toMatch(/^Recently deleted/);
+    await app.commands.run("files.toggleDeleted");
+    expect(deleted()).toMatchObject({ open: true, footer: "Browse files", footerIcon: "folder" });
+    await app.commands.run("files.toggleDeleted");
+    expect(deleted().open).toBe(false);
   });
 });

@@ -261,6 +261,15 @@ test("EDT-13: Mod+K edits links in place; the hover card opens, copies, edits, a
   expect(await axeViolations(page)).toEqual([]);
   await page.screenshot({ path: "../../test-results/screens/link-editor.png" });
 
+  // A press elsewhere in the note puts it away, the caret going where it pressed (EDT-13, D-189).
+  await editor.getByText("More text below the line.").click();
+  await expect(linkEditor).toBeHidden();
+  await expect(editor).toBeFocused();
+  expect(await selectionText(page)).toBe("");
+  await dragSelect(page, "docs");
+  await page.keyboard.press(`${mod}+k`);
+  await expect(url).toBeFocused();
+
   // An invalid address is refused inline; the editor stays.
   await page.keyboard.type("javascript:alert(1)");
   await page.keyboard.press("Enter");

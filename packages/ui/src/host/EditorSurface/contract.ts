@@ -45,6 +45,7 @@ export const contract = defineContract({
       block: "text", codeBlock: "boolean", inlineCode: "boolean", oneBlock: "boolean", href: "text", table: "boolean",
     } },
     linkEdit: { payload: { href: "text", selected: "boolean" } },
+    linkDismiss: {},
     openLink: { payload: { href: "text" } },
     slash: { payload: { open: "boolean", query: "text", valid: "text" } },
     slashMove: { payload: { delta: "number" } },

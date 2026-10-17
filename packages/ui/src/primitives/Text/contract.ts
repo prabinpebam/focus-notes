@@ -11,9 +11,10 @@ export const contract = defineContract({
     lines: { kind: "enum", values: ["none", "one", "two", "three"], default: "none" },
     announce: { kind: "boolean", default: false, description: "A polite live region, for counts and results." },
     personal: { kind: "boolean", default: false, description: "The person's own words (their invite message), not the interface's: the visual score doesn't count them (D-127, D-143)." },
+    label: { kind: "message", description: "Pressable (D-189): what pressing it opens, its accessible name and tooltip (\"Open ada/notes on GitHub\")." },
     inset: { kind: "enum", values: ["none", "control"], default: "none", description: "control: inset like a small button's label, so a text that leads a row of buttons (the link card) lines up with them (D-111)." },
   },
-  events: {},
+  events: { press: {} },
   slots: {},
   states: ["rest"],
   tokens: "cmp.text.*",
@@ -23,5 +24,6 @@ export const contract = defineContract({
     ...["default", "muted", "accent", "danger", "warning", "success"].map((tone) => ({ name: `tone ${tone}`, props: { value: { t: "gallery.sample" }, tone } })),
     ...["none", "one", "two", "three"].map((lines) => ({ name: `lines ${lines}`, props: { value: { t: "gallery.long" }, lines } })),
     ...["none", "control"].map((inset) => ({ name: `inset ${inset}`, props: { value: { t: "gallery.sample" }, inset } })),
+    { name: "pressable", props: { value: { t: "gallery.sample" }, role: "emphasis", label: { t: "gallery.action" } } },
   ],
 });

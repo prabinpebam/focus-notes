@@ -79,6 +79,8 @@ export interface EditorSurfaceProps {
   onFormat?: (payload: FormatPayload) => void;
   /** Answers the link editor's open request with the link and whether text was selected. */
   onLinkEdit?: (payload: { href: string; selected: boolean }) => void;
+  /** A press in the note while the link editor is open: put it away (EDT-13). */
+  onLinkDismiss?: () => void;
   /** Mod+click on a link (or a plain click in a read-only note). */
   onOpenLink?: (payload: { href: string }) => void;
   /** The `/query` the slash menu filters by, and the blocks valid there (EDT-06). */
@@ -151,7 +153,7 @@ export function EditorSurface({
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
   outlineWidth = 0, outlineResizeLabel, filesDock = false, filesWidth = 0, onOutlineResize, onFilesFit,
-  id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onFormat, onLinkEdit, onOpenLink, onSlash, onSlashMove, onPasteNotice,
+  id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
   onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
@@ -430,6 +432,20 @@ export function EditorSurface({
     setSelectionGhost(editor, Boolean(linkEditing));
     tracker.current?.holdSelection(Boolean(linkEditing));
   }, [editor, linkEditing]);
+  // A press anywhere in the note while the link editor is open puts it away (EDT-13): the press then
+  // places the caret or starts a selection as it would anyway.
+  const linkDismissRef = useRef(onLinkDismiss);
+  linkDismissRef.current = onLinkDismiss;
+  useEffect(() => {
+    const sc = scrollerRef.current;
+    if (!sc || !linkEditing) return;
+    const down = (e: PointerEvent) => {
+      if (e.button !== 0 || (e.target as Element | null)?.closest?.("[data-key-scope=linkEditor]")) return;
+      linkDismissRef.current?.();
+    };
+    sc.addEventListener("pointerdown", down, true);
+    return () => sc.removeEventListener("pointerdown", down, true);
+  }, [linkEditing]);
 
   useEffect(() => {
     if (!focusMode || !editor || !columnRef.current) return;

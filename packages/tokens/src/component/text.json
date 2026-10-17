@@ -9,5 +9,10 @@
     "caption": { "$value": "{font.uiCaption}" }, "secondary": { "$value": "{font.uiSecondary}" }, "body": { "$value": "{font.uiBody}" },
     "label": { "$value": "{font.uiBody}" }, "emphasis": { "$value": "{font.uiEmphasis}" }, "title": { "$value": "{font.uiTitle}" }, "lead": { "$value": "{font.uiLead}" } },
   "lineHeight": { "$type": "number", "$value": "{font.uiLineHeight}" },
-  "weight": { "$type": "fontWeight", "regular": { "$value": "{font.weightRegular}" }, "strong": { "$value": "{font.weightSemibold}" } }
+  "weight": { "$type": "fontWeight", "regular": { "$value": "{font.weightRegular}" }, "strong": { "$value": "{font.weightSemibold}" } },
+  "link": { "$description": "A text that opens something when pressed (D-189): underlined on hover, with the controls' focus ring.",
+    "radius": { "$type": "dimension", "$value": "{radius.control}" },
+    "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
+    "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" },
+    "focusRing": { "$type": "color", "$value": "{color.focusRing}" } }
 } } }

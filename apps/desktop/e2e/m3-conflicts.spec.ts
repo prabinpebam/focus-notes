@@ -104,14 +104,15 @@ test("FIL-12: a sync conflict offers Resolve; Take the other version by keyboard
   const footer = sheet.getByRole("button", { name: /^Recently deleted/ });
   await tabTo(page, footer, 20);
   await page.keyboard.press("Enter");
-  await expect(footer).toHaveAttribute("aria-pressed", "true");
+  // Showing the list, the footer leads back to the tree (D-189).
+  await expect(sheet.getByRole("button", { name: "Browse files" })).toBeVisible();
   await expect(sheet.getByRole("status").filter({ hasText: "1 note deleted in the last 30 days." })).toBeVisible({ timeout: 15_000 });
   await expect(sheet.getByText(/^Welcome \(your version, /)).toBeVisible();
   expect(await settledAxe(page)).toEqual([]);
   await page.screenshot({ path: "../../test-results/screens/recently-deleted.png" });
-  // Tab wraps past the trigger (and the window buttons on Windows and Linux), Open local folder (D-188) and the header's New note,
-  // New folder, Sort (D-175) and pin (D-161) to the panel's list: 13 stops on Windows.
-  await tabTo(page, sheet.getByRole("button", { name: "Restore", exact: true }), 13);
+  // Tab wraps past the trigger (and the window buttons on Windows and Linux), where the notes come from (its links and
+  // Open local folder, D-188, D-189), the header's way back to Files, New note, New folder, Sort (D-175) and pin (D-161) to the panel's list.
+  await tabTo(page, sheet.getByRole("button", { name: "Restore", exact: true }), 16);
   await page.keyboard.press("Enter");
   await expect(page.locator("#toasts").getByText(/^Restored “Welcome \(your version, .+\)” to “Private”\.$/)).toBeVisible({ timeout: 15_000 });
   // Back in the tree, selected and focused, and on disk with this computer's text.

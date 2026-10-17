@@ -448,7 +448,13 @@ describe("FIL-10: Recently deleted in the Files sheet", () => {
     await done(app);
     d = app.viewModels.select("vm.deleted", app.store.state) as typeof d;
     expect(d.open).toBe(true);
-    expect(d.footer).toBe("Recently deleted · 2");
+    // While the list shows, the footer leads back to the tree (D-189); closed, it has the count.
+    expect(d.footer).toBe("Browse files");
+    await app.commands.run("files.hideDeleted");
+    expect((app.viewModels.select("vm.deleted", app.store.state) as typeof d).footer).toBe("Recently deleted · 2");
+    await app.commands.run("files.showDeleted");
+    await done(app);
+    d = app.viewModels.select("vm.deleted", app.store.state) as typeof d;
     expect(d.status).toBe("2 notes deleted in the last 30 days.");
     expect(d.groups.map((g) => g.label)).toEqual(["Today", "Thursday, October 1, 2026"]);
     expect(d.groups[0]!.notes[0]!.title).toBe("Spec ideas");

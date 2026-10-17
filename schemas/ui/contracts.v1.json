@@ -55,6 +55,10 @@
           "default": false,
           "description": "The person's own words (their invite message), not the interface's: the visual score doesn't count them (D-127, D-143)."
         },
+        "label": {
+          "kind": "message",
+          "description": "Pressable (D-189): what pressing it opens, its accessible name and tooltip (\"Open ada/notes on GitHub\")."
+        },
         "inset": {
           "kind": "enum",
           "values": [
@@ -65,7 +69,9 @@
           "description": "control: inset like a small button's label, so a text that leads a row of buttons (the link card) lines up with them (D-111)."
         }
       },
-      "events": {},
+      "events": {
+        "press": {}
+      },
       "slots": {},
       "states": [
         "rest"
@@ -245,6 +251,18 @@
             },
             "inset": "control"
           }
+        },
+        {
+          "name": "pressable",
+          "props": {
+            "value": {
+              "t": "gallery.sample"
+            },
+            "role": "emphasis",
+            "label": {
+              "t": "gallery.action"
+            }
+          }
         }
       ]
     },
@@ -256,6 +274,15 @@
         "value": {
           "kind": "message",
           "required": true
+        },
+        "back": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Pressable, it leads back (D-189): a chevron before it."
+        },
+        "label": {
+          "kind": "message",
+          "description": "Pressable (D-189): what pressing it does, its accessible name (\"Back to Files\")."
         },
         "level": {
           "kind": "enum",
@@ -269,7 +296,9 @@
           "description": "display: the interface ramp's largest size, a full-window onboarding step's title (D-126). It is an h1."
         }
       },
-      "events": {},
+      "events": {
+        "press": {}
+      },
       "slots": {},
       "states": [
         "rest"
@@ -9145,6 +9174,7 @@
             "selected": "boolean"
           }
         },
+        "linkDismiss": {},
         "openLink": {
           "payload": {
             "href": "text"

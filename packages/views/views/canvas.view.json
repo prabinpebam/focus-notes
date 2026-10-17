@@ -934,6 +934,9 @@
               }
             }
           },
+          "linkDismiss": {
+            "run": "link.dismiss"
+          },
           "linkEdit": {
             "run": "link.openEditor",
             "args": {
@@ -4001,12 +4004,36 @@
                             },
                             "role": "emphasis",
                             "lines": "one"
+                          },
+                          "when": {
+                            "get": "vm.files.source.titlePlain"
                           }
                         },
                         {
                           "type": "Text",
                           "when": {
-                            "get": "vm.files.source.hasLogin"
+                            "get": "vm.files.source.repoLink"
+                          },
+                          "props": {
+                            "value": {
+                              "get": "vm.files.source.title"
+                            },
+                            "role": "emphasis",
+                            "lines": "one",
+                            "label": {
+                              "get": "vm.files.source.repoLabel"
+                            }
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.openRepo"
+                            }
+                          }
+                        },
+                        {
+                          "type": "Text",
+                          "when": {
+                            "get": "vm.files.source.loginPlain"
                           },
                           "props": {
                             "value": {
@@ -4015,6 +4042,28 @@
                             "role": "caption",
                             "tone": "muted",
                             "lines": "one"
+                          }
+                        },
+                        {
+                          "type": "Text",
+                          "when": {
+                            "get": "vm.files.source.profileLink"
+                          },
+                          "props": {
+                            "value": {
+                              "get": "vm.files.source.login"
+                            },
+                            "role": "caption",
+                            "tone": "muted",
+                            "lines": "one",
+                            "label": {
+                              "get": "vm.files.source.profileLabel"
+                            }
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.openProfile"
+                            }
                           }
                         }
                       ]
@@ -4057,13 +4106,42 @@
                   },
                   "cases": {
                     "false": {
-                      "type": "Heading",
-                      "props": {
-                        "level": "2",
-                        "value": {
-                          "t": "files.heading"
+                      "type": "Inline",
+                      "children": [
+                        {
+                          "type": "Heading",
+                          "props": {
+                            "level": "2",
+                            "value": {
+                              "t": "files.heading"
+                            }
+                          },
+                          "when": {
+                            "get": "vm.deleted.closed"
+                          }
+                        },
+                        {
+                          "type": "Heading",
+                          "when": {
+                            "get": "vm.deleted.open"
+                          },
+                          "props": {
+                            "level": "2",
+                            "value": {
+                              "t": "files.heading"
+                            },
+                            "back": true,
+                            "label": {
+                              "t": "files.backToFiles"
+                            }
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.hideDeleted"
+                            }
+                          }
                         }
-                      }
+                      ]
                     },
                     "true": {
                       "type": "Text",
@@ -4108,6 +4186,9 @@
                                 }
                               }
                             }
+                          },
+                          "when": {
+                            "get": "vm.deleted.closed"
                           }
                         },
                         {
@@ -4132,6 +4213,9 @@
                             "press": {
                               "run": "files.newNote"
                             }
+                          },
+                          "when": {
+                            "get": "vm.deleted.closed"
                           }
                         },
                         {
@@ -4156,6 +4240,9 @@
                             "press": {
                               "run": "files.newFolder"
                             }
+                          },
+                          "when": {
+                            "get": "vm.deleted.closed"
                           }
                         },
                         {
@@ -4315,10 +4402,8 @@
                   "get": "vm.deleted.footer"
                 },
                 "variant": "subtle",
-                "icon": "history",
-                "toggle": true,
-                "pressed": {
-                  "get": "vm.deleted.open"
+                "icon": {
+                  "get": "vm.deleted.footerIcon"
                 }
               },
               "on": {

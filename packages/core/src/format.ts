@@ -176,6 +176,8 @@ export function registerFormatting({ store, commands, viewModels, catalog, bridg
       editorAction("edit.focus");
     },
   });
+  // A press elsewhere in the note (EDT-13): the press places the caret, so focus is left to it.
+  commands.register({ id: "link.dismiss", title: "command.link.cancel", run: () => { if (store.state.ui.format.link.open) setLink({ open: false, error: "" }); } });
   commands.register<{ href?: string }>({
     id: "link.open", title: "command.link.open",
     // Only web links, and only through the shell: the app window never navigates (EDT-13).

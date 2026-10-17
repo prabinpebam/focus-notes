@@ -201,6 +201,18 @@ export function registerFiles(ctx: Ctx) {
       announce(catalog.format(on ? "files.pinnedNow" : "files.unpinnedNow"));
     },
   });
+  // The repository and the account on GitHub, in the browser (D-189): only through the shell, as every web link.
+  const github = (path: string) => `https://github.com/${path.split("/").map(encodeURIComponent).join("/")}`;
+  commands.register({
+    id: "files.openRepo", title: "command.files.openRepo", icon: "github", group: "files",
+    enabled: (s) => Boolean(bridge.openLink) && Boolean(s.workspace.repo),
+    run: () => { const r = store.state.workspace.repo; if (r) bridge.openLink?.(github(r)); },
+  });
+  commands.register({
+    id: "files.openProfile", title: "command.files.openProfile", icon: "github", group: "files",
+    enabled: (s) => Boolean(bridge.openLink) && Boolean(s.account.login),
+    run: () => { const l = store.state.account.login; if (l) bridge.openLink?.(github(l)); },
+  });
   // Open local folder (D-188): where the notes are saved, in the system's file manager.
   commands.register({
     id: "files.revealFolder", title: "command.files.revealFolder", icon: "open", group: "files",
@@ -855,7 +867,7 @@ export function registerFiles(ctx: Ctx) {
     ]),
   };
   const NO_ITEM = { id: "", label: "", shortcut: "", disabled: false };
-  const NO_SOURCE = { visible: false, icon: "folder", title: "", login: "", hasLogin: false, label: "", revealable: false };
+  const NO_SOURCE = { visible: false, icon: "folder", title: "", login: "", hasLogin: false, label: "", revealable: false, repoLink: false, repoLabel: "", profileLink: false, profileLabel: "", titlePlain: false, loginPlain: false };
   /**
    * Where the notes come from (D-188): the notes repository (its name alone when the signed-in account owns it), the account
    * as @login, and whether its folder can be opened. A folder without a GitHub repository shows the folder's name.
@@ -872,6 +884,9 @@ export function registerFiles(ctx: Ctx) {
       visible: true, icon: repo ? "github" : "folder", title, login: at, hasLogin: Boolean(at),
       label: catalog.format(at ? "files.source.label" : "files.source.labelLocal", { where: repo || folder, login: at }),
       revealable: Boolean(ws?.reveal) && Boolean(s.workspace.folder),
+      // The name opens the repository, @login the profile, on GitHub (D-189).
+      repoLink: Boolean(repo && bridge.openLink), repoLabel: repo ? catalog.format("files.source.openRepo", { repo }) : "",
+      profileLink: Boolean(login && bridge.openLink), profileLabel: login ? catalog.format("files.source.openProfile", { login }) : "", titlePlain: !(repo && bridge.openLink), loginPlain: Boolean(at) && !bridge.openLink,
     };
   };
   const CLOSED = { source: NO_SOURCE, open: false, pinned: false, docked: false, width: 0, pinIcon: "pin", pinLabel: "", pinShortcut: "", menu: [], menuLabel: "", focusRequest: 0, items: [], focusId: "", editValue: "", editError: "", editLabel: "", filter: "", empty: false, emptyText: "", selectedCount: 0, multi: false, selectionText: "", newNote: NO_ITEM, newFolder: NO_ITEM, canMakePublic: false, canMakePrivate: false };
@@ -900,7 +915,7 @@ export function registerFiles(ctx: Ctx) {
     schema: {
       type: "object",
       properties: {
-        source: { type: "object", properties: { visible: { type: "boolean" }, icon: { type: "string", enum: ["github", "folder"] }, title: { type: "string" }, login: { type: "string" }, hasLogin: { type: "boolean" }, label: { type: "string" }, revealable: { type: "boolean" } } },
+        source: { type: "object", properties: { visible: { type: "boolean" }, icon: { type: "string", enum: ["github", "folder"] }, title: { type: "string" }, login: { type: "string" }, hasLogin: { type: "boolean" }, repoLink: { type: "boolean" }, repoLabel: { type: "string" }, profileLink: { type: "boolean" }, profileLabel: { type: "string" }, titlePlain: { type: "boolean" }, loginPlain: { type: "boolean" }, label: { type: "string" }, revealable: { type: "boolean" } } },
         open: { type: "boolean" }, pinned: { type: "boolean" }, docked: { type: "boolean" }, width: { type: "number" }, pinIcon: { type: "string", enum: ["pin", "pinOff"] }, pinLabel: { type: "string" }, pinShortcut: { type: "string" },
         menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } }, menuLabel: { type: "string" },
         focusRequest: { type: "number" }, items: { type: "array", items: TREE_ITEM }, focusId: { type: "string" },
@@ -1021,7 +1036,7 @@ export function registerFiles(ctx: Ctx) {
     schema: {
       type: "object",
       properties: {
-        available: { type: "boolean" }, open: { type: "boolean" }, loading: { type: "boolean" }, footer: { type: "string" }, focus: { type: "number" },
+        available: { type: "boolean" }, open: { type: "boolean" }, loading: { type: "boolean" }, footer: { type: "string" }, footerIcon: { type: "string", enum: ["history", "folder"] }, focus: { type: "number" },
         closed: { type: "boolean" },
         groups: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, notes: { type: "array", items: DELETED_NOTE } } } },
         empty: { type: "boolean" }, status: { type: "string" },
@@ -1033,7 +1048,7 @@ export function registerFiles(ctx: Ctx) {
       const available = s.ui.files.open && canRestore(s);
       const count = r.notes?.length;
       const footer = available ? catalog.format(count === undefined ? "deleted.footer" : "deleted.footerCount", { count: count ?? 0 }) : "";
-      if (!available || !r.open) return { available, open: false, closed: true, loading: false, footer, focus: r.focus, groups: [], empty: false, status: "" };
+      if (!available || !r.open) return { available, open: false, closed: true, loading: false, footer, footerIcon: "history", focus: r.focus, groups: [], empty: false, status: "" };
       const now = new Date();
       const groups = groupByDay(r.notes ?? []).map((g) => ({
         id: g.day, label: dayLabel(g.at, now),
@@ -1044,7 +1059,8 @@ export function registerFiles(ctx: Ctx) {
         })),
       }));
       return {
-        available, open: true, closed: false, loading: r.loading, footer, focus: r.focus, groups, empty: !r.loading && !groups.length,
+        // Back to the tree from the list (D-189): the footer says where it goes.
+        available, open: true, closed: false, loading: r.loading, footer: catalog.format("deleted.browseFiles"), footerIcon: "folder", focus: r.focus, groups, empty: !r.loading && !groups.length,
         status: r.loading ? catalog.format("deleted.loading") : catalog.format("deleted.count", { count: count ?? 0 }),
       };
     },

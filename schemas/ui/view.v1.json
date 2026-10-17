@@ -646,6 +646,19 @@
                 }
               ]
             },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "inset": {
               "anyOf": [
                 {
@@ -670,7 +683,11 @@
         "on": {
           "type": "object",
           "additionalProperties": false,
-          "properties": {}
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
         }
       }
     },
@@ -720,6 +737,32 @@
                 }
               ]
             },
+            "back": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "level": {
               "anyOf": [
                 {
@@ -746,7 +789,11 @@
         "on": {
           "type": "object",
           "additionalProperties": false,
-          "properties": {}
+          "properties": {
+            "press": {
+              "$ref": "#/$defs/actions"
+            }
+          }
         }
       }
     },
@@ -8449,6 +8496,9 @@
               "$ref": "#/$defs/actions"
             },
             "linkEdit": {
+              "$ref": "#/$defs/actions"
+            },
+            "linkDismiss": {
               "$ref": "#/$defs/actions"
             },
             "openLink": {

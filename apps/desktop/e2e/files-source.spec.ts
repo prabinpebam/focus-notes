@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { quit } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
-import { existingInstance, start, world } from "./github-world.ts";
+import { existingInstance, opened, start, world } from "./github-world.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -42,6 +42,19 @@ test("D-188: Files leads with the notes repository and @login, and Open local fo
     await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
     expect(await axeViolations(page)).toEqual([]);
     await page.screenshot({ path: "../../test-results/screens/files-source-docked.png" });
+    // D-189: the name opens the repository, @login the profile, on GitHub (recorded instead of a browser).
+    await band.getByRole("button", { name: "Open ada/notes on GitHub" }).click();
+    await band.getByRole("button", { name: /^Open @\w+'s profile on GitHub$/ }).click();
+    await expect.poll(() => opened(l)).toEqual(["https://github.com/ada/notes", expect.stringMatching(/^https:\/\/github\.com\/\w+$/)]);
+    // D-189: in Recently deleted, the Files heading and the footer's Browse files both go back to the tree.
+    await files.getByRole("button", { name: /^Recently deleted/ }).click();
+    await expect(files.getByRole("button", { name: "Browse files" })).toBeVisible();
+    await files.getByRole("heading", { name: "Back to Files" }).getByRole("button").click();
+    await expect(files.getByRole("tree")).toBeVisible();
+    await expect(files.getByRole("heading", { name: "Files" })).toBeVisible();
+    await files.getByRole("button", { name: /^Recently deleted/ }).click();
+    await files.getByRole("button", { name: "Browse files" }).click();
+    await expect(files.getByRole("tree")).toBeVisible();
   } finally {
     await quit(l);
     w.server.close();

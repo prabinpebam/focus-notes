@@ -33,3 +33,19 @@ export const lines = styleVariants({
   two: { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" },
   three: { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" },
 });
+// Pressable (D-189): no button chrome, so it reads as the text it is; underlined on hover, ringed on focus.
+export const link = style({
+  appearance: "none",
+  border: 0,
+  padding: 0,
+  background: "none",
+  textAlign: "start",
+  cursor: "pointer",
+  maxWidth: "100%",
+  borderRadius: t.link.radius,
+  outline: "none",
+  selectors: {
+    "&:hover": { textDecorationLine: "underline" },
+    "&:focus-visible": { outlineStyle: "solid", outlineWidth: t.link.focusWidth, outlineOffset: t.link.focusOffset, outlineColor: t.link.focusRing },
+  },
+});
