@@ -112,24 +112,22 @@ export const main = style({
 });
 minimalScrollbar(main, t);
 export const header = style({ display: "flex", flexDirection: "column", gap: t.gap, flexShrink: 0 });
-// Where the notes come from (D-188): leads the sheet above a hairline that runs edge to edge. Docked,
-// it starts at the window's top edge, so its upper part is in the title band, which stays the window's
+// Where the notes come from (D-188): leads the sheet above a hairline that runs edge to edge (drawn
+// past the sheet's padding, so the band's own box keeps the sheet's uniform inset, D-111). Docked, it
+// starts at the window's top edge, so its upper part is in the title band, which stays the window's
 // drag region (its buttons don't drag).
 export const band = style({
+  position: "relative",
   display: "flex",
   alignItems: "center",
   flexShrink: 0,
   minWidth: 0,
-  marginInline: `calc(-1 * ${t.padding})`,
-  paddingInline: t.padding,
   paddingBlockEnd: t.gap,
-  borderBlockEndStyle: "solid",
-  borderBlockEndWidth: t.band.borderWidth,
-  borderBlockEndColor: t.band.border,
   selectors: {
+    "&::after": { content: '""', position: "absolute", bottom: 0, left: `calc(-1 * ${t.padding})`, right: `calc(-1 * ${t.padding})`, height: t.band.borderWidth, backgroundColor: t.band.border },
     // Docked, it leads from the window's top edge with the sheet's own padding around it, rather than fitted into the title band (the sheet drops its top padding for it).
     "[data-docked] > &": { paddingBlock: t.padding, minHeight: t.dock.top, boxSizing: "border-box" },
-    ":root[data-platform=macos] [data-docked][data-side=start] > &": { paddingInlineStart: t.band.macStart },
+    ":root[data-platform=macos] [data-docked][data-side=start] > &": { paddingInlineStart: `calc(${t.band.macStart} - ${t.padding})` },
   },
 });
 globalStyle(`${band} button`, { WebkitAppRegion: "no-drag" } as Record<string, string>);

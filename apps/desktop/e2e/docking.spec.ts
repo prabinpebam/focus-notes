@@ -86,8 +86,9 @@ test("D-187: Files and the contents dock flush to the window's edges, the note's
     const band = files(page).locator("[data-sheet-band]");
     await expect(band).toContainText(dirs.docs.split(/[\\/]/).filter(Boolean).pop()!);
     await expect(band.getByRole("button", { name: "Open local folder" })).toBeVisible();
-    const bb = await band.evaluate((el) => { const r = el.getBoundingClientRect(), w = document.querySelector("[data-app-root]")!.getBoundingClientRect(); return { top: Math.round(r.top - w.top), height: Math.round(r.height), left: Math.round(r.left - w.left), border: getComputedStyle(el).borderBottomWidth }; });
-    expect(bb).toMatchObject({ top: 0, left: 0 });
+    const bb = await band.evaluate((el) => { const r = el.getBoundingClientRect(), w = document.querySelector("[data-app-root]")!.getBoundingClientRect(); const line = getComputedStyle(el, "::after"); return { top: Math.round(r.top - w.top), height: Math.round(r.height), left: Math.round(r.left - w.left), border: line.height, lineLeft: line.left }; });
+    // Inset as the sheet's content is; its hairline runs past the padding to both edges.
+    expect(bb).toMatchObject({ top: 0, left: 16, lineLeft: "-16px" });
     expect(bb.height).toBeGreaterThan(44);
     expect(parseFloat(bb.border)).toBeGreaterThan(0);
     // The window's controls show at the top of the docked contents, on it (Windows and Linux draw them).
