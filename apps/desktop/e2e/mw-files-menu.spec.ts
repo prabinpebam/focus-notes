@@ -24,8 +24,8 @@ async function fakeTrash(l: Launched) {
   });
   return () => l.app.evaluate(() => (globalThis as unknown as { trashed: string[] }).trashed);
 }
-async function opened(dirs: ReturnType<typeof tempDirs>) {
-  const l = await launch(dirs);
+async function opened(dirs: ReturnType<typeof tempDirs>, env: Record<string, string> = {}) {
+  const l = await launch(dirs, env);
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
   await expect(editor).toContainText("Hello.");
@@ -36,6 +36,58 @@ async function opened(dirs: ReturnType<typeof tempDirs>) {
   const items = (menu: ReturnType<Page["getByRole"]>) => menu.getByRole("menuitem").evaluateAll((els) => els.map((e) => e.querySelector("span span span")?.textContent ?? e.textContent));
   return { l, page, editor, files, tree, row, items };
 }
+
+test("D-192: a row's menu opens its folder, and copies it as a file, as a path, or as text; Ctrl+C in the tree copies the selection", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Welcome to Focus Notes\n\nHello.\n");
+  writeFileSync(join(dirs.docs, "ideas.md"), "---\nid: n-1\n---\n# Ideas\n\nSee [welcome](Welcome.md).\n");
+  mkdirSync(join(dirs.docs, "journal"));
+  writeFileSync(join(dirs.docs, "journal", "day-one.md"), "# Day one\n");
+  // Journeys copy into memory, never the computer's clipboard, and never open Explorer or Finder.
+  const { l, page, row } = await opened(dirs, { FOCUS_NOTES_MEMORY_CLIPBOARD: "1" });
+  await l.app.evaluate(({ shell }) => {
+    const g = globalThis as unknown as { shown: string[] };
+    g.shown = [];
+    shell.showItemInFolder = (p: string) => void g.shown.push(p);
+  });
+  const shown = () => l.app.evaluate(() => (globalThis as unknown as { shown: string[] }).shown);
+  const clipboard = () => l.app.evaluate(() => (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard?.text ?? "");
+  const toasts = page.locator("#toasts");
+  const menuItem = async (name: string, key: string) => {
+    await row(name).click({ button: "right" });
+    const menu = page.getByRole("menu", { name: `Actions for “${name}”` });
+    await menu.locator(`[role="menuitem"][data-key="files.${key}"]`).click();
+    await expect(menu).toBeHidden();
+  };
+  await page.keyboard.press(`${mod}+O`);
+  const ideas = join(dirs.docs, "ideas.md");
+
+  await menuItem("Ideas", "revealItem");
+  await expect.poll(shown).toEqual([ideas]);
+  await menuItem("Ideas", "copyPath");
+  await expect.poll(clipboard).toBe(ideas);
+  await expect(toasts.getByText("Copied the path to “Ideas”.")).toBeVisible();
+  // The note's Markdown, without the app's own id.
+  await menuItem("Ideas", "copyText");
+  await expect.poll(clipboard).toBe("# Ideas\n\nSee [welcome](Welcome.md).\n");
+  await menuItem("Ideas", "copyItem");
+  await expect.poll(clipboard).toBe(`files:\n${ideas}`);
+  await expect(toasts.getByText("Copied “Ideas”. Paste it in a folder, a mail or a chat.")).toBeVisible();
+  // A folder: its own items; Ctrl+C (⌘C) in the tree copies the selection, folder and note together.
+  await row("journal").click({ button: "right" });
+  const journalMenu = page.getByRole("menu", { name: "Actions for “journal”" });
+  expect(await journalMenu.getByRole("menuitem").evaluateAll((els) => els.map((e) => e.querySelector("span span span")?.textContent ?? e.textContent)))
+    .toEqual(["New note", "New folder", "Open containing folder", "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
+  await page.keyboard.press("Escape");
+  await row("journal").click();
+  await row("Ideas").click({ modifiers: [process.platform === "darwin" ? "Meta" : "Control"] });
+  await page.keyboard.press(`${mod}+C`);
+  await expect.poll(async () => (await clipboard()).split("\n").sort()).toEqual([ideas, join(dirs.docs, "journal"), "files:"].sort());
+  await expect(toasts.getByText("Copied 2 items. Paste it in a folder, a mail or a chat.")).toBeVisible();
+  // Nothing in the folder changed.
+  expect(ls(dirs.docs)).toEqual(["Welcome.md", "ideas.md", "journal"]);
+  await quit(l);
+});
 
 test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item's menu; it duplicates, deletes, makes folders and moves a selection", async () => {
   const dirs = tempDirs();
@@ -54,7 +106,7 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await expect(ideasMenu).toBeVisible();
   await expect(row("Ideas")).toHaveAttribute("aria-selected", "true");
   await expect(row("Welcome to Focus Notes")).toHaveAttribute("aria-selected", "false");
-  expect(await items(ideasMenu)).toEqual(["Open", "Rename", "Duplicate", "Move to…", "Delete"]);
+  expect(await items(ideasMenu)).toEqual(["Open", "Open containing folder", "Copy", "Copy as path", "Copy text", "Rename", "Duplicate", "Move to…", "Delete"]);
   // Each item shows its shortcut.
   await expect(ideasMenu.getByRole("menuitem", { name: /^Rename/ })).toContainText(process.platform === "darwin" ? "↩" : "F2");
   await expect(ideasMenu.getByRole("menuitem", { name: /^Delete/ })).toContainText(process.platform === "darwin" ? "⌘⌫" : "Delete");
@@ -78,7 +130,7 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   // Shift+F10 on the focused row: its menu, first item focused; Esc closes it and focus goes back to the row.
   await page.keyboard.press("Shift+F10");
   const copyMenu = page.getByRole("menu", { name: "Actions for “Ideas copy”" });
-  await expect(copyMenu.getByRole("menuitem", { name: /^Open/ })).toBeFocused();
+  await expect(copyMenu.getByRole("menuitem", { name: /^Open(?! containing)/ })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(copyMenu).toBeHidden();
   await expect(files).toBeVisible();
@@ -100,7 +152,7 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await more.dispatchEvent("pointerdown", { button: 0, pointerType: "mouse", isPrimary: true });
   const folderMenu = page.getByRole("menu", { name: "Actions for “journal”" });
   await expect(folderMenu).toBeVisible();
-  expect(await items(folderMenu)).toEqual(["New note", "New folder", "Rename", "Move to…", "Delete"]);
+  expect(await items(folderMenu)).toEqual(["New note", "New folder", "Open containing folder", "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
   await folderMenu.getByRole("menuitem", { name: /^New folder/ }).click();
   const name = tree.getByRole("textbox", { name: "Folder name" });
   await expect(name).toBeFocused();
@@ -112,7 +164,7 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await tree.getByRole("treeitem", { name: "Notes", exact: true }).click({ button: "right" });
   const sectionMenu = page.getByRole("menu", { name: "Actions for “Notes”" });
   await expect(sectionMenu).toBeVisible();
-  expect(await items(sectionMenu)).toEqual(["New note", "New folder"]);
+  expect(await items(sectionMenu)).toEqual(["New note", "New folder", "Open containing folder", "Copy as path"]);
   await page.keyboard.press("Escape");
 
   // Several selected: right-click on one of them keeps the selection, and the menu acts on all of it.
@@ -123,7 +175,7 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await expect(many).toBeVisible();
   await expect(row("Ideas")).toHaveAttribute("aria-selected", "true");
   await expect(row("Welcome to Focus Notes")).toHaveAttribute("aria-selected", "true");
-  expect(await items(many)).toEqual(["Duplicate", "Move to…", "Delete"]);
+  expect(await items(many)).toEqual(["Duplicate", "Move to…", "Copy", "Copy as path", "Delete"]);
   expect(await settledAxe(page)).toEqual([]);
   await many.getByRole("menuitem", { name: /^Move to…/ }).click();
   const dialog = page.getByRole("dialog", { name: "Move 2 items to…" });

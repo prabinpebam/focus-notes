@@ -243,6 +243,10 @@ export interface WorkspaceBridge {
   info(): Promise<{ folder: string; format?: string; site?: string; repo?: string }>;
   /** Opens the workspace's folder in the system's file manager (D-188). Desktop only. */
   reveal?(): Promise<void>;
+  /** Opens the folder that holds a note, folder or section, with it selected, in the system's file manager (D-192). Desktop only. */
+  revealItem?(path: string): Promise<void>;
+  /** Puts notes and folders on the system's clipboard as files, as a file manager's Copy does (D-192). Desktop only. */
+  copyItems?(paths: string[]): Promise<void>;
   /** Every note and folder in the workspace's roots. */
   scan(): Promise<WorkspaceScan>;
   /** Writes the format file, after a migration the person agreed to. */

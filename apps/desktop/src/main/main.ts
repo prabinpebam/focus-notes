@@ -53,6 +53,7 @@ import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/i
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
 import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
 import { CrashRecovery, coverBounds } from "./window/crash-cover.ts";
+import { copyFilesToClipboard, defaultRun } from "./copy-files.ts";
 import { themeCanvas, WINDOW_METRICS } from "@focus-notes/core/window-geometry";
 import { AppMenuBar } from "./window/menu-bar.ts";
 import { SnapshotCache } from "@focus-notes/core/snapshot";
@@ -1128,6 +1129,24 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const problem = await shell.openPath(notesHome());
     if (problem) throw new Error(problem);
   });
+  // Open containing folder, Copy and Copy as path (D-192): only notes, folders and sections inside the workspace's roots.
+  const itemPath = (p: unknown): string => {
+    if (typeof p !== "string" || !p || !isAbsolute(p) || resolve(p) !== p) throw refuse("invalid");
+    const root = roots().find((r) => inside(r.path, p));
+    if (!root || relative(root.path, p).split(sep).some((part) => part.startsWith("."))) throw refuse("invalid");
+    if (!existsSync(p)) throw refuse("notFound");
+    return p;
+  };
+  handle("workspace:revealItem", async (p) => {
+    shell.showItemInFolder(itemPath(p));
+  });
+  handle("workspace:copyItems", async (ps) => {
+    if (!Array.isArray(ps) || !ps.length || ps.length > 1000) throw refuse("invalid");
+    const paths = ps.map(itemPath);
+    // Journeys copy into memory, never the computer's clipboard: the paths, marked as files.
+    if (devEnv("FOCUS_NOTES_MEMORY_CLIPBOARD") === "1") return appClipboard().writeText(`files:\n${paths.join("\n")}`);
+    await copyFilesToClipboard(paths, { platform: process.platform, run: defaultRun, writeBuffer: (f, d) => clipboard.writeBuffer(f, d) });
+  });
   handle("workspace:scan", async () => {
     const rs = roots();
     const entries = [];
@@ -1421,9 +1440,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const onDisk = secondary ? await readFile(stateFile(), "utf8").then((t) => JSON.parse(t) as Record<string, unknown>).catch(() => undefined) : undefined;
     await atomicWrite(stateFile(), JSON.stringify(stateFromWindow(s as Record<string, unknown>, onDisk, secondary), null, 2));
   });
-  // Copying a link's address (EDT-13). Text only, and never read back: the renderer can't read the clipboard.
+  // Copying a link's address (EDT-13), a path, or a note's text (D-192). Text only, and never read back: the renderer can't read the clipboard.
   handle("clipboard:write", async (text) => {
-    if (typeof text !== "string" || text.length > 10_000) throw new Error("Only text can be copied");
+    // A note's text can be long (200,000 words at most, about 1.5 million characters).
+    if (typeof text !== "string" || text.length > 4_000_000) throw new Error("Only text can be copied");
     // Journeys copy into memory, never the computer's clipboard.
     appClipboard().writeText(text);
   });

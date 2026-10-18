@@ -1085,7 +1085,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       workspace.movedOnDisk(from, to);
       conflicts.moved(from, to);
     },
-    describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id),
+    describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id), tracker,
   });
   const browser = registerBrowserFeatures({
     store, commands, viewModels, catalog, bridge, load, flush, toast, tracker, menu: extraMenu,

@@ -84,6 +84,8 @@ interface Ctx {
   itemSchema: Record<string, unknown>;
   /** Runs an editor action: `edit.focus` puts the caret back in the note. */
   editorAction: (id: string) => void;
+  /** The one task tracker (PRF-08): waits a person starts show their sign through it. */
+  tracker?: { run<T>(target: string, message: string, work: () => Promise<T>, doneMessage?: string): Promise<T> };
 }
 
 const REASONS: Record<RefusalReason | OpErrorCode, string> = {
@@ -642,6 +644,85 @@ export function registerFiles(ctx: Ctx) {
     disabledReason: (s) => publicLinkReason(s, focusedPath(s)) ?? "spotlight.reason.noClipboard",
     run: async () => { await copyPublicLink({ store, commands, catalog, bridge, toast }, focusedPath(store.state)); },
   });
+  // Open containing folder (D-192): the system's file manager, at the row's folder, with the row selected.
+  commands.register<{ path?: string }>({
+    id: "files.revealItem", title: "command.files.revealItem", icon: "open",
+    shortcut: { macos: "Mod+Alt+R", default: "Shift+Alt+R", handledBy: "files" }, layer: "pro", group: "files",
+    enabled: (s) => Boolean(ws?.revealItem) && Boolean(focusedPath(s)),
+    run: async (a) => {
+      const path = typeof a?.path === "string" && a.path ? a.path : focusedPath(store.state);
+      if (!path || !ws?.revealItem) return;
+      try {
+        await ws.revealItem(path);
+      } catch {
+        toast(catalog.format("toast.revealItemFailed"), { tone: "error" });
+      }
+    },
+  });
+  // Copy, Copy as path and Copy text (D-192): what's acted on (the selection, else the focused row), as a file manager copies.
+  const actedRows = (s: AppState): FileRow[] => {
+    const rows = rowsOf(s);
+    const focus = rows.find((r) => r.id === s.ui.files.selection.focus);
+    if (!focus) return [];
+    const acted = actedOn(s.ui.files.selection, focus.id).map((id) => rows.find((r) => r.id === id)).filter((r): r is FileRow => Boolean(r));
+    return acted.length ? acted : [focus];
+  };
+  const rowsWhat = (rows: readonly FileRow[]) => (rows.length === 1
+    ? catalog.format("files.quoted", { name: rows[0]!.kind === "root" ? rootLabel(rows[0]!.rootId) : rows[0]!.label })
+    : catalog.format("files.items", { count: rows.length }));
+  const fileRows = (s: AppState) => actedRows(s).filter((r) => r.kind !== "root");
+  commands.register({
+    id: "files.copyItem", title: "command.files.copyItem", icon: "copy",
+    shortcut: { default: "Mod+C", handledBy: "filesTree" }, layer: "basic", group: "files",
+    enabled: (s) => Boolean(ws?.copyItems) && fileRows(s).length > 0,
+    run: async () => {
+      const rows = fileRows(store.state);
+      if (!rows.length || !ws?.copyItems) return;
+      const work = () => ws.copyItems!(rows.map((r) => r.path));
+      try {
+        await (ctx.tracker ? ctx.tracker.run("files.copyItem", "task.copying", work) : work());
+        toast(catalog.format("files.copiedItems", { what: rowsWhat(rows) }));
+      } catch {
+        toast(catalog.format("toast.copyItemsFailed"), { tone: "error" });
+      }
+    },
+  });
+  commands.register({
+    id: "files.copyPath", title: "command.files.copyPath", icon: "copy",
+    shortcut: { macos: "Mod+Alt+C", default: "Shift+Alt+C", handledBy: "files" }, layer: "pro", group: "files",
+    enabled: (s) => Boolean(ws?.revealItem) && Boolean(bridge.copyText) && actedRows(s).length > 0,
+    run: async () => {
+      const rows = actedRows(store.state);
+      if (!rows.length || !bridge.copyText) return;
+      try {
+        await bridge.copyText(rows.map((r) => r.path).join("\n"));
+        toast(rows.length === 1 ? catalog.format("files.copiedPath", { what: rowsWhat(rows) }) : catalog.format("files.copiedPaths", { count: rows.length }));
+      } catch {
+        toast(catalog.format("toast.copyFailed"), { tone: "error" });
+      }
+    },
+  });
+  const textRow = (s: AppState) => {
+    const rows = actedRows(s);
+    return rows.length === 1 && rows[0]!.kind === "note" ? rows[0] : undefined;
+  };
+  commands.register({
+    id: "files.copyText", title: "command.files.copyText", icon: "copy", group: "files",
+    enabled: (s) => Boolean(bridge.copyText) && Boolean(textRow(s)),
+    run: async () => {
+      const row = textRow(store.state);
+      if (!row || !bridge.copyText) return;
+      try {
+        // The open note's text is the editor's, unsaved edits too; the app's own `id` line stays behind.
+        const note = store.state.note;
+        const text = note.path === row.path ? note.markdown : await bridge.readNote(row.path);
+        await bridge.copyText(withoutNoteId(text));
+        toast(catalog.format("files.copiedText", { what: rowsWhat([row]) }));
+      } catch {
+        toast(catalog.format("toast.copyFailed"), { tone: "error" });
+      }
+    },
+  });
 
   // ---- who can see a note: Make public, Make private (FIL-06, SHR-01, SHR-02) ----
   /** The items a visibility change acts on: the Files selection while the panel is open, else the open note. */
@@ -906,7 +987,9 @@ export function registerFiles(ctx: Ctx) {
       if (id === "files.newNote" && newNoteShortcut()) return { ...d, shortcut: newNoteShortcut() };
       return d;
     };
-    const menu = rowMenu(focus, acted, { both }).map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
+    const menu = rowMenu(focus, acted, {
+      both, reveal: Boolean(ws?.revealItem), paths: Boolean(ws?.revealItem) && Boolean(bridge.copyText), copyFiles: Boolean(ws?.copyItems), copyText: Boolean(bridge.copyText),
+    }).map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
     const what = acted.length > 1 ? catalog.format("files.items", { count: acted.length }) : catalog.format("files.quoted", { name: focus.kind === "root" ? rootLabel(focus.rootId) : focus.label });
     return { menu, menuLabel: catalog.format("files.menuLabel", { what }) };
   };

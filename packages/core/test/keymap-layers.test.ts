@@ -97,6 +97,7 @@ const COVERAGE: Record<string, Cover> = {
   "Select everything shown": ["files.selectAll"],
   "New note in this folder / new folder": ["note.new", "files.newFolder"],
   "Delete (with confirmation and Undo)": ["files.delete"],
+  "Copy, to paste in a folder, a mail or a chat (desktop)": ["files.copyItem"],
   "Move: cut, then paste in the destination": { planned: "the Files panel's cut and paste (Files → What's built); Move to… covers it" },
   "Move to… picker": ["files.moveTo"],
   "Show the current note in the panel": ["files.reveal"],
@@ -269,7 +270,8 @@ const PRO: Record<string, Cover> = {
   "Copy link to the selected note": ["spotlight.copyLink"],
   "Jump between result groups": ["spotlight.nextGroup", "spotlight.prevGroup"],
   "Preview without opening": { planned: "the Files panel's preview (Files → What's built)" },
-  "Show in Finder / Explorer (desktop)": { planned: "the desktop shell's reveal (Files → What's built)" },
+  "Open containing folder (desktop)": ["files.revealItem"],
+  "Copy as path (desktop)": ["files.copyPath"],
 };
 
 function proRows(): string[] {

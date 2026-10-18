@@ -17,7 +17,7 @@ A full keymap, from the shortcuts everyone knows to niche ones for heavy users. 
 | **Basic** | Everyone | Undo, copy, save, new, open, find, bold |
 | **Writer** | Regular writers | Headings, lists, links, focus mode, font size, theme |
 | **Power** | Daily users | Spotlight, quick open, replace, move blocks, back and forward, go to heading |
-| **Pro** | Heavy keyboard users | Block selection mode, table cell selection, replace across notes, find in selection, Spotlight action keys, expand selection, reveal in Finder/Explorer |
+| **Pro** | Heavy keyboard users | Block selection mode, table cell selection, replace across notes, find in selection, Spotlight action keys, expand selection, open containing folder |
 
 5. **Discoverable.** Tooltips show each shortcut. Spotlight lists the shortcut next to every command, so using it teaches the key. <kbd>Mod</kbd>+<kbd>/</kbd> opens a cheat sheet that can be searched and filtered by layer. The first-run experience teaches exactly one: <kbd>Mod</kbd>+<kbd>/</kbd> for Spotlight.
 6. **Customizable (P1).** A `keybindings.json` file (per device, or synced in `private/.focus-notes/`, D-46) can override any binding. It warns on conflicts, can reset everything, and shows the effective binding in Spotlight.
@@ -213,12 +213,14 @@ The keys follow each platform's file manager (Finder or Explorer), because that'
 | Select everything shown | <kbd>⌘A</kbd> | <kbd>Ctrl+A</kbd> | Basic | Finder, Explorer |
 | New note in this folder / new folder | <kbd>⌘N</kbd> / <kbd>⇧⌘N</kbd> | <kbd>Ctrl+N</kbd> / <kbd>Ctrl+Shift+N</kbd> | Writer | Finder, Explorer |
 | Delete (with confirmation and Undo) | <kbd>⌘⌫</kbd> | <kbd>Delete</kbd> | Basic | Finder, Explorer |
+| Copy, to paste in a folder, a mail or a chat (desktop) | <kbd>⌘C</kbd> | <kbd>Ctrl+C</kbd> | Basic | Finder, Explorer |
+| Copy as path (desktop) | <kbd>⌥⌘C</kbd> | <kbd>Shift+Alt+C</kbd> | Pro | VS Code |
 | Move: cut, then paste in the destination | <kbd>⌘C</kbd> then <kbd>⌥⌘V</kbd> (also <kbd>⌘X</kbd> / <kbd>⌘V</kbd>) | <kbd>Ctrl+X</kbd> / <kbd>Ctrl+V</kbd> | Power | Finder, Explorer |
 | Move to… picker | <kbd>⇧⌘M</kbd> | <kbd>Ctrl+Shift+M</kbd> | Power | No common standard |
 | Show the current note in the panel | <kbd>⇧⌘E</kbd> | <kbd>Ctrl+Shift+E</kbd> | Power | VS Code |
-| Show in Finder / Explorer (desktop) | <kbd>⌥⌘R</kbd> | <kbd>Shift+Alt+R</kbd> | Pro | VS Code |
+| Open containing folder (desktop) | <kbd>⌥⌘R</kbd> | <kbd>Shift+Alt+R</kbd> | Pro | VS Code |
 
-The tree's keys work while focus is in the tree, and New folder and Move to… anywhere in the panel; in a row's name field, <kbd>Enter</kbd> saves the name and <kbd>Esc</kbd> cancels, and the tree's other keys (<kbd>Delete</kbd>, <kbd>F2</kbd>, <kbd>Ctrl+A</kbd>) edit the text instead. Browsers keep <kbd>Ctrl+Shift+N</kbd>, so New folder is <kbd>Ctrl+Alt+Shift+N</kbd> in the web app. Preview, cut and paste, and Show in Finder / Explorer aren't built yet ([Files → What's built](../design/views/files.html#whats-built)).
+The tree's keys work while focus is in the tree, and New folder, Move to… and Open containing folder anywhere in the panel; in a row's name field, <kbd>Enter</kbd> saves the name and <kbd>Esc</kbd> cancels, and the tree's other keys (<kbd>Delete</kbd>, <kbd>F2</kbd>, <kbd>Ctrl+A</kbd>) edit the text instead. Browsers keep <kbd>Ctrl+Shift+N</kbd>, so New folder is <kbd>Ctrl+Alt+Shift+N</kbd> in the web app. Open containing folder shows the focused note, folder or section selected in Explorer or Finder (D-192); the browser has no such item. <kbd>Ctrl+C</kbd> (<kbd>⌘C</kbd>) in the tree copies the selected notes and folders as files, the way Explorer and Finder do, and Copy as path copies their full paths, one per line; both are desktop only. Preview and cut and paste aren't built yet ([Files → What's built](../design/views/files.html#whats-built)).
 
 ## Toolbar and menus
 
