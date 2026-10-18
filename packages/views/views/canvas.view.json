@@ -16,6 +16,7 @@
     "vm.picker",
     "vm.account",
     "vm.saveState",
+    "vm.repoBackup",
     "vm.unlock",
     "vm.about",
     "vm.files",
@@ -4418,6 +4419,308 @@
           {
             "type": "FileTree",
             "id": "filesTree",
+            "slots": {
+              "sectionEnd": [
+                {
+                  "type": "PopoverPanel",
+                  "id": "repoBackup-private",
+                  "when": {
+                    "get": "vm.repoBackup.private.visible"
+                  },
+                  "props": {
+                    "label": {
+                      "t": "repoBackup.title.private"
+                    },
+                    "placement": "bottom",
+                    "padding": "comfortable"
+                  },
+                  "slots": {
+                    "trigger": [
+                      {
+                        "type": "SaveState",
+                        "id": "repoBackupIcon-private",
+                        "props": {
+                          "state": {
+                            "get": "vm.repoBackup.private.state"
+                          },
+                          "label": {
+                            "get": "vm.repoBackup.private.label"
+                          },
+                          "interactive": true
+                        }
+                      }
+                    ],
+                    "content": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "StepMark",
+                                "props": {
+                                  "icon": {
+                                    "get": "vm.repoBackup.private.icon"
+                                  },
+                                  "size": "compact",
+                                  "tone": {
+                                    "get": "vm.repoBackup.private.tone"
+                                  },
+                                  "busy": {
+                                    "get": "vm.repoBackup.private.backingUp"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Stack",
+                                "props": {
+                                  "gap": "xs"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Heading",
+                                    "props": {
+                                      "value": {
+                                        "get": "vm.repoBackup.private.name"
+                                      },
+                                      "level": "2"
+                                    }
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "value": {
+                                        "get": "vm.repoBackup.private.stateText"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "when": {
+                              "get": "vm.repoBackup.private.hasRepository"
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.repoBackup.private.repository"
+                              },
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.repoBackup.private.backupTime"
+                              },
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.repoBackup.private.waitingText"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "repoBackup.action"
+                              },
+                              "icon": "cloudUp",
+                              "variant": "secondary",
+                              "busy": {
+                                "get": "vm.repoBackup.private.backingUp"
+                              },
+                              "disabledReason": {
+                                "get": "vm.repoBackup.private.backupReason"
+                              },
+                              "disabled": {
+                                "expr": {
+                                  "!": {
+                                    "get": "vm.repoBackup.private.canBackUp"
+                                  }
+                                }
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "repoBackup.backUp",
+                                "args": {
+                                  "repo": "private"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "PopoverPanel",
+                  "id": "repoBackup-public",
+                  "when": {
+                    "get": "vm.repoBackup.public.visible"
+                  },
+                  "props": {
+                    "label": {
+                      "t": "repoBackup.title.public"
+                    },
+                    "placement": "bottom",
+                    "padding": "comfortable"
+                  },
+                  "slots": {
+                    "trigger": [
+                      {
+                        "type": "SaveState",
+                        "id": "repoBackupIcon-public",
+                        "props": {
+                          "state": {
+                            "get": "vm.repoBackup.public.state"
+                          },
+                          "label": {
+                            "get": "vm.repoBackup.public.label"
+                          },
+                          "interactive": true
+                        }
+                      }
+                    ],
+                    "content": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "m"
+                            },
+                            "children": [
+                              {
+                                "type": "StepMark",
+                                "props": {
+                                  "icon": {
+                                    "get": "vm.repoBackup.public.icon"
+                                  },
+                                  "size": "compact",
+                                  "tone": {
+                                    "get": "vm.repoBackup.public.tone"
+                                  },
+                                  "busy": {
+                                    "get": "vm.repoBackup.public.backingUp"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Stack",
+                                "props": {
+                                  "gap": "xs"
+                                },
+                                "children": [
+                                  {
+                                    "type": "Heading",
+                                    "props": {
+                                      "value": {
+                                        "get": "vm.repoBackup.public.name"
+                                      },
+                                      "level": "2"
+                                    }
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "value": {
+                                        "get": "vm.repoBackup.public.stateText"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "when": {
+                              "get": "vm.repoBackup.public.hasRepository"
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.repoBackup.public.repository"
+                              },
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.repoBackup.public.backupTime"
+                              },
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.repoBackup.public.waitingText"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "repoBackup.action"
+                              },
+                              "icon": "cloudUp",
+                              "variant": "secondary",
+                              "busy": {
+                                "get": "vm.repoBackup.public.backingUp"
+                              },
+                              "disabledReason": {
+                                "get": "vm.repoBackup.public.backupReason"
+                              },
+                              "disabled": {
+                                "expr": {
+                                  "!": {
+                                    "get": "vm.repoBackup.public.canBackUp"
+                                  }
+                                }
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "repoBackup.backUp",
+                                "args": {
+                                  "repo": "public"
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
             "props": {
               "label": {
                 "t": "files.tree"

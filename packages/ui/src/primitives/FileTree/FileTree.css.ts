@@ -100,3 +100,6 @@ export const anchor = style({ position: "absolute", left: anchorX, top: anchorY,
 // Inline and without size, so the name reads "About, public" with no space before the comma.
 export const srOnly = style({ display: "inline", fontSize: 0 });
 export const error = style({ color: t.danger, fontSize: t.captionSize, whiteSpace: "normal" });
+
+/** A section's own control at its trailing end (a repository's backup, D-191): in the heading's case and size, not upper-cased. */
+export const accessory = style({ display: "inline-flex", flexShrink: 0, alignItems: "center", textTransform: "none" });

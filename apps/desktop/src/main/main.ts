@@ -1287,6 +1287,13 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const g = await gitOpening;
     return g ? g.status() : NO_GIT;
   });
+  // Backup by repository (FIL-14, D-191): what waits in each section's repository, and Back up for one.
+  handle("sync:repos", async () => (await gitOpening)?.repos() ?? []);
+  handle("sync:backupRepo", async (repo) => {
+    if (repo !== "private" && repo !== "public") throw new Error("Back up private or public");
+    const g = await gitOpening;
+    return g ? g.backupRepo(repo) : NO_GIT;
+  });
   handle("setup:status", async () => (await setup()).report());
   // The folder is the main process's own: the one setup started with, or the one chosen with the dialog (D-98).
   handle("setup:start", async (options, passphrase) => (await setup()).start(checkOptions({ ...(options as object), ...(await setupWhere((options as { instance?: unknown } | undefined)?.instance as string | undefined)) }), passphraseArg(passphrase)));

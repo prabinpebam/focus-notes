@@ -70,6 +70,8 @@ export interface TreeItem {
   droppable?: boolean;
   /** Shows the inline name field instead of its label. */
   editing?: boolean;
+  /** A section's control at its trailing end: an index into the tree's sectionEnd slot (D-191). */
+  accessory?: number;
 }
 
 /**
@@ -78,7 +80,7 @@ export interface TreeItem {
  * stops the outer scopes so Delete and F2 edit the text there. `findAll` is the Find in all notes
  * sheet and `findAllField` its search field.
  */
-export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "moveField", "firstRun", "repoField", "spotlightField", "findAll", "findAllField"] as const;
+export const KEY_SCOPES = ["none", "findBar", "findField", "replaceField", "pickerField", "formatToolbar", "linkEditor", "files", "filesTree", "filesEdit", "filesSection", "moveField", "firstRun", "repoField", "spotlightField", "findAll", "findAllField"] as const;
 export type KeyScope = (typeof KEY_SCOPES)[number];
 
 /** A theme in the theme manager's gallery (ThemeGallery). */

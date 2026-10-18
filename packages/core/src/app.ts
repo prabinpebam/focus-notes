@@ -1456,9 +1456,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const REPO_VIEW = {
     type: "object" as const,
     properties: {
-      visible: { type: "boolean" as const }, backingUp: { type: "boolean" as const }, canBackUp: { type: "boolean" as const },
+      visible: { type: "boolean" as const }, hasRepository: { type: "boolean" as const }, backingUp: { type: "boolean" as const }, canBackUp: { type: "boolean" as const },
       state: { type: "string" as const, enum: ["savedLocal", "pending", "syncing", "synced", "offline", "error"] },
-      ...Object.fromEntries(["name", "stateText", "label", "repository", "backupTime", "waitingText"].map((k) => [k, { type: "string" as const }])),
+      ...Object.fromEntries(["name", "stateText", "label", "repository", "backupTime", "waitingText", "backupReason"].map((k) => [k, { type: "string" as const }])),
       icon: { type: "string" as const }, tone: { type: "string" as const, enum: ["neutral", "accent", "danger", "success"] },
     },
   };

@@ -1507,7 +1507,13 @@
           }
         }
       },
-      "slots": {},
+      "slots": {
+        "sectionEnd": {
+          "accepts": [
+            "PopoverPanel"
+          ]
+        }
+      },
       "states": [
         "rest",
         "hover",
@@ -4601,6 +4607,7 @@
         "vm.picker",
         "vm.account",
         "vm.saveState",
+        "vm.repoBackup",
         "vm.unlock",
         "vm.about",
         "vm.files",

@@ -863,6 +863,7 @@ export function registerFiles(ctx: Ctx) {
       ...["id", "label", "description", "title", "parent"].map((k) => [k, { type: "string" as const }]),
       ["kind", { type: "string" as const, enum: ["section", "folder", "note"] }],
       ["level", { type: "number" as const }],
+      ["accessory", { type: "number" as const }],
       ...["expanded", "hasChildren", "selected", "current", "pending", "readOnly", "draggable", "droppable", "editing"].map((k) => [k, { type: "boolean" as const }]),
     ]),
   };
@@ -947,6 +948,8 @@ export function registerFiles(ctx: Ctx) {
         pending: pending.has(r.id), readOnly: r.readOnly,
         draggable: writable && !r.readOnly && r.kind !== "root", droppable: writable && !r.readOnly && r.kind !== "note",
         editing: f.edit?.kind === "rename" && f.edit.id === r.id,
+        // Private and Public each carry their repository's backup at the trailing end (D-191).
+        ...(r.kind === "root" && (r.rootId === "private" || r.rootId === "public") ? { accessory: r.rootId === "private" ? 0 : 1 } : {}),
       }));
       // A new folder's name field shows in place, first in its folder.
       if (f.edit?.kind === "newFolder") {

@@ -269,9 +269,23 @@ export class GitSync {
         const d = await this.#git(repo, ["diff", "--name-only", "--no-renames", "-z", `${st.upstream}...HEAD`]);
         if (d.code === 0) for (const p of d.stdout.split("\0")) if (p) add(p);
       }
-      out.push({ repo: id, folders: folders.size, notes: notes.size, other: other.size, commits });
+      out.push({ repo: id, ...(await this.#nameOf(repo)), folders: folders.size, notes: notes.size, other: other.size, commits });
     }
     return out;
+  }
+
+  /** The repository as owner/name, from its remote on GitHub; read once. */
+  readonly #names = new Map<Repo, Promise<{ name?: string }>>();
+  #nameOf(repo: Repo): Promise<{ name?: string }> {
+    let p = this.#names.get(repo);
+    if (!p) {
+      p = this.#git(repo, ["remote", "get-url", "origin"]).then((r) => {
+        const m = r.code === 0 ? /github\.com[:/]+([^/\s]+\/[^/\s]+?)(?:\.git)?\/?$/i.exec(r.stdout.trim()) : null;
+        return m ? { name: m[1]! } : {};
+      }, () => ({}));
+      this.#names.set(repo, p);
+    }
+    return p;
   }
 
   /**
