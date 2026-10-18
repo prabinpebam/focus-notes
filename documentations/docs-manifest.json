@@ -398,6 +398,15 @@
       "group": "Architecture"
     },
     {
+      "path": "architecture/crash-recovery.md",
+      "title": "Crash recovery",
+      "order": 477,
+      "icon": "restore_page",
+      "status": "deciding",
+      "updated": "2026-10-18",
+      "group": "Architecture"
+    },
+    {
       "path": "architecture/standards.md",
       "title": "Standards",
       "order": 480,

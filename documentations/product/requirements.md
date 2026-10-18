@@ -339,6 +339,7 @@ Cross-cutting requirements serving CP-SAFE-01.
 | QLT-03 | A recovery journal means a crash loses at most about one second of typing, restored at next launch. | P0 |
 | QLT-04 | Local diagnostics: redacted, rotated logs, *Copy diagnostic report*, and *Report a problem* (a pre-filled GitHub issue the user reviews). Nothing is sent automatically. | P0 |
 | QLT-05 | Every wait a person feels has a named performance measure, and the main process records named spans for Git and content work, kept in memory and shown only in local diagnostics. `pnpm bench` runs Playwright on a throwaway Git copy of a fixture workspace (never real notes), and a committed budgets file with noise allowances supports `--compare` and `--check`, which fails CI on a regression. *(derived from QLT-01)* | P0 |
+| QLT-06 | Crash recovery is isolated: drafts live only in the app's data folder; recovery never creates, writes, renames, moves or deletes a file or folder in the workspace by itself; a draft follows its note through renames; and recovered text comes back in the editor as unsaved edits, through the resolver, or in a Recovered list, for the person to keep (D-190). *(derived from QLT-03)* | P0 |
 
 ## Accessibility (A11Y)
 
