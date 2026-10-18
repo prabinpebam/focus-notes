@@ -106,6 +106,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     info: () => ipcRenderer.invoke("workspace:info"),
     reveal: () => ipcRenderer.invoke("workspace:reveal"),
     revealItem: (path: string) => ipcRenderer.invoke("workspace:revealItem", path),
+    openFolder: (path: string) => ipcRenderer.invoke("workspace:openFolder", path),
     copyItems: (paths: string[]) => ipcRenderer.invoke("workspace:copyItems", paths),
     scan: () => ipcRenderer.invoke("workspace:scan"),
     writeFormat: (text: string) => ipcRenderer.invoke("workspace:writeFormat", text),

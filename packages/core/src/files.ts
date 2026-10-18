@@ -185,28 +185,30 @@ export function targetFolder(tree: WorkspaceTree, rows: readonly FileRow[], focu
  * row acts on nothing but takes new things. A read-only section offers only what can be done there.
  * `both`: the workspace has a public and a private section, so visibility can change.
  */
-export function rowMenu(focus: FileRow, acted: readonly FileRow[], o: { both: boolean; reveal?: boolean; paths?: boolean; copyFiles?: boolean; copyText?: boolean }): string[][] {
+export function rowMenu(focus: FileRow, acted: readonly FileRow[], o: { both: boolean; reveal?: boolean; openFolder?: boolean; paths?: boolean; copyFiles?: boolean; copyText?: boolean }): string[][] {
   const vis = (rows: readonly FileRow[]) => (o.both ? [
     ...(rows.some((r) => r.rootId === "private") ? ["files.makePublic"] : []),
     ...(rows.some((r) => r.rootId === "public") ? ["files.makePrivate"] : []),
   ] : []);
   const out = (sections: string[][]) => sections.filter((s) => s.length);
-  // Open containing folder, Copy, Copy as path and Copy text (D-192), each where the shell can do it.
+  // Open containing folder (a note), Open in File Explorer / Finder (a folder or section), Copy, Copy as path
+  // and Copy text (D-192), each where the shell can do it.
   const reveal = o.reveal ? ["files.revealItem"] : [];
+  const openFolder = o.openFolder ? ["files.openFolderItem"] : [];
   const path = o.paths ? ["files.copyPath"] : [];
   const copy = (rows: readonly FileRow[]) => [...(o.copyFiles ? ["files.copyItem"] : []), ...path, ...(o.copyText && rows.length === 1 && rows[0]!.kind === "note" ? ["files.copyText"] : [])];
-  if (focus.kind === "root" && !acted.length) return out(focus.readOnly ? [reveal, path] : [["files.newNote", "files.newFolder"], reveal, path]);
+  if (focus.kind === "root" && !acted.length) return out(focus.readOnly ? [openFolder, path] : [["files.newNote", "files.newFolder"], openFolder, path]);
   if (!acted.length) return [];
   if (acted.some((r) => r.readOnly)) {
     if (acted.length !== 1) return out([copy(acted)]);
-    if (acted[0]!.kind !== "note") return out([reveal, copy(acted)]);
+    if (acted[0]!.kind !== "note") return out([openFolder, copy(acted)]);
     return out([["files.openItem", ...reveal], copy(acted), acted[0]!.rootId === "public" ? ["files.copyPublicLink"] : []]);
   }
   if (acted.length > 1) {
     return out([[...(acted.some((r) => r.kind === "note") ? ["files.duplicate"] : []), "files.moveTo"], copy(acted), vis(acted), ["files.delete"]]);
   }
   const r = acted[0]!;
-  if (r.kind === "folder") return out([["files.newNote", "files.newFolder"], reveal, copy(acted), ["files.rename", "files.moveTo"], vis(acted), ["files.delete"]]);
+  if (r.kind === "folder") return out([["files.newNote", "files.newFolder"], openFolder, copy(acted), ["files.rename", "files.moveTo"], vis(acted), ["files.delete"]]);
   return out([["files.openItem", ...reveal], copy(acted), ["files.rename", "files.duplicate", "files.moveTo"], [...vis(acted), ...(r.rootId === "public" ? ["files.copyPublicLink"] : [])], ["files.delete"]]);
 }
 

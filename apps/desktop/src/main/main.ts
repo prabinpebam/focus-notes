@@ -14,7 +14,7 @@ import { SWITCHES, connectionSnippets, type AgentsPage, type SwitchId } from "@f
 import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/agents-fs";
 import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
@@ -1149,6 +1149,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   };
   handle("workspace:revealItem", async (p) => {
     shell.showItemInFolder(itemPath(p));
+  });
+  handle("workspace:openFolder", async (p) => {
+    const dir = itemPath(p);
+    if (!statSync(dir).isDirectory()) throw refuse("invalid");
+    const problem = await shell.openPath(dir);
+    if (problem) throw new Error(problem);
   });
   handle("workspace:copyItems", async (ps) => {
     if (!Array.isArray(ps) || !ps.length || ps.length > 1000) throw refuse("invalid");

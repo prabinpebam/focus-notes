@@ -52,38 +52,38 @@ describe("the row menu's items (D-162)", () => {
     const s = row({ kind: "root", id: "root:public", readOnly: true });
     expect(rowMenu(s, [], { both: true })).toEqual([]);
   });
-  it("where the shell can show files, a note, a folder or a section offers Open containing folder; a selection doesn't (D-192)", () => {
+  it("where the shell can show files, a note offers Open containing folder, a folder or a section Open in File Explorer; a selection neither (D-192)", () => {
     const n = row({});
-    expect(rowMenu(n, [n], { both: true, reveal: true })).toEqual([
+    expect(rowMenu(n, [n], { both: true, reveal: true, openFolder: true })).toEqual([
       ["files.openItem", "files.revealItem"], ["files.rename", "files.duplicate", "files.moveTo"], ["files.makePublic"], ["files.delete"],
     ]);
     const f = row({ kind: "folder", id: "drafts", path: "drafts", name: "drafts", label: "drafts" });
-    expect(rowMenu(f, [f], { both: false, reveal: true })).toEqual([
-      ["files.newNote", "files.newFolder"], ["files.revealItem"], ["files.rename", "files.moveTo"], ["files.delete"],
+    expect(rowMenu(f, [f], { both: false, reveal: true, openFolder: true })).toEqual([
+      ["files.newNote", "files.newFolder"], ["files.openFolderItem"], ["files.rename", "files.moveTo"], ["files.delete"],
     ]);
     const s = row({ kind: "root", id: "root:private", path: "private:", level: 1, name: "", label: "" });
-    expect(rowMenu(s, [], { both: true, reveal: true })).toEqual([["files.newNote", "files.newFolder"], ["files.revealItem"]]);
+    expect(rowMenu(s, [], { both: true, reveal: true, openFolder: true })).toEqual([["files.newNote", "files.newFolder"], ["files.openFolderItem"]]);
     // Read-only places can still be shown.
     const ro = row({ rootId: "public", readOnly: true, id: "public:a.md", path: "public:a.md" });
-    expect(rowMenu(ro, [ro], { both: true, reveal: true })).toEqual([["files.openItem", "files.revealItem"], ["files.copyPublicLink"]]);
+    expect(rowMenu(ro, [ro], { both: true, reveal: true, openFolder: true })).toEqual([["files.openItem", "files.revealItem"], ["files.copyPublicLink"]]);
     const rf = row({ kind: "folder", readOnly: true });
-    expect(rowMenu(rf, [rf], { both: true, reveal: true })).toEqual([["files.revealItem"]]);
+    expect(rowMenu(rf, [rf], { both: true, reveal: true, openFolder: true })).toEqual([["files.openFolderItem"]]);
     const rs = row({ kind: "root", id: "root:public", readOnly: true });
-    expect(rowMenu(rs, [], { both: true, reveal: true })).toEqual([["files.revealItem"]]);
-    expect(rowMenu(n, [n, row({ id: "b.md", path: "b.md" })], { both: false, reveal: true })).toEqual([["files.duplicate", "files.moveTo"], ["files.delete"]]);
+    expect(rowMenu(rs, [], { both: true, reveal: true, openFolder: true })).toEqual([["files.openFolderItem"]]);
+    expect(rowMenu(n, [n, row({ id: "b.md", path: "b.md" })], { both: false, reveal: true, openFolder: true })).toEqual([["files.duplicate", "files.moveTo"], ["files.delete"]]);
   });
   it("Copy, Copy as path and Copy text, each where the shell can; Copy text for one note only (D-192)", () => {
-    const all = { both: false, reveal: true, paths: true, copyFiles: true, copyText: true };
+    const all = { both: false, reveal: true, openFolder: true, paths: true, copyFiles: true, copyText: true };
     const n = row({});
     expect(rowMenu(n, [n], all)).toEqual([
       ["files.openItem", "files.revealItem"], ["files.copyItem", "files.copyPath", "files.copyText"], ["files.rename", "files.duplicate", "files.moveTo"], ["files.delete"],
     ]);
     const f = row({ kind: "folder", id: "drafts", path: "drafts" });
     expect(rowMenu(f, [f], all)).toEqual([
-      ["files.newNote", "files.newFolder"], ["files.revealItem"], ["files.copyItem", "files.copyPath"], ["files.rename", "files.moveTo"], ["files.delete"],
+      ["files.newNote", "files.newFolder"], ["files.openFolderItem"], ["files.copyItem", "files.copyPath"], ["files.rename", "files.moveTo"], ["files.delete"],
     ]);
     const s = row({ kind: "root", id: "root:private", path: "private:", level: 1 });
-    expect(rowMenu(s, [], all)).toEqual([["files.newNote", "files.newFolder"], ["files.revealItem"], ["files.copyPath"]]);
+    expect(rowMenu(s, [], all)).toEqual([["files.newNote", "files.newFolder"], ["files.openFolderItem"], ["files.copyPath"]]);
     expect(rowMenu(n, [n, f], all)).toEqual([["files.duplicate", "files.moveTo"], ["files.copyItem", "files.copyPath"], ["files.delete"]]);
     // Read-only places can be copied too, never changed.
     const ro = row({ rootId: "public", readOnly: true, id: "public:a.md", path: "public:a.md" });
@@ -167,31 +167,42 @@ const menuIds = (app: ReturnType<typeof createApp>) => vm(app).menu.map((s) => s
 
 describe("the menu in the app (D-162)", () => {
   const notes = { "private:welcome.md": "# Welcome\n", "private:ideas.md": "---\nid: n-7\n---\n# Ideas\n\nSee [w](welcome.md).\n", "public:about.md": "# About\n" };
-  it("Open containing folder shows the focused row in the system's file manager, only where the shell can (D-192)", async () => {
+  it("Open containing folder shows a note in the system's file manager; a folder or section opens itself, only where the shell can (D-192)", async () => {
     const f = setup(notes);
     const shown: string[] = [];
+    const opened: string[] = [];
     let fail = false;
     f.bridge.workspace!.revealItem = async (p) => { if (fail) throw new Error("notFound"); shown.push(p); };
+    f.bridge.workspace!.openFolder = async (p) => { if (fail) throw new Error("notFound"); opened.push(p); };
     const app = await started(f);
     await app.commands.run("files.open");
     await app.commands.run("files.select", { id: "private:ideas.md", mode: "replace" });
     expect(menuIds(app)[0]).toEqual(["files.openItem", "files.revealItem"]);
+    expect(menuIds(app).flat()).not.toContain("files.openFolderItem");
     const item = vm(app).menu.flatMap((s) => s.items).find((i) => i.id === "files.revealItem");
     expect(item).toMatchObject({ label: "Open containing folder", shortcut: "Alt+Shift+R" });
     await app.commands.run("files.revealItem");
     await app.commands.run("files.select", { id: "root:public", mode: "replace" });
+    expect(menuIds(app).flat()).toContain("files.openFolderItem");
+    expect(menuIds(app).flat()).not.toContain("files.revealItem");
+    expect(vm(app).menu.flatMap((s) => s.items).find((i) => i.id === "files.openFolderItem")).toMatchObject({ label: "Open in File Explorer" });
+    // The same key opens a section or folder itself.
     await app.commands.run("files.revealItem");
+    await app.commands.run("files.openFolderItem");
     await app.commands.run("files.revealItem", { path: "private:welcome.md" });
-    expect(shown).toEqual(["private:ideas.md", "public:", "private:welcome.md"]);
+    expect(shown).toEqual(["private:ideas.md", "private:welcome.md"]);
+    expect(opened).toEqual(["public:", "public:"]);
     // Gone since: a calm error, nothing else.
     fail = true;
-    await app.commands.run("files.revealItem");
+    await app.commands.run("files.openFolderItem");
     expect(app.store.state.ui.toasts.at(-1)?.message).toBe("Couldn't open the folder. It may have moved or been deleted.");
     // A shell that can't show files (the browser) has no such item.
     const web = await started(setup(notes));
     await web.commands.run("files.open");
     await web.commands.run("files.select", { id: "private:ideas.md", mode: "replace" });
     expect(menuIds(web).flat()).not.toContain("files.revealItem");
+    await web.commands.run("files.select", { id: "root:public", mode: "replace" });
+    expect(menuIds(web).flat()).not.toContain("files.openFolderItem");
   });
   it("Copy puts files on the clipboard, Copy as path their paths, Copy text a note's text without the app's id (D-192)", async () => {
     const f = setup(notes);

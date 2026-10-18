@@ -24,6 +24,7 @@ async function fakeTrash(l: Launched) {
   });
   return () => l.app.evaluate(() => (globalThis as unknown as { trashed: string[] }).trashed);
 }
+const OPEN_FOLDER = process.platform === "darwin" ? "Open in Finder" : process.platform === "linux" ? "Open in file manager" : "Open in File Explorer";
 async function opened(dirs: ReturnType<typeof tempDirs>, env: Record<string, string> = {}) {
   const l = await launch(dirs, env);
   const { page } = l;
@@ -46,11 +47,14 @@ test("D-192: a row's menu opens its folder, and copies it as a file, as a path, 
   // Journeys copy into memory, never the computer's clipboard, and never open Explorer or Finder.
   const { l, page, row } = await opened(dirs, { FOCUS_NOTES_MEMORY_CLIPBOARD: "1" });
   await l.app.evaluate(({ shell }) => {
-    const g = globalThis as unknown as { shown: string[] };
+    const g = globalThis as unknown as { shown: string[]; openedDirs: string[] };
     g.shown = [];
+    g.openedDirs = [];
     shell.showItemInFolder = (p: string) => void g.shown.push(p);
+    shell.openPath = async (p: string) => (g.openedDirs.push(p), "");
   });
   const shown = () => l.app.evaluate(() => (globalThis as unknown as { shown: string[] }).shown);
+  const openedDirs = () => l.app.evaluate(() => (globalThis as unknown as { openedDirs: string[] }).openedDirs);
   const clipboard = () => l.app.evaluate(() => (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard?.text ?? "");
   const toasts = page.locator("#toasts");
   const menuItem = async (name: string, key: string) => {
@@ -64,6 +68,9 @@ test("D-192: a row's menu opens its folder, and copies it as a file, as a path, 
 
   await menuItem("Ideas", "revealItem");
   await expect.poll(shown).toEqual([ideas]);
+  // A folder opens itself in File Explorer, Finder or the file manager.
+  await menuItem("journal", "openFolderItem");
+  await expect.poll(openedDirs).toEqual([join(dirs.docs, "journal")]);
   await menuItem("Ideas", "copyPath");
   await expect.poll(clipboard).toBe(ideas);
   await expect(toasts.getByText("Copied the path to “Ideas”.")).toBeVisible();
@@ -77,7 +84,7 @@ test("D-192: a row's menu opens its folder, and copies it as a file, as a path, 
   await row("journal").click({ button: "right" });
   const journalMenu = page.getByRole("menu", { name: "Actions for “journal”" });
   expect(await journalMenu.getByRole("menuitem").evaluateAll((els) => els.map((e) => e.querySelector("span span span")?.textContent ?? e.textContent)))
-    .toEqual(["New note", "New folder", "Open containing folder", "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
+    .toEqual(["New note", "New folder", OPEN_FOLDER, "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
   await page.keyboard.press("Escape");
   await row("journal").click();
   await row("Ideas").click({ modifiers: [process.platform === "darwin" ? "Meta" : "Control"] });
@@ -152,7 +159,7 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await more.dispatchEvent("pointerdown", { button: 0, pointerType: "mouse", isPrimary: true });
   const folderMenu = page.getByRole("menu", { name: "Actions for “journal”" });
   await expect(folderMenu).toBeVisible();
-  expect(await items(folderMenu)).toEqual(["New note", "New folder", "Open containing folder", "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
+  expect(await items(folderMenu)).toEqual(["New note", "New folder", OPEN_FOLDER, "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
   await folderMenu.getByRole("menuitem", { name: /^New folder/ }).click();
   const name = tree.getByRole("textbox", { name: "Folder name" });
   await expect(name).toBeFocused();
@@ -164,7 +171,7 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await tree.getByRole("treeitem", { name: "Notes", exact: true }).click({ button: "right" });
   const sectionMenu = page.getByRole("menu", { name: "Actions for “Notes”" });
   await expect(sectionMenu).toBeVisible();
-  expect(await items(sectionMenu)).toEqual(["New note", "New folder", "Open containing folder", "Copy as path"]);
+  expect(await items(sectionMenu)).toEqual(["New note", "New folder", OPEN_FOLDER, "Copy as path"]);
   await page.keyboard.press("Escape");
 
   // Several selected: right-click on one of them keeps the selection, and the menu acts on all of it.

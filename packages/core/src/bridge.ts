@@ -265,6 +265,8 @@ export interface WorkspaceBridge {
   reveal?(): Promise<void>;
   /** Opens the folder that holds a note, folder or section, with it selected, in the system's file manager (D-192). Desktop only. */
   revealItem?(path: string): Promise<void>;
+  /** Opens a folder or section itself in the system's file manager: File Explorer, Finder or the Linux one (D-192). Desktop only. */
+  openFolder?(path: string): Promise<void>;
   /** Puts notes and folders on the system's clipboard as files, as a file manager's Copy does (D-192). Desktop only. */
   copyItems?(paths: string[]): Promise<void>;
   /** Every note and folder in the workspace's roots. */

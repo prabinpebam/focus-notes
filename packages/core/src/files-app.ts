@@ -644,19 +644,47 @@ export function registerFiles(ctx: Ctx) {
     disabledReason: (s) => publicLinkReason(s, focusedPath(s)) ?? "spotlight.reason.noClipboard",
     run: async () => { await copyPublicLink({ store, commands, catalog, bridge, toast }, focusedPath(store.state)); },
   });
-  // Open containing folder (D-192): the system's file manager, at the row's folder, with the row selected.
+  // Open containing folder (D-192): a note, in the system's file manager at its folder, selected.
+  // A folder or a section opens itself: Open in File Explorer, Finder or the file manager. One key does whichever fits.
+  const focusedRow = (s: AppState) => rowsOf(s).find((r) => r.id === s.ui.files.selection.focus);
+  const opensFolder = (r: FileRow | undefined) => Boolean(r && r.kind !== "note");
+  const openFolderAt = async (path: string) => {
+    try {
+      await ws!.openFolder!(path);
+    } catch {
+      toast(catalog.format("toast.revealItemFailed"), { tone: "error" });
+    }
+  };
   commands.register<{ path?: string }>({
     id: "files.revealItem", title: "command.files.revealItem", icon: "open",
     shortcut: { macos: "Mod+Alt+R", default: "Shift+Alt+R", handledBy: "files" }, layer: "pro", group: "files",
-    enabled: (s) => Boolean(ws?.revealItem) && Boolean(focusedPath(s)),
+    enabled: (s) => {
+      const r = focusedRow(s);
+      return Boolean(r) && (opensFolder(r) ? Boolean(ws?.openFolder) : Boolean(ws?.revealItem));
+    },
     run: async (a) => {
-      const path = typeof a?.path === "string" && a.path ? a.path : focusedPath(store.state);
-      if (!path || !ws?.revealItem) return;
+      const r = focusedRow(store.state);
+      const path = typeof a?.path === "string" && a.path ? a.path : r?.path;
+      if (!path) return;
+      if (!(typeof a?.path === "string" && a.path) && opensFolder(r)) {
+        if (ws?.openFolder) await openFolderAt(path);
+        return;
+      }
+      if (!ws?.revealItem) return;
       try {
         await ws.revealItem(path);
       } catch {
         toast(catalog.format("toast.revealItemFailed"), { tone: "error" });
       }
+    },
+  });
+  const fileManager = bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows";
+  commands.register<{ path?: string }>({
+    id: "files.openFolderItem", title: `command.files.openFolderItem.${fileManager}`, icon: "open", group: "files",
+    enabled: (s) => Boolean(ws?.openFolder) && opensFolder(focusedRow(s)),
+    run: async (a) => {
+      const path = typeof a?.path === "string" && a.path ? a.path : focusedRow(store.state)?.path;
+      if (path && ws?.openFolder) await openFolderAt(path);
     },
   });
   // Copy, Copy as path and Copy text (D-192): what's acted on (the selection, else the focused row), as a file manager copies.
@@ -989,7 +1017,7 @@ export function registerFiles(ctx: Ctx) {
       return d;
     };
     const menu = rowMenu(focus, acted, {
-      both, reveal: Boolean(ws?.revealItem), paths: Boolean(ws?.revealItem) && Boolean(bridge.copyText), copyFiles: Boolean(ws?.copyItems), copyText: Boolean(bridge.copyText),
+      both, reveal: Boolean(ws?.revealItem), openFolder: Boolean(ws?.openFolder), paths: Boolean(ws?.revealItem) && Boolean(bridge.copyText), copyFiles: Boolean(ws?.copyItems), copyText: Boolean(bridge.copyText),
     }).map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
     const what = acted.length > 1 ? catalog.format("files.items", { count: acted.length }) : catalog.format("files.quoted", { name: focus.kind === "root" ? rootLabel(focus.rootId) : focus.label });
     return { menu, menuLabel: catalog.format("files.menuLabel", { what }) };
