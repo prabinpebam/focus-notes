@@ -270,7 +270,7 @@ const PRO: Record<string, Cover> = {
   "Copy link to the selected note": ["spotlight.copyLink"],
   "Jump between result groups": ["spotlight.nextGroup", "spotlight.prevGroup"],
   "Preview without opening": { planned: "the Files panel's preview (Files → What's built)" },
-  "Open containing folder (desktop)": ["files.revealItem"],
+  "Open containing folder, or a folder in File Explorer / Finder (desktop)": ["files.revealItem"],
   "Copy as path (desktop)": ["files.copyPath"],
 };
 
