@@ -210,6 +210,26 @@ export interface SyncBridge {
   held?(): Promise<HeldNotes>;
   /** Make it public (backed up with the next save) or Keep it on this computer only. Resolves to the lists after. */
   answerHeld?(path: string, choice: "public" | "local"): Promise<HeldNotes>;
+  /** What waits in each repository's notes, from the cached status (FIL-14, D-191). Absent where there's no Git. */
+  repos?(): Promise<RepoBackupReport[]>;
+  /** Commits everything waiting in one repository's notes (empty folders kept with a `.gitkeep`), then pushes (FIL-14). */
+  backupRepo?(repo: RepoId): Promise<SyncReport>;
+}
+
+/** A Files section's repository: Private is the `private/` submodule, Public the notes repository (D-191). */
+export type RepoId = "private" | "public";
+/** What waits for backup in one repository's notes: not committed, or committed and not pushed (FIL-14). */
+export interface RepoBackupReport {
+  repo: RepoId;
+  /** The repository, as owner/name when its remote is on GitHub. */
+  name?: string;
+  /** Folders added or removed, empty ones included (Git keeps a folder through its `.gitkeep`). */
+  folders: number;
+  notes: number;
+  /** Other files in the notes (images, attachments). */
+  other: number;
+  /** Commits made here and not pushed yet. */
+  commits: number;
 }
 
 /** A note changed both on this computer and elsewhere since they last synced (FIL-12). */

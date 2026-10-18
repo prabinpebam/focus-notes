@@ -88,6 +88,19 @@ export function saveMessage(changes: Change[]): string {
   return message(subject, changes.map(describe));
 }
 
+/**
+ * The message for backing up one repository by hand (FIL-14, D-191): one change says what it is;
+ * otherwise folders and notes are counted ("Back up 2 folders and 1 note"), each listed below.
+ */
+export function backupMessage(changes: Change[]): string {
+  if (changes.length === 1) return describe(changes[0]!);
+  const folders = changes.filter((c) => c.path.endsWith(KEEP)).length;
+  const notes = changes.filter((c) => /\.md$/i.test(c.path)).length;
+  const files = changes.length - folders - notes;
+  const what = [folders ? plural(folders, "folder", "folders") : "", notes ? plural(notes, "note", "notes") : "", files ? plural(files, "file", "files") : ""].filter(Boolean);
+  return message(`Back up ${what.length > 1 ? `${what.slice(0, -1).join(", ")} and ${what.at(-1)}` : what[0]}`, changes.map(describe));
+}
+
 /** The message for one batch from the Files panel, said as the operation, with its link updates (FIL-05, FIL-09). */
 export function batchMessage(ops: BatchOp[], changes: Change[] = []): string {
   const main = ops.filter((o) => o.op !== "write");
