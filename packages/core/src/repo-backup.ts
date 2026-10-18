@@ -23,6 +23,8 @@ export interface RepoBackupEntry {
 }
 export type RepoBackupState = Partial<Record<RepoId, RepoBackupEntry>>;
 export const REPO_IDS: readonly RepoId[] = ["private", "public"];
+/** Changes close together (a save and its status, a batch) are asked about once, this long after the last. */
+export const SETTLE_MS = 250;
 
 /** How many things wait: folders, notes and files, or else the commits not pushed. */
 export function waitingOf(r: RepoBackupReport | undefined): number {
@@ -139,14 +141,34 @@ export function registerRepoBackup<S extends { sync: SyncState; repoBackup: Repo
     refresh,
     start() {
       if (!bridge.sync?.repos) return;
+      // Asked only while Files shows the icons, and once more as it opens; changes close together are asked about once.
+      const shown = () => (store.state as { ui?: { files?: { open?: boolean } } }).ui?.files?.open !== false;
+      let stale = false;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const soon = () => {
+        if (!shown()) {
+          stale = true;
+          return;
+        }
+        clearTimeout(timer);
+        timer = setTimeout(() => void refresh(), SETTLE_MS);
+      };
       // Whatever the app's own backup did, and whatever changed in Files, each repository says again.
-      bridge.sync.onStatus(() => void refresh());
+      bridge.sync.onStatus(soon);
       let tree: unknown;
+      let open = shown();
       store.subscribe(() => {
         const t = (store.state as { workspace?: { tree?: unknown } }).workspace?.tree;
+        const nowOpen = shown();
+        const opened = nowOpen && !open;
+        open = nowOpen;
+        if (opened && stale) {
+          stale = false;
+          void refresh();
+        }
         if (t === tree) return;
         tree = t;
-        void refresh();
+        soon();
       });
       void refresh();
     },

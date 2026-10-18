@@ -3,12 +3,12 @@
  * with a backup icon that says what's waiting there, folders included (empty ones too), and a card
  * whose Back up to GitHub commits and pushes everything waiting in that repository's notes.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { MessageCatalog } from "../src/messages.ts";
 import { Store } from "../src/store.ts";
 import { TaskTracker, type TaskView } from "../src/tasks.ts";
 import { NO_SYNC, type SyncState } from "../src/sync-app.ts";
-import { registerRepoBackup, repoBackupView, repoStateOf, waitingOf, waitingText, type RepoBackupState } from "../src/repo-backup.ts";
+import { registerRepoBackup, repoBackupView, repoStateOf, SETTLE_MS, waitingOf, waitingText, type RepoBackupState } from "../src/repo-backup.ts";
 import type { PlatformBridge, RepoBackupReport, SyncReport } from "../src/bridge.ts";
 
 const catalog = new MessageCatalog("en", {
@@ -127,6 +127,33 @@ describe("backing up one repository", () => {
     expect(repoStateOf(h.store.state.repoBackup.public, h.store.state.sync)).toBe("offline");
     expect(h.store.state.repoBackup.public?.report?.folders).toBe(1);
     expect(h.toasts).toEqual(["Couldn't back up: you're offline."]);
+  });
+  it("asks only while Files shows the icons, once for changes close together, and again as Files opens", async () => {
+    vi.useFakeTimers();
+    try {
+      let asked = 0;
+      let status: (() => void) | undefined;
+      const store = new Store<{ sync: SyncState; repoBackup: RepoBackupState; ui: { files: { open: boolean } }; workspace: { tree: object } }>({ sync: { git: true }, repoBackup: {}, ui: { files: { open: false } }, workspace: { tree: {} } });
+      const bridge = { sync: { onStatus: (l: () => void) => ((status = l), () => {}), repos: async () => (asked++, [report("public")]) } } as unknown as PlatformBridge;
+      const tracker = new TaskTracker({ signDelay: 0, signMinimum: 0, announceDelay: 0, elapsedDelay: 0, doneDuration: 0 }, { change: () => {}, announce: () => {} });
+      registerRepoBackup({ store, bridge, catalog, tracker, toast: () => {} }).start();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(asked).toBe(1);
+      status!();
+      store.update((s) => ({ ...s, workspace: { tree: {} } }));
+      await vi.advanceTimersByTimeAsync(SETTLE_MS * 2);
+      expect(asked).toBe(1);
+      store.update((s) => ({ ...s, ui: { files: { open: true } } }));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(asked).toBe(2);
+      status!();
+      status!();
+      store.update((s) => ({ ...s, workspace: { tree: {} } }));
+      await vi.advanceTimersByTimeAsync(SETTLE_MS * 2);
+      expect(asked).toBe(3);
+    } finally {
+      vi.useRealTimers();
+    }
   });
   it("a repository the shell no longer reports goes away; refreshes never overlap", async () => {
     const h = harness([[report("private"), report("public")], [report("public")]]);
