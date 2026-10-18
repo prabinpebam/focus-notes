@@ -165,14 +165,15 @@
   <thead><tr><th>Acted on</th><th>Items, in order</th></tr></thead>
   <tbody>
     <tr><td>A note</td><td>Open · Open containing folder (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>, desktop) · Copy (<kbd>Ctrl</kbd>+<kbd>C</kbd>, desktop) · Copy as path (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>, desktop) · Copy text · Rename (<kbd>F2</kbd>) · Duplicate · Move to… (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd>) · Make public or Make private · Copy public link (a public note) · Delete (<kbd>Delete</kbd>)</td></tr>
-    <tr><td>A folder</td><td>New note · New folder (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd>) · Open containing folder · Copy · Copy as path (all three desktop) · Rename · Move to… · Make public or Make private · Delete</td></tr>
-    <tr><td>A section (Private, Public)</td><td>New note · New folder · Open containing folder · Copy as path (both desktop)</td></tr>
+    <tr><td>A folder</td><td>New note · New folder (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd>) · Open in File Explorer (Finder on macOS, file manager on Linux) · Copy · Copy as path (all three desktop) · Rename · Move to… · Make public or Make private · Delete</td></tr>
+    <tr><td>A section (Private, Public)</td><td>New note · New folder · Open in File Explorer (Finder, file manager) · Copy as path (both desktop)</td></tr>
     <tr><td>Several selected</td><td>Duplicate (only notes are copied) · Move to… · Copy · Copy as path (both desktop) · Make public or Make private · Delete, each acting on the selection</td></tr>
   </tbody>
 </table>
-<p>Each item shows its shortcut. An unavailable item stays in the menu, reachable, with the reason under it ("Notes here can't be changed"); a read-only section offers only what can be done there: Open, Open containing folder, the copies, and Copy public link on a public note. The file system's items (D-192), desktop only:</p>
+<p>Each item shows its shortcut. An unavailable item stays in the menu, reachable, with the reason under it ("Notes here can't be changed"); a read-only section offers only what can be done there: Open, Open containing folder or Open in File Explorer, the copies, and Copy public link on a public note. The file system's items (D-192), desktop only:</p>
 <ul>
-  <li><strong>Open containing folder</strong> opens the folder that holds the item in Explorer or Finder, with the item selected; a section shows its notes folder.</li>
+  <li><strong>Open containing folder</strong> (a note) opens the folder that holds it in Explorer or Finder, with the note selected.</li>
+<li><strong>Open in File Explorer</strong> (a folder or section; <strong>Open in Finder</strong> on macOS, <strong>Open in file manager</strong> on Linux) opens that folder itself.</li>
   <li><strong>Copy</strong> puts the notes and folders on the system's clipboard as files, as Explorer's and Finder's Copy do, to paste in a folder, a mail or a chat; a section isn't copied whole. "Copying…" shows through the task tracker if it takes a moment, then "Copied “⟨title⟩”."</li>
   <li><strong>Copy as path</strong> copies each one's full path, one per line, without quotes.</li>
 </ul>
