@@ -33,6 +33,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
   - **WP-8.4 workspace pro:** last-changed time on rows, replace across notes (FND-05), Spotlight filters and a preview pane (SPT-06).
   - **WP-8.5 multiple windows:** <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd>, reopening the same windows at launch, the macOS Window menu.
   - **WP-8.8 document minimap (D-185, D-186):** built on the `fix-state-note` branch (17 October) with its code, accessibility and design-system reviews addressed, and the owner's docking added: Files and the contents dock flush to the window's edges, resizable, Files undocking first as the window narrows (*Dock contents*, D-186, D-187). Waiting for its Windows CI run and the owner's look. It stays in focus mode, which is on by default. Follow-ups: a setting to turn it off, an exit fade for the card, PopoverPanel's own hover-close delay reading `wait.hoverClose`, and, on Linux only (D-112, report-only), an axe `label-content-name-mismatch` in the ⋯ menu that's new on this branch (m1-toolbar and m1-a11y; Windows and macOS pass).
+  - **WP-8.10 backup by repository (D-191):** Private and Public in Files each show their repository's backup icon and card, counting what waits there (empty folders too), with *Back up to GitHub* for that repository. Built on `wp-repo-backup` (18 October); waiting for its Windows CI run and the owner's look.
   - **WP-5.6, WP-5.7, WP-6.2:** loose ends.
 - **Not started:**
   - WP-8.6 signing, updates, channels and stores (needs the owner's certificates);
@@ -114,7 +115,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M8: Polish and pro features (Make it yours, fully)</p>
-<p>Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, a document minimap, signed builds with automatic updates and channels, store listings, and more interface languages. <a href="implementation-plan.md#m8">Details</a>. DSK-06, DSK-07, DST-04, DST-07, EDT-07, FIL-11, FIL-13, FND-03, FND-05, I18N-03, KEY-04, KEY-07, SPT-06, TBL-04, TBL-09, THM-04, THM-05, THM-09 to THM-12, UI-08, UI-13.</p>
+<p>Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, a document minimap, signed builds with automatic updates and channels, store listings, and more interface languages. <a href="implementation-plan.md#m8">Details</a>. DSK-06, DSK-07, DST-04, DST-07, EDT-07, FIL-11, FIL-13, FIL-14, FND-03, FND-05, I18N-03, KEY-04, KEY-07, SPT-06, TBL-04, TBL-09, THM-04, THM-05, THM-09 to THM-12, UI-08, UI-13.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>

@@ -48,6 +48,8 @@ While there's a problem, opening the toolbar adds a status row at its top: "3 ch
 
 Pressing it backs up now (the retry, on a problem). After *Save to cloud* the label opens beside the icon, "Backing up…" then "Backed up", for about 2 s, and a polite live region says the result; problems are announced by their toast, and nothing else is.
 
+**By repository (FIL-14, D-191):** each Files section's heading (Private, Public) carries its repository's own `SaveState` icon with these states, and a card like this one: the section, its state, the repository, the last backup, what waits there in counts ("2 folders, 1 note waiting for backup", empty folders included), and *Back up to GitHub* for that repository alone, which runs through the task tracker and announces "Public notes backed up" ([Files → Repository backup](../views/files.html#repository-backup)).
+
 **Restored after a crash (QLT-03, WP-2.6, D-105):** when the app starts after a crash, the text the recovery journal kept is already back in its note, and one information toast says so, with nothing to decide: "Restored what you were writing in “⟨title⟩” before Focus Notes closed." (or "in ⟨n⟩ notes"). If the note changed while the app was closed, nothing is written over it: the text is kept beside it, and the toast says "“⟨title⟩” changed while Focus Notes was closed, so what you were writing is kept beside it, in “⟨name⟩ (recovered)”."
 
 <h2 id="waits" data-reader-personas="design engineering">Waits</h2>

@@ -2077,6 +2077,35 @@
       "status": "verifying"
     },
     {
+      "id": "WP-8.10",
+      "stage": "M8",
+      "title": "Backup by repository",
+      "summary": "Each Files section's heading carries its repository's backup icon and card: what waits there (folders, empty ones too, notes, files, commits not pushed) and Back up to GitHub for that repository (D-191).",
+      "requirements": [
+        "FIL-14"
+      ],
+      "dependsOn": [
+        "WP-3.3",
+        "WP-2.4"
+      ],
+      "touches": [
+        "ui",
+        "core",
+        "views",
+        "desktop"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "design/views/files.html"
+      ],
+      "lookahead": false,
+      "status": "building"
+    },
+    {
       "id": "WP-9.1",
       "stage": "Later",
       "title": "Image block",
