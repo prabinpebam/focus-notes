@@ -9,12 +9,14 @@ describe("Copy puts files on the clipboard (D-192)", () => {
       const runs: { file: string; args: string[]; env: NodeJS.ProcessEnv }[] = [];
       await copyFilesToClipboard(paths, { platform, run: async (file, args, env) => void runs.push({ file, args, env }), writeBuffer: () => { throw new Error("not here"); } });
       expect(runs).toHaveLength(1);
-      expect(runs[0]!.file).toBe(platform === "win32" ? "powershell.exe" : "osascript");
+      expect(runs[0]!.file).toBe(platform === "win32" ? copyCommand("win32")!.file : "/usr/bin/osascript");
       expect(runs[0]!.args.join(" ")).not.toContain("It's");
       expect(runs[0]!.args.join(" ")).toContain(COPY_PATHS_ENV);
       expect(runs[0]!.env[COPY_PATHS_ENV]).toBe(paths.join("\n"));
     }
     expect(copyCommand("win32")!.args).toContain("-NonInteractive");
+    // By absolute path, never found on the PATH or in the working folder (D-166 (5)).
+    expect(copyCommand("win32", "D:\\Win")!.file).toBe("D:\\Win\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
   });
   it("Linux writes GNOME's copied-files format with file URLs", async () => {
     const written: [string, string][] = [];

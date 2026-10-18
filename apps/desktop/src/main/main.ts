@@ -53,7 +53,7 @@ import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/i
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
 import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
 import { CrashRecovery, coverBounds } from "./window/crash-cover.ts";
-import { copyFilesToClipboard, defaultRun } from "./copy-files.ts";
+import { COPY_PATHS_MAX, copyFilesToClipboard, defaultRun } from "./copy-files.ts";
 import { themeCanvas, WINDOW_METRICS } from "@focus-notes/core/window-geometry";
 import { AppMenuBar } from "./window/menu-bar.ts";
 import { SnapshotCache } from "@focus-notes/core/snapshot";
@@ -1129,12 +1129,22 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const problem = await shell.openPath(notesHome());
     if (problem) throw new Error(problem);
   });
-  // Open containing folder, Copy and Copy as path (D-192): only notes, folders and sections inside the workspace's roots.
+  // Open containing folder, Copy and Copy as path (D-192): only notes, folders and sections inside the workspace's roots,
+  // as the file system resolves them: no control characters, no symbolic link or short name (GIT~1) leading elsewhere.
+  const sameName = (a: string, b: string) => (process.platform === "linux" ? a === b : a.toLowerCase() === b.toLowerCase());
   const itemPath = (p: unknown): string => {
-    if (typeof p !== "string" || !p || !isAbsolute(p) || resolve(p) !== p) throw refuse("invalid");
+    if (typeof p !== "string" || !p || /[\x00-\x1f\x7f]/.test(p) || !isAbsolute(p) || resolve(p) !== p) throw refuse("invalid");
     const root = roots().find((r) => inside(r.path, p));
     if (!root || relative(root.path, p).split(sep).some((part) => part.startsWith("."))) throw refuse("invalid");
     if (!existsSync(p)) throw refuse("notFound");
+    let real: string, realRoot: string;
+    try {
+      real = realpathSync.native(p);
+      realRoot = realpathSync.native(root.path);
+    } catch {
+      throw refuse("notFound");
+    }
+    if (!inside(realRoot, real) || !sameName(relative(realRoot, real), relative(root.path, p))) throw refuse("invalid");
     return p;
   };
   handle("workspace:revealItem", async (p) => {
@@ -1143,6 +1153,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("workspace:copyItems", async (ps) => {
     if (!Array.isArray(ps) || !ps.length || ps.length > 1000) throw refuse("invalid");
     const paths = ps.map(itemPath);
+    // A Windows environment variable holds at most 32,767 characters.
+    if (paths.join("\n").length > COPY_PATHS_MAX) throw refuse("invalid");
     // Journeys copy into memory, never the computer's clipboard: the paths, marked as files.
     if (devEnv("FOCUS_NOTES_MEMORY_CLIPBOARD") === "1") return appClipboard().writeText(`files:\n${paths.join("\n")}`);
     await copyFilesToClipboard(paths, { platform: process.platform, run: defaultRun, writeBuffer: (f, d) => clipboard.writeBuffer(f, d) });

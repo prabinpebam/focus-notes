@@ -6,8 +6,11 @@
  * Linux. The paths go in an environment variable, never in the command, so no name can run as code.
  */
 import { execFile } from "node:child_process";
+import { win32 } from "node:path";
 
 export const COPY_PATHS_ENV = "FOCUS_NOTES_COPY_PATHS";
+/** The paths, one per line, must fit in a Windows environment variable (32,767 characters). */
+export const COPY_PATHS_MAX = 32_000;
 
 const WINDOWS = `Set-Clipboard -LiteralPath ($env:${COPY_PATHS_ENV} -split "\`n")`;
 const MACOS = [
@@ -17,10 +20,13 @@ const MACOS = [
   "pb.writeObjects($(s.split('\\n').map((p) => $.NSURL.fileURLWithPath(p))));",
 ].join(" ");
 
-/** The program and arguments that put `paths` on the clipboard, or undefined where Electron does it itself (Linux). */
-export function copyCommand(platform: NodeJS.Platform): { file: string; args: string[] } | undefined {
-  if (platform === "win32") return { file: "powershell.exe", args: ["-NoProfile", "-NonInteractive", "-Command", WINDOWS] };
-  if (platform === "darwin") return { file: "osascript", args: ["-l", "JavaScript", "-e", MACOS] };
+/**
+ * The program and arguments that put `paths` on the clipboard, or undefined where Electron does it itself (Linux).
+ * Programs by absolute path, never found on the PATH or in the working folder (D-166 (5)).
+ */
+export function copyCommand(platform: NodeJS.Platform, systemRoot = process.env.SystemRoot ?? "C:\\Windows"): { file: string; args: string[] } | undefined {
+  if (platform === "win32") return { file: win32.join(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"), args: ["-NoProfile", "-NonInteractive", "-Command", WINDOWS] };
+  if (platform === "darwin") return { file: "/usr/bin/osascript", args: ["-l", "JavaScript", "-e", MACOS] };
   return undefined;
 }
 
