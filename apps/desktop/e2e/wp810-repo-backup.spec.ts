@@ -34,6 +34,8 @@ test("FIL-14: an empty folder shows waiting on its section; the card backs it up
     await expect(pub).toHaveAttribute("data-state", "synced", { timeout: 15_000 });
     await expect(priv).toHaveAttribute("data-state", "synced");
     const heading = files.getByRole("treeitem", { name: /^Public/ });
+    // The heading is named by its label alone, whatever its icon says.
+    await expect(heading).toHaveAccessibleName("Public");
     const [row, icon] = [(await heading.boundingBox())!, (await pub.boundingBox())!];
     expect(icon.x + icon.width).toBeGreaterThan(row.x + row.width / 2);
 

@@ -61,6 +61,18 @@ describe("FIL-14: what waits in each repository", () => {
     expect(git(privateRemote, "log", "-1", "--format=%s", "main")).toBe("Start");
   });
 
+  it("a rename from outside the notes folder is left alone: never a delete there in Back up's name", async () => {
+    const { ws, notesRemote } = instance();
+    const s = await open(ws);
+    git(ws, "mv", ".focus-notes/workspace.json", "notes/moved.json");
+    s.changed();
+    expect((await s.repos())[1]).toMatchObject({ folders: 0, notes: 0, other: 0 });
+    const r = await s.backupRepo("public");
+    expect(r.problem).toBeUndefined();
+    expect(git(notesRemote, "ls-tree", "-r", "--name-only", "main")).toContain(".focus-notes/workspace.json");
+    expect(git(ws, "status", "--porcelain")).toContain("notes/moved.json");
+  });
+
   it("commits not pushed yet are counted by what they changed", async () => {
     const { ws } = instance();
     const s = await open(ws);

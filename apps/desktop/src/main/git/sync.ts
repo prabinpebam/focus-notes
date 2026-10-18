@@ -262,7 +262,7 @@ export class GitSync {
         else if (/\.md$/i.test(rel)) notes.add(rel);
         else other.add(rel);
       };
-      for (const e of st.entries) if (e.kind !== "ignored") add(e.path);
+      for (const e of st.entries) if (e.kind !== "ignored" && e.kind !== "unmerged" && (e.from === undefined || inNotes(e.from))) add(e.path);
       for (const dir of await emptyFolders(join(repo.dir, NOTES))) folders.add(posix(relative(repo.dir, dir)));
       const commits = st.upstream ? st.ahead : 0;
       if (commits > 0) {
@@ -304,7 +304,8 @@ export class GitSync {
       this.#generation++;
       const st = await repo.cache.fresh().catch(() => undefined);
       if (!st) return this.#fail("failed");
-      const paths = st.entries.filter((e) => e.kind !== "ignored" && e.kind !== "unmerged" && inNotes(e.path)).flatMap((e) => (e.from !== undefined ? [e.path, e.from] : [e.path]));
+      // A rename from outside the notes folder is left to the person: never a delete there in its name.
+      const paths = st.entries.filter((e) => e.kind !== "ignored" && e.kind !== "unmerged" && inNotes(e.path) && (e.from === undefined || inNotes(e.from))).flatMap((e) => (e.from !== undefined ? [e.path, e.from] : [e.path]));
       if (!paths.length) return undefined;
       return this.#commit(repo, st, paths, backupMessage, repo.moves);
     });
