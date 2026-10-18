@@ -156,7 +156,8 @@ export function registerRepoBackup<S extends { sync: SyncState; repoBackup: Repo
       set(repo, { backingUp: true, problem: undefined });
       const name = catalog.format(`repoBackup.name.${repo}`);
       try {
-        await tracker.run(`repoBackup.${repo}`, "repoBackup.task", async () => {
+        const priv = repo === "private";
+        await tracker.run(priv ? "repoBackup.private" : "repoBackup.public", "repoBackup.task", async () => {
           const r: SyncReport = await bridge.sync!.backupRepo!(repo);
           if (r.state === "problem") throw new SyncFailed(catalog.format(`sync.problem.${r.problem ?? "failed"}`), r.problem ?? "failed");
         }, "save.label.done");

@@ -23,7 +23,7 @@ const catalog = new MessageCatalog("en", {
   "save.state.savedLocal": "Saved on this computer", "save.state.pending": "Saved here · not backed up yet", "save.state.syncing": "Backing up…",
   "save.state.synced": "Backed up at {time}", "save.state.syncedNow": "Backed up", "save.state.offline": "Offline · will back up when you're back", "save.state.error": "Couldn't back up · Try again",
   "save.backup.unknown": "No backup recorded in this session", "save.backup.last": "Last backup: {time}",
-  "save.backup.progress": "Backing up your changes to GitHub", "save.backup.current": "No changes waiting for backup",
+  "save.backup.progress": "Backing up your changes to GitHub", "save.backup.current": "No changes waiting for backup", "save.backup.local": "Connect a GitHub workspace to back up your notes",
   "sync.problem.offline": "Couldn't back up: you're offline.", "sync.problem.failed": "Couldn't back up.",
 });
 
