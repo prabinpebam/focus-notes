@@ -2077,6 +2077,35 @@
       "status": "verifying"
     },
     {
+      "id": "WP-8.9",
+      "stage": "M8",
+      "title": "Isolated crash recovery",
+      "summary": "Drafts keyed by a draft ID in the app's data folder, matched to notes at launch without writing anything, and restored through the editor, the resolver, or Files → Recovered (D-190).",
+      "requirements": [
+        "QLT-06"
+      ],
+      "dependsOn": [
+        "WP-2.6"
+      ],
+      "touches": [
+        "core",
+        "desktop",
+        "views",
+        "ui"
+      ],
+      "reviews": [
+        "code",
+        "security",
+        "design-system",
+        "accessibility"
+      ],
+      "specs": [
+        "architecture/crash-recovery.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
       "id": "WP-9.1",
       "stage": "Later",
       "title": "Image block",

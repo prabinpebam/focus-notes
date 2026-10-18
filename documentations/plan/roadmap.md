@@ -47,6 +47,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
   - Typing in a 50,000-word note, or in very large tables with wrapping cells, misses its budget locally. Virtualising what's off screen would fix it.
   - Intermittent CI journeys: the real-cursor drag helper never starting (`m5-snappy`), the first-run card (`m1-a11y`), `wp83-customize`, `dsk09-frames`, `m1-tables` (DEF-27).
   - The white window margin (D-153) needs a look on the owner's hardware.
+- **Crash recovery made isolated (WP-8.9, D-190, 18 October):** the recovery journal recreated four notes under names they'd held during title renames, and committed them. The plan and a benchmark of how other editors recover are in [Crash recovery](../architecture/crash-recovery.md); its hotfix (S0) comes first.
 - **Waiting on the owner:** D-158 (where new notes go without a private repository), the look without a GPU (D-151 (13)), and the anchored setup card.
 - **Suggested next, in order:** finish WP-8.5 and WP-8.4, the image block (WP-9.1), then the Help articles (WP-10.3).
 - **How to work:** read the project context at the top of [`AGENTS.md`](../../AGENTS.md) first. This is the owner's hobby project in development: do what they ask directly, gate a change only on the checks that cover it (D-180), and keep only the real safety rules (their notes, privacy, their computer).
@@ -114,7 +115,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M8: Polish and pro features (Make it yours, fully)</p>
-<p>Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, a document minimap, signed builds with automatic updates and channels, store listings, and more interface languages. <a href="implementation-plan.md#m8">Details</a>. DSK-06, DSK-07, DST-04, DST-07, EDT-07, FIL-11, FIL-13, FND-03, FND-05, I18N-03, KEY-04, KEY-07, SPT-06, TBL-04, TBL-09, THM-04, THM-05, THM-09 to THM-12, UI-08, UI-13.</p>
+<p>Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, a document minimap, signed builds with automatic updates and channels, store listings, more interface languages, and isolated crash recovery. <a href="implementation-plan.md#m8">Details</a>. DSK-06, DSK-07, DST-04, DST-07, EDT-07, FIL-11, FIL-13, FND-03, FND-05, I18N-03, KEY-04, KEY-07, QLT-06, SPT-06, TBL-04, TBL-09, THM-04, THM-05, THM-09 to THM-12, UI-08, UI-13.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>
