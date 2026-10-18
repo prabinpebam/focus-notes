@@ -115,6 +115,7 @@ Seed: *"CRUD files and folders, including moves."* Detailed in [Files and sharin
 | FIL-11 | Sort the tree by name or last change. Duplicate a note. | P1 |
 | FIL-12 | Conflict resolver: when sync finds the same note changed elsewhere, show both versions and offer keep mine, take theirs (keeping a recoverable copy of mine), or keep both. | P0 |
 | FIL-13 | Note history: a note's versions from Git, with time and author (agent changes labeled), comparison, and restore as a new commit. | P1 |
+| FIL-14 | Backup by repository: each Files section (Private, Public) shows its repository's backup state at its heading's trailing end, counting what waits there, folders included (empty ones too), and its card backs up everything waiting in that repository's notes on request, keeping empty folders with a `.gitkeep` (D-191). | P1 |
 
 ## Sharing and visibility (SHR)
 

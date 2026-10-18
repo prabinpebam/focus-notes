@@ -13,8 +13,9 @@ import { conflictCopy, deletedId, DELETED_LOG_ARGS, parseDeletedId, parseDeleted
 import { StatusCache, filesKey, gitFiles } from "./cache.ts";
 import { Cadence, FETCH_EVERY_MS, type BackupPolicy, POINTER_GAP_MS, pointerDelay, retryDelay, systemClock, type Clock, type SyncReason } from "./cadence.ts";
 import { releaseLock, takeLock } from "./lock.ts";
-import { AGENT_TRAILER, agentMessage, agentMovesOf, agentNoteOf, agentOf, batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, undoAgentMessage, type BatchOp, type Change } from "./message.ts";
-import type { ConflictChoice, NoteConflict, SyncProblem, SyncReport } from "@focus-notes/core";
+import { emptyFolders } from "./folders.ts";
+import { AGENT_TRAILER, agentMessage, backupMessage, agentMovesOf, agentNoteOf, agentOf, batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, undoAgentMessage, type BatchOp, type Change } from "./message.ts";
+import type { ConflictChoice, NoteConflict, RepoBackupReport, SyncProblem, SyncReport } from "@focus-notes/core";
 import type { RepoHealth } from "@focus-notes/core/diagnostics";
 import { bothChanged, changedAt, divergence, GitFailed, readBlobs, settle, treeNames, type Exec, type Settle } from "./resolve.ts";
 import { Queue, commitProblem, createRunner, networkProblem, type GitRunner } from "./run.ts";
@@ -61,6 +62,10 @@ export interface GitSyncOptions {
 
 const MIN_GIT: [number, number] = [2, 31];
 const PRIVATE = "private";
+/** A repository's notes folder: only what's in it is counted and backed up by a section's backup (D-191). */
+const NOTES = "notes";
+const KEEP = "/.gitkeep";
+const inNotes = (rel: string) => rel === NOTES || rel.startsWith(`${NOTES}/`);
 const posix = (p: string) => p.split(sep).join("/");
 const inside = (base: string, p: string) => {
   const r = relative(base, p);
@@ -233,6 +238,86 @@ export class GitSync {
 
   #waiting(statuses: (RepoStatus | undefined)[]): number {
     return [this.notes, this.privateRepo].reduce((n, r) => n + (r?.pending.size ?? 0), 0) + statuses.reduce((n, s) => n + (s?.upstream ? s.ahead : 0), 0);
+  }
+
+  // ---- backup by repository (FIL-14, D-191) ----
+
+  /**
+   * What waits for backup in each repository's notes (FIL-14): files not committed, folders with
+   * nothing in them (Git can't see those), and what commits not pushed yet changed. From the cached
+   * status, and one `git diff` only while commits wait.
+   */
+  async repos(): Promise<RepoBackupReport[]> {
+    const out: RepoBackupReport[] = [];
+    for (const [id, repo] of [["private", this.privateRepo], ["public", this.notes]] as const) {
+      if (!repo) continue;
+      const st = await repo.cache.get().catch(() => undefined);
+      if (!st) continue;
+      const folders = new Set<string>();
+      const notes = new Set<string>();
+      const other = new Set<string>();
+      const add = (rel: string) => {
+        if (!inNotes(rel)) return;
+        if (rel.endsWith(KEEP)) folders.add(rel.slice(0, -KEEP.length));
+        else if (/\.md$/i.test(rel)) notes.add(rel);
+        else other.add(rel);
+      };
+      for (const e of st.entries) if (e.kind !== "ignored" && e.kind !== "unmerged" && (e.from === undefined || inNotes(e.from))) add(e.path);
+      for (const dir of await emptyFolders(join(repo.dir, NOTES))) folders.add(posix(relative(repo.dir, dir)));
+      const commits = st.upstream ? st.ahead : 0;
+      if (commits > 0) {
+        const d = await this.#git(repo, ["diff", "--name-only", "--no-renames", "-z", `${st.upstream}...HEAD`]);
+        if (d.code === 0) for (const p of d.stdout.split("\0")) if (p) add(p);
+      }
+      out.push({ repo: id, ...(await this.#nameOf(repo)), folders: folders.size, notes: notes.size, other: other.size, commits });
+    }
+    return out;
+  }
+
+  /** The repository as owner/name, from its remote on GitHub; read once. */
+  readonly #names = new Map<Repo, Promise<{ name?: string }>>();
+  #nameOf(repo: Repo): Promise<{ name?: string }> {
+    let p = this.#names.get(repo);
+    if (!p) {
+      p = this.#git(repo, ["remote", "get-url", "origin"]).then((r) => {
+        const m = r.code === 0 ? /github\.com[:/]+([^/\s]+\/[^/\s]+?)(?:\.git)?\/?$/i.exec(r.stdout.trim()) : null;
+        return m ? { name: m[1]! } : {};
+      }, () => ({}));
+      this.#names.set(repo, p);
+    }
+    return p;
+  }
+
+  /**
+   * Back up to GitHub for one repository (FIL-14): every folder with nothing in it gets a `.gitkeep`,
+   * everything waiting in its notes is committed in one commit, and then it's pushed with the app's
+   * own sync (private first, then the pointer, D-07). Only the notes folder is touched: never other
+   * files someone keeps in the repository.
+   */
+  backupRepo(which: "private" | "public"): Promise<SyncReport> {
+    const repo = which === "private" ? this.privateRepo : this.notes;
+    if (!repo) return Promise.resolve(this.#report);
+    const committed = this.#ops.run(async (): Promise<SyncProblem | undefined> => {
+      if (!(await this.#lock())) return this.#fail("locked");
+      this.#emit({ state: "syncing" });
+      for (const dir of await emptyFolders(join(repo.dir, NOTES))) await writeFile(join(dir, ".gitkeep"), "", { flag: "wx" }).catch(() => {});
+      this.#generation++;
+      const st = await repo.cache.fresh().catch(() => undefined);
+      if (!st) return this.#fail("failed");
+      // A rename from outside the notes folder is left to the person: never a delete there in its name.
+      const paths = st.entries.filter((e) => e.kind !== "ignored" && e.kind !== "unmerged" && inNotes(e.path) && (e.from === undefined || inNotes(e.from))).flatMap((e) => (e.from !== undefined ? [e.path, e.from] : [e.path]));
+      if (!paths.length) return undefined;
+      return this.#commit(repo, st, paths, backupMessage, repo.moves);
+    });
+    return committed.then(async (problem) => {
+      if (problem) {
+        this.#emit({ state: "problem", problem, waiting: this.#waiting([this.notes.last, this.privateRepo?.last]) });
+        return this.#report;
+      }
+      // Pushing it (the notes repository's pointer follows a private push) is the app's own backup.
+      const r = await this.sync("save");
+      return r;
+    });
   }
 
   /** Commits and pushes (or only pushes and pulls, for the app's own reasons). Calls made while one runs share the next run. */

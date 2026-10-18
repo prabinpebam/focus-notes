@@ -23,7 +23,8 @@ export const contract = defineContract({
     editBlur: {},
     menuAction: { payload: { id: "text" } },
   },
-  slots: {},
+  // Controls at a section row's trailing end, by its `accessory` index: each section's repository backup (D-191).
+  slots: { sectionEnd: { accepts: ["PopoverPanel"] } },
   states: ["rest", "hover", "focusVisible", "selected", "current", "multiSelected", "editing", "invalid", "dropTarget", "pending", "readOnly", "menuOpen"],
   tokens: "cmp.fileTree.*",
   a11y: { pattern: "tree (multi-selectable) with type-ahead", name: "label" },

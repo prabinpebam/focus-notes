@@ -3772,6 +3772,18 @@
               "$ref": "#/$defs/actions"
             }
           }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "sectionEnd": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
         }
       }
     },

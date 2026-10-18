@@ -4,7 +4,7 @@ import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, FOCUS_DIM, LINE_HEIGHT,
 import { cheatSheet, displayPlatform, EDITOR_COMMANDS, NATIVE_KEYS, type CheatSheetLayer, type CheatSheetPlatform } from "./keymap.ts";
 import { ViewModelRegistry } from "./view-models.ts";
 import { MessageCatalog, type Messages } from "./messages.ts";
-import type { PlatformBridge, AppStateFile, Compositing } from "./bridge.ts";
+import type { PlatformBridge, AppStateFile, Compositing, RepoId } from "./bridge.ts";
 import { registerBrowserFeatures, PICKER_CLOSED, UNLOCK_CLOSED, NO_INSTANCE, type PickerState, type UnlockState, type InstanceState } from "./browser.ts";
 import { isReadOnlyPath, sourceOf } from "./notes.ts";
 import { registerWorkspaceFeatures, noteReadOnly, NO_WORKSPACE, type WorkspaceState, type WorkspaceFormatOptions } from "./workspace-app.ts";
@@ -17,6 +17,7 @@ import { joinPath, newNoteFolder } from "./workspace.ts";
 import { registerImport, IMPORT_CLOSED, type ImportState } from "./import-app.ts";
 import { registerPublicLink } from "./public-link-app.ts";
 import { appStateOfSettings, parseSettings, settingsFileOf, splitAppState, type SettingsFile } from "./settings.ts";
+import { registerRepoBackup, repoBackupView, REPO_IDS, type RepoBackupState } from "./repo-backup.ts";
 import { registerSync, NO_SYNC, SyncFailed, saveStateOf, syncProblemAction, type SyncState } from "./sync-app.ts";
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
@@ -116,6 +117,8 @@ export interface AppState {
   workspace: WorkspaceState;
   /** Save and sync with Git: whether there's a repository, and the problem to show if any (EDT-11). */
   sync: SyncState;
+  /** What waits for backup in each section's repository (FIL-14, D-191). */
+  repoBackup: RepoBackupState;
   /** Set up my instance: the latest report from the shell's setup (FRE-08). */
   setup: SetupState;
   /** The desktop's first run (FRE-01): the step it's at and what it found. */
@@ -299,6 +302,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
     sync: NO_SYNC,
+    repoBackup: {},
     setup: NO_SETUP,
     firstRun: FIRST_RUN_INACTIVE,
     account: NO_ACCOUNT,
@@ -372,6 +376,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const setNote = (patch: Partial<AppState["note"]>) =>
     store.update((s) => ({ ...s, note: { ...s.note, ...patch } }));
   const sync = registerSync({ store, bridge, catalog, toast, announce });
+  const repoBackup = registerRepoBackup({ store, bridge, catalog, tracker, toast, announce });
+  // Back up to GitHub for one Files section's repository (FIL-14, D-191).
+  commands.register({
+    id: "repoBackup.backUp", title: "command.repoBackup.backUp",
+    run: (a) => (REPO_IDS.includes(a.repo as RepoId) ? repoBackup.backUp(a.repo as RepoId) : undefined),
+  });
   const setup = registerSetup({ store, bridge, catalog, commands, viewModels });
   /** The note put away while the first run's card shows again (Run setup again, Sign in, Switch account, Open another workspace). */
   let held: string | undefined;
@@ -1442,6 +1452,25 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       };
     },
   });
+  // ---- backup by repository: the icon on each Files section's heading, and its card (FIL-14, D-191) ----
+  const REPO_VIEW = {
+    type: "object" as const,
+    properties: {
+      visible: { type: "boolean" as const }, hasRepository: { type: "boolean" as const }, backingUp: { type: "boolean" as const }, canBackUp: { type: "boolean" as const },
+      state: { type: "string" as const, enum: ["savedLocal", "pending", "syncing", "synced", "offline", "error"] },
+      ...Object.fromEntries(["name", "stateText", "label", "repository", "backupTime", "waitingText", "backupReason"].map((k) => [k, { type: "string" as const }])),
+      icon: { type: "string" as const }, tone: { type: "string" as const, enum: ["neutral", "accent", "danger", "success"] },
+    },
+  };
+  viewModels.register({
+    id: "vm.repoBackup",
+    schema: { type: "object", properties: { private: REPO_VIEW, public: REPO_VIEW } },
+    reads: ["sync", "repoBackup"],
+    select: (s) => ({
+      private: repoBackupView("private", s.repoBackup.private, s.sync, catalog),
+      public: repoBackupView("public", s.repoBackup.public, s.sync, catalog),
+    }),
+  });
 
   return {
     store, commands, viewModels, messages: catalog, bridge, flush,
@@ -1524,6 +1553,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       else if (restored.length) toast(catalog.format("toast.restored", { count: restored.length, note: restored[0]!.title }));
       workspace.start();
       sync.start();
+      repoBackup.start();
       setup.start();
       await browser.start();
       // Once every command is registered and the first note is open: the menu bar never delays the caret (PRF-02).

@@ -3012,7 +3012,13 @@
           }
         }
       },
-      "slots": {},
+      "slots": {
+        "sectionEnd": {
+          "accepts": [
+            "PopoverPanel"
+          ]
+        }
+      },
       "states": [
         "rest",
         "hover",

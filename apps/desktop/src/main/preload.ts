@@ -192,6 +192,9 @@ contextBridge.exposeInMainWorld("focusNotes", {
     // New notes without a private repository (D-158): held until the writer answers; the main process checks the answer.
     held: () => ipcRenderer.invoke("held:list"),
     answerHeld: (path: string, choice: "public" | "local") => ipcRenderer.invoke("held:answer", path, choice),
+    // Backup by repository (FIL-14, D-191): the main process checks which repository.
+    repos: () => ipcRenderer.invoke("sync:repos"),
+    backupRepo: (repo: "private" | "public") => ipcRenderer.invoke("sync:backupRepo", repo),
     onStatus: (listener: (report: unknown) => void) => {
       const handler = (_e: unknown, report: unknown) => listener(report);
       ipcRenderer.on("sync:status", handler);

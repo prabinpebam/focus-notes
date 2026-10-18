@@ -85,7 +85,7 @@
   <dt>Filter field</dt>
   <dd>Filters the tree by name as you type, keeping the ancestors of matches. It doesn't search inside notes: the empty-result line offers "Search inside notes with ⌘/ or Ctrl+/".</dd>
   <dt>Sections</dt>
-  <dd><strong>Private</strong> first, because it's the default for new notes (D-05), then <strong>Public</strong>. Each has an uppercase 13 px label and a count on hover, and can be collapsed.</dd>
+  <dd><strong>Private</strong> first, because it's the default for new notes (D-05), then <strong>Public</strong>. Each has an uppercase 13 px label and a count on hover, and can be collapsed. Where the workspace is a Git repository, each heading also carries, at its trailing end, <a href="#repository-backup">its repository's backup icon</a> (D-191).</dd>
   <dt>Rows</dt>
   <dd>32 px tall (44 px on touch). 16 px indent per level. A chevron for folders, the note's <em>title</em>, and on hover, on the focused row and on selected rows, the time it last changed ("2 h") and a ⋯ button that opens <a href="#row-menu">the row's menu</a>. Public notes add a small status: <em>Live</em>, <em>Publishing…</em>, or <em>Not published</em>.</dd>
   <dt>Footer</dt>
@@ -107,6 +107,11 @@
     <tr><td>Saving</td><td>Shown in its new place at once, with a small spinner at the end of the row after 300 ms, until the write and commit finish (<a href="../components/feedback-and-dialogs.md#waits">Waits</a>)</td></tr>
   </tbody>
 </table>
+
+<h2 id="repository-backup" data-reader-personas="design product">Repository backup</h2>
+<p>Private and Public are each their own repository: Private is the <code>private/</code> submodule, Public the notes repository. Each section's heading row ends with that repository's backup icon (FIL-14, D-191), the same <code>SaveState</code> icon and states as the note's own (<a href="../components/feedback-and-dialogs.md#save-and-sync-status">Save and sync status</a>): waiting, backing up, backed up, offline, problem. It's a real button with its own tab stop, named "Private notes backup: Backed up at 10:36 AM", and it answers on pointer-down.</p>
+<p>Pressing it (or <kbd>Enter</kbd> on it) opens a card like the note's: the section's name and state, the repository (owner/name, when it's on GitHub), the last backup, and what waits there in counts: "2 folders, 1 note waiting for backup". What waits is counted in the repository's <code>notes/</code> folder only: files not committed (whoever made them), folders with nothing in them, which Git can't see, and what commits not pushed yet changed. <strong>Back up to GitHub</strong> gives each empty folder a <code>.gitkeep</code>, commits everything waiting there in one commit ("Create folder notes/Plans", or "Back up 2 folders and 1 note"), and pushes, private before the pointer (D-07). While it runs the icon turns and the card says so; then the icon says backed up and screen readers hear "Public notes backed up". A problem toasts, as the note's own backup does.</p>
+<p>A folder made in Files is already committed with its <code>.gitkeep</code> and pushed in the background with its batch (FIL-05), so its section's icon goes from backing up to backed up on its own. The icon matters for what the app didn't make: folders and files made in Explorer, Finder or by an agent, and empty folders. In the browser app, and in a folder that isn't a repository, there's no icon.</p>
 
 <h2 data-reader-personas="design product">Creating</h2>
 <table>
@@ -213,6 +218,7 @@
 <ul>
   <li>The list is a <code>tree</code> with <code>aria-multiselectable</code>. Rows carry <code>aria-level</code>, <code>aria-expanded</code>, and <code>aria-selected</code>, and their accessible names include visibility ("About, public, live").</li>
   <li>Type-ahead jumps to matching rows. Arrow keys follow the standard tree pattern.</li>
+  <li>A section's backup icon is a button inside its heading row, with its own tab stop; its keys stay with it (the tree's <kbd>Enter</kbd>, <kbd>F2</kbd> and arrows don't apply there), and its card is a dialog whose <em>Back up to GitHub</em> is the next tab stop (D-191).</li>
   <li>Operations are announced politely ("Moved 3 notes to drafts"). Drag and drop always has a keyboard equivalent (cut and paste, Move to…).</li>
   <li>In compact windows (under 600 px), the sheet is full-width, and long-press opens the row menu.</li>
 </ul>

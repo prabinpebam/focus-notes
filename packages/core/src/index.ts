@@ -22,6 +22,7 @@ export * from "./flat-store.ts";
 export * from "./files-app.ts";
 export * from "./links.ts";
 export * from "./sync-app.ts";
+export * from "./repo-backup.ts";
 export * from "./setup-app.ts";
 export * from "./first-run-app.ts";
 export * from "./settings.ts";

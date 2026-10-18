@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import { Popover } from "react-aria-components";
 import { CommandMenu } from "../MenuButton/MenuButton.tsx";
 import * as menuStyles from "../MenuButton/MenuButton.css.ts";
@@ -23,6 +23,8 @@ export interface FileTreeProps {
   /** The focused row's menu (D-162): right-click, its ⋯, Shift+F10, or the Menu key. */
   menu?: MenuSection[];
   menuLabel?: string;
+  /** Controls at a section row's trailing end, by the row's `accessory` (a section's backup, D-191). */
+  sectionEnd?: ReactNode[];
   id: string;
   onSelect?: (p: { id: string; mode: string }) => void;
   onExpand?: (p: { id: string; expanded: boolean }) => void;
@@ -49,7 +51,7 @@ const EXPAND_AFTER_MS = 600;
 /** The last focus request each tree met, by id, kept while it's re-created (DEF-20). */
 const metRequests = new Map<string, number>();
 
-export function FileTree({ label, items, focusId, focusRequest, editValue = "", editLabel, editError, menu = [], menuLabel = "", id, onSelect, onExpand, onAction, onDrop, onEditChange, onEditBlur, onMenuAction }: FileTreeProps) {
+export function FileTree({ label, items, focusId, focusRequest, editValue = "", editLabel, editError, menu = [], menuLabel = "", sectionEnd = [], id, onSelect, onExpand, onAction, onDrop, onEditChange, onEditBlur, onMenuAction }: FileTreeProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
   const [dropId, setDropId] = useState("");
@@ -276,6 +278,9 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
     <div ref={ref} id={id} role="tree" aria-label={label} aria-multiselectable="true" className={s.tree} data-key-scope="filesTree" onKeyDown={keyDown}>
       {items.map((item) => {
         const folder = item.kind !== "note";
+        // A section's own control (its repository's backup, D-191); the row is then named by its label alone.
+        const end = item.kind === "section" && item.accessory !== undefined ? sectionEnd[item.accessory] : undefined;
+        const labelId = end ? `${treeRowId(id, item.id)}-label` : undefined;
         return (
           <div
             key={item.id}
@@ -285,6 +290,7 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
               if (el && menuAt?.id === item.id && menuAt.at === "row") anchor.current = el;
             }}
             role="treeitem"
+            aria-labelledby={labelId}
             aria-level={item.level}
             aria-selected={item.selected}
             aria-expanded={folder ? item.expanded : undefined}
@@ -337,11 +343,24 @@ export function FileTree({ label, items, focusId, focusRequest, editValue = "", 
                 {editError ? <span id={errorId} className={s.error}>{editError}</span> : null}
               </span>
             ) : (
-              <span className={s.label} dir="auto">{item.label}{item.description ? <span className={s.srOnly}>,</span> : null}</span>
+              <span className={s.label} id={labelId} dir="auto">{item.label}{item.description ? <span className={s.srOnly}>,</span> : null}</span>
             )}
             {/* The name is the row's text: "About, public" (Files → Accessibility). */}
             {item.description && !item.editing ? <span className={s.description}>{item.description}</span> : null}
             {item.pending ? <span className={s.pending}><Spinner size="s" /></span> : null}
+            {end ? (
+              // Its own control, not the row's: its keys, clicks and presses stay with it (D-191).
+              <span
+                className={s.accessory}
+                data-key-scope="filesSection"
+                data-key-scope-stop=""
+                onKeyDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+                onDoubleClick={(e) => e.stopPropagation()}
+                onContextMenu={(e) => e.stopPropagation()}
+              >{end}</span>
+            ) : null}
             {hasMenu && !item.editing && (!item.readOnly || item.kind === "note") ? (
               <span
                 className={s.more}
