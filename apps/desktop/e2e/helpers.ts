@@ -287,6 +287,25 @@ export async function bandStartsMove(app: ElectronApplication, page: Page): Prom
   return seen();
 }
 
+/**
+ * UI-13, D-195: the narrowest window, with what's docked now, in which the document minimap's rail
+ * fits beside the reading column (16 px clear of the text, 32 px wide, 8 px from the scrollbar). The
+ * column's measure is in `ch` of the UI font, so it's ~528 px of text with Windows' Segoe UI and wider
+ * with macOS's and Linux's system fonts: tests size windows from this rather than Windows' numbers.
+ */
+export async function railFrom(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const sc = document.querySelector("[data-editor-scroller]") as HTMLElement;
+    let col = document.querySelector(".ProseMirror")!.parentElement!;
+    while (getComputedStyle(col).maxWidth === "none" && col.parentElement && col !== sc) col = col.parentElement;
+    const cs = getComputedStyle(col);
+    const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const max = parseFloat(cs.maxWidth) + (cs.boxSizing === "content-box" ? pad : 0);
+    const need = max + 2 * Math.max(0, 16 + 32 + 8 - parseFloat(cs.paddingRight));
+    return Math.ceil(need + window.innerWidth - sc.clientWidth) + 2;
+  });
+}
+
 /** Closes through the window's close path so pending saves are flushed (QLT-03). */
 export async function quit(l: Launched): Promise<void> {
   const closed = l.app.waitForEvent("close", { timeout: 10_000 }).then(() => true, () => false);

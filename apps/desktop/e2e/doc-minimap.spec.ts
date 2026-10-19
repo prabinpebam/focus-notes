@@ -7,7 +7,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { launch, quit, railFrom, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -306,6 +306,8 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
   });
   try {
     const unpinnedRight = await textRight();
+    // The narrowest window this OS's UI font leaves the rail room in (D-195).
+    const narrowest = await railFrom(page);
     // Pinned from the hover card with the pointer: the caret stays in the note.
     await page.mouse.move(500, 400);
     await hoverRail(page);
@@ -380,15 +382,19 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
     expect(await axeViolations(page)).toEqual([]);
     await page.screenshot({ path: `${shots}/minimap-pinned-light.png` });
     // Not enough room beside the text for the card and the narrowest text: the rail comes back, its
-    // card's pin still pressed.
-    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(700, 600));
-    await expect(rail(page)).toHaveCount(1);
-    await expect(card(page)).toBeHidden();
-    await page.mouse.move(300, 300);
-    await hoverRail(page);
-    await expect(pin()).toHaveAttribute("aria-pressed", "true");
-    await page.mouse.move(300, 300);
-    await expect(card(page)).toBeHidden();
+    // card's pin still pressed. With a wider UI font (Linux's DejaVu Sans) the column is too wide for
+    // the rail in any window the card can't dock in: that step is Windows' and macOS's (D-195).
+    const narrow = Math.max(700, narrowest);
+    if (narrow < widthBefore + 400) {
+      await l.app.evaluate(({ BrowserWindow }, w) => BrowserWindow.getAllWindows()[0]!.setSize(w, 600), narrow);
+      await expect(rail(page)).toHaveCount(1);
+      await expect(card(page)).toBeHidden();
+      await page.mouse.move(300, 300);
+      await hoverRail(page);
+      await expect(pin()).toHaveAttribute("aria-pressed", "true");
+      await page.mouse.move(300, 300);
+      await expect(card(page)).toBeHidden();
+    } else test.info().annotations.push({ type: "skipped step", description: `the rail needs a ${narrowest} px window, where the card docks` });
     await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(1024, 720));
     await expect(card(page)).toHaveAttribute("data-pinned", "");
     await quit(l);
