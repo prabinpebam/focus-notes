@@ -59,7 +59,8 @@ jobs:
           if-no-files-found: error
 
   desktop:
-    needs: version
+    # The web job pins the workspace template the installers carry (DST-08, D-201).
+    needs: [version, web]
     strategy:
       fail-fast: false
       matrix:
@@ -86,7 +87,15 @@ jobs:
           package-manager-cache: false
       - run: pnpm install --frozen-lockfile
       - run: node packages/tokens/build.mjs
+      # The pinned template this release attaches, carried byte for byte (DST-08, D-201). Outside
+      # dist/ and release/, so it's never uploaded twice.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: asset-web
+          path: ${{ runner.temp }}/asset-web
       - name: Build the installers (unsigned until DSK-07)
+        env:
+          FOCUS_NOTES_TEMPLATE_ARCHIVE: ${{ runner.temp }}/asset-web/focus-notes-workspace-${{ needs.version.outputs.version }}.tgz
         run: pnpm --filter @focus-notes/desktop run dist "-c.extraMetadata.version=$VERSION"
       # SEC-01: the Electron fuses, read back from the packaged executable (hardening.test.ts).
       - name: Check the packaged executable's fuses
