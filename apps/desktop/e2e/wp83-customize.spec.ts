@@ -82,6 +82,8 @@ test("UI-08, KEY-07: a key from keybindings.json takes effect, conflicts and pro
     const toolbar = page.getByRole("toolbar");
     await expect(toolbar).toBeVisible();
     const n = await toolbar.getByRole("button", { name, exact: true }).count();
+    // Escape reaches the toolbar only once it has taken focus; before that the keypress goes to the note.
+    await expect(toolbar.locator(":focus")).toHaveCount(1);
     await page.keyboard.press("Escape");
     await expect(toolbar).toBeHidden();
     return n;

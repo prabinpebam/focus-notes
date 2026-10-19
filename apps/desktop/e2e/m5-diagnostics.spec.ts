@@ -85,7 +85,8 @@ test("QLT-04: Settings → About previews the diagnostic report; Copy and Save (
       (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard!.text = "";
     });
     await settings.getByRole("button", { name: "Report a problem…" }).click();
-    await expect(page.getByText("Report copied. Paste it into the issue on GitHub.")).toBeVisible();
+    // The report is built afresh, Git probes included, which a busy Windows runner can take over 5 s for.
+    await expect(page.getByText("Report copied. Paste it into the issue on GitHub.")).toBeVisible({ timeout: 15_000 });
     const opened = await l.app.evaluate(() => (globalThis as { opened?: string[] }).opened ?? []);
     expect(opened).toHaveLength(1);
     expect(opened[0]).toMatch(/^https:\/\/github\.com\/prabinpebam\/focus-notes\/issues\/new\?/);
