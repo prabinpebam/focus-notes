@@ -1,8 +1,9 @@
 // Builds the main process (ESM) and the sandboxed preload (CommonJS, as sandboxing requires).
 import { build } from "vite";
-import { copyFileSync } from "node:fs";
+import { copyFileSync, writeFileSync } from "node:fs";
 import { builtinModules } from "node:module";
 import { join } from "node:path";
+import { templateResource } from "../../../tools/release/template.mjs";
 
 const root = join(import.meta.dirname, "..");
 const external = ["electron", ...builtinModules, ...builtinModules.map((m) => `node:${m}`)];
@@ -29,4 +30,10 @@ await one("src/mcp/main.ts", "es", "mcp.mjs", false);
 await one("src/cli/main.ts", "es", "cli.mjs", false);
 // The window's icon (the taskbar's, on Windows and Linux), beside the main process in the package.
 copyFileSync(join(root, "build", "icon.png"), join(root, "out", "main", "icon.png"));
-console.log("Main and preload built.");
+// The workspace template a new instance starts from (DST-08, D-201), beside the main process in the
+// package. A release passes its pinned archive (FOCUS_NOTES_TEMPLATE_ARCHIVE); a development build
+// carries templates/workspace/ as it is.
+const archive = process.env.FOCUS_NOTES_TEMPLATE_ARCHIVE;
+const resource = templateResource(archive ? { archive } : {});
+writeFileSync(join(root, "out", "main", "workspace-template.json"), `${JSON.stringify(resource)}\n`);
+console.log(`Main and preload built, with the workspace template ${resource.version}.`);

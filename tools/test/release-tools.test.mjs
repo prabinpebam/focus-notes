@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { releaseVersion } from "../release/version.mjs";
 import { commitsSince, previousTag, releaseNotes } from "../release/notes.mjs";
 import { cyclonedx, purl } from "../release/sbom.mjs";
-import { packTemplate, pinApp, pinFormat, sha256Of, templateName } from "../release/template.mjs";
+import { packTemplate, pinApp, pinFormat, sha256Of, templateName, templateResource } from "../release/template.mjs";
 import { bundleName, LAYOUT, pack, smoke } from "../release/web-bundle.mjs";
 import { readTgz } from "../../templates/workspace/.github/focus-notes/update.mjs";
 
@@ -103,6 +103,13 @@ describe("DST-06 groundwork: the workspace template pinned to a release's bundle
     expect(() => pinApp('{ "version": "0.0.0", "sha256": "", "source": "x/y" }', { version: "1.2.3", sha256: SHA })).toThrow(/exactly/);
   });
 
+  it("DST-08: a development build carries templates/workspace/ as it is, with its 0.0.0 pin", () => {
+    const dev = templateResource();
+    expect(dev.version).toBe("0.0.0");
+    expect(dev.files.map((f) => f.path)).toEqual(expect.arrayContaining([".focus-notes/app.json", ".focus-notes/workspace.json", ".github/workflows/pages.yml", "notes/.gitkeep", ".gitattributes"]));
+    expect(Buffer.from(dev.files.find((f) => f.path === ".focus-notes/app.json").data, "base64").toString()).toBe(tplPin);
+  });
+
   it("names the same version as templateVersion in .focus-notes/workspace.json", () => {
     expect(JSON.parse(pinFormat('{ "formatVersion": 1, "templateVersion": "0.0.0" }\n', "1.2.3"))).toEqual({ formatVersion: 1, templateVersion: "1.2.3" });
   });
@@ -125,6 +132,11 @@ describe("DST-06 groundwork: the workspace template pinned to a release's bundle
       expect(files.has("notes/.gitkeep")).toBe(true);
       expect(JSON.parse(readFileSync(join(x, ".focus-notes", "workspace.json"), "utf8")).templateVersion).toBe("1.2.3");
       for (const f of ["AGENTS.md", "README.md", ".gitattributes", "notes/.gitkeep", ".focus-notes/managed.json", ".github/workflows/update.yml", ".github/focus-notes/update.mjs"]) expect(readFileSync(join(x, f))).toBeTruthy();
+      // DST-08, D-201: the template the desktop app carries is that archive, byte for byte.
+      const carried = templateResource({ archive: file });
+      expect(carried.version).toBe("1.2.3");
+      expect(carried.files.map((f) => f.path)).toEqual([...files.keys()].sort());
+      for (const f of carried.files) expect(Buffer.from(f.data, "base64").equals(files.get(f.path)), f.path).toBe(true);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

@@ -43,6 +43,7 @@ import { DEFAULT_SETUP, isRepoName, SETUP_STEPS, type SetupStepId } from "@focus
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type FirstRunProgress, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
 import { checkOptions, notesRepos, SetupEngine } from "./setup/engine.ts";
 import { githubFetch } from "./setup/credential.ts";
+import { readTemplate, TEMPLATE_RESOURCE } from "./setup/bundled-template.ts";
 import { avatarLoader } from "./first-run/avatar.ts";
 import type { BatchOp } from "./git/message.ts";
 import { Account } from "./first-run/account.ts";
@@ -284,6 +285,8 @@ const setup = () => (setupEngine ??= SetupEngine.open({
   fetch: apiFetch,
   remoteUrl,
   isTemplate: (owner, name) => templateGuard.isTemplateRepo(owner, name),
+  // A new instance's first commit comes from the template the app carries (DST-08, D-201).
+  bundledTemplate: () => readTemplate(join(import.meta.dirname, TEMPLATE_RESOURCE)),
   onReport: (r) => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("setup:report", r);
   },
