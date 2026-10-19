@@ -12,7 +12,7 @@ export interface PopoverPanelProps {
   padding?: "normal" | "comfortable";
   /** The pressable that opens the panel. */
   trigger: ReactNode;
-  content: ReactNode;
+  content?: ReactNode;
   onOpenChange?: (payload: { open: boolean }) => void;
 }
 

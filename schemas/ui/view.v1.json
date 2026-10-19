@@ -1195,6 +1195,13 @@
                 }
               ]
             },
+            "busyLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
             "disabled": {
               "anyOf": [
                 {

@@ -15,6 +15,7 @@
   "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
   "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" },
   "toggle": { "$type": "color", "selected": { "$value": "{color.pressed}" } },
+  "busy": { "$type": "duration", "signDelay": { "$value": "{wait.signDelay}", "$description": "A busy sign shows only after this, so quick work shows nothing extra (Waits, D-199)." } },
   "primary": { "$type": "color",
     "background": { "rest": { "$value": "{color.accent}" }, "hover": { "$value": "{color.accent}" }, "pressed": { "$value": "{color.accent}" } },
     "text": { "$value": "{color.onAccent}" }, "border": { "$value": "{color.accent}" } },

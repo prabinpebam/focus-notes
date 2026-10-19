@@ -4,6 +4,7 @@
   "radius": { "$type": "dimension", "$value": "{radius.control}" },
   "duration": { "$type": "duration", "$value": "{motion.micro}" },
   "disabledOpacity": { "$type": "number", "$value": "{opacity.disabled}" },
+  "busy": { "$type": "duration", "signDelay": { "$value": "{wait.signDelay}", "$description": "A busy sign shows only after this, so quick work shows nothing extra (Waits, D-199)." } },
   "focusWidth": { "$type": "dimension", "$value": "{border.focus}" },
   "focusOffset": { "$type": "dimension", "$value": "{border.focusOffset}" },
   "color": { "$type": "color",

@@ -2,11 +2,11 @@
  * The renderer (DSY-06, Views as data → Rendering). Maps view nodes to registry components,
  * resolves values, and turns events into actions. It never creates DOM elements itself.
  */
-import { Component, createElement, Fragment, memo, useCallback, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type ReactNode } from "react";
+import { Component, createElement, Fragment, memo, useCallback, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { App, AppState } from "@focus-notes/core";
 // From its own module, so a page that renders without the app (the share reader) doesn't load the app.
 import { formatChord } from "@focus-notes/core/commands";
-import type { Contract } from "@focus-notes/ui/contracts";
+import type { Contract, Registry } from "@focus-notes/ui/contracts";
 import { evaluate } from "./expr.ts";
 import {
   isBind, isComponent, isEach, isExpr, isFragment, isMessage, isRead, isSlot, isSwitch,
@@ -24,7 +24,7 @@ export interface RuntimeApp {
 
 export interface RuntimeDeps {
   app: RuntimeApp;
-  registry: Readonly<Record<string, ComponentType<any>>>;
+  registry: Registry;
   contracts: ReadonlyMap<string, Contract>;
   views: Record<string, unknown>;
 }

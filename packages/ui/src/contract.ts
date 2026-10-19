@@ -72,11 +72,14 @@ export interface Contract {
   fixtures: readonly Fixture[];
   /** Journeys that reach states no fixture can render. Hosts, which have no fixtures, need at least one (D-198). */
   journeys?: readonly JourneyCoverage[];
+  /** The component builds its parts' DOM IDs from its own, so a view must give the node an `id` (D-199). */
+  requiresId?: true;
   /** Declared states nothing reaches yet, each with why: known gaps, not coverage (D-198). */
   uncovered?: Readonly<Record<string, string>>;
 }
 
-export const defineContract = <C extends Contract>(c: C): C => c;
+/** `const`, so enum values, required flags and event payloads keep their literal types for the registry's check (D-199). */
+export const defineContract = <const C extends Contract>(c: C): C => c;
 
 /**
  * Why a declared state is a known gap (D-198): nothing in the gallery or the journeys reaches it

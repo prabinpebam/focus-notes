@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { defineRegistry } from "./register.ts";
 import { Text } from "./primitives/Text/Text.tsx";
 import { Heading } from "./primitives/Heading/Heading.tsx";
 import { Icon } from "./primitives/Icon/Icon.tsx";
@@ -65,7 +65,7 @@ import { DatePicker } from "./primitives/DatePicker/DatePicker.tsx";
  * components aren't here: they render only at build time through site.ts's registry, so their styles
  * and tokens never ship in the app (PRF-14).
  */
-export const registry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({
+export const registry = defineRegistry({
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, NoteContent,
   EditorSurface, TableControls, BlockHandle, WindowFrame,

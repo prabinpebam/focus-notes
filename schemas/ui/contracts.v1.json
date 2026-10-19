@@ -466,7 +466,12 @@
         },
         "busy": {
           "kind": "boolean",
-          "default": false
+          "default": false,
+          "description": "A wait it started (Waits, D-199): inert at once; after wait.signDelay a Spinner replaces its icon."
+        },
+        "busyLabel": {
+          "kind": "text",
+          "description": "Its words while the wait shows (\"Signing out…\"), and the task tracker's done words after it."
         },
         "disabled": {
           "kind": "boolean",
@@ -606,6 +611,22 @@
               "t": "gallery.action"
             },
             "busy": true
+          }
+        },
+        {
+          "name": "busy with icon and words",
+          "covers": [
+            "busy"
+          ],
+          "props": {
+            "label": {
+              "t": "gallery.action"
+            },
+            "icon": "save",
+            "busy": true,
+            "busyLabel": {
+              "get": "vm.gallery.query"
+            }
           }
         },
         {
@@ -2508,6 +2529,7 @@
     {
       "type": "ResultList",
       "tier": "primitive",
+      "requiresId": true,
       "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant). Header items head labeled groups; highlights mark where the query matched; a row can show its state.",
       "props": {
         "label": {
@@ -3122,6 +3144,7 @@
     {
       "type": "FileTree",
       "tier": "primitive",
+      "requiresId": true,
       "description": "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, an inline name field, and each row's menu (D-162).",
       "props": {
         "label": {
@@ -8695,6 +8718,7 @@
           "children": [
             {
               "type": "ResultList",
+              "id": "fixture-results",
               "props": {
                 "label": {
                   "t": "findAll.results"

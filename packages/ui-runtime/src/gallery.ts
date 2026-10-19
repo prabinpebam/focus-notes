@@ -16,7 +16,8 @@ export function galleryViews(contracts: readonly Contract[], scheme: "light" | "
   const out: Record<string, unknown> = {};
   for (const c of contracts) {
     c.fixtures.forEach((f, i) => {
-      const node = { type: c.type, ...(f.props ? { props: f.props } : {}), ...(f.children ? { children: f.children } : {}), ...(f.slots ? { slots: f.slots } : {}) };
+      // A component that names its parts from its id gets one, as a view would give it (D-199).
+      const node = { type: c.type, ...(c.requiresId ? { id: `fixture-${c.type}` } : {}), ...(f.props ? { props: f.props } : {}), ...(f.children ? { children: f.children } : {}), ...(f.slots ? { slots: f.slots } : {}) };
       const wrapped = c.type === "AppRoot"
         ? { ...node, id: "fixture" }
         : {

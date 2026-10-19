@@ -5,6 +5,7 @@ import { Icon } from "../Icon/Icon.tsx";
 import { Tooltip } from "../Tooltip/Tooltip.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
 import type { IconName } from "../../icon-names.ts";
+import { useBusy } from "../../behaviors/busy.ts";
 import * as s from "./IconButton.css.ts";
 
 export interface IconButtonProps {
@@ -19,7 +20,7 @@ export interface IconButtonProps {
   mixed?: boolean;
   disabled?: boolean;
   disabledReason?: string;
-  /** A wait it started is showing (PRF-08): a spinner replaces the icon, and the label says what it's doing. */
+  /** A wait it started (Waits, D-199): inert at once; after the busy delay a Spinner replaces the icon, and the label says what it's doing. */
   busy?: boolean;
   busyLabel?: string;
   /** At the edge of a panel's content (a dialog's close button): its icon lines up with the edge, and its hit area reaches into the padding. */
@@ -31,19 +32,24 @@ export interface IconButtonProps {
 export function IconButton({ icon, label, shortcut, tone = "default", toggle, pressed, mixed, disabled, disabledReason, busy, busyLabel, bleed, id, onPress }: IconButtonProps) {
   const className = `${s.base} ${s.tone[tone]}${bleed ? ` ${s.bleed}` : ""}`;
   const keepNoteFocus = useContext(CompanionContext);
-  const name = busyLabel || label;
-  const common = { id, className, "aria-label": name, "aria-disabled": disabled ? ("true" as const) : undefined, "aria-busy": busy ? ("true" as const) : undefined, "data-bleed": bleed ? "" : undefined, preventFocusOnPress: keepNoteFocus };
-  const glyph = busy ? <Spinner size="s" /> : <Icon name={icon} />;
+  const { inert, name, attrs, ref } = useBusy({ busy, busyLabel, label, disabled });
+  const common = { id, className, "aria-label": name, ...attrs, ref, "data-bleed": bleed ? "" : undefined, preventFocusOnPress: keepNoteFocus };
+  const glyph = busy ? (
+    <span className={s.busyGlyph}>
+      <span className={s.busyIcon}><Icon name={icon} /></span>
+      <span className={s.busySpinner}><Spinner size="s" /></span>
+    </span>
+  ) : <Icon name={icon} />;
   const button = toggle && mixed ? (
-    <AriaButton {...common} aria-pressed="mixed" onPress={disabled || busy ? undefined : onPress}>
+    <AriaButton {...common} aria-pressed="mixed" onPress={inert ? undefined : onPress}>
       {glyph}
     </AriaButton>
   ) : toggle ? (
-    <ToggleButton {...common} isSelected={Boolean(pressed)} onChange={disabled || busy ? undefined : () => onPress?.()}>
+    <ToggleButton {...common} isSelected={Boolean(pressed)} onChange={inert ? undefined : () => onPress?.()}>
       {glyph}
     </ToggleButton>
   ) : (
-    <AriaButton {...common} onPress={disabled || busy ? undefined : onPress}>
+    <AriaButton {...common} onPress={inert ? undefined : onPress}>
       {glyph}
     </AriaButton>
   );

@@ -137,3 +137,18 @@ export class TaskTracker {
     return this.#tasks.size === 0 ? Promise.resolve() : new Promise((r) => this.#idle.push(r));
   }
 }
+
+/**
+ * A control's busy props for a target, from the tracker's tasks: the one busy policy (D-199).
+ * Busy from `ack`, so a repeated press does nothing (the control shows its sign only after its
+ * `wait.signDelay` style delay); words from `on` ("Saving…", then with the elapsed seconds); the done
+ * words while `done`, no longer busy. A failure leaves nothing. The latest task for the target wins,
+ * so pressing again while it says done starts over.
+ */
+export function busyProps(tasks: readonly TaskView[], target: string, format: (key: string, args?: Record<string, string | number>) => string): { busy?: boolean; busyLabel?: string } {
+  const t = tasks.findLast((x) => x.target === target);
+  if (!t) return {};
+  if (t.phase === "ack") return { busy: true };
+  const words = t.phase === "done" ? format(t.doneMessage ?? "task.done") : format(t.message);
+  return { busy: t.phase === "on", busyLabel: t.elapsed ? format("task.elapsed", { words, seconds: t.elapsed }) : words };
+}

@@ -185,6 +185,8 @@ A probe view bound a declared `string[]` view-model field to both Toolbar lists.
 
 **Acceptance:** an intentional incompatible prop change fails typecheck without needing a rendered failure.
 
+**Status:** fixed by [D-199](../../plan/decisions.md): registries use the typed `defineRegistry`, and [a type-level test](../../../packages/ui/test/registry-conformance.test.ts) shows a renamed or retyped Button prop fails `pnpm typecheck`.
+
 ### DS-A06 · P2 · The documented busy-state protocol is not shared by the sampled controls
 
 **Evidence:** [the component catalog](components.md#contracts) specifies one shared busy hook with `ack`, `on`, and `done` phases, `data-busy`, and token timing. [Button](../../../packages/ui/src/primitives/Button/Button.tsx) suppresses activation and exposes `aria-busy`, but renders the same content. [IconButton](../../../packages/ui/src/primitives/IconButton/IconButton.tsx) immediately swaps its glyph for Spinner and can change its label. Neither sampled component implements the documented shared phase protocol.
@@ -194,6 +196,8 @@ A probe view bound a declared `string[]` view-model field to both Toolbar lists.
 **Recommendation:** establish the actual intended shared busy policy, reconcile the contract and catalog, and reuse task-tracker timing if staged feedback is needed. Do not add independent component timers.
 
 **Acceptance:** short, waiting, completed, failed, and repeated operations have explicit expected behavior, tested for both controls and reduced motion.
+
+**Status:** fixed by [D-199](../../plan/decisions.md): Button, IconButton, and ItemCard share `useBusy`, timed by the task tracker and the `wait.signDelay` token, and [the busy policy test](../../../packages/ui-runtime/test/busy-policy.test.tsx) drives both controls through each case with the real tracker, including reduced motion. The catalog text is the docs-keeper's.
 
 ### DS-A07 · P2 · The narrative catalog and enforcement claims have drifted
 

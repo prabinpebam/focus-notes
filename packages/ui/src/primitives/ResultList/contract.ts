@@ -3,6 +3,7 @@ import { defineContract } from "../../contract.ts";
 export const contract = defineContract({
   type: "ResultList",
   tier: "primitive",
+  requiresId: true,
   description: "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant). Header items head labeled groups; highlights mark where the query matched; a row can show its state.",
   props: {
     label: { kind: "message", required: true },

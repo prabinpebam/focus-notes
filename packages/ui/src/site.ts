@@ -3,7 +3,6 @@
  * components a site page uses, rendered once at build time through the public pages' static renderer
  * (D-114), so the site's stylesheet carries nothing else (PRF-12, HLP-08).
  */
-import type { ComponentType } from "react";
 import type { Contract } from "./contract.ts";
 import { Text } from "./primitives/Text/Text.tsx";
 import { SiteLink } from "./primitives/SiteLink/SiteLink.tsx";
@@ -18,8 +17,9 @@ import { SitePage } from "./layouts/SitePage/SitePage.tsx";
 import { SiteSection } from "./layouts/SiteSection/SiteSection.tsx";
 import { NoteContent } from "./blocks/NoteContent/NoteContent.tsx";
 import { contractByType } from "./contracts.ts";
+import { defineRegistry } from "./register.ts";
 
-export const siteRegistry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({ Text, SiteLink, SiteText, SiteFigure, SiteThemeShowcase, Icon, Stack, Inline, SitePage, SiteSection, SiteGrid, NoteContent });
+export const siteRegistry = defineRegistry({ Text, SiteLink, SiteText, SiteFigure, SiteThemeShowcase, Icon, Stack, Inline, SitePage, SiteSection, SiteGrid, NoteContent });
 export const siteContracts: ReadonlyMap<string, Contract> = new Map(Object.keys(siteRegistry).map((type) => [type, contractByType.get(type)!]));
 
 /** No script and no other origin (PRV-01, HLP-08): the site's own styles, fonts and images, nothing else. */

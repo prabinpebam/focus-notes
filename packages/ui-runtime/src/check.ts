@@ -172,6 +172,7 @@ export function checkUi(inputs: CheckInputs): Problem[] {
         const slot = parent.slots.default;
         if (slot && slot.accepts !== "any" && !slot.accepts.includes(node.type)) add("design", at, `${parent.type} doesn't accept ${node.type} as a child`);
       }
+      if (c.requiresId && !node.id) add("references", at, `${node.type} needs an id: it names its parts from it`);
       if (node.id) {
         if (ids.has(node.id)) add("references", `${at}/id`, `duplicate id "${node.id}"`);
         ids.add(node.id);

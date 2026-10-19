@@ -5,14 +5,13 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MessageCatalog, type AppState, type Messages } from "@focus-notes/core";
-import type { Contract } from "@focus-notes/ui/contracts";
-import type { ComponentType } from "react";
+import type { Contract, Registry } from "@focus-notes/ui/contracts";
 import { ViewHost, type RuntimeApp } from "./render.ts";
 
 export interface StaticRenderOptions {
   views: Record<string, unknown>;
   view: string;
-  registry: Readonly<Record<string, ComponentType<any>>>;
+  registry: Registry;
   contracts: ReadonlyMap<string, Contract>;
   messages: Messages | MessageCatalog;
   /** Each view model's value by ID ("vm.reader"). */

@@ -249,7 +249,12 @@
         },
         "busy": {
           "kind": "boolean",
-          "default": false
+          "default": false,
+          "description": "A wait it started (Waits, D-199): inert at once; after wait.signDelay a Spinner replaces its icon."
+        },
+        "busyLabel": {
+          "kind": "text",
+          "description": "Its words while the wait shows (\"Signing out…\"), and the task tracker's done words after it."
         },
         "disabled": {
           "kind": "boolean",
@@ -299,6 +304,7 @@
         "size m with icon",
         "icon at end",
         "busy",
+        "busy with icon and words",
         "toggle off",
         "toggle on",
         "disabled with reason"

@@ -3,6 +3,8 @@ import { Button as AriaButton, ToggleButton } from "react-aria-components";
 import { CompanionContext } from "../../behaviors/anchors.ts";
 import { Icon } from "../Icon/Icon.tsx";
 import { Tooltip } from "../Tooltip/Tooltip.tsx";
+import { Spinner } from "../Spinner/Spinner.tsx";
+import { useBusy } from "../../behaviors/busy.ts";
 import type { IconName } from "../../icon-names.ts";
 import * as s from "./Button.css.ts";
 
@@ -17,7 +19,10 @@ export interface ButtonProps {
   pressed?: boolean;
   /** A disclosure button: whether what it shows is open (aria-expanded). */
   expanded?: boolean;
+  /** A wait it started (Waits, D-199): inert at once; after the busy delay a Spinner replaces its icon. */
   busy?: boolean;
+  /** Its words while the wait shows ("Signing out…"), and the tracker's done words after it ("Published"). */
+  busyLabel?: string;
   disabled?: boolean;
   /** Required with `disabled`: a disabled button stays focusable and says why (Foundations → States). */
   disabledReason?: string;
@@ -29,24 +34,31 @@ export interface ButtonProps {
   onPress?: () => void;
 }
 
-export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, expanded, busy, disabled, disabledReason, autoFocus, bleed, id, onPress }: ButtonProps) {
-  const inert = disabled || busy;
+export function Button({ label, variant = "secondary", size = "m", icon, iconPosition = "start", toggle, pressed, expanded, busy, busyLabel, disabled, disabledReason, autoFocus, bleed, id, onPress }: ButtonProps) {
+  const { inert, name, attrs, ref } = useBusy({ busy, busyLabel, label, disabled });
   const keepNoteFocus = useContext(CompanionContext);
   const common = {
     id,
     className: [s.base, s.size[size], s.variant[variant], ...(bleed ? [s.bleed[size]] : [])].join(" "),
     "data-bleed": bleed ? "" : undefined,
-    "aria-disabled": inert ? ("true" as const) : undefined,
-    "aria-busy": busy ? ("true" as const) : undefined,
+    ...attrs,
+    ref,
     ...(expanded !== undefined ? { "aria-expanded": expanded } : {}),
     ...(autoFocus ? { autoFocus: true } : {}),
     preventFocusOnPress: keepNoteFocus,
   };
+  // Busy, the icon's cell holds a Spinner too, shown after the busy delay; a button without an icon says it in words.
+  const glyph = icon ? (busy ? (
+    <span className={s.busyGlyph}>
+      <span className={s.busyIcon}><Icon name={icon} size="s" /></span>
+      <span className={s.busySpinner}><Spinner size="s" /></span>
+    </span>
+  ) : <Icon name={icon} size="s" />) : null;
   const content = (
     <>
-      {icon && iconPosition === "start" ? <Icon name={icon} size="s" /> : null}
-      <span className={s.label}>{label}</span>
-      {icon && iconPosition === "end" ? <Icon name={icon} size="s" /> : null}
+      {iconPosition === "start" ? glyph : null}
+      <span className={s.label}>{name}</span>
+      {iconPosition === "end" ? glyph : null}
     </>
   );
   const button = toggle ? (

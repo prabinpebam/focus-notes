@@ -3,6 +3,7 @@ import { defineContract, GAP } from "../../contract.ts";
 export const contract = defineContract({
   type: "FileTree",
   tier: "primitive",
+  requiresId: true,
   description: "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, an inline name field, and each row's menu (D-162).",
   props: {
     label: { kind: "message", required: true },

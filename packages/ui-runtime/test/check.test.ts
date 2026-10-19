@@ -42,6 +42,11 @@ describe("ui:check (DSY-08)", () => {
   it("rejects literal text", () => expect(messagesOf(problems({ type: "Text", props: { value: "Hello" } })).join()).toMatch(/schema|literal/));
   // DSY-02: a raw value where a token is expected fails the check.
   it("rejects raw values where a token is expected", () => expect(problems({ type: "Stack", props: { gap: "12px" } }).length).toBeGreaterThan(0));
+  it("requires an id on a component that names its parts from it (D-199)", () => {
+    const list = { type: "ResultList", props: { label: { t: "findAll.results" }, items: { get: "vm.gallery.results" } } };
+    expect(messagesOf(problems(list)).join()).toMatch(/ResultList needs an id/);
+    expect(messagesOf(problems({ ...list, id: "results" })).join()).not.toMatch(/needs an id/);
+  });
   it("rejects unknown messages and wrong arguments", () => {
     expect(messagesOf(problems({ type: "Text", props: { value: { t: "nope.missing" } } }))).toContain('references: message "nope.missing" doesn\'t exist');
     expect(messagesOf(problems({ type: "Text", props: { value: { t: "canvas.placeholder" } } }))).toContain('types: message "canvas.placeholder" needs argument "platform"');
