@@ -320,9 +320,12 @@ export function chordMatches(chord: string, e: KeyEventLike, platform: Platform,
 }
 
 const KEY_NAMES: Record<string, string> = { Up: "↑", Down: "↓", Left: "←", Right: "→", Plus: "+", Escape: "Esc", Space: "Space" };
-/** macOS names its named keys with the glyphs its menus use: ↩ Return, ⌫ Delete, ⎋ Escape (D-194). */
+/**
+ * macOS names its named keys with the glyphs its menus use: ↩ Return, ⌫ Delete, ⇥ Tab (D-194). Escape
+ * stays "Esc", as its key cap and Apple's own help write it.
+ */
 const MAC_KEY_NAMES: Record<string, string> = {
-  ...KEY_NAMES, Enter: "↩", Return: "↩", Backspace: "⌫", Delete: "⌦", Escape: "⎋", Esc: "⎋", Tab: "⇥",
+  ...KEY_NAMES, Enter: "↩", Return: "↩", Backspace: "⌫", Delete: "⌦", Tab: "⇥",
   Home: "↖", End: "↘", PageUp: "⇞", PageDown: "⇟",
 };
 
@@ -350,7 +353,7 @@ export function chordParts(chord: string, platform: Platform): string[] {
 const SPOKEN: Record<string, string> = {
   "⌘": "Command", "⌃": "Control", "⌥": "Option", "⇧": "Shift", Ctrl: "Control", "↑": "Up", "↓": "Down", "←": "Left", "→": "Right",
   "+": "Plus", "-": "Minus", "=": "Equals", "/": "Slash", "\\": "Backslash", ".": "Period", ",": "Comma", "`": "Backtick", Esc: "Escape",
-  "↩": "Return", "⌫": "Delete", "⌦": "Forward Delete", "⎋": "Escape", "⇥": "Tab", "↖": "Home", "↘": "End", "⇞": "Page Up", "⇟": "Page Down",
+  "↩": "Return", "⌫": "Delete", "⌦": "Forward Delete", "⇥": "Tab", "↖": "Home", "↘": "End", "⇞": "Page Up", "⇟": "Page Down",
 };
 
 /** A chord in words, for screen readers: "Shift Command L", "Control Slash". */

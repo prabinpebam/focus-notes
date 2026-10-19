@@ -784,7 +784,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
             ...(!a.available ? { disabled: true, ...(a.reason ? { description: msg(a.reason) } : {}) } : {}),
           })),
           summary: msg("spotlight.actionsCount", { count: list.filter((a) => a.available).length }),
-          hints: msg("spotlight.hints.actions", { back: key("Left") }),
+          hints: msg("spotlight.hints.actions", { run: key("Enter"), back: key("Left"), close: key("Escape") }),
           actionsTitle: msg("spotlight.actionsFor", { name: row?.label ?? "" }),
           listLabel: msg("spotlight.actionsList"),
         };
@@ -799,7 +799,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
       return {
         open: true, mode, query: p.query, placeholder: msg(`spotlight.placeholder.${p.mode}`), fieldLabel: msg(`spotlight.placeholder.${p.mode}`),
         activeId: p.activeId, focus: p.focus, items, summary, status,
-        hints: msg("spotlight.hints", { alt: key("Mod+Enter"), actions: key("Mod+K") }),
+        hints: msg("spotlight.hints", { open: key("Enter"), alt: key("Mod+Enter"), actions: key("Mod+K"), close: key("Escape") }),
         actionsTitle: "", listLabel: msg("spotlight.list"),
       };
     },

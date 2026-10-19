@@ -34,7 +34,7 @@ The keymap supports as many platforms as possible ([D-19](../plan/decisions.md))
 | **Ctrl** (only where it says so) | <kbd>⌃</kbd> Control | <kbd>Ctrl</kbd> |
 | **Enter** | <kbd>↩</kbd> Return | <kbd>Enter</kbd> |
 | **Backspace** / **Delete** | <kbd>⌫</kbd> Delete / <kbd>⌦</kbd> Forward Delete | <kbd>Backspace</kbd> / <kbd>Delete</kbd> |
-| **Escape**, **Tab** | <kbd>⎋</kbd>, <kbd>⇥</kbd> | <kbd>Esc</kbd>, <kbd>Tab</kbd> |
+| **Escape**, **Tab** | <kbd>Esc</kbd>, <kbd>⇥</kbd> | <kbd>Esc</kbd>, <kbd>Tab</kbd> |
 | **Home**, **End**, **Page Up**, **Page Down** | <kbd>↖</kbd>, <kbd>↘</kbd>, <kbd>⇞</kbd>, <kbd>⇟</kbd> | <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>PageUp</kbd>, <kbd>PageDown</kbd> |
 
 Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu bar) uses the right symbols for the platform: `⌥⌘F` on Apple, `Ctrl+H` on Windows, and on Apple the named keys in the glyphs its own menus use, read aloud in words (Rename's <kbd>↩</kbd> is "Return", Delete's <kbd>⌘⌫</kbd> is "Command Delete"; [D-194](../plan/decisions.md)).
