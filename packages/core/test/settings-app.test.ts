@@ -100,7 +100,7 @@ describe("IA-VIEW-SETTINGS: opening Settings", () => {
     await t.app.start();
     const more = t.app.viewModels.select("vm.toolbar", t.app.store.state) as { more: { id: string; items: { id: string; shortcut?: string; disabled?: boolean }[] }[] };
     const help = more.more.find((g) => g.items.some((i) => i.id === "settings.open"))!;
-    expect(help.items.map((i) => i.id)).toEqual(["settings.open", "toolbar.customize", "shortcuts.open", "help.open"]);
+    expect(help.items.map((i) => i.id)).toEqual(["settings.open", "feedback.open", "toolbar.customize", "shortcuts.open", "help.open"]);
     expect(help.items[0]).toMatchObject({ shortcut: "Ctrl+,", label: "Settings…" });
     expect(help.items[0]!.disabled).toBeUndefined();
     expect(t.app.commands.match({ key: ",", code: "Comma", ctrlKey: true, metaKey: false, shiftKey: false, altKey: false, altGraph: false }, [])).toBe("settings.open");

@@ -103,6 +103,16 @@ export async function settings(page: Page, category: string) {
   await expect(dialog.getByRole("tab", { name: category })).toHaveAttribute("aria-selected", "true");
 }
 
+export async function sendFeedback(page: Page, kind: "Problem" | "Idea") {
+  await moreMenu(page);
+  await page.getByRole("menu", { name: "More" }).getByRole("menuitem", { name: "Send feedback…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Send feedback" });
+  await expect(dialog.getByRole("textbox", { name: "Title" })).toBeFocused();
+  await dialog.getByRole("radiogroup", { name: "Kind" }).getByText(kind, { exact: true }).click();
+  await expect(dialog.getByRole("radio", { name: kind })).toBeChecked();
+  await dialog.getByRole("textbox", { name: "Title" }).fill(kind === "Problem" ? "Saving froze the window" : "Folders for tags");
+}
+
 export interface Surface {
   name: string;
   open: (page: Page) => Promise<void>;
@@ -208,6 +218,9 @@ export const SURFACES: Surface[] = [
   { name: "settings account", open: (page) => settings(page, "Account"), tooltips: (page) => page.getByRole("dialog", { name: "Settings" }).getByRole("button", { name: "Close" }) },
   { name: "settings workspace", open: (page) => settings(page, "Workspace") },
   { name: "settings appearance", open: (page) => settings(page, "Appearance") },
+  // Send feedback (D-203), signed out here: Continue on GitHub, Problem with the report, then Idea without it.
+  { name: "send feedback", open: (page) => sendFeedback(page, "Problem"), tooltips: (page) => page.getByRole("dialog", { name: "Send feedback" }).getByRole("button") },
+  { name: "send feedback idea", open: (page) => sendFeedback(page, "Idea") },
   { name: "formatting toolbar", open: async (page) => {
     await page.keyboard.press(caret.docStart);
     await page.keyboard.press("ArrowDown");

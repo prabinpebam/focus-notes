@@ -112,6 +112,9 @@ test("A11Y-01, DEF-12: Tab while Settings checks the account rests on the panel,
   await press(page, `${mod}+,`);
   await expect(settings(page).getByRole("tab", { name: "Account" })).toBeFocused();
   await expect(settings(page).getByText(/^Checking/)).toBeVisible();
+  // The list's foot comes before the panel, in the order they read (D-203).
+  await press(page, "Tab");
+  await expect(settings(page).getByRole("button", { name: "Send feedback" })).toBeFocused();
   await press(page, "Tab");
   await expect(settings(page).getByRole("tabpanel")).toBeFocused();
   await expect(settings(page).getByRole("button", { name: /^Sign in/ })).toBeFocused({ timeout: 10_000 });

@@ -159,7 +159,7 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
     if (f.phase !== "editing" || f.cooling || !ready(f) || !fb?.send) return;
     const draft = input();
     set({ phase: "sending", problem: undefined });
-    const result: FeedbackResult = await tracker.run(FEEDBACK_SEND, "feedback.sending", () => fb.send!(draft, windowTimings()))
+    const result: FeedbackResult = await tracker.run("feedback.send", "feedback.sending", () => fb.send!(draft, windowTimings()))
       .catch((): FeedbackResult => ({ problem: "network" }));
     const open = state().open;
     if ("number" in result) {

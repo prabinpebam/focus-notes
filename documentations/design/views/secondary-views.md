@@ -48,7 +48,7 @@ The views people open now and then: Settings, Send feedback, Share and visibilit
 
 | Entry point | What it shows |
 | --- | --- |
-| **Settings**, the foot of the category list | *Send feedback*, a subtle button with the feedback icon, under the categories. It shows on every category, including the one Settings opens on (the Tabs `footer` slot, D-203 (1)). It closes Settings, and closing the dialog goes back to Settings. |
+| **Settings**, the foot of the category list | *Send feedback*, a subtle button with the feedback icon, under the categories. It shows on every category, including the one Settings opens on (the Tabs `footer` slot, D-203 (1)). It closes Settings, and closing the dialog goes back to Settings. Tab goes from the categories to *Send feedback*, then to the category's panel, in the order they read. |
 | **⋯ menu** | *Send feedback…*, after *Settings…*, on the desktop and in the browser. |
 | **Spotlight** | *Send feedback…*, found by *feedback*, *bug*, *issue*, *problem*, *idea*, *suggestion*, *report*, and *github*. |
 | **macOS Help menu** | *Send Feedback…*, before the diagnostic report's items. |
