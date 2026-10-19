@@ -56,6 +56,8 @@ import { CrashRecovery, coverBounds } from "./window/crash-cover.ts";
 import { COPY_PATHS_MAX, copyFilesToClipboard, defaultRun } from "./copy-files.ts";
 import { themeCanvas, WINDOW_METRICS } from "@focus-notes/core/window-geometry";
 import { AppMenuBar } from "./window/menu-bar.ts";
+import { describeMenu, spellingMenu, type SpellingMenuParams } from "./spelling/menu.ts";
+import { HELPER_ARGS, MAX_WORD, OsSpellChecker } from "./spelling/os-spellchecker.ts";
 import { SnapshotCache } from "@focus-notes/core/snapshot";
 import { textHash } from "@focus-notes/core/journal";
 import type { RestoredNote } from "@focus-notes/core";
@@ -163,6 +165,31 @@ const devVersion = () => {
   }
 };
 const onSpawn = logSpawns ? (program: string, args: string[]) => process.stdout.write(`[focus-notes] spawn ${JSON.stringify([program, ...args])}\n`) : undefined;
+/** Windows' spell checker, asked directly for the right-click menu (D-193): Electron reports no misspelled word there. */
+const osSpelling = platform === "windows"
+  ? new OsSpellChecker(() => {
+    const exe = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+    onSpawn?.(exe, HELPER_ARGS);
+    return spawn(exe, HELPER_ARGS, { windowsHide: true, stdio: "pipe" });
+  })
+  : undefined;
+const SPELLING_TARGET_MS = 250;
+/** The word under the right-click, from the page's preload, or "" (none, or no answer in time). */
+function spellingTarget(wc: Electron.WebContents): Promise<string> {
+  return new Promise((resolve) => {
+    const done = (word: string) => {
+      clearTimeout(timer);
+      ipcMain.removeListener("spelling:target", answer);
+      resolve(word);
+    };
+    const answer = (e: IpcMainEvent, word: unknown) => {
+      if (e.sender === wc && fromApp(e)) done(typeof word === "string" && word.length <= MAX_WORD ? word : "");
+    };
+    const timer = setTimeout(() => done(""), SPELLING_TARGET_MS);
+    ipcMain.on("spelling:target", answer);
+    wc.send("spelling:target");
+  });
+}
 const apiFetch = githubFetch(fakeApi && /^http:\/\/127\.0\.0\.1:\d+$/.test(fakeApi)
   ? (i, init) => fetch(fakeApi + i.slice("https://api.github.com".length), init)
   : undefined);
@@ -1585,6 +1612,40 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
       if (input.type === "keyDown" && input.meta && input.shift && !input.alt && !input.control && input.key.toLowerCase() === "v") win.webContents.pasteAndMatchStyle();
     });
   }
+  // A right-click in text: the OS spell checker's suggestions and the edit actions, in the OS's menu (D-193).
+  // Journeys read the menu from the log: a native menu would open over the owner's screen (D-141).
+  // On Windows, Electron underlines a word but doesn't report it (electron/electron#54729), so the
+  // preload names the word under the pointer and the OS's spell checker is asked directly.
+  win.webContents.on("context-menu", (_e, params) => {
+    void (async () => {
+      const wc = win.webContents;
+      let p: SpellingMenuParams = params;
+      let osWord: string | undefined;
+      if (osSpelling && params.isEditable && !params.misspelledWord && params.menuSourceType !== "keyboard") {
+        osSpelling.warm();
+        const word = await spellingTarget(wc);
+        const check = word ? await osSpelling.check(word, wc.session.getSpellCheckerLanguages()) : undefined;
+        if (check?.misspelled) {
+          osWord = word;
+          p = { ...params, misspelledWord: word, dictionarySuggestions: check.suggestions };
+        }
+      }
+      const items = spellingMenu(p, {
+        replace: (s) => (osWord ? wc.send("spelling:replace", osWord, s) : wc.replaceMisspelling(s)),
+        learn: (w) => {
+          wc.session.addWordToSpellCheckerDictionary(w);
+          osSpelling?.forget(w);
+        },
+      });
+      if (!items.length || win.isDestroyed()) return;
+      if (journey) {
+        (globalThis as { __focusNotesLastMenu?: unknown }).__focusNotesLastMenu = items;
+        process.stdout.write(`[focus-notes] context-menu ${describeMenu(items)}\n`);
+      } else Menu.buildFromTemplate(items).popup({ window: win });
+    })();
+  });
+  // The checker starts in the background once the window is up, so the first right-click has its answer.
+  if (osSpelling) win.once("show", () => setTimeout(() => osSpelling.warm(), 3_000));
   // End-to-end tests turn the warm-up after start off, so their timing stays the same (PRF-10).
   // GPU or software compositing (D-121): in software the note's edges fade without the blur.
   const gpu = compositing();
@@ -1890,6 +1951,7 @@ let gitQuit = false;
 let journalClosed = false;
 const QUIT_GIT_LIMIT_MS = 8_000;
 app.on("will-quit", (e) => {
+  osSpelling?.dispose();
   if (writeQueues.size === 0 && (gitQuit || !gitSync) && (journalClosed || !journal)) return;
   e.preventDefault();
   void Promise.allSettled([...writeQueues.values()])

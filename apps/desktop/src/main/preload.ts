@@ -4,6 +4,7 @@
  */
 import { contextBridge, ipcRenderer } from "electron";
 import { parsePointerZone, pointerMove } from "./window/pointer-report.ts";
+import { wordAround } from "./spelling/word.ts";
 
 const params = new URLSearchParams(globalThis.location?.search ?? "");
 const platform = (params.get("platform") ?? "windows") as "macos" | "windows" | "linux";
@@ -61,6 +62,40 @@ if (pointerZone) {
     report();
   }, { capture: true, passive: true });
 }
+
+/**
+ * The word under a right-click in the note (D-193), for the shell's spelling menu on Windows, where
+ * Electron reports no misspelled word itself. The shell asks for it as the menu opens, and a chosen
+ * suggestion replaces it as typed text, so the editor takes it like any typing (and undoes it).
+ */
+let spellTarget: { node: Text; start: number; end: number; word: string } | undefined;
+if (platform === "windows" && typeof document !== "undefined") addEventListener("contextmenu", (e) => {
+  spellTarget = undefined;
+  const r = document.caretRangeFromPoint(e.clientX, e.clientY);
+  const node = r?.startContainer;
+  if (!r || !node || node.nodeType !== Node.TEXT_NODE || !node.parentElement?.isContentEditable) return;
+  const w = wordAround((node as Text).data, r.startOffset);
+  if (!w) return;
+  const range = document.createRange();
+  range.setStart(node, w.start);
+  range.setEnd(node, w.end);
+  const b = range.getBoundingClientRect();
+  if (e.clientX < b.left - 1 || e.clientX > b.right + 1 || e.clientY < b.top - 1 || e.clientY > b.bottom + 1) return;
+  spellTarget = { node: node as Text, ...w };
+}, { capture: true, passive: true });
+ipcRenderer.on("spelling:target", () => ipcRenderer.send("spelling:target", spellTarget?.word ?? ""));
+ipcRenderer.on("spelling:replace", (_e, word: unknown, replacement: unknown) => {
+  const t = spellTarget;
+  spellTarget = undefined;
+  if (!t || typeof replacement !== "string" || word !== t.word || !t.node.isConnected || t.node.data.slice(t.start, t.end) !== t.word) return;
+  const range = document.createRange();
+  range.setStart(t.node, t.start);
+  range.setEnd(t.node, t.end);
+  const selection = getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+  document.execCommand("insertText", false, replacement);
+});
 
 contextBridge.exposeInMainWorld("focusNotes", {
   platform,
