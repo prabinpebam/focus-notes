@@ -53,6 +53,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     console.error("The Store package still has the placeholder identity: set MSSTORE_IDENTITY_NAME and MSSTORE_PUBLISHER (Partner Center → Product identity).");
     process.exit(2);
   }
+  const version = argv.find((a) => a.startsWith("-c.extraMetadata.version="))?.split("=")[1] ?? pkg.version;
+  const versionProblem = storeVersionProblem(version);
+  if (versionProblem && argv.includes("--require-identity")) {
+    console.error(versionProblem);
+    process.exit(2);
+  }
   console.log(`Store package identity: ${identity.identityName}, ${identity.publisher}${placeholder ? " (placeholder: only for checking the build)" : ""}.`);
   const cli = createRequire(join(root, "package.json")).resolve("electron-builder/cli.js");
   const r = spawnSync(process.execPath, [cli, "--win", "appx", "--publish", "never", ...args, ...argv.filter((a) => a !== "--require-identity")], { cwd: root, stdio: "inherit" });

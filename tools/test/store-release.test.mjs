@@ -6,6 +6,7 @@
  * the credentials, skipping cleanly with a notice when not.
  */
 import { describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -131,6 +132,25 @@ describe("the Store target in the build configuration", () => {
     expect(real.placeholder).toBe(false);
     expect(real.identity.publisherDisplayName).toBe(desktop.build.appx.publisherDisplayName);
     expect(identityArgs({ MSSTORE_IDENTITY_NAME: "Owner.FocusNotes" }).placeholder).toBe(true);
+  });
+
+  it("knows the Store refuses a version that starts with 0, or a section over 65535", () => {
+    expect(storeVersionProblem("0.0.1")).toMatch(/can't start with 0/);
+    expect(storeVersionProblem("0.9.12")).toMatch(/Store releases start at 1\.0\.0/);
+    expect(storeVersionProblem("1.0.0")).toBeUndefined();
+    expect(storeVersionProblem("2.10.3-rc.1")).toBeUndefined();
+    expect(storeVersionProblem("1.70000.0")).toMatch(/65535/);
+    expect(storeVersionProblem("one")).toMatch(/isn't a version/);
+  });
+
+  it("refuses, before building, a release build with the placeholders or a 0.x version", () => {
+    const run = (env, ...args) => spawnSync(process.execPath, [join(root, "apps/desktop/scripts/dist-store.mjs"), "--require-identity", ...args], { env: { ...process.env, MSSTORE_IDENTITY_NAME: "", MSSTORE_PUBLISHER: "", ...env }, encoding: "utf8" });
+    const placeholder = run({}, "-c.extraMetadata.version=1.0.0");
+    expect(placeholder.status).toBe(2);
+    expect(placeholder.stderr).toMatch(/placeholder identity/);
+    const zero = run({ MSSTORE_IDENTITY_NAME: "Owner.FocusNotes", MSSTORE_PUBLISHER: "CN=1A2B" }, "-c.extraMetadata.version=0.4.0");
+    expect(zero.status).toBe(2);
+    expect(zero.stderr).toMatch(/refuses version 0\.4\.0/);
   });
 });
 
