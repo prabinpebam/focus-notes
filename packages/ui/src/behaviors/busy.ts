@@ -11,6 +11,8 @@
  * - A failure ends the task at once: `busy` false, no words, the control is back at rest.
  * Under reduced motion the timing is the same and the Spinner stands still (motion.spin).
  */
+import { useCallback } from "react";
+
 export type BusyPhase = "on" | "done";
 
 export interface BusyInput {
@@ -39,6 +41,11 @@ export interface Busy {
 export function useBusy({ busy, busyLabel, label, disabled }: BusyInput): Busy {
   const phase: BusyPhase | undefined = busy ? "on" : busyLabel ? "done" : undefined;
   const inert = Boolean(busy || disabled);
+  // Stable while `busy` holds, so the button's ref isn't detached and attached on every render.
+  const ref = useCallback((el: Element | null) => {
+    if (busy) el?.setAttribute("aria-busy", "true");
+    else el?.removeAttribute("aria-busy");
+  }, [busy]);
   return {
     phase,
     inert,
@@ -47,9 +54,6 @@ export function useBusy({ busy, busyLabel, label, disabled }: BusyInput): Busy {
       ...(inert ? { "aria-disabled": "true" as const } : {}),
       ...(phase ? { "data-busy": phase } : {}),
     },
-    ref: (el) => {
-      if (busy) el?.setAttribute("aria-busy", "true");
-      else el?.removeAttribute("aria-busy");
-    },
+    ref,
   };
 }
