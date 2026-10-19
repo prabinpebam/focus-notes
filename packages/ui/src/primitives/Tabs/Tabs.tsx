@@ -58,7 +58,8 @@ export function Tabs({ label, items, value, orientation = "horizontal", autoFocu
     <AriaTabs ref={rootRef} className={s.root[laid]} orientation={laid} selectedKey={selected} onSelectionChange={(k) => onChange?.({ value: String(k) })} {...(id ? { id } : {})}>
       {footer ? (
         // The list and its footer share the column and its divider; the footer sits right under the tabs.
-        <div className={s.side[laid]}>
+        // `data-side-nav`: the column is the side navigation that runs the body's full height (D-123).
+        <div className={s.side[laid]} data-side-nav="">
           {tabList(s.sideList[laid])}
           <div className={s.footer[laid]}>{footer}</div>
         </div>
