@@ -151,6 +151,15 @@ export class GitHubApi {
     await this.request("POST", `/repos/${template.owner}/${template.name}/generate`, { owner, name, description, private: false, include_all_branches: false });
   }
 
+  /**
+   * Opens an issue (Send feedback, QLT-07, D-203): only the number and its page come back. GitHub
+   * drops labels the account can't set, without failing.
+   */
+  async createIssue(owner: string, repo: string, issue: { title: string; body: string; labels: string[] }): Promise<{ number: number; url: string }> {
+    const r = await this.request<{ number: number; html_url: string }>("POST", `/repos/${owner}/${repo}/issues`, issue);
+    return { number: r.number, url: r.html_url };
+  }
+
   /** Makes a repository in the signed-in account, with a first commit (a README) so it has a main branch, or empty (`autoInit` false). */
   async createRepo(name: string, description: string, isPrivate: boolean, autoInit = true): Promise<void> {
     await this.request("POST", "/user/repos", { name, description, private: isPrivate, auto_init: autoInit });
