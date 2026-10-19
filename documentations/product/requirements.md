@@ -393,6 +393,7 @@ Owner: *"How do we package and distribute this?… It would be ideal if people c
 | DST-05 | `.focus-notes/workspace.json` with `formatVersion`. Migrations ask first, and older apps refuse to write newer formats. | P0 |
 | DST-06 | The instance template repository is generated from `templates/workspace/` at each release; its *Deploy app* workflow deploys the released web app bundle by version and checksum, and updates arrive as pull requests that move the version (D-87). | P0 |
 | DST-07 | Stable and Beta update channels. | P1 |
+| DST-08 | The desktop app carries the workspace template: *Create my notes* makes an empty repository in your account and pushes its first commit from the template inside the app (in a release, the same pinned template the release attaches), so making an instance never depends on the public template repository. A repository you already made, in the browser or before, is still used as it is, and a template repository is still never written to (D-157, D-201). | P0 |
 
 ## Product site and help (HLP)
 

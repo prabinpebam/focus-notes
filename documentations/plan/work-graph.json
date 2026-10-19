@@ -1432,6 +1432,36 @@
       "status": "verifying"
     },
     {
+      "id": "WP-5.10",
+      "stage": "M5",
+      "title": "The template inside the app",
+      "summary": "The desktop app carries the pinned workspace template; Create my notes makes an empty repository and pushes its first commit from it, checking the sign-in can add workflows first, so setup never depends on the public template repository.",
+      "requirements": [
+        "DST-08"
+      ],
+      "dependsOn": [
+        "WP-5.5",
+        "WP-3.1"
+      ],
+      "touches": [
+        "apps/desktop",
+        "packages/github",
+        "ci",
+        "template"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "architecture/desktop-and-git.md#creating-a-workspace",
+        "experience/first-run.md",
+        "plan/distribution.md"
+      ],
+      "lookahead": false,
+      "status": "verifying"
+    },
+    {
       "id": "WP-6.1",
       "stage": "MW",
       "title": "Web app on your own Pages, local first",
