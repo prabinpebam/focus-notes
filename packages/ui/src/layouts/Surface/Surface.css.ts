@@ -43,11 +43,11 @@ const sp = tokens.space;
 // What scrolls into view (a focused button) keeps the padding around it, so its focus ring is never cut.
 const pad = (v: string) => ({ padding: v, paddingInlineEnd: `max(0px, calc(${v} - ${sb.scrollbarSize}))`, scrollPadding: v });
 export const bodyPadding = styleVariants({
-  none: {}, xs: pad(sp.xs), s: pad(sp.s), m: pad(sp.m), l: pad(sp.l), xl: pad(sp.xl), xxl: pad(sp.xxl), xxxl: pad(sp.xxxl),
+  none: {}, xxs: pad(sp.xxs), xs: pad(sp.xs), s: pad(sp.s), m: pad(sp.m), l: pad(sp.l), xl: pad(sp.xl), xxl: pad(sp.xxl), xxxl: pad(sp.xxxl),
 });
 // In a short window (below breakpoint.short) the scroller's padding can step down (the full-window setup, D-131).
 const shortQuery = `(max-height: ${breakpoints.short - 1}px)`;
 const shortPad = (v: string) => ({ "@media": { [shortQuery]: pad(v) } });
 export const bodyShortPadding = styleVariants({
-  none: shortPad(sp.none), xs: shortPad(sp.xs), s: shortPad(sp.s), m: shortPad(sp.m), l: shortPad(sp.l), xl: shortPad(sp.xl), xxl: shortPad(sp.xxl), xxxl: shortPad(sp.xxxl),
+  none: shortPad(sp.none), xxs: shortPad(sp.xxs), xs: shortPad(sp.xs), s: shortPad(sp.s), m: shortPad(sp.m), l: shortPad(sp.l), xl: shortPad(sp.xl), xxl: shortPad(sp.xxl), xxxl: shortPad(sp.xxxl),
 });

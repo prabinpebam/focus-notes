@@ -68,15 +68,19 @@ import { contract as SiteFigure } from "./primitives/SiteFigure/contract.ts";
 import { contract as SiteGrid } from "./layouts/SiteGrid/contract.ts";
 import { contract as SiteThemeShowcase } from "./primitives/SiteThemeShowcase/contract.ts";
 
-export const contracts: readonly Contract[] = [
+/** Each contract by its type, with its literal types, so the registry checks components against it (D-199). */
+export const contractsByType = {
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, SitePage, SiteSection, SiteGrid,
   EditorSurface, TableControls, BlockHandle, WindowFrame,
   Trigger, Toolbar, Dialog,
   NoteContent,
-];
+} as const;
+export type ContractsByType = typeof contractsByType;
+export const contracts: readonly Contract[] = Object.values(contractsByType);
 export const contractByType = new Map(contracts.map((c) => [c.type, c]));
 export { ICON_NAMES, type IconName } from "./icon-names.ts";
 export type * from "./contract.ts";
 export type * from "./data.ts";
+export type { Registry, RegisteredComponent, ContractProps, RuntimeValue } from "./register.ts";
 export { ITEM_SHAPES, STRING_ITEMS, type ItemShape, type FieldKind } from "./items.ts";

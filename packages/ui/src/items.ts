@@ -22,6 +22,17 @@ export interface ItemShape {
 
 const shape = <T>(fields: Fields<T>, lists?: Partial<Record<keyof T & string, ListOf>>): ItemShape => ({ fields: fields as ItemShape["fields"], ...(lists ? { lists: lists as Record<string, ListOf> } : {}) });
 
+/**
+ * The item type each list kind holds, so the registry can check a component's list props against
+ * what the renderer passes (DS-A05, D-199). A list kind without an entry here fails typecheck.
+ */
+export interface ListItemTypes {
+  commandItems: CommandItem; menuSections: MenuSection; options: Option; keyCaps: string; keyBindings: KeyBinding;
+  resultItems: ResultItem; treeItems: TreeItem; versionBlocks: VersionBlock; themeTiles: ThemeTile; colorValues: ColorValue;
+  noteBlocks: BlockNode; siteThemes: SiteTheme;
+}
+export type ListItemOf<L extends ListOf> = ListItemTypes[L];
+
 /** A list of plain strings, such as key caps. */
 export const STRING_ITEMS = "string" as const;
 

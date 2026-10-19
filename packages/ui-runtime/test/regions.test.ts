@@ -28,7 +28,7 @@ function mount() {
   app.viewModels.register({ id: "vm.heavy", reads: ["ui.toolbarOpen"], schema, select: () => { heavySelected++; return { label: "heavy" }; } });
   const renders: string[] = [];
   const Text = registry.Text as ComponentType<{ value: string }>;
-  const spied = { ...registry, Text: (p: { value: string }) => { renders.push(p.value); return h(Text, p); } };
+  const spied = { ...registry, Text: (p: Record<string, unknown>) => { renders.push(String(p.value)); return h(Text, p as { value: string }); } };
   const view = {
     $schema: "x", id: "v", viewModels: ["vm.left", "vm.right", "vm.heavy"], focus: "f",
     root: {

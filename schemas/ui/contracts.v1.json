@@ -2508,6 +2508,7 @@
     {
       "type": "ResultList",
       "tier": "primitive",
+      "requiresId": true,
       "description": "A list box of results whose owner keeps focus and moves the active item (aria-activedescendant). Header items head labeled groups; highlights mark where the query matched; a row can show its state.",
       "props": {
         "label": {
@@ -3122,6 +3123,7 @@
     {
       "type": "FileTree",
       "tier": "primitive",
+      "requiresId": true,
       "description": "The Files tree: rows with levels, multiple selection, type-ahead, drag and drop onto folders, an inline name field, and each row's menu (D-162).",
       "props": {
         "label": {
@@ -8695,6 +8697,7 @@
           "children": [
             {
               "type": "ResultList",
+              "id": "fixture-results",
               "props": {
                 "label": {
                   "t": "findAll.results"

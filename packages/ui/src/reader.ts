@@ -2,15 +2,15 @@
  * The published pages' part of the design system (IA-VIEW-PUBLIC, WP-5.1): only the components a
  * reader page uses, so the publisher's renderer and its stylesheet carry nothing else (PRF-12).
  */
-import type { ComponentType } from "react";
 import type { Contract } from "./contract.ts";
 import { Text } from "./primitives/Text/Text.tsx";
 import { Stack } from "./layouts/Stack/Stack.tsx";
 import { ReaderPage } from "./layouts/ReaderPage/ReaderPage.tsx";
 import { NoteContent } from "./blocks/NoteContent/NoteContent.tsx";
 import { contractByType } from "./contracts.ts";
+import { defineRegistry } from "./register.ts";
 
-export const readerRegistry: Readonly<Record<string, ComponentType<any>>> = Object.freeze({ Text, Stack, ReaderPage, NoteContent });
+export const readerRegistry = defineRegistry({ Text, Stack, ReaderPage, NoteContent });
 export const readerContracts: ReadonlyMap<string, Contract> = new Map(Object.keys(readerRegistry).map((type) => [type, contractByType.get(type)!]));
 export type { BlockNode } from "./blocks/NoteContent/NoteContent.tsx";
 
