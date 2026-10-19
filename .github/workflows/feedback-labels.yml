@@ -1,0 +1,27 @@
+# Send feedback's labels (QLT-07, D-203). Issues from the app carry a hidden marker; GitHub drops the
+# labels the app asks for when the person can't push, so this adds them: bug or enhancement, and
+# from-app. The issue's text is read only as data inside the script: never in a shell, never in an
+# expression.
+name: Feedback labels
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Label feedback from the app
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const body = context.payload.issue.body || "";
+            const m = /<!-- focus-notes-feedback: kind=(problem|idea); /.exec(body);
+            if (!m) return;
+            const labels = [m[1] === "problem" ? "bug" : "enhancement", "from-app"];
+            await github.rest.issues.addLabels({ ...context.repo, issue_number: context.payload.issue.number, labels });
