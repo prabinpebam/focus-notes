@@ -5,6 +5,7 @@
 // Run: node scripts/icon.mjs (or --check, which fails if the files differ from what it would write).
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { deflateSync } from "node:zlib";
 
 const root = join(import.meta.dirname, "..");
@@ -66,9 +67,9 @@ function sample(x, y) {
   return [...col, a];
 }
 
-/** Renders the design at `px` square, 8 × 8 samples a pixel; premultiplied while averaging. */
-function render(px) {
-  const n = 8, k = ICON.size / px, data = Buffer.alloc(px * px * 4);
+/** Renders the design at `px` square, `n` × `n` samples a pixel; premultiplied while averaging. Straight RGBA. */
+export function render(px, n = 8) {
+  const k = ICON.size / px, data = Buffer.alloc(px * px * 4);
   for (let j = 0; j < px; j++) for (let i = 0; i < px; i++) {
     let r = 0, g = 0, b = 0, al = 0;
     for (let v = 0; v < n; v++) for (let u = 0; u < n; u++) {
@@ -92,14 +93,15 @@ function chunk(type, body) {
   const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(tb));
   return Buffer.concat([len, tb, crc]);
 }
-function png(px) {
-  const data = render(px);
-  const raw = Buffer.alloc(px * (px * 4 + 1));
-  for (let y = 0; y < px; y++) data.copy(raw, y * (px * 4 + 1) + 1, y * px * 4, (y + 1) * px * 4);
+/** A PNG of straight RGBA pixels, `w` × `h`. */
+export function encodePng(w, h, data) {
+  const raw = Buffer.alloc(h * (w * 4 + 1));
+  for (let y = 0; y < h; y++) data.copy(raw, y * (w * 4 + 1) + 1, y * w * 4, (y + 1) * w * 4);
   const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(px, 0); ihdr.writeUInt32BE(px, 4); ihdr[8] = 8; ihdr[9] = 6;
+  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 6;
   return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(raw, { level: 9 })), chunk("IEND", Buffer.alloc(0))]);
 }
+const png = (px) => encodePng(px, px, render(px));
 function ico(sizes) {
   const images = sizes.map(png);
   const head = Buffer.alloc(6 + 16 * sizes.length);
@@ -115,8 +117,12 @@ function ico(sizes) {
   return Buffer.concat([head, ...images]);
 }
 
-const files = { "icon.svg": Buffer.from(svg()), "icon.png": png(512), "icon.ico": ico([256, 128, 64, 48, 32, 16]) };
-if (process.argv.includes("--check")) {
+// The Store's tile and logo images are drawn from the same design (tools/release/store-assets.mjs).
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+const files = isMain ? { "icon.svg": Buffer.from(svg()), "icon.png": png(512), "icon.ico": ico([256, 128, 64, 48, 32, 16]) } : {};
+if (!isMain) {
+  // Imported for its renderer: nothing to write.
+} else if (process.argv.includes("--check")) {
   const stale = Object.entries(files).filter(([f, b]) => { try { return !readFileSync(join(out, f)).equals(b); } catch { return true; } }).map(([f]) => f);
   if (stale.length) { console.error(`Icon files out of date: ${stale.join(", ")}. Run node scripts/icon.mjs.`); process.exit(1); }
   console.log("Icon files up to date.");

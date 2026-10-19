@@ -104,7 +104,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M5: Publish and share (Version 1.0)</p>
-<p>The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. Visitors' *Use this app for yourself* dialog links to the downloads, and every release ships with checksums, an SBOM, and attestations. <a href="implementation-plan.md#m5">Details</a>. DSK-09, DST-03, DST-06, DST-08, PKG-02, PRF-05, PRF-06, PRF-12, PRF-13, PRF-14, PRV-04, QLT-02, QLT-04, SEC-05, SHR-03, SHR-05 to SHR-11.</p>
+<p>The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. Visitors' *Use this app for yourself* dialog links to the downloads, and every release ships with checksums, an SBOM, and attestations. <a href="implementation-plan.md#m5">Details</a>. DSK-09, DST-03, DST-06, DST-08, PKG-02, PKG-12, PRF-05, PRF-06, PRF-12, PRF-13, PRF-14, PRV-04, QLT-02, QLT-04, SEC-05, SHR-03, SHR-05 to SHR-11.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M7: Agents (Your agents can help, safely)</p>

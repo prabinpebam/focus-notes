@@ -489,6 +489,15 @@
       "group": "Plan"
     },
     {
+      "path": "plan/microsoft-store.md",
+      "title": "Microsoft Store",
+      "order": 525,
+      "icon": "storefront",
+      "status": "draft",
+      "updated": "2026-10-16",
+      "group": "Plan"
+    },
+    {
       "path": "plan/risks.md",
       "title": "Risks",
       "order": 530,

@@ -109,7 +109,7 @@ describe("release.yml (DST-03, D-128)", () => {
   it("DST-03: runs on a v<version> tag, or by hand as a dry run (the default)", () => {
     expect(wf.on.push).toEqual({ tags: ["v[0-9]*"] });
     expect(wf.on.workflow_dispatch.inputs["dry-run"]).toMatchObject({ type: "boolean", default: true });
-    expect(Object.keys(wf.jobs)).toEqual(["version", "desktop", "web", "collect", "attest", "release"]);
+    expect(Object.keys(wf.jobs)).toEqual(["version", "desktop", "web", "store", "collect", "attest", "release"]);
     expect(stepsOf(job("version")).find((s) => s.id === "v").run).toBe("node tools/release/version.mjs");
     expect(stepsOf(job("version")).find((s) => s.id === "v").env.DRY_RUN_INPUT).toBe("${{ inputs.dry-run }}");
   });
@@ -150,7 +150,7 @@ describe("release.yml (DST-03, D-128)", () => {
 
   it("DST-03, L8: collects every asset-* artifact into its own folder, fails on a duplicate name, then writes SHA256SUMS", () => {
     const c = job("collect");
-    expect(c.needs).toEqual(["version", "desktop", "web"]);
+    expect(c.needs).toEqual(["version", "desktop", "web", "store"]);
     expect(c.permissions).toBeUndefined();
     expect(stepsOf(c)[0].with).toEqual({ pattern: "asset-*", path: "parts" });
     const run = stepsOf(c)[1].run;
@@ -191,7 +191,7 @@ describe("release.yml (DST-03, D-128)", () => {
 
   it("supersedes preview-release.yml: stage exits are draft pre-releases from the same pipeline", () => {
     expect(existsSync(join(root, ".github", "workflows", "preview-release.yml"))).toBe(false);
-    expect(Object.keys(wf.jobs)).toEqual(["version", "desktop", "web", "collect", "attest", "release"]);
+    expect(Object.keys(wf.jobs)).toEqual(["version", "desktop", "web", "store", "collect", "attest", "release"]);
     expect(release.text).not.toMatch(/protected/);
   });
 });

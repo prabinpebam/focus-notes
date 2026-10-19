@@ -1462,6 +1462,35 @@
       "status": "verifying"
     },
     {
+      "id": "WP-5.11",
+      "stage": "M5",
+      "title": "Microsoft Store package",
+      "summary": "An MSIX package beside the NSIS installer with its Partner Center identity in one place, the command-line tool as an app execution alias, the Store listing generated from the product site, a Store build on every release, and an automatic submission once the owner has set the Store credentials.",
+      "requirements": [
+        "PKG-12"
+      ],
+      "dependsOn": [
+        "WP-5.5"
+      ],
+      "touches": [
+        "apps/desktop",
+        "packages/core",
+        "packages/views",
+        ".github/workflows",
+        "tools"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "plan/microsoft-store.md",
+        "plan/distribution.md"
+      ],
+      "lookahead": false,
+      "status": "verifying"
+    },
+    {
       "id": "WP-6.1",
       "stage": "MW",
       "title": "Web app on your own Pages, local first",
