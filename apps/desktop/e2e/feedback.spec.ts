@@ -158,6 +158,14 @@ test("QLT-07: from the ⋯ menu, an idea goes without the report, after Try agai
     await settled(page);
     expect(await axeViolations(page)).toEqual([]);
     await shot(page, "failed-network");
+    // Closed with Esc, the draft stays, and the caret goes back to the note (the ⋯ menu it came from is gone).
+    await page.keyboard.press("Escape");
+    await expect(d).toHaveCount(0);
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+    await (await openMore(page)).getByRole("menuitem", { name: /^Send feedback…/ }).click();
+    // Reopened, the draft and what happened to it are as they were.
+    await expect(d.getByRole("textbox", { name: "Title" })).toHaveValue("Tags in Files");
+    await expect(d.getByText("Couldn't reach GitHub. Your feedback is still here.")).toBeVisible();
     await d.getByRole("button", { name: "Try again" }).click();
     await expect(d.getByText("Issue #101")).toBeVisible({ timeout: 15_000 });
     const issue = w.gh.issues[0]!;
