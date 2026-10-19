@@ -205,6 +205,8 @@ A probe view bound a declared `string[]` view-model field to both Toolbar lists.
 
 **Acceptance:** documented implemented names and counts agree with generated contracts, and every enforcement claim links to an executable check with matching scope.
 
+**Status (19 October, D-200, proposed):** enforced for the catalog, documented for the overview. [Components](components.md#inventory) now carries an inventory generated from the contracts by [component-inventory.mjs](../../../tools/component-inventory.mjs) (67 registered: 44 primitives, four hosts, 15 layouts, one block, three compounds), and every guidance row says *Implemented*, *Composed*, or *Planned*. `pnpm check` fails when the inventory is stale, the summary counts differ, or a row's status disagrees with the registry; [component-inventory.test.mjs](../../../tools/test/component-inventory.test.mjs) holds each drift found here as a failing case. [The overview's Enforcement table](overview.html#enforcement) links each rule to its check, states what it doesn't cover, and labels prop parity (DS-A05), the shared busy protocol (DS-A06), and pixel comparison (DS-A03) as planned. The overview's claims are reviewed, not machine-checked.
+
 ## Prioritized improvement path
 
 <ol class="slate-steps">
