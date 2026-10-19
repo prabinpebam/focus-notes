@@ -13,8 +13,9 @@ export const contract = defineContract({
   states: ["closed", "opening", "open", "closing"],
   tokens: "cmp.morphPanel.*",
   a11y: { pattern: "dialog (non-modal), opened by its trigger", name: "label" },
+  journeys: [{ spec: "apps/desktop/e2e/m1-canvas.spec.ts", covers: ["opening", "closing"] }],
   fixtures: [
-    { name: "closed", props: { label: { t: "toolbar.label" }, open: false }, slots: { trigger: [{ type: "TriggerButton", props: { label: { t: "trigger.label" } } }], content: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] } },
-    { name: "open", props: { label: { t: "toolbar.label" }, open: true }, slots: { trigger: [{ type: "TriggerButton", props: { label: { t: "trigger.label" } } }], content: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] } },
+    { name: "closed", covers: ["closed"], props: { label: { t: "toolbar.label" }, open: false }, slots: { trigger: [{ type: "TriggerButton", props: { label: { t: "trigger.label" } } }], content: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] } },
+    { name: "open", covers: ["open"], props: { label: { t: "toolbar.label" }, open: true }, slots: { trigger: [{ type: "TriggerButton", props: { label: { t: "trigger.label" } } }], content: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] } },
   ],
 });

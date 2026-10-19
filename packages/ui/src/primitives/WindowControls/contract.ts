@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 const labels = {
   label: { t: "window.controls" }, minimizeLabel: { t: "window.minimize" }, maximizeLabel: { t: "window.maximize" },
@@ -26,9 +26,11 @@ export const contract = defineContract({
   states: ["hidden", "shown", "buttonHover", "closeHover", "focusVisible", "layoutsOpen", "zoneHover"],
   tokens: "cmp.windowControls.*",
   a11y: { pattern: "group of buttons; the picker is a non-modal dialog of zone buttons", name: "label" },
+  journeys: [{ spec: "apps/desktop/e2e/m2-window.spec.ts", covers: ["closeHover", "layoutsOpen"] }],
+  uncovered: { buttonHover: GAP.hover, focusVisible: GAP.focusVisible, zoneHover: GAP.hover },
   fixtures: [
-    { name: "shown", props: { ...labels, reveal: true } },
+    { name: "shown", covers: ["shown"], props: { ...labels, reveal: true } },
     { name: "maximized", props: { ...labels, reveal: true, maximized: true } },
-    { name: "hidden until hover", props: { ...labels } },
+    { name: "hidden until hover", covers: ["hidden"], props: { ...labels } },
   ],
 });

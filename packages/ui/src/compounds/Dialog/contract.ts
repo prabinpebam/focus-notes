@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "Dialog",
@@ -16,15 +16,17 @@ export const contract = defineContract({
   states: ["open", "entering", "exiting"],
   tokens: "none (composes DialogPanel, Heading, IconButton, Inline)",
   a11y: { pattern: "modal dialog", name: "title" },
+  uncovered: { entering: GAP.motion, exiting: GAP.motion },
   fixtures: [
-    { name: "size s", props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "s" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
-    { name: "height content", props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "s", height: "content" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "size s", covers: ["open"], props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "s" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "height content", covers: ["open"], props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "s", height: "content" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     {
       name: "size l with toolbar",
+      covers: ["open"],
       props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "l" },
       slots: { toolbar: [{ type: "SearchField", props: { label: { t: "shortcuts.search" }, clearLabel: { t: "field.clear" } } }] },
       children: [{ type: "Text", props: { value: { t: "gallery.long" } } }],
     },
-    { name: "size xl", props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "xl" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "size xl", covers: ["open"], props: { title: { t: "shortcuts.title" }, closeLabel: { t: "dialog.close" }, open: true, size: "xl" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
   ],
 });

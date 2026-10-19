@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "SegmentedControl",
@@ -15,8 +15,9 @@ export const contract = defineContract({
   states: ["rest", "hover", "selected", "focusVisible"],
   tokens: "cmp.segmentedControl.*",
   a11y: { pattern: "radio group", name: "label" },
+  uncovered: { hover: GAP.hover, focusVisible: GAP.focusVisible },
   fixtures: [
-    { name: "first selected", props: { label: { t: "shortcuts.layer" }, options: { get: "vm.gallery.options" }, value: { get: "vm.gallery.optionFirst" } } },
+    { name: "first selected", covers: ["rest", "selected"], props: { label: { t: "shortcuts.layer" }, options: { get: "vm.gallery.options" }, value: { get: "vm.gallery.optionFirst" } } },
     { name: "last selected", props: { label: { t: "shortcuts.platform" }, options: { get: "vm.gallery.options" }, value: { get: "vm.gallery.optionLast" } } },
     { name: "orientation vertical", props: { label: { t: "shortcuts.platform" }, options: { get: "vm.gallery.options" }, value: { get: "vm.gallery.optionFirst" }, orientation: "vertical" } },
   ],

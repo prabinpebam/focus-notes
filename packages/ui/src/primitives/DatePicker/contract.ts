@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "DatePicker",
@@ -17,9 +17,10 @@ export const contract = defineContract({
   states: ["rest", "focused", "open", "invalid"],
   tokens: "cmp.datePicker.*",
   a11y: { pattern: "date picker (group of spin buttons, and a dialog with a grid)", name: "label" },
+  uncovered: { focused: GAP.focused, open: GAP.open },
   fixtures: [
     { name: "empty", props: { label: { t: "gallery.sample" } } },
     { name: "with a description", props: { label: { t: "gallery.sample" }, description: { t: "gallery.sample" } } },
-    { name: "invalid", props: { label: { t: "gallery.sample" }, invalid: true } },
+    { name: "invalid", covers: ["invalid"], props: { label: { t: "gallery.sample" }, invalid: true } },
   ],
 });

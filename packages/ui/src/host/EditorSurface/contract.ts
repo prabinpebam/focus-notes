@@ -68,5 +68,7 @@ export const contract = defineContract({
   states: ["empty", "editing", "readOnly"],
   tokens: "cmp.editorSurface.*",
   a11y: { pattern: "textbox (multi-line)", name: "label" },
+  journeys: [{ spec: "apps/desktop/e2e/m1-canvas.spec.ts", covers: ["editing"] }, { spec: "apps/desktop/e2e/m1-focus.spec.ts", covers: ["empty"] }],
+  uncovered: { readOnly: "No journey checks that the surface itself refuses edits yet." },
   fixtures: [],
 });

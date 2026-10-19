@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "FileTree",
@@ -28,8 +28,9 @@ export const contract = defineContract({
   states: ["rest", "hover", "focusVisible", "selected", "current", "multiSelected", "editing", "invalid", "dropTarget", "pending", "readOnly", "menuOpen"],
   tokens: "cmp.fileTree.*",
   a11y: { pattern: "tree (multi-selectable) with type-ahead", name: "label" },
+  uncovered: { hover: GAP.hover, focusVisible: GAP.focusVisible, dropTarget: GAP.drag, menuOpen: GAP.open },
   fixtures: [
-    { name: "sections, folders, the current note, and a multiple selection", props: { label: { t: "files.tree" }, items: { get: "vm.gallery.tree" }, focusId: { get: "vm.gallery.treeFocus" } } },
-    { name: "naming a folder, with an error", props: { label: { t: "files.tree" }, items: { get: "vm.gallery.treeEditing" }, editValue: { get: "vm.gallery.query" }, editLabel: { get: "vm.gallery.treeEditLabel" }, editError: { get: "vm.gallery.treeEditError" } } },
+    { name: "sections, folders, the current note, and a multiple selection", covers: ["rest", "selected", "current", "multiSelected", "pending", "readOnly"], props: { label: { t: "files.tree" }, items: { get: "vm.gallery.tree" }, focusId: { get: "vm.gallery.treeFocus" } } },
+    { name: "naming a folder, with an error", covers: ["editing", "invalid"], props: { label: { t: "files.tree" }, items: { get: "vm.gallery.treeEditing" }, editValue: { get: "vm.gallery.query" }, editLabel: { get: "vm.gallery.treeEditLabel" }, editError: { get: "vm.gallery.treeEditError" } } },
   ],
 });

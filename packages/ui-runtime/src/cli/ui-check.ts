@@ -3,7 +3,7 @@
  * --write writes the generated UI schema and contract catalog to schemas/ui/.
  * --verify fails when the committed schemas/ui/ files differ from what --write would produce (D-138).
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { contracts, ICON_NAMES } from "@focus-notes/ui/contracts";
 import { createApp, PUBLIC_INDEX_VIEW_MODEL, READER_VIEW_MODEL, SHARE_COMMANDS, SHARE_VIEW_MODEL, SITE_VIEW_MODELS, type PlatformBridge } from "@focus-notes/core";
@@ -48,13 +48,14 @@ const inputs = {
 };
 
 const problems = checkUi(inputs);
-const coverage = checkFixtureCoverage(contracts);
+const root = join(import.meta.dirname, "..", "..", "..", "..");
+const coverage = checkFixtureCoverage(contracts, { exists: (p) => existsSync(join(root, p)) });
 // A major bump ships with the migration from the major before it (DSY-10).
 for (const m of missingMigrations()) problems.push({ doc: `UI schema v${m}`, stage: "schema", at: "/", message: `no migration to v${m + 1}` });
 for (const p of problems) console.error(`✗ ${p.doc} [${p.stage}] ${p.at}: ${p.message}`);
 for (const c of coverage) console.error(`✗ fixtures: ${c}`);
 
-const out = join(import.meta.dirname, "..", "..", "..", "..", "schemas", "ui");
+const out = join(root, "schemas", "ui");
 // The catalog lists the product's views and pages, not the gallery's (DSY-13, D-166).
 const files = uiSchemaFiles({ ...inputs, catalogViews: { ...views, ...pages } });
 if (process.argv.includes("--write")) {

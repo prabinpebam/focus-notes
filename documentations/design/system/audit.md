@@ -145,6 +145,8 @@ In-memory probes ran the actual checker body with only its file enumeration and 
 
 **Acceptance:** adding a new uncovered state fails validation; removing the only coverage for focus-visible, busy, or a host interaction also fails.
 
+**Status (D-198, proposed):** enforced. `checkFixtureCoverage` requires every declared state to be rendered by a fixture (`covers`), reached by a journey that exists (`journeys`), or listed in `uncovered` with a reason; hosts must name their journeys. Interaction-only states without a journey are listed as gaps, not coverage. Tests: [check.test.ts, declared-state coverage](../../../packages/ui-runtime/test/check.test.ts).
+
 ### DS-A03 · P1 · Pixel regression protection is not an ordinary gate
 
 **Evidence:** [the baseline journey](../../../apps/desktop/e2e/baselines.spec.ts) skips unless `FOCUS_NOTES_CAPTURE_BASELINES=1`. It compares pixels only when [isApproved](../../../apps/desktop/e2e/baselines.ts) finds an approved image. No tracked files exist under the expected approved-baseline directory in this checkout. [Normal CI](../../../.github/workflows/ci.yml) runs journeys but does not enable this opt-in baseline suite.

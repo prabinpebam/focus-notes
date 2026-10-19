@@ -16,6 +16,6 @@ export const contract = defineContract({
   a11y: { pattern: "group", name: "label" },
   fixtures: [
     { name: "with description", props: { label: { t: "find.field" }, description: { t: "gallery.long" } }, children: [{ type: "SearchField", props: { label: { t: "find.field" }, clearLabel: { t: "field.clear" } } }] },
-    { name: "with error", props: { label: { t: "find.field" }, error: { t: "find.invalid" } }, children: [{ type: "SearchField", props: { label: { t: "find.field" }, clearLabel: { t: "field.clear" }, invalid: true } }] },
+    { name: "with error", covers: ["error"], props: { label: { t: "find.field" }, error: { t: "find.invalid" } }, children: [{ type: "SearchField", props: { label: { t: "find.field" }, clearLabel: { t: "field.clear" }, invalid: true } }] },
   ],
 });

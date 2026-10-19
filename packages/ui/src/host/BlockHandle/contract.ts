@@ -17,5 +17,7 @@ export const contract = defineContract({
   states: ["hidden", "shown", "pressed", "menuOpen", "dragging"],
   tokens: "cmp.blockHandle.*",
   a11y: { pattern: "button with a menu (menu button), out of the Tab order: Shift+F10 opens the same menu", name: "label" },
+  journeys: [{ spec: "apps/desktop/e2e/m8-editor-pro.spec.ts", covers: ["shown", "pressed", "dragging", "menuOpen"] }],
+  uncovered: { hidden: "Away from a block: no journey checks the handle is absent yet." },
   fixtures: [],
 });

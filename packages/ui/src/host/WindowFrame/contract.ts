@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "WindowFrame",
@@ -27,5 +27,7 @@ export const contract = defineContract({
   states: ["rest", "bandHover", "fullScreenHidden", "moving", "resizing", "menuOpen"],
   tokens: "cmp.windowFrame.*",
   a11y: { pattern: "menu (the system menu); the handles are pointer-only, with Move and Size in the menu for the keyboard", name: "menuLabel" },
+  journeys: [{ spec: "apps/desktop/e2e/m2-window.spec.ts", covers: ["rest", "moving", "resizing", "menuOpen"] }],
+  uncovered: { bandHover: GAP.hover, fullScreenHidden: "In full screen before the pointer reaches the top edge: no journey checks the band hides yet." },
   fixtures: [],
 });

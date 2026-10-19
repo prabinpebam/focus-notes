@@ -19,9 +19,10 @@ export const contract = defineContract({
   states: ["above", "below", "offscreen"],
   tokens: "cmp.positioner.*",
   a11y: { pattern: "none" },
+  uncovered: { offscreen: "Needs an anchor measured outside the window: a static fixture can't place one, and no journey checks it yet." },
   fixtures: [
-    { name: "anchor selection, above", props: { anchor: "selection", placement: "above" }, children: sample },
-    { name: "anchor link, below", props: { anchor: "link", placement: "below" }, children: sample },
+    { name: "anchor selection, above", covers: ["above"], props: { anchor: "selection", placement: "above" }, children: sample },
+    { name: "anchor link, below", covers: ["below"], props: { anchor: "link", placement: "below" }, children: sample },
     { name: "anchor caret, below, start", props: { anchor: "caret", placement: "below", align: "start" }, children: sample },
     { name: "align center", props: { align: "center" }, children: sample },
     { name: "landmark region", props: { landmark: "region", label: { t: "gallery.sample" } }, children: sample },

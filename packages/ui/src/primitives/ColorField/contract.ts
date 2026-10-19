@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "ColorField",
@@ -18,8 +18,9 @@ export const contract = defineContract({
   states: ["rest", "focused", "invalid"],
   tokens: "cmp.colorField.*",
   a11y: { pattern: "text box", name: "label" },
+  uncovered: { focused: GAP.focused },
   fixtures: [
     { name: "with a swatch", props: { label: { t: "colors.key.text" }, value: { get: "vm.gallery.colorHex" }, swatch: { get: "vm.gallery.colorHex" }, description: { get: "vm.gallery.query" } } },
-    { name: "invalid", props: { label: { t: "colors.key.accent" }, value: { get: "vm.gallery.query" }, invalid: true, error: { get: "vm.gallery.query" } } },
+    { name: "invalid", covers: ["invalid"], props: { label: { t: "colors.key.accent" }, value: { get: "vm.gallery.query" }, invalid: true, error: { get: "vm.gallery.query" } } },
   ],
 });

@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 const variants = ["primary", "secondary", "subtle", "danger"] as const;
 
@@ -26,6 +26,7 @@ export const contract = defineContract({
   states: ["rest", "hover", "pressed", "selected", "focusVisible", "disabled", "busy"],
   tokens: "cmp.button.*",
   a11y: { pattern: "button", name: "label" },
+  uncovered: { hover: GAP.hover, pressed: GAP.pressed, focusVisible: GAP.focusVisible },
   fixtures: [
     ...variants.map((variant) => ({ name: `variant ${variant}`, props: { label: { t: "gallery.action" }, variant } })),
     { name: "size s", props: { label: { t: "gallery.action" }, size: "s" } },
@@ -33,9 +34,9 @@ export const contract = defineContract({
     { name: "bleed", props: { label: { t: "gallery.action" }, variant: "subtle", bleed: true } },
     { name: "size m with icon", props: { label: { t: "gallery.action" }, size: "m", icon: "save" } },
     { name: "icon at end", props: { label: { t: "gallery.action" }, icon: "chevronRight", iconPosition: "end" } },
-    { name: "busy", props: { label: { t: "gallery.action" }, busy: true } },
+    { name: "busy", covers: ["busy"], props: { label: { t: "gallery.action" }, busy: true } },
     { name: "toggle off", props: { label: { t: "gallery.action" }, variant: "subtle", icon: "link", toggle: true, pressed: false } },
-    { name: "toggle on", props: { label: { t: "gallery.action" }, variant: "subtle", icon: "link", toggle: true, pressed: true } },
-    { name: "disabled with reason", props: { label: { t: "gallery.action" }, disabled: true, disabledReason: { t: "gallery.reason" } } },
+    { name: "toggle on", covers: ["selected"], props: { label: { t: "gallery.action" }, variant: "subtle", icon: "link", toggle: true, pressed: true } },
+    { name: "disabled with reason", covers: ["disabled"], props: { label: { t: "gallery.action" }, disabled: true, disabledReason: { t: "gallery.reason" } } },
   ],
 });

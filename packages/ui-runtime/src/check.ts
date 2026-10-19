@@ -213,11 +213,46 @@ export function checkUi(inputs: CheckInputs): Problem[] {
   return problems;
 }
 
-/** Every enum value of every contract appears in at least one fixture (DSY-09). */
-export function checkFixtureCoverage(contracts: readonly Contract[]): string[] {
+export interface CoverageOptions {
+  /** Whether a repository-relative file exists; journeys and host declarations are checked with it. */
+  exists?: (repoPath: string) => boolean;
+}
+
+/**
+ * Every enum value of every contract appears in at least one fixture (DSY-09), and every declared
+ * state is rendered by a fixture, reached by a named journey, or listed as uncovered with a reason
+ * (DS-A02, D-198). Hosts have no fixtures; they name the journeys that exercise them.
+ */
+export function checkFixtureCoverage(contracts: readonly Contract[], options: CoverageOptions = {}): string[] {
   const out: string[] = [];
   for (const c of contracts) {
-    if (c.tier === "host") continue;
+    const states = new Set(c.states);
+    const reached = new Set<string>();
+    for (const f of c.fixtures) {
+      if (!f.covers) { if (states.has("rest")) reached.add("rest"); continue; }
+      for (const s of f.covers) {
+        if (!states.has(s)) out.push(`${c.type}: fixture "${f.name}" covers "${s}", which isn't a declared state`);
+        reached.add(s);
+      }
+    }
+    for (const j of c.journeys ?? []) {
+      if (options.exists && !options.exists(j.spec)) out.push(`${c.type}: journey ${j.spec} doesn't exist`);
+      if (j.covers.length === 0) out.push(`${c.type}: journey ${j.spec} covers no state`);
+      for (const s of j.covers) {
+        if (!states.has(s)) out.push(`${c.type}: journey ${j.spec} covers "${s}", which isn't a declared state`);
+        reached.add(s);
+      }
+    }
+    for (const [s, reason] of Object.entries(c.uncovered ?? {})) {
+      if (!states.has(s)) out.push(`${c.type}: uncovered "${s}" isn't a declared state`);
+      else if (reached.has(s)) out.push(`${c.type}: "${s}" is listed as uncovered, but a fixture or journey covers it`);
+      if (!reason.trim()) out.push(`${c.type}: uncovered "${s}" needs a reason`);
+    }
+    for (const s of c.states) if (!reached.has(s) && !(s in (c.uncovered ?? {}))) out.push(`${c.type}: state "${s}" has no fixture or journey, and no reason it's uncovered`);
+    if (c.tier === "host") {
+      if (!c.journeys?.length) out.push(`${c.type}: a host names the journeys that exercise it`);
+      continue;
+    }
     for (const [prop, spec] of Object.entries(c.props)) {
       if (spec.kind !== "enum" && spec.kind !== "token") continue;
       const values = spec.kind === "enum" ? spec.values : [];

@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "TriggerButton",
@@ -15,5 +15,6 @@ export const contract = defineContract({
   states: ["rest", "hover", "pressed", "focusVisible"],
   tokens: "cmp.triggerButton.*",
   a11y: { pattern: "menu button", name: "label" },
+  uncovered: { hover: GAP.hover, pressed: GAP.pressed, focusVisible: GAP.focusVisible },
   fixtures: ["red", "warning", "danger"].map((tone) => ({ name: `tone ${tone}`, props: { label: { t: "trigger.label" }, tone } })),
 });

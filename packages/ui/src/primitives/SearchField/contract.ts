@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "SearchField",
@@ -24,11 +24,12 @@ export const contract = defineContract({
   states: ["rest", "focused", "filled", "invalid"],
   tokens: "cmp.searchField.*",
   a11y: { pattern: "search box", name: "label" },
+  uncovered: { focused: GAP.focused },
   fixtures: [
     { name: "empty", props: { label: { t: "shortcuts.search" }, placeholder: { t: "shortcuts.searchPlaceholder" }, clearLabel: { t: "field.clear" } } },
-    { name: "filled", props: { label: { t: "shortcuts.search" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" } } },
+    { name: "filled", covers: ["filled"], props: { label: { t: "shortcuts.search" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" } } },
     { name: "with a mode chip", props: { label: { t: "spotlight.field" }, chip: { t: "spotlight.mode.commands" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" }, keyScope: "spotlightField" } },
-    { name: "invalid", props: { label: { t: "shortcuts.search" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" }, invalid: true } },
+    { name: "invalid", covers: ["invalid"], props: { label: { t: "shortcuts.search" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" }, invalid: true } },
     { name: "size m", props: { label: { t: "find.field" }, value: { get: "vm.gallery.query" }, clearLabel: { t: "field.clear" }, size: "m" } },
     { name: "another icon", props: { label: { t: "find.replaceField" }, clearLabel: { t: "field.clear" }, size: "m", icon: "rename" } },
     ...["none", "findBar", "findField", "replaceField", "pickerField", "moveField", "repoField", "spotlightField", "findAllField"].map((keyScope) => ({ name: `keyScope ${keyScope}`, props: { label: { t: "shortcuts.search" }, clearLabel: { t: "field.clear" }, keyScope } })),

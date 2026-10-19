@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "TableControls",
@@ -27,5 +27,7 @@ export const contract = defineContract({
   states: ["hidden", "hover", "handleHover", "menuOpen", "insertPoint", "dragging", "resizing", "rangeSelected"],
   tokens: "cmp.tableControls.*",
   a11y: { pattern: "buttons with menus (menu button)", name: "columnLabel" },
+  journeys: [{ spec: "apps/desktop/e2e/m1-tables.spec.ts", covers: ["hover", "insertPoint", "menuOpen", "dragging", "rangeSelected"] }, { spec: "apps/desktop/e2e/d182-tables.spec.ts", covers: ["resizing"] }],
+  uncovered: { hidden: "Before the pointer reaches a table: no journey checks the controls are absent yet.", handleHover: GAP.hover },
   fixtures: [],
 });

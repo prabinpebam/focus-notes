@@ -18,7 +18,7 @@ export const contract = defineContract({
   tokens: "cmp.resultList.*",
   a11y: { pattern: "listbox with aria-activedescendant", name: "label" },
   fixtures: [
-    { name: "with active item", props: { label: { t: "find.label" }, items: { get: "vm.gallery.results" }, activeId: { get: "vm.gallery.optionFirst" } } },
+    { name: "with active item", covers: ["rest", "active", "disabled"], props: { label: { t: "find.label" }, items: { get: "vm.gallery.results" }, activeId: { get: "vm.gallery.optionFirst" } } },
     { name: "width fill", props: { label: { t: "find.label" }, items: { get: "vm.gallery.results" }, width: "fill" } },
     { name: "width menu", props: { label: { t: "slash.label" }, items: { get: "vm.gallery.results" }, activeId: { get: "vm.gallery.optionFirst" }, width: "menu" } },
     { name: "groups, matches, and states", props: { label: { t: "spotlight.list" }, items: { get: "vm.gallery.spotlight" }, activeId: { get: "vm.gallery.spotlightFirst" } } },

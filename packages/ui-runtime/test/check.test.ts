@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { contracts, ICON_NAMES } from "@focus-notes/ui/contracts";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { contracts, ICON_NAMES, type Contract } from "@focus-notes/ui/contracts";
 import { createApp, type PlatformBridge } from "@focus-notes/core";
 import { views, messages } from "@focus-notes/views";
 import { tokenGroups } from "@focus-notes/tokens";
@@ -24,6 +26,8 @@ const view = (root: unknown, extra: Record<string, unknown> = {}) => ({
 });
 const problems = (root: unknown, extra?: Record<string, unknown>): Problem[] => checkUi({ ...base, views: view(root, extra) });
 const messagesOf = (ps: Problem[]) => ps.map((p) => `${p.stage}: ${p.message}`);
+const repo = join(import.meta.dirname, "..", "..", "..");
+const exists = (p: string) => existsSync(join(repo, p));
 
 describe("ui:check (DSY-08)", () => {
   it("passes the real views", () => expect(checkUi({ ...base, views })).toEqual([]));
@@ -72,7 +76,32 @@ describe("ui:check (DSY-08)", () => {
   it("rejects children a component doesn't accept", () => {
     expect(messagesOf(problems({ type: "Tooltip", props: { label: { t: "gallery.sample" } }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] }))).toContain("design: Tooltip doesn't accept Text as a child");
   });
-  it("covers every enum value with a fixture (DSY-09)", () => expect(checkFixtureCoverage(contracts)).toEqual([]));
+  it("covers every enum value with a fixture (DSY-09)", () => expect(checkFixtureCoverage(contracts, { exists })).toEqual([]));
+});
+
+// DS-A02, D-198: every declared state is rendered by a fixture, reached by a journey that exists, or a reasoned gap.
+describe("declared-state coverage (DS-A02)", () => {
+  const edit = (type: string, change: (c: Contract) => Contract) => contracts.map((c) => (c.type === type ? change(structuredClone(c) as Contract) : c));
+  const gaps = (cs: readonly Contract[]) => checkFixtureCoverage(cs, { exists });
+  it("fails a new state nothing covers", () => {
+    expect(gaps(edit("Button", (c) => ({ ...c, states: [...c.states, "glowing"] })))).toContain('Button: state "glowing" has no fixture or journey, and no reason it\'s uncovered');
+  });
+  it("fails when the only fixture for busy stops covering it", () => {
+    const out = gaps(edit("Button", (c) => ({ ...c, fixtures: c.fixtures.map((f) => ({ ...f, covers: f.covers?.filter((s) => s !== "busy") })) })));
+    expect(out).toContain('Button: state "busy" has no fixture or journey, and no reason it\'s uncovered');
+  });
+  it("fails when the only journey for focusVisible is removed", () => {
+    expect(gaps(edit("IconButton", (c) => ({ ...c, journeys: [] })))).toContain('IconButton: state "focusVisible" has no fixture or journey, and no reason it\'s uncovered');
+  });
+  it("fails a host without its journeys, or naming one that doesn't exist", () => {
+    expect(gaps(edit("EditorSurface", (c) => ({ ...c, journeys: undefined })))).toContain("EditorSurface: a host names the journeys that exercise it");
+    expect(gaps(edit("EditorSurface", (c) => ({ ...c, journeys: [{ spec: "apps/desktop/e2e/nope.spec.ts", covers: ["editing"] }, ...(c.journeys ?? [])] })))).toContain("EditorSurface: journey apps/desktop/e2e/nope.spec.ts doesn't exist");
+  });
+  it("fails state names a contract doesn't declare, and exceptions that hide real coverage", () => {
+    expect(gaps(edit("Button", (c) => ({ ...c, fixtures: [...c.fixtures, { name: "x", covers: ["glowing"] }] })))).toContain('Button: fixture "x" covers "glowing", which isn\'t a declared state');
+    expect(gaps(edit("Button", (c) => ({ ...c, uncovered: { ...c.uncovered, busy: "no reason" } })))).toContain('Button: "busy" is listed as uncovered, but a fixture or journey covers it');
+    expect(gaps(edit("Button", (c) => ({ ...c, uncovered: { ...c.uncovered, hover: " " } })))).toContain('Button: uncovered "hover" needs a reason');
+  });
 });
 
 describe("expressions (D-60)", () => {

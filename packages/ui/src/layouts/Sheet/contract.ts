@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "Sheet",
@@ -19,10 +19,11 @@ export const contract = defineContract({
   states: ["rest", "entering", "pinned", "docked"],
   tokens: "cmp.sheet.*",
   a11y: { pattern: "complementary landmark", name: "label" },
+  uncovered: { entering: GAP.motion },
   fixtures: [
     { name: "start, files width", props: { label: { t: "files.heading" }, side: "start", width: "files", keyScope: "files" }, slots: { header: [{ type: "Heading", props: { level: "2", value: { t: "files.heading" } } }], footer: [{ type: "Button", props: { label: { t: "deleted.footer" }, variant: "subtle", icon: "history" } }] }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     { name: "end, theme width", props: { label: { t: "gallery.sample" }, side: "end", width: "theme", keyScope: "none" }, children: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] },
     { name: "end, find width", props: { label: { t: "findAll.title" }, side: "end", width: "find", keyScope: "findAll" }, slots: { header: [{ type: "Heading", props: { level: "2", value: { t: "findAll.title" } } }] }, children: [{ type: "ResultList", props: { label: { t: "findAll.results" }, items: { get: "vm.gallery.matches" }, height: "fill" } }] },
-    { name: "start, docked", props: { label: { t: "files.heading" }, side: "start", width: "files", keyScope: "files", pinned: true, docked: true, dockWidth: 0, resizeLabel: { t: "files.resize" } }, slots: { band: [{ type: "Inline", props: { justify: "between", gap: "s", grow: true }, children: [{ type: "Inline", props: { gap: "s", grow: true }, children: [{ type: "Icon", props: { name: "github" } }, { type: "Text", props: { value: { t: "gallery.sample" }, role: "emphasis", lines: "one" } }] }, { type: "IconButton", props: { icon: "open", label: { t: "command.files.revealFolder" }, tone: "muted", bleed: true } }] }], header: [{ type: "Heading", props: { level: "2", value: { t: "files.heading" } } }] }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "start, docked", covers: ["pinned", "docked"], props: { label: { t: "files.heading" }, side: "start", width: "files", keyScope: "files", pinned: true, docked: true, dockWidth: 0, resizeLabel: { t: "files.resize" } }, slots: { band: [{ type: "Inline", props: { justify: "between", gap: "s", grow: true }, children: [{ type: "Inline", props: { gap: "s", grow: true }, children: [{ type: "Icon", props: { name: "github" } }, { type: "Text", props: { value: { t: "gallery.sample" }, role: "emphasis", lines: "one" } }] }, { type: "IconButton", props: { icon: "open", label: { t: "command.files.revealFolder" }, tone: "muted", bleed: true } }] }], header: [{ type: "Heading", props: { level: "2", value: { t: "files.heading" } } }] }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
   ],
 });

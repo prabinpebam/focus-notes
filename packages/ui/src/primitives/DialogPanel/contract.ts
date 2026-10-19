@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "DialogPanel",
@@ -17,13 +17,15 @@ export const contract = defineContract({
   states: ["open", "entering", "exiting"],
   tokens: "cmp.dialogPanel.*",
   a11y: { pattern: "modal dialog", name: "label" },
+  uncovered: { entering: GAP.motion, exiting: GAP.motion },
   fixtures: [
-    { name: "size s", props: { label: { t: "shortcuts.title" }, open: true, size: "s" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
-    { name: "height content", props: { label: { t: "shortcuts.title" }, open: true, size: "s", height: "content" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
-    { name: "size l", props: { label: { t: "shortcuts.title" }, open: true, size: "l" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
-    { name: "size xl", props: { label: { t: "shortcuts.title" }, open: true, size: "xl" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "size s", covers: ["open"], props: { label: { t: "shortcuts.title" }, open: true, size: "s" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "height content", covers: ["open"], props: { label: { t: "shortcuts.title" }, open: true, size: "s", height: "content" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "size l", covers: ["open"], props: { label: { t: "shortcuts.title" }, open: true, size: "l" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
+    { name: "size xl", covers: ["open"], props: { label: { t: "shortcuts.title" }, open: true, size: "xl" }, children: [{ type: "Text", props: { value: { t: "gallery.long" } } }] },
     {
       name: "size m, top, frosted, with footer",
+      covers: ["open"],
       props: { label: { t: "spotlight.dialog" }, open: true, size: "m", placement: "top", material: "frosted" },
       slots: { footer: [{ type: "Text", props: { value: { t: "spotlight.helpHint" }, role: "caption", tone: "muted" } }] },
       children: [{ type: "Text", props: { value: { t: "gallery.long" } } }],

@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "IconButton",
@@ -23,14 +23,16 @@ export const contract = defineContract({
   states: ["rest", "hover", "pressed", "selected", "mixed", "focusVisible", "disabled", "busy"],
   tokens: "cmp.iconButton.*",
   a11y: { pattern: "button", name: "label" },
+  journeys: [{ spec: "apps/desktop/e2e/m1-toolbar.spec.ts", covers: ["focusVisible"] }],
+  uncovered: { hover: GAP.hover, pressed: GAP.pressed },
   fixtures: [
     { name: "tone default", props: { icon: "open", label: { t: "gallery.action" } } },
     { name: "tone muted", props: { icon: "more", label: { t: "gallery.action" }, tone: "muted" } },
     { name: "toggle off", props: { icon: "focus", label: { t: "gallery.action" }, toggle: true, pressed: false } },
-    { name: "toggle on", props: { icon: "focus", label: { t: "gallery.action" }, toggle: true, pressed: true } },
-    { name: "toggle mixed", props: { icon: "bold", label: { t: "gallery.action" }, toggle: true, mixed: true } },
-    { name: "busy", props: { icon: "save", label: { t: "gallery.action" }, busy: true, busyLabel: { get: "vm.gallery.query" } } },
+    { name: "toggle on", covers: ["selected"], props: { icon: "focus", label: { t: "gallery.action" }, toggle: true, pressed: true } },
+    { name: "toggle mixed", covers: ["mixed"], props: { icon: "bold", label: { t: "gallery.action" }, toggle: true, mixed: true } },
+    { name: "busy", covers: ["busy"], props: { icon: "save", label: { t: "gallery.action" }, busy: true, busyLabel: { get: "vm.gallery.query" } } },
     { name: "bleed", props: { icon: "dismiss", label: { t: "gallery.action" }, tone: "muted", bleed: true } },
-    { name: "disabled with reason", props: { icon: "save", label: { t: "gallery.action" }, disabled: true, disabledReason: { t: "gallery.reason" } } },
+    { name: "disabled with reason", covers: ["disabled"], props: { icon: "save", label: { t: "gallery.action" }, disabled: true, disabledReason: { t: "gallery.reason" } } },
   ],
 });

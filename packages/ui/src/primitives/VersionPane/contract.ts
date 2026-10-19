@@ -16,7 +16,7 @@ export const contract = defineContract({
   tokens: "cmp.versionPane.*",
   a11y: { pattern: "region (labelled), changed blocks prefixed for screen readers", name: "label" },
   fixtures: [
-    { name: "with changed blocks", props: { label: { t: "conflict.mine" }, blocks: { get: "vm.gallery.versionBlocks" }, emptyText: { t: "conflict.emptyNote" }, changedLabel: { t: "conflict.changed" } } },
-    { name: "deleted version", props: { label: { t: "conflict.theirs" }, blocks: { get: "vm.gallery.versionEmpty" }, emptyText: { t: "conflict.deletedThere" }, changedLabel: { t: "conflict.changed" } } },
+    { name: "with changed blocks", covers: ["rest", "changed"], props: { label: { t: "conflict.mine" }, blocks: { get: "vm.gallery.versionBlocks" }, emptyText: { t: "conflict.emptyNote" }, changedLabel: { t: "conflict.changed" } } },
+    { name: "deleted version", covers: ["empty"], props: { label: { t: "conflict.theirs" }, blocks: { get: "vm.gallery.versionEmpty" }, emptyText: { t: "conflict.deletedThere" }, changedLabel: { t: "conflict.changed" } } },
   ],
 });

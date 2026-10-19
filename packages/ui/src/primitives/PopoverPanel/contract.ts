@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "PopoverPanel",
@@ -16,12 +16,15 @@ export const contract = defineContract({
   states: ["closed", "open"],
   tokens: "cmp.popoverPanel.*",
   a11y: { pattern: "dialog (non-modal popover)", name: "label" },
+  uncovered: { open: GAP.open },
   fixtures: [...["bottom", "top", "top start", "start", "end"].map((placement) => ({
     name: `placement ${placement}`,
+    covers: ["closed"],
     props: { label: { t: "gallery.sample" }, placement, open: false },
     slots: { trigger: [{ type: "Button", props: { label: { t: "gallery.action" } } }], content: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] },
   })), ...["normal", "comfortable"].map((padding) => ({
     name: `padding ${padding}`,
+    covers: ["closed"],
     props: { label: { t: "gallery.sample" }, padding, open: false },
     slots: { trigger: [{ type: "Button", props: { label: { t: "gallery.action" } } }], content: [{ type: "Text", props: { value: { t: "gallery.sample" } } }] },
   }))],

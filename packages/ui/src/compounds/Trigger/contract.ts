@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "Trigger",
@@ -20,8 +20,10 @@ export const contract = defineContract({
   states: ["rest", "hover", "pressed", "focusVisible", "open", "problem"],
   tokens: "none (composes TriggerButton, MorphPanel, Toolbar)",
   a11y: { pattern: "button that morphs into a toolbar (non-modal dialog)", name: "label" },
+  journeys: [{ spec: "apps/desktop/e2e/m1-canvas.spec.ts", covers: ["hover", "open"] }],
+  uncovered: { pressed: GAP.pressed, focusVisible: GAP.focusVisible },
   fixtures: [
     { name: "rest", props: { label: { t: "trigger.label" }, toolbarLabel: { t: "toolbar.label" }, items: { get: "vm.gallery.toolbar" }, more: { get: "vm.gallery.menu" }, moreLabel: { t: "toolbar.more" } } },
-    { name: "save problem", props: { label: { t: "trigger.label" }, problemLabel: { t: "trigger.saveProblem" }, problem: true, toolbarLabel: { t: "toolbar.label" }, items: { get: "vm.gallery.toolbar" }, more: { get: "vm.gallery.menu" }, moreLabel: { t: "toolbar.more" } } },
+    { name: "save problem", covers: ["problem"], props: { label: { t: "trigger.label" }, problemLabel: { t: "trigger.saveProblem" }, problem: true, toolbarLabel: { t: "toolbar.label" }, items: { get: "vm.gallery.toolbar" }, more: { get: "vm.gallery.menu" }, moreLabel: { t: "toolbar.more" } } },
   ],
 });

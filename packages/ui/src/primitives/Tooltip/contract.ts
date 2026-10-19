@@ -14,8 +14,10 @@ export const contract = defineContract({
   states: ["hidden", "visible"],
   tokens: "cmp.tooltip.*",
   a11y: { pattern: "tooltip", name: "label" },
+  uncovered: { visible: "Shows on hover or focus of its anchor: the gallery shows it hidden, and no journey checks it yet." },
   fixtures: ["top", "bottom", "start", "end"].map((placement) => ({
     name: `placement ${placement}`,
+    covers: ["hidden"],
     props: { label: { t: "gallery.sample" }, placement },
     children: [{ type: "Button", props: { label: { t: "gallery.action" } } }],
   })),

@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "ThemeGallery",
@@ -16,8 +16,9 @@ export const contract = defineContract({
   states: ["rest", "hover", "selected", "focusVisible", "previewing"],
   tokens: "cmp.themeGallery.*",
   a11y: { pattern: "listbox", name: "label" },
+  uncovered: { hover: GAP.hover, focusVisible: GAP.focusVisible },
   fixtures: [
-    { name: "first selected", props: { label: { t: "theme.gallery" }, items: { get: "vm.gallery.themeTiles" }, value: { get: "vm.gallery.themeFirst" } } },
-    { name: "previewing", props: { label: { t: "theme.gallery" }, items: { get: "vm.gallery.themeTiles" }, value: { get: "vm.gallery.themeDark" }, previewing: true } },
+    { name: "first selected", covers: ["rest", "selected"], props: { label: { t: "theme.gallery" }, items: { get: "vm.gallery.themeTiles" }, value: { get: "vm.gallery.themeFirst" } } },
+    { name: "previewing", covers: ["previewing"], props: { label: { t: "theme.gallery" }, items: { get: "vm.gallery.themeTiles" }, value: { get: "vm.gallery.themeDark" }, previewing: true } },
   ],
 });

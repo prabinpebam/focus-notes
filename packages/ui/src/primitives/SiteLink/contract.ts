@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const VARIANTS = ["inline", "nav", "brand", "primary", "secondary"] as const;
 
@@ -17,6 +17,7 @@ export const contract = defineContract({
   states: ["rest", "hover", "focus"],
   tokens: "cmp.siteLink.*",
   a11y: { pattern: "link", name: "label" },
+  uncovered: { hover: GAP.hover, focus: GAP.focusVisible },
   fixtures: [
     ...VARIANTS.map((variant) => ({ name: `variant ${variant}`, props: { label: { t: "site.nav.help" }, href: { get: "vm.gallery.href" }, variant } })),
     { name: "current", props: { label: { t: "site.nav.help" }, href: { get: "vm.gallery.href" }, variant: "nav", current: true } },

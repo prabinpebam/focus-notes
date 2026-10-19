@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "Toast",
@@ -16,6 +16,7 @@ export const contract = defineContract({
   states: ["rest", "paused", "focusVisible"],
   tokens: "cmp.toast.*",
   a11y: { pattern: "status (errors: alert)", name: "message" },
+  uncovered: { paused: "Pauses while the pointer or focus is on it: a static fixture can't show it, and no journey checks it yet.", focusVisible: GAP.focusVisible },
   fixtures: [
     { name: "tone info", props: { message: { get: "vm.gallery.query" }, tone: "info", dismissLabel: { t: "toast.dismiss" } } },
     { name: "tone error with action", props: { message: { get: "vm.gallery.query" }, tone: "error", actionLabel: { get: "vm.gallery.query" }, dismissLabel: { t: "toast.dismiss" } } },

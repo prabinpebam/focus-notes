@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 /** At most this many themes per scheme: the CSS that shows a theme's screenshot is written for each place. */
 export const MAX_THEMES = 8;
@@ -21,9 +21,11 @@ export const contract = defineContract({
   states: ["light", "dark", "focus"],
   tokens: "cmp.siteThemeShowcase.*",
   a11y: { pattern: "radiogroup", name: "schemeLabel, lightThemesLabel and darkThemesLabel" },
+  uncovered: { dark: "Chosen with its Light / Dark switch: the gallery shows the first light theme, and no journey checks the switch yet.", focus: GAP.focusVisible },
   fixtures: [
     {
       name: "themes",
+      covers: ["light"],
       props: {
         name: { get: "vm.gallery.query" }, themes: { get: "vm.gallery.siteThemes" },
         schemeLabel: { t: "site.scheme.label" }, lightLabel: { t: "site.scheme.light" }, darkLabel: { t: "site.scheme.dark" },

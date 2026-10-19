@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "Slider",
@@ -18,6 +18,7 @@ export const contract = defineContract({
   states: ["rest", "hover", "dragging", "focusVisible"],
   tokens: "cmp.slider.*",
   a11y: { pattern: "slider", name: "label" },
+  uncovered: { hover: GAP.hover, dragging: GAP.drag, focusVisible: GAP.focusVisible },
   fixtures: [
     { name: "at the middle", props: { label: { t: "reading.measure" }, value: 75, min: 50, max: 100, step: 5, valueText: { get: "vm.gallery.query" } } },
     { name: "at the start", props: { label: { t: "reading.lineHeight" }, value: 1.3, min: 1.3, max: 2, step: 0.1 } },

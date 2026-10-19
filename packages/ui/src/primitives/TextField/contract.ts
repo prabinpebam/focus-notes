@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "TextField",
@@ -23,11 +23,12 @@ export const contract = defineContract({
   states: ["rest", "focused", "invalid"],
   tokens: "cmp.textField.*",
   a11y: { pattern: "text box", name: "label" },
+  uncovered: { focused: GAP.focused },
   fixtures: [
     { name: "type text", props: { label: { t: "unlock.passphrase" }, type: "text", description: { t: "unlock.intro" } } },
     { name: "type password", props: { label: { t: "unlock.passphrase" }, type: "password" } },
     { name: "type url", props: { label: { t: "unlock.passphrase" }, type: "url" } },
-    { name: "invalid", props: { label: { t: "unlock.passphrase" }, invalid: true } },
+    { name: "invalid", covers: ["invalid"], props: { label: { t: "unlock.passphrase" }, invalid: true } },
     { name: "invalid with error", props: { label: { t: "unlock.passphrase" }, invalid: true, error: { t: "gallery.sample" } } },
     { name: "size m", props: { label: { t: "unlock.passphrase" }, labelHidden: true, size: "m" } },
     { name: "label hidden", props: { label: { t: "unlock.passphrase" }, labelHidden: true, placeholder: { t: "unlock.passphrase" } } },

@@ -1,4 +1,4 @@
-import { defineContract } from "../../contract.ts";
+import { defineContract, GAP } from "../../contract.ts";
 
 export const contract = defineContract({
   type: "PillButton",
@@ -10,5 +10,6 @@ export const contract = defineContract({
   states: ["rest", "hover", "pressed", "focusVisible"],
   tokens: "cmp.pillButton.*",
   a11y: { pattern: "button", name: "label" },
+  uncovered: { hover: GAP.hover, pressed: GAP.pressed, focusVisible: GAP.focusVisible },
   fixtures: [{ name: "unlock", props: { label: { t: "account.unlock" } } }],
 });

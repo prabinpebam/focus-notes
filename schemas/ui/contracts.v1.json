@@ -505,6 +505,11 @@
         "pattern": "button",
         "name": "label"
       },
+      "uncovered": {
+        "hover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "pressed": "Pointer press: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "variant primary",
@@ -593,6 +598,9 @@
         },
         {
           "name": "busy",
+          "covers": [
+            "busy"
+          ],
           "props": {
             "label": {
               "t": "gallery.action"
@@ -614,6 +622,9 @@
         },
         {
           "name": "toggle on",
+          "covers": [
+            "selected"
+          ],
           "props": {
             "label": {
               "t": "gallery.action"
@@ -626,6 +637,9 @@
         },
         {
           "name": "disabled with reason",
+          "covers": [
+            "disabled"
+          ],
           "props": {
             "label": {
               "t": "gallery.action"
@@ -715,6 +729,18 @@
         "pattern": "button",
         "name": "label"
       },
+      "journeys": [
+        {
+          "spec": "apps/desktop/e2e/m1-toolbar.spec.ts",
+          "covers": [
+            "focusVisible"
+          ]
+        }
+      ],
+      "uncovered": {
+        "hover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "pressed": "Pointer press: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "tone default",
@@ -748,6 +774,9 @@
         },
         {
           "name": "toggle on",
+          "covers": [
+            "selected"
+          ],
           "props": {
             "icon": "focus",
             "label": {
@@ -759,6 +788,9 @@
         },
         {
           "name": "toggle mixed",
+          "covers": [
+            "mixed"
+          ],
           "props": {
             "icon": "bold",
             "label": {
@@ -770,6 +802,9 @@
         },
         {
           "name": "busy",
+          "covers": [
+            "busy"
+          ],
           "props": {
             "icon": "save",
             "label": {
@@ -794,6 +829,9 @@
         },
         {
           "name": "disabled with reason",
+          "covers": [
+            "disabled"
+          ],
           "props": {
             "icon": "save",
             "label": {
@@ -850,9 +888,15 @@
         "pattern": "tooltip",
         "name": "label"
       },
+      "uncovered": {
+        "visible": "Shows on hover or focus of its anchor: the gallery shows it hidden, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "placement top",
+          "covers": [
+            "hidden"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -872,6 +916,9 @@
         },
         {
           "name": "placement bottom",
+          "covers": [
+            "hidden"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -891,6 +938,9 @@
         },
         {
           "name": "placement start",
+          "covers": [
+            "hidden"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -910,6 +960,9 @@
         },
         {
           "name": "placement end",
+          "covers": [
+            "hidden"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -1014,6 +1067,11 @@
       "a11y": {
         "pattern": "menu button",
         "name": "label"
+      },
+      "uncovered": {
+        "hover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "pressed": "Pointer press: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
       },
       "fixtures": [
         {
@@ -1153,9 +1211,15 @@
         "pattern": "dialog (non-modal popover)",
         "name": "label"
       },
+      "uncovered": {
+        "open": "Opened by interaction: the gallery shows it closed, and no journey checks it open yet."
+      },
       "fixtures": [
         {
           "name": "placement bottom",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -1188,6 +1252,9 @@
         },
         {
           "name": "placement top",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -1220,6 +1287,9 @@
         },
         {
           "name": "placement top start",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -1252,6 +1322,9 @@
         },
         {
           "name": "placement start",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -1284,6 +1357,9 @@
         },
         {
           "name": "placement end",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -1316,6 +1392,9 @@
         },
         {
           "name": "padding normal",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -1348,6 +1427,9 @@
         },
         {
           "name": "padding comfortable",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -1451,9 +1533,23 @@
         "pattern": "menu button",
         "name": "label"
       },
+      "journeys": [
+        {
+          "spec": "apps/desktop/e2e/m1-toolbar.spec.ts",
+          "covers": [
+            "open",
+            "itemFocused",
+            "itemDisabled",
+            "itemChecked"
+          ]
+        }
+      ],
       "fixtures": [
         {
           "name": "variant icon",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "icon": "more",
             "label": {
@@ -1466,6 +1562,9 @@
         },
         {
           "name": "variant pill",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "variant": "pill",
             "text": {
@@ -1482,6 +1581,9 @@
         },
         {
           "name": "placement top start",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "icon": "more",
             "label": {
@@ -1495,6 +1597,9 @@
         },
         {
           "name": "variant text, placement bottom start",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "variant": "text",
             "text": {
@@ -1511,6 +1616,9 @@
         },
         {
           "name": "variant select",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "variant": "select",
             "text": {
@@ -1527,6 +1635,9 @@
         },
         {
           "name": "variant text, bleed",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "variant": "text",
             "text": {
@@ -1690,6 +1801,9 @@
         "pattern": "search box",
         "name": "label"
       },
+      "uncovered": {
+        "focused": "Focus in the field: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "empty",
@@ -1707,6 +1821,9 @@
         },
         {
           "name": "filled",
+          "covers": [
+            "filled"
+          ],
           "props": {
             "label": {
               "t": "shortcuts.search"
@@ -1739,6 +1856,9 @@
         },
         {
           "name": "invalid",
+          "covers": [
+            "invalid"
+          ],
           "props": {
             "label": {
               "t": "shortcuts.search"
@@ -1939,9 +2059,17 @@
         "pattern": "radio group",
         "name": "label"
       },
+      "uncovered": {
+        "hover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "first selected",
+          "covers": [
+            "rest",
+            "selected"
+          ],
           "props": {
             "label": {
               "t": "shortcuts.layer"
@@ -2071,9 +2199,16 @@
         "pattern": "modal dialog",
         "name": "label"
       },
+      "uncovered": {
+        "entering": "A transition's frames: a fixture shows where it settles, and no journey checks the motion yet.",
+        "exiting": "A transition's frames: a fixture shows where it settles, and no journey checks the motion yet."
+      },
       "fixtures": [
         {
           "name": "size s",
+          "covers": [
+            "open"
+          ],
           "props": {
             "label": {
               "t": "shortcuts.title"
@@ -2094,6 +2229,9 @@
         },
         {
           "name": "height content",
+          "covers": [
+            "open"
+          ],
           "props": {
             "label": {
               "t": "shortcuts.title"
@@ -2115,6 +2253,9 @@
         },
         {
           "name": "size l",
+          "covers": [
+            "open"
+          ],
           "props": {
             "label": {
               "t": "shortcuts.title"
@@ -2135,6 +2276,9 @@
         },
         {
           "name": "size xl",
+          "covers": [
+            "open"
+          ],
           "props": {
             "label": {
               "t": "shortcuts.title"
@@ -2155,6 +2299,9 @@
         },
         {
           "name": "size m, top, frosted, with footer",
+          "covers": [
+            "open"
+          ],
           "props": {
             "label": {
               "t": "spotlight.dialog"
@@ -2324,6 +2471,10 @@
         "pattern": "status (errors: alert)",
         "name": "message"
       },
+      "uncovered": {
+        "paused": "Pauses while the pointer or focus is on it: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "tone info",
@@ -2421,6 +2572,11 @@
       "fixtures": [
         {
           "name": "with active item",
+          "covers": [
+            "rest",
+            "active",
+            "disabled"
+          ],
           "props": {
             "label": {
               "t": "find.label"
@@ -2560,9 +2716,17 @@
         "pattern": "tabs",
         "name": "label"
       },
+      "uncovered": {
+        "hover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "first selected",
+          "covers": [
+            "rest",
+            "selected"
+          ],
           "props": {
             "label": {
               "t": "shortcuts.layer"
@@ -2656,9 +2820,21 @@
         "pattern": "dialog (non-modal), opened by its trigger",
         "name": "label"
       },
+      "journeys": [
+        {
+          "spec": "apps/desktop/e2e/m1-canvas.spec.ts",
+          "covers": [
+            "opening",
+            "closing"
+          ]
+        }
+      ],
       "fixtures": [
         {
           "name": "closed",
+          "covers": [
+            "closed"
+          ],
           "props": {
             "label": {
               "t": "toolbar.label"
@@ -2690,6 +2866,9 @@
         },
         {
           "name": "open",
+          "covers": [
+            "open"
+          ],
           "props": {
             "label": {
               "t": "toolbar.label"
@@ -2805,6 +2984,9 @@
         "pattern": "text box",
         "name": "label"
       },
+      "uncovered": {
+        "focused": "Focus in the field: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "type text",
@@ -2838,6 +3020,9 @@
         },
         {
           "name": "invalid",
+          "covers": [
+            "invalid"
+          ],
           "props": {
             "label": {
               "t": "unlock.passphrase"
@@ -2917,6 +3102,11 @@
       "a11y": {
         "pattern": "button",
         "name": "label"
+      },
+      "uncovered": {
+        "hover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "pressed": "Pointer press: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
       },
       "fixtures": [
         {
@@ -3038,9 +3228,23 @@
         "pattern": "tree (multi-selectable) with type-ahead",
         "name": "label"
       },
+      "uncovered": {
+        "hover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet.",
+        "dropTarget": "A drag in progress: a static fixture can't show it, and no journey checks it yet.",
+        "menuOpen": "Opened by interaction: the gallery shows it closed, and no journey checks it open yet."
+      },
       "fixtures": [
         {
           "name": "sections, folders, the current note, and a multiple selection",
+          "covers": [
+            "rest",
+            "selected",
+            "current",
+            "multiSelected",
+            "pending",
+            "readOnly"
+          ],
           "props": {
             "label": {
               "t": "files.tree"
@@ -3055,6 +3259,10 @@
         },
         {
           "name": "naming a folder, with an error",
+          "covers": [
+            "editing",
+            "invalid"
+          ],
           "props": {
             "label": {
               "t": "files.tree"
@@ -3116,6 +3324,10 @@
       "fixtures": [
         {
           "name": "with changed blocks",
+          "covers": [
+            "rest",
+            "changed"
+          ],
           "props": {
             "label": {
               "t": "conflict.mine"
@@ -3133,6 +3345,9 @@
         },
         {
           "name": "deleted version",
+          "covers": [
+            "empty"
+          ],
           "props": {
             "label": {
               "t": "conflict.theirs"
@@ -3220,9 +3435,26 @@
         "pattern": "group of buttons; the picker is a non-modal dialog of zone buttons",
         "name": "label"
       },
+      "journeys": [
+        {
+          "spec": "apps/desktop/e2e/m2-window.spec.ts",
+          "covers": [
+            "closeHover",
+            "layoutsOpen"
+          ]
+        }
+      ],
+      "uncovered": {
+        "buttonHover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet.",
+        "zoneHover": "Pointer hover: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "shown",
+          "covers": [
+            "shown"
+          ],
           "props": {
             "label": {
               "t": "window.controls"
@@ -3278,6 +3510,9 @@
         },
         {
           "name": "hidden until hover",
+          "covers": [
+            "hidden"
+          ],
           "props": {
             "label": {
               "t": "window.controls"
@@ -3359,9 +3594,17 @@
         "pattern": "listbox",
         "name": "label"
       },
+      "uncovered": {
+        "hover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "first selected",
+          "covers": [
+            "rest",
+            "selected"
+          ],
           "props": {
             "label": {
               "t": "theme.gallery"
@@ -3376,6 +3619,9 @@
         },
         {
           "name": "previewing",
+          "covers": [
+            "previewing"
+          ],
           "props": {
             "label": {
               "t": "theme.gallery"
@@ -3449,6 +3695,11 @@
       "a11y": {
         "pattern": "slider",
         "name": "label"
+      },
+      "uncovered": {
+        "hover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "dragging": "A drag in progress: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
       },
       "fixtures": [
         {
@@ -3546,6 +3797,9 @@
         "pattern": "text box",
         "name": "label"
       },
+      "uncovered": {
+        "focused": "Focus in the field: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "with a swatch",
@@ -3566,6 +3820,9 @@
         },
         {
           "name": "invalid",
+          "covers": [
+            "invalid"
+          ],
           "props": {
             "label": {
               "t": "colors.key.accent"
@@ -3996,9 +4253,18 @@
         "pattern": "button",
         "name": "label"
       },
+      "uncovered": {
+        "hover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "pressed": "Pointer press: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "saved here",
+          "covers": [
+            "rest",
+            "savedLocal"
+          ],
           "props": {
             "state": "savedLocal",
             "label": {
@@ -4008,6 +4274,9 @@
         },
         {
           "name": "not backed up yet",
+          "covers": [
+            "pending"
+          ],
           "props": {
             "state": "pending",
             "label": {
@@ -4017,6 +4286,9 @@
         },
         {
           "name": "backing up, asked",
+          "covers": [
+            "syncing"
+          ],
           "props": {
             "state": "syncing",
             "label": {
@@ -4029,6 +4301,9 @@
         },
         {
           "name": "backed up",
+          "covers": [
+            "synced"
+          ],
           "props": {
             "state": "synced",
             "label": {
@@ -4038,6 +4313,9 @@
         },
         {
           "name": "offline",
+          "covers": [
+            "offline"
+          ],
           "props": {
             "state": "offline",
             "label": {
@@ -4047,6 +4325,9 @@
         },
         {
           "name": "problem",
+          "covers": [
+            "error"
+          ],
           "props": {
             "state": "error",
             "label": {
@@ -4537,6 +4818,10 @@
         "pattern": "date picker (group of spin buttons, and a dialog with a grid)",
         "name": "label"
       },
+      "uncovered": {
+        "focused": "Focus in the field: a static fixture can't show it, and no journey checks it yet.",
+        "open": "Opened by interaction: the gallery shows it closed, and no journey checks it open yet."
+      },
       "fixtures": [
         {
           "name": "empty",
@@ -4559,6 +4844,9 @@
         },
         {
           "name": "invalid",
+          "covers": [
+            "invalid"
+          ],
           "props": {
             "label": {
               "t": "gallery.sample"
@@ -4610,6 +4898,10 @@
       "a11y": {
         "pattern": "link",
         "name": "label"
+      },
+      "uncovered": {
+        "hover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "focus": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
       },
       "fixtures": [
         {
@@ -4996,9 +5288,16 @@
         "pattern": "radiogroup",
         "name": "schemeLabel, lightThemesLabel and darkThemesLabel"
       },
+      "uncovered": {
+        "dark": "Chosen with its Light / Dark switch: the gallery shows the first light theme, and no journey checks the switch yet.",
+        "focus": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "themes",
+          "covers": [
+            "light"
+          ],
           "props": {
             "name": {
               "get": "vm.gallery.query"
@@ -7960,6 +8259,9 @@
         },
         {
           "name": "with error",
+          "covers": [
+            "error"
+          ],
           "props": {
             "label": {
               "t": "find.field"
@@ -8052,9 +8354,15 @@
       "a11y": {
         "pattern": "none"
       },
+      "uncovered": {
+        "offscreen": "Needs an anchor measured outside the window: a static fixture can't place one, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "anchor selection, above",
+          "covers": [
+            "above"
+          ],
           "props": {
             "anchor": "selection",
             "placement": "above"
@@ -8083,6 +8391,9 @@
         },
         {
           "name": "anchor link, below",
+          "covers": [
+            "below"
+          ],
           "props": {
             "anchor": "link",
             "placement": "below"
@@ -8287,6 +8598,9 @@
         "pattern": "complementary landmark",
         "name": "label"
       },
+      "uncovered": {
+        "entering": "A transition's frames: a fixture shows where it settles, and no journey checks the motion yet."
+      },
       "fixtures": [
         {
           "name": "start, files width",
@@ -8395,6 +8709,10 @@
         },
         {
           "name": "start, docked",
+          "covers": [
+            "pinned",
+            "docked"
+          ],
           "props": {
             "label": {
               "t": "files.heading"
@@ -9276,6 +9594,23 @@
         "pattern": "textbox (multi-line)",
         "name": "label"
       },
+      "journeys": [
+        {
+          "spec": "apps/desktop/e2e/m1-canvas.spec.ts",
+          "covers": [
+            "editing"
+          ]
+        },
+        {
+          "spec": "apps/desktop/e2e/m1-focus.spec.ts",
+          "covers": [
+            "empty"
+          ]
+        }
+      ],
+      "uncovered": {
+        "readOnly": "No journey checks that the surface itself refuses edits yet."
+      },
       "fixtures": []
     },
     {
@@ -9381,6 +9716,28 @@
         "pattern": "buttons with menus (menu button)",
         "name": "columnLabel"
       },
+      "journeys": [
+        {
+          "spec": "apps/desktop/e2e/m1-tables.spec.ts",
+          "covers": [
+            "hover",
+            "insertPoint",
+            "menuOpen",
+            "dragging",
+            "rangeSelected"
+          ]
+        },
+        {
+          "spec": "apps/desktop/e2e/d182-tables.spec.ts",
+          "covers": [
+            "resizing"
+          ]
+        }
+      ],
+      "uncovered": {
+        "hidden": "Before the pointer reaches a table: no journey checks the controls are absent yet.",
+        "handleHover": "Pointer hover: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": []
     },
     {
@@ -9427,6 +9784,20 @@
       "a11y": {
         "pattern": "button with a menu (menu button), out of the Tab order: Shift+F10 opens the same menu",
         "name": "label"
+      },
+      "journeys": [
+        {
+          "spec": "apps/desktop/e2e/m8-editor-pro.spec.ts",
+          "covers": [
+            "shown",
+            "pressed",
+            "dragging",
+            "menuOpen"
+          ]
+        }
+      ],
+      "uncovered": {
+        "hidden": "Away from a block: no journey checks the handle is absent yet."
       },
       "fixtures": []
     },
@@ -9532,6 +9903,21 @@
         "pattern": "menu (the system menu); the handles are pointer-only, with Move and Size in the menu for the keyboard",
         "name": "menuLabel"
       },
+      "journeys": [
+        {
+          "spec": "apps/desktop/e2e/m2-window.spec.ts",
+          "covers": [
+            "rest",
+            "moving",
+            "resizing",
+            "menuOpen"
+          ]
+        }
+      ],
+      "uncovered": {
+        "bandHover": "Pointer hover: a static fixture can't show it, and no journey checks it yet.",
+        "fullScreenHidden": "In full screen before the pointer reaches the top edge: no journey checks the band hides yet."
+      },
       "fixtures": []
     },
     {
@@ -9602,6 +9988,19 @@
         "pattern": "button that morphs into a toolbar (non-modal dialog)",
         "name": "label"
       },
+      "journeys": [
+        {
+          "spec": "apps/desktop/e2e/m1-canvas.spec.ts",
+          "covers": [
+            "hover",
+            "open"
+          ]
+        }
+      ],
+      "uncovered": {
+        "pressed": "Pointer press: a static fixture can't show it, and no journey checks it yet.",
+        "focusVisible": "Keyboard focus: a static fixture can't show it, and no journey checks it yet."
+      },
       "fixtures": [
         {
           "name": "rest",
@@ -9625,6 +10024,9 @@
         },
         {
           "name": "save problem",
+          "covers": [
+            "problem"
+          ],
           "props": {
             "label": {
               "t": "trigger.label"
@@ -9771,9 +10173,16 @@
         "pattern": "modal dialog",
         "name": "title"
       },
+      "uncovered": {
+        "entering": "A transition's frames: a fixture shows where it settles, and no journey checks the motion yet.",
+        "exiting": "A transition's frames: a fixture shows where it settles, and no journey checks the motion yet."
+      },
       "fixtures": [
         {
           "name": "size s",
+          "covers": [
+            "open"
+          ],
           "props": {
             "title": {
               "t": "shortcuts.title"
@@ -9797,6 +10206,9 @@
         },
         {
           "name": "height content",
+          "covers": [
+            "open"
+          ],
           "props": {
             "title": {
               "t": "shortcuts.title"
@@ -9821,6 +10233,9 @@
         },
         {
           "name": "size l with toolbar",
+          "covers": [
+            "open"
+          ],
           "props": {
             "title": {
               "t": "shortcuts.title"
@@ -9859,6 +10274,9 @@
         },
         {
           "name": "size xl",
+          "covers": [
+            "open"
+          ],
           "props": {
             "title": {
               "t": "shortcuts.title"
