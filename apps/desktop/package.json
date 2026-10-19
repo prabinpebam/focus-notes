@@ -16,6 +16,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test:e2e": "playwright test",
     "dist": "pnpm run build && electron-builder --publish never",
+    "dist:store": "pnpm run build && node scripts/dist-store.mjs",
     "icon": "node scripts/icon.mjs"
   },
   "devDependencies": {
@@ -75,6 +76,19 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "oneClick": false
+    },
+    "appx": {
+      "identityName": "Placeholder.FocusNotes",
+      "publisher": "CN=00000000-0000-0000-0000-000000000000",
+      "publisherDisplayName": "Prabin Pebam",
+      "applicationId": "FocusNotes",
+      "displayName": "Focus Notes",
+      "backgroundColor": "transparent",
+      "languages": ["en-US"],
+      "minVersion": "10.0.17763.0",
+      "maxVersionTested": "10.0.26100.0",
+      "customExtensionsPath": "build/appx-extensions.xml",
+      "artifactName": "Focus-Notes-${version}-store-${arch}.msix"
     },
     "mac": {
       "category": "public.app-category.productivity",

@@ -1,0 +1,9 @@
+<!-- The Store package's command-line tool (PKG-12, D-202): electron-builder adds this inside the
+     manifest's <Extensions>, after the focus-notes: protocol it declares itself from "protocols".
+     Typing focus-notes in a terminal starts the app's own executable through this alias, with the
+     package's identity; the app runs the command when its first argument is one (store-build.ts). -->
+<uap3:Extension xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3" Category="windows.appExecutionAlias" Executable="app\focus-notes.exe" EntryPoint="Windows.FullTrustApplication">
+  <uap3:AppExecutionAlias>
+    <desktop:ExecutionAlias Alias="focus-notes.exe" />
+  </uap3:AppExecutionAlias>
+</uap3:Extension>
