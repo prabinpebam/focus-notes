@@ -26,7 +26,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Text | primitive | `rest` | 20 | None |
 | Heading | primitive | `rest` | 4 | None |
 | Icon | primitive | `rest` | 4 | None |
-| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 13 | `hover`, `pressed`, `focusVisible` |
+| Button | primitive | `rest`, `hover`, `pressed`, `selected`, `focusVisible`, `disabled`, `busy` | 14 | `hover`, `pressed`, `focusVisible` |
 | IconButton | primitive | `rest`, `hover`, `pressed`, `selected`, `mixed`, `focusVisible`, `disabled`, `busy` | 8 | `hover`, `pressed` |
 | Tooltip | primitive | `hidden`, `visible` | 4 | `visible` |
 | SignalDot | primitive | `rest` | 3 | None |
@@ -95,7 +95,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <h2 id="contracts" data-reader-personas="engineering">Contracts</h2>
 
-Each component declares a contract in `packages/ui`. `ui:check` turns the contracts into the view JSON Schema, the gallery's fixtures, and the catalog published for agents (DSY-13), and fails when the committed copies in `schemas/ui` differ (D-138). TypeScript prop types generated from the contracts are **planned (DS-A05)**: today each component's React props are written by hand beside its contract, and nothing yet proves they agree ([audit DS-A05](audit.md#ds-a05-p2-contracts-do-not-prove-implementation-prop-parity)). This is the contract for `Button`, abridged from `schemas/ui/contracts.v1.json`:
+Each component declares a contract in `packages/ui`. `ui:check` turns the contracts into the view JSON Schema, the gallery's fixtures, and the catalog published for agents (DSY-13), and fails when the committed copies in `schemas/ui` differ (D-138). Each component's React props are written beside its contract, and every registry is built with `defineRegistry` (`packages/ui/src/register.ts`), which checks them against the contract at compile time (D-199). Contracts are also exported keyed by type as `contractsByType`, and a contract can declare `requiresId`, which `ui:check` enforces (ResultList, FileTree). This is the contract for `Button`, abridged from `schemas/ui/contracts.v1.json`:
 
 ```json
 {
@@ -131,7 +131,7 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | `tokens` | The component's own tokens. It may read nothing else; the boundary check enforces this (D-197). |
 | `a11y` | The ARIA Authoring Practices pattern, and which prop provides the accessible name. |
 
-**Busy state (planned, DS-A06).** The intended protocol: components with a `busy` state (Button, IconButton, FileTree rows, ResultList items) take `busy` as a boolean bound to the task tracker; one shared primitive hook turns it into the phases `ack`, `on`, and `done`, rendered as `data-busy`, with the timing from the `wait.*` tokens and the look from the component's own `cmp.*.busy` tokens; a busy Button keeps its width; a region being updated shows an indeterminate `ProgressBar` line, placed by its view with the same timing; and no component times its own waits ([Waits](../components/feedback-and-dialogs.md#waits), PRF-08). The shared hook isn't built: today Button suppresses activation and sets `aria-busy` while showing the same content, and IconButton swaps its glyph for a Spinner ([audit DS-A06](audit.md#ds-a06-p2-the-documented-busy-state-protocol-is-not-shared-by-the-sampled-controls)).
+**Busy state (D-199).** Button, IconButton and ItemCard take `busy` as a boolean bound to the task tracker (`busyProps` in `packages/core/src/tasks.ts`). One shared hook, `useBusy` (`packages/ui/src/behaviors/busy.ts`), turns it into `data-busy` phases and sets `aria-busy`; it has no timer of its own. The `ack` phase is the delay in the control's style: the spinner appears after `cmp.button.busy.signDelay` or `cmp.iconButton.busy.signDelay` (both `{wait.signDelay}`, 300 ms), replacing the icon in the same cell, and `done` shows for 1.5 s. A busy control is inert but not dimmed and keeps its width; Button can show a `busyLabel`. A region being updated shows an indeterminate `ProgressBar` line placed by its view, and no component times its own waits ([Waits](../components/feedback-and-dialogs.md#waits), PRF-08). View models that set `busy` directly rather than through the tracker get the reveal delay but not the minimum display time.
 
 <h2 id="primitives" data-reader-personas="design engineering">Primitives</h2>
 
