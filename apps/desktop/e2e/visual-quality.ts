@@ -313,7 +313,8 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
         const bc = getComputedStyle(body);
         const full = body.scrollHeight - parseFloat(bc.paddingTop) - parseFloat(bc.paddingBottom);
         for (const nav of body.querySelectorAll('[role="tablist"][aria-orientation="vertical"]')) {
-          const nh = nav.getBoundingClientRect().height;
+          // With a footer (D-203), the list and the footer share a column that draws the divider: it's what runs the full height.
+          const nh = (nav.closest("[data-side-nav]") ?? nav).getBoundingClientRect().height;
           if (nh < full - tol) out.push(`side navigation: ${nameOf(nav)} in ${name} is ${px(nh)} px tall, short of its body's ${px(full)} px`);
         }
       }

@@ -34,3 +34,6 @@ export const error = style({ color: t.error, fontSize: t.fontSize });
 export const hidden = style({ position: "absolute", width: t.srOnlySize, height: t.srOnlySize, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" });
 /** Several lines: as tall as about six, growing with what it holds, and only taller by hand (D-143). */
 export const area = style({ height: "auto", minHeight: t.areaHeight, paddingBlock: t.paddingBlock, lineHeight: t.lineHeight, resize: "vertical", fieldSizing: "content" } as Parameters<typeof style>[0]);
+/** Several lines that scroll past a set height instead of growing: read-only text to check before it's sent (D-203).
+ * After `area`, so its fixed size wins. */
+export const scrolls = style({ maxHeight: t.areaMaxHeight, overflowY: "auto", resize: "none" });

@@ -20,6 +20,12 @@ export interface TextFieldProps {
   size?: keyof typeof s.size;
   /** Several lines (the invite message, D-143): Enter starts a new line, and it grows from about six lines. */
   multiline?: boolean;
+  /** Shown and focusable, but not editable: while what it holds is being sent (D-203). */
+  readOnly?: boolean;
+  /** Several lines that scroll past a set height instead of growing: the report Send feedback posts (D-203). */
+  scrolls?: boolean;
+  /** Needed before its form can go: announced as required; the form says what's missing (D-203). */
+  required?: boolean;
   id?: string;
   onChange?: (payload: { value: string }) => void;
   /** Enter in the field, outside an IME composition. */
@@ -27,7 +33,7 @@ export interface TextFieldProps {
 }
 
 /** A labelled single-line field. Secrets use type "password" and are never spell-checked or autofilled. */
-export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", multiline, id, onChange, onSubmit }: TextFieldProps) {
+export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", multiline, readOnly, scrolls, required, id, onChange, onSubmit }: TextFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   const area = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
@@ -40,12 +46,15 @@ export function TextField({ label, value, placeholder, description, type = "text
       onChange={(v) => onChange?.({ value: v })}
       type={type}
       isInvalid={Boolean(invalid)}
+      isReadOnly={Boolean(readOnly)}
+      isRequired={Boolean(required)}
+      validationBehavior="aria"
       {...(autoFocus ? { autoFocus } : {})}
       {...(id ? { id } : {})}
     >
       <Label className={labelHidden ? s.hidden : s.label}>{label}</Label>
       {multiline ? (
-        <TextArea ref={area} className={`${s.input} ${s.area}`} spellCheck autoCorrect="off" {...(placeholder ? { placeholder } : {})} />
+        <TextArea ref={area} className={`${s.input} ${s.area}${scrolls ? ` ${s.scrolls}` : ""}`} spellCheck={!scrolls} autoCorrect="off" {...(placeholder ? { placeholder } : {})} />
       ) : <Input
         ref={input}
         className={`${s.input} ${s.size[size]}`}
@@ -54,7 +63,7 @@ export function TextField({ label, value, placeholder, description, type = "text
         autoCorrect="off"
         autoComplete={type === "password" ? "off" : "on"}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.nativeEvent.isComposing && onSubmit) {
+          if (e.key === "Enter" && !e.nativeEvent.isComposing && onSubmit && !readOnly) {
             e.preventDefault();
             onSubmit();
           }

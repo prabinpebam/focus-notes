@@ -70,14 +70,6 @@ export interface DiagnosticFacts {
 
 /** What the report never includes: shown beside the preview and written at the top of the report. */
 export const NEVER_INCLUDED = "No note text, note or folder names, paths, email addresses, passwords, keys, or tokens.";
-/**
- * Report a problem: the project's new-issue form with a fixed template. The report itself goes on
- * the clipboard for the person to paste and read, never in the address, so opening the form sends
- * GitHub nothing of it (D-55, D-140).
- */
-export const REPORT_PROBLEM_URL = `https://github.com/prabinpebam/focus-notes/issues/new?labels=bug&body=${encodeURIComponent(
-  "**What happened?**\n\n\n**What did you expect?**\n\n\n<!-- Focus Notes put its diagnostic report on your clipboard. Paste it below and read it before you submit. -->\n",
-)}`;
 /** At most this many of the latest problems and timings go in a report. */
 export const REPORT_PROBLEMS = 50;
 export const REPORT_TIMINGS = 40;
@@ -93,6 +85,9 @@ export interface RedactOptions {
   home?: string;
   workspace?: string;
 }
+
+/** What the report is for: `forSend` when Send feedback posts it, so it doesn't say nothing was sent (D-203). */
+export interface ReportUse { forSend?: boolean }
 
 /** `redact` reads at most this much of its input, so no pattern can run long (D-140). */
 export const REDACT_MAX = 4096;
@@ -158,7 +153,7 @@ export function redact(text: string, o: RedactOptions = {}): string {
  */
 export const MEASURE_NAMES: readonly string[] = [
   "fn:note.open", "fn:spotlight.open",
-  ...["note.save", "conflict", "import.confirm", "notes.export", "unlock.remember", "unlock.submit", "account.signOut", "workspace.remove", "files.copyItem", "repoBackup.private", "repoBackup.public"].map((t) => `focus-notes:${t}`),
+  ...["note.save", "conflict", "import.confirm", "notes.export", "unlock.remember", "unlock.submit", "account.signOut", "workspace.remove", "files.copyItem", "repoBackup.private", "repoBackup.public", "feedback.send"].map((t) => `focus-notes:${t}`),
   // The first run's waits (PRF-13, D-149): FIRST_RUN_WAITS in first-run-app.ts.
   ...["git", "prepare", "account", "signIn", "identity", "findNotes", "folder", "chooseFolder", "clone", "create", "open", "strength"].map((t) => `focus-notes:firstRun.${t}`),
 ];
@@ -219,13 +214,14 @@ const cell = (s: string) => s.replace(/\|/g, "/");
  * known strings too; then every line again, without them, so the report's own words ("notes
  * repository") stay readable whatever the repositories are called.
  */
-export function buildReport(f: DiagnosticFacts, o: RedactOptions = {}): string {
+export function buildReport(f: DiagnosticFacts, o: RedactOptions = {}, use: ReportUse = {}): string {
   const w = f.workspace;
   const v = (s: string) => redact(s, o);
   const lines = [
     "## Focus Notes diagnostic report",
     "",
-    `Made ${iso(f.generatedAt)} on this computer. ${NEVER_INCLUDED} Nothing was sent.`,
+    // Attached to Send feedback, it is being sent: "Nothing was sent." would be untrue (D-203).
+    `Made ${iso(f.generatedAt)} on this computer. ${NEVER_INCLUDED}${use.forSend ? "" : " Nothing was sent."}`,
     "",
     "### App",
     `- Focus Notes ${v(f.app.version)}${f.app.packaged ? "" : " (development build)"}`,

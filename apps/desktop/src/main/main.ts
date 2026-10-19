@@ -38,7 +38,8 @@ import { createRunner, whenGitIdle, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
 import { accessStore, siteFromGitConfig } from "./share/access.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
-import { ProblemLog, REPORT_PROBLEM_URL, type RedactOptions } from "@focus-notes/core/diagnostics";
+import { ProblemLog, type RedactOptions } from "@focus-notes/core/diagnostics";
+import { feedbackMain } from "./feedback.ts";
 import { diagnostics, knownStrings, reportFileName, reportPathAllowed } from "./diagnostics.ts";
 import { DEFAULT_SETUP, isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
 import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type FirstRunProgress, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
@@ -1342,11 +1343,20 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     }
     return false;
   });
-  // Report a problem: the report on the clipboard, then a fixed address (never one from the window, never with the report in it).
-  handle("diagnostics:reportProblem", async (timings) => {
-    appClipboard().writeText(await diag.report(timings));
-    await shell.openExternal(REPORT_PROBLEM_URL);
+  // Send feedback (QLT-07, D-203): to the project's fixed repository with the signed-in token, which stays here;
+  // Continue on GitHub opens the new-issue form, the report only ever on the clipboard (D-140), never in the address.
+  const feedback = feedbackMain({
+    // Journeys without the fake GitHub never ask the real one.
+    client: async () => (journey && !fakeApi ? undefined : (await account.api())?.api),
+    report: (timings, use) => diag.report(timings, use),
+    system: { version: app.isPackaged ? app.getVersion() : devVersion(), platform: process.platform, release: osRelease(), arch: process.arch },
+    copy: (text) => appClipboard().writeText(text),
+    open: (url) => shell.openExternal(url),
   });
+  // The report's preview is the exact text that's posted: main keeps it, and Send and Continue use that (D-203).
+  handle("feedback:preview", (timings) => feedback.preview(timings));
+  handle("feedback:send", (input) => feedback.send(input));
+  handle("feedback:continue", (input) => feedback.continue(input));
   handle("sync:now", async (reason) => {
     const g = await gitOpening;
     return g ? g.request(reason === "switch" ? "switch" : "save") : NO_GIT;

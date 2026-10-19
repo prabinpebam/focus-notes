@@ -29,6 +29,7 @@ import { registerKeybindings, KEYBINDINGS_NONE, type KeybindingsState } from "./
 import { registerToolbarCustomize, TOOLBAR_CUSTOMIZE_CLOSED, validPinned, type ToolbarCustomizeState } from "./toolbar-customize.ts";
 import { registerHeld, HELD_CLOSED, type HeldUiState } from "./held-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
+import { FEEDBACK_CLOSED, registerFeedback, type FeedbackState } from "./feedback-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
 import { registerMenuBar } from "./menu-bar.ts";
@@ -102,6 +103,8 @@ export interface AppState {
     agents: AgentsState;
     /** Settings (IA-VIEW-SETTINGS): Account and Workspace, with signing out and removing the workspace (FRE-07). */
     settings: SettingsState;
+    /** Send feedback (IA-VIEW-FEEDBACK, D-203): the draft, in memory only. */
+    feedback: FeedbackState;
     /** Settings → Sharing and its dialogs: audiences made, changed, and withdrawn (WP-5.3). */
     share: ShareManageState;
     /** Spotlight (IA-VIEW-SPOTLIGHT): search and act. */
@@ -239,7 +242,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
   { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
   { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink", "history.open"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
-  { id: "app", label: "menu.app", items: ["settings.open", "toolbar.customize", "shortcuts.open", "help.open"] },
+  { id: "app", label: "menu.app", items: ["settings.open", "feedback.open", "toolbar.customize", "shortcuts.open", "help.open"] },
 ];
 /**
  * ⋯ items whose feature arrives in a later work package: present now, disabled, and saying why
@@ -297,7 +300,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     toolbarPinned: [...DEFAULT_TOOLBAR],
     keybindings: KEYBINDINGS_NONE,
     compositing: bridge.compositing?.initial === "software" ? "software" : "gpu",
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, toolbarCustomize: TOOLBAR_CUSTOMIZE_CLOSED, history: HISTORY_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, toolbarCustomize: TOOLBAR_CUSTOMIZE_CLOSED, history: HISTORY_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, feedback: FEEDBACK_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -404,6 +407,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
   });
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
+  registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, toast, setNote, persistAppState, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),

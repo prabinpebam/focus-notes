@@ -12,6 +12,8 @@ export interface TabsProps {
   /** The selected tab takes focus when the tabs appear (Settings opens on its categories, D-103). */
   autoFocus?: boolean;
   id?: string;
+  /** Under the list, on every tab: an action for the whole set (Settings' Send feedback, D-203). */
+  footer?: ReactNode;
   /** The selected tab's panel content; the view switches it on `value`. */
   children?: ReactNode;
   onChange?: (payload: { value: string }) => void;
@@ -24,7 +26,7 @@ export interface TabsProps {
  * resting on the panel then, within React's commit; the dialog around it moves focus on to that
  * control (DialogPanel, DEF-12).
  */
-export function Tabs({ label, items, value, orientation = "horizontal", autoFocus, id, children, onChange }: TabsProps) {
+export function Tabs({ label, items, value, orientation = "horizontal", autoFocus, id, footer, children, onChange }: TabsProps) {
   const selected = value ?? items[0]?.id ?? "";
   // Vertical tabs need room for the list and the panel side by side; without it (a narrow window,
   // 320 px reflow) they lay out across, over the panel, and the arrow keys go left and right.
@@ -47,11 +49,21 @@ export function Tabs({ label, items, value, orientation = "horizontal", autoFocu
     focused.current = true;
     el.focus();
   };
+  const tabList = (className: string) => (
+    <TabList className={className} aria-label={label}>
+      {items.map((o) => <Tab key={o.id} id={o.id} className={s.tab[laid]} {...(o.id === selected ? { ref: focusFirst } : {})}>{o.label}</Tab>)}
+    </TabList>
+  );
   return (
     <AriaTabs ref={rootRef} className={s.root[laid]} orientation={laid} selectedKey={selected} onSelectionChange={(k) => onChange?.({ value: String(k) })} {...(id ? { id } : {})}>
-      <TabList className={s.list[laid]} aria-label={label}>
-        {items.map((o) => <Tab key={o.id} id={o.id} className={s.tab[laid]} {...(o.id === selected ? { ref: focusFirst } : {})}>{o.label}</Tab>)}
-      </TabList>
+      {footer ? (
+        // The list and its footer share the column and its divider; the footer sits right under the tabs.
+        // `data-side-nav`: the column is the side navigation that runs the body's full height (D-123).
+        <div className={s.side[laid]} data-side-nav="">
+          {tabList(s.sideList[laid])}
+          <div className={s.footer[laid]}>{footer}</div>
+        </div>
+      ) : tabList(s.list[laid])}
       {/* Keyed by the selection, so the panel and its id change together with the selected tab's aria-controls. */}
       <TabPanel key={selected} id={selected} className={s.panel[laid]}>{children}</TabPanel>
     </AriaTabs>

@@ -53,6 +53,8 @@ export class FakeGitHub {
    * keeps `files`. Branch heads and the contents API read it.
    */
   contents?: (repo: FakeRepo) => string[] | undefined;
+  /** Issues opened (Send feedback, D-203): any public repository takes them, as GitHub does. */
+  readonly issues: { owner: string; repo: string; number: number; title: string; body: string; labels: string[] }[] = [];
   /** A classic token's scopes, sent as `X-OAuth-Scopes`; undefined sends no header, like a fine-grained token. */
   scopes?: string[];
 
@@ -142,6 +144,13 @@ export class FakeGitHub {
       const repo = this.add({ owner: this.login, name, private: body?.private === true, template: `${template.owner}/${template.name}`, files: [...template.files] });
       this.onCreate?.(repo);
       return json(201, toRepo(repo));
+    }
+    r = /^\/repos\/([^/]+)\/([^/]+)\/issues$/.exec(path);
+    if (method === "POST" && r) {
+      // Anyone signed in can open an issue on a public repository; labels are kept as asked.
+      const number = 100 + this.issues.length + 1;
+      this.issues.push({ owner: r[1]!, repo: r[2]!, number, title: String(body?.title ?? ""), body: String(body?.body ?? ""), labels: Array.isArray(body?.labels) ? body.labels.map(String) : [] });
+      return json(201, { number, html_url: `https://github.com/${r[1]}/${r[2]}/issues/${number}` });
     }
     r = /^\/repos\/([^/]+)\/([^/]+)(\/.*)?$/.exec(path);
     if (!r) return json(404, { message: "Not Found" });

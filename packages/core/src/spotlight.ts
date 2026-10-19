@@ -392,6 +392,8 @@ const INTERNAL_IDS = new Set([
   "files.restore", "files.restoreTo", "files.editBlur", "files.setFits", "files.setWidth", "outline.setWidth",
   // The theme manager's own steps: previews from its gallery, a theme chosen there, its colors, closing and reverting it.
   "theme.manager.close", "theme.manager.revert", "theme.preview", "theme.previewEnd", "theme.choose", "theme.color.set", "theme.color.fix",
+  // Send feedback's own buttons (D-203): Spotlight lists only Send feedback… and Report a problem….
+  "feedback.send", "feedback.submit", "feedback.retry", "feedback.continue", "feedback.done", "feedback.close", "feedback.openIssue", "feedback.signIn", "feedback.toggleAttach", "feedback.togglePreview",
 ]);
 /** Scopes where a key acts on what's in front of it, not a place a person starts from. */
 const ACTION_SCOPES = new Set(["editor", "table"]);

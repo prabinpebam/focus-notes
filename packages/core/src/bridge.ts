@@ -10,6 +10,7 @@ import type { AgentsBridge } from "./agents-app.ts";
 import type { NativeWindowBridge, WindowBridge } from "./window-app.ts";
 import type { AccessBridge } from "./share-manage.ts";
 import type { DiagnosticsPreview, TimingSummary } from "./diagnostics.ts";
+import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.ts";
 
 /**
  * Services a shell provides. The Electron preload implements this as `window.focusNotes`;
@@ -123,6 +124,27 @@ export interface PlatformBridge {
    * copies or saves it. Nothing is sent. The desktop's; absent in the browser.
    */
   diagnostics?: DiagnosticsBridge;
+  /**
+   * Send feedback (QLT-07, D-203): the shell posts an issue to the project's fixed repository with
+   * the signed-in token, which never reaches the window, or opens GitHub's new-issue form. The
+   * desktop's; the browser continues on GitHub through `openExternal`.
+   */
+  feedback?: FeedbackBridge;
+}
+
+export interface FeedbackBridge {
+  /**
+   * Builds the redacted report to attach (with the window's timings), keeps it in the shell, and
+   * returns it for the preview: it's going public, so the person sees exactly what's posted (D-203).
+   */
+  preview?(timings: TimingSummary[]): Promise<string>;
+  /**
+   * Posts the issue, with the report last previewed when `attachReport`. Resolves to the issue's
+   * number and address, or a problem code; never the token.
+   */
+  send?(input: FeedbackInput): Promise<FeedbackResult>;
+  /** Opens the new-issue form filled in, and copies what the address can't hold: the previewed report when attached, the details when cut. */
+  continue(input: FeedbackInput): Promise<FeedbackCopied>;
 }
 
 /** A deep link the shell resolved: an existing note's own path (and a heading anchor), or a search. */
@@ -135,8 +157,7 @@ export interface DiagnosticsBridge {
   copy(timings: TimingSummary[]): Promise<void>;
   /** Saves the report where the person chooses. False when they cancel. */
   save(timings: TimingSummary[]): Promise<boolean>;
-  /** Report a problem: puts the report on the clipboard and opens the project's new-issue form, which never carries it. */
-  reportProblem(timings: TimingSummary[]): Promise<void>;
+
 }
 
 /** GPU or software compositing (D-121). */

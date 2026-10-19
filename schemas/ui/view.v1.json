@@ -909,7 +909,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -1119,7 +1121,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -1382,7 +1386,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -2099,7 +2105,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -2503,7 +2511,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -2610,6 +2620,19 @@
                     "horizontal",
                     "vertical"
                   ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "readOnly": {
+              "anyOf": [
+                {
+                  "type": "boolean"
                 },
                 {
                   "$ref": "#/$defs/read"
@@ -3278,6 +3301,18 @@
           "items": {
             "$ref": "#/$defs/node"
           }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "footer": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
         }
       }
     },
@@ -3552,7 +3587,46 @@
                 }
               ]
             },
+            "readOnly": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "multiline": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "scrolls": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "required": {
               "anyOf": [
                 {
                   "type": "boolean"
@@ -4586,7 +4660,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -4817,7 +4893,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -5299,7 +5377,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -9339,6 +9419,7 @@
                 {
                   "enum": [
                     "s",
+                    "m",
                     "l",
                     "xl"
                   ]

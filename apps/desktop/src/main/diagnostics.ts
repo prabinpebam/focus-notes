@@ -4,7 +4,7 @@
  * built and redacted by `@focus-notes/core/diagnostics`. Nothing here reads a note, a credential,
  * or `access.json`, and nothing is sent: the person copies or saves the report and decides.
  */
-import { buildReport, parseTimings, previewOf, settingsSummary, type DiagnosticFacts, type DiagnosticsPreview, type ProblemLog, type RedactOptions, type RepoHealth } from "@focus-notes/core/diagnostics";
+import { buildReport, parseTimings, previewOf, settingsSummary, type DiagnosticFacts, type DiagnosticsPreview, type ProblemLog, type RedactOptions, type RepoHealth, type ReportUse } from "@focus-notes/core/diagnostics";
 import type { SyncReport } from "@focus-notes/core";
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 
@@ -53,7 +53,7 @@ export function diagnostics(d: DiagnosticsDeps) {
   return {
     preview: async (): Promise<DiagnosticsPreview> => previewOf(await facts([])),
     /** The report, redacted. `timings` comes from the window and is checked again here. */
-    report: async (timings: unknown): Promise<string> => buildReport(await facts(timings), d.redaction()),
+    report: async (timings: unknown, use: ReportUse = {}): Promise<string> => buildReport(await facts(timings), d.redaction(), use),
   };
 }
 

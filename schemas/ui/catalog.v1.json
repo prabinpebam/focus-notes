@@ -885,6 +885,11 @@
           ],
           "default": "horizontal",
           "description": "vertical: one full-width row per choice, for choices whose labels don't fit side by side (the first run's Workspace, D-123)."
+        },
+        "readOnly": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Shown and focusable, but the choice can't change: while what it chose is being sent (Send feedback's Kind, D-203)."
         }
       },
       "events": {
@@ -910,6 +915,7 @@
       "fixtures": [
         "first selected",
         "last selected",
+        "read only",
         "orientation vertical"
       ]
     },
@@ -1237,6 +1243,9 @@
         }
       },
       "slots": {
+        "footer": {
+          "accepts": "any"
+        },
         "default": {
           "accepts": "any"
         }
@@ -1254,7 +1263,8 @@
       },
       "fixtures": [
         "first selected",
-        "orientation vertical"
+        "orientation vertical",
+        "orientation vertical with footer"
       ]
     },
     {
@@ -1364,10 +1374,25 @@
           "default": "l",
           "description": "32 px tall beside 32 px buttons in a bar (the link editor), or 40 px."
         },
+        "readOnly": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Shown and focusable but not editable, while what it holds is being sent (Send feedback, D-203)."
+        },
         "multiline": {
           "kind": "boolean",
           "default": false,
           "description": "Several lines, growing from about six (the invite message, D-143): Enter starts a new line."
+        },
+        "scrolls": {
+          "kind": "boolean",
+          "default": false,
+          "description": "With multiline: scrolls past a set height instead of growing, for read-only text to check before it's sent (the report Send feedback posts, D-203)."
+        },
+        "required": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Needed before its form can go: announced as required (aria), while the form says what's missing (Send feedback's Title, D-203)."
         }
       },
       "events": {
@@ -1398,7 +1423,10 @@
         "invalid with error",
         "size m",
         "label hidden",
-        "multiline"
+        "multiline",
+        "read only",
+        "read only scrolls",
+        "required"
       ]
     },
     {
@@ -4321,11 +4349,12 @@
           "kind": "enum",
           "values": [
             "s",
+            "m",
             "l",
             "xl"
           ],
           "default": "l",
-          "description": "xl is the conflict resolver's: most of the window, up to layout.dialogXL."
+          "description": "m is a form that fits its content (Send feedback, D-203), 640 px like Spotlight; xl is the conflict resolver's: most of the window, up to layout.dialogXL."
         }
       },
       "events": {
@@ -4357,6 +4386,7 @@
         "size s",
         "height content",
         "size l with toolbar",
+        "size m",
         "size xl"
       ]
     },
@@ -4413,6 +4443,7 @@
       "cardVisual",
       "avatar",
       "textArea",
+      "textAreaMax",
       "stepMark",
       "stepMarkIcon",
       "stepDot",
@@ -4593,7 +4624,9 @@
     "chevronLeft",
     "mail",
     "pin",
-    "pinOff"
+    "pinOff",
+    "feedback",
+    "sent"
   ],
   "views": [
     {
@@ -4630,6 +4663,14 @@
         "vm.spotlight",
         "vm.demo",
         "vm.toolbarCustomize"
+      ]
+    },
+    {
+      "id": "feedback",
+      "ia": "IA-VIEW-FEEDBACK",
+      "viewModels": [
+        "vm.sendFeedback",
+        "vm.diagnostics"
       ]
     },
     {

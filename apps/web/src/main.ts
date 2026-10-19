@@ -12,7 +12,7 @@ if (!root) throw new Error("Missing #root in the entry document");
 const bridge = await createWebBridge({ demo: import.meta.env.FOCUS_NOTES_DEMO === true });
 const app = createApp(bridge, messages.en!);
 // The theme manager is a view document of its own, hosted beside the canvas (IA-VIEW-THEME).
-mountApp(root, { app, views, overlays: ["theme"] });
+mountApp(root, { app, views, overlays: ["theme", "feedback"] });
 // Hand over pending text whenever the page might go away (QLT-03).
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") void flushApp(app); });
 addEventListener("pagehide", () => void flushApp(app));

@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReport, MEASURE_NAMES, parseTimings, previewOf, ProblemLog, redact, REPORT_PROBLEM_URL, settingsSummary, summarizeTimings, type DiagnosticFacts } from "../src/diagnostics.ts";
+import { buildReport, MEASURE_NAMES, parseTimings, previewOf, ProblemLog, redact, settingsSummary, summarizeTimings, type DiagnosticFacts } from "../src/diagnostics.ts";
 import { OPEN_MEASURE } from "../src/app.ts";
 import { SPOTLIGHT_MEASURE } from "../src/spotlight-app.ts";
 
@@ -122,13 +122,6 @@ describe("QLT-04: redact", () => {
 });
 
 describe("QLT-04: the report", () => {
-  it("Report a problem opens the project's new-issue form, whose address never carries the report", () => {
-    const u = new URL(REPORT_PROBLEM_URL);
-    expect(`${u.origin}${u.pathname}`).toBe("https://github.com/prabinpebam/focus-notes/issues/new");
-    expect(u.searchParams.get("body")).toContain("Paste it below");
-    expect(REPORT_PROBLEM_URL).not.toMatch(/diagnostic%20report%0A%0AMade|Focus%20Notes%200/);
-    expect(REPORT_PROBLEM_URL.length).toBeLessThan(400);
-  });
   it("has the versions, Git and its helper, the workspace's health, the journal, compositing, settings, timings, and recent problems", () => {
     const r = buildReport(facts());
     expect(r).toContain("## Focus Notes diagnostic report");
