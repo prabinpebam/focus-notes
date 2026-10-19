@@ -5,7 +5,7 @@
  */
 import { expect, type Locator, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -36,9 +36,10 @@ export async function world(opts: { gcm?: boolean; gh?: boolean; helper?: boolea
   const root = mkdtempSync(join(tmpdir(), "fn-m3fr-"));
   const remotes = join(root, "remotes");
   const git = (cwd: string, ...args: string[]) => execFileSync("git", args, { cwd, env: fakes.env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
-  const seed = (bare: string, fill: (dir: string) => void) => {
+  const seed = (bare: string, fill?: (dir: string) => void) => {
     mkdirSync(bare, { recursive: true });
     git(bare, "init", "--quiet", "--bare", "--initial-branch=main");
+    if (!fill) return;
     const dir = mkdtempSync(join(root, "seed-"));
     fill(dir);
     git(dir, "init", "--quiet", "--initial-branch=main");
@@ -46,10 +47,23 @@ export async function world(opts: { gcm?: boolean; gh?: boolean; helper?: boolea
     git(dir, "-c", "user.name=Seed", "-c", "user.email=seed@example.com", "commit", "--quiet", "-m", "Initial commit");
     git(dir, "push", "--quiet", bare, "main");
   };
-  gh.onCreate = (r: FakeRepo) => seed(join(remotes, r.owner, `${r.name}.git`), (dir) => {
+  // A new repository's remote: empty (setup pushes the instance's first commit itself, D-201), a
+  // README (auto_init), or a copy of the template made in the browser.
+  const made = new Set<FakeRepo>();
+  gh.onCreate = (r: FakeRepo) => made.add(r) && seed(join(remotes, r.owner, `${r.name}.git`), !r.template && r.files.size === 0 ? undefined : (dir) => {
     if (r.template) cpSync(join(repoRoot, "templates", "workspace"), dir, { recursive: true });
     else writeFileSync(join(dir, "README.md"), `# ${r.name}\n`);
   });
+  // What GitHub says is in a repository made here is what its remote has, pushes included.
+  gh.contents = (r: FakeRepo) => {
+    const bare = join(remotes, r.owner, `${r.name}.git`);
+    if (!made.has(r) || !existsSync(bare)) return undefined;
+    try {
+      return git(bare, "ls-tree", "-r", "--name-only", "main").split("\n").filter(Boolean);
+    } catch {
+      return [];
+    }
+  };
   const server = createServer((req, res) => {
     let body = "";
     req.on("data", (d) => (body += d));
@@ -58,7 +72,8 @@ export async function world(opts: { gcm?: boolean; gh?: boolean; helper?: boolea
       for (const [k, v] of Object.entries(req.headers)) if (typeof v === "string") headers[k] = v;
       const r = await gh.fetch(`https://api.github.com${req.url}`, { method: req.method ?? "GET", headers, ...(body ? { body } : {}) }).catch(() => undefined);
       if (!r) return res.destroy();
-      res.writeHead(r.status, { "Content-Type": "application/json" });
+      const scopes = r.headers.get("X-OAuth-Scopes");
+      res.writeHead(r.status, { "Content-Type": "application/json", ...(scopes !== null ? { "X-OAuth-Scopes": scopes } : {}) });
       res.end(await r.text());
     });
   });

@@ -291,12 +291,12 @@ test("FRE-02, FRE-01: declined and offline say so in plain words and recover wit
   }
 });
 
-test("FRE-08, D-135: GitHub can't find the starter notes: setup says so plainly, not that the sign-in lacks permissions; Try again then finishes setup to Ready", async () => {
+test("FRE-08, D-135, D-201: a sign-in that can't add workflows: setup says so plainly before making anything; Try again then finishes setup to Ready, from the template the app carries", async () => {
   test.setTimeout(120_000);
   const w = await world({ gcm: true });
   w.fakes.store(w.gh.token);
-  // The template repository is missing (a 404 on generate), twice so the step stays failed.
-  w.gh.fail("POST /repos/prabinpebam/focus-notes-workspace/generate", 404, "Not Found", 2);
+  // A classic token without the workflow scope: GitHub lists its scopes, so setup stops before making anything.
+  w.gh.scopes = ["repo", "gist"];
   const l = await start(w);
   const { page } = l;
   try {
@@ -309,14 +309,15 @@ test("FRE-08, D-135: GitHub can't find the starter notes: setup says so plainly,
     const create = card(page).getByRole("button", { name: "Create my notes Private unless you share. Backed up to GitHub.", exact: true });
     await expect(create).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
-    await expect(card(page).getByText("Focus Notes couldn't find its starter notes on GitHub. Try again in a minute.")).toBeVisible({ timeout: 30_000 });
+    await expect(card(page).getByText("Your GitHub sign-in can't add workflows. Sign in again and allow them.")).toBeVisible({ timeout: 30_000 });
     expect(await card(page).innerText()).not.toMatch(/permissions|doesn't allow/);
+    expect(w.gh.repo("notes"), "nothing is made before the sign-in can finish").toBeUndefined();
     // The status says it in one sentence, with Try again as the step's action and no disabled Continue.
     await expect(card(page).getByRole("button", { name: "Continue" })).toHaveCount(0);
     const again = card(page).getByRole("button", { name: "Try again" });
     await expect(again).toBeFocused();
-    // GitHub has the starter notes again: Try again runs the rest of setup, not just that step (D-98, D-135).
-    w.gh.failures.clear();
+    // Signed in again with the workflow scope: Try again runs the rest of setup, not just that step (D-98, D-135).
+    w.gh.scopes = ["repo", "gist", "workflow"];
     await press(page, "Enter");
     await expect(card(page).getByText("Backing up carries on in the background.")).toBeVisible({ timeout: 60_000 });
     await expect(card(page).getByText("Your site: https://ada.github.io/notes/")).toBeVisible({ timeout: 30_000 });
@@ -325,6 +326,11 @@ test("FRE-08, D-135: GitHub can't find the starter notes: setup says so plainly,
     await cont.click();
     await heading(page, "Ready");
     expect(w.gh.repo("notes-private")).toBeTruthy();
+    // D-201: GitHub copied no template; the instance's first commit was made here, from the app's own.
+    expect(w.gh.calls.some((c) => c.path.endsWith("/generate"))).toBe(false);
+    const notes = join(w.remotes, "ada", "notes.git");
+    expect(w.git(notes, "log", "--reverse", "--format=%s", "main").split("\n")[0]).toBe("Start my Focus Notes");
+    expect(w.git(notes, "ls-tree", "-r", "--name-only", "main")).toContain(".github/workflows/pages.yml");
   } finally {
     await quit(l);
     w.server.close();

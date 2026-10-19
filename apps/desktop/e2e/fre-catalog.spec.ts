@@ -83,11 +83,11 @@ const CATALOG: [string, string, string, boolean?][] = [
   ["notes-local-error", "Open a folder, not a Git repository", "A folder was chosen that isn't a clone of a workspace."],
   ["creating-progress", "Creating your notes, in progress", "Create my notes is running (here at its fourth step, the deploy key): the part it's on in words with its number, and every part, always shown (PRF-13).", true],
   ["creating-success", "Creating your notes, done", "Every step that matters is done: Continue, and the site's address.", true],
-  ["creating-failed-template", "Creating your notes, starter notes missing", "GitHub can't find the template repository (a 404 on copying it)."],
+  ["creating-failed-workflow", "Creating your notes, sign-in can't add workflows", "The GitHub sign-in lacks the workflow scope the instance's first push needs (D-201); nothing is made yet."],
   ["creating-failed-notfound", "Creating your notes, something not found", "GitHub answers 404 on a later step (the deploy key)."],
   ["creating-failed-permission", "Creating your notes, permission refused", "GitHub answers 403 on a step: the sign-in doesn't allow it."],
   ["creating-failed-offline", "Creating your notes, GitHub unreachable", "GitHub can't be reached in the middle of setup."],
-  ["creating-retried", "Creating your notes, after Try again", "Try again on the failed step (starter notes missing), once GitHub has them: the rest of setup runs to the end, its parts shown."],
+  ["creating-retried", "Creating your notes, after Try again", "Try again on the failed step (sign-in can't add workflows), once signed in again with it: the rest of setup runs to the end, its parts shown."],
   ["ready-ready", "Ready", "After Continue: the window starts again in the new notes, at the last step.", true],
   ["ready-canvas", "The app after Start writing", "Writing, with the circular save indicator.", true],
   ["ready-canvas-account", "The app, backup details", "The save indicator's hover card: status, last backup and Backup to GitHub."],
@@ -751,7 +751,7 @@ test("Git missing, and Git too old", async () => {
 
 const KEYS = "POST /repos/ada/notes-private/keys";
 const FAILURES: [string, string, RegExp, (w: World, net: ReturnType<typeof network>) => void][] = [
-  ["creating-failed-template", "starter notes missing", /couldn't find its starter notes/, (w) => w.gh.fail("POST /repos/prabinpebam/focus-notes-workspace/generate", 404, "Not Found", 50)],
+  ["creating-failed-workflow", "sign-in can't add workflows", /sign-in can't add workflows/, (w) => void (w.gh.scopes = ["repo", "gist"])],
   ["creating-failed-notfound", "something not found", /GitHub couldn't find something this step needs/, (w) => w.gh.fail(KEYS, 404, "Not Found", 50)],
   ["creating-failed-permission", "permission refused", /Your sign-in doesn't allow this/, (w) => w.gh.fail(KEYS, 403, "Resource not accessible by integration", 50)],
   ["creating-failed-offline", "GitHub unreachable", /Can't reach GitHub\. Check your connection, then retry\./, (_w, net) => net.down.add(KEYS)],
@@ -776,9 +776,9 @@ for (const [id, what, says, breakIt] of FAILURES) {
       // D-154: no dead ends: besides Try again, something that changes what happens next, and Back.
       await expect(button(page, "Start over")).toBeVisible();
       await expect(button(page, "Back")).toBeVisible();
-      if (id !== "creating-failed-template") return;
-      // Try again once GitHub has the starter notes: the whole rest of setup runs, to the end (D-135).
-      w.gh.failures.clear();
+      if (id !== "creating-failed-workflow") return;
+      // Try again once signed in with the workflow scope: the whole rest of setup runs, to the end (D-135).
+      w.gh.scopes = ["repo", "gist", "workflow"];
       await expect(button(page, "Try again")).toBeFocused();
       await button(page, "Try again").click();
       await expect(text(page, says)).toHaveCount(0, { timeout: 30_000 });
