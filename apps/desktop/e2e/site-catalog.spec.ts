@@ -5,13 +5,15 @@
  * tools/site/scenes.py then sets each on the wallpaper as a 2560 × 1440 desktop scene (D-176).
  *
  * Opt in with `FOCUS_NOTES_CAPTURE_SITE=1` (and `FOCUS_NOTES_E2E=1`). `FOCUS_NOTES_SITE_OUT` names the
- * folder. The window is 1440 × 900 unless `FOCUS_NOTES_SITE_WINDOW_W`/`_H` say otherwise; the Review captures workflow
- * can regenerate it on CI (`gh workflow run review-captures.yml -f catalog=site`).
+ * folder. The window is 1440 × 900 unless `FOCUS_NOTES_SITE_WINDOW_W`/`_H` say otherwise. The `store`
+ * review catalogue (tools/review/catalogs.mjs) runs it on CI at an exact 1920 × 1080 drawn window for
+ * the Microsoft Store's screenshots (`gh workflow run review-captures.yml -f catalog=store`), which
+ * tools/release/store-screenshots.py sets on an opaque backdrop.
  */
-import { test, expect, type Page } from "./fixtures.ts";
+import { test, expect, screenAllowed, type Page } from "./fixtures.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { launch, quit, tempDirs, windowBox, type Launched } from "./helpers.ts";
 import { scheme, spotlight, files, reset, mod } from "./surfaces.ts";
 import { settled } from "./visual-quality.ts";
 import { repoRoot } from "./github-world.ts";
@@ -21,6 +23,28 @@ test.skip(process.env.FOCUS_NOTES_CAPTURE_SITE !== "1", "Opt in with FOCUS_NOTES
 /** The window's size (D-176), and where the lossless captures go; tools/site/scenes.py makes the site's images from them. */
 const WINDOW = { width: Number(process.env.FOCUS_NOTES_SITE_WINDOW_W ?? 1440), height: Number(process.env.FOCUS_NOTES_SITE_WINDOW_H ?? 900) };
 const PNG_OUT = process.env.FOCUS_NOTES_SITE_OUT ?? join(repoRoot, "test-results", "site-capture");
+/**
+ * The Microsoft Store's screenshots (the `store` review catalogue, D-202 (11)) want the drawn window,
+ * inside its shadow margin, at exactly WINDOW: resized in place, as the FRE catalogue does. It resizes
+ * a real window, so only where the screen is allowed (CI, D-141).
+ */
+const EXACT = process.env.FOCUS_NOTES_SITE_EXACT === "1";
+
+async function drawnSize(l: Launched) {
+  test.skip(!screenAllowed(), "An exact window size resizes a real window: CI only (D-141)");
+  const box = await windowBox(l.page);
+  const inner = await l.page.evaluate(() => ({ w: innerWidth, h: innerHeight }));
+  const mx = (inner.w - box.width) / 2, my = (inner.h - box.height) / 2;
+  await l.app.evaluate(({ BrowserWindow }, a) => {
+    const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
+    const b = w.getBounds();
+    w.setBounds({ x: b.x, y: b.y, width: Math.round(a.width + 2 * a.mx), height: Math.round(a.height + 2 * a.my) });
+  }, { ...WINDOW, mx, my });
+  await expect.poll(async () => {
+    const b = await windowBox(l.page);
+    return Math.abs(b.width - WINDOW.width) <= 1 && Math.abs(b.height - WINDOW.height) <= 1;
+  }).toBe(true);
+}
 
 /** The demo workspace: real writing, nobody's own notes, nothing private. */
 export const DEMO_NOTES: Record<string, string> = {
@@ -69,6 +93,7 @@ async function start(theme: "light" | "dark"): Promise<Launched> {
   writeFileSync(join(dirs.userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 40, y: 40, width: WINDOW.width, height: WINDOW.height } }));
   const l = await launch(dirs);
   await expect(l.page.getByRole("textbox", { name: "Note" })).toBeFocused();
+  if (EXACT) await drawnSize(l);
   await scheme(l.page, theme);
   await openNote(l.page, "On writing slowly");
   return l;

@@ -266,6 +266,30 @@ The CodeQL alerts: #3 `packages/seal/src/format.ts:207`; #4 `packages/core/src/f
 
 **Owner.** The demo on a clean Windows 11 machine. Confirm D-75, D-105, D-107, D-108, D-109, D-110, D-115. Then the risks review, the retrospective, and acceptance (items 8 to 10).
 
+<h2 id="version-1-0-for-the-microsoft-store">Version 1.0 for the Microsoft Store: the indie release bar</h2>
+
+The Store refuses versions that start with 0, so its first release is v1.0.0 ([D-202](decisions.md) (10), [Microsoft Store](microsoft-store.md)). It's held to this bar, sized for one person shipping a free app, not to the whole [release definition of done](definition-of-done.md#release-definition-of-done). **The owner reviews this checklist and decides whether it's good enough to be v1.0.**
+
+**Status.** *Met*: the evidence exists. *Landing*: being finished now. *Owner*: needs the owner's account or computer. *After v1.0*: part of the full bar, not of this one.
+
+| Quality | The v1.0 bar | Evidence | Status |
+| --- | --- | --- | --- |
+| Complete | Every M0 to M5 requirement passes its tests, and the journeys pass on Windows, macOS and Linux CI on the commit that's tagged | `ci.yml` on `main`: unit tests, four Windows journey shards, macOS and Linux | Landing (the Store and template changes are on the merge candidate) |
+| Complete | People can tell us what's wrong from inside the app | Settings → About → *Report a problem…* (QLT-04) and *Send feedback* to GitHub issues (QLT-07, D-203) | Landing (QLT-07 is being built) |
+| Calm and consistent | No design-system violations; first-run steps and empty states meet their visual score | `ui:check` in `pnpm check`; VVS gates in the FRE and visual-quality journeys | Met |
+| Fast | The performance budgets hold on CI | `pnpm bench --check`, and the PRF-14 journey budgets in `m5-snappy.spec.ts` | Met (input to next paint sometimes runs over on shared CI runners and passes on re-run) |
+| Reliable | No note is lost: the Markdown round-trip corpus at 100%, and the fault-injection journeys (killed during save and commit, network lost mid-push, a full disk, two computers editing) | `pnpm test` (the corpus), `fault-injection.spec.ts`, `m3-conflicts.spec.ts` | Met |
+| Secure | The Electron security checklist (sandbox, context isolation, no remote content, every IPC channel checked); no high or critical dependency findings; the leak check catches every planted secret; a security review of every change that touches the network, credentials or the release | `pnpm audit:deps` and the leak-check tests in CI; the security-reviewer's records for D-201, D-202 and D-203 | Met for D-201 and D-202; landing for D-203 |
+| Private | No telemetry; the app talks only to GitHub with the person's own account; the privacy statement is published | [The privacy statement](https://prabinpebam.github.io/focus-notes/privacy/) (live, 20 October), the store listing's privacy URL, PRV-01 in `m0-walking-skeleton.spec.ts` | Met |
+| Accessible | Zero axe violations in the journeys; every first-run step, writing, Spotlight and Settings work with the keyboard alone; one pass through first run with Narrator | axe in the journeys, the keyboard journeys; the Narrator pass is the owner's 15 minutes | Met, apart from the Narrator pass (Owner, optional) |
+| Installable and updatable | The Store package builds and its manifest passes; a release run produces it with checksums, the SBOM and attestations; the template is inside the app, so a first run needs no other repository (D-201) | `dist:store` and `tools/release/store-manifest.mjs` in `ci.yml`; a dry run of `release.yml` | Landing (the dry run follows the merge) |
+| Installable and updatable | Microsoft's certification passes, and the owner installs v1.0.0 from the Store and spends 10 minutes on it: first run, a note, a sync, Spotlight, a theme | Partner Center's certification report; the owner's smoke test | Owner ([Microsoft Store → The owner's steps](microsoft-store.md#the-owners-steps)) |
+| Documented | The listing is complete (description, features, screenshots, age rating, support and privacy links); release notes, `SECURITY.md` and Help are current | `store/listing.en-US.md`, `store/screenshots/`, `SECURITY.md`, `documentations/help/` | Landing (the screenshots) |
+| Licensed | The license check passes and `THIRD_PARTY_NOTICES` is complete | `pnpm check` | Met |
+| Operable | The owner knows how to stop a bad release and ship a fix | [Microsoft Store → When a release is bad](microsoft-store.md#when-a-release-is-bad) | Met |
+
+**After v1.0.** These parts of the full bar have no evidence yet and apply from the next minor release on: the 1,000-round fault-injection run and the 72-hour soak; the screen-reader journeys with NVDA, Narrator, VoiceOver and Orca, and a full WCAG 2.2 AA audit record; the IME, dead-key, AltGr and right-to-left suites, and pseudo-localized screenshots; the install-matrix report and app updates outside the Store (DSK-07); the moderated test with five people new to Focus Notes; a rehearsal of the release runbook and a security-report drill; approved visual baselines for every view (A03 waits on the owner's reference images); the OWASP ASVS Level 2 checklist and a human review of sealing.
+
 ## Open gaps across stages
 
 | Gap | Stage | Size | Next step |

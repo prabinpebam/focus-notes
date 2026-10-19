@@ -3,7 +3,7 @@
 How Focus Notes reaches the Microsoft Store: what every release already builds, the steps only the owner can take in Partner Center, and what happens after them (PKG-12, [D-202](decisions.md)).
 
 > [!NOTE]
-> **TL;DR.** Every release builds an MSIX package, `Focus-Notes-<version>-store-x64.msix`, beside the NSIS installer (which stays the direct download). The package is unsigned, because the Store signs it. Its command-line tool is the app execution alias `focus-notes`, and `focus-notes:` links are in its manifest. The Store refuses versions that start with 0, so **the first Store release is v1.0.0**. The owner does five things once: (1) create a developer account; (2) reserve *Focus Notes*; (3) copy its identity into three repository variables; (4) register an Entra app for publishing and put its four secrets in the `release` environment; (5) make the first submission by hand with the listing in `store/`, then add the Store ID as a fifth variable. After that, publishing a release submits it to the Store automatically, and Microsoft certifies it, usually within three business days.
+> **TL;DR.** Every release builds an MSIX package, `Focus-Notes-<version>-store-x64.msix`, beside the NSIS installer (which stays the direct download). The package is unsigned, because the Store signs it. Its command-line tool is the app execution alias `focus-notes`, and `focus-notes:` links are in its manifest. The Store refuses versions that start with 0, so **the first Store release is v1.0.0**, held to the [indie release bar](gate-evidence.md#version-1-0-for-the-microsoft-store) the owner approves. The owner does five things once: (1) create a developer account; (2) reserve *Focus Notes*; (3) copy its identity into three repository variables; (4) register an Entra app for publishing and put its four secrets in the `release` environment; (5) make the first submission by hand with the listing in `store/`, then add the Store ID as a fifth variable. After that, publishing a release submits it to the Store automatically, and Microsoft certifies it, usually within three business days.
 
 ## What's automated and what's yours
 
@@ -19,7 +19,7 @@ How Focus Notes reaches the Microsoft Store: what every release already builds, 
 | The repository variables and the `release` environment's secrets | **Owner** | GitHub → Settings |
 | The first submission, the age rating, pricing | **Owner** | Partner Center |
 
-## The owner's steps
+<h2 id="the-owners-steps">The owner's steps</h2>
 
 <ol class="slate-steps">
 <li class="slate-step">
@@ -70,7 +70,8 @@ How Focus Notes reaches the Microsoft Store: what every release already builds, 
 <li><strong>Properties</strong>: category <em>Productivity</em>, the privacy policy URL, the website and support contact, and system requirements, all from <a href="https://github.com/prabinpebam/focus-notes/blob/main/store/listing.en-US.md"><code>store/listing.en-US.md</code></a>.</li>
 <li><strong>Age ratings</strong>: answer the questionnaire. The draft answers are in the same file; expect 3+ (Everyone).</li>
 <li><strong>Packages</strong>: upload the <code>.msix</code>. Partner Center checks that its identity matches the reservation.</li>
-<li><strong>Store listings → English (United States)</strong>: paste the description, short description, features, search terms and release notes from the file, and add screenshots (PNG, at least 1366 × 768). The scenes to capture are listed there.</li>
+<li><strong>Store listings → English (United States)</strong>: paste the description, short description, features, search terms and release notes from the file, and upload the screenshots in <a href="https://github.com/prabinpebam/focus-notes/tree/main/store/screenshots"><code>store/screenshots/</code></a> in their numbered order (PNG, 2560 × 1440, made by <code>tools/release/store-screenshots.py</code> from the <code>store</code> review catalogue).</li>
+<li><strong>Visibility</strong> (optional): to try the Store's copy before anyone else sees it, choose <strong>Private audience</strong> with your own Microsoft account, install it from the Store once it's certified, and spend 10 minutes on it (first run, a note, a sync, Spotlight, a theme). Then switch it to <strong>Public audience</strong>, which is another certification.</li>
 <li><strong>Submission options</strong>: Partner Center asks why the app uses <code>runFullTrust</code>, which is a restricted capability. Paste the <em>Notes for certification</em> from the file: it's a desktop (Electron) app.</li>
 </ul>
 <p>Then choose <strong>Submit to the Store</strong>.</p>
@@ -93,6 +94,16 @@ Every submission, the first and each automatic one, goes through Microsoft's cer
 | Versions | The fourth section of the version is 0 and the first isn't 0, and each submission's version is higher than the one before | Built as `<x>.<y>.<z>.0`; 0.x versions are never submitted |
 
 If certification fails, Partner Center sends a report. Fix the cause, release a new version, or re-run `store.yml` for the same tag if only the listing was wrong.
+
+<h2 id="when-a-release-is-bad">When a release is bad</h2>
+
+The Store only takes a version higher than the last, so there's no going back to an older package. Instead:
+
+1. **Stop new installs while you fix it** (optional): in Partner Center, **Pricing and availability → Discoverability → Stop acquisition**. People who have it keep it; nobody new gets it. That change is certified too, usually faster.
+2. **Ship the fix, or the last good code, as the next patch version**: revert or fix on `main`, then tag `v1.0.1`. Publishing it submits it automatically (`store.yml`), and the Store updates everyone who installed it.
+3. **Turn acquisition back on** once the fix is published.
+
+Notes are never inside the package, so neither a bad release nor uninstalling touches them.
 
 ## How the Store build differs
 

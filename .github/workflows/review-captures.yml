@@ -11,7 +11,7 @@ on:
       catalog:
         description: Which catalogue to capture
         type: choice
-        options: [fre-catalog, vq-surfaces]
+        options: [fre-catalog, vq-surfaces, store]
         default: fre-catalog
       repeat:
         description: How many times to run it (1 to 20), to show a check holds

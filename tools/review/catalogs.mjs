@@ -25,6 +25,13 @@ export const CATALOGS = {
   // Every surface under the visual quality checklist (D-111), light and dark, default and smallest windows.
   // `onlyEnv` narrows it to some surfaces by name ("system menu,more menu").
   "vq-surfaces": { spec: "e2e/vq-surfaces.spec.ts", env: {}, onlyEnv: "VQ_ONLY", from: join("test-results", "screens"), match: /^vq-.*\.png$/ },
+  // The Microsoft Store's screenshots (D-202 (11)): the site's scenes at an exact 1920 × 1080 drawn window,
+  // CI only; tools/release/store-screenshots.py makes store/screenshots/ from them.
+  store: {
+    spec: "e2e/site-catalog.spec.ts",
+    env: { FOCUS_NOTES_CAPTURE_SITE: "1", FOCUS_NOTES_SITE_EXACT: "1", FOCUS_NOTES_SITE_WINDOW_W: "1920", FOCUS_NOTES_SITE_WINDOW_H: "1080" },
+    outEnv: "FOCUS_NOTES_SITE_OUT",
+  },
 };
 
 /** Where a catalogue's files are collected and uploaded from, relative to the repository's root. */

@@ -89,7 +89,7 @@ Every stage, in addition to its own exit criteria in the [implementation plan](i
 
 <h2 id="release-definition-of-done" data-reader-personas="product design engineering">Release definition of done</h2>
 
-The product-wide quality bar. It applies to every public release, for everything that release contains. Version 1.0 (M5) must meet all of it for M0 to M5.
+The product-wide quality bar. It applies to every public release, for everything that release contains. Version 1.0 (M5) must meet all of it for M0 to M5, except the first Microsoft Store release, v1.0.0, which is held to the smaller [indie release bar](gate-evidence.md#version-1-0-for-the-microsoft-store) the owner approves ([D-202](decisions.md) (10)).
 
 | Quality | The bar | How it's verified |
 | --- | --- | --- |

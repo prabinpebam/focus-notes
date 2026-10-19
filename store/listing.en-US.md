@@ -70,7 +70,7 @@
 
 ## Screenshots
 
-PNG, 1366 × 768 to 3840 × 2160 pixels, landscape, up to 10, each under 50 MB. At least one. Scenes: `note-light`, `spotlight-light`, `files-light`, `theme-ink`. The product site's capture catalogue (apps/desktop/e2e/site-catalog.spec.ts) renders these scenes; site/media keeps them as cut-out WebP and AVIF windows, which the Store doesn't take. Capture them as full 1920 × 1080 PNG frames for the listing, on CI, never on the owner's screen.
+PNG, 1366 × 768 to 3840 × 2160 pixels, landscape, up to 10, each under 50 MB. At least one. Scenes: `note-light`, `spotlight-light`, `files-light`, `themes-light`, `theme-ink`. Upload store/screenshots/ in its numbered order: 2560 × 1440 PNGs, the app's window at 1920 × 1080 on a plain backdrop. They're generated, never taken by hand: `gh workflow run review-captures.yml -f catalog=store` captures the scenes on CI, then `python tools/release/store-screenshots.py --captures <the fetched folder>` makes the PNGs (D-202 (11)).
 
 ## Age rating (draft answers)
 
