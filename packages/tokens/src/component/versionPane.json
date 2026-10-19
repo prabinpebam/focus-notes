@@ -19,5 +19,6 @@
   "blockRadius": { "$type": "dimension", "$value": "{radius.small}" },
   "changed": { "$type": "color", "$value": "{color.findMatch}" },
   "changedMark": { "$type": "color", "$value": "{color.findMatchActive}" },
-  "markWidth": { "$type": "dimension", "$value": "{border.selectedBar}" }
+  "markWidth": { "$type": "dimension", "$value": "{border.selectedBar}" },
+  "srOnlySize": { "$type": "dimension", "$value": "{border.hairline}" }
 } } }

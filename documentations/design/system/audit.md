@@ -116,6 +116,8 @@ Priority is about design-system reliability, not security severity. **P1** shoul
 
 ### DS-A01 · P1 · Token-only styling is not fully enforced
 
+**Status (19 October, D-197):** the checker now parses files with TypeScript and rejects every probe below: raw numbers and durations in `.css.ts`, any handwritten plain `.css`, every style-write API outside UI, and another component's tokens through any binding name. Zero, percentages, token references, and runtime geometry inside UI stay valid. [The checker's tests](../../../tools/test/check-boundaries.test.mjs) hold each probe and control.
+
 **Evidence:** [the boundary checker](../../../tools/check-boundaries.mjs) uses lexical regular expressions. Its raw-value checks run only for `.css.ts`, inspect a limited set of units and numeric properties, and identify token ownership through the exact identifier `tokens`. Plain `.css` files are permitted in styled directories but their values are not inspected. Outside UI, the style-write rule recognizes direct property assignment, not `setProperty`.
 
 In-memory probes ran the actual checker body with only its file enumeration and source read replaced. No probe was written into app source.
