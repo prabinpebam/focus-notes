@@ -8,7 +8,9 @@
 import { test, expect } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, PROMPTLY } from "./helpers.ts";
+import { caret, launch, quit, tempDirs, PROMPTLY } from "./helpers.ts";
+
+const mac = process.platform === "darwin";
 
 test.skip(process.platform === "linux", "the OS spell checker is Windows' and macOS'");
 
@@ -36,12 +38,16 @@ test("D-193: right-clicking a misspelled word offers the OS spell checker's sugg
     const { page, log } = l;
     const editor = page.getByRole("textbox", { name: "Note" });
     await expect(editor).toBeFocused();
-    await page.keyboard.press("Control+End");
+    await page.keyboard.press(caret.docEnd);
     await page.keyboard.type("Thsi sentence has a mistaek in it. ");
     const menus = () => log.filter((x) => x.includes("[focus-notes] context-menu "));
 
     // The spell checker marks words as it gets to them: right-click until the word is known to be wrong.
+    // On macOS, a word right-clicked (and so selected) before Chromium's idle check has reached it stays
+    // unchecked, and the page has no sign of the check, so the journey waits for it, as a person waits
+    // for the underline before right-clicking.
     const at = await wordAt(page, "mistaek");
+    if (mac) await page.waitForTimeout(2_000);
     await expect
       .poll(async () => {
         await page.mouse.click(at.x, at.y, { button: "right" });
@@ -59,9 +65,9 @@ test("D-193: right-clicking a misspelled word offers the OS spell checker's sugg
     });
     await expect(editor).toContainText("Thsi sentence has a mistake in it.");
     await expect.poll(() => readFileSync(join(dirs.docs, "Welcome.md"), "utf8"), PROMPTLY).toContain("a mistake in it.");
-    await page.keyboard.press("Control+Z");
+    await page.keyboard.press(mac ? "Meta+Z" : "Control+Z");
     await expect(editor).toContainText("has a mistaek in it.");
-    await page.keyboard.press("Control+Y");
+    await page.keyboard.press(mac ? "Meta+Shift+Z" : "Control+Y");
     await expect(editor).toContainText("has a mistake in it.");
 
     // A word spelled right: the edit actions only.

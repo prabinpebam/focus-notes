@@ -1622,7 +1622,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
       let p: SpellingMenuParams = params;
       let osWord: string | undefined;
       if (osSpelling && params.isEditable && !params.misspelledWord && params.menuSourceType !== "keyboard") {
-        osSpelling.warm();
+        osSpelling.warm(wc.session.getSpellCheckerLanguages());
         const word = await spellingTarget(wc);
         const check = word ? await osSpelling.check(word, wc.session.getSpellCheckerLanguages()) : undefined;
         if (check?.misspelled) {
@@ -1645,7 +1645,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
     })();
   });
   // The checker starts in the background once the window is up, so the first right-click has its answer.
-  if (osSpelling) win.once("show", () => setTimeout(() => osSpelling.warm(), 3_000));
+  if (osSpelling) win.once("show", () => setTimeout(() => osSpelling.warm(win.isDestroyed() ? [] : win.webContents.session.getSpellCheckerLanguages()), 3_000));
   // End-to-end tests turn the warm-up after start off, so their timing stays the same (PRF-10).
   // GPU or software compositing (D-121): in software the note's edges fade without the blur.
   const gpu = compositing();

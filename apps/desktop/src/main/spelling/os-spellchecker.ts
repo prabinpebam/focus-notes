@@ -131,8 +131,11 @@ export class OsSpellChecker {
   #next = 1;
   #buffer = "";
   readonly #waiting = new Map<number, (c: SpellCheck | undefined) => void>();
+  /** Each request's cache key, so an answer that comes too late for its menu is ready for the next one. */
+  readonly #keys = new Map<number, string>();
   readonly #cache = new Map<string, SpellCheck>();
   readonly #start: () => ChildProcessWithoutNullStreams;
+  #prime: string[] = [];
 
   constructor(start: () => ChildProcessWithoutNullStreams) {
     this.#start = start;
@@ -142,8 +145,12 @@ export class OsSpellChecker {
     return this.#state === "ready";
   }
 
-  /** Starts the helper in the background, once. */
-  warm(): void {
+  /**
+   * Starts the helper in the background, once. With languages, it also loads their dictionaries as
+   * soon as it's ready: the OS takes longer than a menu can wait to load one the first time.
+   */
+  warm(languages: readonly string[] = []): void {
+    if (!this.#prime.length) this.#prime = languages.filter((l) => TAG.test(l));
     if (this.#state !== "idle") return;
     this.#state = "starting";
     let p: ChildProcessWithoutNullStreams;
@@ -173,6 +180,7 @@ export class OsSpellChecker {
     const proc = this.#proc;
     if (this.#state !== "ready" || !proc) return undefined;
     const id = this.#next++;
+    this.#keys.set(id, key);
     const answer = await new Promise<SpellCheck | undefined>((resolve) => {
       const timer = setTimeout(() => {
         this.#waiting.delete(id);
@@ -184,11 +192,14 @@ export class OsSpellChecker {
       });
       proc.stdin.write(encodeRequest(id, tags, word));
     });
-    if (answer) {
-      if (this.#cache.size >= MAX_CACHE) this.#cache.delete(this.#cache.keys().next().value!);
-      this.#cache.set(key, answer);
-    }
+    if (answer) this.#remember(key, answer);
     return answer;
+  }
+
+  #remember(key: string, answer: SpellCheck): void {
+    this.#cache.delete(key);
+    if (this.#cache.size >= MAX_CACHE) this.#cache.delete(this.#cache.keys().next().value!);
+    this.#cache.set(key, answer);
   }
 
   /** A word added to the dictionary: asked again next time. */
@@ -213,13 +224,21 @@ export class OsSpellChecker {
       const line = this.#buffer.slice(0, i).trim();
       this.#buffer = this.#buffer.slice(i + 1);
       if (line === "ready") {
-        if (this.#state === "starting") this.#state = "ready";
+        if (this.#state === "starting") {
+          this.#state = "ready";
+          // A word that isn't a request's: its answer only loads the dictionaries.
+          if (this.#prime.length) this.#proc?.stdin.write(encodeRequest(0, this.#prime, "a"));
+        }
         continue;
       }
       const a = parseAnswer(line);
       if (!a) continue;
-      this.#waiting.get(a.id)?.(a.check);
+      const key = this.#keys.get(a.id);
+      this.#keys.delete(a.id);
+      const waiting = this.#waiting.get(a.id);
       this.#waiting.delete(a.id);
+      if (waiting) waiting(a.check);
+      else if (key && a.check) this.#remember(key, a.check);
     }
   }
 
@@ -228,5 +247,6 @@ export class OsSpellChecker {
     this.#proc = undefined;
     for (const done of this.#waiting.values()) done(undefined);
     this.#waiting.clear();
+    this.#keys.clear();
   }
 }
