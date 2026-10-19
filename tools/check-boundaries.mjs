@@ -2,6 +2,7 @@
 // system allows them. See documentations/design/system/overview.html#where-html-and-css-may-exist.
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const root = join(import.meta.dirname, "..");
 const SKIP = new Set(["node_modules", "dist", "dist-reader", "dist-publish", "dist-site", "dist-app", "dist-demo", "out", "release", ".git", "documentations", "slate", "test-results", ".vite"]);
@@ -10,18 +11,16 @@ const walk = (d) => (existsSync(d) ? readdirSync(d) : []).flatMap((f) => {
   const p = join(d, f);
   return statSync(p).isDirectory() ? walk(p) : [p];
 });
-const files = [...walk(join(root, "apps")), ...walk(join(root, "packages"))].map((p) => relative(root, p).split(sep).join("/"));
-const errs = [];
-const read = (f) => readFileSync(join(root, f), "utf8");
 const isTest = (f) => /\.(test|spec)\.[cm]?tsx?$/.test(f) || f.includes("/test/") || f.includes("/e2e/");
 
 const UI = "packages/ui/src/";
 const STYLED_DIRS = ["primitives/", "layouts/", "host/", "blocks/"].map((d) => UI + d);
 const isStyledDir = (f) => STYLED_DIRS.some((d) => f.startsWith(d));
 
-for (const f of files) {
-  if (isTest(f)) continue;
-  const src = /\.(tsx?|mjs|js|html|css)$/.test(f) ? read(f) : "";
+/** The rules for one file, given its repository-relative path and its source. Returns error lines. */
+export function checkSource(f, src) {
+  const errs = [];
+  if (isTest(f)) return errs;
   // 1. JSX only inside packages/ui.
   if (/\.(tsx|jsx)$/.test(f) && !f.startsWith(UI)) errs.push(`${f}: JSX is only allowed in packages/ui`);
   // 2. Style files only in primitives, layouts, host, and block components.
@@ -65,10 +64,18 @@ for (const f of files) {
   }
   // 6. The renderer maps only registry components, never intrinsic elements.
   if (f.startsWith("packages/ui-runtime/src/") && /createElement\(\s*["'`]/.test(src)) errs.push(`${f}: the renderer may only create registry components`);
+  return errs;
 }
+
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain) {
+const files = [...walk(join(root, "apps")), ...walk(join(root, "packages"))].map((p) => relative(root, p).split(sep).join("/"));
+const read = (f) => readFileSync(join(root, f), "utf8");
+const errs = files.flatMap((f) => checkSource(f, /\.(tsx?|mjs|js|html|css)$/.test(f) ? read(f) : ""));
 console.log(`Boundaries: ${files.length} files checked.`);
 if (errs.length) {
   console.error(errs.join("\n"));
   process.exit(1);
 }
 console.log("Boundary check passed.");
+}
