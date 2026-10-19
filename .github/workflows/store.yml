@@ -1,0 +1,99 @@
+# Microsoft Store submission (PKG-12, D-202): when the owner publishes a release, its Store package
+# (Focus-Notes-<version>-store-x64.msix, built by release.yml's store job) goes to the existing Store
+# app as a new submission, with Microsoft's own tool, the Microsoft Store Developer CLI (msstore).
+# Certification then takes Microsoft up to a few business days; nothing else changes the listing.
+#
+# The first submission is made by hand in Partner Center (documentations/plan/microsoft-store.md).
+# Until the owner adds the release environment's secrets MSSTORE_TENANT_ID, MSSTORE_CLIENT_ID,
+# MSSTORE_CLIENT_SECRET and MSSTORE_SELLER_ID, and the repository variable MSSTORE_PRODUCT_ID, every
+# run stops at its first step with a notice, and succeeds. Pre-releases never go to the Store.
+#
+# Its own workflow, so release.yml keeps no secrets (PKG-04), and it starts only once a person has
+# checked and published the draft release, so the Store never gets what the owner hasn't released.
+# By hand: Actions -> store -> Run workflow, with the tag of a published release (a retry).
+name: store
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The published release whose Store package to submit (v<x.y.z>)
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: store-submission
+  cancel-in-progress: false
+jobs:
+  submit:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    # The secrets live only here, behind the environment's required reviewer (D-128).
+    environment: release
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - id: ready
+        name: Store credentials and the release
+        env:
+          TENANT_ID: ${{ secrets.MSSTORE_TENANT_ID }}
+          CLIENT_ID: ${{ secrets.MSSTORE_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.MSSTORE_CLIENT_SECRET }}
+          SELLER_ID: ${{ secrets.MSSTORE_SELLER_ID }}
+          PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          EVENT_PRERELEASE: ${{ github.event.release.prerelease }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          tag="${EVENT_TAG:-$INPUT_TAG}"
+          missing=()
+          for name in TENANT_ID CLIENT_ID CLIENT_SECRET SELLER_ID; do
+            if [ -z "${!name}" ]; then missing+=("MSSTORE_$name (secret)"); fi
+          done
+          if [ -z "$PRODUCT_ID" ]; then missing+=("MSSTORE_PRODUCT_ID (variable)"); fi
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::notice title=Microsoft Store::Not submitted: ${missing[*]} not set (documentations/plan/microsoft-store.md)."
+            echo "submit=false" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_PRERELEASE" = "true" ] || [[ "$tag" == *-* ]]; then
+            echo "::notice title=Microsoft Store::$tag is a pre-release: not submitted."
+            echo "submit=false" >> "$GITHUB_OUTPUT"
+          elif ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::$tag isn't a release tag (v<x.y.z>)."
+            exit 1
+          else
+            echo "submit=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          fi
+      - name: The release's Store package, checked against its SHA256SUMS
+        if: steps.ready.outputs.submit == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ready.outputs.tag }}
+        run: |
+          mkdir pkg
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir pkg --pattern "*-store-*.msix" --pattern SHA256SUMS
+          cd pkg
+          ls -- *.msix > /dev/null
+          sha256sum --check --ignore-missing --strict SHA256SUMS
+      - uses: microsoft/microsoft-store-apppublisher@cc9910a8d59f2eb55cbb83df0a3800cf3b5300e0 # v1.4
+        if: steps.ready.outputs.submit == 'true'
+      - name: Submit to the Microsoft Store
+        if: steps.ready.outputs.submit == 'true'
+        shell: pwsh
+        env:
+          MSSTORE_TENANT_ID: ${{ secrets.MSSTORE_TENANT_ID }}
+          MSSTORE_CLIENT_ID: ${{ secrets.MSSTORE_CLIENT_ID }}
+          MSSTORE_CLIENT_SECRET: ${{ secrets.MSSTORE_CLIENT_SECRET }}
+          MSSTORE_SELLER_ID: ${{ secrets.MSSTORE_SELLER_ID }}
+          MSSTORE_PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          # The project sends no telemetry (PKG-06), nor does its release tooling.
+          msstore settings --enableTelemetry false
+          msstore reconfigure --tenantId $env:MSSTORE_TENANT_ID --sellerId $env:MSSTORE_SELLER_ID --clientId $env:MSSTORE_CLIENT_ID --clientSecret $env:MSSTORE_CLIENT_SECRET
+          $package = (Get-ChildItem pkg -Filter *.msix | Select-Object -First 1).FullName
+          msstore publish $package --appId $env:MSSTORE_PRODUCT_ID

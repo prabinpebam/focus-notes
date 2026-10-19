@@ -53,6 +53,17 @@ jobs:
       - name: Build the desktop app
         if: ${{ !cancelled() && steps.electron.outcome == 'success' }}
         run: pnpm --filter @focus-notes/desktop run build
+      # The Microsoft Store's package (PKG-12, D-202) still packs, from the build above, and declares
+      # the focus-notes: protocol, the command's alias and full trust. Placeholder identity, unsigned,
+      # never published: a packaging regression shows here before a release.
+      - name: Store package check (Windows)
+        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'Windows' }}
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          node apps/desktop/scripts/dist-store.mjs "-c.directories.output=$RUNNER_TEMP/store"
+          node tools/release/store-manifest.mjs "$RUNNER_TEMP/store"
       # Budgets are enforced on one fixed runner type (Performance and quality); macOS runners'
       # start times swing too far between runs to gate on, so they only report.
       - name: Budgets (QLT-05)
