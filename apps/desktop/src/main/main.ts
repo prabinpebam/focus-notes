@@ -150,6 +150,9 @@ const redaction = (): RedactOptions => ({ home: app.getPath("home"), workspace: 
 /** The login, names, emails, and repository names the report must never hold (D-140), refreshed before each report. */
 let knownCache: string[] = [];
 const problemLog = new ProblemLog(200, redaction);
+// The log goes to whatever started the app. When that terminal or launcher has closed, writing to it fails
+// (EPIPE), and the lines just go nowhere: an unhandled stream error would stop the app with an error dialog.
+for (const out of [process.stdout, process.stderr]) out.on("error", () => {});
 const logLine = (line: string) => {
   process.stdout.write(`[focus-notes] ${line}\n`);
   problemLog.add(line);
