@@ -14,7 +14,7 @@ export type SetupStepState = "pending" | "running" | "done" | "failed" | "skippe
 /** Why a step failed, as a code the app turns into words. Never GitHub's or Git's own text. */
 export const SETUP_PROBLEMS = [
   "signedOut", "auth", "offline", "rateLimited", "permission", "notFound", "templateMissing", "notInstance", "notPrivate", "folderTaken",
-  "linkedElsewhere", "identity", "signing", "hook", "conflict", "locked", "weak", "blocked", "template", "failed",
+  "linkedElsewhere", "identity", "signing", "hook", "conflict", "locked", "weak", "blocked", "template", "workflowScope", "failed",
 ] as const;
 export type SetupProblem = (typeof SETUP_PROBLEMS)[number];
 

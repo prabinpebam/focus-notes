@@ -75,12 +75,15 @@ describe("FRE-08: setup in the app", () => {
     expect(t.vm().steps[0]!.problem).toBe("");
   });
 
-  it("says the starter notes are missing for a missing template, and keeps the permissions text for a real 403", async () => {
+  it("says the starter notes are missing for a missing template, names the workflow scope, and keeps the permissions text for a real 403", async () => {
     const t = setup();
     await t.app.start();
     await settle();
     t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "templateMissing" } }, { running: false }));
-    expect(t.vm().steps[1]!.problem).toBe("Focus Notes couldn't find its starter notes on GitHub. Try again in a minute.");
+    expect(t.vm().steps[1]!.problem).toBe("This copy of Focus Notes is missing its starter notes. Reinstall Focus Notes, then try again.");
+    // D-201: the first push adds workflows, which needs the sign-in's workflow scope.
+    t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "workflowScope" } }, { running: false }));
+    expect(t.vm().steps[1]!.problem).toBe("Your GitHub sign-in can't add workflows. Sign in again and allow them.");
     t.push(report({ account: { state: "done" }, instance: { state: "failed", problem: "notFound" } }, { running: false }));
     expect(t.vm().steps[1]!.problem).toMatch(/couldn't find/);
     expect(t.vm().steps[1]!.problem).not.toMatch(/permission/i);

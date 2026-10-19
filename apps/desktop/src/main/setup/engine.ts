@@ -9,7 +9,8 @@
  * token, the vault passphrase, or the deploy key.
  */
 import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { GitHubApi, GitHubError, sealSecret, type Fetch } from "@focus-notes/github";
 import { validateAccess, type AccessFile } from "@focus-notes/seal/publish";
@@ -20,6 +21,7 @@ import { pointerMessage } from "../git/message.ts";
 import { clonePercent } from "../first-run/workspace.ts";
 import { knownTemplate, KNOWN_TEMPLATES, TEMPLATE } from "../git/template-guard.ts";
 import { DEPLOY_KEY_TITLE, deployKeyPair, type DeployKeyPair } from "./deploy-key.ts";
+import { writeTemplate, type BundledTemplate } from "./bundled-template.ts";
 
 export { TEMPLATE };
 
@@ -33,6 +35,16 @@ export function notesRepos<R extends { owner: string; name: string; template?: b
   return repos.filter((r) => !r.template && !(same(r.owner, template.owner) && same(r.name, template.name)));
 }
 export const SECRET_NAME = "PRIVATE_CONTENT_KEY";
+
+/**
+ * Why a clone, fetch, or push failed. GitHub refuses a push that adds or changes
+ * `.github/workflows/` without the token's `workflow` scope (or a GitHub App's Workflows
+ * permission): that's the sign-in, said plainly (D-201).
+ */
+export function gitNetProblem(stderr: string): SetupProblem {
+  if (/refusing to allow .{0,80}to create or update workflow/i.test(stderr)) return "workflowScope";
+  return networkProblem(stderr);
+}
 const NETWORK_MS = 10 * 60_000;
 
 export interface SetupDeps {
@@ -46,6 +58,13 @@ export interface SetupDeps {
   /** The Git remote for a repository. Default: `https://github.com/<owner>/<repo>.git`. */
   remoteUrl?: (owner: string, repo: string) => string;
   template?: { owner: string; name: string };
+  /**
+   * The workspace template the app carries (DST-08, D-201): a new instance's first commit is made
+   * from it here. Without it, a new instance can't be made (`templateMissing`).
+   */
+  bundledTemplate?: () => Promise<BundledTemplate>;
+  /** Where that first commit is made, in a fresh folder removed after. Default: the system's temporary folder. */
+  scratch?: string;
   /**
    * Whether a repository is a template (D-157, the shell's `TemplateGuard`): setup never makes,
    * downloads, or pushes to one. Known templates are refused without it.
@@ -339,7 +358,7 @@ export class SetupEngine {
   /** Clone, fetch, or push: a failure says whether it was the network, the sign-in, or a conflict. */
   async #gitNet(cwd: string, args: string[]): Promise<void> {
     const r = await this.#git(cwd, args, undefined, NETWORK_MS);
-    if (r.code !== 0) throw new Failure(networkProblem(r.stderr));
+    if (r.code !== 0) throw new Failure(gitNetProblem(r.stderr));
   }
   /** Commits what's staged, with the message on standard input (never an argument, SEC-03). */
   async #commit(cwd: string, message: string): Promise<void> {
@@ -347,6 +366,43 @@ export class SetupEngine {
     if (staged.code === 0) return;
     const r = await this.#git(cwd, ["commit", "--quiet", "--file=-"], message);
     if (r.code !== 0) throw new Failure(commitProblem(r.stderr));
+  }
+
+  /**
+   * Fails before anything is made when the token can't push workflows (D-201): a classic token
+   * whose scopes GitHub lists without `workflow`. Other tokens don't say; their push says instead.
+   */
+  async #canAddWorkflows(api: GitHubApi): Promise<void> {
+    const scopes = await api.scopes();
+    if (scopes && !scopes.includes("workflow")) throw new Failure("workflowScope");
+  }
+
+  /**
+   * The instance's first commit, from the template the app carries, made in a fresh folder and
+   * pushed to the empty repository's `main` (D-201). The folder is removed whatever happens.
+   */
+  async #firstCommit(instance: string): Promise<void> {
+    let t: BundledTemplate;
+    try {
+      if (!this.#d.bundledTemplate) throw new Error("No template");
+      t = await this.#d.bundledTemplate();
+    } catch {
+      throw new Failure("templateMissing");
+    }
+    const base = this.#d.scratch ?? tmpdir();
+    await mkdir(base, { recursive: true });
+    const dir = await mkdtemp(join(base, "fn-instance-"));
+    try {
+      await writeTemplate(dir, t);
+      await this.#gitOk(dir, ["init", "--quiet"]);
+      await this.#gitOk(dir, ["symbolic-ref", "HEAD", "refs/heads/main"]);
+      await this.#gitOk(dir, ["add", "--all"]);
+      await this.#commit(dir, "Start my Focus Notes");
+      await this.#notTemplate(instance);
+      await this.#gitNet(dir, ["push", "--quiet", this.#url(instance), "main"]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   }
 
   // ---- the steps ----
@@ -359,26 +415,30 @@ export class SetupEngine {
       return "done";
     },
 
-    /** Copy the template: the instance repository, unless the account already has it (made in the browser first). */
+    /**
+     * Make the instance repository (D-201), unless the account already has it: made in the browser
+     * from the public template, or by an earlier run. A new one is made empty and gets its first
+     * commit from the template the app carries, pushed from this computer, so GitHub never copies a
+     * template repository. An empty one (an earlier run stopped before its push) gets that commit now.
+     */
     instance: async () => {
       const api = await this.#gh();
       const { instance } = this.#o;
       let repo = await api.findRepo(this.#login, instance);
       await this.#notTemplate(instance, repo?.template);
       if (!repo) {
-        const t = this.#d.template ?? TEMPLATE;
-        try {
-          await api.generate(t, this.#login, instance, "My Focus Notes");
-        } catch (e) {
-          // The template repository is missing or not a template: the starter notes, not the sign-in.
-          if (e instanceof GitHubError && e.status === 404) throw new Failure("templateMissing");
-          throw e;
-        }
+        await this.#canAddWorkflows(api);
+        await api.createRepo(instance, "My Focus Notes", false, false);
         repo = await this.#waitFor(() => api.findRepo(this.#login, instance));
-        await this.#waitFor(() => api.head(this.#login, instance, repo!.defaultBranch));
       }
       await this.#notTemplate(instance, repo.template);
       if (!repo.canPush) throw new Failure("permission");
+      let empty = true;
+      for (const branch of new Set([repo.defaultBranch, "main"])) if (await api.head(this.#login, instance, branch)) empty = false;
+      if (empty) {
+        await this.#canAddWorkflows(api);
+        await this.#firstCommit(instance);
+      }
       if (!(await api.hasFile(this.#login, instance, ".focus-notes/workspace.json"))) throw new Failure("notInstance");
       return "done";
     },

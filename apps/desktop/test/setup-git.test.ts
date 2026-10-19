@@ -1,6 +1,7 @@
 /**
  * Set up my instance (FRE-08) end to end, with real Git against local bare remotes and the
- * in-memory GitHub: the template copied (from templates/workspace/), the private repository made,
+ * in-memory GitHub: the instance made empty and given its first commit from the template the app
+ * carries (templates/workspace/, D-201), the private repository made,
  * cloned, linked at `private/` on `main`, the vault's grant written with only the derived key and
  * valid against its schema, both pushed private first, and Pages on. Then a push that fails and is
  * retried alone, a quit mid-step that resumes, and no token or passphrase in any Git argument,
@@ -16,6 +17,7 @@ import addFormats from "ajv-formats";
 import { derivePasscodeBits, fromB64url, toB64url } from "@focus-notes/seal";
 import { FakeGitHub, type FakeRepo } from "../../../packages/github/test/fake-github.ts";
 import { SetupEngine, SECRET_NAME } from "../src/main/setup/engine.ts";
+import { parseTemplate } from "../src/main/setup/bundled-template.ts";
 import { createRunner } from "../src/main/git/run.ts";
 
 const repoRoot = join(import.meta.dirname, "..", "..", "..");
@@ -26,6 +28,13 @@ const CONFIG = { GIT_CONFIG_COUNT: "3", GIT_CONFIG_KEY_0: "protocol.file.allow",
 const env = { ...process.env, ...IDENTITY, ...CONFIG, GIT_TERMINAL_PROMPT: "0" };
 const git = (cwd: string, ...args: string[]) => execFileSync("git", args, { cwd, encoding: "utf8", env, stdio: ["ignore", "pipe", "pipe"] }).trim();
 const slash = (p: string) => p.replace(/\\/g, "/");
+
+/** templates/workspace/ as the app carries it (D-201): path -> base64. */
+const filesUnder = (dir: string, base = ""): { path: string; data: string }[] => readdirSync(join(dir, base), { withFileTypes: true }).flatMap((e) => {
+  const p = base ? `${base}/${e.name}` : e.name;
+  return e.isDirectory() ? filesUnder(dir, p) : [{ path: p, data: readFileSync(join(dir, p)).toString("base64") }];
+});
+const BUNDLED = parseTemplate({ version: "0.0.0", files: filesUnder(join(repoRoot, "templates", "workspace")) });
 
 /** Files under a folder, `.git` included, as text, for searching for things that must never be there. */
 const everything = (dir: string): string => readdirSync(dir).map((f) => {
@@ -38,11 +47,13 @@ function world() {
   const remotes = join(root, "remotes");
   const remote = (owner: string, name: string) => slash(join(remotes, owner, `${name}.git`));
   const gh = new FakeGitHub();
-  // GitHub makes a repository's Git remote: the template's content for a copy, a README for a new one.
+  // GitHub makes a repository's Git remote: empty, or with a README (auto_init), or the template's
+  // content for a copy made in the browser.
   gh.onCreate = (r: FakeRepo) => {
     const bare = remote(r.owner, r.name);
     mkdirSync(bare, { recursive: true });
     git(bare, "init", "--quiet", "--bare", "--initial-branch=main");
+    if (!r.template && r.files.size === 0) return;
     const seed = mkdtempSync(join(root, "seed-"));
     if (r.template) cpSync(join(repoRoot, "templates", "workspace"), seed, { recursive: true });
     else writeFileSync(join(seed, "README.md"), `# ${r.name}\n`);
@@ -50,6 +61,16 @@ function world() {
     git(seed, "add", "-A");
     git(seed, "commit", "--quiet", "-m", "Initial commit");
     git(seed, "push", "--quiet", bare, "main");
+  };
+  // What GitHub says is in a repository is what its remote has.
+  gh.contents = (r: FakeRepo) => {
+    const bare = remote(r.owner, r.name);
+    if (!existsSync(bare)) return undefined;
+    try {
+      return git(bare, "ls-tree", "-r", "--name-only", "main").split("\n").filter(Boolean);
+    } catch {
+      return [];
+    }
   };
   const spawned: { args: string[]; env: NodeJS.ProcessEnv }[] = [];
   const logs: string[] = [];
@@ -63,6 +84,8 @@ function world() {
     remoteUrl: remote,
     sleep: async () => {},
     log: (l: string) => logs.push(l),
+    bundledTemplate: async () => BUNDLED,
+    scratch: join(root, "scratch"),
   };
   return { root, gh, remote, spawned, logs, progressFile, folder, open: (more: { folders?: (instance: string) => string[] } = {}) => SetupEngine.open({ ...deps, ...more }) };
 }
@@ -76,9 +99,16 @@ describe("FRE-08: Create my workspace, with real Git", () => {
     expect(report.steps.map((s) => `${s.id}:${s.state}`)).toEqual(["account", "instance", "private", "deployKey", "clone", "link", "vault", "pages", "push"].map((s) => `${s}:done`));
     expect(report.site).toBe("https://ada.github.io/notes/");
 
-    // GitHub: the instance from the template, the private repository, the read-only key, the secret, and Pages.
+    // GitHub: the instance, the private repository, the read-only key, the secret, and Pages.
     const notes = w.gh.repo("notes")!, priv = w.gh.repo("notes-private")!;
-    expect(notes).toMatchObject({ private: false, template: "prabinpebam/focus-notes-workspace", pages: { build_type: "workflow" } });
+    expect(notes).toMatchObject({ private: false, pages: { build_type: "workflow" } });
+    // D-201: the instance's first commit is the template the app carries, byte for byte, made here; GitHub copied nothing.
+    expect(w.gh.calls.some((c) => c.path.endsWith("/generate"))).toBe(false);
+    const first = git(w.remote("ada", "notes"), "rev-list", "--max-parents=0", "main");
+    expect(git(w.remote("ada", "notes"), "log", "-1", "--format=%s", first)).toBe("Start my Focus Notes");
+    expect(git(w.remote("ada", "notes"), "ls-tree", "-r", "--name-only", first).split("\n").sort()).toEqual(BUNDLED.files.map((f) => f.path).sort());
+    for (const f of BUNDLED.files) expect(readFileSync(join(w.folder, ...f.path.split("/"))).equals(f.bytes), f.path).toBe(true);
+    expect(readdirSync(join(w.root, "scratch"))).toEqual([]);
     expect(priv.private).toBe(true);
     expect(priv.keys).toEqual([expect.objectContaining({ read_only: true })]);
     expect(w.gh.openSecret(notes, SECRET_NAME)).toMatch(/^-----BEGIN OPENSSH PRIVATE KEY-----/);

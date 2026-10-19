@@ -48,6 +48,13 @@ export class FakeGitHub {
   readonly failures = new Map<string, { status: number; message: string }[]>();
   /** Called when a repository is made, so an integration test can make its Git remote. */
   onCreate?: (repo: FakeRepo) => void;
+  /**
+   * A repository's files as its Git remote has them, for a test whose Git really pushes: undefined
+   * keeps `files`. Branch heads and the contents API read it.
+   */
+  contents?: (repo: FakeRepo) => string[] | undefined;
+  /** A classic token's scopes, sent as `X-OAuth-Scopes`; undefined sends no header, like a fine-grained token. */
+  scopes?: string[];
 
   constructor(token = "ghp_FAKE0123456789abcdefTOKEN") {
     this.token = token;
@@ -105,8 +112,15 @@ export class FakeGitHub {
     if (other) return method === "GET" && path === "/user" ? json(200, other) : json(403, { message: "Resource not accessible" });
     const planned = this.failures.get(`${method} ${path}`)?.shift();
     if (planned) return json(planned.status, { message: planned.message });
-    return this.route(method, path, body);
+    const res = this.route(method, path, body);
+    if (this.scopes) res.headers.set("X-OAuth-Scopes", this.scopes.join(", "));
+    return res;
   };
+
+  private filesOf(repo: FakeRepo): Set<string> {
+    const live = this.contents?.(repo);
+    return live ? new Set(live) : repo.files;
+  }
 
   private route(method: string, path: string, body: Record<string, unknown> | undefined): Response {
     if (method === "GET" && path === "/user") return json(200, { login: this.login, id: this.id, name: "Ada" });
@@ -135,9 +149,9 @@ export class FakeGitHub {
     if (!repo || (repo.private && repo.owner !== this.login)) return json(404, { message: "Not Found" });
     const rest = r[3] ?? "";
     if (method === "GET" && rest === "") return json(200, toRepo(repo));
-    if (method === "GET" && rest === "/git/ref/heads/main") return repo.files.size ? json(200, { object: { sha: "a".repeat(40) } }) : json(409, { message: "Git Repository is empty." });
+    if (method === "GET" && rest === "/git/ref/heads/main") return this.filesOf(repo).size ? json(200, { object: { sha: "a".repeat(40) } }) : json(409, { message: "Git Repository is empty." });
     const file = /^\/contents\/(.+)$/.exec(rest);
-    if (method === "GET" && file) return repo.files.has(decodeURIComponent(file[1]!)) ? json(200, { type: "file" }) : json(404, { message: "Not Found" });
+    if (method === "GET" && file) return this.filesOf(repo).has(decodeURIComponent(file[1]!)) ? json(200, { type: "file" }) : json(404, { message: "Not Found" });
     if (!repo.canPush && method !== "GET") return json(403, { message: "Must have admin rights to Repository." });
     if (rest.startsWith("/keys?") || rest === "/keys") {
       if (method === "GET") return json(200, repo.keys);

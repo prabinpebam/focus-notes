@@ -6,16 +6,26 @@
  */
 import { describe, expect, it } from "vitest";
 import { createPrivateKey, createPublicKey, sign, verify } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SETUP_STEPS, type SetupOptions, type SetupReport, type SetupStepId } from "@focus-notes/core/setup";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
-import { SetupEngine, SECRET_NAME, TEMPLATE, checkOptions, notesRepos, problemOf, type SetupDeps } from "../src/main/setup/engine.ts";
+import { SetupEngine, SECRET_NAME, TEMPLATE, checkOptions, gitNetProblem, notesRepos, problemOf, type SetupDeps } from "../src/main/setup/engine.ts";
+import { parseTemplate, type BundledTemplate } from "../src/main/setup/bundled-template.ts";
 import { GitHubApi, GitHubError } from "@focus-notes/github";
 import { DEPLOY_KEY_TITLE, deployKeyPair } from "../src/main/setup/deploy-key.ts";
 import { CREDENTIAL_QUERY, GITHUB_TIMEOUT_MS, githubFetch, githubToken } from "../src/main/setup/credential.ts";
-import type { GitCall } from "../src/main/git/run.ts";
+import type { GitCall, GitResult } from "../src/main/git/run.ts";
+
+/** A small template the app carries (D-201): the workspace file, a workflow, and a notes folder. */
+const b64 = (t: string) => Buffer.from(t).toString("base64");
+const BUNDLED: BundledTemplate = parseTemplate({ version: "0.0.0", files: [
+  { path: ".focus-notes/workspace.json", data: b64('{ "formatVersion": 1, "templateVersion": "0.0.0" }\n') },
+  { path: ".github/workflows/pages.yml", data: b64("name: pages\n") },
+  { path: "notes/.gitkeep", data: "" },
+] });
+const PUSH_REFUSED = "To https://github.com/ada/notes.git\n ! [remote rejected] main -> main (refusing to allow a Personal Access Token to create or update workflow `.github/workflows/pages.yml` without `workflow` scope)\nerror: failed to push some refs";
 
 const OPTIONS = (folder = join(tmpdir(), "fn-setup-unused")): SetupOptions => ({ instance: "notes", private: "notes-private", folder, publish: true });
 
@@ -30,12 +40,27 @@ function harness(o: { done?: SetupStepId[]; options?: SetupOptions; gh?: FakeGit
   const logs: string[] = [];
   const reports: SetupReport[] = [];
   const gitCalls: GitCall[] = [];
+  const scratch = join(dir, "scratch");
+  /** The next pushes of the first commit fail with these answers, one each. */
+  const pushes: GitResult[] = [];
   let tokenAsked = 0;
   const deps: SetupDeps = {
+    // Only the instance's first commit, made in the scratch folder, has a (pretend) Git: its push
+    // gives the repository the template's files. Every other Git step stops here.
     git: async (c) => {
       gitCalls.push(c);
-      throw new Error("No Git in these tests");
+      if (!c.cwd.startsWith(scratch)) throw new Error("No Git in these tests");
+      if (c.args[0] === "diff") return { code: 1, stdout: "", stderr: "" };
+      if (c.args[0] === "push") {
+        const r = pushes.shift();
+        if (r) return r;
+        const name = /\/([^/]+)\.git$/.exec(c.args.at(-2)!)![1]!;
+        gh.repo(name)!.files = new Set(BUNDLED.files.map((f) => f.path));
+      }
+      return { code: 0, stdout: "", stderr: "" };
     },
+    bundledTemplate: async () => BUNDLED,
+    scratch,
     progressFile,
     token: async () => {
       tokenAsked++;
@@ -48,7 +73,7 @@ function harness(o: { done?: SetupStepId[]; options?: SetupOptions; gh?: FakeGit
     onReport: (r) => reports.push(r),
   };
   const open = (more: Partial<SetupDeps> = {}) => SetupEngine.open({ ...deps, ...more });
-  return { gh, dir, progressFile, logs, reports, gitCalls, open, deps, tokenAsked: () => tokenAsked };
+  return { gh, dir, progressFile, logs, reports, gitCalls, pushes, scratch, open, deps, tokenAsked: () => tokenAsked };
 }
 const state = (r: SetupReport, id: SetupStepId) => r.steps.find((s) => s.id === id)!;
 const before = (id: SetupStepId) => SETUP_STEPS.slice(0, SETUP_STEPS.indexOf(id));
@@ -179,19 +204,73 @@ describe("FRE-08: the API steps", () => {
     expect(r2.login).toBe("ada");
   });
 
-  it("instance: makes the repository from the Focus Notes template", async () => {
+  it("D-201: instance makes an empty public repository and pushes its first commit from the template the app carries; GitHub copies no template", async () => {
     const h = harness({ done: before("instance") });
     const r = await (await h.open()).retry("instance");
     expect(state(r, "instance").state).toBe("done");
-    expect(h.gh.repo("notes")).toMatchObject({ private: false, template: "prabinpebam/focus-notes-workspace" });
-    expect(h.gh.calls).toContainEqual({ method: "POST", path: "/repos/prabinpebam/focus-notes-workspace/generate", body: expect.objectContaining({ owner: "ada", name: "notes", private: false }) });
+    expect(h.gh.calls).toContainEqual({ method: "POST", path: "/user/repos", body: expect.objectContaining({ name: "notes", private: false, auto_init: false }) });
+    expect(h.gh.calls.some((c) => c.path.endsWith("/generate") || c.path.includes("focus-notes-workspace"))).toBe(false);
+    expect(h.gh.repo("notes")).toMatchObject({ private: false });
+    expect([...h.gh.repo("notes")!.files]).toContain(".focus-notes/workspace.json");
+    // The first commit is made in a scratch folder, on main, and pushed to the new repository.
+    expect(h.gitCalls.map((c) => c.args.join(" "))).toEqual(["init --quiet", "symbolic-ref HEAD refs/heads/main", "add --all", "diff --cached --quiet", "commit --quiet --file=-", "push --quiet https://github.com/ada/notes.git main"]);
+    expect(h.gitCalls.find((c) => c.args[0] === "commit")?.input).toBe("Start my Focus Notes");
+    // The scratch folder held the template's files while it ran, and is gone after.
+    expect(readdirSync(h.scratch)).toEqual([]);
+  });
+
+  it("D-201: a first push that failed is retried on the repository already made, which is never made twice", async () => {
+    const h = harness({ done: before("instance") });
+    h.pushes.push({ code: 128, stdout: "", stderr: "fatal: unable to access 'https://github.com/ada/notes.git/': Could not resolve host: github.com" });
+    const e = await h.open();
+    expect(state(await e.retry("instance"), "instance")).toMatchObject({ state: "failed", problem: "offline" });
+    expect(h.gh.repo("notes")?.files.size).toBe(0);
+    expect(readdirSync(h.scratch)).toEqual([]);
+    expect(state(await e.retry("instance"), "instance").state).toBe("done");
+    expect(h.gh.calls.filter((c) => c.method === "POST" && c.path === "/user/repos")).toHaveLength(1);
+    expect(h.gitCalls.filter((c) => c.args[0] === "push")).toHaveLength(2);
+    // An empty repository by that name the person made is ours to start, too.
+    const empty = harness({ done: before("instance") });
+    empty.gh.add({ owner: "ada", name: "notes" });
+    expect(state(await (await empty.open()).retry("instance"), "instance").state).toBe("done");
+    expect(empty.gh.calls.some((c) => c.method === "POST")).toBe(false);
+  });
+
+  it("D-201: a sign-in that can't add workflows fails before anything is made, and says so; a refused push says the same", async () => {
+    const h = harness({ done: before("instance") });
+    h.gh.scopes = ["repo", "gist"];
+    const e = await h.open();
+    expect(state(await e.retry("instance"), "instance")).toMatchObject({ state: "failed", problem: "workflowScope" });
+    expect(h.gh.calls.filter((c) => c.method !== "GET")).toEqual([]);
+    expect(h.gitCalls).toEqual([]);
+    // Signed in again with the workflow scope: Try again makes it.
+    h.gh.scopes = ["repo", "workflow"];
+    expect(state(await e.retry("instance"), "instance").state).toBe("done");
+
+    // A token that doesn't list scopes (fine-grained, or a GitHub App's): GitHub refuses the push instead.
+    const fine = harness({ done: before("instance") });
+    fine.pushes.push({ code: 1, stdout: "", stderr: PUSH_REFUSED });
+    const f = await fine.open();
+    expect(state(await f.retry("instance"), "instance")).toMatchObject({ state: "failed", problem: "workflowScope" });
+    expect(state(await f.retry("instance"), "instance").state).toBe("done");
+  });
+
+  it("D-201: a copy of the app without its template says the starter notes are missing", async () => {
+    const h = harness({ done: before("instance") });
+    const e = await h.open({ bundledTemplate: async () => { throw new Error("ENOENT"); } });
+    expect(state(await e.retry("instance"), "instance")).toEqual({ id: "instance", state: "failed", problem: "templateMissing" });
+    expect(h.gitCalls).toEqual([]);
+    expect(() => parseTemplate({ version: "1.0.0", files: [{ path: "../x", data: "" }] })).toThrow();
+    expect(() => parseTemplate({ version: "1.0.0", files: [{ path: ".git/config", data: "" }] })).toThrow();
+    expect(() => parseTemplate({ version: "1.0.0", files: [{ path: "README.md", data: "" }] })).toThrow(/workspace/);
   });
 
   it("instance: uses the instance the account already has (made in the browser first), and refuses a repository that isn't one", async () => {
     const h = harness({ done: before("instance") });
     h.gh.add({ owner: "ada", name: "notes", template: "prabinpebam/focus-notes-workspace", files: [".focus-notes/workspace.json"] });
     expect(state(await (await h.open()).retry("instance"), "instance").state).toBe("done");
-    expect(h.gh.calls.some((c) => c.path.endsWith("/generate"))).toBe(false);
+    expect(h.gh.calls.filter((c) => c.method !== "GET")).toEqual([]);
+    expect(h.gitCalls).toEqual([]);
 
     const other = harness({ done: before("instance") });
     other.gh.add({ owner: "ada", name: "notes", files: ["index.html"] });
@@ -208,6 +287,11 @@ describe("FRE-08: the API steps", () => {
     const e = await known.open({ template: { owner: "Ada", name: "NOTES" } });
     expect(state(await e.retry("instance"), "instance")).toMatchObject({ state: "failed", problem: "template" });
     expect(known.gh.calls.filter((c) => c.method !== "GET")).toEqual([]);
+    // Not on GitHub yet, but the guard knows the name as a template: nothing is made or pushed (D-201).
+    const fresh = harness({ done: before("instance") });
+    expect(state(await (await fresh.open({ isTemplate: async (_o, n) => n === "notes" })).retry("instance"), "instance")).toMatchObject({ state: "failed", problem: "template" });
+    expect(fresh.gh.calls.filter((c) => c.method !== "GET")).toEqual([]);
+    expect(fresh.gitCalls).toEqual([]);
 
     const priv = harness({ done: before("private") });
     priv.gh.add({ owner: "ada", name: "notes-private", private: true, isTemplate: true, files: ["README.md"] });
@@ -317,13 +401,7 @@ describe("FRE-08: every step can be retried on its own", () => {
     expect(h.gh.calls).toEqual([]);
   });
 
-  it("a missing template is the starter notes, not the sign-in: only a real 403 is about permissions", async () => {
-    const h = harness({ done: before("instance") });
-    h.gh.fail("POST /repos/prabinpebam/focus-notes-workspace/generate", 404, "Not Found");
-    const e = await h.open();
-    expect(state(await e.retry("instance"), "instance")).toEqual({ id: "instance", state: "failed", problem: "templateMissing" });
-    expect(state(await e.retry("instance"), "instance").state).toBe("done");
-
+  it("a 404 is never the sign-in: only a real 403 is about permissions", async () => {
     const k = harness({ done: before("deployKey") });
     k.gh.add({ owner: "ada", name: "notes", files: [".focus-notes/workspace.json"] });
     k.gh.add({ owner: "ada", name: "notes-private", private: true, files: ["README.md"] });
@@ -340,6 +418,12 @@ describe("FRE-08: every step can be retried on its own", () => {
     expect(problemOf(new GitHubError(0, "fetch failed"))).toBe("offline");
     expect(problemOf(new GitHubError(500, "Server error"))).toBe("failed");
     expect(problemOf(new Error("boom"))).toBe("failed");
+    // D-201: GitHub refusing a push that adds workflows, whichever kind of sign-in it was.
+    expect(gitNetProblem(PUSH_REFUSED)).toBe("workflowScope");
+    expect(gitNetProblem("! [remote rejected] main -> main (refusing to allow an OAuth App to create or update workflow `.github/workflows/update.yml` without `workflow` scope)")).toBe("workflowScope");
+    expect(gitNetProblem("! [remote rejected] main -> main (refusing to allow a GitHub App to create or update workflow `.github/workflows/pages.yml` without `workflows` permission)")).toBe("workflowScope");
+    expect(gitNetProblem("fatal: Authentication failed for 'https://github.com/ada/notes.git/'")).toBe("auth");
+    expect(gitNetProblem(" ! [rejected]        main -> main (fetch first)")).toBe("conflict");
   });
 
   it("says when GitHub can't be reached, or refused the sign-in, and asks the helper again after a refusal", async () => {
@@ -359,6 +443,7 @@ describe("FRE-08: every step can be retried on its own", () => {
 describe("FRE-08: progress survives quitting", () => {
   it("resumes from the saved progress: done steps aren't repeated, and a step that was running runs again", async () => {
     const h = harness();
+    h.gh.add({ owner: "ada", name: "notes", files: [".focus-notes/workspace.json"] });
     h.gh.fail("POST /user/repos", 500, "Server Error");
     const first = await h.open();
     const r = await first.start(OPTIONS());

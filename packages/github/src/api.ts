@@ -151,9 +151,26 @@ export class GitHubApi {
     await this.request("POST", `/repos/${template.owner}/${template.name}/generate`, { owner, name, description, private: false, include_all_branches: false });
   }
 
-  /** Makes a repository in the signed-in account, with a first commit (a README) so it has a main branch. */
-  async createRepo(name: string, description: string, isPrivate: boolean): Promise<void> {
-    await this.request("POST", "/user/repos", { name, description, private: isPrivate, auto_init: true });
+  /** Makes a repository in the signed-in account, with a first commit (a README) so it has a main branch, or empty (`autoInit` false). */
+  async createRepo(name: string, description: string, isPrivate: boolean, autoInit = true): Promise<void> {
+    await this.request("POST", "/user/repos", { name, description, private: isPrivate, auto_init: autoInit });
+  }
+
+  /**
+   * The OAuth scopes a classic token has (GitHub's `X-OAuth-Scopes` header), or undefined when
+   * GitHub doesn't say: fine-grained and GitHub App tokens have permissions instead (D-201).
+   */
+  async scopes(): Promise<string[] | undefined> {
+    let res: Response;
+    try {
+      res = await this.#fetch(`${API}/user`, { method: "GET", headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + this.#token, "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" });
+    } catch {
+      throw new GitHubError(0, "offline");
+    }
+    if (!res.ok) throw new GitHubError(res.status, res.statusText);
+    await res.body?.cancel();
+    const h = res.headers.get("X-OAuth-Scopes");
+    return h === null ? undefined : h.split(",").map((s) => s.trim()).filter(Boolean);
   }
 
   async deployKeys(owner: string, repo: string): Promise<DeployKey[]> {
