@@ -112,7 +112,9 @@ test("DSK-06: Mod+Enter in Spotlight opens a note in a new window on its first t
   // Closing a window for a note leaves the first one, and its note, as they were.
   for (const p of [page3, page2]) {
     const closed = p.waitForEvent("close");
-    await p.evaluate(() => (window as unknown as { focusNotes: { window: { close(): void } } }).focusNotes.window.close());
+    // macOS's native window has no drawn controls (DSK-02): its close is the window's own (D-195).
+    if (custom) await p.evaluate(() => (window as unknown as { focusNotes: { window: { close(): void } } }).focusNotes.window.close());
+    else await app.evaluate(({ BrowserWindow }, url) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL() === url)!.close(), p.url());
     await closed;
   }
   await expect(editor).toContainText("Typed in the first window.");

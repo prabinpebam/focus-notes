@@ -144,9 +144,10 @@ test("UI-11: the note starts 25% down, the edited line stays between 25% and 65%
       if (now === last) same++;
       else (same = 0), (since = performance.now());
       last = now;
-      // Three frames and 50 ms still: at a high refresh rate the first frames of the eased auto-scroll
-      // (D-156) move less than a pixel, so three frames alone could pass before it visibly started.
-      if ((same >= 3 && performance.now() - since >= 50) || performance.now() > until) done();
+      // Three frames and 150 ms still: at a high refresh rate the first frames of the eased auto-scroll
+      // (D-156) move less than a pixel, so three frames alone could pass before it visibly started; on
+      // a slow VM (a macOS runner) the zone acted after 50 ms still (D-195).
+      if ((same >= 3 && performance.now() - since >= 150) || performance.now() > until) done();
       else requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
