@@ -40,6 +40,13 @@ export function gitEnv(base: NodeJS.ProcessEnv, read: boolean): NodeJS.ProcessEn
 }
 
 /**
+ * After Git exits, how long its output may stay open before it's closed. On Windows a process started
+ * on another thread at the same moment can inherit Git's end of the pipe; a long-lived one (the spell
+ * checker's helper) then kept it open, and the call never finished, stalling its repository's queue.
+ */
+export const EXITED_PIPE_GRACE_MS = 2_000;
+
+/**
  * Starting a process blocks the thread that starts it: on Windows, 10 to 30 ms for each Git command
  * (measured in the main process's profile, D-151 (5)). So Git starts on a worker thread of its own,
  * and the main process, which moves the window and answers the page, only posts the call and gets
@@ -54,6 +61,7 @@ parentPort.on("message", ({ id, git, args, env, timeout, input }) => {
     const code = typeof error.code === "number" && !error.killed ? error.code : -1;
     parentPort.postMessage({ id, code, stdout: stdout || "", stderr: (stderr || "") + (error.killed ? "\\n(timed out)" : typeof error.code === "string" ? "\\n" + error.code : "") });
   });
+  child.on("exit", () => setTimeout(() => { child.stdout && child.stdout.destroy(); child.stderr && child.stderr.destroy(); }, ${EXITED_PIPE_GRACE_MS}).unref());
   if (child.stdin) {
     child.stdin.on("error", () => {});
     child.stdin.end(input || "");
@@ -71,6 +79,7 @@ function runHere(s: Spawn): Promise<GitResult> {
       resolve({ code: typeof e.code === "number" && !e.killed ? e.code : -1, stdout: stdout ?? "", stderr: `${stderr ?? ""}${e.killed ? "\n(timed out)" : typeof e.code === "string" ? `\n${e.code}` : ""}` });
     });
     if (s.onStderr) child.stderr?.on("data", (d: string | Buffer) => s.onStderr!(String(d)));
+    child.on("exit", () => setTimeout(() => { child.stdout?.destroy(); child.stderr?.destroy(); }, EXITED_PIPE_GRACE_MS).unref());
     child.stdin?.on("error", () => {});
     child.stdin?.end(s.input ?? "");
   });
@@ -83,6 +92,21 @@ function runHere(s: Spawn): Promise<GitResult> {
  * hang on CI, QLT-05; unref'd for good, it exited with a command still running.)
  */
 let spawner: { post(s: Spawn): Promise<GitResult> } | undefined | null;
+let inFlight = 0;
+const idleWaiters: (() => void)[] = [];
+/**
+ * Runs `fn` when the worker isn't starting or running Git, so a long-lived process started on this
+ * thread can't inherit a Git command's pipes (see EXITED_PIPE_GRACE_MS). `fn` runs synchronously
+ * then, so no Git call can be posted between the check and the start.
+ */
+export function whenGitIdle(fn: () => void): void {
+  if (!inFlight) return fn();
+  idleWaiters.push(fn);
+}
+function settled(): void {
+  if (--inFlight > 0) return;
+  for (const fn of idleWaiters.splice(0)) fn();
+}
 function gitSpawner(): { post(s: Spawn): Promise<GitResult> } | undefined {
   if (spawner !== undefined) return spawner ?? undefined;
   try {
@@ -129,7 +153,9 @@ export function createRunner(options: { git?: string; env?: NodeJS.ProcessEnv; o
     const s: Spawn = { git, args, env, timeout: call.timeoutMs ?? DEFAULT_TIMEOUT_MS, ...(call.input !== undefined ? { input: call.input } : {}), ...(call.onStderr ? { onStderr: call.onStderr } : {}) };
     // A call that streams Git's progress (a clone's percentage) runs here: a function can't be posted to the worker.
     const worker = options.here || call.onStderr ? undefined : gitSpawner();
-    return worker ? worker.post(s) : runHere(s);
+    if (!worker) return runHere(s);
+    inFlight++;
+    return worker.post(s).finally(settled);
   };
 }
 /** Commands for one repository run one at a time (Desktop and Git → One at a time). */

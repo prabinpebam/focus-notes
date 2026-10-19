@@ -135,10 +135,13 @@ export class OsSpellChecker {
   readonly #keys = new Map<number, string>();
   readonly #cache = new Map<string, SpellCheck>();
   readonly #start: () => ChildProcessWithoutNullStreams;
+  readonly #defer: (start: () => void) => void;
   #prime: string[] = [];
 
-  constructor(start: () => ChildProcessWithoutNullStreams) {
+  /** `defer` holds the start until it's safe: main passes `whenGitIdle`, so the helper never inherits a Git command's pipes. */
+  constructor(start: () => ChildProcessWithoutNullStreams, defer: (start: () => void) => void = (s) => s()) {
     this.#start = start;
+    this.#defer = defer;
   }
 
   get ready(): boolean {
@@ -153,6 +156,11 @@ export class OsSpellChecker {
     if (!this.#prime.length) this.#prime = languages.filter((l) => TAG.test(l));
     if (this.#state !== "idle") return;
     this.#state = "starting";
+    this.#defer(() => this.#launch());
+  }
+
+  #launch(): void {
+    if (this.#state !== "starting") return;
     let p: ChildProcessWithoutNullStreams;
     try {
       p = this.#start();

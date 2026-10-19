@@ -103,10 +103,11 @@ test("SHR-05, SHR-07, SHR-08, SHR-09: share by link and by passcode, copy the in
     const invite2 = page.getByRole("dialog", { name: "Invite Book club" });
     await expect(invite2).toBeVisible();
     await invite2.getByRole("button", { name: "Copy passcode" }).click();
+    // The shell fills in the secret and writes the clipboard after the click: wait for it.
+    await expect.poll(() => clipboard(l)).toMatch(/^[a-z]+(-[a-z]+){3}$/);
     const passcode = await clipboard(l);
-    expect(passcode).toMatch(/^[a-z]+(-[a-z]+){3}$/);
     await invite2.getByRole("button", { name: "Copy invite" }).click();
-    expect(await clipboard(l)).toContain(`Or go to ${SITE}s/ and use your name "Book club" with the passcode ${passcode}.`);
+    await expect.poll(() => clipboard(l)).toContain(`Or go to ${SITE}s/ and use your name "Book club" with the passcode ${passcode}.`);
     await capture(page, "sharing-invite-passcode");
     await invite2.getByRole("button", { name: "Done" }).click();
     await capture(page, "sharing-list");
@@ -312,6 +313,7 @@ test("SHR-09, D-143: edit the invite template, share from the note's popover unt
     await expect(invite.getByText(/^Hey Ravi, here: https:\/\/ada\.github\.io\/notes\/s\/#s/)).toBeVisible();
     await vvs(page, invite, "invite", BUDGETS.dialog, scores);
     await invite.getByRole("button", { name: "Copy invite" }).click();
+    await expect(invite.getByRole("button", { name: "Copied" })).toBeVisible();
     const text = await clipboard(l);
     const access = JSON.parse(readFileSync(join(priv, "access.json"), "utf8")) as AccessFile;
     const ravi = access.grants.find((g) => g.name === "Ravi")!;

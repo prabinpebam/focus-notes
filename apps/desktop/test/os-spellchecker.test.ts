@@ -39,6 +39,24 @@ describe("the OS spell checker's protocol (D-193)", () => {
     expect(await c.check("mistaek", ["en-US"])).toBeUndefined();
   });
 
+  it("starts the helper only when its defer lets it, and not at all once disposed", () => {
+    let started = 0;
+    let release: (() => void) | undefined;
+    const proc = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough(), stdin: new PassThrough(), kill: () => true });
+    const c = new OsSpellChecker(() => (started++, proc as unknown as ChildProcessWithoutNullStreams), (s) => (release = s));
+    c.warm();
+    c.warm();
+    expect(started).toBe(0);
+    release!();
+    expect(started).toBe(1);
+
+    const d = new OsSpellChecker(() => (started++, proc as unknown as ChildProcessWithoutNullStreams), (s) => (release = s));
+    d.warm();
+    d.dispose();
+    release!();
+    expect(started).toBe(1);
+  });
+
   it("loads the languages once ready, and keeps an answer that came too late for the next menu", async () => {
     const proc = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough(), stdin: new PassThrough(), kill: () => true });
     const sent: string[] = [];

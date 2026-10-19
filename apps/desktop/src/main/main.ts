@@ -33,7 +33,7 @@ import { GitSync, NO_GIT } from "./git/sync.ts";
 import { remoteRepo, TemplateGuard } from "./git/template-guard.ts";
 import { HeldFile, excludeFileOf } from "./git/held.ts";
 import { changedChars, type BackupPolicy } from "./git/cadence.ts";
-import { createRunner, type GitRunner } from "./git/run.ts";
+import { createRunner, whenGitIdle, type GitRunner } from "./git/run.ts";
 import { passphraseStrength } from "@focus-notes/seal";
 import { accessStore, siteFromGitConfig } from "./share/access.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
@@ -174,7 +174,7 @@ const osSpelling = platform === "windows"
     const exe = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
     onSpawn?.(exe, HELPER_ARGS);
     return spawn(exe, HELPER_ARGS, { windowsHide: true, stdio: "pipe" });
-  })
+  }, whenGitIdle)
   : undefined;
 const SPELLING_TARGET_MS = 250;
 /** The word under the right-click, from the page's preload, or "" (none, or no answer in time). */
