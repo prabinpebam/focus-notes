@@ -31,14 +31,19 @@ const editorOf = (page: Page) => page.getByRole("textbox", { name: "Note" });
 /**
  * 400% zoom: the window as drawn is 320 × 200 CSS px. On Windows and Linux the page is the window
  * plus its transparent shadow margin (D-104), which zooms with the page, so the page is that much larger.
+ * macOS keeps a window's height inside the work area, and a runner's screen is shorter than 800 px:
+ * there the zoom is what fits, still 320 × 200 CSS px (D-195).
  */
 async function reflowTo320(page: Page, app: ElectronApplication) {
   const margin = await page.evaluate(() => Math.round(document.querySelector("[data-app-root]")?.getBoundingClientRect().left ?? 0));
-  await app.evaluate(({ BrowserWindow }, m) => {
+  await app.evaluate(({ BrowserWindow, screen }, m) => {
     const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
     win.unmaximize();
-    win.setContentSize((320 + 2 * m) * 4, (200 + 2 * m) * 4);
-    win.webContents.setZoomFactor(4);
+    const room = screen.getDisplayMatching(win.getBounds()).workArea.height - 60;
+    const zoom = process.platform === "darwin" ? Math.max(2, Math.min(4, Math.floor(room / (200 + 2 * m)))) : 4;
+    if (process.platform === "darwin") win.setPosition(win.getBounds().x, screen.getDisplayMatching(win.getBounds()).workArea.y);
+    win.setContentSize((320 + 2 * m) * zoom, (200 + 2 * m) * zoom);
+    win.webContents.setZoomFactor(zoom);
   }, margin);
   await expect.poll(async () => Math.round((await windowBox(page)).width)).toBe(320);
 }

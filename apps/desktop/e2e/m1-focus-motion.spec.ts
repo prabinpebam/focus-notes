@@ -258,7 +258,12 @@ test("D-156, FOC-02: the focus band stays on the caret's row through every kind 
       w.setMinimumSize(320, 320);
       return (new Function("w", "arg", fn) as (w: unknown, arg: unknown) => Box)(w, arg);
     }, [fn, arg] as const);
-  const origin = await win("w.setBounds({ x: 40, y: 40, width: 1000, height: 900 }); return w.getBounds();");
+  // macOS keeps a window inside the screen's work area, and a CI runner's screen is shorter than 900 px:
+  // there the heights scale to fit it, so every step is a real size change (D-195).
+  const area = await app.evaluate(({ screen }) => screen.getPrimaryDisplay().workArea);
+  const fit = process.platform === "darwin" ? Math.min(1, (area.height - 80) / 900) : 1;
+  const hh = (h: number) => Math.round(h * fit);
+  const origin = await win("w.setBounds(arg); return w.getBounds();", { x: 40, y: 40, width: 1000, height: hh(900) });
   const size = () => page.evaluate(() => [innerWidth, innerHeight].join("x"));
   const probe = () => page.evaluate(`(${probeBand.toString()})()`) as Promise<ReturnType<typeof probeBand>>;
   const results: string[] = [];
@@ -319,12 +324,12 @@ test("D-156, FOC-02: the focus band stays on the caret's row through every kind 
     }
     results.push(`-- caret ${where}`);
     // Height only: shrink and grow in steps.
-    for (const height of [700, 520, 760, 900]) await step(`height ${height}`, { height });
+    for (const height of [700, 520, 760, 900].map(hh)) await step(`height ${height}`, { height });
     // Width only, including widths that rewrap the caret's paragraph.
     for (const width of [820, 640, 480, 720, 1000]) await step(`width ${width}`, { width });
     // Both together.
-    await step("both 600x600", { width: 600, height: 600 });
-    await step("both 1000x900", { width: 1000, height: 900 });
+    await step("both 600x600", { width: 600, height: hh(600) });
+    await step("both 1000x900", { width: 1000, height: hh(900) });
     // The top edge: y and height change together.
     await step("top edge down", { y: origin.y + 200, height: origin.height - 200 });
     await step("top edge up", { y: origin.y, height: origin.height });
