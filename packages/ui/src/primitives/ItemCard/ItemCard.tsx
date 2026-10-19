@@ -3,6 +3,7 @@ import { Button as AriaButton } from "react-aria-components";
 import { ICONS } from "../../icons.ts";
 import type { IconName } from "../../icon-names.ts";
 import * as s from "./ItemCard.css.ts";
+import { useBusy } from "../../behaviors/busy.ts";
 
 export interface ItemCardProps {
   title: string;
@@ -35,6 +36,8 @@ const PICTURE = /^data:image\/(png|jpeg|gif|webp);base64,/;
 
 /** One thing, shown rather than described (D-126, D-127): an account, a workspace, or an option. */
 export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, size = "m", personal = "none", label, busy, disabled, autoFocus, skeleton, id, children, onPress }: ItemCardProps) {
+  // The shared busy policy (D-199): inert, aria-busy and data-busy, the same as Button's.
+  const { inert, attrs: busyAttrs, ref: busyRef } = useBusy({ busy, label: label ?? "", disabled });
   if (skeleton) {
     return (
       <div id={id} className={`${s.base} ${size === "l" ? s.large : ""}`} role="status" aria-busy="true" aria-label={label ?? title} data-item-card="" data-skeleton="">
@@ -79,11 +82,11 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
         className={`${s.base} ${s.pressable} ${size === "l" ? s.large : ""}`}
         data-item-card=""
         aria-label={label}
-        aria-disabled={busy || disabled ? "true" : undefined}
-        aria-busy={busy ? "true" : undefined}
+        {...busyAttrs}
+        ref={busyRef}
         data-unavailable={disabled ? "" : undefined}
         {...(autoFocus ? { autoFocus: true } : {})}
-        onPress={busy || disabled ? undefined : onPress}
+        onPress={inert ? undefined : onPress}
       >
         {visual}
         {text}

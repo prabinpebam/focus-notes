@@ -197,6 +197,8 @@ A probe view bound a declared `string[]` view-model field to both Toolbar lists.
 
 **Acceptance:** short, waiting, completed, failed, and repeated operations have explicit expected behavior, tested for both controls and reduced motion.
 
+**Status:** fixed by [D-199](../../plan/decisions.md): Button, IconButton, and ItemCard share `useBusy`, timed by the task tracker and the `wait.signDelay` token, and [the busy policy test](../../../packages/ui-runtime/test/busy-policy.test.tsx) drives both controls through each case with the real tracker, including reduced motion. The catalog text is the docs-keeper's.
+
 ### DS-A07 · P2 · The narrative catalog and enforcement claims have drifted
 
 **Evidence:** [the catalog summary](components.md) describes 40 primitives, six hosts, 13 layouts, nine blocks, and 38 compounds; the current registered counts are 44, four, 15, one, and three. Some rows explain planned or consolidated implementations, but the opening calls the list complete. [The overview](overview.html) promises generated component TypeScript types, complete state fixtures, and pixel checks on every fixture across modes, beyond the guarantees verified above.

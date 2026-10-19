@@ -1,4 +1,4 @@
-import { style, styleVariants } from "@vanilla-extract/css";
+import { keyframes, style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.button;
@@ -26,7 +26,8 @@ export const base = style({
   transitionTimingFunction: t.easing,
   selectors: {
     "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focus.ring, outlineWidth: t.focusWidth, outlineOffset: t.focusOffset },
-    '&[aria-disabled="true"]': { opacity: t.disabledOpacity },
+    // Busy is inert but not disabled: its sign is the Spinner and its words, never a dimmed look (D-199).
+    '&[aria-disabled="true"]:not([data-busy="on"])': { opacity: t.disabledOpacity },
     "&[data-selected]": { backgroundColor: t.toggle.selected },
   },
 });
@@ -62,3 +63,12 @@ export const variant = styleVariants({
 });
 
 export const label = style({ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" });
+
+// The busy sign (Waits, D-199): the icon and a Spinner share one cell, so the control keeps its size.
+// The Spinner shows, and the icon hides, only after the busy delay (wait.signDelay), so quick work
+// shows nothing extra. No timer: the delay is the style's, the busy state the task tracker's.
+const hidden = keyframes({ from: { visibility: "hidden" }, to: { visibility: "hidden" } });
+const shown = keyframes({ from: { visibility: "visible" }, to: { visibility: "visible" } });
+export const busyGlyph = style({ display: "inline-grid", gridTemplateAreas: '"glyph"', alignItems: "center", justifyItems: "center" });
+export const busyIcon = style({ gridArea: "glyph", display: "inline-flex", animationName: hidden, animationDuration: t.duration, animationDelay: t.busy.signDelay, animationFillMode: "forwards" });
+export const busySpinner = style({ gridArea: "glyph", display: "inline-flex", visibility: "hidden", animationName: shown, animationDuration: t.duration, animationDelay: t.busy.signDelay, animationFillMode: "forwards" });

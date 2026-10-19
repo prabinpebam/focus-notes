@@ -10,7 +10,7 @@ import { isReadOnlyPath, sourceOf } from "./notes.ts";
 import { registerWorkspaceFeatures, noteReadOnly, NO_WORKSPACE, type WorkspaceState, type WorkspaceFormatOptions } from "./workspace-app.ts";
 import type { Platform } from "./commands.ts";
 import { waits } from "@focus-notes/tokens";
-import { TaskTracker, type Clock, type TaskView } from "./tasks.ts";
+import { TaskTracker, busyProps, type Clock, type TaskView } from "./tasks.ts";
 import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts";
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
 import { joinPath, newNoteFolder } from "./workspace.ts";
@@ -1057,13 +1057,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const extraMenu: { id: string; label: string; items: MenuEntry[] }[] = [];
 
   // ---- view models ----
-  // A command's busy sign and words come from the task tracker (PRF-08).
-  const busyOf = (id: string) => {
-    const t = store.state.tasks.find((x) => x.target === id && x.phase !== "ack");
-    if (!t) return {};
-    const words = t.phase === "done" ? catalog.format(t.doneMessage ?? "task.done") : catalog.format(t.message);
-    return { busy: t.phase === "on", busyLabel: t.elapsed ? catalog.format("task.elapsed", { words, seconds: t.elapsed }) : words };
-  };
+  // A command's busy sign and words come from the task tracker (PRF-08), by the one busy policy (D-199).
+  const busyOf = (id: string) => busyProps(store.state.tasks, id, (key, args) => catalog.format(key, args));
   const describeItem = (id: string) => {
     const d = commands.describe(id);
     return {
