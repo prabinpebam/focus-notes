@@ -36,7 +36,7 @@ def backdrop(mode: str) -> Image.Image:
     top, bottom = (np.array(c, dtype=np.float64) for c in BACKDROPS[mode])
     t = np.linspace(0.0, 1.0, CANVAS[1])[:, None, None]
     rows = (top * (1 - t) + bottom * t).round().astype(np.uint8)
-    return Image.fromarray(np.repeat(rows, CANVAS[0], axis=1), "RGB").convert("RGBA")
+    return Image.fromarray(np.repeat(rows, CANVAS[0], axis=1)).convert("RGBA")
 
 
 def compose(capture: Image.Image) -> Image.Image:
