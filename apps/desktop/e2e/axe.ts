@@ -9,8 +9,9 @@ const axeSource = readFileSync(require.resolve("axe-core/axe.min.js"), "utf8");
 export async function axeViolations(page: Page): Promise<string[]> {
   await page.evaluate(axeSource);
   const result = await page.evaluate(async () => {
-    const axe = (globalThis as unknown as { axe: { run: (ctx: Document, opts: object) => Promise<{ violations: { id: string; help: string; nodes: { target: string[] }[] }[] }> } }).axe;
+    const axe = (globalThis as unknown as { axe: { run: (ctx: Document, opts: object) => Promise<{ violations: { id: string; help: string; nodes: { target: string[]; html: string }[] }[] }> } }).axe;
     return axe.run(document, { resultTypes: ["violations"] });
   });
-  return result.violations.map((v) => `${v.id}: ${v.help} (${v.nodes.map((n) => n.target.join(" ")).join(", ")})`);
+  // Each node with the start of its markup, so a failure on a runner says what the element is.
+  return result.violations.map((v) => `${v.id}: ${v.help} (${v.nodes.map((n) => `${n.target.join(" ")} ${n.html.slice(0, 160)}`).join(", ")})`);
 }
