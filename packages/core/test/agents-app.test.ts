@@ -13,7 +13,7 @@ import { DEFAULT_AGENT_PERMISSIONS, type AgentPermissions } from "../src/agents.
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 const settle = async () => { for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0)); };
 
-function setup(o: { changedOutside?: boolean; cli?: boolean } = {}) {
+function setup(o: { changedOutside?: boolean; cli?: boolean; store?: boolean } = {}) {
   let perms: AgentPermissions = { ...DEFAULT_AGENT_PERMISSIONS };
   const writes: unknown[] = [];
   const undos: [string, string][] = [];
@@ -24,7 +24,7 @@ function setup(o: { changedOutside?: boolean; cli?: boolean } = {}) {
     permissions: perms, changedOutside,
     snippets: connectionSnippets("C:\\Program Files\\Focus Notes\\focus-notes.exe", ["--cli", "mcp", "--data", "C:\\Users\\me\\AppData\\Roaming\\Focus Notes"], "windows"),
     recent: [{ repo: "private", commit: "a".repeat(40), at: Date.UTC(2026, 9, 16, 6, 0), agent: "Claude Desktop", path: "notes/plan.md" }],
-    cli: { available: o.cli ?? false, installed: false, onPath: false },
+    cli: o.store ? { available: true, installed: true, onPath: true, store: true } : { available: o.cli ?? false, installed: false, onPath: false },
   });
   const bridge: PlatformBridge = {
     platform: "windows",
@@ -127,6 +127,12 @@ describe("AGT-02: Settings → Agents", () => {
     expect(off.commands.describe("agents.installCli").enabled).toBe(false);
     const on = await opened(setup({ cli: true }));
     expect(vm(on).cli.canInstall).toBe(true);
+  });
+
+  it("says the Microsoft Store's package has the command-line tool, and offers no install there (D-202)", async () => {
+    const store = await opened(setup({ store: true }));
+    expect(vm(store).cli).toEqual({ status: messages["agents.cli.store"], canInstall: false });
+    expect(store.commands.describe("agents.installCli").enabled).toBe(false);
   });
 });
 

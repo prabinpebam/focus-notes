@@ -21,7 +21,8 @@ export interface AgentsPage {
   changedOutside: boolean;
   snippets: { id: SnippetId; text: string }[];
   recent: AgentChangeRow[];
-  cli: { available: boolean; installed: boolean; onPath: boolean };
+  /** `store`: the Microsoft Store's package, whose alias is the command-line tool (D-202). */
+  cli: { available: boolean; installed: boolean; onPath: boolean; store?: boolean };
 }
 export interface AgentsBridge {
   load(): Promise<AgentsPage>;
@@ -124,9 +125,9 @@ export function registerAgents(ctx: Ctx) {
   });
   commands.register({
     id: "agents.installCli", title: "command.agents.installCli",
-    enabled: () => Boolean(st().page?.cli.available),
+    enabled: () => Boolean(st().page?.cli.available && !st().page?.cli.store),
     run: async () => {
-      if (!agents || !st().page?.cli.available) return;
+      if (!agents || !st().page?.cli.available || st().page?.cli.store) return;
       const r = await agents.installCli().catch(() => ({ installed: false, onPath: false, problem: "failed" }));
       if (r.problem) ctx.toast(catalog.format("agents.cli.failed"), { tone: "error" });
       else ctx.announce(catalog.format(r.onPath ? "agents.cli.installed" : "agents.cli.notOnPath"));
@@ -169,8 +170,8 @@ export function registerAgents(ctx: Ctx) {
         })),
         recentEmpty: p.recent.length === 0,
         cli: {
-          status: catalog.format(!p.cli.available ? "agents.cli.unavailable" : p.cli.installed ? (p.cli.onPath ? "agents.cli.installed" : "agents.cli.notOnPath") : "agents.cli.notInstalled"),
-          canInstall: p.cli.available && !(p.cli.installed && p.cli.onPath),
+          status: catalog.format(p.cli.store ? "agents.cli.store" : !p.cli.available ? "agents.cli.unavailable" : p.cli.installed ? (p.cli.onPath ? "agents.cli.installed" : "agents.cli.notOnPath") : "agents.cli.notInstalled"),
+          canInstall: p.cli.available && !p.cli.store && !(p.cli.installed && p.cli.onPath),
         },
       };
     },

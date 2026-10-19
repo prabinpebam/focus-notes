@@ -14,6 +14,7 @@ import { SWITCHES, connectionSnippets, type AgentsPage, type SwitchId } from "@f
 import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/agents-fs";
 import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
+import { cliArgv, isStoreBuild, storeAliasPath } from "./store-build.ts";
 import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { watchKeybindings } from "./keybindings-watch.ts";
@@ -82,13 +83,16 @@ app.setPath("crashDumps", join(app.getPath("sessionData"), "Crashpad"));
 
 // ---- the command-line tool (WP-7.3, D-165) ----
 // Released builds can't run Electron as Node, so the app's own executable runs the commands:
-// `focus-notes --cli <command> …` (the launcher in the app's resources adds `--cli`). Only as the very
-// first argument, and never alongside a deep link, so a link can't turn into a command. No window,
+// `focus-notes --cli <command> …` (the launcher in the app's resources adds `--cli`); in the Store
+// build the package's alias passes the command as typed (D-202). Only as the very first argument,
+// and never alongside a deep link, so a link can't turn into a command (cliArgv). No window,
 // no single-instance lock, no watcher: the command runs, and the process exits with its code.
+/** Running from the Microsoft Store's package (PKG-12, D-202). */
+const storeBuild = isStoreBuild();
 {
-  const at = process.argv.indexOf("--cli");
-  if (at === (app.isPackaged ? 1 : 2) && !process.argv.some((a) => /^focus-notes:/i.test(a))) {
-    const code = await runCli(process.argv.slice(at + 1), {
+  const command = cliArgv(process.argv, { packaged: app.isPackaged, store: storeBuild });
+  if (command) {
+    const code = await runCli(command, {
       dataDir: app.getPath("userData"),
       defaultWorkspace: resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPath("documents"), "Focus Notes")),
       stdin: process.stdin, stdout: process.stdout, stderr: process.stderr,
@@ -1015,8 +1019,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const recent = g ? await g.agentChanges(50).catch(() => []) : [];
     // The app's own executable runs the server (D-165): with the built main script in development.
     const args = [...(app.isPackaged ? [] : [join(import.meta.dirname, "main.mjs")]), "--cli", "mcp", "--data", agentsData()];
-    const cli = cliAvailable() ? await cliInstallState(installHost()).catch(() => ({ installed: false, onPath: false })) : { installed: false, onPath: false };
-    return { permissions, changedOutside, snippets: connectionSnippets(process.execPath, args, process.platform === "win32" ? "windows" : "posix"), recent, cli: { available: cliAvailable(), ...cli } };
+    const cli = storeBuild
+      ? { installed: true, onPath: true, store: true }
+      : cliAvailable() ? await cliInstallState(installHost()).catch(() => ({ installed: false, onPath: false })) : { installed: false, onPath: false };
+    // The Store's package starts by its alias, whose path stays the same across versions (D-202).
+    const exe = storeBuild && process.env.LOCALAPPDATA ? storeAliasPath(process.env.LOCALAPPDATA) : process.execPath;
+    return { permissions, changedOutside, snippets: connectionSnippets(exe, args, process.platform === "win32" ? "windows" : "posix"), recent, cli: { available: storeBuild || cliAvailable(), ...cli } };
   }
   handle("agents:load", () => agentsPage());
   handle("agents:set", async (raw) => {
@@ -1033,6 +1041,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return g ? g.undoAgentChange(repo, commit) : { problem: "failed" };
   });
   handle("agents:installCli", async () => {
+    // The Store's package has its alias already; its folder is read-only and moves with each version (D-202).
+    if (storeBuild) return { installed: true, onPath: true };
     if (!cliAvailable()) return { installed: false, onPath: false, problem: "unavailable" };
     return installCli(installHost()).catch(() => ({ installed: false, onPath: false, problem: "failed" }));
   });
@@ -1875,7 +1885,8 @@ const linkArrived = (l: DeepLink | undefined) => {
   pendingLink = l;
   mainWindow?.webContents.send("deeplink:arrived");
 };
-if (app.isPackaged && !journey && primary) app.setAsDefaultProtocolClient("focus-notes");
+// The Store's package declares the scheme in its manifest, and its folder moves with each version (D-202).
+if (app.isPackaged && !journey && primary && !storeBuild) app.setAsDefaultProtocolClient("focus-notes");
 app.on("open-url", (e, url) => {
   e.preventDefault();
   linkArrived(parseDeepLink(url));

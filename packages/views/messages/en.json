@@ -1387,6 +1387,7 @@
   "agents.cli.unavailable": "Available in the installed app.",
   "agents.cli.notInstalled": "Not installed. It acts as you, whatever the switches above say.",
   "agents.cli.installed": "Installed: open a new terminal and type focus-notes.",
+  "agents.cli.store": "Installed with the app from the Microsoft Store: open a new terminal and type focus-notes.",
   "agents.cli.notOnPath": "Installed in ~/.local/bin, which isn't on your PATH yet.",
   "agents.cli.failed": "Couldn't install the command-line tool.",
   "settings.account.github": "GitHub",
