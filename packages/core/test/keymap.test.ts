@@ -154,6 +154,8 @@ describe("the cheat sheet (KEY-05)", () => {
     expect(ids(vm().groups)).toEqual(["shortcuts.open"]);
     await app.commands.run("shortcuts.setQuery", { value: "⇧⌘L" });
     expect(ids(vm().groups)).toEqual(["appearance.toggle"]);
+    await app.commands.run("shortcuts.setQuery", { value: "cmd shift /" });
+    expect(ids(vm().groups)).toEqual(["shortcuts.open"]);
     await app.commands.run("shortcuts.setQuery", { value: "zzz" });
     expect(vm().groups).toEqual([]);
     expect(vm().summary).toBe("No shortcuts match “zzz”");
