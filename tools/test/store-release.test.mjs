@@ -13,6 +13,7 @@ import { deflateRawSync } from "node:zlib";
 import yaml from "js-yaml";
 import { checkManifest, readManifest, readZipEntry } from "../release/store-manifest.mjs";
 import { identityArgs } from "../../apps/desktop/scripts/dist-store.mjs";
+import { LIMITS, buildListing, overLimits, renderListing } from "../release/store-listing.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
 const read = (p) => readFileSync(join(root, p), "utf8");
@@ -218,5 +219,38 @@ describe("ci.yml packs the Store package on Windows", () => {
     expect(s[store].run).toMatch(/dist-store\.mjs/);
     expect(s[store].run).toMatch(/store-manifest\.mjs/);
     expect(text).not.toMatch(/secrets\./);
+  });
+});
+
+describe("the Store listing comes from the product site", () => {
+  const landing = JSON.parse(read("site/landing.json"));
+  const privacy = read("site/privacy.md").replace(/\r\n/g, "\n");
+  const store = JSON.parse(read("store/listing.json"));
+
+  it("takes its words from site/landing.json and site/privacy.md, and stays inside Partner Center's limits", () => {
+    const l = buildListing(landing, privacy, store);
+    expect(l.shortDescription).toBe(landing.line);
+    expect(l.description.startsWith(landing.headline)).toBe(true);
+    for (const f of landing.features) expect(l.description).toContain(f.headline);
+    expect(l.description).toMatch(/^The app talks only to your computer and to GitHub/m);
+    expect(l.description).not.toMatch(/this site|swatch/i);
+    expect(overLimits(l, store.releaseNotesTemplate)).toEqual([]);
+  });
+
+  it("names the privacy and support URLs, the category and a draft age rating", () => {
+    expect(store.privacyPolicyUrl).toBe("https://prabinpebam.github.io/focus-notes/privacy/");
+    expect(store.supportUrl).toMatch(/^https:\/\/github\.com\/prabinpebam\/focus-notes\/issues$/);
+    expect(store.category).toBe("Productivity");
+    expect(store.ageRating.answers.length).toBeGreaterThan(0);
+    expect(store.keywords.length).toBeLessThanOrEqual(LIMITS.keywords);
+  });
+
+  it("is committed as generated", () => {
+    expect(read("store/listing.en-US.md").replace(/\r\n/g, "\n")).toBe(renderListing(landing, privacy, store));
+  });
+
+  it("reports each limit it breaks", () => {
+    const long = { description: "x".repeat(LIMITS.description + 1), shortDescription: "s", features: ["y".repeat(LIMITS.feature + 1)], keywords: ["a", "b", "c", "d", "e", "f", "g", "h"] };
+    expect(overLimits(long, "")).toHaveLength(3);
   });
 });
