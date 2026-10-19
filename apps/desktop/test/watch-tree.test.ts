@@ -24,6 +24,12 @@ describe("PRF-11: watching the workspace's tree", () => {
     const seen = new Set<string>();
     const w = watchTree(root, (rel) => seen.add(rel.split(/[\\/]/).join("/")), { hidden: [".focus-notes"] });
     try {
+      // macOS's event stream starts a moment after the watch does, and a change before then is never
+      // reported (macOS CI); the app reads the tree when it opens, so only the test waits for it.
+      const probe = join(root, "probe.md");
+      expect(await until(() => (writeFileSync(probe, "x"), seen.has("probe.md")), 10_000)).toBe(true);
+      await new Promise((r) => setTimeout(r, 100));
+      seen.clear();
       // As the app saves: a temporary file renamed over the note.
       writeFileSync(join(root, "private", "notes", "welcome.md.1.tmp"), "# Welcome\n\nMine.\n");
       renameSync(join(root, "private", "notes", "welcome.md.1.tmp"), join(root, "private", "notes", "welcome.md"));
