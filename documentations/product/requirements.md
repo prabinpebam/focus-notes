@@ -341,6 +341,7 @@ Cross-cutting requirements serving CP-SAFE-01.
 | QLT-04 | Local diagnostics: redacted, rotated logs, *Copy diagnostic report*, and *Report a problem* (a pre-filled GitHub issue the user reviews). Nothing is sent automatically. | P0 |
 | QLT-05 | Every wait a person feels has a named performance measure, and the main process records named spans for Git and content work, kept in memory and shown only in local diagnostics. `pnpm bench` runs Playwright on a throwaway Git copy of a fixture workspace (never real notes), and a committed budgets file with noise allowances supports `--compare` and `--check`, which fails CI on a regression. *(derived from QLT-01)* | P0 |
 | QLT-06 | Crash recovery is isolated: drafts live only in the app's data folder; recovery never creates, writes, renames, moves or deletes a file or folder in the workspace by itself; a draft follows its note through renames; and recovered text comes back in the editor as unsaved edits, through the resolver, or in a Recovered list, for the person to keep (D-190). *(derived from QLT-03)* | P0 |
+| QLT-07 | *Send feedback*: a problem or an idea, sent from inside the app. Signed in on the desktop, it's posted as an issue to the project's own repository with the person's account, the diagnostic report only when they attach it, and the issue's number shown; otherwise, and always in the browser, GitHub's new-issue form opens filled with their words and never the report. Nothing is sent until they press Send (D-203). *(derived from QLT-04)* | P1 |
 
 ## Accessibility (A11Y)
 

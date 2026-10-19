@@ -1491,6 +1491,41 @@
       "status": "verifying"
     },
     {
+      "id": "WP-5.12",
+      "stage": "M5",
+      "title": "Send feedback",
+      "summary": "Send feedback from Settings' category list, the ⋯ menu, Spotlight and the macOS Help menu: a problem or an idea posted as a GitHub issue to the project with the person's own sign-in, the diagnostic report only when attached, or continued on GitHub's new-issue form when signed out and in the browser; and a workflow that labels issues sent from the app.",
+      "requirements": [
+        "QLT-07"
+      ],
+      "dependsOn": [
+        "WP-5.7"
+      ],
+      "touches": [
+        "apps/desktop",
+        "apps/web",
+        "packages/core",
+        "packages/github",
+        "packages/ui",
+        "packages/tokens",
+        "packages/views",
+        ".github/workflows"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "design/views/secondary-views.md",
+        "architecture/security-and-privacy.md",
+        "architecture/performance-and-quality.md"
+      ],
+      "lookahead": false,
+      "status": "building"
+    },
+    {
       "id": "WP-6.1",
       "stage": "MW",
       "title": "Web app on your own Pages, local first",
