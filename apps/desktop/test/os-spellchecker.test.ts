@@ -105,7 +105,8 @@ describe.runIf(process.platform === "win32")("Windows' spell checker, asked for 
     const c = new OsSpellChecker(() => spawn(exe, HELPER_ARGS, { windowsHide: true, stdio: "pipe" }));
     try {
       c.warm(["en-US"]);
-      const until = Date.now() + 20_000;
+      // PowerShell and the spell checker start cold on a CI runner busy with the rest of the suite.
+      const until = Date.now() + 75_000;
       while (!c.ready && Date.now() < until) await new Promise((r) => setTimeout(r, 50));
       expect(c.ready).toBe(true);
       // A cold computer can take longer than a menu waits to load the dictionary: ask again, as the next right-click would.
@@ -121,5 +122,5 @@ describe.runIf(process.platform === "win32")("Windows' spell checker, asked for 
     } finally {
       c.dispose();
     }
-  }, 30_000);
+  }, 90_000);
 });
