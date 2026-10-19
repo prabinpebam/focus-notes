@@ -6,7 +6,8 @@
 # The first submission is made by hand in Partner Center (documentations/plan/microsoft-store.md).
 # Until the owner adds the release environment's secrets MSSTORE_TENANT_ID, MSSTORE_CLIENT_ID,
 # MSSTORE_CLIENT_SECRET and MSSTORE_SELLER_ID, and the repository variable MSSTORE_PRODUCT_ID, every
-# run stops at its first step with a notice, and succeeds. Pre-releases never go to the Store.
+# run stops at its first step with a notice, and succeeds. Pre-releases never go to the Store, nor
+# 0.x.y releases: the Store refuses a package version that starts with 0.
 #
 # Its own workflow, so release.yml keeps no secrets (PKG-04), and it starts only once a person has
 # checked and published the draft release, so the Store never gets what the owner hasn't released.
@@ -63,6 +64,9 @@ jobs:
           elif ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::$tag isn't a release tag (v<x.y.z>)."
             exit 1
+          elif [[ "$tag" == v0.* ]]; then
+            echo "::notice title=Microsoft Store::$tag isn't submitted: the Store refuses a version that starts with 0, so Store releases start at v1.0.0."
+            echo "submit=false" >> "$GITHUB_OUTPUT"
           else
             echo "submit=true" >> "$GITHUB_OUTPUT"
             echo "tag=$tag" >> "$GITHUB_OUTPUT"

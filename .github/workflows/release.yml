@@ -11,6 +11,9 @@
 # Windows first (D-112): only the Windows build must pass; macOS and Linux build and report without
 # blocking. Unsigned until DSK-07: there are no signing secrets in this repository (PKG-04).
 # No job restores a cache, so nothing another branch's run wrote reaches a release.
+#
+# Microsoft Store (PKG-12, D-202): the store job builds the MSIX package beside the NSIS installer,
+# with Partner Center's identity from repository variables; store.yml submits it once it's published.
 name: release
 on:
   push:
@@ -184,11 +187,14 @@ jobs:
       - id: identity
         name: The package's identity
         run: |
-          if [ -n "$MSSTORE_IDENTITY_NAME" ] && [ -n "$MSSTORE_PUBLISHER" ]; then
-            echo "release=true" >> "$GITHUB_OUTPUT"
-          else
+          if [ -z "$MSSTORE_IDENTITY_NAME" ] || [ -z "$MSSTORE_PUBLISHER" ]; then
             echo "::notice title=Microsoft Store::No MSSTORE_IDENTITY_NAME and MSSTORE_PUBLISHER repository variables: the Store package is built with placeholders and checked, but not released (documentations/plan/microsoft-store.md)."
             echo "release=false" >> "$GITHUB_OUTPUT"
+          elif [ "${VERSION%%.*}" = "0" ]; then
+            echo "::notice title=Microsoft Store::The Store refuses version $VERSION (a package's version can't start with 0): the Store package is built and checked, but not released. Store releases start at 1.0.0."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Build the Store package
         env:

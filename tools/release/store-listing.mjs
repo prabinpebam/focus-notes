@@ -131,6 +131,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       console.error("store/listing.en-US.md is stale: run node tools/release/store-listing.mjs");
       process.exit(1);
     }
+    console.log("Store listing up to date.");
   } else {
     writeFileSync(OUT, text);
     console.log("Wrote store/listing.en-US.md.");

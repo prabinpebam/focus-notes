@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { deflateRawSync } from "node:zlib";
 import yaml from "js-yaml";
 import { checkManifest, readManifest, readZipEntry } from "../release/store-manifest.mjs";
-import { identityArgs } from "../../apps/desktop/scripts/dist-store.mjs";
+import { identityArgs, storeVersionProblem } from "../../apps/desktop/scripts/dist-store.mjs";
 import { LIMITS, buildListing, overLimits, renderListing } from "../release/store-listing.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
@@ -157,7 +157,10 @@ describe("release.yml's store job: built and checked with no secrets", () => {
       ["steps.identity.outputs.release == 'true'", "asset-store"],
       ["steps.identity.outputs.release != 'true'", "store-package-placeholder"],
     ]);
-    expect(steps(job).find((s) => s.id === "identity").run).toMatch(/::notice title=Microsoft Store::/);
+    const identity = steps(job).find((s) => s.id === "identity").run;
+    expect(identity).toMatch(/::notice title=Microsoft Store::No MSSTORE_IDENTITY_NAME/);
+    expect(identity).toMatch(/"\$\{VERSION%%\.\*\}" = "0"/);
+    expect(identity.match(/release=false/g)).toHaveLength(2);
     expect(wf.jobs.collect.needs).toContain("store");
   });
 });
@@ -193,7 +196,8 @@ describe("store.yml: submits a published release's package to the Store", () => 
     expect(ready.env.PRODUCT_ID).toBe("${{ vars.MSSTORE_PRODUCT_ID }}");
     expect(ready.run).toMatch(/::notice title=Microsoft Store::Not submitted/);
     expect(ready.run).toMatch(/pre-release: not submitted/);
-    expect(ready.run.match(/submit=false/g)).toHaveLength(2);
+    expect(ready.run).toMatch(/"\$tag" == v0\.\*/);
+    expect(ready.run.match(/submit=false/g)).toHaveLength(3);
     for (const s of all.slice(1)) expect(s.if, s.name ?? s.uses).toBe("steps.ready.outputs.submit == 'true'");
   });
 

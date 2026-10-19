@@ -7,7 +7,8 @@
 //     MSSTORE_PUBLISHER_DISPLAY_NAME, the release workflow's repository variables of the same names.
 //
 //   pnpm --filter @focus-notes/desktop run dist:store [-- <electron-builder options>]
-//   node scripts/dist-store.mjs --require-identity …   refuse to build with the placeholders
+//   node scripts/dist-store.mjs --require-identity …   refuse to build with the placeholders, or with
+//                                                      a version the Store refuses (0.x.y)
 //
 // Unsigned unless WIN_CSC_LINK names a certificate: the Store signs what it publishes, so the
 // package uploaded to Partner Center needs none (a local test may sign with a throwaway one).
@@ -18,7 +19,20 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const root = join(import.meta.dirname, "..");
-const placeholders = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).build.appx;
+const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+const placeholders = pkg.build.appx;
+
+/**
+ * Why the Store would refuse this version, or undefined. A package's version is Major.Minor.Build.0:
+ * the Store keeps the last section, and the first can't be 0, so 0.x.y releases aren't submitted.
+ */
+export function storeVersionProblem(version) {
+  const m = /^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?$/.exec(version ?? "");
+  if (!m) return `${version} isn't a version.`;
+  if (Number(m[1]) === 0) return `The Microsoft Store refuses version ${version}: a package's version can't start with 0. Store releases start at 1.0.0.`;
+  if (m.slice(1).some((n) => Number(n) > 65535)) return `${version} has a section over 65535.`;
+  return undefined;
+}
 
 /** The `-c.appx.*` overrides the environment asks for, and whether the identity is still a placeholder. */
 export function identityArgs(env) {
