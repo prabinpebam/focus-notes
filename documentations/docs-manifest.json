@@ -227,6 +227,16 @@
       "group": "Design/System"
     },
     {
+      "path": "design/system/audit.md",
+      "title": "Design-system audit",
+      "order": 306,
+      "icon": "fact_check",
+      "status": "draft",
+      "updated": "2026-10-19",
+      "group": "Design/System",
+      "searchText": "design system audit tokens reusable components contracts enforcement fixtures visual baselines accessibility library maturity"
+    },
+    {
       "path": "design/views/files.html",
       "title": "Files panel",
       "order": 320,
