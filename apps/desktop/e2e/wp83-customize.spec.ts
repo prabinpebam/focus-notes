@@ -72,6 +72,10 @@ test("UI-08, KEY-07: a key from keybindings.json takes effect, conflicts and pro
   expect(await settledAxe(page)).toEqual([]);
   await press(dialog.getByRole("button", { name: "Done", exact: true }));
   await expect(dialog).toBeHidden();
+  // Settings closes first, so each Escape below puts the toolbar away rather than racing to close
+  // Settings, which left the toolbar open and the next Mod+. toggled it shut.
+  await page.keyboard.press("Escape");
+  await expect(settings).toBeHidden();
 
   const toolbarHas = async (name: string) => {
     await page.keyboard.press(`${mod}+.`);
@@ -79,6 +83,7 @@ test("UI-08, KEY-07: a key from keybindings.json takes effect, conflicts and pro
     await expect(toolbar).toBeVisible();
     const n = await toolbar.getByRole("button", { name, exact: true }).count();
     await page.keyboard.press("Escape");
+    await expect(toolbar).toBeHidden();
     return n;
   };
   expect(await toolbarHas("Find")).toBe(1);
