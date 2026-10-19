@@ -426,7 +426,7 @@ test("FRE-01: Git missing: one free helper app to install and Check again, in pl
     await expect(card(page).getByText("One free helper app")).toBeVisible({ timeout: 15_000 });
     await card(page).getByRole("button", { name: "Having trouble?" }).click();
     await expect(card(page).getByText("Git isn't installed.")).toBeVisible();
-    await expect(card(page).getByText("winget install --id Git.Git -e")).toBeVisible();
+    await expect(card(page).getByText(process.platform === "darwin" ? "xcode-select --install" : process.platform === "win32" ? "winget install --id Git.Git -e" : "sudo apt install git")).toBeVisible();
     expect(await axeViolations(page)).toEqual([]);
   } finally {
     await quit(l);

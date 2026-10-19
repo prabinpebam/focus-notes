@@ -142,7 +142,9 @@ export function cheatSheet(
       const label = catalog.format(b.title);
       const shown = b.chords.map((c) => formatChord(c, platform));
       if (terms.length) {
-        const keys = b.chords.flatMap((c) => [c, formatChord(c, "macos"), formatChord(c, "windows"), formatChord(c, "windows").replaceAll("+", " ")]);
+        // Keys typed as on either system: "⌘/", "cmd /", "command return", "ctrl /" (D-194).
+        const mac = (c: string) => spokenChord(c, "macos").replace("Command", "Cmd").replace("Option", "Opt");
+        const keys = b.chords.flatMap((c) => [c, formatChord(c, "macos"), spokenChord(c, "macos"), mac(c), formatChord(c, "windows"), formatChord(c, "windows").replaceAll("+", " ")]);
         const hay = [label, groupLabel, catalog.format(`shortcuts.layer.${b.layer}`), ...keys].join("\n").toLowerCase();
         if (!terms.every((t) => hay.includes(t))) continue;
       }

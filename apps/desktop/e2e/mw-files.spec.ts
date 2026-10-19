@@ -115,7 +115,7 @@ test("FIL-01, FIL-02: the panel opens by keyboard and from the toolbar; notes an
     await expect(button).toBeFocused();
   }
   await files.getByRole("button", { name: "New folder", exact: true }).hover();
-  await expect(page.getByRole("tooltip")).toContainText(/New folder.*Shift\+N/i);
+  await expect(page.getByRole("tooltip")).toContainText(process.platform === "darwin" ? "New folder⇧⌘N" : /New folder.*Ctrl\+Shift\+N/);
   await files.getByRole("button", { name: "New folder", exact: true }).click();
   await expect(name).toBeFocused();
   await page.keyboard.type("Drafts");

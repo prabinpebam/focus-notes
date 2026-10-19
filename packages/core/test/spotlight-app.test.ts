@@ -121,6 +121,17 @@ describe("SPT-01: Mod+/ opens Spotlight from anywhere; Mod+Shift+P too, on every
     }
   });
 
+  it("names its keys in the footer as each system writes them (D-194)", async () => {
+    const hints = async (platform: "windows" | "linux" | "macos") => {
+      const { app } = await started(desktop(platform), { search: false });
+      await app.commands.run("spotlight.open");
+      return (vm(app) as unknown as { hints: string }).hints;
+    };
+    expect(await hints("windows")).toBe("Enter to open · Ctrl+Enter for the alternative · Ctrl+K for actions · Esc to close");
+    expect(await hints("linux")).toBe(await hints("windows"));
+    expect(await hints("macos")).toBe("↩ to open · ⌘↩ for the alternative · ⌘K for actions · Esc to close");
+  });
+
   it("opens in All with the field focused, from the toolbar's Search too", async () => {
     const { app } = await started();
     expect(app.commands.describe("spotlight.open")).toMatchObject({ enabled: true, shortcut: "Mod+/" });

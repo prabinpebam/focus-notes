@@ -320,6 +320,14 @@ export function chordMatches(chord: string, e: KeyEventLike, platform: Platform,
 }
 
 const KEY_NAMES: Record<string, string> = { Up: "↑", Down: "↓", Left: "←", Right: "→", Plus: "+", Escape: "Esc", Space: "Space" };
+/**
+ * macOS names its named keys with the glyphs its menus use: ↩ Return, ⌫ Delete, ⇥ Tab (D-194). Escape
+ * stays "Esc", as its key cap and Apple's own help write it.
+ */
+const MAC_KEY_NAMES: Record<string, string> = {
+  ...KEY_NAMES, Enter: "↩", Return: "↩", Backspace: "⌫", Delete: "⌦", Tab: "⇥",
+  Home: "↖", End: "↘", PageUp: "⇞", PageDown: "⇟",
+};
 
 /** Renders a chord for people: "⇧⌘L" on macOS, "Ctrl+Shift+L" elsewhere. */
 export function formatChord(chord: string, platform: Platform): string {
@@ -330,7 +338,7 @@ export function formatChord(chord: string, platform: Platform): string {
 export function chordParts(chord: string, platform: Platform): string[] {
   const parts = chord.split("+");
   const last = parts.at(-1)!;
-  const key = last.length === 1 ? last.toUpperCase() : (KEY_NAMES[last] ?? last);
+  const key = last.length === 1 ? last.toUpperCase() : ((platform === "macos" ? MAC_KEY_NAMES : KEY_NAMES)[last] ?? last);
   const mods = parts.slice(0, -1).map((p) => p.toLowerCase());
   if (platform === "macos") {
     const glyph: Record<string, string> = { mod: "⌘", ctrl: "⌃", alt: "⌥", shift: "⇧" };
@@ -345,6 +353,7 @@ export function chordParts(chord: string, platform: Platform): string[] {
 const SPOKEN: Record<string, string> = {
   "⌘": "Command", "⌃": "Control", "⌥": "Option", "⇧": "Shift", Ctrl: "Control", "↑": "Up", "↓": "Down", "←": "Left", "→": "Right",
   "+": "Plus", "-": "Minus", "=": "Equals", "/": "Slash", "\\": "Backslash", ".": "Period", ",": "Comma", "`": "Backtick", Esc: "Escape",
+  "↩": "Return", "⌫": "Delete", "⌦": "Forward Delete", "⇥": "Tab", "↖": "Home", "↘": "End", "⇞": "Page Up", "⇟": "Page Down",
 };
 
 /** A chord in words, for screen readers: "Shift Command L", "Control Slash". */

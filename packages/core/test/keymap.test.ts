@@ -114,6 +114,19 @@ describe("showing keys", () => {
     expect(spokenChord("Mod+Shift+L", "macos")).toBe("Shift Command L");
     expect(spokenChord("Mod+\\", "windows")).toBe("Control Backslash");
   });
+
+  it("names keys with macOS's glyphs on macOS and in words elsewhere (D-194)", () => {
+    const named = ["Enter", "Backspace", "Delete", "Escape", "Tab", "Home", "End", "PageUp", "PageDown", "Space"];
+    expect(named.map((k) => formatChord(k, "macos"))).toEqual(["↩", "⌫", "⌦", "Esc", "⇥", "↖", "↘", "⇞", "⇟", "Space"]);
+    expect(named.map((k) => formatChord(k, "windows"))).toEqual(["Enter", "Backspace", "Delete", "Esc", "Tab", "Home", "End", "PageUp", "PageDown", "Space"]);
+    expect(named.map((k) => formatChord(k, "linux"))).toEqual(named.map((k) => formatChord(k, "windows")));
+    expect(formatChord("Mod+Backspace", "macos")).toBe("⌘⌫");
+    expect(formatChord("Mod+Shift+Enter", "macos")).toBe("⇧⌘↩");
+    expect(spokenChord("Mod+Backspace", "macos")).toBe("Command Delete");
+    expect(spokenChord("Enter", "macos")).toBe("Return");
+    expect(spokenChord("Escape", "macos")).toBe("Escape");
+    expect(spokenChord("Escape", "windows")).toBe("Escape");
+  });
 });
 
 describe("the cheat sheet (KEY-05)", () => {
@@ -141,6 +154,8 @@ describe("the cheat sheet (KEY-05)", () => {
     expect(ids(vm().groups)).toEqual(["shortcuts.open"]);
     await app.commands.run("shortcuts.setQuery", { value: "⇧⌘L" });
     expect(ids(vm().groups)).toEqual(["appearance.toggle"]);
+    await app.commands.run("shortcuts.setQuery", { value: "cmd shift /" });
+    expect(ids(vm().groups)).toEqual(["shortcuts.open"]);
     await app.commands.run("shortcuts.setQuery", { value: "zzz" });
     expect(vm().groups).toEqual([]);
     expect(vm().summary).toBe("No shortcuts match “zzz”");

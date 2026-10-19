@@ -2107,7 +2107,12 @@
                   "type": "Text",
                   "props": {
                     "value": {
-                      "t": "shortcuts.emptyHint"
+                      "t": "shortcuts.emptyHint",
+                      "args": {
+                        "platform": {
+                          "get": "vm.app.platform"
+                        }
+                      }
                     },
                     "tone": "muted"
                   }
