@@ -5,7 +5,7 @@
  * (apps/web/src/share) supplies the sealed site, the session's storage, and a timer.
  * Every failure is the one generic error: it never says whether a name, a link, or a note exists.
  */
-import { sharedListModel, sharedNoteFromHash, sharedPage, type ReaderModel } from "./public-page.ts";
+import { BLOCK_LIST_SCHEMA, sharedListModel, sharedNoteFromHash, sharedPage, type ReaderModel } from "./public-page.ts";
 import type { JsonSchema } from "./view-models.ts";
 
 /** A share once opened: what it opens, a reader for each note, the session that reopens it, and when it ends. */
@@ -69,8 +69,8 @@ export const SHARE_VIEW_MODEL: { id: string; schema: JsonSchema & { type: "objec
       remember: { type: "boolean" },
       signedOut: { type: "boolean" },
       multiple: { type: "boolean" },
-      list: { type: "object", properties: { title: { type: "array", items: { type: "object" } }, body: { type: "array", items: { type: "object" } } } },
-      note: { type: "object", properties: { title: { type: "array", items: { type: "object" } }, updated: { type: "number" }, body: { type: "array", items: { type: "object" } } } },
+      list: { type: "object", properties: { title: BLOCK_LIST_SCHEMA, body: BLOCK_LIST_SCHEMA } },
+      note: { type: "object", properties: { title: BLOCK_LIST_SCHEMA, updated: { type: "number" }, body: BLOCK_LIST_SCHEMA } },
       focus: { type: "number" },
     },
   },

@@ -5,6 +5,7 @@
  */
 import { parseMarkdown, type PMNode } from "@focus-notes/markdown";
 import type { JsonSchema } from "./view-models.ts";
+import { BLOCK_LIST_SCHEMA } from "./public-page.ts";
 
 /** The project's repository, the only other site the product site links to (with GitHub's own help). */
 export const SITE_REPOSITORY = "https://github.com/prabinpebam/focus-notes";
@@ -201,7 +202,7 @@ export function landingModel(c: LandingContent): LandingModel {
   return { heroAnchor: LANDING_HERO, headline: c.headline, line: c.line, hero, features, closingAnchor: LANDING_CLOSING, closing: c.closing, downloadAnchor: LANDING_DOWNLOAD };
 }
 
-const BLOCKS: JsonSchema = { type: "array", items: { type: "object" } };
+const BLOCKS = BLOCK_LIST_SCHEMA;
 const IMAGE: JsonSchema = { type: "object", properties: Object.fromEntries(["src", "srcSet", "avifSet", "sizes", "alt"].map((k) => [k, { type: "string" } as JsonSchema]).concat([["width", { type: "number" }], ["height", { type: "number" }]])) };
 const vm = (id: string, properties: Record<string, JsonSchema>) => ({ id, schema: { type: "object" as const, properties } });
 /** The site's view models, filled by the site's renderer (WP-10.1), not the app. */
@@ -214,7 +215,7 @@ export const SITE_VIEW_MODELS = [
     headline: { type: "string" },
     line: { type: "string" },
     hero: IMAGE,
-    features: { type: "array", items: { type: "object", properties: { key: { type: "string" }, anchor: { type: "string" }, hasEyebrow: { type: "boolean" }, eyebrow: { type: "string" }, headline: { type: "string" }, line: { type: "string" }, image: IMAGE, hasThemes: { type: "boolean" }, themes: { type: "array", items: { type: "object" } } } } },
+    features: { type: "array", items: { type: "object", properties: { key: { type: "string" }, anchor: { type: "string" }, hasEyebrow: { type: "boolean" }, eyebrow: { type: "string" }, headline: { type: "string" }, line: { type: "string" }, image: IMAGE, hasThemes: { type: "boolean" }, themes: { type: "array", items: { type: "object", properties: { ...IMAGE.properties, id: { type: "string" }, label: { type: "string" }, scheme: { type: "string", enum: ["light", "dark"] } } } } } } },
     closingAnchor: { type: "string" },
     closing: { type: "string" },
     downloadAnchor: { type: "string" },

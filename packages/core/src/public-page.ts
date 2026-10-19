@@ -5,6 +5,12 @@
 import { parseMarkdown, type PMNode } from "@focus-notes/markdown";
 import type { JsonSchema } from "./view-models.ts";
 
+/** A list of note blocks as the Markdown bridge parses them (NoteContent's noteBlocks, D-198). */
+export const BLOCK_LIST_SCHEMA: JsonSchema = {
+  type: "array",
+  items: { type: "object", properties: { type: { type: "string" }, attrs: { type: "object" }, content: { type: "array" }, marks: { type: "array" }, text: { type: "string" } } },
+};
+
 /** A public note's page in the site, from its path in `notes/`: `Guides/Garden.md` → `n/Guides/Garden/`. */
 export function publicPagePath(notePath: string): string {
   const segs = notePath.replace(/\.(md|markdown)$/i, "").split("/");
@@ -28,9 +34,9 @@ export const READER_VIEW_MODEL: { id: string; schema: JsonSchema & { type: "obje
   schema: {
     type: "object",
     properties: {
-      title: { type: "array", items: { type: "object" }, description: "The title as a level-1 heading block." },
+      title: { ...BLOCK_LIST_SCHEMA, description: "The title as a level-1 heading block." },
       updated: { type: "number", description: "When the note last changed (ms since the epoch)." },
-      body: { type: "array", items: { type: "object" }, description: "The note's blocks after its title." },
+      body: { ...BLOCK_LIST_SCHEMA, description: "The note's blocks after its title." },
     },
   },
 };
@@ -58,7 +64,7 @@ export const PUBLIC_INDEX_VIEW_MODEL: { id: string; schema: JsonSchema & { type:
   schema: {
     type: "object",
     properties: {
-      title: { type: "array", items: { type: "object" }, description: "The page's heading as a level-1 heading block." },
+      title: { ...BLOCK_LIST_SCHEMA, description: "The page's heading as a level-1 heading block." },
       count: { type: "number", description: "How many public notes there are." },
       rows: {
         type: "array",
@@ -67,10 +73,10 @@ export const PUBLIC_INDEX_VIEW_MODEL: { id: string; schema: JsonSchema & { type:
           type: "object",
           properties: {
             key: { type: "string", description: "The note's path in notes/." },
-            title: { type: "array", items: { type: "object" }, description: "Its title as a level-2 heading linking to its page." },
+            title: { ...BLOCK_LIST_SCHEMA, description: "Its title as a level-2 heading linking to its page." },
             updated: { type: "number", description: "When it last changed (ms since the epoch)." },
             hasExcerpt: { type: "boolean", description: "Whether its front matter gives an excerpt." },
-            excerpt: { type: "array", items: { type: "object" }, description: "The excerpt as a paragraph block, or nothing." },
+            excerpt: { ...BLOCK_LIST_SCHEMA, description: "The excerpt as a paragraph block, or nothing." },
           },
         },
       },

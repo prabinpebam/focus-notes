@@ -17,8 +17,11 @@ export type PropSpec =
   | { kind: "text"; bindable?: boolean; required?: boolean; description?: string }
   /** An element ID in the same view, for anchors and tooltips. */
   | { kind: "ref"; description?: string }
-  /** Structured data from a view model (menu sections, command items). Only ever a read. */
-  | { kind: "list"; of: "commandItems" | "menuSections" | "options" | "keyCaps" | "keyBindings" | "resultItems" | "treeItems" | "versionBlocks" | "themeTiles" | "colorValues" | "noteBlocks" | "siteThemes"; required?: boolean; description?: string };
+  /** Structured data from a view model (menu sections, command items). Only ever a read; its items must match ITEM_SHAPES[of] (D-198). */
+  | { kind: "list"; of: ListOf; required?: boolean; description?: string };
+
+/** The kinds of structured list a prop can take; each one's item is in items.ts (D-198). */
+export type ListOf = "commandItems" | "menuSections" | "options" | "keyCaps" | "keyBindings" | "resultItems" | "treeItems" | "versionBlocks" | "themeTiles" | "colorValues" | "noteBlocks" | "siteThemes";
 
 export type PropKind = PropSpec["kind"];
 

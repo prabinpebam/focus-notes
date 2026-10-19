@@ -171,6 +171,8 @@ A probe view bound a declared `string[]` view-model field to both Toolbar lists.
 
 **Acceptance:** the `string[]` probe fails; valid command-item and menu-section bindings pass; useful diagnostics identify the incompatible field.
 
+**Status (D-198, proposed):** enforced. Each list kind's item shape is typed from the existing data types ([items.ts](../../../packages/ui/src/items.ts)); `ui:check` requires the bound field's item schema to declare the required fields with matching kinds, including nested menu items. Tests: [check.test.ts, list item contracts](../../../packages/ui-runtime/test/check.test.ts).
+
 ### DS-A05 · P2 · Contracts do not prove implementation-prop parity
 
 **Evidence:** [ButtonProps](../../../packages/ui/src/primitives/Button/Button.tsx) is handwritten separately from [the Button contract](../../../packages/ui/src/primitives/Button/contract.ts). [Registry entries](../../../packages/ui/src/registry.ts) and runtime dependencies use `ComponentType<any>`. [Generated artifacts](../../../packages/ui-runtime/src/generated.ts) are JSON contracts, catalog, and view schema, not implementation prop types generated from the contract.

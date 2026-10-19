@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { contracts, ICON_NAMES, type Contract } from "@focus-notes/ui/contracts";
-import { createApp, type PlatformBridge } from "@focus-notes/core";
+import { createApp, type JsonSchema, type PlatformBridge } from "@focus-notes/core";
 import { views, messages } from "@focus-notes/views";
 import { tokenGroups } from "@focus-notes/tokens";
 import { checkUi, checkFixtureCoverage, type Problem } from "../src/check.ts";
@@ -101,6 +101,38 @@ describe("declared-state coverage (DS-A02)", () => {
     expect(gaps(edit("Button", (c) => ({ ...c, fixtures: [...c.fixtures, { name: "x", covers: ["glowing"] }] })))).toContain('Button: fixture "x" covers "glowing", which isn\'t a declared state');
     expect(gaps(edit("Button", (c) => ({ ...c, uncovered: { ...c.uncovered, busy: "no reason" } })))).toContain('Button: "busy" is listed as uncovered, but a fixture or journey covers it');
     expect(gaps(edit("Button", (c) => ({ ...c, uncovered: { ...c.uncovered, hover: " " } })))).toContain('Button: uncovered "hover" needs a reason');
+  });
+});
+
+// DS-A04, D-198: a list prop's read must hold the items its kind needs, not just any array.
+describe("list item contracts (DS-A04)", () => {
+  const ITEM = { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, icon: { type: "string" }, disabled: { type: "boolean" } } };
+  const probe = { type: "object", properties: {
+    words: { type: "array", items: { type: "string" } },
+    actions: { type: "array", items: ITEM },
+    sections: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
+    unlabelled: { type: "array", items: { type: "object", properties: { id: { type: "string" } } } },
+    badIds: { type: "array", items: { type: "object", properties: { id: { type: "number" }, label: { type: "string" } } } },
+    flatSections: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: { type: "string" } } } } },
+  } } as const;
+  const toolbar = (items: string, more: string) => ({ type: "Toolbar", props: { label: { t: "toolbar.label" }, items: { get: items }, more: { get: more }, moreLabel: { t: "toolbar.more" } } });
+  const check = (items: string, more: string) => messagesOf(checkUi({
+    ...base, viewModels: new Map<string, { schema: JsonSchema; setters?: Record<string, string> }>([...base.viewModels, ["vm.probe", { schema: probe as unknown as JsonSchema }]]),
+    views: { t: { ...view(toolbar(items, more)).t, viewModels: ["vm.app", "vm.canvas", "vm.probe"] } },
+  }));
+  it("passes command items and menu sections", () => expect(check("vm.probe.actions", "vm.probe.sections")).toEqual([]));
+  it("rejects a string[] bound to Toolbar's lists, naming the field", () => {
+    const out = check("vm.probe.words", "vm.probe.words");
+    expect(out).toContain('types: "vm.probe.words" holds string items, but commandItems needs objects');
+    expect(out).toContain('types: "vm.probe.words" holds string items, but menuSections needs objects');
+  });
+  it("rejects items without a required field, or with the wrong type", () => {
+    expect(check("vm.probe.unlabelled", "vm.probe.sections")).toContain('types: "vm.probe.unlabelled" items have no "label", which commandItems needs');
+    expect(check("vm.probe.badIds", "vm.probe.sections")).toContain('types: "vm.probe.badIds" items\' "id" is number, but commandItems needs string');
+  });
+  it("checks nested menu items", () => {
+    expect(check("vm.probe.actions", "vm.probe.flatSections")).toContain('types: "vm.probe.flatSections" items\' "items" holds string items, but commandItems needs objects');
+    expect(check("vm.probe.actions", "vm.probe.actions")).toContain('types: "vm.probe.actions" items have no "items", which menuSections needs');
   });
 });
 

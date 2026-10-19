@@ -3,7 +3,8 @@
  * accessibility rules, and design rules. Rendering checks run in the gallery tests.
  */
 import Ajv2020 from "ajv/dist/2020.js";
-import type { Contract, PropSpec } from "@focus-notes/ui/contracts";
+import type { Contract, ListOf, PropSpec } from "@focus-notes/ui/contracts";
+import { ITEM_SHAPES, STRING_ITEMS } from "@focus-notes/ui/contracts";
 import type { JsonSchema } from "@focus-notes/core";
 import { schemaAt } from "@focus-notes/core";
 import { buildUiSchema, type SchemaInputs } from "./schema.ts";
@@ -103,6 +104,7 @@ export function checkUi(inputs: CheckInputs): Problem[] {
         if (t && spec) {
           const want = spec.kind === "boolean" ? "boolean" : spec.kind === "number" ? "number" : spec.kind === "list" ? "array" : ["message", "text", "enum", "token", "icon"].includes(spec.kind) ? "string" : undefined;
           if (want && t.type && t.type !== want) add("types", at, `"${v.get}" is ${t.type}, but this prop needs ${want}`);
+          else if (spec.kind === "list") for (const m of listItemProblems(t, spec.of, `"${v.get}"`)) add("types", at, m);
           if (spec.kind === "enum" && t.enum) for (const e of t.enum) if (!spec.values.includes(String(e))) add("types", at, `"${v.get}" can be "${e}", which this prop doesn't accept`);
         }
         return;
@@ -211,6 +213,30 @@ export function checkUi(inputs: CheckInputs): Problem[] {
     for (const [where, n] of primaries) if (n > 1) add("design", where, "at most one primary button per view surface");
   }
   return problems;
+}
+
+/**
+ * What's wrong with a list read's items for a list kind (DS-A04, D-198): every required field of
+ * the kind's item is declared, every declared field the kind knows has its kind, and nested lists
+ * (a menu section's items) hold their own kind's items. `where` names the field in messages.
+ */
+export function listItemProblems(list: JsonSchema, of: ListOf, where: string): string[] {
+  const items = list.items as JsonSchema | undefined;
+  if (!items || typeof items !== "object") return [`${where} doesn't say what its items are, but ${of} needs them declared`];
+  const shape = ITEM_SHAPES[of];
+  if (shape === STRING_ITEMS) return items.type && items.type !== "string" ? [`${where} holds ${items.type} items, but ${of} needs strings`] : [];
+  if (items.type && items.type !== "object") return [`${where} holds ${items.type} items, but ${of} needs objects`];
+  const props = (items.properties ?? {}) as Record<string, JsonSchema>;
+  const out: string[] = [];
+  for (const [field, k] of Object.entries(shape.fields)) {
+    const kind = k.replace("?", "");
+    const p = props[field];
+    if (!p) { if (!k.endsWith("?")) out.push(`${where} items have no "${field}", which ${of} needs`); continue; }
+    if (p.type && p.type !== kind && !(kind === "number" && p.type === "integer")) { out.push(`${where} items' "${field}" is ${p.type}, but ${of} needs ${kind}`); continue; }
+    const nested = shape.lists?.[field];
+    if (nested) out.push(...listItemProblems(p, nested, `${where} items' "${field}"`));
+  }
+  return out;
 }
 
 export interface CoverageOptions {

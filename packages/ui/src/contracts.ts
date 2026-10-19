@@ -79,3 +79,4 @@ export const contractByType = new Map(contracts.map((c) => [c.type, c]));
 export { ICON_NAMES, type IconName } from "./icon-names.ts";
 export type * from "./contract.ts";
 export type * from "./data.ts";
+export { ITEM_SHAPES, STRING_ITEMS, type ItemShape, type FieldKind } from "./items.ts";

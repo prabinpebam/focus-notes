@@ -2,7 +2,7 @@
  * The gallery (DSY-09): every component fixture as its own view document, rendered through the
  * same runtime as the app. Each fixture has a stable ID for visual and accessibility tests.
  */
-import type { App } from "@focus-notes/core";
+import { BLOCK_LIST_SCHEMA, type App } from "@focus-notes/core";
 import type { Contract } from "@focus-notes/ui/contracts";
 import { VIEW_SCHEMA_URL } from "./migrate.ts";
 
@@ -174,6 +174,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     ],
   };
   const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, icon: { type: "string" as const }, shortcut: { type: "string" as const }, checked: { type: "boolean" as const }, disabled: { type: "boolean" as const }, reason: { type: "string" as const } } };
+  const TREE_ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, kind: { type: "string" as const }, level: { type: "number" as const }, label: { type: "string" as const } } };
   app.viewModels.register({
     id: "vm.gallery",
     schema: {
@@ -191,17 +192,17 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         keysPc: { type: "array", items: { type: "string" } },
         keysPcSpoken: { type: "string" },
         results: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, description: { type: "string" }, icon: { type: "string" }, shortcut: { type: "string" }, disabled: { type: "boolean" } } } },
-        spotlight: { type: "array", items: { type: "object" } },
+        spotlight: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, description: { type: "string" }, icon: { type: "string" }, disabled: { type: "boolean" }, header: { type: "boolean" }, state: { type: "string" } } } },
         spotlightFirst: { type: "string" },
         matches: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, description: { type: "string" }, header: { type: "boolean" }, highlights: { type: "array", items: { type: "array", items: { type: "number" } } } } } },
         matchFirst: { type: "string" },
-        tree: { type: "array", items: { type: "object" } },
+        tree: { type: "array", items: TREE_ITEM },
         treeFocus: { type: "string" },
-        treeEditing: { type: "array", items: { type: "object" } },
+        treeEditing: { type: "array", items: TREE_ITEM },
         treeEditLabel: { type: "string" },
         treeEditError: { type: "string" },
         versionBlocks: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
-        noteBlocks: { type: "array", items: { type: "object" } },
+        noteBlocks: BLOCK_LIST_SCHEMA,
         versionEmpty: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
         themeTiles: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, kind: { type: "string" }, slot: { type: "string" }, badge: { type: "string" }, description: { type: "string" }, group: { type: "string" }, sample: { type: "string" }, colors: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } } } } },
         themeFirst: { type: "string" },
