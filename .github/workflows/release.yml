@@ -160,7 +160,8 @@ jobs:
   # the Store signs what it publishes. Submitting it is store.yml's, once the release is published,
   # so this workflow holds no secrets (PKG-04).
   store:
-    needs: version
+    # The web job pins the workspace template the package carries, as the desktop job's (DST-08, D-201).
+    needs: [version, web]
     runs-on: windows-latest
     timeout-minutes: 30
     defaults:
@@ -184,6 +185,12 @@ jobs:
           package-manager-cache: false
       - run: pnpm install --frozen-lockfile
       - run: node packages/tokens/build.mjs
+      # The pinned template this release attaches, carried byte for byte (DST-08, D-201). Outside
+      # dist/ and release/, so it's never uploaded twice.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: asset-web
+          path: ${{ runner.temp }}/asset-web
       - id: identity
         name: The package's identity
         run: |
@@ -199,6 +206,7 @@ jobs:
       - name: Build the Store package
         env:
           RELEASE: ${{ steps.identity.outputs.release }}
+          FOCUS_NOTES_TEMPLATE_ARCHIVE: ${{ runner.temp }}/asset-web/focus-notes-workspace-${{ needs.version.outputs.version }}.tgz
         run: |
           flags=()
           if [ "$RELEASE" = "true" ]; then flags+=(--require-identity); fi

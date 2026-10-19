@@ -159,7 +159,9 @@ describe("release.yml's store job: built and checked with no secrets", () => {
   const job = wf.jobs.store;
 
   it("builds on Windows from the tag's version and the repository variables, then checks the manifest", () => {
-    expect(job.needs).toBe("version");
+    expect(job.needs).toEqual(["version", "web"]);
+    const download = steps(job).find((s) => s.uses?.startsWith("actions/download-artifact@"));
+    expect(download?.with).toEqual({ name: "asset-web", path: "${{ runner.temp }}/asset-web" });
     expect(job["runs-on"]).toBe("windows-latest");
     expect(job.permissions).toBeUndefined();
     expect(job.environment).toBeUndefined();
@@ -169,6 +171,8 @@ describe("release.yml's store job: built and checked with no secrets", () => {
     expect(build).toBeGreaterThan(0);
     expect(check).toBe(build + 1);
     expect(steps(job)[build].run).toMatch(/--require-identity/);
+    // The pinned template, as the desktop job carries it (DST-08, D-201).
+    expect(steps(job)[build].env.FOCUS_NOTES_TEMPLATE_ARCHIVE).toBe("${{ runner.temp }}/asset-web/focus-notes-workspace-${{ needs.version.outputs.version }}.tgz");
   });
 
   it("releases the package only with a real identity; otherwise a notice and a short-lived check artifact", () => {
