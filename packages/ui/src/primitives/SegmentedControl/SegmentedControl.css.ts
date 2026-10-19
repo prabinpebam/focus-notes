@@ -1,5 +1,5 @@
 import { style } from "@vanilla-extract/css";
-import { tokens } from "@focus-notes/tokens";
+import { tokens, breakpoints } from "@focus-notes/tokens";
 
 const t = tokens.cmp.segmentedControl;
 
@@ -51,6 +51,9 @@ const segmentBase = style({
   minWidth: 0,
   overflow: "hidden",
   textOverflow: "ellipsis",
+  // A narrow window: tighter, so a row of choices (Works for at 480 px) fits a wider system font, as
+  // Linux's and macOS's are, without cutting a label (D-195).
+  "@media": { [`(max-width: ${breakpoints.medium - 1}px)`]: { paddingInline: t.paddingInlineCompact } },
   transitionProperty: "background-color, color",
   transitionDuration: t.duration,
   transitionTimingFunction: t.easing,

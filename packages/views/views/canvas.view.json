@@ -626,7 +626,8 @@
                           "get": "vm.find.replaceOpen"
                         },
                         "props": {
-                          "gap": "s"
+                          "gap": "s",
+                          "wrap": true
                         },
                         "children": [
                           {
@@ -4103,7 +4104,8 @@
               "type": "Inline",
               "props": {
                 "justify": "between",
-                "gap": "s"
+                "gap": "s",
+                "wrap": true
               },
               "children": [
                 {
@@ -5047,7 +5049,8 @@
               "type": "Inline",
               "props": {
                 "justify": "between",
-                "gap": "s"
+                "gap": "s",
+                "wrap": true
               },
               "children": [
                 {

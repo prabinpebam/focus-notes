@@ -149,7 +149,9 @@ test("PRF-12: LCP, INP, and CLS on a throttled profile, and only the first scree
     let lcp = 0, cls = 0, inp = 0;
     new PerformanceObserver((l) => { for (const e of l.getEntries()) lcp = Math.max(lcp, e.startTime); }).observe({ type: "largest-contentful-paint", buffered: true });
     new PerformanceObserver((l) => { for (const e of l.getEntries() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[]) if (!e.hadRecentInput) cls += e.value; }).observe({ type: "layout-shift", buffered: true });
-    new PerformanceObserver((l) => { for (const e of l.getEntries()) inp = Math.max(inp, e.duration); }).observe({ type: "event", buffered: true, durationThreshold: 16 } as PerformanceObserverInit);
+    // INP counts interactions only (entries with an interactionId: a press, a key), never the hover a
+    // pointer's arrival fires before the page is idle (D-195).
+    new PerformanceObserver((l) => { for (const e of l.getEntries() as (PerformanceEntry & { interactionId?: number })[]) if (e.interactionId) inp = Math.max(inp, e.duration); }).observe({ type: "event", buffered: true, durationThreshold: 16 } as PerformanceObserverInit);
     setTimeout(() => resolve({ lcp, cls, inp }), 500);
   }));
   console.log(`Public page lab metrics: LCP ${Math.round(m.lcp)} ms, INP ${Math.round(m.inp)} ms, CLS ${m.cls.toFixed(3)}`);

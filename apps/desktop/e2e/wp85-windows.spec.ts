@@ -32,6 +32,15 @@ test("DSK-06: Mod+Enter in Spotlight opens a note in a new window on its first t
   const editor = page.getByRole("textbox", { name: "Note" });
   await expect(editor).toContainText("First line.");
 
+  // A window that fills a small screen (a macOS runner's) leaves no room to cascade, and the new one
+  // opens at the work area's top left (D-179): leave it room first, as a person would (D-195).
+  await app.evaluate(({ BrowserWindow, screen }) => {
+    const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes("index.html"))!;
+    const b = w.getBounds();
+    const wa = screen.getDisplayMatching(b).workArea;
+    if (b.x + 32 + b.width > wa.x + wa.width || b.y + 32 + b.height > wa.y + wa.height) w.setBounds({ x: wa.x, y: wa.y, width: Math.min(b.width, wa.width - 64), height: Math.min(b.height, wa.height - 64) });
+  });
+
   // A different note in a new window: this window keeps Welcome.
   const second = app.waitForEvent("window");
   await openInNewWindow(page, "Hello");
@@ -103,7 +112,9 @@ test("DSK-06: Mod+Enter in Spotlight opens a note in a new window on its first t
   // Closing a window for a note leaves the first one, and its note, as they were.
   for (const p of [page3, page2]) {
     const closed = p.waitForEvent("close");
-    await p.evaluate(() => (window as unknown as { focusNotes: { window: { close(): void } } }).focusNotes.window.close());
+    // macOS's native window has no drawn controls (DSK-02): its close is the window's own (D-195).
+    if (custom) await p.evaluate(() => (window as unknown as { focusNotes: { window: { close(): void } } }).focusNotes.window.close());
+    else await app.evaluate(({ BrowserWindow }, url) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL() === url)!.close(), p.url());
     await closed;
   }
   await expect(editor).toContainText("Typed in the first window.");

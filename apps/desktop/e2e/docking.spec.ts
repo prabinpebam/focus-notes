@@ -8,7 +8,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { launch, quit, railFrom, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -60,6 +60,12 @@ test("D-187: Files and the contents dock flush to the window's edges, the note's
     await expect(files(page)).toHaveAttribute("data-docked", "");
     await expect.poll(async () => (await geometry(page)).area.left).toBeGreaterThan(200);
     await settled(page);
+    // Room for the rail beside docked Files: 1024 px with Windows' UI font, wider with macOS's and Linux's (D-195).
+    const room = await railFrom(page);
+    if (room > 1024) {
+      await size(l, room, 720);
+      await settled(page);
+    }
     await page.waitForTimeout(300);
     const b = (await rail(page).boundingBox())!;
     await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);

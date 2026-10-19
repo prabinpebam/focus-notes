@@ -90,6 +90,8 @@ test("FRE-01, FRE-04, FRE-05, FRE-08: the short path: a new install connects wit
     await pill.hover();
     await expect(page.getByRole("dialog", { name: "Backup", exact: true }).getByRole("button", { name: "Backup to GitHub", exact: true })).toBeVisible();
     await press(page, "Escape");
+    // Gone, not still fading out (outside the landmarks while it does), before the page is checked.
+    await expect(page.locator('[data-surface="popover"][aria-label="Backup"]')).toHaveCount(0);
     expect(await axeViolations(page)).toEqual([]);
     noTokenInArgs(w, l);
     expect(readFileSync(join(w.dirs.userData, "setup.json"), "utf8") + readFileSync(join(w.dirs.userData, "state.json"), "utf8")).not.toContain(w.gh.token);

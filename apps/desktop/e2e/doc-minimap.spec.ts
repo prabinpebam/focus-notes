@@ -7,7 +7,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { launch, quit, railFrom, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
@@ -38,6 +38,12 @@ const card = (page: Page) => page.locator("[data-doc-minimap-card]");
 const items = (page: Page) => card(page).locator("li > button");
 const currentBar = (page: Page) => bars(page).evaluateAll((els) => els.findIndex((e) => e.hasAttribute("data-current")));
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+/** The note's scroll stays put for a few frames: a glide or a wheel's smooth scroll has finished. */
+const scrollStill = (page: Page) => expect.poll(() => page.evaluate(() => new Promise<boolean>((done) => {
+  const sc = document.querySelector("[data-editor-scroller]") as HTMLElement;
+  const y = sc.scrollTop;
+  setTimeout(() => requestAnimationFrame(() => done(sc.scrollTop === y)), 150);
+}))).toBe(true);
 /** The rail's centre, where a pointer rests to open the card. */
 async function hoverRail(page: Page) {
   const b = (await rail(page).boundingBox())!;
@@ -82,6 +88,9 @@ test("UI-13: one bar per heading beside the text and clear of the scrollbar, len
     // section; the caret moving makes its section current again.
     await page.getByText("Paragraph 5 carries").click();
     await expect.poll(() => currentBar(page)).toBe(1);
+    // The click may glide the caret into the reading zone (UI-11): measured once that's done, so the
+    // wheel's distance isn't added to what's left of the glide.
+    await scrollStill(page);
     const wheel = await page.evaluate(() => {
       const sc = document.querySelector("[data-editor-scroller]") as HTMLElement;
       const h = document.querySelectorAll(".ProseMirror > h2")[1] as HTMLElement;
@@ -91,6 +100,7 @@ test("UI-13: one bar per heading beside the text and clear of the scrollbar, len
     await page.mouse.move(500, 400);
     await page.mouse.wheel(0, wheel);
     await expect.poll(() => currentBar(page)).toBe(2);
+    await scrollStill(page);
     expect(await page.evaluate(() => {
       const sc = document.querySelector("[data-editor-scroller]")!.getBoundingClientRect();
       const c = window.getSelection()!.getRangeAt(0).getBoundingClientRect();
@@ -204,6 +214,8 @@ test("UI-13: Show contents opens the card from the keyboard with focus on the cu
     await expect(spotlight.locator("[role=option][aria-selected=true]")).toContainText("Show contents");
     await page.keyboard.press("Enter");
     await expect(card(page)).toBeVisible();
+    // Focus is on its current heading before the next key (Tab leaving it closes it).
+    await expect(card(page).locator("li > button:focus")).toHaveCount(1);
   };
   try {
     await page.waitForTimeout(300);
@@ -306,6 +318,8 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
   });
   try {
     const unpinnedRight = await textRight();
+    // The narrowest window this OS's UI font leaves the rail room in (D-195).
+    const narrowest = await railFrom(page);
     // Pinned from the hover card with the pointer: the caret stays in the note.
     await page.mouse.move(500, 400);
     await hoverRail(page);
@@ -380,15 +394,19 @@ test("D-186: the pin keeps the card open in a column of its own, the text moved 
     expect(await axeViolations(page)).toEqual([]);
     await page.screenshot({ path: `${shots}/minimap-pinned-light.png` });
     // Not enough room beside the text for the card and the narrowest text: the rail comes back, its
-    // card's pin still pressed.
-    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(700, 600));
-    await expect(rail(page)).toHaveCount(1);
-    await expect(card(page)).toBeHidden();
-    await page.mouse.move(300, 300);
-    await hoverRail(page);
-    await expect(pin()).toHaveAttribute("aria-pressed", "true");
-    await page.mouse.move(300, 300);
-    await expect(card(page)).toBeHidden();
+    // card's pin still pressed. With a wider UI font (Linux's DejaVu Sans) the column is too wide for
+    // the rail in any window the card can't dock in: that step is Windows' and macOS's (D-195).
+    const narrow = Math.max(700, narrowest);
+    if (narrow < widthBefore + 400) {
+      await l.app.evaluate(({ BrowserWindow }, w) => BrowserWindow.getAllWindows()[0]!.setSize(w, 600), narrow);
+      await expect(rail(page)).toHaveCount(1);
+      await expect(card(page)).toBeHidden();
+      await page.mouse.move(300, 300);
+      await hoverRail(page);
+      await expect(pin()).toHaveAttribute("aria-pressed", "true");
+      await page.mouse.move(300, 300);
+      await expect(card(page)).toBeHidden();
+    } else test.info().annotations.push({ type: "skipped step", description: `the rail needs a ${narrowest} px window, where the card docks` });
     await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(1024, 720));
     await expect(card(page)).toHaveAttribute("data-pinned", "");
     await quit(l);

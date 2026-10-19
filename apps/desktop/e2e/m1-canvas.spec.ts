@@ -144,9 +144,10 @@ test("UI-11: the note starts 25% down, the edited line stays between 25% and 65%
       if (now === last) same++;
       else (same = 0), (since = performance.now());
       last = now;
-      // Three frames and 50 ms still: at a high refresh rate the first frames of the eased auto-scroll
-      // (D-156) move less than a pixel, so three frames alone could pass before it visibly started.
-      if ((same >= 3 && performance.now() - since >= 50) || performance.now() > until) done();
+      // Three frames and 150 ms still: at a high refresh rate the first frames of the eased auto-scroll
+      // (D-156) move less than a pixel, so three frames alone could pass before it visibly started; on
+      // a slow VM (a macOS runner) the zone acted after 50 ms still (D-195).
+      if ((same >= 3 && performance.now() - since >= 150) || performance.now() > until) done();
       else requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -283,6 +284,10 @@ test("D-111: the note's edges blur progressively, crisp at the band's inner edge
   // The GPU path, whatever this computer composites with (a CI runner draws in software, D-121).
   const l = await launch(dirs, { FOCUS_NOTES_GPU_COMPOSITING: "gpu" });
   const { page } = l;
+  // ... and full transparency, whatever this computer's setting (macOS runners ask for reduced
+  // transparency, which swaps the blur for a plain veil as it should, D-195).
+  await (await page.context().newCDPSession(page)).send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-transparency", value: "no-preference" }] });
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.transparency)).toBeUndefined();
   await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
   const scroller = page.locator("[data-editor-scroller]");
   await scroller.evaluate((el) => { el.scrollTop = (el.scrollHeight - el.clientHeight) / 2; });

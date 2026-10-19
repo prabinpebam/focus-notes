@@ -158,6 +158,7 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
   app.on("window", (p) => void emulateFocus(p).catch(() => {}));
   const page = await app.firstWindow();
   await emulateFocus(page);
+  await simulateUiFont(page);
   // FOCUS_NOTES_E2E_CPU_THROTTLE=4 slows the renderer down like a busy CI runner, to reproduce races.
   const throttle = Number(process.env.FOCUS_NOTES_E2E_CPU_THROTTLE ?? 0);
   if (throttle > 1) await (await page.context().newCDPSession(page)).send("Emulation.setCPUThrottlingRate", { rate: throttle });
@@ -179,6 +180,25 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
 }
 
 interface Rect { x: number; y: number; width: number; height: number }
+
+/**
+ * FOCUS_NOTES_E2E_UI_FONT="DejaVuSans.ttf;DejaVuSans-Bold.ttf" sets the interface font to another
+ * system's (here Ubuntu's), regular and bold, so what only macOS's or Linux's wider or shorter font
+ * shows reproduces on Windows (D-195).
+ */
+async function simulateUiFont(page: Page): Promise<void> {
+  const files = (process.env.FOCUS_NOTES_E2E_UI_FONT ?? "").split(";").filter(Boolean);
+  if (!files.length) return;
+  const fonts = files.map((f) => readFileSync(f).toString("base64"));
+  await page.evaluate(async (list) => {
+    for (const [i, data] of list.entries()) {
+      const face = new FontFace("FocusNotesE2eUi", Uint8Array.from(atob(data), (c) => c.charCodeAt(0)).buffer, { weight: i ? "600 900" : "100 500" });
+      await face.load();
+      document.fonts.add(face);
+    }
+    document.documentElement.style.setProperty("--fn-ref-font-system", "FocusNotesE2eUi, sans-serif");
+  }, fonts);
+}
 /**
  * The bounds a window asked for `r` ends up with. Chromium on Linux (X11) keeps a window asked to
  * cover a whole screen exactly 1 px narrower and shorter (bigger or smaller ones are as asked), and
@@ -265,6 +285,25 @@ export async function bandStartsMove(app: ElectronApplication, page: Page): Prom
   const seen = () => app.evaluate(() => (globalThis as unknown as { bandMoves: string[] }).bandMoves.slice());
   await expect.poll(seen, { timeout: 5_000 }).toContain("end:move");
   return seen();
+}
+
+/**
+ * UI-13, D-195: the narrowest window, with what's docked now, in which the document minimap's rail
+ * fits beside the reading column (16 px clear of the text, 32 px wide, 8 px from the scrollbar). The
+ * column's measure is in `ch` of the UI font, so it's ~528 px of text with Windows' Segoe UI and wider
+ * with macOS's and Linux's system fonts: tests size windows from this rather than Windows' numbers.
+ */
+export async function railFrom(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const sc = document.querySelector("[data-editor-scroller]") as HTMLElement;
+    let col = document.querySelector(".ProseMirror")!.parentElement!;
+    while (getComputedStyle(col).maxWidth === "none" && col.parentElement && col !== sc) col = col.parentElement;
+    const cs = getComputedStyle(col);
+    const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const max = parseFloat(cs.maxWidth) + (cs.boxSizing === "content-box" ? pad : 0);
+    const need = max + 2 * Math.max(0, 16 + 32 + 8 - parseFloat(cs.paddingRight));
+    return Math.ceil(need + window.innerWidth - sc.clientWidth) + 2;
+  });
 }
 
 /** Closes through the window's close path so pending saves are flushed (QLT-03). */

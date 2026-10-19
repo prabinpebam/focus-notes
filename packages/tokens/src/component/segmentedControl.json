@@ -14,6 +14,7 @@
   "shadow": { "$type": "shadow", "$value": "{shadow.1}" },
   "padding": { "$type": "dimension", "$value": "{space.xs}" },
   "paddingInline": { "$type": "dimension", "$value": "{space.m}" },
+  "paddingInlineCompact": { "$type": "dimension", "$value": "{space.s}", "$description": "A segment's inline padding in a window narrower than the medium breakpoint, so a row of choices fits a 480 px window with any system's font (D-195)." },
   "gap": { "$type": "dimension", "$value": "{space.s}" },
   "font": { "$type": "fontFamily", "$value": "{font.ui}" },
   "fontSize": { "$type": "dimension", "$value": "{font.uiSecondary}" },

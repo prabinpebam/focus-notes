@@ -12,7 +12,6 @@ export async function axeViolations(page: Page): Promise<string[]> {
     const axe = (globalThis as unknown as { axe: { run: (ctx: Document, opts: object) => Promise<{ violations: { id: string; help: string; nodes: { target: string[]; html: string }[] }[] }> } }).axe;
     return axe.run(document, { resultTypes: ["violations"] });
   });
-  // A name that doesn't hold the visible text says which element, and what it holds, so a failure on another system is readable from its log.
-  const detail = (v: { id: string }, n: { html: string }) => (v.id === "label-content-name-mismatch" ? ` ${n.html.slice(0, 400)}` : "");
-  return result.violations.map((v) => `${v.id}: ${v.help} (${v.nodes.map((n) => n.target.join(" ") + detail(v, n)).join(", ")})`);
+  // Each node with the start of its markup, so a failure on a runner says what the element is.
+  return result.violations.map((v) => `${v.id}: ${v.help} (${v.nodes.map((n) => `${n.target.join(" ")} ${n.html.slice(0, 160)}`).join(", ")})`);
 }
