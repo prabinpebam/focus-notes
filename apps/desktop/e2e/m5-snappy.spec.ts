@@ -317,7 +317,10 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     // real cold-start regression fails while a fresh runner's variance passes. Soft, so the warm
     // numbers are still measured and logged.
     const coldAll = Object.values(c.results).flat().sort((x, y) => x - y);
-    const coldP95 = coldAll[Math.min(coldAll.length - 1, Math.floor(coldAll.length * 0.95))]!;
+    // The nearest-rank 95th percentile: of 20 uses, the 19th (index ⌈0.95n⌉ − 1); index ⌊0.95n⌋ was the
+    // 20th, the maximum, so one outlier failed the gate (CI: "p95 64 ms, max 64 ms", D-195).
+    const p95Of = (a: number[]) => a[Math.max(0, Math.ceil(a.length * 0.95) - 1)]!;
+    const coldP95 = p95Of(coldAll);
     expect.soft(coldP95, "cold first uses, input to next paint p95 (D-178 ceiling 300 ms)").toBeLessThanOrEqual(300);
     const l = await start(env);
     const { page } = l;
@@ -325,7 +328,7 @@ test.describe("PRF-14: the window follows the hand (D-151)", () => {
     const editor = page.getByRole("textbox", { name: "Note" });
     const { results, worstOf, long } = await useRounds(page, 5);
     const all = Object.values(results).flat().sort((a, b) => a - b);
-    const p95 = all[Math.min(all.length - 1, Math.floor(all.length * 0.95))]!;
+    const p95 = p95Of(all);
     console.log(`[D-151] input to next paint (ms, the worst input of each use, under 16 ms shown as 0): ${JSON.stringify(results)}; p95 ${p95} ms, max ${all.at(-1)} ms; long tasks ${JSON.stringify(long)}`);
     for (const [name, r] of Object.entries(results)) console.log(`[D-151] ${name}: first use ${r[0]} ms, fifth ${r[4]} ms; worst input of each (name wait/handlers/to paint, ms) ${JSON.stringify(worstOf[name])}`);
     // Where Spotlight's opening goes (D-151 (12)): one more opening, traced (not measured).
