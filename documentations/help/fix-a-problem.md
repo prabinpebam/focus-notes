@@ -14,7 +14,7 @@ Tell us about a problem or an idea from inside the app. Open it from any of thes
 - **Spotlight:** type *feedback*, *bug*, or *idea*.
 - **macOS:** Help → *Send Feedback…*.
 
-Choose *Problem* or *Idea*, give it a title, and add the details. For a problem, *Attach diagnostic report* is on: press *Preview* to see what it holds. It never includes your notes, their names, paths, emails, passwords, keys, or tokens.
+Choose *Problem* or *Idea*, give it a title, and add the details. For a problem, *Attach diagnostic report* is on, and the report shows below it exactly as it will be posted. It never includes your notes, their names, paths, emails, passwords, keys, or tokens.
 
 - **Signed in to GitHub in the desktop app:** press *Send*. It becomes a public issue at [prabinpebam/focus-notes](https://github.com/prabinpebam/focus-notes/issues), posted as you, and the app shows its number.
 - **Signed out, or in the browser:** press *Continue on GitHub*. GitHub's new-issue page opens with your title and details filled in. If you attached the report, it's on your clipboard: paste it into the issue.

@@ -15,6 +15,7 @@ import { quit } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { existingInstance, opened, start, tabTo, world, type World } from "./github-world.ts";
 import { BUDGETS, scoreRegion } from "./visual-score.ts";
+import { scheme } from "./surfaces.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const ISSUES = "POST /repos/prabinpebam/focus-notes/issues";
@@ -50,12 +51,12 @@ async function openMore(page: Page) {
   return menu;
 }
 
-/** Criteria 1 and 4 of the visual score (D-127) in light and dark, and axe in both; the lower counts. */
+/** Criteria 1 and 4 of the visual score (D-127) in the app's real light and dark themes, and axe in both; the lower counts. */
 async function vvsAndAxe(page: Page, name: string) {
   const parts: string[] = [];
   let low = { anchor: 20, economy: 20 };
   for (const mode of ["light", "dark"] as const) {
-    await page.emulateMedia({ colorScheme: mode });
+    await scheme(page, mode);
     await settled(page);
     expect(await axeViolations(page), mode).toEqual([]);
     const m = await scoreRegion(dialog(page), BUDGETS.dialog);
@@ -63,7 +64,7 @@ async function vvsAndAxe(page: Page, name: string) {
     parts.push(`${mode} anchor ${m.anchorScore}/20 (${m.anchor}px) economy ${m.economyScore}/20 (${m.words} words, ${m.maxLines} lines)`);
     await shot(page, `${name}-${mode}`);
   }
-  await page.emulateMedia({ colorScheme: "light" });
+  await scheme(page, "light");
   const line = `VVS ${name}: ${parts.join("; ")}`;
   console.log(line);
   expect(low.anchor, line).toBe(20);
@@ -94,6 +95,12 @@ test("QLT-07: from Settings' foot, a problem with the report is posted as an iss
     await expect(d.getByRole("radio", { name: "Problem" })).toBeChecked();
     await expect(d.getByRole("textbox", { name: "Title" })).toBeFocused();
     await expect(d.getByRole("button", { name: "Attach diagnostic report" })).toHaveAttribute("aria-pressed", "true");
+    // Attached, the exact report that will be posted shows, read-only, from the start (D-203).
+    const report = d.getByRole("textbox", { name: "Diagnostic report, as it will be posted" });
+    await expect(report).toHaveValue(/^## Focus Notes diagnostic report/, { timeout: 20_000 });
+    await expect(report).toHaveAttribute("readonly", "");
+    await expect(d.getByRole("button", { name: "Preview" })).toHaveAttribute("aria-expanded", "true");
+    await expect(d.getByRole("textbox", { name: "Title" })).toHaveAttribute("aria-required", "true");
     await expect(d.getByText("@ada")).toBeVisible({ timeout: 15_000 });
     await expect(d.getByText("Posts publicly to prabinpebam/focus-notes")).toBeVisible();
     const send = d.getByRole("button", { name: "Send", exact: true });
@@ -102,12 +109,11 @@ test("QLT-07: from Settings' foot, a problem with the report is posted as an iss
 
     await page.keyboard.type("The app closed when I saved");
     await d.getByRole("textbox", { name: "Details" }).fill("I pressed save and it closed.\nI expected it to stay open.");
-    await d.getByRole("button", { name: "Preview" }).click();
     await expect(d.getByText("Never included: note text, names, paths, emails, passwords, keys, or tokens.")).toBeVisible();
-    await expect(d.getByText(/^Focus Notes \d/)).toBeVisible({ timeout: 15_000 });
+    const shown = await report.inputValue();
+    expect(shown).not.toContain("Nothing was sent.");
     await shot(page, "preview");
     await send.click();
-    // The report is built afresh (Git probes included) before the post.
     await expect(d.getByText("Feedback sent")).toBeVisible({ timeout: 20_000 });
     await expect(d.getByText("Issue #101")).toBeVisible();
     await expect(d.getByRole("button", { name: "Done" })).toBeFocused();
@@ -121,6 +127,8 @@ test("QLT-07: from Settings' foot, a problem with the report is posted as an iss
     expect(issue.body.startsWith("I pressed save and it closed.\nI expected it to stay open.\n\n---\n\nFocus Notes ")).toBe(true);
     expect(issue.body).toContain("<details><summary>Diagnostic report</summary>");
     expect(issue.body).toContain("## Focus Notes diagnostic report");
+    // What was posted is exactly what was shown.
+    expect(issue.body).toContain(`\n\n${shown.trim()}\n\n</details>`);
     expect(issue.body).toMatch(/<!-- focus-notes-feedback: kind=problem; app=[\w.+-]+; platform=(win32|darwin|linux) -->$/);
     expectNothingPrivate(issue.body, w);
 
@@ -128,8 +136,9 @@ test("QLT-07: from Settings' foot, a problem with the report is posted as an iss
     await expect.poll(() => opened(l)).toEqual(["https://github.com/prabinpebam/focus-notes/issues/101"]);
     await d.getByRole("button", { name: "Done" }).click();
     await expect(d).toHaveCount(0);
-    // Done goes back to Settings, where it came from.
+    // Done goes back to Settings, where it came from, onto Send feedback.
     await expect(settings).toBeVisible();
+    await expect(settings.getByRole("button", { name: "Send feedback" })).toBeFocused();
   } finally {
     await quit(l);
     w.server.close();
@@ -158,6 +167,9 @@ test("QLT-07: from the ⋯ menu, an idea goes without the report, after Try agai
     await settled(page);
     expect(await axeViolations(page)).toEqual([]);
     await shot(page, "failed-network");
+    // Straight away, the shell waits a few seconds after a failure (D-203).
+    await d.getByRole("button", { name: "Try again" }).click();
+    await expect(d.getByText("Wait a few seconds, then try again.")).toBeVisible({ timeout: 15_000 });
     // Closed with Esc, the draft stays, and the caret goes back to the note (the ⋯ menu it came from is gone).
     await page.keyboard.press("Escape");
     await expect(d).toHaveCount(0);
@@ -165,9 +177,11 @@ test("QLT-07: from the ⋯ menu, an idea goes without the report, after Try agai
     await (await openMore(page)).getByRole("menuitem", { name: /^Send feedback…/ }).click();
     // Reopened, the draft and what happened to it are as they were.
     await expect(d.getByRole("textbox", { name: "Title" })).toHaveValue("Tags in Files");
-    await expect(d.getByText("Couldn't reach GitHub. Your feedback is still here.")).toBeVisible();
-    await d.getByRole("button", { name: "Try again" }).click();
-    await expect(d.getByText("Issue #101")).toBeVisible({ timeout: 15_000 });
+    await expect(d.getByText("Wait a few seconds, then try again.")).toBeVisible();
+    await expect(async () => {
+      await d.getByRole("button", { name: "Try again" }).click();
+      await expect(d.getByText("Issue #101")).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 20_000 });
     const issue = w.gh.issues[0]!;
     expect(issue).toMatchObject({ title: "Tags in Files", labels: ["enhancement", "from-app"] });
     expect(issue.body).not.toContain("Diagnostic report");
@@ -197,6 +211,7 @@ test("QLT-07: from Spotlight, GitHub refusing this sign-in leads to Continue on 
     await expect(d.getByRole("textbox", { name: "Title" })).toBeFocused();
     await page.keyboard.type("Sync stopped");
     await expect(d.getByText("@ada")).toBeVisible({ timeout: 15_000 });
+    await expect(d.getByRole("textbox", { name: "Diagnostic report, as it will be posted" })).toHaveValue(/diagnostic report/, { timeout: 20_000 });
     w.gh.fail(ISSUES, 403, "Resource not accessible by personal access token");
     await d.getByRole("button", { name: "Send", exact: true }).click();
     await expect(d.getByText("GitHub didn't accept it from this sign-in.")).toBeVisible({ timeout: 20_000 });
@@ -266,6 +281,45 @@ test("QLT-07: signed out, it continues on GitHub only, by keyboard alone from st
     expect(url.searchParams.get("body")).toMatch(/^In a table cell\.\n\n---\n\nFocus Notes /);
     expect(await clipboard(l)).toBe("");
     expect(w.gh.calls.filter((c) => c.path.endsWith("/issues"))).toEqual([]);
+  } finally {
+    await quit(l);
+    w.server.close();
+  }
+});
+
+test("QLT-07: by keyboard from Settings, Esc and Done give focus back to Settings' Send feedback", async () => {
+  test.setTimeout(180_000);
+  const { w, l, page } = await launchWorld();
+  try {
+    await page.keyboard.press(`${mod}+,`);
+    const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+    await expect(settings).toBeVisible();
+    const footer = settings.getByRole("button", { name: "Send feedback" });
+    await tabTo(page, footer);
+    await page.keyboard.press("Enter");
+    const d = dialog(page);
+    await expect(d).toBeVisible();
+    await expect(d.getByRole("textbox", { name: "Title" })).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(d).toHaveCount(0);
+    await expect(footer).toBeFocused();
+
+    // Again, and this time it's sent: Done goes back to the same place.
+    await page.keyboard.press("Enter");
+    await expect(d).toBeVisible();
+    await expect(d.getByRole("textbox", { name: "Title" })).toBeFocused();
+    // Enter with no title says why instead of doing nothing.
+    await page.keyboard.press("Enter");
+    await expect(page.locator("[aria-live]").filter({ hasText: "Add a title first." })).toHaveCount(1);
+    await page.keyboard.type("Keyboard only");
+    await expect(d.getByRole("textbox", { name: "Diagnostic report, as it will be posted" })).toHaveValue(/diagnostic report/, { timeout: 20_000 });
+    await page.keyboard.press("Enter");
+    await expect(d.getByText("Feedback sent")).toBeVisible({ timeout: 20_000 });
+    await expect(d.getByRole("button", { name: "Done" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(d).toHaveCount(0);
+    await expect(footer).toBeFocused();
+    expect(w.gh.issues.map((i) => i.title)).toEqual(["Keyboard only"]);
   } finally {
     await quit(l);
     w.server.close();

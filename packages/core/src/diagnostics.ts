@@ -86,6 +86,9 @@ export interface RedactOptions {
   workspace?: string;
 }
 
+/** What the report is for: `forSend` when Send feedback posts it, so it doesn't say nothing was sent (D-203). */
+export interface ReportUse { forSend?: boolean }
+
 /** `redact` reads at most this much of its input, so no pattern can run long (D-140). */
 export const REDACT_MAX = 4096;
 
@@ -211,13 +214,14 @@ const cell = (s: string) => s.replace(/\|/g, "/");
  * known strings too; then every line again, without them, so the report's own words ("notes
  * repository") stay readable whatever the repositories are called.
  */
-export function buildReport(f: DiagnosticFacts, o: RedactOptions = {}): string {
+export function buildReport(f: DiagnosticFacts, o: RedactOptions = {}, use: ReportUse = {}): string {
   const w = f.workspace;
   const v = (s: string) => redact(s, o);
   const lines = [
     "## Focus Notes diagnostic report",
     "",
-    `Made ${iso(f.generatedAt)} on this computer. ${NEVER_INCLUDED} Nothing was sent.`,
+    // Attached to Send feedback, it is being sent: "Nothing was sent." would be untrue (D-203).
+    `Made ${iso(f.generatedAt)} on this computer. ${NEVER_INCLUDED}${use.forSend ? "" : " Nothing was sent."}`,
     "",
     "### App",
     `- Focus Notes ${v(f.app.version)}${f.app.packaged ? "" : " (development build)"}`,

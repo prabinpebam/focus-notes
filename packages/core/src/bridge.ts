@@ -134,12 +134,17 @@ export interface PlatformBridge {
 
 export interface FeedbackBridge {
   /**
-   * Posts the issue, with the redacted report when `attachReport` (and the window's timings in it).
-   * Resolves to the issue's number and address, or a problem code; never the token or the report.
+   * Builds the redacted report to attach (with the window's timings), keeps it in the shell, and
+   * returns it for the preview: it's going public, so the person sees exactly what's posted (D-203).
    */
-  send?(input: FeedbackInput, timings: TimingSummary[]): Promise<FeedbackResult>;
-  /** Opens the new-issue form filled in, and copies what the address can't hold: the report when attached, the details when cut. */
-  continue(input: FeedbackInput, timings: TimingSummary[]): Promise<FeedbackCopied>;
+  preview?(timings: TimingSummary[]): Promise<string>;
+  /**
+   * Posts the issue, with the report last previewed when `attachReport`. Resolves to the issue's
+   * number and address, or a problem code; never the token.
+   */
+  send?(input: FeedbackInput): Promise<FeedbackResult>;
+  /** Opens the new-issue form filled in, and copies what the address can't hold: the previewed report when attached, the details when cut. */
+  continue(input: FeedbackInput): Promise<FeedbackCopied>;
 }
 
 /** A deep link the shell resolved: an existing note's own path (and a heading anchor), or a search. */

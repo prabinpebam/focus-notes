@@ -63,6 +63,9 @@
                       },
                       "value": {
                         "bind": "vm.sendFeedback.kind"
+                      },
+                      "readOnly": {
+                        "get": "vm.sendFeedback.sending"
                       }
                     }
                   },
@@ -88,7 +91,8 @@
                       "readOnly": {
                         "get": "vm.sendFeedback.sending"
                       },
-                      "autoFocus": true
+                      "autoFocus": true,
+                      "required": true
                     },
                     "on": {
                       "submit": {
@@ -156,20 +160,45 @@
                         }
                       },
                       {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "command.feedback.togglePreview"
-                          },
-                          "variant": "subtle",
-                          "icon": "chevronDown",
-                          "expanded": {
-                            "get": "vm.sendFeedback.preview"
-                          }
+                        "switch": {
+                          "get": "vm.sendFeedback.preview"
                         },
-                        "on": {
-                          "press": {
-                            "run": "feedback.togglePreview"
+                        "cases": {
+                          "true": {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.feedback.togglePreview"
+                              },
+                              "variant": "subtle",
+                              "icon": "chevronDown",
+                              "expanded": {
+                                "get": "vm.sendFeedback.preview"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "feedback.togglePreview"
+                              }
+                            }
+                          },
+                          "false": {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "command.feedback.togglePreview"
+                              },
+                              "variant": "subtle",
+                              "icon": "chevronRight",
+                              "expanded": {
+                                "get": "vm.sendFeedback.preview"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "feedback.togglePreview"
+                              }
+                            }
                           }
                         }
                       }
@@ -186,98 +215,33 @@
                     "children": [
                       {
                         "type": "Text",
+                        "when": {
+                          "get": "vm.sendFeedback.reportLoading"
+                        },
                         "props": {
                           "value": {
                             "t": "diagnostics.loading"
                           },
                           "announce": true
-                        },
-                        "when": {
-                          "get": "vm.diagnostics.loading"
                         }
                       },
                       {
-                        "type": "Stack",
-                        "props": {
-                          "gap": "s"
-                        },
+                        "type": "TextField",
+                        "id": "feedbackReport",
                         "when": {
-                          "get": "vm.diagnostics.ready"
+                          "get": "vm.sendFeedback.reportReady"
                         },
-                        "children": [
-                          {
-                            "type": "ItemCard",
-                            "props": {
-                              "title": {
-                                "get": "vm.diagnostics.app.title"
-                              },
-                              "detail": {
-                                "get": "vm.diagnostics.app.detail"
-                              },
-                              "icon": "info"
-                            }
+                        "props": {
+                          "label": {
+                            "t": "feedback.reportLabel"
                           },
-                          {
-                            "type": "ItemCard",
-                            "props": {
-                              "title": {
-                                "get": "vm.diagnostics.git.title"
-                              },
-                              "detail": {
-                                "get": "vm.diagnostics.git.detail"
-                              },
-                              "icon": "sync"
-                            }
+                          "value": {
+                            "get": "vm.sendFeedback.report"
                           },
-                          {
-                            "type": "ItemCard",
-                            "props": {
-                              "title": {
-                                "get": "vm.diagnostics.workspace.title"
-                              },
-                              "detail": {
-                                "get": "vm.diagnostics.workspace.detail"
-                              },
-                              "icon": "folder"
-                            }
-                          },
-                          {
-                            "type": "ItemCard",
-                            "props": {
-                              "title": {
-                                "get": "vm.diagnostics.journal.title"
-                              },
-                              "detail": {
-                                "get": "vm.diagnostics.journal.detail"
-                              },
-                              "icon": "history"
-                            }
-                          },
-                          {
-                            "type": "ItemCard",
-                            "props": {
-                              "title": {
-                                "get": "vm.diagnostics.compositing.title"
-                              },
-                              "detail": {
-                                "get": "vm.diagnostics.compositing.detail"
-                              },
-                              "icon": "color"
-                            }
-                          },
-                          {
-                            "type": "ItemCard",
-                            "props": {
-                              "title": {
-                                "get": "vm.diagnostics.problems.title"
-                              },
-                              "detail": {
-                                "get": "vm.diagnostics.problems.detail"
-                              },
-                              "icon": "warning"
-                            }
-                          }
-                        ]
+                          "multiline": true,
+                          "readOnly": true,
+                          "scrolls": true
+                        }
                       },
                       {
                         "type": "Text",

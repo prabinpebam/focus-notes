@@ -1344,17 +1344,19 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return false;
   });
   // Send feedback (QLT-07, D-203): to the project's fixed repository with the signed-in token, which stays here;
-  // Continue on GitHub opens the new-issue form, the report only ever on the clipboard (D-140).
+  // Continue on GitHub opens the new-issue form, the report only ever on the clipboard (D-140), never in the address.
   const feedback = feedbackMain({
     // Journeys without the fake GitHub never ask the real one.
     client: async () => (journey && !fakeApi ? undefined : (await account.api())?.api),
-    report: (timings) => diag.report(timings),
+    report: (timings, use) => diag.report(timings, use),
     system: { version: app.isPackaged ? app.getVersion() : devVersion(), platform: process.platform, release: osRelease(), arch: process.arch },
     copy: (text) => appClipboard().writeText(text),
     open: (url) => shell.openExternal(url),
   });
-  handle("feedback:send", (input, timings) => feedback.send(input, timings));
-  handle("feedback:continue", (input, timings) => feedback.continue(input, timings));
+  // The report's preview is the exact text that's posted: main keeps it, and Send and Continue use that (D-203).
+  handle("feedback:preview", (timings) => feedback.preview(timings));
+  handle("feedback:send", (input) => feedback.send(input));
+  handle("feedback:continue", (input) => feedback.continue(input));
   handle("sync:now", async (reason) => {
     const g = await gitOpening;
     return g ? g.request(reason === "switch" ? "switch" : "save") : NO_GIT;

@@ -38,6 +38,8 @@ export interface SettingsState {
   remove: { open: boolean; busy: boolean; check?: RemovalCheck };
   /** About's diagnostics: the report's preview (QLT-04). */
   diagnostics: DiagnosticsState;
+  /** What takes focus when Settings opens: its categories, or Send feedback when that dialog closes back to it (D-203). */
+  focus?: "feedback";
 }
 export const SETTINGS_CLOSED: SettingsState = {
   open: false, section: "account", checking: false,
@@ -107,8 +109,9 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     ...(fr ? {} : { planned: true }),
     enabled: available,
     disabledReason: "command.settings.open.reason",
-    run: async () => {
-      store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, settings: { ...s.ui.settings, open: true } } }));
+    run: async (args?: { focus?: "feedback" }) => {
+      const focus = args?.focus === "feedback" ? "feedback" as const : undefined;
+      store.update((s) => ({ ...s, ui: { ...s.ui, toolbarOpen: false, settings: { ...s.ui.settings, open: true, focus } } }));
       await checkAccount();
     },
   });
@@ -227,6 +230,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
       type: "object",
       properties: {
         open: { type: "boolean" }, title: { type: "string" }, section: { type: "string", enum: [...SETTINGS_SECTIONS] }, sections: { type: "array", items: OPTION },
+        focusTabs: { type: "boolean" }, focusFeedback: { type: "boolean" },
         account: {
           type: "object",
           properties: {
@@ -258,6 +262,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
       const folder = s.workspace.folder ?? "";
       return {
         open: st.open, title: catalog.format("settings.title"), section: st.section,
+        focusTabs: st.focus !== "feedback", focusFeedback: st.focus === "feedback",
         sections: sections().map((id) => ({ id, label: catalog.format(`settings.section.${id}`) })),
         account: {
           state: astate, signedIn: astate === "signedIn", signedOut: astate === "signedOut", checking: astate === "checking",

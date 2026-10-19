@@ -27,7 +27,10 @@ export interface FeedbackState {
   /** Attach diagnostic report: on for a problem and off for an idea, until the person chooses (`attachChosen`). */
   attach: boolean;
   attachChosen: boolean;
+  /** The report's preview is open: whenever Attach turns on, until the person folds it. */
   preview: boolean;
+  /** The exact report that's attached, as the shell built and kept it (D-203); absent while it's being made. */
+  report?: string;
   phase: "editing" | "sending" | "sent";
   problem?: FeedbackProblem;
   /** The issue just sent: its number, and its address when it's one of the project's issues. */
@@ -74,14 +77,26 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
   const sending = () => state().phase === "sending";
   const value = (a: { value?: unknown }) => (typeof a.value === "string" ? a.value : "");
   /** Only the desktop attaches a report: the browser has none (D-140). */
-  const canAttach = () => Boolean(bridge.diagnostics && fb);
+  const canAttach = () => Boolean(bridge.diagnostics && fb?.preview);
   const input = (): FeedbackInput => {
     const f = state();
     return { kind: f.kind, title: f.title.trim(), details: f.details, attachReport: f.attach && canAttach() };
   };
-  const loadPreview = () => {
-    const d = store.state.ui.settings.diagnostics;
-    if (canAttach() && state().attach && !d.preview && !d.loading) void commands.run("diagnostics.load");
+  /**
+   * Opens the report's preview when Attach is on, and has the shell build it afresh: what it shows
+   * is what's posted (D-203). An older answer that comes late is dropped.
+   */
+  let generation = 0;
+  const loadPreview = (open = true) => {
+    // Folded, it keeps the report as it was seen.
+    if (!open) return set({ preview: false });
+    const g = ++generation;
+    if (!canAttach() || !state().attach) return set({ preview: false, report: undefined });
+    set({ preview: true, report: undefined });
+    fb!.preview!(windowTimings()).then(
+      (text) => { if (g === generation && typeof text === "string") set({ report: text }); },
+      () => { if (g === generation) set({ report: undefined }); },
+    );
   };
   /** Who'd post it, as the shell's helper says (Settings' account check); signed out or in the browser, nobody. */
   const checkWho = async () => {
@@ -105,7 +120,8 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
         ui: { ...s.ui, toolbarOpen: false, settings: { ...s.ui.settings, open: false }, feedback: { ...s.ui.feedback, ...base, ...kindPatch, open: true, fromSettings } },
       }));
       if (kind === "problem" && !sending() && !state().attachChosen) set({ attach: true });
-      loadPreview();
+      // Opening builds the report afresh, so it's what's posted; a send under way keeps its own.
+      if (!sending()) loadPreview();
       await checkWho();
     },
   });
@@ -117,7 +133,7 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
     if (!back) return set({ fromSettings: false });
     if (f.fromSettings) {
       set({ fromSettings: false });
-      await commands.run("settings.open");
+      await commands.run("settings.open", { focus: "feedback" });
     }
   };
   commands.register({ id: "feedback.setOpen", title: "command.feedback.setOpen", run: async (a) => { if (a.open === false) await close(); } });
@@ -129,8 +145,9 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
     run: (a) => {
       const v = value(a);
       if (sending() || (v !== "problem" && v !== "idea")) return;
+      const was = state().attach;
       set({ kind: v, ...(state().attachChosen ? {} : { attach: v === "problem" }) });
-      loadPreview();
+      if (state().attach !== was) loadPreview();
     },
   });
   commands.register({ id: "feedback.setTitle", title: "command.feedback.setTitle", run: (a) => { if (!sending()) set({ title: value(a) }); } });
@@ -143,10 +160,23 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
       loadPreview();
     },
   });
-  commands.register({ id: "feedback.togglePreview", title: "command.feedback.togglePreview", run: () => { set({ preview: !state().preview }); loadPreview(); } });
+  // Folding keeps the report as seen; opening it again builds it afresh.
+  commands.register({ id: "feedback.togglePreview", title: "command.feedback.togglePreview", run: () => { if (!sending()) loadPreview(!state().preview); } });
 
-  /** The title has text and nothing's past its limit. */
-  const ready = (f: FeedbackState) => Boolean(validateFeedback({ kind: f.kind, title: f.title, details: f.details, attachReport: false }));
+  /** The title has text, nothing's past its limit, and an attached report has been made (and shown). */
+  const ready = (f: FeedbackState) => Boolean(validateFeedback({ kind: f.kind, title: f.title, details: f.details, attachReport: false })) && !(f.attach && canAttach() && !f.report);
+  /** Why the primary can't go yet, as a message key; "" when it can. */
+  const reasonOf = (f: FeedbackState, sends: boolean) => {
+    const titleLong = [...f.title.trim()].length > TITLE_MAX;
+    const detailsLong = [...f.details].length > DETAILS_MAX;
+    return f.cooling && sends ? "feedback.cooling" : !f.title.trim() ? "feedback.needTitle" : titleLong || detailsLong ? "feedback.tooLong"
+      : f.attach && canAttach() && !f.report ? "feedback.needReport" : "";
+  };
+  /** Enter or the primary when it can't go: says why, rather than nothing happening (D-203). */
+  const refuse = (f: FeedbackState, sends: boolean) => {
+    const reason = reasonOf(f, sends);
+    if (reason && f.phase === "editing") announce(catalog.format(reason));
+  };
   /**
    * What the primary does: Send (or Try again) when signed in on the desktop; Continue on GitHub
    * when signed out, in the browser, or once GitHub has refused this sign-in or it has expired.
@@ -156,16 +186,16 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
   const send = async () => {
     const f = state();
     if (route(f) === "continue") return void (await commands.run("feedback.continue"));
-    if (f.phase !== "editing" || f.cooling || !ready(f) || !fb?.send) return;
+    if (f.phase !== "editing" || f.cooling || !ready(f) || !fb?.send) return refuse(f, true);
     const draft = input();
     set({ phase: "sending", problem: undefined });
-    const result: FeedbackResult = await tracker.run("feedback.send", "feedback.sending", () => fb.send!(draft, windowTimings()))
+    const result: FeedbackResult = await tracker.run("feedback.send", "feedback.sending", () => fb.send!(draft))
       .catch((): FeedbackResult => ({ problem: "network" }));
     const open = state().open;
     if ("number" in result) {
       const issue = { number: result.number, ...(issueUrlOk(result.url) ? { url: result.url } : {}) };
       // The draft is cleared; the dialog shows the issue, or, closed, a toast does.
-      set({ ...EMPTY_DRAFT, phase: open ? "sent" : "editing", issue: open ? issue : undefined, problem: undefined, cooling: true });
+      set({ ...EMPTY_DRAFT, report: undefined, phase: open ? "sent" : "editing", issue: open ? issue : undefined, problem: undefined, cooling: true });
       clock.setTimeout(() => set({ cooling: false }), FEEDBACK_COOLDOWN_MS);
       const words = catalog.format("feedback.sentAs", { number: result.number });
       if (open) announce(words);
@@ -188,10 +218,10 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
     id: "feedback.continue", title: "command.feedback.continue",
     run: async () => {
       const f = state();
-      if (sending() || !ready(f)) return;
+      if (sending() || !ready(f)) return refuse(f, false);
       const draft = input();
       let copied: FeedbackCopied = "none";
-      if (fb?.continue) copied = await fb.continue(draft, windowTimings()).catch((): FeedbackCopied => "none");
+      if (fb?.continue) copied = await fb.continue(draft).catch((): FeedbackCopied => "none");
       else {
         const { url, cut } = continueUrl({ ...draft, system: { version: "web", platform: "web" } });
         if (cut && bridge.copyText) copied = await bridge.copyText(draft.details).then((): FeedbackCopied => "details", (): FeedbackCopied => "none");
@@ -229,6 +259,7 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
         title: { type: "string" }, details: { type: "string" }, titlePlaceholder: { type: "string" }, detailsPlaceholder: { type: "string" },
         titleInvalid: { type: "boolean" }, titleError: { type: "string" }, detailsInvalid: { type: "boolean" }, detailsError: { type: "string" },
         canAttach: { type: "boolean" }, attach: { type: "boolean" }, preview: { type: "boolean" }, showPreview: { type: "boolean" },
+        report: { type: "string" }, reportReady: { type: "boolean" }, reportLoading: { type: "boolean" },
         canPost: { type: "boolean" }, continues: { type: "boolean" }, login: { type: "string" }, avatar: { type: "string" }, initials: { type: "string" }, whoTitle: { type: "string" }, whoDetail: { type: "string" },
         stage: { type: "string", enum: ["editing", "sent"] }, editing: { type: "boolean" }, sending: { type: "boolean" }, sent: { type: "boolean" }, issueTitle: { type: "string" }, canOpenIssue: { type: "boolean" },
         problem: { type: "string" }, hasProblem: { type: "boolean" }, offerContinue: { type: "boolean" }, canSignIn: { type: "boolean" },
@@ -244,7 +275,7 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
       const detailsLong = [...f.details].length > DETAILS_MAX;
       const canPost = Boolean(fb?.send && f.who);
       const sends = route(f) === "send";
-      const reason = f.cooling && sends ? "feedback.cooling" : !f.title.trim() ? "feedback.needTitle" : titleLong || detailsLong ? "feedback.tooLong" : "";
+      const reason = reasonOf(f, sends);
       const p = f.problem;
       const busy = busyProps(s.tasks, FEEDBACK_SEND, (k, v) => catalog.format(k, v));
       return {
@@ -254,7 +285,8 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
         titlePlaceholder: catalog.format(`feedback.title.${f.kind}`), detailsPlaceholder: catalog.format(`feedback.details.${f.kind}`),
         titleInvalid: titleLong, titleError: titleLong ? catalog.format("feedback.titleLong", { max: TITLE_MAX }) : "",
         detailsInvalid: detailsLong, detailsError: detailsLong ? catalog.format("feedback.detailsLong", { max: DETAILS_MAX }) : "",
-        canAttach: canAttach(), attach: f.attach && canAttach(), preview: f.preview, showPreview: f.preview && canAttach(),
+        canAttach: canAttach(), attach: f.attach && canAttach(), preview: f.preview, showPreview: f.preview && f.attach && canAttach(),
+        report: f.report ?? "", reportReady: Boolean(f.report), reportLoading: f.preview && f.attach && canAttach() && !f.report,
         canPost, continues: !canPost, login: f.who ? `@${f.who.login}` : "", avatar: f.who?.avatar ?? "", initials: f.who ? initials(f.who.login) : "",
         whoTitle: canPost ? `@${f.who!.login}` : catalog.format("feedback.who.continueTitle"),
         whoDetail: catalog.format(canPost ? "feedback.who.post" : "feedback.who.continueDetail"),

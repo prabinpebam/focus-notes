@@ -192,8 +192,9 @@ contextBridge.exposeInMainWorld("focusNotes", {
   },
   // Send feedback (QLT-07, D-203): main posts to the project's fixed repository with the token it keeps; the window gets a number or a problem code.
   feedback: {
-    send: (input: unknown, timings: unknown) => ipcRenderer.invoke("feedback:send", input, timings),
-    continue: (input: unknown, timings: unknown) => ipcRenderer.invoke("feedback:continue", input, timings),
+    preview: (timings: unknown) => ipcRenderer.invoke("feedback:preview", timings),
+    send: (input: unknown) => ipcRenderer.invoke("feedback:send", input),
+    continue: (input: unknown) => ipcRenderer.invoke("feedback:continue", input),
   },
   // Save and sync with the user's own Git (WP-3.3): intent-level only, never a Git command.
   // keybindings.json (D-170): the main process reads, makes, and resets it, and says when it changed.

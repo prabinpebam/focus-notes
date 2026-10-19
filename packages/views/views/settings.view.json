@@ -64,7 +64,9 @@
                 "bind": "vm.settings.section"
               },
               "orientation": "vertical",
-              "autoFocus": true
+              "autoFocus": {
+                "get": "vm.settings.focusTabs"
+              }
             },
             "slots": {
               "footer": [
@@ -76,7 +78,10 @@
                       "t": "feedback.settingsButton"
                     },
                     "variant": "subtle",
-                    "icon": "feedback"
+                    "icon": "feedback",
+                    "autoFocus": {
+                      "get": "vm.settings.focusFeedback"
+                    }
                   },
                   "on": {
                     "press": {

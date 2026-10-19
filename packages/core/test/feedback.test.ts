@@ -146,6 +146,7 @@ function shell(o: { desktop?: boolean; signedIn?: boolean; answer?: () => Promis
   const continued: FeedbackInput[] = [];
   const opened: string[] = [];
   const copied: string[] = [];
+  const previews: string[] = [];
   const { clock, advance } = fakeClock();
   const bridge: PlatformBridge = {
     platform: desktop ? "windows" : "web",
@@ -168,6 +169,8 @@ function shell(o: { desktop?: boolean; signedIn?: boolean; answer?: () => Promis
             save: async () => true,
           },
           feedback: {
+            // Each build differs, as a real report's time does.
+            preview: async () => (previews.push(`## Report ${previews.length + 1}`), previews.at(-1)!),
             send: async (i: FeedbackInput) => (sent.push(i), (o.answer ?? (async () => ({ number: 7, url: `${FEEDBACK_ISSUES}7` })))()),
             continue: async (i: FeedbackInput) => (continued.push(i), i.attachReport ? "report" : "none"),
           },
@@ -182,7 +185,8 @@ function shell(o: { desktop?: boolean; signedIn?: boolean; answer?: () => Promis
   const vm = () => app.viewModels.select("vm.sendFeedback", app.store.state) as Record<string, any>;
   const toasts = () => (app.viewModels.select("vm.feedback", app.store.state) as { toasts: { message: string }[] }).toasts.map((t) => t.message);
   const run = (id: string, args?: Record<string, unknown>) => app.commands.run(id, args);
-  return { app, vm, run, sent, continued, opened, copied, toasts, advance };
+  const said = () => app.store.state.announcement.text;
+  return { app, vm, run, sent, continued, opened, copied, toasts, advance, previews, said };
 }
 
 async function started(o?: Parameters<typeof shell>[0]) {
@@ -305,6 +309,89 @@ describe("the dialog (D-203)", () => {
     await t.run("feedback.submit");
     expect(t.sent).toHaveLength(0);
     expect(t.continued).toHaveLength(1);
+  });
+});
+
+describe("the report's preview (D-203)", () => {
+  it("shows the exact report whenever Attach is on, keeps it when folded, and builds it afresh only when reopened", async () => {
+    const t = await started();
+    await t.run("feedback.open");
+    await settle();
+    expect(t.vm()).toMatchObject({ attach: true, preview: true, showPreview: true, report: "## Report 1", reportReady: true, reportLoading: false });
+    await t.run("feedback.setTitle", { value: "Crash" });
+    expect(t.vm().primaryDisabled).toBe(false);
+    await t.run("feedback.togglePreview");
+    expect(t.vm()).toMatchObject({ preview: false, showPreview: false, report: "## Report 1", primaryDisabled: false });
+    // Attach off and on again builds it afresh; so does folding and opening it.
+    await t.run("feedback.toggleAttach");
+    await t.run("feedback.toggleAttach");
+    await settle();
+    expect(t.previews).toHaveLength(2);
+    await t.run("feedback.togglePreview");
+    await t.run("feedback.togglePreview");
+    await settle();
+    expect(t.previews).toHaveLength(3);
+    expect(t.vm()).toMatchObject({ showPreview: true, report: "## Report 3" });
+    // The kind changing doesn't touch it while Attach stays on (the person chose it).
+    await t.run("feedback.setKind", { value: "idea" });
+    expect(t.previews).toHaveLength(3);
+    await t.run("feedback.toggleAttach");
+    expect(t.vm()).toMatchObject({ attach: false, showPreview: false, report: "", primaryDisabled: false });
+  });
+  it("waits for the report before it can send, and a late answer for an older preview is dropped", async () => {
+    const t = await started();
+    await t.run("feedback.open", { kind: "idea" });
+    await t.run("feedback.setTitle", { value: "Crash" });
+    void t.run("feedback.toggleAttach");
+    expect(t.vm()).toMatchObject({ reportLoading: true, primaryDisabled: true, primaryReason: "Wait for the report, or don't attach it." });
+    await t.run("feedback.togglePreview");
+    await t.run("feedback.togglePreview");
+    await settle();
+    expect(t.vm().report).toBe(t.previews.at(-1));
+  });
+});
+
+describe("saying why it can't go (D-203)", () => {
+  it("Enter or Send with no title, too long a title, or while cooling announces the reason", async () => {
+    const t = await started();
+    await t.run("feedback.open");
+    await settle();
+    await t.run("feedback.submit");
+    expect(t.said()).toBe("Add a title first.");
+    await t.run("feedback.setTitle", { value: "a".repeat(TITLE_MAX + 1) });
+    await t.run("feedback.send");
+    expect(t.said()).toBe("Shorten it to fit first.");
+    expect(t.sent).toHaveLength(0);
+    await t.run("feedback.setTitle", { value: "Crash" });
+    await t.run("feedback.send");
+    await t.run("feedback.done");
+    await t.run("feedback.open");
+    await settle();
+    await t.run("feedback.setTitle", { value: "Again" });
+    await t.run("feedback.submit");
+    expect(t.said()).toBe("Sent just now. Wait a moment.");
+  });
+  it("Continue on GitHub with no title announces it too", async () => {
+    const t = await started({ desktop: false });
+    await t.run("feedback.open");
+    await t.run("feedback.continue");
+    expect(t.said()).toBe("Add a title first.");
+    expect(t.opened).toEqual([]);
+  });
+});
+
+describe("going back to Settings (D-203)", () => {
+  it("closing it, opened from Settings, reopens Settings with Send feedback focused", async () => {
+    const t = await started();
+    await t.run("settings.open");
+    const settings = () => t.app.viewModels.select("vm.settings", t.app.store.state) as Record<string, unknown>;
+    expect(settings()).toMatchObject({ focusTabs: true, focusFeedback: false });
+    await t.run("feedback.open");
+    await t.run("feedback.setOpen", { open: false });
+    expect(settings()).toMatchObject({ open: true, focusTabs: false, focusFeedback: true });
+    await t.run("settings.setOpen", { open: false });
+    await t.run("settings.open");
+    expect(settings()).toMatchObject({ focusTabs: true, focusFeedback: false });
   });
 });
 

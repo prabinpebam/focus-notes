@@ -19,6 +19,10 @@ export const DETAILS_MAX = 5000;
 export const CONTINUE_URL_MAX = 6000;
 /** After a success, another send waits this long, against double posts. */
 export const FEEDBACK_COOLDOWN_MS = 30_000;
+/** After a failed send, the shell waits this long before trying again (D-203). */
+export const FEEDBACK_FAILED_WAIT_MS = 5_000;
+/** At most this many issues an hour from one run of the app (D-203); Continue on GitHub stays open. */
+export const FEEDBACK_HOURLY_MAX = 5;
 
 export type FeedbackKind = "problem" | "idea";
 /** What the window sends, and all it can send. */
@@ -34,8 +38,8 @@ export interface FeedbackInput {
  * can't open issues there), `signedOut` (no sign-in), `invalid` (the window sent something wrong),
  * `busy` (a send is running or has just finished).
  */
-export type FeedbackProblem = "network" | "expired" | "refused" | "signedOut" | "invalid" | "busy";
-export const FEEDBACK_PROBLEMS: readonly FeedbackProblem[] = ["network", "expired", "refused", "signedOut", "invalid", "busy"];
+export type FeedbackProblem = "network" | "expired" | "refused" | "signedOut" | "invalid" | "busy" | "wait" | "limit";
+export const FEEDBACK_PROBLEMS: readonly FeedbackProblem[] = ["network", "expired", "refused", "signedOut", "invalid", "busy", "wait", "limit"];
 export type FeedbackResult = { number: number; url: string } | { problem: FeedbackProblem };
 /** What Continue on GitHub put on the clipboard. */
 export type FeedbackCopied = "none" | "report" | "details" | "both";
