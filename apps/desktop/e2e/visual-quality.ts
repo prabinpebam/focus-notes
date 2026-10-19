@@ -404,8 +404,14 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
         if (!n.data.trim() || !n.parentElement) continue;
         const range = document.createRange();
         range.selectNodeContents(n);
-        for (const line of range.getClientRects()) {
-          if (line.width < 1 || line.height < 1) continue;
+        // A line of text is measured by its line box, the line height its token sets, not the font's
+        // content area: that is the system font's ascent and descent, which differ by OS (Segoe UI,
+        // SF Pro, DejaVu Sans), so the same padding read 24 px on Windows and 25.8 on macOS and Linux (D-195).
+        const lh = parseFloat(getComputedStyle(n.parentElement).lineHeight);
+        for (const glyphs of range.getClientRects()) {
+          if (glyphs.width < 1 || glyphs.height < 1) continue;
+          const lead = Number.isFinite(lh) && lh > glyphs.height ? (lh - glyphs.height) / 2 : 0;
+          const line = { left: glyphs.left, right: glyphs.right, top: glyphs.top - lead, bottom: glyphs.bottom + lead };
           // Cut by its element too: a heading's box is trimmed to its letters (text-box-trim).
           const cut = visiblePart(n.parentElement, surface);
           const own = n.parentElement.getBoundingClientRect();
