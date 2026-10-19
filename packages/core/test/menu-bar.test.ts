@@ -140,7 +140,7 @@ describe("DSK-05: the macOS menu bar lists every command", () => {
     // ⋯'s planned items are there, unavailable, and say why (D-100): Share and visibility in File, Help and docs in Help.
     const items = (id: string) => commandsIn(m.menus.find((x) => x.id === id)!.items).flatMap((i) => (i.kind === "command" ? [i.id] : []));
     expect(items("file")).toContain("note.share");
-    expect(items("help")).toEqual(["shortcuts.open", "help.open", "diagnostics.copy", "diagnostics.save", "diagnostics.reportProblem"]);
+    expect(items("help")).toEqual(["shortcuts.open", "help.open", "feedback.open", "diagnostics.copy", "diagnostics.save", "diagnostics.reportProblem"]);
     expect(find(m, "note.share")).toMatchObject({ label: "Share and visibility…", enabled: false, reason: "Sharing is in the desktop app's Settings" });
     expect(find(m, "help.open")).toMatchObject({ label: "Help and docs", enabled: false, reason: "Help and docs arrive in a later preview" });
     expect(find(m, "shortcuts.open")?.reason).toBeUndefined();

@@ -79,15 +79,11 @@ export function registerDiagnostics<St extends S>({ store, bridge, catalog, comm
       else if (saved) toast(catalog.format("diagnostics.saved"));
     },
   });
+  // Report a problem opens Send feedback with Problem chosen and the report attached (D-203, replacing D-140 (7)).
   commands.register({
-    id: "diagnostics.reportProblem", title: "command.diagnostics.reportProblem", icon: "github", group: "app", enabled: available,
-    disabledReason: "command.diagnostics.reason",
+    id: "diagnostics.reportProblem", title: "command.diagnostics.reportProblem", icon: "github", group: "app",
     run: async () => {
-      if (!d || state().busy) return;
-      set({ busy: true });
-      const ok = await d.reportProblem(windowTimings()).then(() => true, () => false);
-      set({ busy: false });
-      toast(catalog.format(ok ? "diagnostics.reported" : "diagnostics.failed"), ok ? {} : { tone: "error" });
+      await commands.run("feedback.open", { kind: "problem" });
     },
   });
 

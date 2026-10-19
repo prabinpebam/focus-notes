@@ -66,6 +66,26 @@
               "orientation": "vertical",
               "autoFocus": true
             },
+            "slots": {
+              "footer": [
+                {
+                  "type": "Button",
+                  "id": "settingsFeedback",
+                  "props": {
+                    "label": {
+                      "t": "feedback.settingsButton"
+                    },
+                    "variant": "subtle",
+                    "icon": "feedback"
+                  },
+                  "on": {
+                    "press": {
+                      "run": "feedback.open"
+                    }
+                  }
+                }
+              ]
+            },
             "children": [
               {
                 "switch": {

@@ -1,0 +1,500 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "feedback",
+  "ia": "IA-VIEW-FEEDBACK",
+  "viewModels": [
+    "vm.sendFeedback",
+    "vm.diagnostics"
+  ],
+  "focus": "feedbackTitle",
+  "overlay": true,
+  "root": {
+    "type": "Stack",
+    "children": [
+      {
+        "type": "Dialog",
+        "id": "feedback",
+        "when": {
+          "get": "vm.sendFeedback.open"
+        },
+        "props": {
+          "title": {
+            "t": "feedback.title"
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.sendFeedback.open"
+          },
+          "size": "m",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "feedback.setOpen",
+            "args": {
+              "open": {
+                "get": "event.open"
+              }
+            }
+          }
+        },
+        "children": [
+          {
+            "switch": {
+              "get": "vm.sendFeedback.stage"
+            },
+            "cases": {
+              "editing": {
+                "type": "Stack",
+                "props": {
+                  "gap": "l"
+                },
+                "children": [
+                  {
+                    "type": "SegmentedControl",
+                    "props": {
+                      "label": {
+                        "t": "feedback.kind"
+                      },
+                      "options": {
+                        "get": "vm.sendFeedback.kindOptions"
+                      },
+                      "value": {
+                        "bind": "vm.sendFeedback.kind"
+                      }
+                    }
+                  },
+                  {
+                    "type": "TextField",
+                    "id": "feedbackTitle",
+                    "props": {
+                      "label": {
+                        "t": "feedback.titleLabel"
+                      },
+                      "value": {
+                        "bind": "vm.sendFeedback.title"
+                      },
+                      "placeholder": {
+                        "get": "vm.sendFeedback.titlePlaceholder"
+                      },
+                      "invalid": {
+                        "get": "vm.sendFeedback.titleInvalid"
+                      },
+                      "error": {
+                        "get": "vm.sendFeedback.titleError"
+                      },
+                      "readOnly": {
+                        "get": "vm.sendFeedback.sending"
+                      },
+                      "autoFocus": true
+                    },
+                    "on": {
+                      "submit": {
+                        "run": "feedback.submit"
+                      }
+                    }
+                  },
+                  {
+                    "type": "TextField",
+                    "props": {
+                      "label": {
+                        "t": "feedback.detailsLabel"
+                      },
+                      "value": {
+                        "bind": "vm.sendFeedback.details"
+                      },
+                      "placeholder": {
+                        "get": "vm.sendFeedback.detailsPlaceholder"
+                      },
+                      "invalid": {
+                        "get": "vm.sendFeedback.detailsInvalid"
+                      },
+                      "error": {
+                        "get": "vm.sendFeedback.detailsError"
+                      },
+                      "readOnly": {
+                        "get": "vm.sendFeedback.sending"
+                      },
+                      "multiline": true
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "when": {
+                      "get": "vm.sendFeedback.canAttach"
+                    },
+                    "props": {
+                      "gap": "s",
+                      "wrap": true
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.feedback.toggleAttach"
+                          },
+                          "icon": "document",
+                          "toggle": true,
+                          "pressed": {
+                            "get": "vm.sendFeedback.attach"
+                          },
+                          "disabled": {
+                            "get": "vm.sendFeedback.sending"
+                          },
+                          "disabledReason": {
+                            "t": "feedback.sending"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "feedback.toggleAttach"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.feedback.togglePreview"
+                          },
+                          "variant": "subtle",
+                          "icon": "chevronDown",
+                          "expanded": {
+                            "get": "vm.sendFeedback.preview"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "feedback.togglePreview"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Stack",
+                    "when": {
+                      "get": "vm.sendFeedback.showPreview"
+                    },
+                    "props": {
+                      "gap": "s"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "diagnostics.loading"
+                          },
+                          "announce": true
+                        },
+                        "when": {
+                          "get": "vm.diagnostics.loading"
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "when": {
+                          "get": "vm.diagnostics.ready"
+                        },
+                        "children": [
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.app.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.app.detail"
+                              },
+                              "icon": "info"
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.git.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.git.detail"
+                              },
+                              "icon": "sync"
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.workspace.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.workspace.detail"
+                              },
+                              "icon": "folder"
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.journal.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.journal.detail"
+                              },
+                              "icon": "history"
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.compositing.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.compositing.detail"
+                              },
+                              "icon": "color"
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "get": "vm.diagnostics.problems.title"
+                              },
+                              "detail": {
+                                "get": "vm.diagnostics.problems.detail"
+                              },
+                              "icon": "warning"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "diagnostics.never"
+                          },
+                          "tone": "muted"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ItemCard",
+                    "when": {
+                      "get": "vm.sendFeedback.canPost"
+                    },
+                    "props": {
+                      "title": {
+                        "get": "vm.sendFeedback.whoTitle"
+                      },
+                      "detail": {
+                        "get": "vm.sendFeedback.whoDetail"
+                      },
+                      "avatar": {
+                        "get": "vm.sendFeedback.avatar"
+                      },
+                      "mark": true,
+                      "personal": "title"
+                    }
+                  },
+                  {
+                    "type": "ItemCard",
+                    "when": {
+                      "get": "vm.sendFeedback.continues"
+                    },
+                    "props": {
+                      "title": {
+                        "get": "vm.sendFeedback.whoTitle"
+                      },
+                      "detail": {
+                        "get": "vm.sendFeedback.whoDetail"
+                      },
+                      "icon": "github"
+                    }
+                  },
+                  {
+                    "type": "StatusRow",
+                    "when": {
+                      "get": "vm.sendFeedback.hasProblem"
+                    },
+                    "props": {
+                      "message": {
+                        "get": "vm.sendFeedback.problem"
+                      },
+                      "tone": "danger"
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "justify": "end",
+                      "gap": "s",
+                      "wrap": true
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "feedback.cancel"
+                          },
+                          "variant": "secondary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "feedback.setOpen",
+                            "args": {
+                              "open": false
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "when": {
+                          "get": "vm.sendFeedback.canSignIn"
+                        },
+                        "props": {
+                          "label": {
+                            "t": "command.feedback.signIn"
+                          },
+                          "variant": "secondary"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "feedback.signIn"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "when": {
+                          "get": "vm.sendFeedback.offerContinue"
+                        },
+                        "props": {
+                          "label": {
+                            "t": "command.feedback.continue"
+                          },
+                          "variant": "secondary",
+                          "icon": "github"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "feedback.continue"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "id": "feedbackPrimary",
+                        "props": {
+                          "label": {
+                            "get": "vm.sendFeedback.primaryLabel"
+                          },
+                          "variant": "primary",
+                          "icon": {
+                            "get": "vm.sendFeedback.primaryIcon"
+                          },
+                          "busy": {
+                            "get": "vm.sendFeedback.busy"
+                          },
+                          "busyLabel": {
+                            "get": "vm.sendFeedback.busyLabel"
+                          },
+                          "disabled": {
+                            "get": "vm.sendFeedback.primaryDisabled"
+                          },
+                          "disabledReason": {
+                            "get": "vm.sendFeedback.primaryReason"
+                          }
+                        },
+                        "on": {
+                          "press": {
+                            "run": "feedback.submit"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "sent": {
+                "type": "Stack",
+                "props": {
+                  "gap": "l"
+                },
+                "children": [
+                  {
+                    "type": "ItemCard",
+                    "props": {
+                      "title": {
+                        "t": "feedback.sent"
+                      },
+                      "detail": {
+                        "get": "vm.sendFeedback.issueTitle"
+                      },
+                      "icon": "sent"
+                    }
+                  },
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "justify": "end",
+                      "gap": "s"
+                    },
+                    "children": [
+                      {
+                        "type": "Button",
+                        "when": {
+                          "get": "vm.sendFeedback.canOpenIssue"
+                        },
+                        "props": {
+                          "label": {
+                            "t": "command.feedback.openIssue"
+                          },
+                          "variant": "secondary",
+                          "icon": "github"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "feedback.openIssue"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "command.feedback.done"
+                          },
+                          "variant": "primary",
+                          "autoFocus": true
+                        },
+                        "on": {
+                          "press": {
+                            "run": "feedback.done"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
