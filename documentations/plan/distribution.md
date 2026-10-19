@@ -69,6 +69,7 @@ CI installs from lockfiles with frozen versions.
 | Output | Format | Where it goes |
 | --- | --- | --- |
 | Windows installer | NSIS `.exe` (x64, arm64) | GitHub Releases, winget (P1) |
+| Microsoft Store package | MSIX `.msix` (x64), unsigned: the Store signs it. The command-line tool is an app execution alias, `focus-notes`, and `focus-notes:` links are in its manifest (D-202) | GitHub Releases (for the Store only), then the Microsoft Store: `store.yml` submits each published release once the owner has set the Store credentials (PKG-12, [Microsoft Store](microsoft-store.md)) |
 | macOS app | Universal `.dmg` and `.zip` (for updates), notarized | GitHub Releases, Homebrew cask (P1) |
 | Linux app | AppImage and `.deb` (x64, arm64) | GitHub Releases, Flathub (later) |
 | Update metadata | `latest*.yml` files | GitHub Releases (read by electron-updater) |
@@ -77,6 +78,8 @@ CI installs from lockfiles with frozen versions.
 | Integrity | `SHA256SUMS`, CycloneDX SBOM, GitHub artifact attestations | GitHub Releases |
 
 **As built (WP-5.5, D-128).** `release.yml` attaches the Windows NSIS installer (x64), the macOS `.dmg` and `.zip` and the Linux AppImage and `.deb` (x64), `focus-notes-web-<version>.tgz`, `focus-notes-workspace-<version>.tgz` (the workspace template with `.focus-notes/app.json` pinned to that bundle's version and SHA-256), `focus-notes-<version>.cdx.json` (the SBOM, made by `tools/release/sbom.mjs` from the same package list as `THIRD_PARTY_NOTICES`), and `SHA256SUMS`, each with a build-provenance attestation. Not yet: arm64 builds, signing and notarization, and the `latest*.yml` update metadata, which arrive with signed, self-updating builds (DSK-07). The bundle also holds `bundle.json` (its name, version and commit), `LICENSE` and `THIRD_PARTY_NOTICES.md`, and `publish/` holds the page renderer (`render.mjs` and `assets/`) beside `cli.mjs`, so a template instance renders public pages with `--reader`.
+
+**As built (WP-5.11, D-202).** `release.yml`'s `store` job builds `Focus-Notes-<version>-store-x64.msix` with the Partner Center identity from the repository variables `MSSTORE_IDENTITY_NAME`, `MSSTORE_PUBLISHER` and `MSSTORE_PUBLISHER_DISPLAY_NAME`, reads its manifest back (`tools/release/store-manifest.mjs`: identity, the `focus-notes:` scheme, the `focus-notes` alias, `runFullTrust`), and attaches it with the other files, in `SHA256SUMS` and attested. Until the variables are set, and for 0.x versions (the Store refuses a version that starts with 0), it builds and checks the package as a short-lived artifact instead. When the owner publishes the release, `store.yml` submits that `.msix` to the Store, or stops with a notice while the Store credentials aren't set. CI builds and checks the package on Windows on every push. The steps only the owner can take are in [Microsoft Store](microsoft-store.md).
 
 ## Release process
 
@@ -142,9 +145,10 @@ Besides tagged releases, every push to `main` whose Windows CI passed replaces o
 | --- | --- | --- |
 | macOS | Apple Developer ID certificate and notarization (needs an Apple Developer membership) | Gatekeeper blocks the app until the user explicitly allows it |
 | Windows | An Authenticode certificate: a cloud signing service, or a free open-source signing program if the project qualifies | SmartScreen warns on download until the app builds a reputation |
+| Microsoft Store | None here: the Store signs the MSIX package with its own certificate when it publishes it (D-202) | The `.msix` on GitHub Releases is unsigned, so Windows won't install it from there; it's for the Store |
 | Linux | Checksums and attestations. Packages signed where the channel supports it. | Unaffected |
 
-Signing secrets will live only in the release workflow's `release` environment, once the owner has protected it: a required reviewer and a deployment policy that admits only `v*` tags, which are repository settings, not files (D-128). Until then (DSK-07), every build is unsigned and says so in its release notes; the repository holds no secrets (PKG-04).
+Signing secrets will live only in the release workflow's `release` environment, once the owner has protected it: a required reviewer and a deployment policy that admits only `v*` tags, which are repository settings, not files (D-128). Until then (DSK-07), every build is unsigned and says so in its release notes; the repository holds no secrets (PKG-04). The Microsoft Store's submission credentials (`MSSTORE_TENANT_ID`, `MSSTORE_CLIENT_ID`, `MSSTORE_CLIENT_SECRET`, `MSSTORE_SELLER_ID`) live there too, read only by `store.yml`, never by `release.yml` (D-202).
 
 <h2 id="the-product-site">The project's own site</h2>
 
