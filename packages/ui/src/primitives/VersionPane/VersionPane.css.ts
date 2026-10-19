@@ -37,4 +37,4 @@ export const block = style({
 });
 export const changed = style({ backgroundColor: t.changed, borderInlineStartColor: t.changedMark });
 export const empty = style({ margin: 0, fontFamily: t.headingFont, fontSize: t.size, color: t.muted });
-export const hidden = style({ position: "absolute", width: 1, height: 1, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" });
+export const hidden = style({ position: "absolute", width: t.srOnlySize, height: t.srOnlySize, overflow: "hidden", clipPath: "inset(50%)", whiteSpace: "nowrap" });
