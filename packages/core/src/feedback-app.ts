@@ -5,6 +5,7 @@
  * Continue on GitHub opens the new-issue form filled in. The draft stays in memory only, never on
  * disk, and is cleared after a send.
  */
+import { initials } from "./share-manage.ts";
 import type { PlatformBridge } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import { windowTimings } from "./diagnostics-app.ts";
@@ -205,7 +206,8 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
     id: "feedback.openIssue", title: "command.feedback.openIssue",
     run: (a) => {
       const url = typeof a.url === "string" ? a.url : state().issue?.url;
-      if (issueUrlOk(url)) bridge.openExternal?.(url);
+      // The desktop opens web links through `openLink` (https only, in the browser); the web app through `openExternal`.
+      if (issueUrlOk(url)) (bridge.openLink ?? bridge.openExternal)?.(url);
     },
   });
   /** Sign in again (401): the draft stays, and the account card shows. */
@@ -227,7 +229,7 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
         title: { type: "string" }, details: { type: "string" }, titlePlaceholder: { type: "string" }, detailsPlaceholder: { type: "string" },
         titleInvalid: { type: "boolean" }, titleError: { type: "string" }, detailsInvalid: { type: "boolean" }, detailsError: { type: "string" },
         canAttach: { type: "boolean" }, attach: { type: "boolean" }, preview: { type: "boolean" }, showPreview: { type: "boolean" },
-        canPost: { type: "boolean" }, continues: { type: "boolean" }, login: { type: "string" }, avatar: { type: "string" }, whoTitle: { type: "string" }, whoDetail: { type: "string" },
+        canPost: { type: "boolean" }, continues: { type: "boolean" }, login: { type: "string" }, avatar: { type: "string" }, initials: { type: "string" }, whoTitle: { type: "string" }, whoDetail: { type: "string" },
         stage: { type: "string", enum: ["editing", "sent"] }, editing: { type: "boolean" }, sending: { type: "boolean" }, sent: { type: "boolean" }, issueTitle: { type: "string" }, canOpenIssue: { type: "boolean" },
         problem: { type: "string" }, hasProblem: { type: "boolean" }, offerContinue: { type: "boolean" }, canSignIn: { type: "boolean" },
         primaryLabel: { type: "string" }, primaryIcon: { type: "string" }, primaryDisabled: { type: "boolean" }, primaryReason: { type: "string" },
@@ -253,7 +255,7 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
         titleInvalid: titleLong, titleError: titleLong ? catalog.format("feedback.titleLong", { max: TITLE_MAX }) : "",
         detailsInvalid: detailsLong, detailsError: detailsLong ? catalog.format("feedback.detailsLong", { max: DETAILS_MAX }) : "",
         canAttach: canAttach(), attach: f.attach && canAttach(), preview: f.preview, showPreview: f.preview && canAttach(),
-        canPost, continues: !canPost, login: f.who ? `@${f.who.login}` : "", avatar: f.who?.avatar ?? "",
+        canPost, continues: !canPost, login: f.who ? `@${f.who.login}` : "", avatar: f.who?.avatar ?? "", initials: f.who ? initials(f.who.login) : "",
         whoTitle: canPost ? `@${f.who!.login}` : catalog.format("feedback.who.continueTitle"),
         whoDetail: catalog.format(canPost ? "feedback.who.post" : "feedback.who.continueDetail"),
         stage: f.phase === "sent" ? "sent" : "editing", editing: f.phase !== "sent", sending: f.phase === "sending", sent: f.phase === "sent",
@@ -263,7 +265,8 @@ export function registerFeedback<St extends S>({ store, bridge, catalog, command
         primaryLabel: catalog.format(!sends ? "command.feedback.continue" : p ? "command.feedback.retry" : "command.feedback.send"),
         primaryIcon: sends ? "feedback" : "github",
         primaryDisabled: Boolean(reason) && f.phase === "editing", primaryReason: reason ? catalog.format(reason) : "",
-        busy: f.phase === "sending" || Boolean(busy.busy), busyLabel: busy.busyLabel ?? catalog.format("feedback.sending"),
+        busy: f.phase === "sending" || Boolean(busy.busy), // Words only while sending: a busy label at rest would rename the button (D-199).
+        busyLabel: busy.busyLabel ?? (f.phase === "sending" ? catalog.format("feedback.sending") : ""),
       };
     },
   });

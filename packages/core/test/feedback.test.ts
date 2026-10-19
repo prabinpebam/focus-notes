@@ -196,7 +196,7 @@ describe("the dialog (D-203)", () => {
   it("opens on Problem with the report attached; Idea leaves it off, unless the person chose", async () => {
     const t = await started();
     await t.run("feedback.open");
-    expect(t.vm()).toMatchObject({ open: true, kind: "problem", attach: true, canAttach: true, canPost: true, whoTitle: "@ada", primaryLabel: "Send", primaryDisabled: true, primaryReason: "Add a title first." });
+    expect(t.vm()).toMatchObject({ open: true, kind: "problem", attach: true, canAttach: true, canPost: true, whoTitle: "@ada", primaryLabel: "Send", primaryDisabled: true, primaryReason: "Add a title first.", busy: false, busyLabel: "" });
     await t.run("feedback.setKind", { value: "idea" });
     expect(t.vm()).toMatchObject({ kind: "idea", attach: false, titlePlaceholder: "Your idea, in a few words" });
     await t.run("feedback.toggleAttach");
@@ -258,7 +258,7 @@ describe("the dialog (D-203)", () => {
     await t.run("feedback.setTitle", { value: "x" });
     const sending = t.run("feedback.send");
     await settle();
-    expect(t.vm()).toMatchObject({ sending: true, busy: true });
+    expect(t.vm()).toMatchObject({ sending: true, busy: true, busyLabel: "Sending…" });
     await t.run("feedback.setTitle", { value: "changed" });
     await t.run("feedback.send");
     expect(t.sent).toHaveLength(1);

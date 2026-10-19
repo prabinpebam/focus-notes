@@ -85,13 +85,23 @@ test("QLT-04: Settings → About previews the diagnostic report; Copy and Save (
       shell.openExternal = (async (u: string) => void (globalThis as { opened?: string[] }).opened!.push(u)) as typeof shell.openExternal;
       (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard!.text = "";
     });
+    // D-203: it opens Send feedback on Problem with the report attached; signed out, it continues on GitHub.
     await settings.getByRole("button", { name: "Report a problem…" }).click();
+    const feedback = page.getByRole("dialog", { name: "Send feedback" });
+    await expect(feedback).toBeVisible();
+    await expect(feedback.getByRole("radio", { name: "Problem" })).toBeChecked();
+    await expect(feedback.getByRole("button", { name: "Attach diagnostic report" })).toHaveAttribute("aria-pressed", "true");
+    await expect(feedback.getByRole("textbox", { name: "Title" })).toBeFocused();
+    await page.keyboard.type("The app closed");
+    await feedback.getByRole("button", { name: "Continue on GitHub" }).click();
     // Built afresh again, as Copy is.
-    await expect(page.getByText("Report copied. Paste it into the issue on GitHub.")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("Report copied. Paste it into the issue.")).toBeVisible({ timeout: 15_000 });
+    await expect(feedback).toHaveCount(0);
     const opened = await l.app.evaluate(() => (globalThis as { opened?: string[] }).opened ?? []);
     expect(opened).toHaveLength(1);
     expect(opened[0]).toMatch(/^https:\/\/github\.com\/prabinpebam\/focus-notes\/issues\/new\?/);
-    expect(decodeURIComponent(opened[0]!)).not.toContain("diagnostic report\n\nMade");
+    expect(new URL(opened[0]!).searchParams.get("title")).toBe("The app closed");
+    expect(decodeURIComponent(opened[0]!)).not.toContain("Focus Notes diagnostic report");
     expect(await clipboard(l)).toContain("## Focus Notes diagnostic report");
 
     // Save, from Spotlight: the system's dialog is answered with a file in a temporary folder.

@@ -304,6 +304,9 @@
                       "avatar": {
                         "get": "vm.sendFeedback.avatar"
                       },
+                      "initials": {
+                        "get": "vm.sendFeedback.initials"
+                      },
                       "mark": true,
                       "personal": "title"
                     }
