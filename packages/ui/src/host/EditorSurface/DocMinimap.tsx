@@ -400,16 +400,20 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   }), [schedule, setOpen]);
 
   // Run from Spotlight, the card opens while the dialog still holds focus; the dialog hands focus back
-  // to the note as it leaves, a frame or more later. Until then (within a second, and only until the
-  // first key or press), focus goes to the current heading once no dialog is open.
+  // to the note as it leaves, a frame or more later. Until then (within a second of the dialog going,
+  // at most five after opening, and only until the first key or press), focus goes to the current
+  // heading once no dialog is open. A slow close (a busy machine) waits rather than loses focus.
   useEffect(() => {
     if (open !== "keyboard" || !claimUntil.current) return;
     let raf = 0;
+    const hardStop = performance.now() + 5 * CLAIM_MS;
     const stop = () => { claimUntil.current = 0; };
     const tick = () => {
-      if (performance.now() > claimUntil.current) return stop();
+      const now = performance.now();
+      if (now > claimUntil.current || now > hardStop) return stop();
       const nav = navRef.current;
-      if (nav && !document.querySelector("[data-dialog-modal]") && !nav.contains(document.activeElement)) focusCurrent();
+      if (document.querySelector("[data-dialog-modal]")) claimUntil.current = Math.max(claimUntil.current, now + CLAIM_MS);
+      else if (nav && !nav.contains(document.activeElement)) focusCurrent();
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);

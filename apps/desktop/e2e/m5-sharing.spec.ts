@@ -144,6 +144,8 @@ test("SHR-05, SHR-07, SHR-08, SHR-09: share by link and by passcode, copy the in
     expect(b!.revokedAt).toBeTruthy();
     expect(asha).toContain(`#${a!.id}.${a!.link!.secret}`);
     await page.keyboard.press("Escape");
+    // Settings closes before the save, so the key reaches the note's window, not the leaving dialog.
+    await expect(settings).toBeHidden();
     await page.keyboard.press(`${mod}+S`);
     await expect.poll(() => { try { return git(privateRemote, "show", "main:access.json"); } catch { return ""; } }, { timeout: 30_000 }).toContain(a!.link!.secret);
     const publicHistory = git(notesRemote, "log", "-p", "--all");
