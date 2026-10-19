@@ -66,7 +66,8 @@ test("QLT-04: Settings → About previews the diagnostic report; Copy and Save (
 
     // Copy: the report, on the clipboard.
     await settings.getByRole("button", { name: "Copy diagnostic report" }).click();
-    await expect(page.getByText("Diagnostic report copied")).toBeVisible();
+    // The report is built afresh, Git probes included: 1 to 2 s, past 5 s on a busy machine.
+    await expect(page.getByText("Diagnostic report copied")).toBeVisible({ timeout: 15_000 });
     const copied = await clipboard(l);
     expect(copied).toContain("## Focus Notes diagnostic report");
     expect(copied).toContain(`- Focus Notes ${(JSON.parse(readFileSync(join(import.meta.dirname, "..", "package.json"), "utf8")) as { version: string }).version}`);
@@ -85,7 +86,7 @@ test("QLT-04: Settings → About previews the diagnostic report; Copy and Save (
       (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard!.text = "";
     });
     await settings.getByRole("button", { name: "Report a problem…" }).click();
-    // The report is built afresh, Git probes included, which a busy Windows runner can take over 5 s for.
+    // Built afresh again, as Copy is.
     await expect(page.getByText("Report copied. Paste it into the issue on GitHub.")).toBeVisible({ timeout: 15_000 });
     const opened = await l.app.evaluate(() => (globalThis as { opened?: string[] }).opened ?? []);
     expect(opened).toHaveLength(1);
