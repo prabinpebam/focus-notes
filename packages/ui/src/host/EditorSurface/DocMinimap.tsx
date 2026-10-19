@@ -358,9 +358,14 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   // Focus mode is on by default, so the rail stays: it sits beside the text, never on it (D-185).
   const railShown = enough && layout.room && !pinnedShown;
   const cardShown = Boolean(open) || pinnedShown;
-  // Nothing left to show: a card opened from the rail goes with it.
+  // Nothing left to show: a card opened from the rail goes with it. Only as the rail goes: unpinned
+  // from the dock, the rail's room is still the docked note's until the note has its width back (with a
+  // wider UI font it had none), and the card stays a hover card meanwhile (D-195).
+  const railWas = useRef(railShown);
   useEffect(() => {
-    if (!enough || (!railShown && open !== "keyboard")) {
+    const went = railWas.current && !railShown;
+    railWas.current = railShown;
+    if (!enough || (went && open !== "keyboard")) {
       if (openRef.current) setOpen(null);
     }
   }, [enough, railShown, open, setOpen]);
