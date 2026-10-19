@@ -72,6 +72,11 @@
       "panelMinWidth": {
         "$type": "dimension",
         "$value": "{layout.categoryPanelMin}"
+      },
+      "footerGap": {
+        "$type": "dimension",
+        "$value": "{space.m}",
+        "$description": "Between the tab list and its footer (Settings' Send feedback, D-203), each side of the footer's hairline."
       }
     }
   }

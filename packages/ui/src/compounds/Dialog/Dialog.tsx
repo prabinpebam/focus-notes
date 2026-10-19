@@ -8,7 +8,7 @@ export interface DialogProps {
   title: string;
   closeLabel: string;
   open?: boolean;
-  size?: "s" | "l" | "xl";
+  size?: "s" | "m" | "l" | "xl";
   /** stable (default): at least 400 px and never shrinking while open; content: as tall as its content (confirmations). */
   height?: "stable" | "content";
   /** Controls that stay above the scrolling body. */

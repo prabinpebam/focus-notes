@@ -21,6 +21,18 @@ export const list = {
   horizontal: style([listBase, { flexWrap: "wrap" }]),
   vertical: style([listBase, { flexDirection: "column", flexGrow: 0, flexShrink: 0, flexBasis: t.listWidth, borderInlineEndWidth: t.borderWidth, paddingInlineEnd: t.gap }]),
 };
+/** With a footer, the list and the footer share a column, which takes the list's place and its divider (D-203). */
+export const side = {
+  horizontal: style({ display: "flex", flexDirection: "column", gap: t.footerGap }),
+  vertical: style({ display: "flex", flexDirection: "column", gap: t.footerGap, flexGrow: 0, flexShrink: 0, flexBasis: t.listWidth, borderStyle: "solid", borderWidth: 0, borderColor: t.border, borderInlineEndWidth: t.borderWidth, paddingInlineEnd: t.gap }),
+};
+export const sideList = {
+  horizontal: list.horizontal,
+  vertical: style([listBase, { flexDirection: "column" }]),
+};
+/** Under the tabs, after a hairline, the footer's action at the list's own inset. */
+const footerBase = style({ display: "flex", flexDirection: "column", alignItems: "stretch", paddingBlockStart: t.footerGap, borderStyle: "solid", borderWidth: 0, borderColor: t.border, borderBlockStartWidth: t.borderWidth });
+export const footer = { horizontal: style([footerBase, { alignItems: "flex-start" }]), vertical: footerBase };
 const tabBase = style({
   display: "inline-flex",
   alignItems: "center",

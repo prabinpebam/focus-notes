@@ -909,7 +909,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -1119,7 +1121,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -1382,7 +1386,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -2099,7 +2105,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -2503,7 +2511,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -3278,6 +3288,18 @@
           "items": {
             "$ref": "#/$defs/node"
           }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "footer": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
         }
       }
     },
@@ -3543,6 +3565,19 @@
                     "m",
                     "l"
                   ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "readOnly": {
+              "anyOf": [
+                {
+                  "type": "boolean"
                 },
                 {
                   "$ref": "#/$defs/read"
@@ -4586,7 +4621,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -4817,7 +4854,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -5299,7 +5338,9 @@
                     "chevronLeft",
                     "mail",
                     "pin",
-                    "pinOff"
+                    "pinOff",
+                    "feedback",
+                    "sent"
                   ]
                 },
                 {
@@ -9339,6 +9380,7 @@
                 {
                   "enum": [
                     "s",
+                    "m",
                     "l",
                     "xl"
                   ]

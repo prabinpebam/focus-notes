@@ -20,6 +20,8 @@ export interface TextFieldProps {
   size?: keyof typeof s.size;
   /** Several lines (the invite message, D-143): Enter starts a new line, and it grows from about six lines. */
   multiline?: boolean;
+  /** Shown and focusable, but not editable: while what it holds is being sent (D-203). */
+  readOnly?: boolean;
   id?: string;
   onChange?: (payload: { value: string }) => void;
   /** Enter in the field, outside an IME composition. */
@@ -27,7 +29,7 @@ export interface TextFieldProps {
 }
 
 /** A labelled single-line field. Secrets use type "password" and are never spell-checked or autofilled. */
-export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", multiline, id, onChange, onSubmit }: TextFieldProps) {
+export function TextField({ label, value, placeholder, description, type = "text", invalid, error, labelHidden, autoFocus, focusRequest, size = "l", multiline, readOnly, id, onChange, onSubmit }: TextFieldProps) {
   const input = useRef<HTMLInputElement | null>(null);
   const area = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
@@ -40,6 +42,7 @@ export function TextField({ label, value, placeholder, description, type = "text
       onChange={(v) => onChange?.({ value: v })}
       type={type}
       isInvalid={Boolean(invalid)}
+      isReadOnly={Boolean(readOnly)}
       {...(autoFocus ? { autoFocus } : {})}
       {...(id ? { id } : {})}
     >
@@ -54,7 +57,7 @@ export function TextField({ label, value, placeholder, description, type = "text
         autoCorrect="off"
         autoComplete={type === "password" ? "off" : "on"}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.nativeEvent.isComposing && onSubmit) {
+          if (e.key === "Enter" && !e.nativeEvent.isComposing && onSubmit && !readOnly) {
             e.preventDefault();
             onSubmit();
           }

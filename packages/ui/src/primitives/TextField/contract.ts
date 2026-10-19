@@ -16,6 +16,7 @@ export const contract = defineContract({
     autoFocus: { kind: "boolean", default: false },
     focusRequest: { kind: "number", min: 0 },
     size: { kind: "enum", values: ["m", "l"], default: "l", description: "32 px tall beside 32 px buttons in a bar (the link editor), or 40 px." },
+    readOnly: { kind: "boolean", default: false, description: "Shown and focusable but not editable, while what it holds is being sent (Send feedback, D-203)." },
     multiline: { kind: "boolean", default: false, description: "Several lines, growing from about six (the invite message, D-143): Enter starts a new line." },
   },
   events: { change: { payload: { value: "text" }, binds: "value" }, submit: {} },

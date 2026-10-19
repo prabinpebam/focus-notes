@@ -12,6 +12,7 @@ import {
   ArrowImport20Regular, TextStrikethrough20Regular, TextT20Regular, TaskListLtr20Regular, LineHorizontal120Regular, FolderAdd20Regular,
   Cloud20Regular, CloudArrowUp20Regular, CloudCheckmark20Regular, CloudOff20Regular,
   ArrowDownload20Regular, Circle20Regular, Globe20Regular, CalendarLtr20Regular, ChevronLeft20Regular, Mail20Regular, Pin20Regular, PinOff20Regular,
+  PersonFeedback20Regular, CheckmarkCircle20Regular,
   type FluentIcon,
 } from "@fluentui/react-icons";
 import type { IconName } from "./icon-names.ts";
@@ -40,6 +41,8 @@ export const ICONS: Record<IconName, FluentIcon> = {
   download: ArrowDownload20Regular, circle: Circle20Regular, globe: Globe20Regular,
   // Pinning Files open (D-161).
   pin: Pin20Regular, pinOff: PinOff20Regular,
+  // Send feedback (D-203): the feedback itself, and that it was sent.
+  feedback: PersonFeedback20Regular, sent: CheckmarkCircle20Regular,
   // GitHub's own mark (Octicons, MIT), where the setup names GitHub (D-126).
   github: GitHubMark,
 };
