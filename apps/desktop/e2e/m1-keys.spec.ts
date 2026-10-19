@@ -24,7 +24,7 @@ test("Mod+Shift+/ opens a searchable cheat sheet; Esc clears, then closes, and t
   await expect(search).toBeFocused();
   for (const g of ["App and window", "Editing", "Formatting", "Blocks"]) await expect(sheet.getByRole("heading", { name: g })).toBeVisible();
   // Keys are drawn in this platform's symbols and read in words.
-  await expect(sheet.getByText(mac ? "Shift Command L" : "Control Shift L")).toBeAttached();
+  await expect(sheet.getByText(mac ? "Shift Command L" : "Control Shift L", { exact: true })).toBeAttached();
   expect(await axeViolations(page)).toEqual([]);
   await page.screenshot({ path: "../../test-results/screens/cheat-sheet.png" });
 

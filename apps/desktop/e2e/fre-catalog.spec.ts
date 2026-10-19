@@ -30,6 +30,8 @@ const CAPTURE = process.env.FOCUS_NOTES_CAPTURE_FRE === "1";
 const OUT = process.env.FOCUS_NOTES_FRE_OUT ?? join(repoRoot, "test-results", "fre-review");
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 const win = process.platform === "win32";
+// The install command Having trouble? offers on this system (D-194).
+const GIT_INSTALL = process.platform === "darwin" ? "xcode-select --install" : win ? "winget install --id Git.Git -e" : "sudo apt install git";
 
 const STEPS: Record<string, string> = {
   welcome: "1 · Welcome", connect: "2 · Connect", notes: "3 · Your notes", creating: "4 · Creating your notes",
@@ -721,7 +723,7 @@ test("Git missing, and Git too old", async () => {
     await expect(text(l.page, "One free helper app")).toBeVisible({ timeout: 15_000 });
     await shot(l, "connect-git-missing");
     await button(l.page, "Having trouble?").click();
-    await expect(text(l.page, "winget install --id Git.Git -e")).toBeVisible();
+    await expect(text(l.page, GIT_INSTALL)).toBeVisible();
     await shot(l, "connect-git-missing-trouble");
   } finally {
     await close(l, w);
