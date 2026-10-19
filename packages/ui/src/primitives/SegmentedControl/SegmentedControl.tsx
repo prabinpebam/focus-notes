@@ -8,17 +8,20 @@ export interface SegmentedControlProps {
   value?: string;
   /** vertical: one full-width row per choice, for labels that don't fit side by side (D-123). */
   orientation?: "horizontal" | "vertical";
+  /** Shown and focusable, but the choice can't change: while what it chose is being sent (D-203). */
+  readOnly?: boolean;
   id?: string;
   onChange?: (payload: { value: string }) => void;
 }
 
 /** Two to five mutually exclusive choices drawn as segments, side by side or one row each: a radio group (arrow keys move and select). */
-export function SegmentedControl({ label, options, value, orientation = "horizontal", id, onChange }: SegmentedControlProps) {
+export function SegmentedControl({ label, options, value, orientation = "horizontal", readOnly, id, onChange }: SegmentedControlProps) {
   return (
     <RadioGroup
       className={s.root[orientation]}
       orientation={orientation}
       value={value ?? null}
+      isReadOnly={Boolean(readOnly)}
       onChange={(v) => onChange?.({ value: v })}
       {...(id ? { id } : {})}
     >

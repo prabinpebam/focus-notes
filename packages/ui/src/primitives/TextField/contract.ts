@@ -18,6 +18,8 @@ export const contract = defineContract({
     size: { kind: "enum", values: ["m", "l"], default: "l", description: "32 px tall beside 32 px buttons in a bar (the link editor), or 40 px." },
     readOnly: { kind: "boolean", default: false, description: "Shown and focusable but not editable, while what it holds is being sent (Send feedback, D-203)." },
     multiline: { kind: "boolean", default: false, description: "Several lines, growing from about six (the invite message, D-143): Enter starts a new line." },
+    scrolls: { kind: "boolean", default: false, description: "With multiline: scrolls past a set height instead of growing, for read-only text to check before it's sent (the report Send feedback posts, D-203)." },
+    required: { kind: "boolean", default: false, description: "Needed before its form can go: announced as required (aria), while the form says what's missing (Send feedback's Title, D-203)." },
   },
   events: { change: { payload: { value: "text" }, binds: "value" }, submit: {} },
   slots: {},
@@ -34,5 +36,8 @@ export const contract = defineContract({
     { name: "size m", props: { label: { t: "unlock.passphrase" }, labelHidden: true, size: "m" } },
     { name: "label hidden", props: { label: { t: "unlock.passphrase" }, labelHidden: true, placeholder: { t: "unlock.passphrase" } } },
     { name: "multiline", props: { label: { t: "unlock.passphrase" }, multiline: true, description: { t: "gallery.sample" } } },
+    { name: "read only", props: { label: { t: "unlock.passphrase" }, readOnly: true, value: { get: "vm.gallery.query" } } },
+    { name: "read only scrolls", props: { label: { t: "unlock.passphrase" }, multiline: true, readOnly: true, scrolls: true, value: { get: "vm.gallery.query" } } },
+    { name: "required", props: { label: { t: "unlock.passphrase" }, required: true } },
   ],
 });

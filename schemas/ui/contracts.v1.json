@@ -2058,6 +2058,11 @@
           ],
           "default": "horizontal",
           "description": "vertical: one full-width row per choice, for choices whose labels don't fit side by side (the first run's Workspace, D-123)."
+        },
+        "readOnly": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Shown and focusable, but the choice can't change: while what it chose is being sent (Send feedback's Kind, D-203)."
         }
       },
       "events": {
@@ -2115,6 +2120,21 @@
             "value": {
               "get": "vm.gallery.optionLast"
             }
+          }
+        },
+        {
+          "name": "read only",
+          "props": {
+            "label": {
+              "t": "shortcuts.platform"
+            },
+            "options": {
+              "get": "vm.gallery.options"
+            },
+            "value": {
+              "get": "vm.gallery.optionFirst"
+            },
+            "readOnly": true
           }
         },
         {
@@ -3031,6 +3051,16 @@
           "kind": "boolean",
           "default": false,
           "description": "Several lines, growing from about six (the invite message, D-143): Enter starts a new line."
+        },
+        "scrolls": {
+          "kind": "boolean",
+          "default": false,
+          "description": "With multiline: scrolls past a set height instead of growing, for read-only text to check before it's sent (the report Send feedback posts, D-203)."
+        },
+        "required": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Needed before its form can go: announced as required (aria), while the form says what's missing (Send feedback's Title, D-203)."
         }
       },
       "events": {
@@ -3143,6 +3173,41 @@
             "description": {
               "t": "gallery.sample"
             }
+          }
+        },
+        {
+          "name": "read only",
+          "props": {
+            "label": {
+              "t": "unlock.passphrase"
+            },
+            "readOnly": true,
+            "value": {
+              "get": "vm.gallery.query"
+            }
+          }
+        },
+        {
+          "name": "read only scrolls",
+          "props": {
+            "label": {
+              "t": "unlock.passphrase"
+            },
+            "multiline": true,
+            "readOnly": true,
+            "scrolls": true,
+            "value": {
+              "get": "vm.gallery.query"
+            }
+          }
+        },
+        {
+          "name": "required",
+          "props": {
+            "label": {
+              "t": "unlock.passphrase"
+            },
+            "required": true
           }
         }
       ]

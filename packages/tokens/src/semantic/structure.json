@@ -260,6 +260,10 @@
       "$value": "{ref.size.158}",
       "$description": "A multi-line field's least height, about six lines: the invite message (D-143)."
     },
+    "textAreaMax": {
+      "$value": "{ref.size.25vh}",
+      "$description": "A read-only multi-line field's most height before it scrolls: the report Send feedback posts (D-203)."
+    },
     "stepMark": {
       "$value": "{ref.size.64}",
       "$description": "A setup step's hero icon tile (D-135)."

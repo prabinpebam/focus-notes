@@ -18,6 +18,11 @@
         "$value": "{size.textArea}",
         "$description": "A multi-line field's least height (D-143)."
       },
+      "areaMaxHeight": {
+        "$type": "dimension",
+        "$value": "{size.textAreaMax}",
+        "$description": "A scrolling multi-line field's most height: the report Send feedback posts (D-203)."
+      },
       "paddingBlock": {
         "$type": "dimension",
         "$value": "{space.s}"

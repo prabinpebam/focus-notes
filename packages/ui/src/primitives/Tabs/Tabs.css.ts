@@ -30,9 +30,9 @@ export const sideList = {
   horizontal: list.horizontal,
   vertical: style([listBase, { flexDirection: "column" }]),
 };
-/** Under the tabs, after a hairline, the footer's action at the list's own inset. */
-const footerBase = style({ display: "flex", flexDirection: "column", alignItems: "stretch", paddingBlockStart: t.footerGap, borderStyle: "solid", borderWidth: 0, borderColor: t.border, borderBlockStartWidth: t.borderWidth });
-export const footer = { horizontal: style([footerBase, { alignItems: "flex-start" }]), vertical: footerBase };
+/** Under the tabs, after a hairline, the footer's action at the list's own inset, as wide as its words. */
+const footerBase = style({ display: "flex", flexDirection: "column", alignItems: "flex-start", paddingBlockStart: t.footerGap, borderStyle: "solid", borderWidth: 0, borderColor: t.border, borderBlockStartWidth: t.borderWidth });
+export const footer = { horizontal: footerBase, vertical: footerBase };
 const tabBase = style({
   display: "inline-flex",
   alignItems: "center",

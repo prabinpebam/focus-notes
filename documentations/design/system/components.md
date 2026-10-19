@@ -36,7 +36,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | MenuButton | primitive | `closed`, `open`, `itemFocused`, `itemDisabled`, `itemChecked` | 6 | None |
 | Shortcut | primitive | `rest` | 2 | None |
 | SearchField | primitive | `rest`, `focused`, `filled`, `invalid` | 15 | `focused` |
-| SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible` | 3 | `hover`, `focusVisible` |
+| SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible` | 4 | `hover`, `focusVisible` |
 | DialogPanel | primitive | `open`, `entering`, `exiting` | 5 | `entering`, `exiting` |
 | Spinner | primitive | `rest` | 2 | None |
 | LiveRegion | primitive | `rest` | 1 | None |
@@ -44,7 +44,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ResultList | primitive | `rest`, `active`, `disabled` | 6 | None |
 | Tabs | primitive | `rest`, `hover`, `selected`, `focusVisible` | 3 | `hover`, `focusVisible` |
 | MorphPanel | primitive | `closed`, `opening`, `open`, `closing` | 2 | None |
-| TextField | primitive | `rest`, `focused`, `invalid` | 8 | `focused` |
+| TextField | primitive | `rest`, `focused`, `invalid` | 11 | `focused` |
 | PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 1 | `hover`, `pressed`, `focusVisible` |
 | FileTree | primitive | `rest`, `hover`, `focusVisible`, `selected`, `current`, `multiSelected`, `editing`, `invalid`, `dropTarget`, `pending`, `readOnly`, `menuOpen` | 2 | `hover`, `focusVisible`, `dropTarget`, `menuOpen` |
 | VersionPane | primitive | `rest`, `changed`, `empty` | 2 | None |
