@@ -60,6 +60,9 @@ import { COPY_PATHS_MAX, copyFilesToClipboard, defaultRun } from "./copy-files.t
 import { themeCanvas, WINDOW_METRICS } from "@focus-notes/core/window-geometry";
 import { AppMenuBar } from "./window/menu-bar.ts";
 import { describeMenu, spellingMenu, type SpellingMenuParams } from "./spelling/menu.ts";
+import { DrawnTextMenu } from "./spelling/drawn-menu.ts";
+import { textMenuEntries } from "@focus-notes/core/text-menu";
+import { themeSourceFor } from "./window/native-theme.ts";
 import { HELPER_ARGS, MAX_WORD, OsSpellChecker } from "./spelling/os-spellchecker.ts";
 import { SnapshotCache } from "@focus-notes/core/snapshot";
 import { textHash } from "@focus-notes/core/journal";
@@ -183,6 +186,8 @@ const osSpelling = platform === "windows"
   }, whenGitIdle)
   : undefined;
 const SPELLING_TARGET_MS = 250;
+/** How long the drawn menu waits for the OS spell checker before it shows without its suggestions (one frame, PRF-14). */
+const FRAME_MS = 16;
 /** The word under the right-click, from the page's preload, or "" (none, or no answer in time). */
 function spellingTarget(wc: Electron.WebContents): Promise<string> {
   return new Promise((resolve) => {
@@ -1638,31 +1643,89 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
       if (input.type === "keyDown" && input.meta && input.shift && !input.alt && !input.control && input.key.toLowerCase() === "v") win.webContents.pasteAndMatchStyle();
     });
   }
-  // A right-click in text: the OS spell checker's suggestions and the edit actions, in the OS's menu (D-193).
-  // Journeys read the menu from the log: a native menu would open over the owner's screen (D-141).
+  // A right-click in text: the OS spell checker's suggestions and the edit actions (D-193). On macOS
+  // in the OS's menu, which journeys read from the log: a native menu would open over the owner's
+  // screen (D-141). On Windows and Linux the page draws the same items in the theme (D-204, EDT-14).
   // On Windows, Electron underlines a word but doesn't report it (electron/electron#54729), so the
   // preload names the word under the pointer and the OS's spell checker is asked directly.
+  let osWord: string | undefined;
+  const replace = (s: string) => (osWord ? win.webContents.send("spelling:replace", osWord, s) : win.webContents.replaceMisspelling(s));
+  const learn = (w: string) => {
+    win.webContents.session.addWordToSpellCheckerDictionary(w);
+    osSpelling?.forget(w);
+  };
+  // The items the system has no role for, on either platform's menu. Journeys log what would open
+  // over the owner's screen (the emoji panel, the browser) instead (D-141).
+  const textMenuActs = (link: string) => ({
+    replace, learn,
+    lookUp: () => win.webContents.showDefinitionForSelection(),
+    run: (command: string) => win.webContents.send("textMenu:run", command),
+    emoji: () => (journey ? process.stdout.write("[focus-notes] emoji-panel\n") : app.showEmojiPanel()),
+    copyLink: () => appClipboard().writeText(link),
+    // The app's guarded link opening (EDT-13): web links only, in the user's browser.
+    openLink: () => {
+      if (!isWebLink(link)) return;
+      if (journey) process.stdout.write(`[focus-notes] open-link ${link}\n`);
+      else void shell.openExternal(link);
+    },
+  });
+  const drawn = platform === "macos" ? undefined : new DrawnTextMenu((m) => !win.isDestroyed() && win.webContents.send("textMenu:open", m));
+  const onTextMenuChoice = (e: IpcMainEvent, id: unknown, item: unknown) => {
+    if (!fromApp(e) || e.sender !== win.webContents || win.isDestroyed()) return;
+    const chosen = drawn?.choose(id, item);
+    if (!chosen) return;
+    const { action: a, link } = chosen;
+    const wc = win.webContents;
+    const act = textMenuActs(link);
+    if (a.kind === "replace") act.replace(a.word);
+    else if (a.kind === "learn") act.learn(a.word);
+    else if (a.kind === "lookUp") act.lookUp();
+    else if (a.kind === "emoji") act.emoji();
+    else if (a.kind === "copyLink") act.copyLink();
+    else if (a.kind === "openLink") act.openLink();
+    else if (a.role === "undo" || a.role === "redo") act.run(a.role === "undo" ? "edit.undo" : "edit.redo");
+    else if (a.role === "pasteAsPlainText") wc.pasteAndMatchStyle();
+    else wc[a.role]();
+  };
+  if (drawn) {
+    ipcMain.on("textMenu:choose", onTextMenuChoice);
+    win.on("closed", () => ipcMain.removeListener("textMenu:choose", onTextMenuChoice));
+  }
   win.webContents.on("context-menu", (_e, params) => {
     void (async () => {
       const wc = win.webContents;
-      let p: SpellingMenuParams = params;
-      let osWord: string | undefined;
-      if (osSpelling && params.isEditable && !params.misspelledWord && params.menuSourceType !== "keyboard") {
-        osSpelling.warm(wc.session.getSpellCheckerLanguages());
-        const word = await spellingTarget(wc);
-        const check = word ? await osSpelling.check(word, wc.session.getSpellCheckerLanguages()) : undefined;
-        if (check?.misspelled) {
-          osWord = word;
-          p = { ...params, misspelledWord: word, dictionarySuggestions: check.suggestions };
+      osWord = undefined;
+      // The OS spell checker's answer for the word under the pointer (Windows), when there's one to ask for.
+      const ask = osSpelling && params.isEditable && !params.misspelledWord && params.menuSourceType !== "keyboard"
+        ? (async () => {
+          osSpelling.warm(wc.session.getSpellCheckerLanguages());
+          const word = await spellingTarget(wc);
+          const check = word ? await osSpelling.check(word, wc.session.getSpellCheckerLanguages()) : undefined;
+          return check?.misspelled ? { word, suggestions: check.suggestions } : undefined;
+        })()
+        : undefined;
+      const withWord = (w: { word: string; suggestions: string[] } | undefined): SpellingMenuParams => (w ? { ...params, misspelledWord: w.word, dictionarySuggestions: w.suggestions } : params);
+      if (drawn) {
+        // The menu shows at once (PRF-14): if the OS spell checker takes longer than a frame, its
+        // suggestions fill in when they come (Perceived performance → wait inventory).
+        const zoom = wc.getZoomFactor() || 1;
+        const quick = ask ? await Promise.race([ask, new Promise<"later">((r) => setTimeout(() => r("later"), FRAME_MS))]) : undefined;
+        if (win.isDestroyed()) return;
+        if (quick === "later") {
+          const id = drawn.open(params.x / zoom, params.y / zoom, textMenuEntries(params, { platform, checking: true }), params.linkURL);
+          const w = await ask!;
+          if (w) osWord = w.word;
+          if (!win.isDestroyed()) drawn.update(id, textMenuEntries(withWord(w), { platform }));
+          return;
         }
+        if (quick) osWord = quick.word;
+        const entries = textMenuEntries(withWord(quick), { platform });
+        if (entries.length) drawn.open(params.x / zoom, params.y / zoom, entries, params.linkURL);
+        return;
       }
-      const items = spellingMenu(p, {
-        replace: (s) => (osWord ? wc.send("spelling:replace", osWord, s) : wc.replaceMisspelling(s)),
-        learn: (w) => {
-          wc.session.addWordToSpellCheckerDictionary(w);
-          osSpelling?.forget(w);
-        },
-      });
+      const w = ask ? await ask : undefined;
+      if (w) osWord = w.word;
+      const items = spellingMenu(withWord(w), textMenuActs(params.linkURL), platform);
       if (!items.length || win.isDestroyed()) return;
       if (journey) {
         (globalThis as { __focusNotesLastMenu?: unknown }).__focusNotesLastMenu = items;
@@ -1772,14 +1835,23 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   });
 
   const onSystemScheme = () => {
-    if (win.isDestroyed()) return;
+    // While macOS's native parts follow the app's own light or dark (D-204), the system's scheme
+    // can't be read; it's sent again once the appearance is the system's.
+    if (win.isDestroyed() || nativeTheme.themeSource !== "system") return;
     const d = nativeTheme.shouldUseDarkColors;
     win.webContents.send("scheme:changed", d ? "dark" : "light");
   };
   nativeTheme.on("updated", onSystemScheme);
   // This window's page only: each window has its own canvas (DSK-06).
-  const onScheme = (e: IpcMainEvent, scheme: unknown, canvas: unknown, accent: unknown) => {
+  const onScheme = (e: IpcMainEvent, scheme: unknown, canvas: unknown, accent: unknown, appearance: unknown) => {
     if (!fromApp(e) || e.sender !== win.webContents || win.isDestroyed() || (scheme !== "light" && scheme !== "dark")) return;
+    // macOS's right-click menu (the system's own) is drawn in the app's light or dark (D-204).
+    const source = themeSourceFor(platform, appearance);
+    if (nativeTheme.themeSource !== source) {
+      nativeTheme.themeSource = source;
+      // Back to the system's: the page hears its scheme now, whatever changed while it couldn't be read.
+      if (source === "system") onSystemScheme();
+    }
     const color = typeof canvas === "string" && /^#[0-9a-f]{6}$/i.test(canvas) ? canvas : CANVAS[scheme];
     canvasNow = color;
     // The transparent window stays transparent: the page draws the window's canvas inside its shadow margin.

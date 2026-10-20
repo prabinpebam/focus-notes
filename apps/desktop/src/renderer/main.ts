@@ -14,7 +14,7 @@ const FIRST_FRAME_MARK = "fn:window.firstFrame";
 const SWITCH_MARK = "fn:workspace.switch";
 
 interface DesktopBridge extends PlatformBridge {
-  setWindowScheme(s: "light" | "dark", canvas?: string, accent?: string): void;
+  setWindowScheme(s: "light" | "dark", canvas?: string, accent?: string, appearance?: string): void;
   onFlushRequest(listener: () => Promise<boolean>): void;
   firstFrame(): void;
   onWorkspaceSwitched(listener: () => void): () => void;
@@ -82,7 +82,9 @@ interface Running {
 let lastTheme = "";
 const followTheme = (app: App) => app.store.subscribe(() => {
   const s = resolvedScheme(app.store.state);
-  const t = `${s}:${resolvedTheme(app.store.state)}`;
+  // The appearance too: macOS's native menus follow the app's light or dark (D-204).
+  const mode = app.store.state.appearance.mode;
+  const t = `${s}:${resolvedTheme(app.store.state)}:${mode}`;
   if (t === lastTheme) return;
   lastTheme = t;
   requestAnimationFrame(() => {
@@ -90,7 +92,7 @@ const followTheme = (app: App) => app.store.subscribe(() => {
     const canvas = style.getPropertyValue("--fn-color-canvas").trim();
     // The snap preview is the theme's accent (cmp.windowFrame.snapPreview), drawn by the shell.
     const accent = style.getPropertyValue("--fn-cmp-window-frame-snap-preview").trim();
-    base.setWindowScheme(s, canvas, accent);
+    base.setWindowScheme(s, canvas, accent, mode);
   });
 });
 

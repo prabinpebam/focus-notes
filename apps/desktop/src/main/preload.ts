@@ -288,7 +288,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     openWorkspace: () => ipcRenderer.invoke("firstRun:openWorkspace"),
     openPage: (page: string) => ipcRenderer.send("firstRun:openPage", page),
   },
-  setWindowScheme: (s: "light" | "dark", canvas?: string, accent?: string) => ipcRenderer.send("window:scheme", s, canvas, accent),
+  setWindowScheme: (s: "light" | "dark", canvas?: string, accent?: string, appearance?: string) => ipcRenderer.send("window:scheme", s, canvas, accent, appearance),
   // DSK-09, D-148: the page's first themed frame is drawn (the window shows then), and the workspace
   // changed, so the app starts again in place, never by reloading the page.
   firstFrame: () => ipcRenderer.send("window:firstFrame"),
@@ -319,6 +319,14 @@ contextBridge.exposeInMainWorld("focusNotes", {
         revealControls: (show: boolean) => ipcRenderer.send("window:reveal", show === true),
       }
     : undefined,
+  // The right-click menu in text, drawn by the app on Windows and Linux (D-204, EDT-14); macOS shows the system's.
+  // Undo and Redo from either menu come back as the editor's own commands.
+  textMenu: {
+    drawn: platform !== "macos",
+    onOpen: listen("textMenu:open"),
+    choose: (id: number, item: string) => ipcRenderer.send("textMenu:choose", id, item),
+    onRun: listen("textMenu:run"),
+  },
   onFlushRequest: (listener: () => Promise<boolean>) => {
     ipcRenderer.on("app:flush", () => {
       void listener()
