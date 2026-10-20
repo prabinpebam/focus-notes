@@ -53,6 +53,43 @@
                 },
                 "children": [
                   {
+                    "type": "ItemCard",
+                    "when": {
+                      "get": "vm.sendFeedback.canPost"
+                    },
+                    "props": {
+                      "title": {
+                        "get": "vm.sendFeedback.whoTitle"
+                      },
+                      "detail": {
+                        "get": "vm.sendFeedback.whoDetail"
+                      },
+                      "avatar": {
+                        "get": "vm.sendFeedback.avatar"
+                      },
+                      "initials": {
+                        "get": "vm.sendFeedback.initials"
+                      },
+                      "mark": true,
+                      "personal": "title"
+                    }
+                  },
+                  {
+                    "type": "ItemCard",
+                    "when": {
+                      "get": "vm.sendFeedback.continues"
+                    },
+                    "props": {
+                      "title": {
+                        "get": "vm.sendFeedback.whoTitle"
+                      },
+                      "detail": {
+                        "get": "vm.sendFeedback.whoDetail"
+                      },
+                      "icon": "github"
+                    }
+                  },
+                  {
                     "type": "SegmentedControl",
                     "props": {
                       "label": {
@@ -253,43 +290,6 @@
                         }
                       }
                     ]
-                  },
-                  {
-                    "type": "ItemCard",
-                    "when": {
-                      "get": "vm.sendFeedback.canPost"
-                    },
-                    "props": {
-                      "title": {
-                        "get": "vm.sendFeedback.whoTitle"
-                      },
-                      "detail": {
-                        "get": "vm.sendFeedback.whoDetail"
-                      },
-                      "avatar": {
-                        "get": "vm.sendFeedback.avatar"
-                      },
-                      "initials": {
-                        "get": "vm.sendFeedback.initials"
-                      },
-                      "mark": true,
-                      "personal": "title"
-                    }
-                  },
-                  {
-                    "type": "ItemCard",
-                    "when": {
-                      "get": "vm.sendFeedback.continues"
-                    },
-                    "props": {
-                      "title": {
-                        "get": "vm.sendFeedback.whoTitle"
-                      },
-                      "detail": {
-                        "get": "vm.sendFeedback.whoDetail"
-                      },
-                      "icon": "github"
-                    }
                   },
                   {
                     "type": "StatusRow",
