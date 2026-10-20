@@ -48,17 +48,30 @@ export const item = style({
     "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.focusRing, outlineWidth: t.focusWidth, outlineOffset: `calc(-1 * ${t.focusWidth})` },
     "&[data-disabled]": { opacity: t.disabledOpacity },
   },
+  // Forced colors: the focused item in the system's highlight, as a system menu shows it (D-204).
+  "@media": { "(forced-colors: active)": { selectors: { "&[data-focused]": { backgroundColor: t.forcedFocused, color: t.forcedFocusedText, forcedColorAdjust: "none" } } } },
 });
 
 // The label, and under it why an unavailable item is unavailable (Foundations → States). The reason
 // keeps full contrast; only the label dims.
 export const label = style({ flexGrow: 1, display: "flex", flexDirection: "column", paddingBlock: t.reasonPaddingBlock });
 export const labelRow = style({ display: "flex", alignItems: "center", gap: t.gap });
-export const labelText = style({ flexGrow: 1, selectors: { [`${item}[aria-disabled="true"] &`]: { opacity: t.disabledOpacity } } });
+const unavailable = `${item}[aria-disabled="true"] &`;
+export const labelText = style({
+  flexGrow: 1,
+  selectors: { [unavailable]: { opacity: t.disabledOpacity } },
+  "@media": { "(forced-colors: active)": { selectors: { [unavailable]: { color: t.textDisabled } } } },
+});
 export const reason = style({ color: t.textMuted, fontSize: t.captionSize });
 export const check = style({ width: t.captionSize, display: "inline-flex", justifyContent: "center", color: t.text });
 // In the interface font, as everywhere else shortcuts show (a <kbd> would be monospace).
-export const shortcut = style({ color: t.textMuted, fontSize: t.captionSize, fontFamily: t.font });
+// An unavailable item's shortcut dims with its label; in forced colors, a focused one is in the
+// highlight's text color, as its label (D-204).
+export const shortcut = style({
+  color: t.textMuted, fontSize: t.captionSize, fontFamily: t.font,
+  selectors: { [unavailable]: { opacity: t.disabledOpacity } },
+  "@media": { "(forced-colors: active)": { selectors: { [`${item}[data-focused] &`]: { color: t.forcedFocusedText }, [unavailable]: { color: t.textDisabled } } } },
+});
 export const separator = style({ height: t.separatorWidth, backgroundColor: t.separator, marginBlock: t.padding });
 
 // The text variant: the current value and a chevron, as in Turn into (Text formatting → Anatomy).

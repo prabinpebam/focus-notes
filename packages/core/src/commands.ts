@@ -345,8 +345,9 @@ export function chordParts(chord: string, platform: Platform): string[] {
     const order = ["ctrl", "alt", "shift", "mod"];
     return [...mods.sort((a, b) => order.indexOf(a) - order.indexOf(b)).map((m) => glyph[m] ?? m), key];
   }
-  const name: Record<string, string> = { mod: "Ctrl", ctrl: "Ctrl", alt: "Alt", shift: "Shift" };
-  const order = ["mod", "ctrl", "alt", "shift"];
+  // Meta is the Windows key off macOS (Win+. opens Windows' emoji panel).
+  const name: Record<string, string> = { mod: "Ctrl", ctrl: "Ctrl", alt: "Alt", shift: "Shift", meta: "Win" };
+  const order = ["meta", "mod", "ctrl", "alt", "shift"];
   return [...mods.sort((a, b) => order.indexOf(a) - order.indexOf(b)).map((m) => name[m] ?? m), key];
 }
 

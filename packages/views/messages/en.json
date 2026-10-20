@@ -328,6 +328,7 @@
   "textMenu.emoji": "Emoji",
   "textMenu.copyLink": "Copy link",
   "textMenu.openLink": "Open link",
+  "textMenu.suggestions": "{count, plural, =0 {No spelling suggestions} one {# spelling suggestion} other {# spelling suggestions}}",
   "window.menuItem.restore": "Restore",
   "window.menuItem.move": "Move",
   "window.menuItem.size": "Size",

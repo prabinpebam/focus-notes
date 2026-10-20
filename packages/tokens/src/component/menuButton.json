@@ -69,6 +69,21 @@
         "$type": "color",
         "$value": "{color.hover}"
       },
+      "forcedFocused": {
+        "$type": "color",
+        "$value": "{color.selection}",
+        "$description": "The focused item in forced colors (Highlight); it's only used there."
+      },
+      "forcedFocusedText": {
+        "$type": "color",
+        "$value": "{color.onSelection}",
+        "$description": "The focused item's text in forced colors (HighlightText)."
+      },
+      "textDisabled": {
+        "$type": "color",
+        "$value": "{color.textDisabled}",
+        "$description": "An unavailable item's label and shortcut in forced colors (GrayText)."
+      },
       "pressed": {
         "$type": "color",
         "$value": "{color.pressed}"

@@ -1136,7 +1136,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const heldNotes = registerHeld({ store, commands, viewModels, catalog, bridge, toast, announce });
   void heldNotes.refresh();
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
-  const textMenuApp = registerTextMenu({ store, commands, viewModels, catalog, bridge });
+  const textMenuApp = registerTextMenu({ store, commands, viewModels, catalog, bridge, announce });
   // The compositing can change while the app runs: the GPU process crashed and came back in software (D-121).
   bridge.compositing?.onChange((c) => {
     if ((c === "gpu" || c === "software") && c !== store.state.compositing) store.update((s) => ({ ...s, compositing: c }));

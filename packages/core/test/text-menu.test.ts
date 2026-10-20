@@ -4,6 +4,7 @@
  * shows it in the app's words with the platform's keys; Undo and Redo run the editor's own history.
  */
 import { describe, expect, it } from "vitest";
+import { spokenChord } from "../src/commands.ts";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createApp, type PlatformBridge } from "../src/index.ts";
@@ -79,18 +80,19 @@ describe("the drawn menu in the page", () => {
     let open: (m: unknown) => void = () => {};
     let run: (c: unknown) => void = () => {};
     const chosen: [number, string][] = [];
+    const closed: number[] = [];
     const bridge: PlatformBridge = {
       platform, readNote: async () => "", writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/n/Untitled.md",
       defaultNotePath: async () => "/n/My notes.md", loadAppState: async () => ({ version: 1 }), saveAppState: async () => {},
       systemScheme: () => "light", onSystemSchemeChange: () => () => {},
-      textMenu: { drawn: platform !== "macos", onOpen: (l) => ((open = l), () => {}), choose: (id, item) => chosen.push([id, item]), onRun: (l) => ((run = l), () => {}) },
+      textMenu: { drawn: platform !== "macos", onOpen: (l) => ((open = l), () => {}), choose: (id, item) => chosen.push([id, item]), closed: (id) => closed.push(id), onRun: (l) => ((run = l), () => {}) },
     };
     const app = createApp(bridge, messages);
     await app.start();
     const actions: string[] = [];
     app.onEditorAction((id) => actions.push(id));
-    const vm = () => app.viewModels.select("vm.textMenu", app.store.state) as { available: boolean; request: number; x: number; y: number; sections: { id: string; items: { id: string; label: string; keys?: string[]; keysLabel?: string; disabled?: boolean }[] }[] };
-    return { app, vm, chosen, actions, open: (m: unknown) => open(m), run: (c: unknown) => run(c) };
+    const vm = () => app.viewModels.select("vm.textMenu", app.store.state) as { available: boolean; request: number; x: number; y: number; sections: { id: string; items: { id: string; label: string; shortcut?: string; disabled?: boolean }[] }[] };
+    return { app, vm, chosen, closed, actions, open: (m: unknown) => open(m), run: (c: unknown) => run(c) };
   }
   const entries = textMenuEntries(params({ misspelledWord: "teh", dictionarySuggestions: ["the"] }), { platform: "windows" });
 
@@ -102,10 +104,28 @@ describe("the drawn menu in the page", () => {
     expect(vm).toMatchObject({ available: true, request: 1, x: 40, y: 50 });
     const items = vm.sections.flatMap((s) => s.items);
     expect(items.map((i) => i.label)).toEqual(["the", "Add to dictionary", "Undo", "Redo", "Cut", "Copy", "Paste", "Paste as plain text", "Delete", "Select all", "Emoji"]);
-    const keys = Object.fromEntries(items.map((i) => [i.id, i.keys?.join("+")]));
-    expect(keys).toMatchObject({ undo: "Ctrl+Z", redo: "Ctrl+Y", cut: "Ctrl+X", copy: "Ctrl+C", paste: "Ctrl+V", pasteAsPlainText: "Ctrl+Shift+V", delete: "Del", selectAll: "Ctrl+A", emoji: "Win+." });
-    expect(items.find((i) => i.id === "redo")).toMatchObject({ disabled: true, keysLabel: "Ctrl Y" });
+    const keys = Object.fromEntries(items.map((i) => [i.id, i.shortcut]));
+    expect(keys).toMatchObject({ undo: "Ctrl+Z", redo: "Ctrl+Y", cut: "Ctrl+X", copy: "Ctrl+C", paste: "Ctrl+V", pasteAsPlainText: "Ctrl+Shift+V", delete: "Delete", selectAll: "Ctrl+A", emoji: "Win+." });
+    expect(items.find((i) => i.id === "redo")).toMatchObject({ disabled: true, shortcut: "Ctrl+Y" });
     expect(items.find((i) => i.id === "delete")!.disabled).toBe(true);
+    // The emoji panel's key comes from the shared key names, and so does its spoken name.
+    expect(spokenChord("Meta+.", "windows")).toBe("Win Period");
+  });
+
+  it("leaves out a suggestion the page would refuse, so the menu still shows (S3)", () => {
+    const long = "x".repeat(101);
+    const e = textMenuEntries(params({ misspelledWord: "teh", dictionarySuggestions: [long, "the"] }), { platform: "windows" });
+    expect(e.filter((x) => x.kind === "suggestion")).toEqual([{ kind: "suggestion", word: "the" }]);
+    expect(parseTextMenu({ id: 1, x: 0, y: 0, entries: e })).toBeDefined();
+  });
+
+  it("tells the shell a dismissed menu is gone, and says how many suggestions came late", async () => {
+    const t = await started("windows");
+    t.open({ id: 4, x: 0, y: 0, entries: [{ kind: "checking" }, { kind: "separator" }, { kind: "edit", role: "copy", enabled: true }] });
+    t.open({ id: 4, x: 0, y: 0, entries });
+    expect(t.app.store.state.announcement.text).toBe("1 spelling suggestion");
+    await t.app.commands.run("textMenu.close");
+    expect(t.closed).toEqual([4]);
   });
 
   it("sends a choice back once, ignores an item it didn't offer, and fills in late suggestions only while open", async () => {

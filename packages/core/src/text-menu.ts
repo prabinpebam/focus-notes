@@ -64,9 +64,10 @@ export function textMenuEntries(p: TextMenuParams, opts: { platform: TextMenuPla
   const f = p.editFlags;
   const selected = p.selectionText.trim();
   const groups: TextMenuEntry[][] = [];
-  if (p.isEditable && p.misspelledWord) {
-    const suggestions = p.dictionarySuggestions.slice(0, MAX_SUGGESTIONS);
-    groups.push(suggestions.length ? suggestions.map((word) => ({ kind: "suggestion" as const, word })) : [{ kind: "noSuggestions" }]);
+  // Only words the page accepts (parseTextMenu): one long suggestion mustn't make it refuse the menu.
+  if (p.isEditable && p.misspelledWord && word(p.misspelledWord)) {
+    const suggestions = p.dictionarySuggestions.filter(word).slice(0, MAX_SUGGESTIONS);
+    groups.push(suggestions.length ? suggestions.map((w) => ({ kind: "suggestion" as const, word: w })) : [{ kind: "noSuggestions" }]);
     groups.push([{ kind: "learn", word: p.misspelledWord }]);
   } else if (p.isEditable && opts.checking) {
     groups.push([{ kind: "checking" }]);

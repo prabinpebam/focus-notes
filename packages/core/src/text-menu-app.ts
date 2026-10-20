@@ -6,7 +6,7 @@
  */
 import type { AppState } from "./app.ts";
 import type { PlatformBridge } from "./bridge.ts";
-import { chordParts, shortcutFor, type CommandRegistry, type Platform } from "./commands.ts";
+import { formatChord, shortcutFor, type CommandRegistry, type Platform } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
@@ -18,6 +18,8 @@ export interface TextMenuBridge {
   onOpen(listener: (model: unknown) => void): () => void;
   /** The item chosen in menu `id`; the shell checks it against the menu it sent. */
   choose(id: number, item: string): void;
+  /** Menu `id` was dismissed: the shell forgets it, so nothing can be chosen from it any more. */
+  closed?(id: number): void;
   /** The app draws the menu (Windows and Linux); on macOS it's the system's. */
   drawn: boolean;
   /** Undo or Redo chosen in either menu: the shell asks the page to run the editor's own history. */
@@ -36,15 +38,8 @@ export const TEXT_MENU_CLOSED: TextMenuState = { request: 0, open: false };
 /** The edit actions' keys, as the system binds them; Undo, Redo and Paste as plain text take the app's own bindings. */
 const CHORDS: Partial<Record<TextMenuEdit, string>> = { cut: "Mod+X", copy: "Mod+C", paste: "Mod+V", delete: "Delete", selectAll: "Mod+A" };
 const OWN: Partial<Record<TextMenuEdit, string>> = { undo: "edit.undo", redo: "edit.redo", pasteAsPlainText: "keys.pastePlain" };
-type Keys = { keys: string[]; keysLabel: string };
-/** Key caps for a chord, in the platform's words ("Ctrl", "Del"), with the words read aloud. */
-function capsFor(chord: string, platform: Platform): Keys {
-  const keys = chordParts(chord, platform).map((k) => (platform !== "macos" && k === "Delete" ? "Del" : k));
-  // The name holds the caps as shown (WCAG 2.5.3: the visible label is part of the name).
-  return { keys, keysLabel: keys.join(" ") };
-}
 /** Windows' emoji panel: Win+. (the system's key, not the app's). */
-const EMOJI_KEYS: Keys = { keys: ["Win", "."], keysLabel: "Win ." };
+const EMOJI_CHORD = "Meta+.";
 
 interface Ctx {
   store: Store<AppState>;
@@ -52,6 +47,8 @@ interface Ctx {
   viewModels: ViewModelRegistry<AppState>;
   catalog: MessageCatalog;
   bridge: PlatformBridge;
+  /** A polite announcement (the suggestions that came after the menu opened). */
+  announce: (text: string) => void;
 }
 
 /** The model's items as the menu's sections, split at its separators, in the app's words. */
@@ -63,7 +60,7 @@ export function textMenuSections(model: TextMenuModel | undefined, catalog: Mess
     if (commands?.has(own)) return commands.describe(own).shortcut;
     return shortcutFor(commands?.shortcut(own), platform) ?? (role === "pasteAsPlainText" ? "Mod+Shift+V" : undefined);
   };
-  const sections: { id: string; items: ({ id: string; label: string; disabled?: boolean } & Partial<Keys>)[] }[] = [];
+  const sections: { id: string; items: { id: string; label: string; shortcut?: string; disabled?: boolean }[] }[] = [];
   let items: (typeof sections)[number]["items"] = [];
   const close = () => {
     if (items.length) sections.push({ id: `textMenu${sections.length}`, items });
@@ -78,8 +75,8 @@ export function textMenuSections(model: TextMenuModel | undefined, catalog: Mess
     else if (e.kind === "edit") {
       const chord = chordOf(e.role);
       const enabled = e.enabled && (e.role === "undo" ? history.undo : e.role === "redo" ? history.redo : true);
-      items.push({ id, label: catalog.format(`textMenu.${e.role}`), ...(chord ? capsFor(chord, platform) : {}), ...(enabled ? {} : { disabled: true }) });
-    } else if (e.kind === "emoji") items.push({ id, label: catalog.format("textMenu.emoji"), ...(platform === "windows" ? EMOJI_KEYS : {}) });
+      items.push({ id, label: catalog.format(`textMenu.${e.role}`), ...(chord ? { shortcut: formatChord(chord, platform) } : {}), ...(enabled ? {} : { disabled: true }) });
+    } else if (e.kind === "emoji") items.push({ id, label: catalog.format("textMenu.emoji"), ...(platform === "windows" ? { shortcut: formatChord(EMOJI_CHORD, platform) } : {}) });
     else if (e.kind === "copyLink" || e.kind === "openLink") items.push({ id, label: catalog.format(`textMenu.${e.kind}`) });
     // lookUp and speech are macOS's, and macOS shows its own menu.
   });
@@ -87,7 +84,7 @@ export function textMenuSections(model: TextMenuModel | undefined, catalog: Mess
   return sections;
 }
 
-export function registerTextMenu({ store, commands, viewModels, catalog, bridge }: Ctx) {
+export function registerTextMenu({ store, commands, viewModels, catalog, bridge, announce }: Ctx) {
   const set = (t: TextMenuState) => store.update((s) => ({ ...s, textMenu: t }));
   commands.register<{ id?: unknown }>({
     id: "textMenu.choose", title: "command.textMenu.choose",
@@ -101,9 +98,17 @@ export function registerTextMenu({ store, commands, viewModels, catalog, bridge 
       bridge.textMenu?.choose(model.id, id);
     },
   });
-  commands.register({ id: "textMenu.close", title: "command.textMenu.close", run: () => set({ ...store.state.textMenu, open: false }) });
+  commands.register({
+    id: "textMenu.close", title: "command.textMenu.close",
+    run: () => {
+      const t = store.state.textMenu;
+      if (!t.open) return;
+      set({ ...t, open: false });
+      if (t.model) bridge.textMenu?.closed?.(t.model.id);
+    },
+  });
 
-  const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, keys: { type: "array" as const, items: { type: "string" as const } }, keysLabel: { type: "string" as const }, disabled: { type: "boolean" as const } } };
+  const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, shortcut: { type: "string" as const }, disabled: { type: "boolean" as const } } };
   const SECTIONS = { type: "array" as const, items: { type: "object" as const, properties: { id: { type: "string" as const }, items: { type: "array" as const, items: ITEM } } } };
   let memo: { key: TextMenuState; undo: boolean; redo: boolean; value: Record<string, unknown> } | undefined;
   viewModels.register({
@@ -143,7 +148,12 @@ export function registerTextMenu({ store, commands, viewModels, catalog, bridge 
         const t = store.state.textMenu;
         // The same menu again: its suggestions came; it stays open where it is (and closed, if it was closed).
         if (t.model?.id === model.id) {
-          if (t.open) set({ ...t, model });
+          if (!t.open) return;
+          set({ ...t, model });
+          // The suggestions came after the menu opened: said politely, as focus moves to the first one.
+          const was = t.model.entries.some((e) => e.kind === "checking");
+          const spelling = model.entries.some((e) => e.kind === "suggestion" || e.kind === "noSuggestions");
+          if (was && spelling) announce(catalog.format("textMenu.suggestions", { count: model.entries.filter((e) => e.kind === "suggestion").length }));
         } else set({ request: t.request + 1, model, open: true });
       });
     },

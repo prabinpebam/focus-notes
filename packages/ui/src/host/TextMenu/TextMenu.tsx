@@ -20,19 +20,33 @@ export interface TextMenuProps {
 
 const name = (v: string) => v.replace(/^var\(/, "").replace(/\)$/, "");
 
-/** Where focus and the selection were as the menu opened: they go back exactly there (cut and copy act on the selection). */
+/**
+ * Where focus and the selection were as the menu opened: they go back exactly there (cut and copy act
+ * on the selection). A field (the find bar, a rename) keeps its own selection, with its direction.
+ */
 interface Saved {
   el: HTMLElement | null;
   ranges: Range[];
+  field?: { start: number; end: number; direction: "forward" | "backward" | "none" };
 }
+type Field = HTMLInputElement | HTMLTextAreaElement;
+const isField = (el: Element | null): el is Field => el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement;
 function save(): Saved {
+  const el = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  if (isField(el) && el.selectionStart !== null && el.selectionEnd !== null) {
+    return { el, ranges: [], field: { start: el.selectionStart, end: el.selectionEnd, direction: el.selectionDirection ?? "none" } };
+  }
   const sel = typeof getSelection === "function" ? getSelection() : null;
   const ranges = sel ? Array.from({ length: sel.rangeCount }, (_, i) => sel.getRangeAt(i).cloneRange()) : [];
-  return { el: document.activeElement instanceof HTMLElement ? document.activeElement : null, ranges };
+  return { el, ranges };
 }
 function restore(saved: Saved | undefined) {
   if (!saved?.el?.isConnected) return;
   saved.el.focus({ preventScroll: true });
+  if (saved.field && isField(saved.el)) {
+    saved.el.setSelectionRange(saved.field.start, saved.field.end, saved.field.direction);
+    return;
+  }
   const sel = getSelection();
   if (!sel || !saved.ranges.length) return;
   sel.removeAllRanges();
@@ -54,15 +68,33 @@ export function TextMenu({ label, sections, request = 0, x = 0, y = 0, open: ope
   const saved = useRef<Saved | undefined>(undefined);
   const events = useRef({ onAction, onClose });
   events.current = { onAction, onClose };
+  const openRef = useRef(open);
+  openRef.current = open;
 
-  // Before the menu takes focus: where the caret and selection are now.
+  // Before the menu takes focus: where the caret and selection are now (not the menu's own, if one is open).
   useLayoutEffect(() => {
     if (request === seen.current) return;
     seen.current = request;
     if (!sections.length) return;
-    saved.current = save();
+    if (!openRef.current) saved.current = save();
     setOpen(true);
   }, [request, sections.length]);
+
+  // The suggestions came after the menu opened: if focus is no longer on one of its items (it was on
+  // "Checking spelling…", which they replace), it goes to the first one, once the menu has settled.
+  const shown = useRef(sections);
+  useEffect(() => {
+    const before = shown.current;
+    shown.current = sections;
+    if (!open || before === sections) return;
+    const frame = requestAnimationFrame(() => {
+      const pop = popoverRef.current;
+      const now = document.activeElement;
+      if (!pop || (now && pop.contains(now) && now.getAttribute("role") === "menuitem")) return;
+      pop.querySelector<HTMLElement>('[role="menuitem"]:not([aria-disabled="true"])')?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [sections, open]);
   useLayoutEffect(() => {
     const el = anchorRef.current;
     if (!el) return;
@@ -72,6 +104,7 @@ export function TextMenu({ label, sections, request = 0, x = 0, y = 0, open: ope
   });
 
   const close = (chosen?: string) => {
+    openRef.current = false;
     setOpen(false);
     const back = saved.current;
     saved.current = undefined;
@@ -95,6 +128,35 @@ export function TextMenu({ label, sections, request = 0, x = 0, y = 0, open: ope
   };
   const closeRef = useRef(close);
   closeRef.current = close;
+
+  // A right-click outside the open menu closes it, as a system menu does, and opens nothing else: its
+  // pointerdown closes the menu, and the press and its contextmenu are cancelled.
+  const swallow = useRef(false);
+  useEffect(() => {
+    const outside = (e: Event) => !(e.target instanceof Node && popoverRef.current?.contains(e.target));
+    const down = (e: MouseEvent) => {
+      if (e.type === "pointerdown") swallow.current = false;
+      if (e.button !== 2 || !outside(e)) return;
+      if (openRef.current) {
+        swallow.current = true;
+        closeRef.current();
+      }
+      if (swallow.current) e.preventDefault();
+    };
+    const menu = (e: MouseEvent) => {
+      if (!outside(e) || openRef.current || swallow.current) e.preventDefault();
+      swallow.current = false;
+      if (openRef.current) closeRef.current();
+    };
+    addEventListener("pointerdown", down, true);
+    addEventListener("mousedown", down, true);
+    addEventListener("contextmenu", menu, true);
+    return () => {
+      removeEventListener("pointerdown", down, true);
+      removeEventListener("mousedown", down, true);
+      removeEventListener("contextmenu", menu, true);
+    };
+  }, []);
 
   // A scroll or a wheel anywhere but the menu (a short note doesn't scroll), the window losing focus,
   // or a resize closes it, as a system menu does.

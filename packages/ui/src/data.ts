@@ -4,9 +4,6 @@ export interface CommandItem {
   label: string;
   icon?: string;
   shortcut?: string;
-  /** The shortcut as key caps (the Shortcut primitive), in the platform's words, with `keysLabel` read aloud: the right-click menu in text (D-204). */
-  keys?: string[];
-  keysLabel?: string;
   checked?: boolean;
   disabled?: boolean;
   /** Why it's disabled, shown in its tooltip. */
