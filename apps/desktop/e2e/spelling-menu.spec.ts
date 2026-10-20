@@ -256,7 +256,8 @@ test("D-204: the menu in text is the app's own on Windows and Linux: its edit ac
     await expect(item(page, "Select all")).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(menu(page)).toHaveCount(0);
-    expect(await selection(page)).toEqual({ ...before, editor: true });
+    // Focus comes back a frame after the menu unmounts.
+    await expect.poll(() => selection(page)).toEqual({ ...before, editor: true });
     // The menu's keys: the platform's, as key caps.
     await openAt(page, word);
     await expect(item(page, "Cut")).toHaveAccessibleName("Cut Ctrl X");

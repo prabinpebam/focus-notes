@@ -78,6 +78,12 @@ export function TextMenu({ label, sections, request = 0, x = 0, y = 0, open: ope
     restore(back);
     if (chosen === undefined) {
       events.current.onClose?.();
+      // The popover's own focus handling can leave focus nowhere as it unmounts (Linux): unless
+      // something else took focus (a click outside), the text gets it and its selection back.
+      requestAnimationFrame(() => {
+        const now = document.activeElement;
+        if (!now || now === document.body || !now.isConnected) restore(back);
+      });
       return;
     }
     // The chosen item acts once the menu is gone and the text has focus and its selection again
