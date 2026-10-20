@@ -1526,6 +1526,38 @@
       "status": "building"
     },
     {
+      "id": "WP-5.13",
+      "stage": "M5",
+      "title": "The menu in text, in the theme",
+      "summary": "Right-clicking text opens a menu from one model on every platform with the OS menu's full set of actions: the OS spell checker's suggestions and Add to dictionary, Undo and Redo through the editor's history, Cut, Copy, Paste, Paste as plain text, Delete, Select all, link and emoji items. Drawn by the app in the theme on Windows and Linux; the system's menu on macOS, in the app's light or dark appearance.",
+      "requirements": [
+        "EDT-14"
+      ],
+      "dependsOn": [
+        "WP-5.12"
+      ],
+      "touches": [
+        "apps/desktop",
+        "packages/core",
+        "packages/editor",
+        "packages/ui",
+        "packages/views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "design/components/feedback-and-dialogs.md",
+        "design/system/components.md",
+        "architecture/perceived-performance.md"
+      ],
+      "lookahead": false,
+      "status": "building"
+    },
+    {
       "id": "WP-6.1",
       "stage": "MW",
       "title": "Web app on your own Pages, local first",

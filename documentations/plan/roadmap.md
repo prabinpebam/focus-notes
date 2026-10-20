@@ -15,7 +15,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M3: Desktop sign-in and Git** | Your instance on your computer. | The owner, then invited testers | Preview 0.3.x | 21 |
 | **M2: The desktop app** | A dedicated desktop experience. | The owner, then invited testers | Preview 0.3.x | 9 |
 | **M4: Find anything, make it yours** | Everything is one keystroke away. | Invited testers | Preview 0.4.x | 13 |
-| **M5: Publish and share** | Version 1.0. | Anyone | 1.0 stable on GitHub Releases | 18 |
+| **M5: Publish and share** | Version 1.0. | Anyone | 1.0 stable on GitHub Releases | 19 |
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 22 |
 | **Later: Components** | Rich components. | Anyone | Later releases | 2 |
@@ -104,7 +104,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M5: Publish and share (Version 1.0)</p>
-<p>The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. Visitors' *Use this app for yourself* dialog links to the downloads, and every release ships with checksums, an SBOM, and attestations. <a href="implementation-plan.md#m5">Details</a>. DSK-09, DST-03, DST-06, DST-08, PKG-02, PKG-12, PRF-05, PRF-06, PRF-12, PRF-13, PRF-14, PRV-04, QLT-02, QLT-04, QLT-07, SEC-05, SHR-03, SHR-05 to SHR-11.</p>
+<p>The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. Visitors' *Use this app for yourself* dialog links to the downloads, and every release ships with checksums, an SBOM, and attestations. <a href="implementation-plan.md#m5">Details</a>. DSK-09, DST-03, DST-06, DST-08, EDT-14, PKG-02, PKG-12, PRF-05, PRF-06, PRF-12, PRF-13, PRF-14, PRV-04, QLT-02, QLT-04, QLT-07, SEC-05, SHR-03, SHR-05 to SHR-11.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M7: Agents (Your agents can help, safely)</p>

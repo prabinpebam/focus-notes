@@ -103,13 +103,34 @@ A task has a target (the node it affects, by ID), a message key that says what's
 
 <h2 id="context-menu" data-reader-personas="design">Context menu</h2>
 
-**IA-CMP-CONTEXTMENU.** Serves UC-FILE-05, UC-FILE-06, UC-TABLE-03.
+**IA-CMP-CONTEXTMENU.** Serves UC-FILE-05, UC-FILE-06, UC-TABLE-03, UC-FMT-08.
 
 - Opens with right-click, <kbd>Shift</kbd>+<kbd>F10</kbd> or the Menu key (at the focused item), or a 500 ms long-press on touch screens.
-- App-drawn for the app's own items (rows, tables, the title bar), so it follows the theme the same way on the web and the desktop. Right-clicking text on the desktop opens the OS's own menu instead: the OS spell checker's suggestions and *Add to dictionary* for a misspelled word, then Cut, Copy, Paste and Select all (D-193).
+- App-drawn for the app's own items (rows, tables, the title bar), so it follows the theme the same way on the web and the desktop. Right-clicking text on the desktop opens the [text menu](#text-menu): the OS spell checker's suggestions and the edit actions, drawn by the app in the theme on Windows and Linux, and the system's own menu on macOS (D-193, D-204).
 - 14 px items with shortcuts right-aligned and dividers between groups. Submenus open with › on <kbd>→</kbd> or after a 200 ms hover. Destructive items come last. At most about 12 items, and the rest go into submenus.
 - It holds the same actions as the visible controls for that item. It's never the only way to reach anything.
 - It's the same `CommandMenu` as every app menu, in a popover at the pointer (right-click) or at the item (keyboard, ⋯). <kbd>Esc</kbd> returns focus to the item. An unavailable item stays reachable and shows why. First used for the Files rows ([Files panel → Row menu](../views/files.html#row-menu), D-162).
+
+<h3 id="text-menu">Text menu</h3>
+
+**TextMenu** (a host component over `CommandMenu`; D-204, EDT-14). One model (`packages/core/src/text-menu.ts`) builds the items for every platform, so the drawn menu and the system's stay in step; each item shows only when it applies and is disabled when it can't act.
+
+| Group | Windows and Linux (drawn in the theme) | macOS (the system's menu) |
+| --- | --- | --- |
+| Spelling | Up to 6 suggestions, or *No suggestions* (disabled), then *Add to dictionary* | The suggestions, or *No Guesses Found*, then *Learn Spelling* |
+| Look up | None | *Look Up “word”* (a selection or the misspelled word) |
+| History | *Undo* <kbd>Ctrl</kbd>+<kbd>Z</kbd>, *Redo* <kbd>Ctrl</kbd>+<kbd>Y</kbd>: the editor's own history, disabled when it has nothing | *Undo* <kbd>⌘</kbd><kbd>Z</kbd>, *Redo* <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd>: the editor's own history |
+| Edit | *Cut*, *Copy*, *Paste*, *Paste as plain text* <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd>, *Delete* <kbd>Del</kbd> | *Cut*, *Copy*, *Paste*, *Paste and Match Style*, *Delete* |
+| Select | *Select all* <kbd>Ctrl</kbd>+<kbd>A</kbd> | *Select All* |
+| Link | *Copy link*, *Open link* (web and mail links, through the app's guarded link opening) | *Copy Link*, *Open Link* |
+| Speech | None | *Speech* › *Start Speaking*, *Stop Speaking* |
+| Emoji | Windows: *Emoji* <kbd>Win</kbd>+<kbd>.</kbd>; Linux: none (no system panel) | *Emoji & Symbols* |
+
+Read-only text with a selection gets *Copy* alone. A menu opened by key (<kbd>Shift</kbd>+<kbd>F10</kbd>, the Menu key) is the block menu, not this one.
+
+- **Drawn (Windows, Linux).** The shell sends the page the checked model (the place, at most 30 entries, at most 6 suggestions); the page shows it at the pointer within a frame, flipped or shifted to stay in the window and scrolling when it's taller. A chosen item goes back as its id, once, over a channel that checks the sender, and the shell acts: suggestions and *Add to dictionary*, the webContents' cut, copy, paste, paste-and-match-style, delete and select-all, the app's Undo and Redo, the emoji panel, and the link (whose address stays in the shell). Arrow keys, <kbd>Home</kbd>, <kbd>End</kbd>, typeahead, <kbd>Enter</kbd> and <kbd>Space</kbd> work as in every app menu; <kbd>Esc</kbd>, a click or a wheel outside, a scroll, the window losing focus or a resize close it, and the caret and selection go back exactly where they were before an item acts. When Windows' spell checker takes longer than a frame (its first answer), the menu opens at once with a *Checking spelling…* row and the suggestions fill in ([wait inventory](../../architecture/perceived-performance.md#the-wait-inventory)).
+- **System (macOS).** The native menu, as Mac users expect, in the app's light or dark appearance (`nativeTheme.themeSource` follows Appearance; *System* follows the OS).
+- **Left out, and why.** *Ignore spelling* and *Ignore all*: Electron has no session-only ignore, and adding a word then removing it at quit would leave it in the OS dictionary after a crash. Browser items (search the web, print, inspect, translate, writing direction) and the Unicode and IME items of old Win32 edit controls: no clear use in a note. *Select all* in read-only text: it would select the whole window. Emoji on Linux: there's no system panel. Look Up and Speech: macOS's services, with no Windows or Linux counterpart in Electron.
 
 <h2 id="move-to-picker" data-reader-personas="design product">Move to picker</h2>
 
@@ -148,5 +169,5 @@ A task has a target (the node it affects, by ID), a message key that says what's
 | DD-FB-02 | Sync status is invisible when healthy and shows as an arc on the trigger when not. | UC-SAFE-01, UC-SAFE-03 | It keeps the canvas calm (CP-CALM-01) while making unsynced work visible (CP-SAFE-01), using the one element that's always on screen. | A permanent "Saved" label. A status bar. |
 | DD-FB-03 | Confirmations open on Cancel and name the object and its consequence. | UC-SHARE-01 | Stops reflexive <kbd>Enter</kbd> from publishing or deleting, and shows people exactly what they're agreeing to. | Focus on the primary button. A generic "Are you sure?". |
 | DD-FB-04 | The conflict resolver offers three outcomes, and "Take the other" keeps a recoverable copy of yours. | UC-SAFE-02 | No choice in the resolver can lose words. | Automatic merging (surprising in prose). Last write wins. |
-| DD-FB-05 | Context menus for the app's own items are app-drawn on every platform; right-clicking text on the desktop opens the OS's menu with the OS spell checker's suggestions (D-193). | UC-FILE-05 | The app's menus look and behave the same everywhere and follow the theme; text gets the system's spelling and editing menu, which people already know, with the system's words and dictionary. | Native menus for everything (unthemed, and different between web and desktop); app-drawn spelling suggestions (Electron reports no misspelled word on Windows, so they'd need the same OS query anyway). |
+| DD-FB-05 | Context menus for the app's own items are app-drawn on every platform; right-clicking text on the desktop opens the text menu with the OS spell checker's suggestions, drawn in the theme on Windows and Linux and the system's on macOS (D-193, D-204). | UC-FILE-05 | The app's menus look and behave the same everywhere and follow the theme; text gets the system's spelling and editing menu, which people already know, with the system's words and dictionary. | Native menus for everything (unthemed, and different between web and desktop); app-drawn spelling suggestions (Electron reports no misspelled word on Windows, so they'd need the same OS query anyway). |
 | DD-FB-06 | One task tracker explains every wait a person starts: nothing under 300 ms, then a sign at the place and words, with timings as tokens. | UC-SAFE-01, UC-FILE-06 | Short work stays calm (CP-CALM-01), and long work is never a mystery. One tracker keeps the timing and words consistent everywhere. | A global spinner or progress bar. Each component deciding its own timing. Showing a spinner for every wait at once, which flickers. |
