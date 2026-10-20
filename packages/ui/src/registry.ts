@@ -42,6 +42,7 @@ import { Sheet } from "./layouts/Sheet/Sheet.tsx";
 import { VersionPane } from "./primitives/VersionPane/VersionPane.tsx";
 import { WindowControls } from "./primitives/WindowControls/WindowControls.tsx";
 import { WindowFrame } from "./host/WindowFrame/WindowFrame.tsx";
+import { TextMenu } from "./host/TextMenu/TextMenu.tsx";
 import { ThemeGallery } from "./primitives/ThemeGallery/ThemeGallery.tsx";
 import { Slider } from "./primitives/Slider/Slider.tsx";
 import { ColorField } from "./primitives/ColorField/ColorField.tsx";
@@ -68,6 +69,6 @@ import { DatePicker } from "./primitives/DatePicker/DatePicker.tsx";
 export const registry = defineRegistry({
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, NoteContent,
-  EditorSurface, TableControls, BlockHandle, WindowFrame,
+  EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,
   Trigger, Toolbar, Dialog,
 });

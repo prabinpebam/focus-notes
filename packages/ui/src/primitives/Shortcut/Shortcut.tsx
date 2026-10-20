@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import * as s from "./Shortcut.css.ts";
 
 export interface ShortcutProps {
@@ -13,7 +14,7 @@ export function Shortcut({ keys, label, id }: ShortcutProps) {
   return (
     <span id={id} className={s.root}>
       {keys.map((k, i) => (
-        <kbd key={i} className={s.cap} aria-hidden="true">{k}</kbd>
+        <Fragment key={i}>{i ? " " : null}<kbd className={s.cap} aria-hidden="true">{k}</kbd></Fragment>
       ))}
       <span className={s.spoken}>{label}</span>
     </span>

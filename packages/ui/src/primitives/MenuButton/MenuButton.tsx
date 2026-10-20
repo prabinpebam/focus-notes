@@ -2,6 +2,7 @@ import { Fragment, useRef, useState } from "react";
 import { Button, Header, Keyboard, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator, SubmenuTrigger, Text } from "react-aria-components";
 import { IconButton } from "../IconButton/IconButton.tsx";
 import { Icon } from "../Icon/Icon.tsx";
+import { Shortcut } from "../Shortcut/Shortcut.tsx";
 import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import type { IconName } from "../../icon-names.ts";
 import type { CommandItem, MenuSection as Section } from "../../data.ts";
@@ -167,7 +168,7 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
                           <Text slot="label" className={s.label}>
                             <span className={s.labelRow}>
                               <span className={s.labelText}>{item.label}</span>
-                              {item.shortcut ? <>{" "}<Keyboard className={s.shortcut}>{item.shortcut}</Keyboard></> : null}
+                              {item.keys?.length ? <>{" "}<span className={s.shortcut}><Shortcut keys={item.keys} label={item.keysLabel ?? item.keys.join(" ")} /></span></> : item.shortcut ? <>{" "}<Keyboard className={s.shortcut}>{item.shortcut}</Keyboard></> : null}
                             </span>
                             {item.disabled && item.reason ? <>{" "}<span className={s.reason}>{item.reason}</span></> : null}
                           </Text>

@@ -43,6 +43,7 @@ export const contract = defineContract({
     format: { payload: {
       toolbar: "boolean", card: "boolean", bold: "text", italic: "text", strike: "text", code: "text",
       block: "text", codeBlock: "boolean", inlineCode: "boolean", oneBlock: "boolean", href: "text", table: "boolean",
+      undo: "boolean", redo: "boolean",
     } },
     linkEdit: { payload: { href: "text", selected: "boolean" } },
     linkDismiss: {},

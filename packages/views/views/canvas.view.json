@@ -30,6 +30,7 @@
     "vm.held",
     "vm.deleted",
     "vm.window",
+    "vm.textMenu",
     "vm.spotlight",
     "vm.demo",
     "vm.toolbarCustomize"
@@ -172,6 +173,42 @@
                 "get": "event.fine"
               }
             }
+          }
+        }
+      },
+      {
+        "type": "TextMenu",
+        "when": {
+          "get": "vm.textMenu.available"
+        },
+        "props": {
+          "label": {
+            "t": "textMenu.label"
+          },
+          "sections": {
+            "get": "vm.textMenu.sections"
+          },
+          "request": {
+            "get": "vm.textMenu.request"
+          },
+          "x": {
+            "get": "vm.textMenu.x"
+          },
+          "y": {
+            "get": "vm.textMenu.y"
+          }
+        },
+        "on": {
+          "action": {
+            "run": "textMenu.choose",
+            "args": {
+              "id": {
+                "get": "event.id"
+              }
+            }
+          },
+          "close": {
+            "run": "textMenu.close"
           }
         }
       },
@@ -900,6 +937,12 @@
             "args": {
               "toolbar": {
                 "get": "event.toolbar"
+              },
+              "undo": {
+                "get": "event.undo"
+              },
+              "redo": {
+                "get": "event.redo"
               },
               "card": {
                 "get": "event.card"

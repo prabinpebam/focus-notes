@@ -167,6 +167,13 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
       { id: "ink", label: "Ink", scheme: "dark", src: "#gallery", alt: "Ink" },
     ],
     colorValues: [{ id: "color.accent", value: "#9a3412" }, { id: "color.link", value: "#9a3412" }],
+    // The right-click menu in text (TextMenu, D-204): a misspelled word's suggestions, then the edit actions, Cut unavailable.
+    textMenu: [
+      { id: "textMenu0", items: [{ id: "s0", label: "mistake" }, { id: "s1", label: "mistakes" }] },
+      { id: "textMenu1", items: [{ id: "learn", label: "Add to dictionary" }] },
+      { id: "textMenu2", items: [{ id: "cut", label: "Cut", shortcut: "Ctrl+X", disabled: true }, { id: "copy", label: "Copy", shortcut: "Ctrl+C" }, { id: "paste", label: "Paste", shortcut: "Ctrl+V" }] },
+      { id: "textMenu3", items: [{ id: "selectAll", label: "Select all", shortcut: "Ctrl+A" }] },
+    ],
     snapLayouts: [
       { id: "halves", label: "Halves", items: [{ id: "g.left", label: "Left half" }, { id: "g.right", label: "Right half" }] },
       { id: "thirds", label: "Thirds", items: [{ id: "g.leftThird", label: "Left third" }, { id: "g.centerThird", label: "Center third" }, { id: "g.rightThird", label: "Right third" }] },
@@ -213,6 +220,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         siteThemes: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, scheme: { type: "string" }, src: { type: "string" }, alt: { type: "string" } } } },
         colorValues: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } },
         snapLayouts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
+        textMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ITEM } } } },
       },
     },
     select: () => ({ fixtures, toolbar, menu, ...extras }),

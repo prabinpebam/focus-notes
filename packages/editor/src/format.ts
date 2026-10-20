@@ -6,7 +6,7 @@
 import { Extension, getMarkRange, type Editor } from "@tiptap/core";
 import { Plugin, PluginKey, TextSelection, type EditorState } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
-import { closeHistory } from "@tiptap/pm/history";
+import { closeHistory, redoDepth, undoDepth } from "@tiptap/pm/history";
 import type { ResolvedPos } from "@tiptap/pm/model";
 import { CellSelection } from "@tiptap/pm/tables";
 import { syncSelection } from "./sync.ts";
@@ -33,6 +33,9 @@ export interface FormatInfo {
   link: { href: string; from: number; to: number } | null;
   /** In a table: cells hold inline content only, so Turn into doesn't show (TBL-05, TBL-06). */
   table: boolean;
+  /** The editor's own history has something to undo or redo (the right-click menu's Undo and Redo, D-204). */
+  undo: boolean;
+  redo: boolean;
 }
 
 /** A web address that opens in the browser and can be pasted as a link: http, https, or mailto. */
@@ -124,6 +127,8 @@ export function formatState(state: EditorState): FormatInfo {
     oneBlock: oneBlock && !cells,
     link,
     table,
+    undo: undoDepth(state) > 0,
+    redo: redoDepth(state) > 0,
   };
 }
 

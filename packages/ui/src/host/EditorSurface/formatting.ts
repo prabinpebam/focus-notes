@@ -23,6 +23,9 @@ export interface FormatPayload {
   href: string;
   /** In a table: the toolbar has marks only (TBL-05). */
   table: boolean;
+  /** The editor's history can undo or redo (the right-click menu, D-204). */
+  undo: boolean;
+  redo: boolean;
 }
 
 /** DD-FMT-04: after a pointer selection ends, and after the last keyboard selection change. */
@@ -110,6 +113,7 @@ export function trackFormatting(editor: Editor, scroller: HTMLElement, emit: (p:
     const p: FormatPayload = {
       toolbar, card, bold: info.marks.bold, italic: info.marks.italic, strike: info.marks.strike, code: info.marks.code,
       block: info.block, codeBlock: info.codeBlock, inlineCode: info.inlineCode, oneBlock: info.oneBlock, href, table: info.table,
+      undo: info.undo, redo: info.redo,
     };
     const key = JSON.stringify(p);
     if (key === last) return;

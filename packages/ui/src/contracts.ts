@@ -43,6 +43,7 @@ import { contract as Sheet } from "./layouts/Sheet/contract.ts";
 import { contract as VersionPane } from "./primitives/VersionPane/contract.ts";
 import { contract as WindowControls } from "./primitives/WindowControls/contract.ts";
 import { contract as WindowFrame } from "./host/WindowFrame/contract.ts";
+import { contract as TextMenu } from "./host/TextMenu/contract.ts";
 import { contract as ThemeGallery } from "./primitives/ThemeGallery/contract.ts";
 import { contract as Slider } from "./primitives/Slider/contract.ts";
 import { contract as ColorField } from "./primitives/ColorField/contract.ts";
@@ -72,7 +73,7 @@ import { contract as SiteThemeShowcase } from "./primitives/SiteThemeShowcase/co
 export const contractsByType = {
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, SitePage, SiteSection, SiteGrid,
-  EditorSurface, TableControls, BlockHandle, WindowFrame,
+  EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,
   Trigger, Toolbar, Dialog,
   NoteContent,
 } as const;

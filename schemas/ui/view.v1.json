@@ -386,6 +386,9 @@
           "$ref": "#/$defs/c_WindowFrame"
         },
         {
+          "$ref": "#/$defs/c_TextMenu"
+        },
+        {
           "$ref": "#/$defs/c_Trigger"
         },
         {
@@ -9089,6 +9092,119 @@
               "$ref": "#/$defs/actions"
             },
             "key": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_TextMenu": {
+      "type": "object",
+      "description": "The right-click menu in text on Windows and Linux (D-204): the spell checker's suggestions, Add to dictionary, and Cut, Copy, Paste and Select all, as the shell sent them, drawn as the app's own command menu at the pointer, so it follows the theme. It flips or shifts to stay in the window and scrolls in a short one. Esc, a click outside, a scroll, the window losing focus or a resize close it, and the caret and selection go back to the text as they were. macOS shows the system's menu instead.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "TextMenu"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "sections": {
+              "$ref": "#/$defs/read"
+            },
+            "request": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "x": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "y": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
+            "open": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "sections"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/actions"
+            },
+            "close": {
               "$ref": "#/$defs/actions"
             }
           }
