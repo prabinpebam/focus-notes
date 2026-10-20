@@ -49,17 +49,24 @@ async function choose(page: Page, label: string) {
 }
 /** Selects a word in the note, as a double-click does, and waits until the editor has it. */
 async function selectWord(page: Page, word: string) {
-  await page.evaluate((word) => {
-    const walker = document.createTreeWalker(document.querySelector("[data-editor]")!, NodeFilter.SHOW_TEXT);
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-      const i = n.textContent!.indexOf(word);
-      if (i < 0) continue;
-      (document.querySelector("[data-editor]") as HTMLElement).focus();
-      getSelection()!.setBaseAndExtent(n, i, n, i + word.length);
-      return;
-    }
-  }, word);
-  await expect.poll(() => page.evaluate(() => getSelection()!.toString())).toBe(word);
+  const editor = page.locator("[data-editor]");
+  if (!(await editor.evaluate((el) => el === document.activeElement))) await editor.focus();
+  // The editor puts its own selection back as it takes focus: select until the word holds.
+  await expect
+    .poll(async () => {
+      await page.evaluate((word) => {
+        const walker = document.createTreeWalker(document.querySelector("[data-editor]")!, NodeFilter.SHOW_TEXT);
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          const i = n.textContent!.indexOf(word);
+          if (i < 0) continue;
+          getSelection()!.setBaseAndExtent(n, i, n, i + word.length);
+          return;
+        }
+      }, word);
+      await page.waitForTimeout(100);
+      return page.evaluate(() => getSelection()!.toString());
+    }, PROMPTLY)
+    .toBe(word);
 }
 const selection = (page: Page) => page.evaluate(() => {
   const s = getSelection()!;

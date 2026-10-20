@@ -62,7 +62,7 @@ import { AppMenuBar } from "./window/menu-bar.ts";
 import { describeMenu, spellingMenu, type SpellingMenuParams } from "./spelling/menu.ts";
 import { DrawnTextMenu } from "./spelling/drawn-menu.ts";
 import { textMenuEntries } from "@focus-notes/core/text-menu";
-import { themeSourceFor } from "./window/native-theme.ts";
+import { themeSourceFor, type ThemeSource } from "./window/native-theme.ts";
 import { HELPER_ARGS, MAX_WORD, OsSpellChecker } from "./spelling/os-spellchecker.ts";
 import { SnapshotCache } from "@focus-notes/core/snapshot";
 import { textHash } from "@focus-notes/core/journal";
@@ -166,6 +166,8 @@ const logLine = (line: string) => {
   process.stdout.write(`[focus-notes] ${line}\n`);
   problemLog.add(line);
 };
+/** What the app set `nativeTheme.themeSource` to (D-204): only macOS sets it, from Appearance. */
+let appThemeSource: ThemeSource = "system";
 /** The clipboard: in memory for journeys (`FOCUS_NOTES_MEMORY_CLIPBOARD`, never packaged), so they never touch the computer's. */
 let memClipboard: TextClipboard | undefined;
 const appClipboard = (): TextClipboard => (devEnv("FOCUS_NOTES_MEMORY_CLIPBOARD") === "1" ? (memClipboard ??= memoryClipboard()) : clipboard);
@@ -1837,7 +1839,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   const onSystemScheme = () => {
     // While macOS's native parts follow the app's own light or dark (D-204), the system's scheme
     // can't be read; it's sent again once the appearance is the system's.
-    if (win.isDestroyed() || nativeTheme.themeSource !== "system") return;
+    if (win.isDestroyed() || appThemeSource !== "system") return;
     const d = nativeTheme.shouldUseDarkColors;
     win.webContents.send("scheme:changed", d ? "dark" : "light");
   };
@@ -1847,7 +1849,9 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
     if (!fromApp(e) || e.sender !== win.webContents || win.isDestroyed() || (scheme !== "light" && scheme !== "dark")) return;
     // macOS's right-click menu (the system's own) is drawn in the app's light or dark (D-204).
     const source = themeSourceFor(platform, appearance);
-    if (nativeTheme.themeSource !== source) {
+    // Compared with what the app last set, so it's set only when the appearance changes.
+    if (appThemeSource !== source) {
+      appThemeSource = source;
       nativeTheme.themeSource = source;
       // Back to the system's: the page hears its scheme now, whatever changed while it couldn't be read.
       if (source === "system") onSystemScheme();
