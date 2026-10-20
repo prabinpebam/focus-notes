@@ -1555,7 +1555,7 @@
         "architecture/perceived-performance.md"
       ],
       "lookahead": false,
-      "status": "building"
+      "status": "verifying"
     },
     {
       "id": "WP-6.1",
