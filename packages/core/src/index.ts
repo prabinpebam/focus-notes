@@ -34,6 +34,8 @@ export * from "./settings-app.ts";
 export * from "./share-manage.ts";
 export * from "./theme-manager-app.ts";
 export * from "./window-app.ts";
+export * from "./text-menu-app.ts";
+export * from "./text-menu.ts";
 export * from "./menu-bar.ts";
 export * from "./window-geometry.ts";
 export * from "./journal.ts";

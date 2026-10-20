@@ -8,6 +8,7 @@ import type { KeybindingsBridge } from "./keybindings-app.ts";
 import type { HeldNotes } from "./held.ts";
 import type { AgentsBridge } from "./agents-app.ts";
 import type { NativeWindowBridge, WindowBridge } from "./window-app.ts";
+import type { TextMenuBridge } from "./text-menu-app.ts";
 import type { AccessBridge } from "./share-manage.ts";
 import type { DiagnosticsPreview, TimingSummary } from "./diagnostics.ts";
 import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.ts";
@@ -99,6 +100,8 @@ export interface PlatformBridge {
   window?: WindowBridge;
   /** macOS's native window: its menu bar and traffic lights (DSK-02, DSK-05, D-14). Absent elsewhere. */
   nativeWindow?: NativeWindowBridge;
+  /** The right-click menu in text the app draws (D-204, EDT-14): Windows and Linux. Absent on macOS (the system's menu) and in the browser. */
+  textMenu?: TextMenuBridge;
   /**
    * The recovery journal (QLT-03): unsaved text is kept outside the note at least every second, and
    * a crash's is restored at the next launch. The desktop's; absent in the browser, where the note

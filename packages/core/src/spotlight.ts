@@ -374,7 +374,7 @@ const decay = (score: number, ms: number) => score * 0.5 ** (Math.max(0, ms) / F
 // ---- commands Spotlight lists (KEY-01) ----
 
 /** Steps the app's views and keys take rather than actions a person looks for. */
-const INTERNAL_PREFIXES = ["firstRun.", "slash.", "move.", "picker.", "unlock.", "import.", "gallery.", "spotlight.choose", "spotlight.set", "findAll.", "share.manage."];
+const INTERNAL_PREFIXES = ["firstRun.", "slash.", "move.", "picker.", "unlock.", "import.", "gallery.", "spotlight.choose", "spotlight.set", "findAll.", "share.manage.", "textMenu."];
 const INTERNAL_IDS = new Set([
   // Events from components and the editor, and the runner itself.
   "app.ready", "command.run", "note.setContent", "find.prefill", "find.setResult", "paste.notice", "format.setState",

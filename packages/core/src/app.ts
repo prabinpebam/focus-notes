@@ -32,6 +32,7 @@ import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./setting
 import { FEEDBACK_CLOSED, registerFeedback, type FeedbackState } from "./feedback-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
+import { registerTextMenu, TEXT_MENU_CLOSED, type TextMenuState } from "./text-menu-app.ts";
 import { registerMenuBar } from "./menu-bar.ts";
 import { WarmUp } from "./warmup.ts";
 import { registerSpotlight, SPOTLIGHT_CLOSED, type SpotlightState } from "./spotlight-app.ts";
@@ -130,6 +131,8 @@ export interface AppState {
   account: AccountState;
   /** The app-built window on Windows and Linux, as the shell reports it (DSK-03, D-14). Native elsewhere. */
   window: WindowState;
+  /** The right-click menu in text the app draws on Windows and Linux (D-204, EDT-14). */
+  textMenu: TextMenuState;
   /** Waits a person started (PRF-08). */
   tasks: TaskView[];
   /** The latest polite announcement for screen readers; `n` makes repeats announce again. */
@@ -310,6 +313,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     firstRun: FIRST_RUN_INACTIVE,
     account: NO_ACCOUNT,
     window: initialWindow(bridge),
+    textMenu: TEXT_MENU_CLOSED,
     tasks: [],
     announcement: { text: "", n: 0 },
   });
@@ -1132,6 +1136,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const heldNotes = registerHeld({ store, commands, viewModels, catalog, bridge, toast, announce });
   void heldNotes.refresh();
   const windowApp = registerWindow({ store, commands, viewModels, catalog, bridge });
+  const textMenuApp = registerTextMenu({ store, commands, viewModels, catalog, bridge });
   // The compositing can change while the app runs: the GPU process crashed and came back in software (D-121).
   bridge.compositing?.onChange((c) => {
     if ((c === "gpu" || c === "software") && c !== store.state.compositing) store.update((s) => ({ ...s, compositing: c }));
@@ -1486,6 +1491,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
     async start() {
       windowApp.start();
+      textMenuApp.start();
       // The workspace format is read alongside the app state, before the first note opens (DST-05).
       const formatRead = workspace.prepare();
       const [loaded, synced] = await Promise.all([

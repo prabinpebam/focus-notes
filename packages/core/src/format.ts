@@ -38,6 +38,9 @@ export interface FormatState {
   codeBlock: boolean;
   inlineCode: boolean;
   oneBlock: boolean;
+  /** The editor's history can undo or redo: the right-click menu's Undo and Redo show it (D-204). */
+  canUndo: boolean;
+  canRedo: boolean;
   /** The link the selection or caret is in, or the hovered link. */
   href: string;
   /** Bumped to move focus into the toolbar (Alt+F10). */
@@ -63,7 +66,7 @@ export interface LinkEditorState {
 }
 export const FORMAT_CLOSED: FormatState = {
   toolbar: false, card: false, bold: "off", italic: "off", strike: "off", code: "off", block: "", codeBlock: false, inlineCode: false,
-  oneBlock: false, href: "", focusToolbar: 0, link: { open: false, url: "", text: "", withText: false, error: "", focus: 0 }, slash: SLASH_CLOSED,
+  oneBlock: false, canUndo: false, canRedo: false, href: "", focusToolbar: 0, link: { open: false, url: "", text: "", withText: false, error: "", focus: 0 }, slash: SLASH_CLOSED,
   inTable: false, table: TABLE_CLOSED, blockHandle: BLOCK_CLOSED,
 };
 
@@ -123,6 +126,7 @@ export function registerFormatting({ store, commands, viewModels, catalog, bridg
       bold: mark(a.bold), italic: mark(a.italic), strike: mark(a.strike), code: mark(a.code),
       block: typeof a.block === "string" ? a.block : "", codeBlock: Boolean(a.codeBlock), inlineCode: Boolean(a.inlineCode),
       oneBlock: Boolean(a.oneBlock), href: typeof a.href === "string" ? a.href : "", inTable: Boolean(a.table),
+      canUndo: Boolean(a.undo), canRedo: Boolean(a.redo),
     }),
   });
   commands.register({
