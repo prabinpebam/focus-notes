@@ -168,6 +168,10 @@ const logLine = (line: string) => {
 };
 /** What the app set `nativeTheme.themeSource` to (D-204): only macOS sets it, from Appearance. */
 let appThemeSource: ThemeSource = "system";
+/** A link from a note or its menu (EDT-13, D-204): only http, https and mailto, and only in the user's browser. */
+function openWebLink(url: string): void {
+  if (isWebLink(url)) void shell.openExternal(url);
+}
 /** The clipboard: in memory for journeys (`FOCUS_NOTES_MEMORY_CLIPBOARD`, never packaged), so they never touch the computer's. */
 let memClipboard: TextClipboard | undefined;
 const appClipboard = (): TextClipboard => (devEnv("FOCUS_NOTES_MEMORY_CLIPBOARD") === "1" ? (memClipboard ??= memoryClipboard()) : clipboard);
@@ -1534,8 +1538,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   // A link from a note (EDT-13): only http, https, and mailto, and only in the user's browser.
   ipcMain.on("link:open", (e, url: unknown) => {
-    if (!fromApp(e) || typeof url !== "string" || !isWebLink(url)) return;
-    void shell.openExternal(url);
+    if (!fromApp(e) || typeof url !== "string") return;
+    openWebLink(url);
   });
   ipcMain.on("app:ready", (e) => {
     if (!fromApp(e)) return;
@@ -1650,25 +1654,25 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   // screen (D-141). On Windows and Linux the page draws the same items in the theme (D-204, EDT-14).
   // On Windows, Electron underlines a word but doesn't report it (electron/electron#54729), so the
   // preload names the word under the pointer and the OS's spell checker is asked directly.
-  let osWord: string | undefined;
-  const replace = (s: string) => (osWord ? win.webContents.send("spelling:replace", osWord, s) : win.webContents.replaceMisspelling(s));
+  // The word the OS spell checker named travels with its menu: a suggestion replaces it, not a word
+  // a later right-click named.
+  const replaceIn = (osWord: string | undefined) => (s: string) => (osWord ? win.webContents.send("spelling:replace", osWord, s) : win.webContents.replaceMisspelling(s));
   const learn = (w: string) => {
     win.webContents.session.addWordToSpellCheckerDictionary(w);
     osSpelling?.forget(w);
   };
   // The items the system has no role for, on either platform's menu. Journeys log what would open
   // over the owner's screen (the emoji panel, the browser) instead (D-141).
-  const textMenuActs = (link: string) => ({
-    replace, learn,
+  const textMenuActs = (link: string, osWord: string | undefined) => ({
+    replace: replaceIn(osWord), learn,
     lookUp: () => win.webContents.showDefinitionForSelection(),
     run: (command: string) => win.webContents.send("textMenu:run", command),
     emoji: () => (journey ? process.stdout.write("[focus-notes] emoji-panel\n") : app.showEmojiPanel()),
     copyLink: () => appClipboard().writeText(link),
     // The app's guarded link opening (EDT-13): web links only, in the user's browser.
     openLink: () => {
-      if (!isWebLink(link)) return;
-      if (journey) process.stdout.write(`[focus-notes] open-link ${link}\n`);
-      else void shell.openExternal(link);
+      if (!journey) openWebLink(link);
+      else if (isWebLink(link)) process.stdout.write(`[focus-notes] open-link ${link}\n`);
     },
   });
   const drawn = platform === "macos" ? undefined : new DrawnTextMenu((m) => !win.isDestroyed() && win.webContents.send("textMenu:open", m));
@@ -1676,9 +1680,9 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
     if (!fromApp(e) || e.sender !== win.webContents || win.isDestroyed()) return;
     const chosen = drawn?.choose(id, item);
     if (!chosen) return;
-    const { action: a, link } = chosen;
+    const { action: a, link, word } = chosen;
     const wc = win.webContents;
-    const act = textMenuActs(link);
+    const act = textMenuActs(link, word);
     if (a.kind === "replace") act.replace(a.word);
     else if (a.kind === "learn") act.learn(a.word);
     else if (a.kind === "lookUp") act.lookUp();
@@ -1689,14 +1693,28 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
     else if (a.role === "pasteAsPlainText") wc.pasteAndMatchStyle();
     else wc[a.role]();
   };
+  // The page dismissed its menu: it can't be chosen from any more (a newer one stays).
+  const onTextMenuClosed = (e: IpcMainEvent, id: unknown) => {
+    if (!fromApp(e) || e.sender !== win.webContents) return;
+    drawn?.closed(id);
+  };
   if (drawn) {
     ipcMain.on("textMenu:choose", onTextMenuChoice);
-    win.on("closed", () => ipcMain.removeListener("textMenu:choose", onTextMenuChoice));
+    ipcMain.on("textMenu:closed", onTextMenuClosed);
+    win.on("closed", () => {
+      ipcMain.removeListener("textMenu:choose", onTextMenuChoice);
+      ipcMain.removeListener("textMenu:closed", onTextMenuClosed);
+    });
   }
+  // Each right-click is numbered: only the latest one's answers (the OS spell checker's) are used.
+  let rightClicks = 0;
   win.webContents.on("context-menu", (_e, params) => {
+    // First, before anything is awaited: the menu showing can't be chosen from any more.
+    drawn?.close();
+    const n = ++rightClicks;
+    const latest = () => n === rightClicks && !win.isDestroyed();
     void (async () => {
       const wc = win.webContents;
-      osWord = undefined;
       // The OS spell checker's answer for the word under the pointer (Windows), when there's one to ask for.
       const ask = osSpelling && params.isEditable && !params.misspelledWord && params.menuSourceType !== "keyboard"
         ? (async () => {
@@ -1712,23 +1730,21 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
         // suggestions fill in when they come (Perceived performance → wait inventory).
         const zoom = wc.getZoomFactor() || 1;
         const quick = ask ? await Promise.race([ask, new Promise<"later">((r) => setTimeout(() => r("later"), FRAME_MS))]) : undefined;
-        if (win.isDestroyed()) return;
+        if (!latest()) return;
         if (quick === "later") {
           const id = drawn.open(params.x / zoom, params.y / zoom, textMenuEntries(params, { platform, checking: true }), params.linkURL);
           const w = await ask!;
-          if (w) osWord = w.word;
-          if (!win.isDestroyed()) drawn.update(id, textMenuEntries(withWord(w), { platform }));
+          if (latest()) drawn.update(id, textMenuEntries(withWord(w), { platform }), w?.word);
           return;
         }
-        if (quick) osWord = quick.word;
         const entries = textMenuEntries(withWord(quick), { platform });
-        if (entries.length) drawn.open(params.x / zoom, params.y / zoom, entries, params.linkURL);
+        if (entries.length) drawn.open(params.x / zoom, params.y / zoom, entries, params.linkURL, quick?.word);
         return;
       }
       const w = ask ? await ask : undefined;
-      if (w) osWord = w.word;
-      const items = spellingMenu(withWord(w), textMenuActs(params.linkURL), platform);
-      if (!items.length || win.isDestroyed()) return;
+      if (!latest()) return;
+      const items = spellingMenu(withWord(w), textMenuActs(params.linkURL, w?.word), platform);
+      if (!items.length) return;
       if (journey) {
         (globalThis as { __focusNotesLastMenu?: unknown }).__focusNotesLastMenu = items;
         process.stdout.write(`[focus-notes] context-menu ${describeMenu(items)}\n`);

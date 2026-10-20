@@ -325,6 +325,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     drawn: platform !== "macos",
     onOpen: listen("textMenu:open"),
     choose: (id: number, item: string) => ipcRenderer.send("textMenu:choose", id, item),
+    closed: (id: number) => ipcRenderer.send("textMenu:closed", id),
     onRun: listen("textMenu:run"),
   },
   onFlushRequest: (listener: () => Promise<boolean>) => {

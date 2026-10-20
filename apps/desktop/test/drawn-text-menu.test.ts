@@ -24,7 +24,7 @@ describe("DrawnTextMenu", () => {
     const id = menu.open(10.4, 20.6, entries, "https://example.com/");
     expect(sent).toEqual([{ id, x: 10, y: 21, entries }]);
     expect(JSON.stringify(sent)).not.toContain("example.com");
-    expect(menu.choose(id, "copyLink")).toEqual({ action: { kind: "copyLink" }, link: "https://example.com/" });
+    expect(menu.choose(id, "copyLink")).toEqual({ action: { kind: "copyLink" }, link: "https://example.com/", word: undefined });
     expect(menu.choose(id, "copy")).toBeUndefined();
   });
 
@@ -38,7 +38,7 @@ describe("DrawnTextMenu", () => {
     expect(menu.choose(second, "s1")).toBeUndefined();
     expect(menu.choose(String(second), "s0")).toBeUndefined();
     expect(menu.choose(second, { id: "s0" })).toBeUndefined();
-    expect(menu.choose(second, "s0")).toEqual({ action: { kind: "replace", word: "mistake" }, link: "" });
+    expect(menu.choose(second, "s0")).toEqual({ action: { kind: "replace", word: "mistake" }, link: "", word: undefined });
   });
 
   it("fills in the menu showing when the spell checker answers late, and drops an older menu's answer", () => {
@@ -48,9 +48,24 @@ describe("DrawnTextMenu", () => {
     const now = menu.open(3, 4, [{ kind: "checking" }]);
     menu.update(old, entries);
     expect(sent).toHaveLength(2);
-    menu.update(now, entries);
+    menu.update(now, entries, "mistaek");
     expect(sent.at(-1)).toEqual({ id: now, x: 3, y: 4, entries });
-    expect(menu.choose(now, "learn")).toEqual({ action: { kind: "learn", word: "mistaek" }, link: "" });
+    // The word the OS spell checker named travels with its menu, kept here.
+    expect(menu.choose(now, "learn")).toEqual({ action: { kind: "learn", word: "mistaek" }, link: "", word: "mistaek" });
+  });
+
+  it("forgets the menu on a new right-click and when the page dismisses it, but not a newer one", () => {
+    const menu = new DrawnTextMenu(() => {});
+    const a = menu.open(0, 0, entries, "", "mistaek");
+    menu.close();
+    expect(menu.choose(a, "s0")).toBeUndefined();
+    const b = menu.open(0, 0, entries);
+    menu.closed(a);
+    menu.closed(String(b));
+    expect(menu.choose(b, "copy")).toBeDefined();
+    const c = menu.open(0, 0, entries);
+    menu.closed(c);
+    expect(menu.choose(c, "copy")).toBeUndefined();
   });
 });
 
