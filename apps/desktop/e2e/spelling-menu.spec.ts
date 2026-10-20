@@ -37,8 +37,8 @@ const wordAt = (page: Page, word: string) =>
   }, word);
 
 const menu = (page: Page) => page.locator("[data-text-menu]").getByRole("menu");
-/** An item by its words (its name adds its keys, read aloud). */
-const item = (page: Page, label: string) => menu(page).getByRole("menuitem", { name: new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?: (?:Ctrl|Win|Del)\\b.*)?$`) });
+/** An item by its words (its name adds its shortcut). */
+const item = (page: Page, label: string) => menu(page).getByRole("menuitem", { name: new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?: (?:Ctrl|Win|Delete)\\b.*)?$`) });
 async function openAt(page: Page, at: { x: number; y: number }) {
   await page.mouse.click(at.x, at.y, { button: "right" });
   await expect(menu(page)).toBeVisible();
@@ -86,6 +86,17 @@ async function clipboardInPage(l: Launched) {
       const dt = new DataTransfer();
       if (kind === "paste" || kind === "pasteAndMatchStyle") for (const [t, v] of Object.entries(w.__clip)) if (kind === "paste" || t === "text/plain") dt.setData(t, v);
       const target = document.activeElement ?? document.body;
+      // A field (the find bar): what the browser does to its own selection.
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+        const s = target.selectionStart ?? 0;
+        const e = target.selectionEnd ?? 0;
+        if (kind === "copy" || kind === "cut") w.__clip = { "text/plain": target.value.slice(s, e) };
+        if (kind !== "copy") {
+          target.setRangeText(kind === "cut" ? "" : (w.__clip["text/plain"] ?? ""), s, e, "end");
+          target.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        return;
+      }
       target.dispatchEvent(new ClipboardEvent(kind === "pasteAndMatchStyle" ? "paste" : kind, { clipboardData: dt, bubbles: true, cancelable: true }));
       if (kind === "copy" || kind === "cut") w.__clip = Object.fromEntries([...dt.types].map((t) => [t, dt.getData(t)]));
     };
@@ -258,14 +269,63 @@ test("D-204: the menu in text is the app's own on Windows and Linux: its edit ac
     await expect(menu(page)).toHaveCount(0);
     // Focus comes back a frame after the menu unmounts.
     await expect.poll(() => selection(page)).toEqual({ ...before, editor: true });
-    // The menu's keys: the platform's, as key caps.
+    // The menu's shortcuts: the platform's, as the other menus write them.
     await openAt(page, word);
-    await expect(item(page, "Cut")).toHaveAccessibleName("Cut Ctrl X");
-    await expect(item(page, "Paste as plain text")).toHaveAccessibleName("Paste as plain text Ctrl Shift V");
-    await expect(item(page, "Redo")).toHaveAccessibleName(/^Redo Ctrl Y/);
+    await expect(item(page, "Cut")).toHaveAccessibleName("Cut Ctrl+X");
+    await expect(item(page, "Paste as plain text")).toHaveAccessibleName("Paste as plain text Ctrl+Shift+V");
+    await expect(item(page, "Redo")).toHaveAccessibleName(/^Redo Ctrl\+Y/);
+    await expect(item(page, "Delete")).toHaveAccessibleName(/^Delete Delete/);
+    if (windows) await expect(item(page, "Emoji")).toHaveAccessibleName("Emoji Win+.");
+    // Its groups have no names made of internal ids.
+    expect(await menu(page).getByRole("group").count()).toBeGreaterThan(1);
+    for (const g of await menu(page).getByRole("group").all()) expect(await g.getAttribute("aria-label")).toBeNull();
+    // Enter on an unavailable item leaves the menu open.
+    await page.keyboard.press("Home");
+    await expect(item(page, "Undo")).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(menu(page)).toBeVisible();
+    // Enter chooses: Copy takes the selected word.
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
+    await expect(item(page, "Copy")).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(menu(page)).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __clip: Record<string, string> }).__clip["text/plain"] ?? "")).toBe("word");
+    // Space chooses: Select all.
+    await openAt(page, word);
+    await page.keyboard.press("s");
+    await expect(item(page, "Select all")).toBeFocused();
+    // After typeahead's pause (a space straight after it is part of what's typed).
+    await page.waitForTimeout(1_100);
+    await page.keyboard.press(" ");
+    await expect(menu(page)).toHaveCount(0);
+    await expect.poll(() => page.evaluate(() => getSelection()!.toString())).toContain("One");
+
+    // A right-click elsewhere while it's open closes it, opens nothing else, and gives the text back as it was.
+    await selectWord(page, "word");
+    const held = await selection(page);
+    await openAt(page, word);
+    const elsewhere = await wordAt(page, "One");
+    await page.mouse.click(elsewhere.x, elsewhere.y, { button: "right" });
+    await expect(menu(page)).toHaveCount(0);
+    await expect.poll(() => selection(page)).toEqual({ ...held, editor: true });
+    await page.waitForTimeout(300);
+    await expect(menu(page)).toHaveCount(0);
+
+    // The window losing focus, or a resize, closes it.
+    await openAt(page, word);
+    await page.evaluate(() => dispatchEvent(new Event("blur")));
+    await expect(menu(page)).toHaveCount(0);
+    await openAt(page, word);
+    await l.app.evaluate(({ BrowserWindow }) => {
+      const w = BrowserWindow.getAllWindows()[0]!;
+      const [width, height] = w.getSize();
+      w.setSize(width! - 40, height!);
+    });
+    await expect(menu(page)).toHaveCount(0);
 
     // Copy and Paste as plain text drop the formatting; Paste keeps it.
-    await page.keyboard.press("Escape");
     const bold = await wordAt(page, "bold");
     await selectWord(page, "bold");
     await openAt(page, bold);
@@ -334,11 +394,39 @@ test("D-204: the menu in text is the app's own on Windows and Linux: its edit ac
     await page.mouse.wheel(0, 200);
     await expect(menu(page)).toHaveCount(0);
 
-    // Keys still open the app's block menu (D-193).
+    // Keys still open the app's block menu (D-193): Shift+F10 and the Menu key.
+    for (const key of ["Shift+F10", "ContextMenu"]) {
+      await editor.focus();
+      await page.keyboard.press(key);
+      await expect(page.getByRole("menu", { name: /options$/ })).toBeVisible();
+      await expect(page.locator("[data-text-menu]")).toHaveCount(0);
+      await page.keyboard.press("Escape");
+    }
+
+    // A field keeps its own selection, with its direction: the find bar's Cut takes what was selected there.
     await editor.focus();
-    await page.keyboard.press("Shift+F10");
-    await expect(page.getByRole("menu", { name: /options$/ })).toBeVisible();
-    await expect(page.locator("[data-text-menu]")).toHaveCount(0);
+    await page.keyboard.press("Control+F");
+    const field = page.getByRole("region", { name: "Find in note" }).getByRole("searchbox", { name: "Find" });
+    await expect(field).toBeFocused();
+    await page.keyboard.type("keep world");
+    await page.keyboard.press("End");
+    for (let i = 0; i < 5; i++) await page.keyboard.press("Shift+ArrowLeft");
+    const inField = await field.evaluate((el: HTMLInputElement) => {
+      const cs = getComputedStyle(el);
+      const c = document.createElement("canvas").getContext("2d")!;
+      c.font = cs.font;
+      const b = el.getBoundingClientRect();
+      return { x: b.left + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth) + c.measureText("keep wor").width, y: b.top + b.height / 2 };
+    });
+    const fieldSelection = () => field.evaluate((el: HTMLInputElement) => ({ start: el.selectionStart, end: el.selectionEnd, direction: el.selectionDirection, focused: el === document.activeElement }));
+    await openAt(page, inField);
+    await page.keyboard.press("Escape");
+    await expect(menu(page)).toHaveCount(0);
+    await expect.poll(fieldSelection).toEqual({ start: 5, end: 10, direction: "backward", focused: true });
+    await openAt(page, inField);
+    await choose(page, "Cut");
+    await expect(field).toHaveValue("keep ");
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __clip: Record<string, string> }).__clip["text/plain"] ?? "")).toBe("world");
     await page.keyboard.press("Escape");
 
     // Another theme: Sepia.
@@ -352,6 +440,130 @@ test("D-204: the menu in text is the app's own on Windows and Linux: its edit ac
     await openAt(page, await wordAt(page, "word"));
     expect(await axeViolations(page)).toEqual([]);
     await page.screenshot({ path: join(shots, "text-menu-sepia.png") });
+    await page.keyboard.press("Escape");
+  } finally {
+    await quit(l);
+  }
+});
+
+test("D-204: suggestions that come after the menu opened fill it in, are announced, and take focus if its item went", async () => {
+  test.skip(!windows, "only Windows asks the OS spell checker after the menu has opened");
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Spelling\n\nA mistaek here.\n");
+  const l = await launch(dirs);
+  try {
+    const { page } = l;
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+    mkdirSync(shots, { recursive: true });
+    // A slow spell checker: the word under the pointer is named late, and the answer reaches the page a
+    // second after the menu. With `__noSuggestions`, it has none.
+    await l.app.evaluate(({ BrowserWindow }) => {
+      const wc = BrowserWindow.getAllWindows()[0]!.webContents;
+      type Send = (this: Electron.WebContents, channel: string, ...args: unknown[]) => void;
+      const proto = Object.getPrototypeOf(wc) as { send: Send };
+      const send = proto.send;
+      const g = globalThis as { __noSuggestions?: boolean };
+      proto.send = function (channel, ...args) {
+        if (channel === "spelling:target") {
+          setTimeout(() => send.call(this, channel, ...args), 100);
+          return;
+        }
+        const m = args[0] as { entries?: { kind: string }[] } | undefined;
+        if (channel === "textMenu:open" && m?.entries && !m.entries.some((e) => e.kind === "checking")) {
+          const entries = g.__noSuggestions && m.entries.some((e) => e.kind === "suggestion") ? [{ kind: "noSuggestions" }, ...m.entries.filter((e) => e.kind !== "suggestion")] : m.entries;
+          setTimeout(() => send.call(this, channel, { ...m, entries }), 1_000);
+          return;
+        }
+        send.call(this, channel, ...args);
+      };
+    });
+    const at = await wordAt(page, "mistaek");
+    // The OS's checker starts on the first right-click: open until it answers.
+    await expect
+      .poll(async () => {
+        if (await menu(page).count()) await page.keyboard.press("Escape");
+        await openAt(page, at);
+        await page.waitForTimeout(2_000);
+        return (await menu(page).textContent()) ?? "";
+      }, { timeout: 30_000 })
+      .toContain("Add to dictionary");
+    await page.keyboard.press("Escape");
+    await expect(menu(page)).toHaveCount(0);
+
+    await openAt(page, at);
+    await expect(item(page, "Checking spelling…")).toHaveAttribute("aria-disabled", "true");
+    await page.screenshot({ path: join(shots, "text-menu-checking.png") });
+    // Focus is on the item the answer takes away: it moves to the first suggestion, and they're announced.
+    await page.keyboard.press("Home");
+    await expect(item(page, "Checking spelling…")).toBeFocused();
+    await expect(item(page, "mistake")).toBeFocused();
+    await expect(page.locator('[role="status"]').filter({ hasText: /^\d+ spelling suggestions?$/ })).toHaveCount(1);
+    expect(await axeViolations(page)).toEqual([]);
+    await page.screenshot({ path: join(shots, "text-menu-suggestions.png") });
+    await page.keyboard.press("Escape");
+    await expect(menu(page)).toHaveCount(0);
+
+    // No suggestions: said so, and unavailable.
+    await l.app.evaluate(() => ((globalThis as { __noSuggestions?: boolean }).__noSuggestions = true));
+    await openAt(page, at);
+    await expect(item(page, "No suggestions")).toHaveAttribute("aria-disabled", "true");
+    await expect(page.locator('[role="status"]').filter({ hasText: "No spelling suggestions" })).toHaveCount(1);
+    await page.screenshot({ path: join(shots, "text-menu-no-suggestions.png") });
+    await page.keyboard.press("Escape");
+  } finally {
+    await quit(l);
+  }
+});
+
+test("D-204: the menu in Ink with a custom accent and a visible keyboard focus, and in forced colors", async () => {
+  test.skip(mac, "macOS shows the system's menu");
+  const dirs = tempDirs();
+  // A workspace with a private side, where the person's own themes live (as m8-custom-themes sets it up).
+  mkdirSync(join(dirs.docs, ".focus-notes"), { recursive: true });
+  writeFileSync(join(dirs.docs, ".focus-notes", "workspace.json"), '{ "formatVersion": 1 }\n');
+  mkdirSync(join(dirs.docs, "notes"), { recursive: true });
+  mkdirSync(join(dirs.docs, "private", "notes"), { recursive: true });
+  writeFileSync(join(dirs.docs, "private", "notes", "welcome.md"), "# Themes\n\nOne word here.\n");
+  const themes = join(dirs.docs, "private", ".focus-notes", "themes");
+  mkdirSync(themes, { recursive: true });
+  writeFileSync(join(themes, "ink-orchid.json"), JSON.stringify({ name: "Ink orchid", kind: "dark", base: "ink", tokens: { "color.accent": "#e879f9" } }));
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", appearance: "dark", focusMode: false, darkTheme: "custom:ink-orchid" }));
+  const l = await launch(dirs);
+  try {
+    const { page } = l;
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--fn-color-accent").trim().toLowerCase()), PROMPTLY).toBe("#e879f9");
+    mkdirSync(shots, { recursive: true });
+    const word = await wordAt(page, "word");
+    const focused = menu(page).locator('[role="menuitem"][data-focus-visible]');
+    await openAt(page, word);
+    await page.keyboard.press("ArrowDown");
+    await expect(focused).toHaveCount(1);
+    expect(await axeViolations(page)).toEqual([]);
+    await page.screenshot({ path: join(shots, "text-menu-ink-accent.png") });
+    await page.keyboard.press("Escape");
+
+    // Forced colors: the focused item in the system's highlight, unavailable ones in GrayText.
+    await page.emulateMedia({ forcedColors: "active" });
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--fn-color-canvas").trim())).toBe("Canvas");
+    const system = await page.evaluate(() => {
+      const p = document.createElement("div");
+      p.style.cssText = "forced-color-adjust: none; background-color: Highlight; color: GrayText";
+      document.body.append(p);
+      const cs = getComputedStyle(p);
+      const r = { highlight: cs.backgroundColor, gray: cs.color };
+      p.remove();
+      return r;
+    });
+    await openAt(page, word);
+    await page.keyboard.press("ArrowDown");
+    await expect(focused).toHaveCSS("background-color", system.highlight);
+    const undo = item(page, "Undo");
+    await expect(undo).toHaveAttribute("aria-disabled", "true");
+    await expect(undo.getByText("Undo", { exact: true })).toHaveCSS("color", system.gray);
+    await expect(undo.locator("kbd")).toHaveCSS("color", system.gray);
+    expect(await axeViolations(page)).toEqual([]);
+    await page.screenshot({ path: join(shots, "text-menu-forced-colors.png") });
     await page.keyboard.press("Escape");
   } finally {
     await quit(l);
