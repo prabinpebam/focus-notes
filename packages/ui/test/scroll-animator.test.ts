@@ -67,11 +67,13 @@ describe("the auto-scroll (D-156)", () => {
     const s = setup();
     s.a.to(300);
     expect(s.pos()).toBe(0); // nothing moves until the next frame
+    expect(s.a.end).toBe(200);
     for (let i = 0; i < 12; i++) s.tick();
     expect(s.pos()).toBeLessThan(300);
     s.tick(); // 208 ms
     expect(s.pos()).toBe(300);
     expect(s.a.dest).toBeNull();
+    expect(s.a.end).toBeNull();
     expect(s.pending()).toBe(0); // nothing at rest (PRF-04)
     // Monotonic, and no frame moves more than the curve's steepest slope allows (about 1.74x the average).
     const steps = s.samples.map((v, i) => v - (s.samples[i - 1] ?? 0));

@@ -77,6 +77,8 @@ export interface ScrollAnimator {
   finish(): void;
   /** Where the running animation is heading, or null at rest. */
   readonly dest: number | null;
+  /** When the running animation ends on the clock, or null at rest. */
+  readonly end: number | null;
 }
 
 /** One stretch of the scroll: from p0 (moving at v0 px/ms) at t0 to p1 (at rest) at t1. */
@@ -192,6 +194,9 @@ export function createScrollAnimator(
     },
     get dest() {
       return seg ? seg.p1 : null;
+    },
+    get end() {
+      return seg ? seg.t1 : null;
     },
   };
 }

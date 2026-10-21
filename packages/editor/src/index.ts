@@ -291,6 +291,20 @@ export const CommandKeymap = Extension.create<{ bindings: KeyBinding[] }>({
       const name = toKeyName(chord);
       byKey.set(name, [...(byKey.get(name) ?? []), action]);
     }
+    // Shift with the note's start or end key selects to there through ProseMirror, so its reveal is the
+    // reading zone's glide (D-156) and not the browser's instant one. Where Shift is another
+    // command's key already (macOS's Mod+Shift+Down moves a block), that command keeps it.
+    for (const { id, chord } of this.options.bindings) {
+      const end = id === "edit.docEnd" ? 1 : id === "edit.docStart" ? -1 : 0;
+      const name = end ? toKeyName(`Shift+${chord}`) : "";
+      if (!end || byKey.has(name)) continue;
+      byKey.set(name, [(e) => {
+        const { doc, selection } = e.state;
+        const edge = (end > 0 ? Selection.atEnd(doc) : Selection.atStart(doc)).from;
+        e.view.dispatch(e.state.tr.setSelection(TextSelection.between(doc.resolve(selection.anchor), doc.resolve(edge))).scrollIntoView());
+        return true;
+      }]);
+    }
     const map: Record<string, () => boolean> = {};
     for (const [name, actions] of byKey) {
       map[name] = () => {

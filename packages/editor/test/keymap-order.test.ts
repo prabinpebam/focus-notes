@@ -63,3 +63,28 @@ describe("a custom key from keybindings.json reaches the editor command (D-170)"
     expect(expanded).toBeGreaterThan(0);
   });
 });
+
+describe("Shift with the note's start or end key (D-156)", () => {
+  it("selects from the caret to there through the editor, so the reading zone animates its reveal", () => {
+    const { editor } = open("One.\n\nTwo.\n\nThree.\n", [
+      { id: "edit.docStart", chord: "Mod+Home" },
+      { id: "edit.docEnd", chord: "Mod+End" },
+    ]);
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 7)));
+    expect(press(editor, "End", { ctrlKey: true, shiftKey: true })).toBe(true);
+    expect(editor.state.selection.anchor).toBe(7);
+    expect(editor.state.selection.head).toBe(editor.state.doc.content.size - 1);
+    expect(press(editor, "Home", { ctrlKey: true, shiftKey: true })).toBe(true);
+    expect(editor.state.selection.anchor).toBe(7);
+    expect(editor.state.selection.head).toBe(1);
+  });
+  it("leaves a shifted key another command owns to that command (macOS Mod+Shift+Down moves a block)", () => {
+    const { editor, md } = open("One.\n\nTwo.\n", [
+      { id: "edit.docEnd", chord: "Mod+Down" },
+      { id: "block.moveDown", chord: "Mod+Shift+Down" },
+    ]);
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 2)));
+    expect(press(editor, "ArrowDown", { ctrlKey: true, shiftKey: true })).toBe(true);
+    expect(md()).toBe("Two.\n\nOne.\n");
+  });
+});

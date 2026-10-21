@@ -34,6 +34,23 @@ const pastBand = (page: Page) =>
     return r.top < top ? r.top - top : r.bottom > bottom ? r.bottom - bottom : 0;
   });
 
+/** The sampled scroll from `before` was one glide down: monotonic, no frame a large share, about 200 ms. */
+async function expectGlide(page: Page, before: number, label: string, min: number) {
+  const samples = await page.evaluate(() => (window as unknown as { __scroll: { t: number; y: number }[] }).__scroll);
+  const ys = samples.map((s) => s.y);
+  const total = ys.at(-1)! - before;
+  const steps = ys.map((y, i) => y - (ys[i - 1] ?? before));
+  const moving = samples.filter((s, i) => Math.abs(s.y - (samples[i - 1]?.y ?? before)) > 0.25);
+  const span = moving.length ? moving.at(-1)!.t - moving[0]!.t : 0;
+  console.log(`D-156 ${label}: ${total.toFixed(0)} px over ${span.toFixed(0)} ms in ${moving.length} frames; largest step ${(100 * Math.max(...steps) / total).toFixed(0)}%`);
+  expect(total).toBeGreaterThan(min);
+  for (const d of steps) expect(d).toBeGreaterThanOrEqual(-0.5);
+  expect(Math.max(...steps) / total).toBeLessThan(0.45);
+  expect(moving.length).toBeGreaterThanOrEqual(5);
+  expect(span).toBeGreaterThan(120);
+  expect(span).toBeLessThan(320);
+}
+
 test("D-156: typing past the band's bottom scrolls smoothly over about 200 ms, never in a jump", async () => {
   const dirs = tempDirs();
   const lines = Array.from({ length: 60 }, (_, i) => `Line ${i + 1}.`).join("\n\n");
@@ -83,6 +100,106 @@ test("D-156: typing past the band's bottom scrolls smoothly over about 200 ms, n
   console.log(`D-156 scroll: ${total.toFixed(0)} px over ${span.toFixed(0)} ms in ${moving.length} frames; largest step ${(100 * Math.max(...steps) / total).toFixed(0)}%`);
   expect(span).toBeGreaterThan(120);
   expect(span).toBeLessThan(320);
+  expect(Math.abs(await pastBand(page))).toBeLessThanOrEqual(2);
+  await quit(l);
+});
+
+test("D-156: a drag-selection released past the band scrolls smoothly over about 200 ms, then shows the toolbar", async () => {
+  const dirs = tempDirs();
+  const lines = Array.from({ length: 80 }, (_, i) => `Line ${i + 1}.`).join("\n\n");
+  writeFileSync(join(dirs.docs, "Welcome.md"), `# Title\n\n${lines}\n`);
+  const l = await launch(dirs);
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  await editor.locator("p").first().click();
+  await page.waitForTimeout(300);
+  // A drag from the first line to one below the band, still inside the view (the browser's own edge
+  // auto-scroll never starts): the release then glides that line back into the band.
+  const drag = await page.evaluate(() => {
+    const s = document.querySelector<HTMLElement>("[data-editor-scroller]")!;
+    const box = s.getBoundingClientRect();
+    const ps = [...document.querySelectorAll<HTMLElement>("[data-editor] p")];
+    const first = ps[0]!.getBoundingClientRect();
+    const limit = box.top + s.clientHeight * 0.9;
+    const target = ps.filter((p) => p.getBoundingClientRect().bottom < limit).at(-1)!.getBoundingClientRect();
+    return {
+      from: { x: first.left + 2, y: first.top + first.height / 2 },
+      to: { x: target.left + 30, y: target.top + target.height / 2 },
+      past: target.bottom - (box.top + s.clientHeight * 0.65),
+    };
+  });
+  expect(drag.past).toBeGreaterThan(60);
+  const before = await page.evaluate(() => document.querySelector<HTMLElement>("[data-editor-scroller]")!.scrollTop);
+  await page.mouse.move(drag.from.x, drag.from.y);
+  await page.mouse.down();
+  await page.mouse.move(drag.to.x, drag.to.y, { steps: 8 });
+  await sampleScroll(page, 700);
+  await page.mouse.up();
+  await expect(page.getByRole("toolbar", { name: "Text formatting" })).toBeVisible();
+  await page.waitForTimeout(800);
+  await expectGlide(page, before, "drag-selection", 60);
+  await quit(l);
+});
+
+test("D-156: Shift with the note's end key selects to the end and glides there, then shows the toolbar", async () => {
+  test.skip(process.platform === "darwin", "on macOS Mod+Shift+Down moves a block (KEY-02)");
+  const dirs = tempDirs();
+  const lines = Array.from({ length: 80 }, (_, i) => `Line ${i + 1}.`).join("\n\n");
+  writeFileSync(join(dirs.docs, "Welcome.md"), `# Title\n\n${lines}\n`);
+  const l = await launch(dirs);
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  await editor.locator("p").first().click();
+  await page.waitForTimeout(300);
+  const before = await page.evaluate(() => document.querySelector<HTMLElement>("[data-editor-scroller]")!.scrollTop);
+  await sampleScroll(page, 700);
+  await page.keyboard.press(`Shift+${caret.docEnd}`);
+  await expect(page.getByRole("toolbar", { name: "Text formatting" })).toBeVisible();
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => window.getSelection()!.toString())).toContain("Line 80.");
+  await expectGlide(page, before, "select to end", 200);
+  await quit(l);
+});
+
+test("D-156: deselecting with the caret past the band glides, with the toolbar still open as it collapses", async () => {
+  const dirs = tempDirs();
+  const lines = Array.from({ length: 60 }, (_, i) => `Line ${i + 1}.`).join("\n\n");
+  writeFileSync(join(dirs.docs, "Welcome.md"), `# Title\n\n${lines}\n`);
+  const l = await launch(dirs);
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  await editor.locator("p").first().click();
+  await page.waitForTimeout(300);
+  // Paragraph 20 selected, its end the selection's head.
+  await page.evaluate(() => {
+    const p = document.querySelectorAll("[data-editor] p")[20]!;
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    const r = document.createRange();
+    r.setStart(p.firstChild!, 0);
+    r.setEnd(p.firstChild!, p.firstChild!.textContent!.length);
+    sel.addRange(r);
+  });
+  await expect(page.getByRole("toolbar", { name: "Text formatting" })).toBeVisible();
+  // The wheel's way (no caret move): the selection to near the view's bottom, below the band.
+  await page.evaluate(() => {
+    const s = document.querySelector<HTMLElement>("[data-editor-scroller]")!;
+    const r = window.getSelection()!.getRangeAt(0).getBoundingClientRect();
+    s.scrollTop += r.bottom - (s.getBoundingClientRect().top + s.clientHeight * 0.88);
+  });
+  await page.waitForTimeout(400);
+  expect(await pastBand(page)).toBeGreaterThan(60);
+  await expect(page.getByRole("toolbar", { name: "Text formatting" })).toBeVisible();
+  const before = await page.evaluate(() => document.querySelector<HTMLElement>("[data-editor-scroller]")!.scrollTop);
+  await sampleScroll(page, 700);
+  await page.keyboard.press("ArrowRight");
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => window.getSelection()!.isCollapsed)).toBe(true);
+  await expect(page.getByRole("toolbar", { name: "Text formatting" })).toBeHidden();
+  await expectGlide(page, before, "deselect", 60);
   expect(Math.abs(await pastBand(page))).toBeLessThanOrEqual(2);
   await quit(l);
 });

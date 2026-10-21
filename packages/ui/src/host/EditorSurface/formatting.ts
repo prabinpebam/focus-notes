@@ -6,6 +6,7 @@
 import type { Editor } from "@tiptap/react";
 import { formatState, linkAround } from "@focus-notes/editor";
 import { anchors, companion, COMPANION_LEAVE_EVENT, inCompanion, type AnchorRect } from "../../behaviors/anchors.ts";
+import { autoScrollRemaining } from "./reading-zone.ts";
 
 type EditorView = Editor["view"];
 
@@ -145,11 +146,18 @@ export function trackFormatting(editor: Editor, scroller: HTMLElement, emit: (p:
     if (shown) return publish(true, false, info, href);
     // Not showing yet: wait until the selection has settled.
     clearTimeout(showTimer);
-    showTimer = setTimeout(() => {
+    const show = () => {
       showTimer = undefined;
+      // Opening mid-scroll would end the reading zone's scroll at once (DEF-21), so the toolbar waits for it.
+      const wait = autoScrollRemaining(scroller);
+      if (wait > 0) {
+        showTimer = setTimeout(show, Math.ceil(wait) + 1);
+        return;
+      }
       shown = true;
       evaluate();
-    }, lastInput === "pointer" ? POINTER_DELAY_MS : KEYBOARD_DELAY_MS);
+    };
+    showTimer = setTimeout(show, lastInput === "pointer" ? POINTER_DELAY_MS : KEYBOARD_DELAY_MS);
     publish(false, card, info, href);
   };
 

@@ -16,6 +16,13 @@ const varName = (ref: string) => ref.slice(4, -1);
 
 /** Each note's scroller's animated scroll, while its reading zone is kept. */
 const glides = new WeakMap<HTMLElement, (dest: number) => void>();
+/** How long each note's running auto-scroll has left, in ms. */
+const remaining = new WeakMap<HTMLElement, () => number>();
+
+/** How long the note's reading-zone scroll still runs, in ms (0 at rest). */
+export function autoScrollRemaining(scroller: HTMLElement): number {
+  return remaining.get(scroller)?.() ?? 0;
+}
 
 /**
  * Scrolls the note to `dest` with the reading zone's own animation (D-156): motion.autoScroll (200 ms)
@@ -36,8 +43,8 @@ export function glideTo(scroller: HTMLElement, dest: number): void {
  * other selection moves are checked after the frame. A drag-selection waits for the pointer to lift.
  * Scrolling never brings the caret back: not the wheel, nor pressing, dragging, or clicking the
  * scrollbar, nor the focus that such a press moves. Blank canvas clicks place the caret too.
- * A caret move from typing, a key, or a click in the note animates the scroll over motion.autoScroll
- * with easing.inOut (D-156); every other scroll is ProseMirror's own, instant, as before. The animator
+ * A caret or selection-head move from typing, a key, or a click in the note animates the scroll over
+ * motion.autoScroll with easing.inOut (D-156); every other scroll is ProseMirror's own, instant, as before. The animator
  * only writes scrollTop. The wheel or the scrollbar stops it. Reduced motion (a duration of 0) makes it instant.
  * Returns a cleanup function.
  */
@@ -51,6 +58,8 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   let intent = false;
   /** Whether that key is held down and repeating: the scroll then follows within a few frames (D-156). */
   let repeating = false;
+  /** Whether a range was selected since the last check: collapsing it (deselecting) is a selection move too. */
+  let hadRange = !editor.state.selection.empty;
   const ease = cubicBezier(autoScroll.easing);
   const animator = createScrollAnimator(
     {
@@ -90,8 +99,8 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
         scrollThreshold: { top: band.top, bottom: band.bottom, left: 0, right: 0 },
         scrollMargin: { top: band.top, bottom: band.bottom, left: 5, right: 5 },
         // Only a scroll that will animate is taken over (the frame's callback below); every other one,
-        // from a programmatic selection, focus coming back, find, or a range the contextual toolbar is
-        // opening on, is ProseMirror's own, instant and in the same task, as before D-156.
+        // from a programmatic selection, focus coming back, or find, is ProseMirror's own, instant and
+        // in the same task, as before D-156.
         handleScrollToSelection: () => {
           if (!mayAnimate()) {
             animator.finish();
@@ -105,13 +114,19 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   };
 
   /**
-   * Whether the scroll now may animate (D-156): only a caret move from typing, a key, or a click in the
-   * note (not a key elsewhere, a programmatic selection, or focus coming back), with the note focused,
-   * find closed, and a caret rather than a range (on a range the contextual toolbar is opening, and it
-   * is anchored there). Anything else scrolls at once, as does every scroll while a surface anchored to
-   * the note (the slash menu, a link card, a toolbar) is open: it never sits on a moving note (DEF-21).
+   * Whether the scroll now may animate (D-156): only a caret or selection-head move from typing, a key,
+   * or a click in the note (not a key elsewhere, a programmatic selection, or focus coming back), with
+   * the note focused and find closed. A caret scrolls at once while a surface anchored to the note is
+   * open (DEF-21). A selected range, or one just collapsed (deselecting), can animate with the
+   * formatting toolbar open: that toolbar follows its live anchor in each frame the reading zone
+   * writes, waits for the scroll to end before opening, and closes as the range collapses.
    */
-  const mayAnimate = () => intent && !findOpen && !anchors.anyOpen && !editor.isDestroyed && editor.view.hasFocus() && editor.state.selection.empty;
+  const mayAnimate = () =>
+    intent && !findOpen && !editor.isDestroyed && editor.view.hasFocus() && (hadRange || !editor.state.selection.empty || !anchors.anyOpen);
+  /** Runs before ProseMirror's next scroll check reads it: a range selected now counts until a check. */
+  const noteRange = () => {
+    if (!editor.isDestroyed && !editor.state.selection.empty) hadRange = true;
+  };
 
   const keep = () => {
     frame = 0;
@@ -120,6 +135,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
     // back, and other programmatic moves place it at once, as before (a long note's jump to its end
     // would otherwise paint every page on the way, PRF-01).
     const animate = mayAnimate();
+    hadRange = !editor.state.selection.empty;
     const follow = repeating;
     intent = false;
     repeating = false;
@@ -220,12 +236,15 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   };
   const offOpen = anchors.onOpen(settleNow);
   const glide = (dest: number) => animator.to(dest, "animate");
+  const left = () => (animator.end === null ? 0 : Math.max(0, animator.end - performance.now()));
   glides.set(scroller, glide);
+  remaining.set(scroller, left);
 
   measure();
   const dom = editor.view.dom;
   const ro = new ResizeObserver(measure);
   ro.observe(scroller);
+  editor.on("selectionUpdate", noteRange);
   editor.on("selectionUpdate", schedule);
   editor.on("update", schedule);
   editor.on("focus", onFocus);
@@ -240,10 +259,12 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   return () => {
     offOpen();
     if (glides.get(scroller) === glide) glides.delete(scroller);
+    if (remaining.get(scroller) === left) remaining.delete(scroller);
     ro.disconnect();
     animator.cancel();
     if (frame) cancelAnimationFrame(frame);
     if (!editor.isDestroyed) editor.view.setProps({ handleScrollToSelection: undefined });
+    editor.off("selectionUpdate", noteRange);
     editor.off("selectionUpdate", schedule);
     editor.off("update", schedule);
     editor.off("focus", onFocus);
