@@ -13,6 +13,8 @@ const CARET_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "
 const TYPING = /^(insertText|insertCompositionText|insertParagraph|insertLineBreak|delete(Content|Word|Soft|Hard))/;
 /** The CSS custom property name inside a token reference such as "var(--fn-x)". */
 const varName = (ref: string) => ref.slice(4, -1);
+/** How long after a pointer release a selection change still counts as the click's own, in ms. */
+const RELEASE_MS = 150;
 
 /** Each note's scroller's animated scroll, while its reading zone is kept. */
 const glides = new WeakMap<HTMLElement, (dest: number) => void>();
@@ -60,6 +62,8 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
   let repeating = false;
   /** Whether a range was selected since the last check: collapsing it (deselecting) is a selection move too. */
   let hadRange = !editor.state.selection.empty;
+  /** When the last pointer release in the note was (performance.now()). */
+  let releasedAt = -Infinity;
   const ease = cubicBezier(autoScroll.easing);
   const animator = createScrollAnimator(
     {
@@ -123,9 +127,15 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
    */
   const mayAnimate = () =>
     intent && !findOpen && !editor.isDestroyed && editor.view.hasFocus() && (hadRange || !editor.state.selection.empty || !anchors.anyOpen);
-  /** Runs before ProseMirror's next scroll check reads it: a range selected now counts until a check. */
+  /**
+   * Runs before ProseMirror's next scroll check reads it: a range selected now counts until a check.
+   * A quick click's selection can arrive just after the release (the browser's selectionchange comes
+   * after mouseup), when the release's own check already ran: it's still the click's move.
+   */
   const noteRange = () => {
-    if (!editor.isDestroyed && !editor.state.selection.empty) hadRange = true;
+    if (editor.isDestroyed) return;
+    if (!editor.state.selection.empty) hadRange = true;
+    if (!pointerDown && performance.now() - releasedAt < RELEASE_MS) intent = true;
   };
 
   const keep = () => {
@@ -193,6 +203,7 @@ export function keepInReadingZone(editor: Editor, scroller: HTMLElement, column:
     pointerDown = false;
     if (scrollPress) return;
     intent = true;
+    releasedAt = performance.now();
     schedule();
   };
   // Focus coming back after a press on the scrollbar isn't a caret move; typing or a key is.

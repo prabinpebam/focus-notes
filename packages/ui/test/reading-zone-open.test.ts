@@ -22,6 +22,7 @@ function setup(empty = true) {
   // A 600 px tall note scroller with 4,000 px of content.
   Object.defineProperty(scroller, "clientHeight", { value: 600, configurable: true });
   Object.defineProperty(scroller, "scrollHeight", { value: 4000, configurable: true });
+  Object.defineProperty(scroller, "clientWidth", { value: 800, configurable: true });
   scroller.getBoundingClientRect = () => ({ top: 0, bottom: 600, left: 0, right: 800, width: 800, height: 600, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
   let caretTop = 900; // below the band: the caret was moved down by a key
   let props: Record<string, unknown> = {};
@@ -126,6 +127,35 @@ describe("a selection's auto-scroll (D-156)", () => {
     expect(scroller.scrollTop).toBeGreaterThan(0);
     expect(scroller.scrollTop).toBeLessThan(10);
     closed();
+  });
+
+  it("glides when a quick click's collapsed selection arrives just after the release", () => {
+    const frames: FrameRequestCallback[] = [];
+    let now = 0;
+    vi.spyOn(performance, "now").mockImplementation(() => now);
+    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => frames.push(cb));
+    vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(() => {});
+    const tick = (ms = 16) => {
+      now += ms;
+      for (const cb of frames.splice(0)) cb(now);
+    };
+    const { scroller, moveCaret, select } = setup(false);
+    const closed = anchors.opening();
+    moveCaret(200); // the range's head, inside the band
+    scroller.dispatchEvent(new PointerEvent("pointerdown", { clientX: 100, clientY: 500, bubbles: true }));
+    window.dispatchEvent(new PointerEvent("pointerup", { clientX: 100, clientY: 500 }));
+    // The release's check sees the range still inside the band: nothing to do.
+    tick();
+    expect(scroller.scrollTop).toBe(0);
+    // Then the browser's selection lands: a caret on the clicked line, below the band.
+    moveCaret(900);
+    select(true);
+    closed();
+    tick(0);
+    expect(autoScrollRemaining(scroller)).toBe(200);
+    tick();
+    expect(scroller.scrollTop).toBeGreaterThan(0);
+    expect(scroller.scrollTop).toBeLessThan(10);
   });
 
   it("still scrolls a fresh caret at once while a surface is open (DEF-21)", () => {

@@ -204,6 +204,59 @@ test("D-156: deselecting with the caret past the band glides, with the toolbar s
   await quit(l);
 });
 
+test("D-156: deselecting with a quick click on a line below the band glides, on the text and on the canvas", async () => {
+  const dirs = tempDirs();
+  const lines = Array.from({ length: 60 }, (_, i) => `Line ${i + 1} with a few more words.`).join("\n\n");
+  writeFileSync(join(dirs.docs, "Welcome.md"), `# Title\n\n${lines}\n`);
+  const l = await launch(dirs);
+  const { page } = l;
+  const editor = page.getByRole("textbox", { name: "Note" });
+  await expect(editor).toBeFocused();
+  await editor.locator("p").first().click();
+  await page.waitForTimeout(300);
+  for (const where of ["text", "canvas"] as const) {
+    // A drag-selection inside the band, its toolbar open.
+    const p = (await editor.locator("p").nth(where === "text" ? 3 : 8).boundingBox())!;
+    const inBand = await page.evaluate((y) => {
+      const s = document.querySelector<HTMLElement>("[data-editor-scroller]")!;
+      const top = s.getBoundingClientRect().top;
+      return y > top + s.clientHeight * 0.25 && y < top + s.clientHeight * 0.35;
+    }, p.y + p.height / 2);
+    if (!inBand) {
+      await page.evaluate((y) => {
+        const s = document.querySelector<HTMLElement>("[data-editor-scroller]")!;
+        s.scrollTop += y - (s.getBoundingClientRect().top + s.clientHeight * 0.3);
+      }, p.y + p.height / 2);
+      await page.waitForTimeout(300);
+    }
+    const q = (await editor.locator("p").nth(where === "text" ? 3 : 8).boundingBox())!;
+    await page.mouse.move(q.x + 2, q.y + q.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(q.x + 120, q.y + q.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await expect(page.getByRole("toolbar", { name: "Text formatting" })).toBeVisible();
+    await page.waitForTimeout(400);
+    // A line near the view's bottom, past the band: on its text, or on the blank canvas right of it.
+    const target = await page.evaluate((where) => {
+      const s = document.querySelector<HTMLElement>("[data-editor-scroller]")!;
+      const box = s.getBoundingClientRect();
+      const col = document.querySelector<HTMLElement>("[data-editor]")!.getBoundingClientRect();
+      const y = box.top + s.clientHeight * 0.85;
+      const ps = [...document.querySelectorAll<HTMLElement>("[data-editor] p")];
+      const r = ps.filter((p) => p.getBoundingClientRect().top <= y).at(-1)!.getBoundingClientRect();
+      return { x: where === "text" ? r.left + 20 : Math.min(col.right + 40, box.right - 30), y: r.top + r.height / 2 };
+    }, where);
+    const before = await page.evaluate(() => document.querySelector<HTMLElement>("[data-editor-scroller]")!.scrollTop);
+    await sampleScroll(page, 700);
+    // No hold between press and release: the browser's selection then arrives after the release.
+    await page.mouse.click(target.x, target.y);
+    await page.waitForTimeout(800);
+    expect(await page.evaluate(() => window.getSelection()!.isCollapsed)).toBe(true);
+    await expectGlide(page, before, `click-deselect on ${where}`, 60);
+  }
+  await quit(l);
+});
+
 test("D-156: a press in the note stops a running auto-scroll where it is, so the text stays under the pointer", async () => {
   const dirs = tempDirs();
   const lines = Array.from({ length: 60 }, (_, i) => `Line ${i + 1}.`).join("\n\n");
