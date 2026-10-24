@@ -12,6 +12,9 @@ const one = (entry, format, file, empty) =>
     root,
     configFile: false,
     logLevel: "warn",
+    // The package carries no node_modules: a library the main process reads at run time is bundled
+    // (mammoth, for Word files in Import, D-210).
+    ssr: { noExternal: ["mammoth"] },
     build: {
       outDir: "out/main",
       emptyOutDir: empty,
