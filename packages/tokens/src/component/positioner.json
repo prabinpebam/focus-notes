@@ -11,7 +11,7 @@
       },
       "layer": {
         "$type": "number",
-        "$value": "{layer.contextual}"
+        "$value": "{layer.anchored}"
       },
       "duration": {
         "$type": "duration",

@@ -134,7 +134,7 @@
       },
       "layer": {
         "$type": "number",
-        "$value": "{layer.panel}"
+        "$value": "{layer.popover}"
       },
       "pillHeight": {
         "$type": "dimension",

@@ -33,5 +33,5 @@
   "zone": { "$type": "color", "$value": "{color.border}" },
   "zoneHover": { "$type": "color", "$value": "{color.accent}" },
   "zoneRadius": { "$type": "dimension", "$value": "{radius.small}" },
-  "layer": { "$type": "number", "$value": "{layer.panel}" }
+  "layer": { "$type": "number", "$value": "{layer.popover}" }
 } } }

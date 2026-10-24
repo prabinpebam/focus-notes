@@ -203,3 +203,38 @@ test("D-187: as the window narrows, Files undocks first (closing), then the cont
     await page.screenshot({ path: `${shots}/docked-both-again.png` });
   } finally { await quit(l); }
 });
+
+test("D-207: the link editor (and every surface pinned to the selection) opens above a docked Files sheet, never under it", async () => {
+  const l = await start();
+  const page = l.page;
+  try {
+    await page.keyboard.press(`${mod}+Alt+P`);
+    await expect(files(page)).toHaveAttribute("data-docked", "");
+    await expect.poll(async () => (await geometry(page)).area.left).toBeGreaterThan(200);
+    await settled(page);
+    // The caret at the start of a line, right beside the sheet: the link editor centres on it and reaches over the sheet.
+    await page.keyboard.press("Home");
+    await page.keyboard.press(`${mod}+k`);
+    const linkEditor = page.getByRole("region", { name: "Link editor" });
+    await expect(linkEditor).toBeVisible();
+    await settled(page);
+    // Wherever the editor overlaps the sheet, the editor is what's on top.
+    const hit = await page.evaluate(() => {
+      const ed = document.querySelector('[aria-label="Link editor"]')!;
+      const sheet = document.querySelector('aside[aria-label="Files"]')!;
+      const e = ed.getBoundingClientRect();
+      const s = sheet.getBoundingClientRect();
+      const z = (el: Element) => {
+        for (let n: Element | null = el; n; n = n.parentElement) { const v = getComputedStyle(n).zIndex; if (v !== "auto") return Number(v); }
+        return 0;
+      };
+      const overlap = e.left < s.right && e.right > s.left;
+      const x = (Math.max(e.left, s.left) + Math.min(e.right, s.right)) / 2;
+      const top = overlap ? document.elementFromPoint(x, e.top + e.height / 2) : null;
+      return { editorZ: z(ed), sheetZ: z(sheet), overlap, onTop: top ? ed.contains(top) : null };
+    });
+    expect(hit.editorZ).toBeGreaterThan(hit.sheetZ);
+    if (hit.overlap) expect(hit.onTop).toBe(true);
+    await page.screenshot({ path: `${shots}/link-editor-over-files.png` });
+  } finally { await quit(l); }
+});

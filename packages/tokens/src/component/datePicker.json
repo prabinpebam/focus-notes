@@ -30,7 +30,7 @@
   "popoverRadius": { "$type": "dimension", "$value": "{radius.popover}" },
   "popoverShadow": { "$type": "shadow", "$value": "{shadow.2}" },
   "popoverPadding": { "$type": "dimension", "$value": "{space.m}" },
-  "layer": { "$type": "number", "$value": "{layer.panel}" },
+  "layer": { "$type": "number", "$value": "{layer.popover}" },
   "cell": { "$type": "dimension", "$value": "{size.controlM}" },
   "cellRadius": { "$type": "dimension", "$value": "{radius.round}" },
   "selected": { "$type": "color", "$value": "{color.accent}" },

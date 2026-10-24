@@ -4591,7 +4591,9 @@
       "contextual",
       "trigger",
       "panel",
+      "anchored",
       "dialog",
+      "popover",
       "toast",
       "tooltip"
     ],

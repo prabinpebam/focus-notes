@@ -12,5 +12,5 @@
   "duration": { "$type": "duration", "$value": "{motion.enter}" },
   "exitDuration": { "$type": "duration", "$value": "{motion.exit}" },
   "easing": { "$type": "cubicBezier", "$value": "{easing.decelerate}" },
-  "layer": { "$type": "number", "$value": "{layer.panel}" }
+  "layer": { "$type": "number", "$value": "{layer.popover}" }
 } } }

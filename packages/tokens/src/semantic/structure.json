@@ -627,29 +627,46 @@
   },
   "layer": {
     "$type": "number",
+    "$description": "The stacking order (D-207). A surface takes its layer from its role, never from what it happens to overlap: what's drawn on the note, the window's chrome, persistent panels, transient surfaces pinned to the note, modal dialogs, menus and popovers opened from a control, toasts, tooltips.",
     "canvas": {
-      "$value": 0
+      "$value": 0,
+      "$description": "The note itself."
     },
     "mask": {
-      "$value": 1
+      "$value": 1,
+      "$description": "The focus mask and the note's fading edges, over its text."
     },
     "contextual": {
-      "$value": 2
+      "$value": 2,
+      "$description": "Controls drawn on the note's text (block handles, table controls, the minimap): a panel over the note covers them."
     },
     "trigger": {
-      "$value": 3
+      "$value": 3,
+      "$description": "The window's chrome: the title bar band, the trigger and the window controls."
     },
     "panel": {
-      "$value": 4
+      "$value": 4,
+      "$description": "Persistent surfaces beside or over the note: the side sheets, the find bar, the account corner."
+    },
+    "anchored": {
+      "$value": 5,
+      "$description": "Transient surfaces pinned to the note's selection or caret (the format toolbar, the slash menu, the link editor and card): above every panel, below a modal dialog."
     },
     "dialog": {
-      "$value": 5
+      "$value": 6,
+      "$description": "Modal dialogs, their scrim, and full-window steps."
+    },
+    "popover": {
+      "$value": 7,
+      "$description": "Menus, popovers and pickers opened from a control anywhere, a dialog's included: above everything they can open from."
     },
     "toast": {
-      "$value": 6
+      "$value": 8,
+      "$description": "Toasts and skip links."
     },
     "tooltip": {
-      "$value": 7
+      "$value": 9,
+      "$description": "Tooltips and the window's resize edges: always on top."
     }
   },
   "breakpoint": {
