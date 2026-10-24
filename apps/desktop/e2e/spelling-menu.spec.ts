@@ -361,6 +361,8 @@ test("D-204: the menu in text is the app's own on Windows and Linux: its edit ac
     await page.keyboard.press(caret.docEnd);
     await page.keyboard.type(" cutme");
     for (let i = 0; i < 5; i++) await page.keyboard.press("Shift+ArrowLeft");
+    // The editor must hold the selection before the menu reads it (Cut was disabled on a slow Linux runner).
+    await selectWord(page, "cutme");
     const cut = await wordAt(page, "cutme");
     await openAt(page, cut);
     await choose(page, "Cut");
