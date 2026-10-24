@@ -10,7 +10,36 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  # Gates match what changed (D-180, D-206): docs, the site, agent files and kits, and repository
+  # checks never wait on the desktop build, budgets or journeys. Anything the desktop app is built
+  # from, or that changes how CI installs and runs it, turns them on.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      desktop: ${{ steps.diff.outputs.desktop }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: diff
+        shell: bash
+        env:
+          BEFORE: ${{ github.event.before }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then base="origin/$BASE_REF"
+          elif [ -n "$BEFORE" ] && ! [[ "$BEFORE" =~ ^0+$ ]] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then base="$BEFORE"
+          else base="$(git merge-base origin/main HEAD)"; fi
+          files="$(git diff --name-only "$base" HEAD)"
+          echo "$files"
+          if [ -z "$files" ] || echo "$files" | grep -Eq '^(apps/desktop/|packages/|templates/|schemas/|tools/(release|bench|dev)/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|\.npmrc$|\.github/workflows/ci\.yml$)'; then
+            echo "desktop=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "desktop=false" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
+    needs: changes
     strategy:
       fail-fast: false
       matrix:
@@ -33,6 +62,7 @@ jobs:
       # (where a slow download timed out every journey).
       - name: Fetch Electron
         id: electron
+        if: needs.changes.outputs.desktop == 'true'
         timeout-minutes: 10
         working-directory: apps/desktop
         run: node -e "console.log(require('electron'))"
@@ -104,6 +134,8 @@ jobs:
   # them, which made CI the constraint on every merge; four shards in parallel take a few
   # minutes each (D-113).
   journeys-windows:
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
     runs-on: windows-latest
     timeout-minutes: 45
     strategy:
