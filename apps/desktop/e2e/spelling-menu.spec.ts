@@ -403,6 +403,9 @@ test("D-204: the menu in text is the app's own on Windows and Linux: its edit ac
       await expect(page.getByRole("menu", { name: /options$/ })).toBeVisible();
       await expect(page.locator("[data-text-menu]")).toHaveCount(0);
       await page.keyboard.press("Escape");
+      // The menu gives focus back as it closes; wait, so that can't land after Find takes it (DEF-30).
+      await expect(page.getByRole("menu", { name: /options$/ })).toHaveCount(0);
+      await expect(editor).toBeFocused();
     }
 
     // A field keeps its own selection, with its direction: the find bar's Cut takes what was selected there.
