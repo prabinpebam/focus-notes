@@ -13,6 +13,8 @@ export interface CommandItem {
   /** A wait it started is showing its sign (PRF-08), and what it's doing. */
   busy?: boolean;
   busyLabel?: string;
+  /** What it stands for is on its way (spelling suggestions): a shimmering placeholder beside its words, which say what's coming (D-208). */
+  loading?: boolean;
 }
 
 /** A result in a ResultList (Spotlight, the slash menu, Move to, Find in all notes). */

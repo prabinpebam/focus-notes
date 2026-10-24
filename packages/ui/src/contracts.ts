@@ -29,6 +29,7 @@ import { contract as SegmentedControl } from "./primitives/SegmentedControl/cont
 import { contract as DialogPanel } from "./primitives/DialogPanel/contract.ts";
 import { contract as Dialog } from "./compounds/Dialog/contract.ts";
 import { contract as Spinner } from "./primitives/Spinner/contract.ts";
+import { contract as Skeleton } from "./primitives/Skeleton/contract.ts";
 import { contract as LiveRegion } from "./primitives/LiveRegion/contract.ts";
 import { contract as Toast } from "./primitives/Toast/contract.ts";
 import { contract as ResultList } from "./primitives/ResultList/contract.ts";
@@ -71,7 +72,7 @@ import { contract as SiteThemeShowcase } from "./primitives/SiteThemeShowcase/co
 
 /** Each contract by its type, with its literal types, so the registry checks components against it (D-199). */
 export const contractsByType = {
-  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
+  Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, ProgressBar, DatePicker, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
   Stack, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ReaderPage, SitePage, SiteSection, SiteGrid,
   EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,
   Trigger, Toolbar, Dialog,

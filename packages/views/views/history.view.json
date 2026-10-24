@@ -85,6 +85,35 @@
             },
             "children": [
               {
+                "type": "Stack",
+                "when": {
+                  "get": "vm.history.loading"
+                },
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Skeleton",
+                    "props": {
+                      "width": "full"
+                    }
+                  },
+                  {
+                    "type": "Skeleton",
+                    "props": {
+                      "width": "long"
+                    }
+                  },
+                  {
+                    "type": "Skeleton",
+                    "props": {
+                      "width": "medium"
+                    }
+                  }
+                ]
+              },
+              {
                 "type": "ResultList",
                 "id": "historyList",
                 "props": {

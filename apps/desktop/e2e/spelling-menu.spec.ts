@@ -492,6 +492,8 @@ test("D-204: suggestions that come after the menu opened fill it in, are announc
 
     await openAt(page, at);
     await expect(item(page, "Checking spelling…")).toHaveAttribute("aria-disabled", "true");
+    // D-208: a shimmering placeholder where the suggestion will be, beside the words, and hidden from screen readers.
+    await expect(item(page, "Checking spelling…").locator('[data-shimmer][aria-hidden="true"]')).toHaveCount(1);
     await page.screenshot({ path: join(shots, "text-menu-checking.png") });
     // Focus is on the item the answer takes away: it moves to the first suggestion, and they're announced.
     await page.keyboard.press("Home");

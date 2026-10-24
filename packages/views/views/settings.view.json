@@ -125,6 +125,44 @@
                         }
                       },
                       {
+                        "type": "Inline",
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "shape": "avatar"
+                            }
+                          },
+                          {
+                            "type": "Stack",
+                            "props": {
+                              "gap": "s",
+                              "grow": true
+                            },
+                            "children": [
+                              {
+                                "type": "Skeleton",
+                                "props": {
+                                  "width": "long"
+                                }
+                              },
+                              {
+                                "type": "Skeleton",
+                                "props": {
+                                  "width": "medium"
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "when": {
+                          "get": "vm.settings.account.checking"
+                        }
+                      },
+                      {
                         "type": "Stack",
                         "when": {
                           "get": "vm.settings.account.signedIn"
@@ -497,6 +535,35 @@
                         }
                       },
                       {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "full"
+                            }
+                          },
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "long"
+                            }
+                          },
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "medium"
+                            }
+                          }
+                        ],
+                        "when": {
+                          "get": "vm.shareManage.loading"
+                        }
+                      },
+                      {
                         "type": "Text",
                         "when": {
                           "get": "vm.shareManage.unavailable"
@@ -740,6 +807,35 @@
                             "t": "agents.loading"
                           },
                           "announce": true
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "full"
+                            }
+                          },
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "long"
+                            }
+                          },
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "medium"
+                            }
+                          }
+                        ],
+                        "when": {
+                          "get": "vm.agents.loading"
                         }
                       },
                       {
@@ -1389,6 +1485,35 @@
                           },
                           "announce": true
                         },
+                        "when": {
+                          "get": "vm.diagnostics.loading"
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "full"
+                            }
+                          },
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "long"
+                            }
+                          },
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "medium"
+                            }
+                          }
+                        ],
                         "when": {
                           "get": "vm.diagnostics.loading"
                         }
@@ -2924,6 +3049,35 @@
                     "t": "share.manage.loading"
                   },
                   "announce": true
+                }
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Skeleton",
+                    "props": {
+                      "width": "full"
+                    }
+                  },
+                  {
+                    "type": "Skeleton",
+                    "props": {
+                      "width": "long"
+                    }
+                  },
+                  {
+                    "type": "Skeleton",
+                    "props": {
+                      "width": "medium"
+                    }
+                  }
+                ],
+                "when": {
+                  "get": "vm.shareNote.loading"
                 }
               },
               {

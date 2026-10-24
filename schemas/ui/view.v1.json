@@ -245,6 +245,9 @@
           "$ref": "#/$defs/c_Spinner"
         },
         {
+          "$ref": "#/$defs/c_Skeleton"
+        },
+        {
           "$ref": "#/$defs/c_LiveRegion"
         },
         {
@@ -2884,6 +2887,83 @@
                   "enum": [
                     "s",
                     "m"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    },
+    "c_Skeleton": {
+      "type": "object",
+      "description": "A placeholder in the shape of content that's on its way: a line of words, a tile or an avatar, with a light that passes across it a few times, then stands still. Decorative: the region it sits in says what it's waiting for, once. Not for a wait without a known shape (use Spinner), nor for an empty or failed result (say so instead).",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "Skeleton"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "shape": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "line",
+                    "tile",
+                    "avatar"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "width": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "full",
+                    "long",
+                    "medium",
+                    "short"
                   ]
                 },
                 {

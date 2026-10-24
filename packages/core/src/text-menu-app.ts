@@ -60,7 +60,7 @@ export function textMenuSections(model: TextMenuModel | undefined, catalog: Mess
     if (commands?.has(own)) return commands.describe(own).shortcut;
     return shortcutFor(commands?.shortcut(own), platform) ?? (role === "pasteAsPlainText" ? "Mod+Shift+V" : undefined);
   };
-  const sections: { id: string; items: { id: string; label: string; shortcut?: string; disabled?: boolean }[] }[] = [];
+  const sections: { id: string; items: { id: string; label: string; shortcut?: string; disabled?: boolean; loading?: boolean }[] }[] = [];
   let items: (typeof sections)[number]["items"] = [];
   const close = () => {
     if (items.length) sections.push({ id: `textMenu${sections.length}`, items });
@@ -71,7 +71,8 @@ export function textMenuSections(model: TextMenuModel | undefined, catalog: Mess
     if (e.kind === "separator" || !id) return close();
     if (e.kind === "suggestion") items.push({ id, label: e.word });
     else if (e.kind === "learn") items.push({ id, label: catalog.format("textMenu.learn") });
-    else if (e.kind === "noSuggestions" || e.kind === "checking") items.push({ id, label: catalog.format(`textMenu.${e.kind}`), disabled: true });
+    else if (e.kind === "checking") items.push({ id, label: catalog.format("textMenu.checking"), disabled: true, loading: true });
+    else if (e.kind === "noSuggestions") items.push({ id, label: catalog.format("textMenu.noSuggestions"), disabled: true });
     else if (e.kind === "edit") {
       const chord = chordOf(e.role);
       const enabled = e.enabled && (e.role === "undo" ? history.undo : e.role === "redo" ? history.redo : true);

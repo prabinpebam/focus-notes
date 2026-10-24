@@ -154,7 +154,7 @@ export function registerNoteHistory(ctx: Ctx) {
     schema: {
       type: "object",
       properties: {
-        open: { type: "boolean" }, status: { type: "string" }, items: { type: "array", items: ITEM }, activeId: { type: "string" },
+        open: { type: "boolean" }, status: { type: "string" }, items: { type: "array", items: ITEM }, activeId: { type: "string" }, loading: { type: "boolean" },
         showing: { type: "boolean" }, versionLabel: { type: "string" }, blocks: { type: "array", items: BLOCK }, emptyText: { type: "string" },
         canRestore: { type: "boolean" }, more: { type: "boolean" }, focus: { type: "number" },
       },
@@ -179,6 +179,8 @@ export function registerNoteHistory(ctx: Ctx) {
         : !h.versions.length ? catalog.format("history.none") : h.failed ? catalog.format("history.versionFailed") : catalog.format("history.count", { count: h.versions.length });
       const vm = {
         open: h.open, status, items, activeId: h.active ?? "",
+        // The first versions are on their way: placeholders where the list will be (D-208).
+        loading: h.open && h.loading && !h.versions.length,
         showing: Boolean(v && h.text !== undefined),
         versionLabel: v ? catalog.format("history.viewing", { at: v.at }) : "",
         blocks: v && h.text !== undefined ? compareVersions(h.text, md ?? "").mine : [],

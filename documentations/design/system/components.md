@@ -3,7 +3,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **68 registered contracts**: **44 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **15 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages), and **3 compound components** (Trigger, Toolbar, Dialog). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **69 registered contracts**: **45 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **15 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages), and **3 compound components** (Trigger, Toolbar, Dialog). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="inventory" data-reader-personas="design engineering">Implemented inventory</h2>
 
@@ -19,7 +19,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**68 registered contracts:** 44 primitives, 5 host components, 15 layouts, 1 block component, 3 compound components.
+**69 registered contracts:** 45 primitives, 5 host components, 15 layouts, 1 block component, 3 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -39,6 +39,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | SegmentedControl | primitive | `rest`, `hover`, `selected`, `focusVisible` | 4 | `hover`, `focusVisible` |
 | DialogPanel | primitive | `open`, `entering`, `exiting` | 5 | `entering`, `exiting` |
 | Spinner | primitive | `rest` | 2 | None |
+| Skeleton | primitive | `rest` | 6 | None |
 | LiveRegion | primitive | `rest` | 1 | None |
 | Toast | primitive | `rest`, `paused`, `focusVisible` | 2 | `paused`, `focusVisible` |
 | ResultList | primitive | `rest`, `active`, `disabled` | 6 | None |
@@ -180,6 +181,7 @@ Each component declares a contract in `packages/ui`. `ui:check` turns the contra
 | **VersionCompare** | Implemented | `found`, `needed`, `foundLabel`, `neededLabel` (all required), `label`. The version found against the version needed, as two pills with an arrow (D-142) | Group, named by its label | Setup's tool checks |
 | **StrengthMeter** | Implemented | `value`, `label` (required), `valueText`. Four segments toned by a passphrase's strength, with a word beside them (D-142) | Meter | Passphrase fields |
 | **Spinner** | Implemented | `size`, `label` | Progress bar, indeterminate | Busy buttons, saving rows in Files, "Checking changes…" ([Waits](../components/feedback-and-dialogs.md#waits)) |
+| **Skeleton** | Implemented | `shape` line, tile or avatar; `width` full, long, medium or short. A placeholder shaped like content on its way, with a light that passes three times (4.5 s) and then stands still; still with reduced motion, a plain GrayText shape in forced colours (D-208); `cmp.skeleton.*` | None: always hidden, the region beside it carries the one status | ItemCard skeletons in the first run, the spelling menu's "Checking spelling…", Settings' account, sharing, agents and About while they load, Send feedback's report, history and Recently deleted |
 | **ProgressBar** | Implemented | `value`, `max`, `label`. A determinate bar for work that reports how far it has got, read out as a percentage; the words beside it say what the work is (PRF-13, D-149) | Progress bar | Setup, publishing, long work |
 | **LiveRegion** | Implemented | `message` (required), `announceKey`. A polite announcement with nothing on screen; `cmp.liveRegion.*` | Status (live region) | Announcements that have no visible text |
 | **Divider** | Implemented | `orientation` | Separator | Menus, toolbars |

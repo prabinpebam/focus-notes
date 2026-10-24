@@ -4,6 +4,7 @@ import { ICONS } from "../../icons.ts";
 import type { IconName } from "../../icon-names.ts";
 import * as s from "./ItemCard.css.ts";
 import { useBusy } from "../../behaviors/busy.ts";
+import { Skeleton } from "../Skeleton/Skeleton.tsx";
 
 export interface ItemCardProps {
   title: string;
@@ -41,10 +42,10 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
   if (skeleton) {
     return (
       <div id={id} className={`${s.base} ${size === "l" ? s.large : ""}`} role="status" aria-busy="true" aria-label={label ?? title} data-item-card="" data-skeleton="">
-        <span className={size === "l" ? s.skeletonAvatar : s.skeletonTile} aria-hidden="true" />
+        <Skeleton shape={size === "l" ? "avatar" : "tile"} />
         <span className={s.text} aria-hidden="true">
-          <span className={`${s.skeletonBar} ${s.skeletonTitle}`} />
-          <span className={`${s.skeletonBar} ${s.skeletonDetail}`} />
+          <Skeleton width="long" />
+          <Skeleton width="medium" />
         </span>
       </div>
     );

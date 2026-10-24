@@ -1,0 +1,20 @@
+{ "cmp": { "skeleton": {
+  "fill": { "$type": "color", "$value": "{color.surfaceSunken}", "$description": "A placeholder where content will be while it's on its way: the shape of what's coming, never a spinner (PRF-13, D-208)." },
+  "highlight": { "$type": "color", "$value": "{color.surfaceRaised}", "$description": "The light that passes across the placeholder." },
+  "edge": { "$type": "color", "$value": "{color.none}", "$description": "The shimmer's soft edges." },
+  "forcedFill": { "$type": "color", "$value": "{color.textDisabled}", "$description": "In forced colours the placeholder is a still GrayText shape, with no shimmer." },
+  "line": { "$type": "dimension", "$value": "{space.m}", "$description": "A line of words to come." },
+  "lineRadius": { "$type": "dimension", "$value": "{radius.small}" },
+  "width": { "$type": "dimension",
+    "long": { "$value": "{layout.categoryList}" },
+    "medium": { "$value": "{layout.themeTile}" },
+    "short": { "$value": "{layout.fieldMin}" }
+  },
+  "tile": { "$type": "dimension", "$value": "{size.cardVisual}" },
+  "tileRadius": { "$type": "dimension", "$value": "{radius.control}" },
+  "avatar": { "$type": "dimension", "$value": "{size.avatar}" },
+  "avatarRadius": { "$type": "dimension", "$value": "{radius.round}" },
+  "duration": { "$type": "duration", "$value": "{motion.shimmer}" },
+  "passes": { "$type": "number", "$value": "{motion.shimmerPasses}" },
+  "easing": { "$type": "cubicBezier", "$value": "{easing.inOut}" }
+} } }

@@ -30,6 +30,9 @@
     },
     "autoScroll": {
       "$value": "{ref.duration.0}"
+    },
+    "shimmer": {
+      "$value": "{ref.duration.0}"
     }
   }
 }

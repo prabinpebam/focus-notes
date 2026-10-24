@@ -47,6 +47,19 @@ test("PRF-13: reading the account, finding the notes, downloading and opening th
     // Reading the account: the profile card's skeleton and "Connecting to your account…".
     await named(page, /^Connecting to your account…/, t, "reading the account");
     await expect(card(page).locator("[data-skeleton]")).toHaveCount(1);
+    // D-208: its placeholders shimmer three times, then stand still; with reduced motion they never move.
+    const shimmer = card(page).locator("[data-skeleton] [data-shimmer]");
+    await expect(shimmer).toHaveCount(3);
+    const motion = () => shimmer.first().evaluate((el) => {
+      const a = getComputedStyle(el, "::after");
+      return { display: a.display, name: a.animationName, count: a.animationIterationCount, duration: a.animationDuration, hidden: el.getAttribute("aria-hidden") };
+    });
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    expect(await motion()).toMatchObject({ count: "3", duration: "1.5s", hidden: "true" });
+    expect((await motion()).name).not.toBe("none");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    expect((await motion()).display).toBe("none");
+    await page.emulateMedia({ reducedMotion: "no-preference" });
     await counts(page, "Connecting to your account…");
     await expect(page.getByRole("button", { name: "Continue as Ada" })).toBeFocused({ timeout: 10_000 });
     await expect(card(page).locator("[data-skeleton]")).toHaveCount(0);

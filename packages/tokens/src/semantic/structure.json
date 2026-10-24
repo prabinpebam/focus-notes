@@ -608,6 +608,15 @@
     },
     "autoScroll": {
       "$value": "{ref.duration.200}"
+    },
+    "shimmer": {
+      "$value": "{ref.duration.1500}",
+      "$description": "One pass of a skeleton's shimmer, the light moving across a placeholder while its content is on its way (D-208)."
+    },
+    "shimmerPasses": {
+      "$type": "number",
+      "$value": 3,
+      "$description": "How many times the shimmer passes before the placeholder stands still: 3 × 1.5 s stays within 5 s of motion (WCAG 2.2.2, D-208)."
     }
   },
   "easing": {

@@ -30,13 +30,6 @@
   "badgePaddingInline": { "$type": "dimension", "$value": "{space.s}" },
   "badgeRadius": { "$type": "dimension", "$value": "{radius.round}" },
   "markSize": { "$type": "dimension", "$value": "{size.iconS}" },
-  "skeleton": {
-    "bar": { "$type": "color", "$value": "{color.surfaceSunken}", "$description": "A skeleton card's placeholders, where its picture and words will be while they're on their way (PRF-13)." },
-    "barHeight": { "$type": "dimension", "$value": "{space.m}" },
-    "barRadius": { "$type": "dimension", "$value": "{radius.small}" },
-    "titleWidth": { "$type": "dimension", "$value": "{layout.categoryList}" },
-    "detailWidth": { "$type": "dimension", "$value": "{layout.themeTile}" }
-  },
   "action": {
     "border": { "$type": "color", "$value": "{color.accent}", "$description": "A card that is the step's main action (D-131)." },
     "tileBackground": { "$type": "color", "$value": "{color.accentMuted}", "$description": "Its tile in the accent: stronger than the step's title around it (D-142)." },

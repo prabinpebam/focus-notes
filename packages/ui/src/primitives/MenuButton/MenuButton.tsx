@@ -2,6 +2,7 @@ import { Fragment, useRef, useState } from "react";
 import { Button, Header, Keyboard, Menu, MenuItem, MenuSection, MenuTrigger, Popover, Separator, SubmenuTrigger, Text } from "react-aria-components";
 import { IconButton } from "../IconButton/IconButton.tsx";
 import { Icon } from "../Icon/Icon.tsx";
+import { Skeleton } from "../Skeleton/Skeleton.tsx";
 import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import type { IconName } from "../../icon-names.ts";
 import type { CommandItem, MenuSection as Section } from "../../data.ts";
@@ -166,6 +167,7 @@ export function CommandMenu({ label, sections, onAction, autoFocus }: { label: s
                               that shows, when a short window clips the item, is still words of the name. */}
                           <Text slot="label" className={s.label}>
                             <span className={s.labelRow}>
+                              {item.loading ? <Skeleton width="short" /> : null}
                               <span className={s.labelText}>{item.label}</span>
                               {item.shortcut ? <>{" "}<Keyboard className={s.shortcut}>{item.shortcut}</Keyboard></> : null}
                             </span>

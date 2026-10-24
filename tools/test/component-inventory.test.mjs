@@ -31,7 +31,8 @@ describe("component catalog page (DS-A07)", () => {
   });
 
   it("fails when the TL;DR's counts disagree", () => {
-    expect(lint(page.replace("**44 primitives**", "**40 primitives**")).join("\n")).toMatch(/44 primitives/);
+    const primitives = catalog.components.filter((c) => c.tier === "primitive").length;
+    expect(lint(page.replace(`**${primitives} primitives**`, "**40 primitives**")).join("\n")).toMatch(new RegExp(`${primitives} primitives`));
     expect(lint(page.replace("**3 compound components**", "**38 compound components**")).join("\n")).toMatch(/3 compound components/);
   });
 

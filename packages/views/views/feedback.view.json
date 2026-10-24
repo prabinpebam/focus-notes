@@ -263,6 +263,35 @@
                         }
                       },
                       {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "full"
+                            }
+                          },
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "long"
+                            }
+                          },
+                          {
+                            "type": "Skeleton",
+                            "props": {
+                              "width": "medium"
+                            }
+                          }
+                        ],
+                        "when": {
+                          "get": "vm.sendFeedback.reportLoading"
+                        }
+                      },
+                      {
                         "type": "TextField",
                         "id": "feedbackReport",
                         "when": {
