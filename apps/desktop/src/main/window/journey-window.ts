@@ -15,6 +15,17 @@
  */
 import type { BrowserWindow, BrowserWindowConstructorOptions } from "electron";
 
+/**
+ * On the owner's computer a journey's windows are drawn fully transparent (opacity 0): shown without
+ * activating, they'd still sit on top of whatever the person is working in. Transparent, they stay
+ * on top (so Chromium never treats them as covered and slows their frames), take no clicks, and
+ * show nothing. Pages are captured from the window's own content, which the opacity doesn't touch.
+ * CI, screen-level journeys (`FOCUS_NOTES_E2E_ALLOW_SCREEN=1`) and `FOCUS_NOTES_E2E_VISIBLE=1`
+ * (to watch one) keep them visible.
+ */
+export const journeyUnseen = (env: NodeJS.ProcessEnv = process.env): boolean =>
+  env.FOCUS_NOTES_E2E === "1" && !env.CI && env.FOCUS_NOTES_E2E_ALLOW_SCREEN !== "1" && env.FOCUS_NOTES_E2E_VISIBLE !== "1";
+
 /** The argument a journey's own `focus` and `blur` carry, so they're told from the system's. */
 export const JOURNEY_EVENT = "journey";
 
@@ -58,6 +69,12 @@ export function keepOutOfTheWay(win: BrowserWindow): void {
   win.restore = () => win.showInactive();
   win.focus = () => {};
   win.moveTop = () => {};
+  // Unseen on the owner's computer (above): every opacity the app sets stays 0, so it remains layered (D-153).
+  if (journeyUnseen()) {
+    const setOpacity = win.setOpacity.bind(win);
+    win.setOpacity = () => setOpacity(0);
+    setOpacity(0);
+  }
   // The computer's own pointer never reaches the page: resting over the window (a CI runner's sits
   // in the middle of its screen) or moved by someone working meanwhile, it would hover and change
   // what journeys check. Journeys' pointer goes to the page directly, through the DevTools protocol.

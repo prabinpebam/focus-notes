@@ -8,6 +8,7 @@ import { app, BrowserWindow, ipcMain, screen, type BrowserWindowConstructorOptio
 import { SNAP_ZONES, WINDOW_METRICS, type DisplayInfo, type Rect, type SnapZone } from "@focus-notes/core/window-geometry";
 import { CustomWindow, POINTER_EDGE_PX, type PreviewLike } from "./custom-window.ts";
 import { BAND_APPROACH_PX, MacTitleBar } from "./mac-title-bar.ts";
+import { journeyUnseen } from "./journey-window.ts";
 import { cascadePlacement, initialPlacement, readWindowMemory, writeWindowMemory, type Placement } from "./placement.ts";
 
 export type FrameKind = "custom" | "opaque";
@@ -41,6 +42,7 @@ function snapPreview(): PreviewLike & { destroy(): void } {
           webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, javascript: false, webSecurity: true, devTools: false },
         });
         w.setIgnoreMouseEvents(true);
+        if (journeyUnseen()) w.setOpacity(0);
       }
       w.setBackgroundColor(color);
       w.setBounds(r);
