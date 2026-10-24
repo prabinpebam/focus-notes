@@ -3644,7 +3644,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## dompurify 3.4.16
+## dompurify 3.4.17
 
 License: (MPL-2.0 OR Apache-2.0)  
 Homepage: https://github.com/cure53/DOMPurify

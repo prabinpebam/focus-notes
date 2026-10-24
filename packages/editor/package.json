@@ -20,7 +20,7 @@
     "@tiptap/extension-strike": "3.31.4",
     "@tiptap/pm": "3.31.4",
     "@tiptap/starter-kit": "3.31.4",
-    "dompurify": "3.4.16",
+    "dompurify": "3.4.17",
     "prosemirror-search": "^1.1.1"
   },
   "devDependencies": {
