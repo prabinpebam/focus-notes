@@ -40,6 +40,12 @@ const PROSE = "Calm writing starts with a quiet page and a steady rhythm. The wo
 
 const editorOf = (page: Page) => page.getByRole("textbox", { name: "Note" });
 const settled = (page: Page) => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+/** The note's scroll stays put for a few frames: a D-156 glide has finished, so boxes measured now hold. */
+const scrollStill = (page: Page) => expect.poll(() => page.evaluate(() => new Promise<boolean>((done) => {
+  const sc = document.querySelector("[data-editor-scroller]") as HTMLElement;
+  const y = sc.scrollTop;
+  setTimeout(() => requestAnimationFrame(() => done(sc.scrollTop === y)), 150);
+}))).toBe(true);
 const settledAxe = async (page: Page) => {
   await settled(page);
   return axeViolations(page);
@@ -235,12 +241,15 @@ async function demo(l: Launched, dirs: { docs: string }, keyboardOnly: boolean) 
     await page.keyboard.press("Shift+F10");
     await chooseByKeyboard(page, "Insert column right");
   } else {
-    // The + on the boundary between rows 1 and 2, on the table's left edge, then New column.
+    // The + on the boundary between rows 1 and 2, on the table's left edge, then New column. The paste
+    // grew the table, which may glide the note (D-156): measure once it's still, or the pointer misses the boundary.
+    await scrollStill(page);
     const frame = (await table.boundingBox())!;
     const row2 = (await table.locator("tr").nth(1).boundingBox())!;
     await page.mouse.move(frame.x + 3, row2.y + 1);
     await page.getByRole("button", { name: "Insert row between rows 1 and 2" }).click();
     await expect(table.locator("tr")).toHaveCount(5);
+    await scrollStill(page);
     const cell = (await table.locator("tr").nth(2).locator("td").first().boundingBox())!;
     await page.mouse.move(cell.x + 10, cell.y + cell.height / 2);
     await page.getByRole("button", { name: "New column" }).click();

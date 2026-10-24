@@ -74,6 +74,8 @@ test("TBL-09, TBL-04 by keyboard: the cell menu sorts a column in natural order,
   await page.keyboard.press("Shift+F10");
   await chooseByKeyboard(page, "Sort column Z→A");
   await expect.poll(() => column(page, 0)).toEqual(["plums", "pears", "figs", "Apples"]);
+  // The menu hands the caret back to the note before Tab may move it across (macOS was faster to press).
+  await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
   await page.keyboard.press("Tab");
   await page.keyboard.press("Shift+F10");
   await chooseByKeyboard(page, "Align");
