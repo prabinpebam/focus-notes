@@ -7,7 +7,7 @@ import { Extension, type Editor } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { DOMParser as PMDOMParser, Fragment, Slice, type ParseOptions, type Schema } from "@tiptap/pm/model";
 import type * as Md from "mdast";
-import { blocksFromMdast, markdownToBlocks, type PMNode } from "@focus-notes/markdown";
+import { blocksFromMdast, markdownToBlocks, serializeMarkdown, type PMNode } from "@focus-notes/markdown";
 import { isSafeHref, sanitizePastedHtml } from "./sanitize.ts";
 
 type Inline = Md.PhrasingContent;
@@ -299,6 +299,17 @@ export function htmlToBlocks(root: Node): ConvertedHtml {
 
 /** Pasted Markdown as blocks, keeping links only with safe schemes (SEC-02). Windows line ends never reach the note. */
 export const pastedMarkdownBlocks = (text: string): PMNode[] => safeLinks(markdownToBlocks(text.replace(/\r\n?/g, "\n")));
+
+/**
+ * An imported HTML file or Word document as Markdown (FIL-15, D-210): sanitized and read exactly as
+ * a paste is, in an inert document, then written as the note's Markdown. Images are left out.
+ */
+export function htmlToMarkdown(html: string): string {
+  const doc = new DOMParser().parseFromString(sanitizePastedHtml(html), "text/html");
+  const blocks = htmlToBlocks(doc.body).blocks;
+  if (!blocks.length) return "";
+  return serializeMarkdown({ type: "doc", content: blocks });
+}
 
 /** Removes links whose address isn't safe, keeping their text. */
 export function safeLinks(nodes: PMNode[]): PMNode[] {

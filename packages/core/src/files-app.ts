@@ -13,7 +13,7 @@ import { sourceOf } from "./notes.ts";
 import { groupByDay, type DeletedNote } from "./history.ts";
 import { planLinkWrites, rewriteLinks, sameRootOf, type LinkWrite, type PathMove } from "./links.ts";
 import {
-  actedOn, ancestorsOf, copyTitle, destinations, isRootRow, keepShowing, NO_SELECTION, rebase, rootRowId, rowMenu, select, selectAll, targetFolder, titleOfNode,
+  actedOn, ancestorsOf, copyTitle, destinations, importedNote, isRootRow, keepShowing, NO_SELECTION, rebase, rootRowId, rowMenu, select, selectAll, targetFolder, titleOfNode,
   topLevel, visibleRows, withoutNoteId, type FileRow, type FilesSort, type Selection,
 } from "./files.ts";
 import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
@@ -86,6 +86,8 @@ interface Ctx {
   editorAction: (id: string) => void;
   /** The one task tracker (PRF-08): waits a person starts show their sign through it. */
   tracker?: { run<T>(target: string, message: string, work: () => Promise<T>, doneMessage?: string): Promise<T> };
+  /** HTML as Markdown, for Import files (FIL-15); without it, Import files isn't offered. */
+  htmlToMarkdown?: (html: string) => string;
 }
 
 const REASONS: Record<RefusalReason | OpErrorCode, string> = {
@@ -636,6 +638,57 @@ export function registerFiles(ctx: Ctx) {
     enabled: (s) => canWrite(s) && duplicateTargets(s).length > 0,
     run: () => doDuplicate(duplicateTargets(store.state)),
   });
+
+  // ---- importing files (FIL-15, D-210) ----
+  /**
+   * Import files…: the shell asks for Markdown, text, HTML or Word files and reads them; each becomes
+   * a new note in the folder the menu opened on, as one batch with an Undo. Nothing is replaced: a
+   * name that's taken is numbered.
+   */
+  async function doImport(): Promise<void> {
+    const s = store.state;
+    const toMarkdown = ctx.htmlToMarkdown;
+    if (!canWrite(s) || !ws?.chooseImport || !ws.readImport || !toMarkdown) return;
+    const folder = targetFolder(tree(), rowsOf(s), files().selection.focus, s.note.path);
+    if (folder === undefined) return;
+    const where = catalog.format("files.quoted", { name: folderLabel(folder) });
+    const failed = (why: string) => catalog.format("files.importFailed", { where, reason: why });
+    let read: { files: { name: string; kind: "markdown" | "text" | "html"; text: string }[]; skipped: string[] };
+    try {
+      const chosen = await ws.chooseImport();
+      if (!chosen) return;
+      const work = () => ws.readImport!(chosen.id);
+      read = await (ctx.tracker ? ctx.tracker.run("files.import", "task.importing", work) : work());
+    } catch (e) {
+      return void toast(failed(reason(opErrorCode(e))), { tone: "error" });
+    }
+    const skipped = read.skipped.length === 1 ? catalog.format("files.quoted", { name: read.skipped[0]! }) : catalog.format("files.fileCount", { count: read.skipped.length });
+    if (!read.files.length) return void toast(catalog.format("files.importNone", { what: skipped }), { tone: "error" });
+    let t = tree();
+    const made: { path: string; title: string; text: string }[] = [];
+    for (const f of read.files) {
+      const note = importedNote(f, toMarkdown, catalog.format("files.importUntitled"));
+      const plan = planCreateNote(t, folder, note.title);
+      if (plan.kind === "refused") return void toast(failed(reason(plan.reason)), { tone: "error" });
+      t = applyChanges(plan.tree, [{ path: plan.path, kind: "note", exists: true, title: note.title }]);
+      made.push({ path: plan.path, ...note });
+    }
+    const paths = made.map((m) => m.path);
+    const what = made.length === 1 ? catalog.format("files.quoted", { name: made[0]!.title }) : catalog.format("files.noteCount", { count: made.length });
+    const root = rootOf(t, folder);
+    if (root && folder !== root.path) setExpanded(folder, true);
+    else if (root) setExpanded(rootRowId(root.id), true);
+    await perform(t, made.map((m) => ({ op: "create" as const, path: m.path, text: m.text })), {
+      touched: paths, select: paths,
+      done: read.skipped.length ? catalog.format("files.importedSome", { what, where, skipped }) : catalog.format("files.imported", { what, where }),
+      failed, undo: () => removeCopies(paths),
+    });
+  }
+  commands.register({
+    id: "files.import", title: "command.files.import", icon: "import", group: "files",
+    enabled: (s) => canWrite(s) && Boolean(ws?.chooseImport && ws.readImport && ctx.htmlToMarkdown),
+    run: () => doImport(),
+  });
   // Copy public link for the focused row (SHR-03): the same link and reasons as the open note's.
   const focusedPath = (s: AppState) => rowsOf(s).find((r) => r.id === s.ui.files.selection.focus)?.path;
   commands.register({
@@ -1018,6 +1071,7 @@ export function registerFiles(ctx: Ctx) {
     };
     const menu = rowMenu(focus, acted, {
       both, reveal: Boolean(ws?.revealItem), openFolder: Boolean(ws?.openFolder), paths: Boolean(ws?.revealItem) && Boolean(bridge.copyText), copyFiles: Boolean(ws?.copyItems), copyText: Boolean(bridge.copyText),
+      importFiles: Boolean(ws?.chooseImport && ws.readImport && ctx.htmlToMarkdown),
     }).map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
     const what = acted.length > 1 ? catalog.format("files.items", { count: acted.length }) : catalog.format("files.quoted", { name: focus.kind === "root" ? rootLabel(focus.rootId) : focus.label });
     return { menu, menuLabel: catalog.format("files.menuLabel", { what }) };

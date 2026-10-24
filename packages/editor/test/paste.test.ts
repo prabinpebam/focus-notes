@@ -6,7 +6,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
-import { coreExtensions, EDITOR_OPTIONS, MarkdownSession, type PMNode } from "../src/index.ts";
+import { coreExtensions, EDITOR_OPTIONS, htmlToMarkdown, MarkdownSession, type PMNode } from "../src/index.ts";
 
 let editors: Editor[] = [];
 afterEach(() => {
@@ -184,5 +184,27 @@ describe("HTML (EDT-09)", () => {
     expect(links).toEqual(["mailto:me@example.com"]);
     expect(editor.state.doc.textContent).toBe("A js tab data vb mail");
     expect(editor.view.dom.querySelector("iframe, svg, script, img, [onerror]")).toBeNull();
+  });
+});
+
+describe("Import files: HTML and Word documents as Markdown (FIL-15, D-210)", () => {
+  it("reads a whole page as a paste does: headings, emphasis, lists, links and tables; the head, scripts and styles are left out", () => {
+    const html = `<!doctype html><html><head><title>Ignored</title><style>p{color:red}</style><script>alert(1)</script></head>
+      <body><h1>Report</h1><p>Some <strong>bold</strong> and <em>italic</em> text with <a href="https://example.com">a link</a>.</p>
+      <ul><li>One</li><li>Two</li></ul><table><tr><th>A</th><th>B</th></tr><tr><td>1</td><td>2</td></tr></table>
+      <p><a href="javascript:alert(1)">bad</a><img src="data:image/png;base64,AAAA" alt="pic"></p></body></html>`;
+    const md = htmlToMarkdown(html);
+    expect(md).toContain("# Report");
+    expect(md).toContain("Some **bold** and *italic* text with [a link](https://example.com).");
+    expect(md).toMatch(/[-*] One\n[-*] Two/);
+    expect(md).toMatch(/\| A +\| B +\|/);
+    expect(md).not.toMatch(/Ignored|color:red|alert|javascript|data:image/);
+    expect(md).toContain("bad");
+  });
+  it("Word's HTML (mammoth's): headings and paragraphs", () => {
+    expect(htmlToMarkdown("<h1>Plan</h1><p>First step.</p><h2>Later</h2><p>Second.</p>")).toBe("# Plan\n\nFirst step.\n\n## Later\n\nSecond.\n");
+  });
+  it("nothing readable is an empty note", () => {
+    expect(htmlToMarkdown("<html><head><title>x</title></head><body></body></html>")).toBe("");
   });
 });

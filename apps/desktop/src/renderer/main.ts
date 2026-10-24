@@ -1,7 +1,7 @@
 /** The renderer entry: connects the preload bridge to the app core and mounts the canvas view. */
 import { createApp, resolvedScheme, resolvedTheme, type App, type PlatformBridge } from "@focus-notes/core";
 import { mountApp, swapApp, flushApp } from "@focus-notes/ui-runtime";
-import { afterFirstThemedFrame, bootTheme } from "@focus-notes/ui";
+import { afterFirstThemedFrame, bootTheme, htmlToMarkdown } from "@focus-notes/ui";
 import { views, messages } from "@focus-notes/views";
 import { createSearchWorker, startSearch, type SearchService } from "@focus-notes/core/search";
 import searchWorkerUrl from "@focus-notes/core/search-worker?worker&url";
@@ -114,7 +114,7 @@ function attachSearch(r: Running): void {
 let running: Running;
 {
   const scoped = scopedBridge(base);
-  const app = createApp(scoped.bridge, messages.en!);
+  const app = createApp(scoped.bridge, messages.en!, "en", { htmlToMarkdown });
   const abort = new AbortController();
   // Settings and the theme manager are view documents of their own, hosted beside the canvas (IA-VIEW-SETTINGS, IA-VIEW-THEME).
   const react = mountApp(root, { app, views, overlays: OVERLAYS, signal: abort.signal });
@@ -147,7 +147,7 @@ base.onWorkspaceSwitched(() => {
     old.search?.stop();
     const windowState = base.window ? await base.window.state().catch(() => undefined) : undefined;
     const scoped = scopedBridge(base, windowState);
-    const app = createApp(scoped.bridge, messages.en!);
+    const app = createApp(scoped.bridge, messages.en!, "en", { htmlToMarkdown });
     await app.start().catch((e: unknown) => console.error(e));
     const abort = new AbortController();
     const react = swapApp(root, old, { app, views, overlays: OVERLAYS, signal: abort.signal });

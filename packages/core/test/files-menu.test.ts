@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { copyTitle, createApp, rowMenu, titleOfMarkdown, withoutNoteId, type AppStateFile, type FileRow, type FlatNote, type PlatformBridge, type WorkspaceOp } from "../src/index.ts";
+import { copyTitle, createApp, importedNote, rowMenu, titleOfMarkdown, withoutNoteId, type AppStateFile, type FileRow, type FlatNote, type PlatformBridge, type WorkspaceOp } from "../src/index.ts";
 
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 
@@ -111,6 +111,31 @@ describe("Duplicate's names and text (D-162)", () => {
   });
 });
 
+describe("Import files (FIL-15, D-210)", () => {
+  const toMd = (html: string) => `md(${html})`;
+  it("a folder and a writable section offer it after New note and New folder, where the shell can read files; a note or a selection doesn't", () => {
+    const f = row({ kind: "folder", id: "drafts", path: "drafts", name: "drafts", label: "drafts" });
+    expect(rowMenu(f, [f], { both: false, importFiles: true })[0]).toEqual(["files.newNote", "files.newFolder", "files.import"]);
+    const s = row({ kind: "root", id: "root:private", path: "private:", level: 1 });
+    expect(rowMenu(s, [], { both: false, importFiles: true })).toEqual([["files.newNote", "files.newFolder", "files.import"]]);
+    expect(rowMenu(row({ kind: "root", id: "root:public", readOnly: true }), [], { both: false, importFiles: true })).toEqual([]);
+    expect(rowMenu(row({}), [row({})], { both: false, importFiles: true }).flat()).not.toContain("files.import");
+    expect(rowMenu(f, [f, row({})], { both: false, importFiles: true }).flat()).not.toContain("files.import");
+  });
+  it("Markdown and text stay as they are, with \\n line ends and no app id; the first H1 is the title", () => {
+    expect(importedNote({ name: "x", kind: "markdown", text: "---\nid: n-1\n---\r\n# Plan\r\n\r\n- a\r\n" }, toMd, "Imported note")).toEqual({ title: "Plan", text: "# Plan\n\n- a\n" });
+    expect(importedNote({ name: "x", kind: "text", text: "# Notes\n*kept*\n" }, toMd, "Imported note")).toEqual({ title: "Notes", text: "# Notes\n*kept*\n" });
+  });
+  it("without an H1, the file's name becomes it; an empty file is just the title", () => {
+    expect(importedNote({ name: "Meeting  notes", kind: "text", text: "Agenda\n" }, toMd, "Imported note")).toEqual({ title: "Meeting notes", text: "# Meeting notes\n\nAgenda\n" });
+    expect(importedNote({ name: "Empty", kind: "markdown", text: "" }, toMd, "Imported note")).toEqual({ title: "Empty", text: "# Empty\n" });
+    expect(importedNote({ name: " ", kind: "markdown", text: "" }, toMd, "Imported note").title).toBe("Imported note");
+  });
+  it("HTML and Word documents go through the HTML reader", () => {
+    expect(importedNote({ name: "Doc", kind: "html", text: "<p>Hi</p>" }, (h) => `# From HTML\n\n${h.length}\n`, "Imported note")).toEqual({ title: "From HTML", text: "# From HTML\n\n9\n" });
+  });
+});
+
 /** A browser-like shell with private and public sections, both writable. */
 function setup(notesIn: Record<string, string>, state: Partial<AppStateFile> = {}) {
   const notes = new Map<string, FlatNote>(Object.entries(notesIn).map(([path, text]) => [path, { path, text, updated: 0 }]));
@@ -153,8 +178,8 @@ function setup(notesIn: Record<string, string>, state: Partial<AppStateFile> = {
   return { bridge, notes, batches, saved, live };
 }
 const settle = () => new Promise((r) => setTimeout(r, 0));
-async function started(f: ReturnType<typeof setup>) {
-  const app = createApp(f.bridge, messages);
+async function started(f: ReturnType<typeof setup>, options: Parameters<typeof createApp>[3] = {}) {
+  const app = createApp(f.bridge, messages, "en", options);
   await app.start();
   await settle();
   return app;
@@ -315,6 +340,80 @@ describe("the menu in the app (D-162)", () => {
     expect(f.batches).toHaveLength(1);
     expect(f.batches[0]!.map((o) => (o.op === "create" ? o.path : o.op))).toEqual(["private:ideas-copy.md", "public:about-copy.md"]);
     expect(app.store.state.ui.toasts.at(-1)!.message).toBe("Duplicated 2 items.");
+  });
+});
+
+describe("Import files in the app (FIL-15, D-210)", () => {
+  const notes = { "private:welcome.md": "# Welcome\n", "private:ideas.md": "# Ideas\n" };
+  const importing = (read: { files: { name: string; kind: "markdown" | "text" | "html"; text: string }[]; skipped: string[] } | undefined) => {
+    const f = setup(notes);
+    f.bridge.workspace!.chooseImport = async () => (read ? { id: "pick-1", count: read.files.length + read.skipped.length } : undefined);
+    f.bridge.workspace!.readImport = async (id) => { if (id !== "pick-1") throw new Error("notFound"); return read!; };
+    return f;
+  };
+  const htmlToMarkdown = (html: string) => `# ${html.replace(/<[^>]+>/g, "")}\n`;
+  it("only a shell that reads files, with the HTML reader, offers it", async () => {
+    const plain = await started(setup(notes), { htmlToMarkdown });
+    await plain.commands.run("files.open");
+    await plain.commands.run("files.select", { id: "private:drafts", mode: "replace" });
+    expect(menuIds(plain).flat()).not.toContain("files.import");
+    const app = await started(importing(undefined), { htmlToMarkdown });
+    await app.commands.run("files.open");
+    await app.commands.run("files.select", { id: "private:drafts", mode: "replace" });
+    expect(menuIds(app)[0]).toEqual(["files.newNote", "files.newFolder", "files.import"]);
+    expect(vm(app).menu.flatMap((s) => s.items).find((i) => i.id === "files.import")?.label).toBe("Import files…");
+    const without = await started(importing(undefined));
+    await without.commands.run("files.open");
+    await without.commands.run("files.select", { id: "private:drafts", mode: "replace" });
+    expect(menuIds(without).flat()).not.toContain("files.import");
+  });
+  it("makes a note in the folder for each file, in one batch, selected; a taken name is numbered; Undo removes them", async () => {
+    const f = importing({ files: [
+      { name: "ideas", kind: "markdown", text: "# Ideas\n\nMore.\n" },
+      { name: "Report", kind: "html", text: "<h1>Report</h1>" },
+      { name: "todo", kind: "text", text: "milk\r\n" },
+    ], skipped: [] });
+    const app = await started(f, { htmlToMarkdown });
+    await app.commands.run("files.open");
+    await app.commands.run("files.select", { id: "root:private", mode: "replace" });
+    await app.commands.run("files.import");
+    await settle();
+    expect(f.batches).toEqual([[
+      { op: "create", path: "private:ideas-2.md", text: "# Ideas\n\nMore.\n" },
+      { op: "create", path: "private:report.md", text: "# Report\n" },
+      { op: "create", path: "private:todo.md", text: "# todo\n\nmilk\n" },
+    ]]);
+    expect(f.live().map((n) => n.path).sort()).toEqual(["private:ideas-2.md", "private:ideas.md", "private:report.md", "private:todo.md", "private:welcome.md"]);
+    expect(vm(app).items.filter((i) => i.selected).map((i) => i.id)).toEqual(["private:ideas-2.md", "private:report.md", "private:todo.md"]);
+    const t = app.store.state.ui.toasts.at(-1)!;
+    expect(t.message).toBe("Imported 3 notes into “Private”.");
+    expect(t.action?.label).toBe("Undo");
+    await app.commands.run(t.action!.command, t.action!.args);
+    await settle();
+    expect(f.batches[1]!.map((o) => o.op)).toEqual(["delete", "delete", "delete"]);
+    expect(f.live().map((n) => n.path).sort()).toEqual(["private:ideas.md", "private:welcome.md"]);
+  });
+  it("into a folder, says what it couldn't read; cancelled does nothing; nothing read imports nothing", async () => {
+    const f = importing({ files: [{ name: "plan", kind: "markdown", text: "# Plan\n" }], skipped: ["huge.docx"] });
+    const app = await started(f, { htmlToMarkdown });
+    await app.commands.run("files.open");
+    await app.commands.run("files.select", { id: "private:drafts", mode: "replace" });
+    await app.commands.run("files.import");
+    await settle();
+    expect(f.batches).toEqual([[{ op: "create", path: "private:drafts/plan.md", text: "# Plan\n" }]]);
+    expect(app.store.state.ui.toasts.at(-1)?.message).toBe("Imported “Plan” into “drafts”. Couldn't read “huge.docx”.");
+    const none = importing({ files: [], skipped: ["a.docx", "b.docx"] });
+    const app2 = await started(none, { htmlToMarkdown });
+    await app2.commands.run("files.import");
+    await settle();
+    expect(none.batches).toEqual([]);
+    expect(app2.store.state.ui.toasts.at(-1)).toMatchObject({ message: "Couldn't read 2 files. Nothing was imported.", tone: "error" });
+    const cancelled = importing(undefined);
+    const app3 = await started(cancelled, { htmlToMarkdown });
+    await app3.commands.run("files.import");
+    await settle();
+    expect(cancelled.batches).toEqual([]);
+    expect(app3.store.state.ui.toasts).toEqual([]);
   });
 });
 

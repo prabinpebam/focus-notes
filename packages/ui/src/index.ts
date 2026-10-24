@@ -6,6 +6,8 @@ export { keyRanCommand } from "./host/interaction.ts";
 export { InWindow } from "./layouts/AppRoot/in-window.tsx";
 /** Mounting needs these from the editor: the Trusted Types policy and the slash menu's entries. */
 export { installTrustedTypes, slashCatalog } from "@focus-notes/editor";
+/** Import files (FIL-15) reads HTML and Word documents with the paste pipeline. */
+export { htmlToMarkdown } from "@focus-notes/editor";
 /** The code of the views people open first, loaded by the warm-up after start (PRF-10). */
 export { preloadFileTree as preloadViews } from "./primitives/FileTree/lazy.tsx";
 /** The page's first frame in its theme, and the moment it's drawn (DSK-09, D-148). */

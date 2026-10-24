@@ -16,6 +16,7 @@ const DENIED = /\b(A?GPL|LGPL|SSPL|BUSL|Commons-Clause|proprietary)/i;
 // Packages whose manifest omits the license, verified by reading their license file.
 const VERIFIED = new Map([
   ["require-like@0.1.2", "MIT: License file in the package; build-time only (vanilla-extract)"],
+  ["duck@0.1.12", "BSD-2-Clause: the manifest says \"BSD\"; its License file is the two-clause text; shipped through mammoth (D-210)"],
 ]);
 
 const json = execSync("pnpm licenses list --json", { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });

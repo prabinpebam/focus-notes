@@ -57,6 +57,7 @@ import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remo
 import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
 import { CrashRecovery, coverBounds } from "./window/crash-cover.ts";
 import { COPY_PATHS_MAX, copyFilesToClipboard, defaultRun } from "./copy-files.ts";
+import { IMPORT_EXTENSIONS, readImportFiles } from "./import-files.ts";
 import { themeCanvas, WINDOW_METRICS } from "@focus-notes/core/window-geometry";
 import { AppMenuBar } from "./window/menu-bar.ts";
 import { describeMenu, spellingMenu, type SpellingMenuParams } from "./spelling/menu.ts";
@@ -1266,6 +1267,22 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("bundle:choose", () => chooseBundle(win()));
   handle("bundle:import", (id, to) => importBundle(id, to));
+  // Import files (FIL-15, D-210): the dialog and the reading are this process's; the notes are made through workspace:apply.
+  let picked: { id: string; files: string[] } | undefined;
+  handle("import:choose", async () => {
+    const w = win();
+    const opts = { properties: ["openFile" as const, "multiSelections" as const], filters: [{ name: "Notes and documents", extensions: [...IMPORT_EXTENSIONS] }] };
+    const res = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
+    if (res.canceled || !res.filePaths.length) return undefined;
+    picked = { id: randomUUID(), files: res.filePaths };
+    return { id: picked.id, count: res.filePaths.length };
+  });
+  handle("import:read", async (id) => {
+    if (!picked || picked.id !== id) throw refuse("notFound");
+    const { files } = picked;
+    picked = undefined;
+    return readImportFiles(files);
+  });
   handle("settings:load", async () => {
     if (!settingsAvailable()) return { available: false };
     const text = await readFile(settingsFile(), "utf8").catch(() => undefined);

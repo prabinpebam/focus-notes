@@ -120,6 +120,7 @@
     <tr><td>New note</td><td>From the toolbar, <kbd>Mod</kbd>+<kbd>N</kbd>, the Files header's New note button, or a folder's ⋯. It's created in the selected folder (or the folder of the current note, or the Private root), the panel closes, and the caret lands in an empty title. Nothing is written to disk until the first character is typed, so abandoned empty notes leave no files.</td><td>UC-FILE-01</td></tr>
     <tr><td>New folder</td><td>A new row appears in place with an inline name field ("New folder" selected). <kbd>Enter</kbd> creates it, <kbd>Esc</kbd> or clicking away with an empty name cancels. A duplicate or invalid name shows an inline error under the field, and the field stays open.</td><td>UC-FILE-04</td></tr>
     <tr><td>Duplicate</td><td>The row's menu → Duplicate creates "⟨title⟩ copy" (then "⟨title⟩ copy 2") next to the original, with its H1 retitled and its links unchanged, as one commit. The copy shows at once, selected and focused, and the toast offers <strong>Undo</strong>, which deletes it (D-162).</td><td>UC-FILE-10</td></tr>
+    <tr><td>Import files</td><td>A folder's or section's menu → <strong>Import files…</strong> (desktop) opens the system's file dialog for Markdown, text, HTML and Word (<code>.docx</code>) files, several at once. Each becomes a note in that folder: Markdown and text as they are, HTML and Word read as a paste is (sanitized, images left out). Its title is its first H1, else the file's name, added as the H1. A taken name is numbered; nothing is replaced. The notes show at once, selected, as one commit, and the toast "Imported 3 notes into “drafts”." offers <strong>Undo</strong>. Files that can't be read (over 10 MB, damaged, past 200 at once) are named in the toast (D-210).</td><td>UC-FILE-11</td></tr>
   </tbody>
 </table>
 
@@ -170,8 +171,8 @@
   <thead><tr><th>Acted on</th><th>Items, in order</th></tr></thead>
   <tbody>
     <tr><td>A note</td><td>Open · Open containing folder (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd>, desktop) · Copy (<kbd>Ctrl</kbd>+<kbd>C</kbd>, desktop) · Copy as path (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>, desktop) · Copy text · Rename (<kbd>F2</kbd>) · Duplicate · Move to… (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd>) · Make public or Make private · Copy public link (a public note) · Delete (<kbd>Delete</kbd>)</td></tr>
-    <tr><td>A folder</td><td>New note · New folder (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd>) · Open in File Explorer (Finder on macOS, file manager on Linux) · Copy · Copy as path (all three desktop) · Rename · Move to… · Make public or Make private · Delete</td></tr>
-    <tr><td>A section (Private, Public)</td><td>New note · New folder · Open in File Explorer (Finder, file manager) · Copy as path (both desktop)</td></tr>
+    <tr><td>A folder</td><td>New note · New folder (<kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd>) · Import files… (desktop) · Open in File Explorer (Finder on macOS, file manager on Linux) · Copy · Copy as path (all three desktop) · Rename · Move to… · Make public or Make private · Delete</td></tr>
+    <tr><td>A section (Private, Public)</td><td>New note · New folder · Import files… · Open in File Explorer (Finder, file manager) · Copy as path (all three desktop)</td></tr>
     <tr><td>Several selected</td><td>Duplicate (only notes are copied) · Move to… · Copy · Copy as path (both desktop) · Make public or Make private · Delete, each acting on the selection</td></tr>
   </tbody>
 </table>

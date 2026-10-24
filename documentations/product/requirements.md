@@ -117,6 +117,7 @@ Seed: *"CRUD files and folders, including moves."* Detailed in [Files and sharin
 | FIL-12 | Conflict resolver: when sync finds the same note changed elsewhere, show both versions and offer keep mine, take theirs (keeping a recoverable copy of mine), or keep both. | P0 |
 | FIL-13 | Note history: a note's versions from Git, with time and author (agent changes labeled), comparison, and restore as a new commit. | P1 |
 | FIL-14 | Backup by repository: each Files section (Private, Public) shows its repository's backup state at its heading's trailing end, counting what waits there, folders included (empty ones too), and its card backs up everything waiting in that repository's notes on request, keeping empty folders with a `.gitkeep` (D-191). | P1 |
+| FIL-15 | Import files: a folder's or section's menu imports Markdown, text, HTML and Word (`.docx`) files as new notes in it, as one batch with Undo, numbering a taken name and replacing nothing. Only the shell reads the files; HTML and Word are read as a paste is (sanitized, images left out) (D-210). | P1 |
 
 ## Sharing and visibility (SHR)
 

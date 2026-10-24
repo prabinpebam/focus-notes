@@ -84,7 +84,7 @@ test("D-192: a row's menu opens its folder, and copies it as a file, as a path, 
   await row("journal").click({ button: "right" });
   const journalMenu = page.getByRole("menu", { name: "Actions for “journal”" });
   expect(await journalMenu.getByRole("menuitem").evaluateAll((els) => els.map((e) => e.querySelector("span span span")?.textContent ?? e.textContent)))
-    .toEqual(["New note", "New folder", OPEN_FOLDER, "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
+    .toEqual(["New note", "New folder", "Import files…", OPEN_FOLDER, "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
   await page.keyboard.press("Escape");
   await row("journal").click();
   await row("Ideas").click({ modifiers: [process.platform === "darwin" ? "Meta" : "Control"] });
@@ -159,7 +159,7 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await more.dispatchEvent("pointerdown", { button: 0, pointerType: "mouse", isPrimary: true });
   const folderMenu = page.getByRole("menu", { name: "Actions for “journal”" });
   await expect(folderMenu).toBeVisible();
-  expect(await items(folderMenu)).toEqual(["New note", "New folder", OPEN_FOLDER, "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
+  expect(await items(folderMenu)).toEqual(["New note", "New folder", "Import files…", OPEN_FOLDER, "Copy", "Copy as path", "Rename", "Move to…", "Delete"]);
   await folderMenu.getByRole("menuitem", { name: /^New folder/ }).click();
   const name = tree.getByRole("textbox", { name: "Folder name" });
   await expect(name).toBeFocused();
@@ -171,7 +171,7 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await tree.getByRole("treeitem", { name: "Notes", exact: true }).click({ button: "right" });
   const sectionMenu = page.getByRole("menu", { name: "Actions for “Notes”" });
   await expect(sectionMenu).toBeVisible();
-  expect(await items(sectionMenu)).toEqual(["New note", "New folder", OPEN_FOLDER, "Copy as path"]);
+  expect(await items(sectionMenu)).toEqual(["New note", "New folder", "Import files…", OPEN_FOLDER, "Copy as path"]);
   await page.keyboard.press("Escape");
 
   // Several selected: right-click on one of them keeps the selection, and the menu acts on all of it.

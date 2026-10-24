@@ -278,6 +278,14 @@ export interface ConflictChoice {
  * The workspace a shell keeps (Desktop and Git, Web app). Paths are the shell's own, as for
  * `readNote`. The desktop reads a folder and watches it; the browser reads IndexedDB and its site.
  */
+/** A file picked for Import files (FIL-15): its name without the extension, and its text. */
+export interface ImportedFile {
+  name: string;
+  /** How its text reads: Markdown as it is, plain text as Markdown too, HTML converted. */
+  kind: "markdown" | "text" | "html";
+  text: string;
+}
+
 export interface WorkspaceBridge {
   /**
    * Where the workspace is, and the text of its format file if it has one (DST-05). Quick: read before the first note opens.
@@ -315,6 +323,16 @@ export interface WorkspaceBridge {
   chooseBundle?(): Promise<{ id: string; name: string; notes: number } | undefined>;
   /** Adds the chosen bundle's notes to a root as one batch and one commit, replacing nothing (FRE-10). */
   importBundle?(id: string, to: "private" | "public"): Promise<{ added: number; renamed: number }>;
+  /**
+   * Asks for files to import with the system's open dialog (FIL-15, D-210). Only the shell knows
+   * the files: the app gets a handle and how many were picked. Undefined if cancelled. Desktop only.
+   */
+  chooseImport?(): Promise<{ id: string; count: number } | undefined>;
+  /**
+   * Reads the picked files: Markdown, text, HTML, and Word documents as HTML. `skipped` names the
+   * files that couldn't be read (too large, unreadable, or past the limit).
+   */
+  readImport?(id: string): Promise<{ files: ImportedFile[]; skipped: string[] }>;
   /** Notes deleted in the last 30 days, found from Git history (FIL-10). Absent without Git. */
   deleted?(): Promise<DeletedNote[]>;
   /**

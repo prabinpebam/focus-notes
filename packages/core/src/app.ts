@@ -288,6 +288,8 @@ export interface AppOptions {
   clock?: Clock;
   /** The workspace format and its migrations; tests pass their own (DST-05). */
   workspaceFormat?: WorkspaceFormatOptions;
+  /** HTML as Markdown, for Import files (FIL-15): the editor's paste pipeline, which core can't import. */
+  htmlToMarkdown?: (html: string) => string;
 }
 
 export function createApp(bridge: PlatformBridge, messages: Messages, locale = "en", options: AppOptions = {}): App {
@@ -1098,7 +1100,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       workspace.movedOnDisk(from, to);
       conflicts.moved(from, to);
     },
-    describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id), tracker,
+    describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id), tracker, htmlToMarkdown: options.htmlToMarkdown,
   });
   const browser = registerBrowserFeatures({
     store, commands, viewModels, catalog, bridge, load, flush, toast, tracker, menu: extraMenu,

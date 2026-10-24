@@ -2261,6 +2261,34 @@
       "status": "building"
     },
     {
+      "id": "WP-8.11",
+      "stage": "M8",
+      "title": "Import files",
+      "summary": "Import files… in a folder's or section's menu: Markdown, text, HTML and Word documents become new notes in that folder, as one batch with Undo; the shell reads them, HTML through the paste pipeline (D-210).",
+      "requirements": [
+        "FIL-15"
+      ],
+      "dependsOn": [
+        "WP-2.4"
+      ],
+      "touches": [
+        "core",
+        "desktop",
+        "editor",
+        "ui",
+        "views"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "design/views/files.html"
+      ],
+      "lookahead": false,
+      "status": "building"
+    },
+    {
       "id": "WP-9.1",
       "stage": "Later",
       "title": "Image block",

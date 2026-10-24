@@ -2,7 +2,8 @@
  * The Files panel's model (WP-2.4, Files panel): the rows it shows, the selection, and what an
  * operation acts on. Pure functions over the workspace tree, so every rule here is unit-tested.
  */
-import { dirOf, findNode, isWithin, joinPath, rootOf, stemOf, type RootId, type TreeNode, type WorkspaceRoot, type WorkspaceTree } from "./workspace.ts";
+import { dirOf, findNode, isWithin, joinPath, retitle, rootOf, stemOf, titleOfMarkdown, type RootId, type TreeNode, type WorkspaceRoot, type WorkspaceTree } from "./workspace.ts";
+import type { ImportedFile } from "./bridge.ts";
 
 /** One row of the tree: a root's section label, a folder, or a note. */
 export interface FileRow {
@@ -185,7 +186,7 @@ export function targetFolder(tree: WorkspaceTree, rows: readonly FileRow[], focu
  * row acts on nothing but takes new things. A read-only section offers only what can be done there.
  * `both`: the workspace has a public and a private section, so visibility can change.
  */
-export function rowMenu(focus: FileRow, acted: readonly FileRow[], o: { both: boolean; reveal?: boolean; openFolder?: boolean; paths?: boolean; copyFiles?: boolean; copyText?: boolean }): string[][] {
+export function rowMenu(focus: FileRow, acted: readonly FileRow[], o: { both: boolean; reveal?: boolean; openFolder?: boolean; paths?: boolean; copyFiles?: boolean; copyText?: boolean; importFiles?: boolean }): string[][] {
   const vis = (rows: readonly FileRow[]) => (o.both ? [
     ...(rows.some((r) => r.rootId === "private") ? ["files.makePublic"] : []),
     ...(rows.some((r) => r.rootId === "public") ? ["files.makePrivate"] : []),
@@ -196,8 +197,10 @@ export function rowMenu(focus: FileRow, acted: readonly FileRow[], o: { both: bo
   const reveal = o.reveal ? ["files.revealItem"] : [];
   const openFolder = o.openFolder ? ["files.openFolderItem"] : [];
   const path = o.paths ? ["files.copyPath"] : [];
+  // New things, and Import files (FIL-15) where the shell can read them.
+  const create = ["files.newNote", "files.newFolder", ...(o.importFiles ? ["files.import"] : [])];
   const copy = (rows: readonly FileRow[]) => [...(o.copyFiles ? ["files.copyItem"] : []), ...path, ...(o.copyText && rows.length === 1 && rows[0]!.kind === "note" ? ["files.copyText"] : [])];
-  if (focus.kind === "root" && !acted.length) return out(focus.readOnly ? [openFolder, path] : [["files.newNote", "files.newFolder"], openFolder, path]);
+  if (focus.kind === "root" && !acted.length) return out(focus.readOnly ? [openFolder, path] : [create, openFolder, path]);
   if (!acted.length) return [];
   if (acted.some((r) => r.readOnly)) {
     if (acted.length !== 1) return out([copy(acted)]);
@@ -208,8 +211,22 @@ export function rowMenu(focus: FileRow, acted: readonly FileRow[], o: { both: bo
     return out([[...(acted.some((r) => r.kind === "note") ? ["files.duplicate"] : []), "files.moveTo"], copy(acted), vis(acted), ["files.delete"]]);
   }
   const r = acted[0]!;
-  if (r.kind === "folder") return out([["files.newNote", "files.newFolder"], openFolder, copy(acted), ["files.rename", "files.moveTo"], vis(acted), ["files.delete"]]);
+  if (r.kind === "folder") return out([create, openFolder, copy(acted), ["files.rename", "files.moveTo"], vis(acted), ["files.delete"]]);
   return out([["files.openItem", ...reveal], copy(acted), ["files.rename", "files.duplicate", "files.moveTo"], [...vis(acted), ...(r.rootId === "public" ? ["files.copyPublicLink"] : [])], ["files.delete"]]);
+}
+
+/**
+ * An imported file as a new note (FIL-15, D-210). Markdown and text are kept as they are, with
+ * `\n` line ends and no front matter `id` (an import is a new note); HTML and Word documents become
+ * Markdown through `htmlToMarkdown`. The title is the first H1; without one, the file's name is
+ * added as the H1, so the note is called what the file was.
+ */
+export function importedNote(file: ImportedFile, htmlToMarkdown: (html: string) => string, fallbackTitle: string): { title: string; text: string } {
+  const body = file.kind === "html" ? htmlToMarkdown(file.text) : withoutNoteId(file.text.replace(/\r\n?/g, "\n"));
+  const found = titleOfMarkdown(body)?.trim();
+  if (found) return { title: found, text: body };
+  const name = file.name.replace(/\s+/g, " ").trim() || fallbackTitle;
+  return { title: name, text: body.trim() ? retitle(body, name) : `# ${name}\n` };
 }
 
 /** A copy's title: `name(title, 1)` ("Ideas copy"), else the first of `name(title, 2)`, … not among `taken`, ignoring case. */

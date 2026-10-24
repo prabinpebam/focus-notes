@@ -61,6 +61,7 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 | UC-FILE-08 | undo a delete, move, or rename straight away from a toast | SC-FILE-05 | P0 | IA-CMP-TOAST | FIL-05 | *Undo* restores the previous state exactly, including updated links, as a new commit. |
 | UC-FILE-09 | restore notes deleted in the last 30 days from Recently deleted | SC-FILE-05 | P0 | IA-VIEW-FILES | FIL-10 | A deleted note appears there with its folder and deletion date. *Restore* puts it back where it was, or in the root if its folder is gone. |
 | UC-FILE-10 | sort the tree by name or by last change, and duplicate a note | SC-FILE-02 | P1 | IA-VIEW-FILES | FIL-11 | The sort choice is remembered. A duplicate is named "⟨title⟩ copy" and opens straight away. |
+| UC-FILE-11 | bring Markdown, text, HTML and Word files into a folder as notes | SC-FILE-03 | P1 | IA-VIEW-FILES | FIL-15 | A folder's menu → *Import files…* picks several files at once; each becomes a note there, titled by its first heading or its file name, in one batch that *Undo* removes. Nothing is replaced. |
 
 <h2 data-reader-personas="product design">Sharing and reading</h2>
 
