@@ -111,6 +111,7 @@
 </table>
 
 <p>Each role has an instruction file in <code>.github/agents/</code>, written in WP-0.1 and improved at every stage retrospective. All roles also follow the repository's <code>AGENTS.md</code>. A role can be played by different agents or models, but one agent never builds and reviews the same work.</p>
+<p>The roles run on three agent kits, pinned as submodules (D-205): <a href="https://github.com/prabinpebam/agentic-craft">agentic-craft</a> for what to build and what proves it (its <code>grounding-critic</code> and <code>design-system-auditor</code> review beside the roles above), <a href="https://github.com/prabinpebam/agent-orchestration">agent-orchestration</a> for how the work runs (its <code>throughput-reviewer</code> is the one in <a href="#throughput">Throughput</a>), and Slate for these pages. Where a kit's general rule differs from this loop, the loop wins; <code>AGENTS.md</code> → Agent kits says how each applies.</p>
 
 <h2 id="work-graph" data-reader-personas="engineering">The work graph</h2>
 

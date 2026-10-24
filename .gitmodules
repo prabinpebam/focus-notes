@@ -1,3 +1,9 @@
 [submodule "slate"]
 	path = slate
 	url = https://github.com/prabinpebam/slate.git
+[submodule "agentic-craft"]
+	path = agentic-craft
+	url = https://github.com/prabinpebam/agentic-craft.git
+[submodule "agent-orchestration"]
+	path = agent-orchestration
+	url = https://github.com/prabinpebam/agent-orchestration.git

@@ -23,10 +23,34 @@ Focus Notes, a calm, Markdown-native writing app. **Status: M0 to M7 are built a
 - `templates/workspace/`: the source of the template repository people copy to make their instance (`focus-notes-workspace`).
 - `site/`: the product site's content (D-167): the landing page (`landing.json`, D-174, with the downloads as its last section, D-184), `privacy.md`, `demo.md` and `media/` (screenshots from the `site` catalogue). `tools/site/build.mjs` renders it through the design system; see [Product site and help](documentations/product/site-and-help.md#how-the-site-is-built).
 - `documentations/`: the spec, published as a [Slate](https://github.com/prabinpebam/slate) documentation site, and Help for people who write (`documentations/help/`, D-181).
-- `slate/`: the Slate system, pinned as a Git submodule. Don't edit it here.
-- `.github/skills/slate/`: the skill that loads Slate's rules.
+- `slate/`, `agentic-craft/`, `agent-orchestration/`: the three agent kits, pinned as Git submodules. Don't edit them here; see [Agent kits](#agent-kits-d-205).
+- `.github/skills/` and `.github/agents/`: `skills/slate/` is the adapter that loads Slate's rules; the other skills and `design-system-auditor`, `grounding-critic` and `throughput-reviewer` are the kits' installed copies; `builder`, `orchestrator`, `verifier`, `code-reviewer`, `design-system-reviewer`, `accessibility-reviewer`, `security-reviewer` and `docs-keeper` are this project's roles in [the agentic loop](documentations/plan/agentic-loop.html#roles).
 
 The planned code layout (a pnpm monorepo) is in [`documentations/plan/distribution.md`](documentations/plan/distribution.md).
+
+## Agent kits (D-205)
+
+Work runs on three kits, each owning one part and pinned at the repository's root:
+
+| Kit | Owns | Start with |
+| --- | --- | --- |
+| [Slate](https://github.com/prabinpebam/slate) (`slate/`) | Writing and checking the documentation site | the `slate` skill |
+| [agentic-craft](https://github.com/prabinpebam/agentic-craft) (`agentic-craft/`) | What's worth building and what success means: the chain, assumptions, Definitions of Done, design system, copy, waits, performance | the `craft` skill |
+| [agent-orchestration](https://github.com/prabinpebam/agent-orchestration) (`agent-orchestration/`) | How work runs: modes, bounds, checks by tier, progress reviews, logs and handoffs | the `orchestrate` skill |
+
+- **The installed copies belong to the kits.** Never edit a kit skill or agent in `.github/`; project specifics go in the kits' facts sections at the end of this file, which their installers keep. To update a kit: `git -C <kit> pull`, then `node tools/agent-kits.mjs --sync`, and commit the pointer with the copies, separately from code and spec changes. `pnpm check` runs `node tools/agent-kits.mjs`, which fails when a copy differs from its pinned kit (it skips kits that aren't checked out, as on CI).
+- **When they disagree, the first of these wins:** the project context at the top of this file (the owner's direct requests, data safety, privacy); then this file's rules and working modes and the spec pages they link; then the kits' facts sections; then the kits' skills. How the kits' general rules apply here:
+
+| The kits say | Here |
+| --- | --- |
+| Chain: promise → jobs → user-can → task flows → UI | Promise → scenario → user can → view or component → design decision → requirement ([chain.md](documentations/product/spec/chain.md)); a scenario's steps and the experience pages are its task flows, and `pnpm check` checks the chain. The `grounding-critic` critiques against it. |
+| IDs P1, J1, U1, A1, O1, PD1 | The project's IDs in the Craft facts. Decision numbers come from the orchestrator, never picked by a builder. |
+| Four tiers: tokens → fundamentals → compounds → layouts → views | The six layers of [the design system](documentations/design/system/overview.html): tokens → primitives → layouts → compounds → fragments → views. Layouts sit below compounds, primitives may use other primitives, and views and fragments are JSON checked by `ui:check`. The `design-system-auditor` audits against these layers, tokens, states, accessibility and copy; the project's `design-system-reviewer` adds the visual vs verbose score, view documents and visual baselines. UI changes get both. |
+| Goal modes and attention | Attended is *work with me*, unattended is *keep going unattended* (D-113), with the same 15-minute and 45-minute shapes. The default goal is *make this production-ready*; *show me the UX sooner* is for a surface the owner hasn't seen (a candidate preview or a `vq-*` branch); *prove the risky assumption* is a spike against a risk in `risks.md`. |
+| Validation tiers 0–3; the full suite only on a trigger | Tiers 0–2 locally. For desktop and shared app code, the full suite on CI for the pushed work branch is the merge gate, with no exceptions; site, docs and web-only changes ship on their own checks (D-180). |
+| Never merge, push, deploy or publish unless allowed | The Orchestration facts allow what this file allows; data safety, private content and releases still escalate. |
+| Work plan, progress log and handoff templates | The work graph and the owner's feedback queue are the work plan. Log lines use the kit's format (`2026-10-24 11:40 [production-ready · with-me] WP-8.2: …`) in the progress log; handoffs go where the facts say. The kits' templates aren't copied. |
+| A copy glossary | None yet: the Words section of [foundations](documentations/design/foundations.md) and [Writing Help](documentations/design/help-writing.md) are the copy rules. |
 
 ## Rules
 
@@ -111,4 +135,32 @@ This repository is also the owner's own Focus Notes instance, so the workspace r
 
 ## Commits
 
-Small, descriptive commits. Keep `slate/` updates separate from spec changes.
+Small, descriptive commits. Keep `slate/`, `agentic-craft/` and `agent-orchestration/` updates (with their installed copies) separate from spec changes.
+
+<!-- agentic-craft:start -->
+## Craft (agentic-craft harness)
+
+This project uses the [agentic-craft](https://github.com/prabinpebam/agentic-craft) skills for product reasoning: what is worth building and what success means. Start with the `craft` skill; it routes to the rest: `ground` (promise → jobs → user-can → flows → UI), `assumptions`, `definition-of-done`, `design-system`, `ui-copy`, `perceived-performance`, `performance`. Agents: `grounding-critic`, `design-system-auditor`. These skills define product intent and success criteria; they don't prescribe how the work is carried out.
+
+### Project facts (fill in; the skills read these)
+
+- **Product artifacts:** the chain in `documentations/product/spec/` (`customer-promises.md`, `scenarios.md`, `user-can.md`, rules in `chain.md`), then `documentations/design/information-architecture.html` and `documentations/product/requirements.md`; assumptions and risks in `documentations/plan/risks.md`; decisions in `documentations/plan/decisions.md`; the source of truth `documentations/seed-specs.md` (read-only) · Definitions of Done in `documentations/plan/definition-of-done.md` (work package, Help article, stage, release, project), evidence in `documentations/plan/gate-evidence.md`
+- **Design system:** tokens `packages/tokens`, built with `pnpm tokens` (`node packages/tokens/build.mjs --check` for the tier rules) · components by layer `packages/ui` (primitives, layouts, compounds), fragments and views as JSON in `packages/views`, checked by `pnpm ui:check`; rules in `documentations/design/system/overview.html` · library at `pnpm gallery` · glossary: none yet; copy rules in `documentations/design/foundations.md` (Words) and `documentations/design/help-writing.md`
+- **Performance:** benchmark `pnpm bench --check` · baseline `tools/bench/budgets.json` (per platform, written with `--write-baseline`) · budgets `tools/bench/budgets.json`; the wait inventory in `documentations/architecture/perceived-performance.md`
+- **IDs:** promises `CP-…` (the kit's P1), scenarios `SC-…` (J1), user-can `UC-…` (U1), views and components `IA-VIEW-…`/`IA-CMP-…`, design decisions `DD-…`, requirements such as `EDT-14`, risks `R-…` (A1), decisions `D-…` (O1, numbered by the orchestrator), Definition of Done rows by level and stage (PD1, 1.1)
+<!-- agentic-craft:end -->
+
+<!-- agent-orchestration:start -->
+## Orchestration (agent-orchestration harness)
+
+This project uses the [agent-orchestration](https://github.com/prabinpebam/agent-orchestration) skills to carry out work. Start with the `orchestrate` skill: it picks the mode (show me the UX sooner, prove the risky assumption, make this production-ready; work with me or keep going unattended) and routes to `execution-modes`, `stage-validation`, `progress-review` and `coordinate`. Agent: `throughput-reviewer` (about every 30 minutes of running work). These skills decide how work is run, not what to build; product intent comes from the files named below when there are any.
+
+### Project facts (fill in; the skills read these)
+
+- **Product intent:** the Craft facts above; what's built and what's next in `documentations/plan/roadmap.md` (Current state)
+- **Work plan:** `documentations/plan/work-graph.json` (work packages `WP-…`, kept in step with `documentations/plan/implementation-plan.md`); with the owner here, their feedback queue comes first, one item at a time
+- **Commands by validation tier:** unit, related files `pnpm exec vitest run <test files>` · types `pnpm --filter <package> run typecheck` (all: `pnpm typecheck`) · one end-to-end test `pnpm --filter @focus-notes/desktop run build`, then `pnpm --filter @focus-notes/desktop exec playwright test e2e/<file> --workers=1 -g "<title>"` with `FOCUS_NOTES_E2E=1`, always followed by `pwsh tools/dev/close-test-apps.ps1` · full suites `pnpm check`, `pnpm typecheck`, `pnpm test`, `pnpm test:e2e`, `pnpm test:web` (CI runs them on Windows, macOS and Linux for every pushed work branch) · production build with budgets `pnpm build`, then `pnpm bench --check` on a quiet machine
+- **Progress log:** `E:\Projects\side-projects\builder-progress.log` (outside the repository); handoffs in `E:\Projects\side-projects\builder-handoffs\<yyyy-mm-dd-hhmm>.md`
+- **Branches and merges:** work branches `wp-*`, `fix-*` or `vq-*`, each builder in its own worktree · merge by fast-forwarding `main` to a commit whose own CI run is green (several ready branches: one `fix-merge-candidate`) · deploy watched with `gh run watch <run>` (CI, Pages, `preview-channel.yml`); Preview picks up green `main` within 10 minutes · the agent may: commit, push work branches, fast-forward `main` once CI is green (or a failure is quarantined in `gate-evidence.md`), and publish the site and docs when the owner asks (D-180); releases and tags only when the owner asks · must never break: the owner's notes and private content, green `main`, the owner's Preview (never kill, replace or build into its folder)
+- **Reviews and escalation:** review every 30 minutes (`throughput-reviewer`) · always escalate: a spec gap or contradiction, anything that could lose the owner's notes or make private content or secrets public, a new network destination or a non-permissive license, a release, force-pushing published history, and a fix that failed three rounds
+<!-- agent-orchestration:end -->

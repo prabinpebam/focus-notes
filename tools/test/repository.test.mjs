@@ -91,6 +91,17 @@ describe("documentation", () => {
     expect(JSON.parse(read("documentations/docs-manifest.json"))).toBeTruthy();
   });
 
+  it("D-205: agentic-craft and agent-orchestration are pinned submodules, installed with their facts filled in", async () => {
+    const { KITS, checkKit } = await import("../agent-kits.mjs");
+    for (const k of KITS) {
+      expect(read(".gitmodules")).toContain(`path = ${k.name}`);
+      expect(checkKit(k) ?? [], k.name).toEqual([]);
+    }
+    for (const a of ["design-system-auditor", "grounding-critic", "throughput-reviewer"]) expect(existsSync(join(root, ".github", "agents", `${a}.agent.md`)), a).toBe(true);
+    for (const s of ["craft", "orchestrate", "stage-validation"]) expect(existsSync(join(root, ".github", "skills", s, "SKILL.md")), s).toBe(true);
+    expect(read("package.json")).toMatch(/"check": "[^"]*check:kits/);
+  });
+
   it("DOC-02: seed-specs.md exists and no tool writes it", () => {
     expect(existsSync(join(root, "documentations", "seed-specs.md"))).toBe(true);
     for (const f of readdirSync(join(root, "tools")).filter((f) => f.endsWith(".mjs"))) expect(read(`tools/${f}`), f).not.toMatch(/seed-specs/);
