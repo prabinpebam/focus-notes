@@ -1,4 +1,4 @@
-# Release (DST-03, D-128): a tag v<x.y.z> builds the desktop installers on Windows, macOS and Linux,
+# Release (DST-03, D-128): a tag v<x.y.z> builds the desktop installers on Windows (macOS and Linux paused, D-211),
 # the web app bundle template instances deploy (D-98), the workspace template pinned to it, and an
 # SBOM; smoke-tests them; writes SHA256SUMS; attests every file's build provenance; and drafts a
 # GitHub Release with notes from the commits since the last tag. A person checks the draft and
@@ -67,7 +67,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        # Windows only until v1 is in the Microsoft Store (D-211): add macos-latest and ubuntu-latest back here.
+        os: [windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     continue-on-error: ${{ matrix.os != 'windows-latest' }}

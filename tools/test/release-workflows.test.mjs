@@ -114,9 +114,9 @@ describe("release.yml (DST-03, D-128)", () => {
     expect(stepsOf(job("version")).find((s) => s.id === "v").env.DRY_RUN_INPUT).toBe("${{ inputs.dry-run }}");
   });
 
-  it("DST-03: builds the installers on Windows, macOS and Linux; only Windows blocks (D-112)", () => {
+  it("DST-03: builds the installers on Windows; macOS and Linux are paused until v1 is in the Store (D-211)", () => {
     const d = job("desktop");
-    expect(d.strategy.matrix.os).toEqual(["windows-latest", "macos-latest", "ubuntu-latest"]);
+    expect(d.strategy.matrix.os).toEqual(["windows-latest"]);
     expect(d.strategy["fail-fast"]).toBe(false);
     expect(d["continue-on-error"]).toBe("${{ matrix.os != 'windows-latest' }}");
     expect(d.env.VERSION).toBe("${{ needs.version.outputs.version }}");
