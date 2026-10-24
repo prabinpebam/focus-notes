@@ -600,7 +600,12 @@ export function EditorSurface({
       switch (id) {
         case "link.edit": {
           if (!editor.isEditable) return true;
+          syncSelection(editor);
           select();
+          // Read the selection a drag just made, then the ghost takes it now, while the note still has
+          // focus; read in the effect once the field has it, it could come back collapsed and Apply
+          // inserted the address (DEF-31).
+          if (formatRef.current.onLinkEdit) setSelectionGhost(editor, true);
           const info = formatState(editor.state);
           formatRef.current.onLinkEdit?.({ href: info.link?.href ?? "", selected: !editor.state.selection.empty });
           return true;
