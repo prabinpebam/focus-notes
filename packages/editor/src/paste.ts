@@ -297,8 +297,8 @@ export function htmlToBlocks(root: Node): ConvertedHtml {
   return { blocks: safeLinks(blocksFromMdast(tree)), images: reader.images, semantic: reader.semantic };
 }
 
-/** Pasted Markdown as blocks, keeping links only with safe schemes (SEC-02). */
-export const pastedMarkdownBlocks = (text: string): PMNode[] => safeLinks(markdownToBlocks(text));
+/** Pasted Markdown as blocks, keeping links only with safe schemes (SEC-02). Windows line ends never reach the note. */
+export const pastedMarkdownBlocks = (text: string): PMNode[] => safeLinks(markdownToBlocks(text.replace(/\r\n?/g, "\n")));
 
 /** Removes links whose address isn't safe, keeping their text. */
 export function safeLinks(nodes: PMNode[]): PMNode[] {

@@ -81,6 +81,12 @@ describe("Markdown text (EDT-09)", () => {
     expect(editor.view.dom.querySelector("strong")).toBeNull();
     expect(md()).toContain("\\*\\*not bold\\*\\*");
   });
+  it("never writes Windows line ends into the note (Notepad's clipboard)", () => {
+    const { editor, md } = open("");
+    paste(editor, { "text/plain": "# Store\r\n\r\n> [!NOTE]\r\n> **TL;DR.** Short.\r\n\r\n- one\r\n- two\r\n" });
+    expect(kinds(editor)).toEqual(["heading", "blockquote", "bulletList"]);
+    expect(md()).not.toContain("\r");
+  });
   it("pastes into a code block as it is", () => {
     const { editor } = open("```\nx\n```\n");
     caretAfter(editor, "x");
