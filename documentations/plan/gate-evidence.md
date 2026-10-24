@@ -276,7 +276,7 @@ The Store refuses versions that start with 0, so its first release is v1.0.0 ([D
 
 | Quality | The v1.0 bar | Evidence | Status |
 | --- | --- | --- | --- |
-| Complete | Every M0 to M5 requirement passes its tests, and the journeys pass on Windows, macOS and Linux CI on the commit that's tagged | `ci.yml` on `main`: unit tests, four Windows journey shards, macOS and Linux (`23302f04`, run 39314801189) | Met (re-run once for two known intermittent journeys) |
+| Complete | Every M0 to M5 requirement passes its tests, and the journeys pass on Windows CI on the commit that's tagged (Windows only for v1.0, [D-211](decisions.md)) | `ci.yml` on `main`: unit tests and four Windows journey shards (`4f82c103`, run 40107381523: Windows green); earlier also macOS and Linux (`23302f04`, run 39314801189) | Met |
 | Complete | People can tell us what's wrong from inside the app | Settings → About → *Report a problem…* (QLT-04) and *Send feedback* to GitHub issues (QLT-07, D-203): `feedback.spec.ts` on `main` `1846117c`, run 39346035619 | Met |
 | Calm and consistent | No design-system violations; first-run steps and empty states meet their visual score | `ui:check` in `pnpm check`; VVS gates in the FRE and visual-quality journeys | Met |
 | Fast | The performance budgets hold on CI | `pnpm bench --check`, and the PRF-14 journey budgets in `m5-snappy.spec.ts` | Met (input to next paint sometimes runs over on shared CI runners and passes on re-run) |
