@@ -279,9 +279,10 @@ test("EDT-13: Mod+K edits links in place; the hover card opens, copies, edits, a
   await page.keyboard.press("Enter");
   await expect(linkEditor).toBeHidden();
   await expect(editor).toBeFocused();
-  // The selection comes back with focus, a frame after the editor closes (Linux CI read it empty).
-  await expect.poll(() => selectionText(page)).toBe("docs");
   await expect(editor.locator('a[href="https://example.com/docs"]')).toHaveText("docs");
+  // The link is on the selection, and the selection comes back with focus a frame after the editor
+  // closes (DEF-28: the selection read back as the field closed was empty, so the address went in as text).
+  await expect.poll(() => selectionText(page)).toBe("docs");
 
   // The caret in a link shows the hover card.
   await page.keyboard.press("ArrowLeft");

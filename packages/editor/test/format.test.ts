@@ -8,7 +8,7 @@ import { Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import { Slice } from "@tiptap/pm/model";
 import type { EditorView } from "@tiptap/pm/view";
-import { applyLink, coreExtensions, EDITOR_ACTIONS, formatState, MarkdownSession, removeLink, selectLink, type PMNode } from "../src/index.ts";
+import { applyLink, coreExtensions, EDITOR_ACTIONS, formatState, ghostRange, MarkdownSession, removeLink, selectLink, setSelectionGhost, type PMNode } from "../src/index.ts";
 
 let editors: Editor[] = [];
 afterEach(() => {
@@ -170,6 +170,22 @@ describe("links (EDT-13)", () => {
     select(editor, "docs", 0);
     expect(removeLink(editor)).toBe(true);
     expect(md()).toBe("Read the docs today\n");
+  });
+
+  it("the link editor keeps the range it opened on, through edits and a lost selection (DEF-28)", () => {
+    const { editor } = open("Read the docs today\n");
+    select(editor, "docs");
+    setSelectionGhost(editor, true);
+    // An edit before it moves the range with the words; the selection then reads back collapsed.
+    editor.view.dispatch(editor.state.tr.insertText("Do ", 1));
+    editor.commands.setTextSelection(1);
+    setSelectionGhost(editor, false);
+    const r = ghostRange(editor.state)!;
+    expect(editor.state.doc.textBetween(r.from, r.to)).toBe("docs");
+    // A caret is kept as a caret.
+    select(editor, "today", 0);
+    setSelectionGhost(editor, true);
+    expect(ghostRange(editor.state)).toEqual({ from: editor.state.selection.from, to: editor.state.selection.from });
   });
 
   it("inserts a new link at the caret with its text, or the address as text", () => {

@@ -3,7 +3,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   applyLink, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
-  focusAtEnd, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
+  focusAtEnd, ghostRange, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
@@ -605,10 +605,14 @@ export function EditorSurface({
           formatRef.current.onLinkEdit?.({ href: info.link?.href ?? "", selected: !editor.state.selection.empty });
           return true;
         }
-        case "link.apply":
+        case "link.apply": {
+          // On the range the link editor opened on, which the ghost showed all along (DEF-28).
+          const r = ghostRange(editor.state);
+          if (r) editor.commands.setTextSelection(r);
           applyLink(editor, { href: String(args.href ?? ""), text: String(args.text ?? "") });
           editor.view.focus();
           return true;
+        }
         case "link.remove":
           select();
           EDITOR_ACTIONS["link.remove"]!(editor);

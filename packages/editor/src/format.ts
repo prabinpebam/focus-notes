@@ -239,10 +239,13 @@ export const LinkOpen = Extension.create<{ openLink?: (href: string) => void }>(
   },
 });
 
-const ghostKey = new PluginKey<boolean>("selectionGhost");
+type Ghost = { on: boolean; from: number; to: number };
+const ghostKey = new PluginKey<Ghost>("selectionGhost");
 /**
  * Keeps the selection visible while focus is in the link editor, whose field takes the browser's
- * own selection highlight (Text formatting → Link editor).
+ * own selection highlight (Text formatting → Link editor). It holds the range it shows, mapped
+ * through any change, so the link goes on exactly that range: the live selection can be read
+ * back from the page as the field closes, before the link is applied (DEF-28).
  */
 export const SelectionGhost = Extension.create<{ className: string }>({
   name: "selectionGhost",
@@ -251,25 +254,35 @@ export const SelectionGhost = Extension.create<{ className: string }>({
   },
   addProseMirrorPlugins() {
     const className = this.options.className;
-    return [new Plugin<boolean>({
+    return [new Plugin<Ghost>({
       key: ghostKey,
       state: {
-        init: () => false,
-        apply: (tr, on) => (tr.getMeta(ghostKey) as boolean | undefined) ?? on,
+        init: () => ({ on: false, from: 0, to: 0 }),
+        apply: (tr, g) => {
+          const on = tr.getMeta(ghostKey) as boolean | undefined;
+          if (on) return { on, from: tr.selection.from, to: tr.selection.to };
+          const from = tr.mapping.map(g.from, 1), to = Math.max(from, tr.mapping.map(g.to, -1));
+          return { on: on ?? g.on, from, to };
+        },
       },
       props: {
         decorations: (state) => {
-          if (!ghostKey.getState(state) || state.selection.empty || !className) return null;
-          const { from, to } = state.selection;
-          return DecorationSet.create(state.doc, [Decoration.inline(from, to, { class: className })]);
+          const g = ghostKey.getState(state);
+          if (!g?.on || g.from >= g.to || !className) return null;
+          return DecorationSet.create(state.doc, [Decoration.inline(g.from, g.to, { class: className })]);
         },
       },
     })];
   },
 });
 export function setSelectionGhost(editor: Editor, on: boolean): void {
-  if (ghostKey.getState(editor.state) === on) return;
+  if (ghostKey.getState(editor.state)?.on === on) return;
   // Runs from an effect as the link editor closes: read any selection the keys just made first.
   syncSelection(editor);
   editor.view.dispatch(editor.state.tr.setMeta(ghostKey, on).setMeta("addToHistory", false));
+}
+/** The range the link editor was opened on (its start, for a caret), kept as the note changes. */
+export function ghostRange(state: EditorState): { from: number; to: number } | null {
+  const g = ghostKey.getState(state);
+  return g && g.to <= state.doc.content.size ? { from: g.from, to: g.to } : null;
 }
