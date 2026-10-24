@@ -152,7 +152,18 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
     const found = !compositingShown && lines.find((x) => x.includes("[focus-notes] compositing:"));
     if (found) (compositingShown = true), process.stdout.write(`${found.trim()}\n`);
   });
-  const pid = await app.evaluate(() => process.pid);
+  // The main process's inspector can drop a call's answer ("Promise was collected") while Chromium
+  // attaches a new worker just after start; asking again is safe (DEF-32, as in quit()).
+  let pid = 0;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      pid = await app.evaluate(() => process.pid);
+      break;
+    } catch (e) {
+      if (attempt >= 2 || !/garbage collected|Promise was collected/.test(String(e))) throw e;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+  }
   running.set(app, pid);
   // Every window the journey uses; one that closes at once (a page that went away) needs none.
   app.on("window", (p) => void emulateFocus(p).catch(() => {}));
