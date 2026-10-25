@@ -193,7 +193,28 @@ export function checkSource(f, src) {
   }
   // 6. The renderer maps only registry components, never intrinsic elements.
   if (f.startsWith("packages/ui-runtime/src/") && /createElement\(\s*["'`]/.test(src)) errs.push(`${f}: the renderer may only create registry components`);
+  // 7. Crash recovery's draft store can't write a note (QLT-06, Architecture → Crash recovery): it may
+  // not import the note writer, the batch (main.ts) or Git; Git's read-only answers are handed in.
+  if (f === DRAFT_STORE && sf) {
+    for (const spec of moduleSpecifiers(sf)) {
+      if (DRAFT_STORE_FORBIDDEN.some((re) => re.test(spec))) errs.push(`${f}: the draft store may not import "${spec}" (the note writer, the batch or Git)`);
+    }
+  }
   return [...new Set(errs)];
+}
+
+const DRAFT_STORE = "apps/desktop/src/main/drafts.ts";
+const DRAFT_STORE_FORBIDDEN = [/(^|\/)note-write(\.ts)?$/, /(^|\/)main(\.ts)?$/, /(^|\/)git(\/|$)/, /^(node:)?child_process$/, /simple-git/, /(^|\/)workspace\/(remove|setup)/];
+/** Every module a file imports or re-exports, statically, dynamically, or through require. */
+function moduleSpecifiers(sf) {
+  const out = [];
+  const visit = (n) => {
+    if ((ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) && n.moduleSpecifier && ts.isStringLiteral(n.moduleSpecifier)) out.push(n.moduleSpecifier.text);
+    else if (ts.isCallExpression(n) && n.arguments[0] && ts.isStringLiteralLike(n.arguments[0]) && (n.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(n.expression) && n.expression.text === "require"))) out.push(n.arguments[0].text);
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return out;
 }
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

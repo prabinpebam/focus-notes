@@ -113,3 +113,22 @@ export const a = style({
     accepts("apps/desktop/test/probe.test.ts", `export const f = (el: HTMLElement) => el.style.setProperty("color", "red");`);
   });
 });
+
+describe("QLT-06: crash recovery's draft store can't write a note", () => {
+  const STORE = "apps/desktop/src/main/drafts.ts";
+  it("rejects the note writer, the batch and Git in the draft store, however they're imported", () => {
+    rejects(STORE, `import { NoteWriter } from "./note-write.ts";`, /draft store may not import/);
+    rejects(STORE, `import { applyOps } from "./main.ts";`, /draft store/);
+    rejects(STORE, `import { GitSync } from "./git/sync.ts";`, /draft store/);
+    rejects(STORE, `import { createRunner } from "./git/run.ts";`, /draft store/);
+    rejects(STORE, `import { execFile } from "node:child_process";`, /draft store/);
+    rejects(STORE, `export { spawn } from "child_process";`, /draft store/);
+    rejects(STORE, `const w = await import("./note-write.ts");`, /draft store/);
+    rejects(STORE, `const cp = require("child_process");`, /draft store/);
+  });
+
+  it("accepts what the store needs, and the same imports anywhere else", () => {
+    accepts(STORE, `import { rename } from "node:fs/promises";\nimport { textHash } from "@focus-notes/core/journal";\nimport type { RecoveryFound } from "@focus-notes/core";`);
+    accepts("apps/desktop/src/main/main.ts", `import { NoteWriter } from "./note-write.ts";\nimport { GitSync } from "./git/sync.ts";`);
+  });
+});
