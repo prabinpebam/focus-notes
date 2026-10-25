@@ -109,10 +109,13 @@ export interface PlatformBridge {
   /** The right-click menu in text the app draws (D-204, EDT-14): Windows and Linux. Absent on macOS (the system's menu) and in the browser. */
   textMenu?: TextMenuBridge;
   /**
-   * The recovery journal (QLT-03): unsaved text is kept outside the note at least every second, and
-   * a crash's is restored at the next launch. The desktop's; absent in the browser, where the note
-   * itself is saved at least every second while typing goes on.
+   * Crash recovery (QLT-03, QLT-06, D-190): each open note's unsaved text is kept as a draft in the
+   * app's data folder at least every second, never in the workspace, and what a crash left comes
+   * back through the editor. The desktop's; absent in the browser, where the note itself is saved at
+   * least every second while typing goes on.
    */
+  recovery?: RecoveryBridge;
+  /** @deprecated The path-keyed journal (D-105), replaced by `recovery` (WP-8.9); removed once both sides use it. */
   journal?: JournalBridge;
   /** Windows of their own, one note each (desktop, DSK-06, D-179). Absent where the shell has one window. */
   windows?: WindowsBridge;
@@ -177,18 +180,84 @@ export interface CompositingBridge {
   onChange(listener: (c: unknown) => void): () => void;
 }
 
+/** @deprecated The path-keyed journal (D-105), replaced by `RecoveryBridge` (WP-8.9). */
 export interface JournalBridge {
-  /** Keeps a note's unsaved text in the journal. */
   write(path: string, text: string): Promise<void>;
-  /** What the shell restored from the journal at this launch, once: an empty list after the first ask. */
   restored(): Promise<RestoredNote[]>;
 }
-
-/** A note whose unsaved text was restored after a crash, or kept beside it when it had changed since (`copy`). */
+/** @deprecated See `JournalBridge`. */
 export interface RestoredNote {
   path: string;
   title: string;
   copy?: { path: string; title: string };
+}
+
+/**
+ * Crash recovery (QLT-06, D-190, Architecture → Crash recovery). The shell keeps each draft only in
+ * the app's data folder and never writes, creates, renames, moves or deletes anything in the
+ * workspace for it; recovered text reaches a note only through the person's save or a choice.
+ */
+export interface RecoveryBridge {
+  /**
+   * Keeps the open note's unsaved text. `draft` names it for as long as the window has the note open,
+   * through every rename; `seq` rises with each handover, and an older one arriving late is dropped.
+   * `path` only places a draft the shell doesn't know yet; a known draft keeps the path the shell has.
+   */
+  keep(draft: string, seq: number, path: string, text: string): Promise<void>;
+  /** The text handed over at `seq` is saved: the draft goes, unless a newer text has arrived since. */
+  saved(draft: string, seq: number): Promise<void>;
+  /** The person left the note without saving its text: its draft goes. */
+  discard(draft: string): Promise<void>;
+  /**
+   * What the last session left, matched to notes now, without writing anything. Told to the first
+   * window that asks after a launch or after its renderer was replaced; later asks get nothing.
+   */
+  found(): Promise<RecoveryFound>;
+  /** The drafts that couldn't be placed (Files → Recovered), newest first. */
+  recovered(): Promise<RecoveredDraft[]>;
+  /** A Recovered draft's text, to read, copy or save as a new note. */
+  text(id: string): Promise<string>;
+  /** Deletes a Recovered draft (Discard, or once it's saved as a new note). */
+  remove(id: string): Promise<void>;
+  /** How many drafts this workspace has, of any kind: removing the workspace or signing out asks first when there are some. */
+  count(): Promise<number>;
+}
+
+/** A draft matched to its note at launch. */
+export interface FoundDraft {
+  /** The draft's ID: the window opening the note goes on keeping its text under it. */
+  draft: string;
+  /** Where the note is now (it may have been renamed or moved since). */
+  path: string;
+  title: string;
+  /** The recovered text. */
+  text: string;
+  /** Only when the note changed since the text was typed over it: the text on disk now. */
+  disk?: string;
+}
+
+export interface RecoveryFound {
+  /** The note is as it was under the text: it opens with the text as unsaved edits. */
+  matched: FoundDraft[];
+  /** The note changed since: opening it compares the two in the resolver. */
+  changed: FoundDraft[];
+  /** Drafts that couldn't be placed, waiting in Files → Recovered. */
+  recovered: number;
+}
+
+/** A draft in Files → Recovered. */
+export interface RecoveredDraft {
+  id: string;
+  title: string;
+  /** The folder it was last known in, relative to the workspace ("" at a root's top). */
+  where: string;
+  /** The note's last known path. */
+  path: string;
+  /** When its text was last kept, and when it'll be deleted unless saved (30 days later). */
+  at: number;
+  until: number;
+  /** Its length in characters. */
+  chars: number;
 }
 
 /**
