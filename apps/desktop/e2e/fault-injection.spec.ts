@@ -1,8 +1,9 @@
 /**
- * Fault injection (QLT-03; Definition of done → Reliable): the main process is killed at random
+ * Fault injection (QLT-03, QLT-06; Definition of done → Reliable): the main process is killed at random
  * points while someone types, pauses (so saves run), and the workspace commits; each relaunch must
  * bring back everything but at most about the last second, never anything that wasn't typed, and
- * the note must never be half-written.
+ * the note must never be half-written. What a crash left comes back in the editor and is written by
+ * the normal save, never at launch, and no other file ever appears (D-190).
  *
  * Randomized rounds: FOCUS_NOTES_FAULT_ROUNDS sets how many (CI runs a short version, 3; the
  * Definition of done's suite runs 1,000), and FOCUS_NOTES_FAULT_SEED replays a failing run. Each
@@ -10,10 +11,10 @@
  */
 import { test, expect } from "./fixtures.ts";
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, tempDirs, type Launched } from "./helpers.ts";
-import { crash, LOSS_BUDGET_MS, START, typedPart, typeTimed } from "./recovery.ts";
+import { launch, PROMPTLY, tempDirs, type Launched } from "./helpers.ts";
+import { crash, LOSS_BUDGET_MS, readDrafts, START, typedPart, typeTimed } from "./recovery.ts";
 
 const rounds = Number(process.env.FOCUS_NOTES_FAULT_ROUNDS ?? 3);
 const seed = Number(process.env.FOCUS_NOTES_FAULT_SEED ?? Date.now() % 1_000_000);
@@ -62,9 +63,10 @@ test(`QLT-03: killed at random points while typing, ${rounds} rounds, nothing is
   try {
     for (let round = 1; round <= rounds; round++) {
       const l = await start();
-      // What the last crash left: restored before the window read anything.
+      // What the last crash left: on disk once the restored text was saved, and nothing else in the workspace.
       const now = typedPart(readFileSync(note, "utf8"));
       expect(now, `round ${round} (seed ${seed}): the note starts with what was kept`).toBe(kept);
+      expect(readdirSync(dirs.docs).filter((n) => !n.startsWith(".")), `round ${round} (seed ${seed}): no file but the note`).toEqual(["Welcome.md"]);
       const editor = l.page.getByRole("textbox", { name: "Note" });
       await expect(editor).toBeFocused();
       await l.page.keyboard.press(`${mod}+End`);
@@ -88,16 +90,25 @@ test(`QLT-03: killed at random points while typing, ${rounds} rounds, nothing is
       const all = kept + typed.text;
       // Never anything that wasn't typed, never half a write: a prefix of what was typed.
       expect(all.startsWith(after), `round ${round} (seed ${seed}): ${JSON.stringify(after)} is a prefix of ${JSON.stringify(all)}`).toBe(true);
-      // The disk may lag; the journal must not lag by more than about a second. Check it on relaunch.
-      const restoredLaunch = await start();
-      const restored = typedPart(readFileSync(note, "utf8"));
+      // The disk may lag; the draft store must not lag by more than about a second. Check it on
+      // relaunch: what it kept comes back in the editor, and the normal save writes it (QLT-06).
+      const draft = readDrafts(dirs.userData, dirs.docs).find((d) => d.header.path === "Welcome.md");
+      const expected = draft && draft.text !== readFileSync(note, "utf8") ? draft.text : readFileSync(note, "utf8");
+      let restoredLaunch = await start();
+      // Sometimes the launch that restores is crashed into before its save: the draft is still there for the next.
+      if (rnd() < 0.3) {
+        await kill(restoredLaunch);
+        restoredLaunch = await start();
+      }
+      await expect.poll(() => readFileSync(note, "utf8"), { ...PROMPTLY, message: `round ${round} (seed ${seed}): the restored text is saved` }).toBe(expected);
+      const restored = typedPart(expected);
       expect(all.startsWith(restored), `round ${round} (seed ${seed}): restored ${JSON.stringify(restored)} is a prefix of ${JSON.stringify(all)}`).toBe(true);
       expect(restored.length, `round ${round} (seed ${seed}): nothing from an earlier round is lost`).toBeGreaterThanOrEqual(kept.length);
       const lostMs = typed.lostMs(restored.length - kept.length, crashedAt);
       report.push({ round, typed: typed.text.length, kept: restored.length - kept.length, lostMs });
       expect(lostMs, `round ${round} (seed ${seed}): lost ${lostMs} ms of typing`).toBeLessThanOrEqual(LOSS_BUDGET_MS);
       kept = restored;
-      // The relaunch that restored is crashed into as well, before it does anything else.
+      // The relaunch that restored is crashed into as well, once its save is on disk.
       await kill(restoredLaunch);
     }
   } finally {

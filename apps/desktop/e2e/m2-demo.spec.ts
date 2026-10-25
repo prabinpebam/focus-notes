@@ -8,8 +8,8 @@
 import { test, expect, screenAllowed } from "./fixtures.ts";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launch, placed, quit, tempDirs, type Launched } from "./helpers.ts";
-import { crash, journalAhead, LOSS_BUDGET_MS, START, typedPart, typeTimed } from "./recovery.ts";
+import { launch, placed, PROMPTLY, quit, tempDirs, type Launched } from "./helpers.ts";
+import { crash, draftAhead, LOSS_BUDGET_MS, START, typedPart, typeTimed } from "./recovery.ts";
 import { axeViolations } from "./axe.ts";
 
 const ls = (dir: string) => readdirSync(dir).filter((n) => !n.startsWith(".")).sort();
@@ -91,17 +91,20 @@ test("M2 demo: full screen, Files, links that follow a rename, and the text back
   await page.keyboard.press("Escape");
   await expect(files).toBeHidden();
 
-  // Step 6: kill the app while typing; the next launch puts the text back.
+  // Step 6: kill the app while typing; the next launch puts the text back in the editor, and the
+  // normal save writes it (QLT-06).
   await expect(editor).toBeFocused();
   await expect(editor).toContainText("Start.");
   await page.keyboard.press("Control+End");
   await page.keyboard.press("Enter");
-  const typed = await typeTimed(page, "the demo keeps writing while the app is killed, and the words come back", { until: () => journalAhead(dirs.userData, note) });
+  const typed = await typeTimed(page, "the demo keeps writing while the app is killed, and the words come back", { until: () => draftAhead(dirs.userData, docs, note) });
   const killedAt = await crash(l, dirs.userData);
   // If the save to disk caught up in the instant before the kill, nothing is left to restore (DEF-19):
   // the text and the loss budget are still checked, and m2-recovery always covers the notice.
-  const pending = journalAhead(dirs.userData, note);
+  const pending = draftAhead(dirs.userData, docs, note);
+  const crashedDisk = readFileSync(note, "utf8");
   const again = await launch(dirs);
+  if (pending) await expect.poll(() => readFileSync(note, "utf8") !== crashedDisk, PROMPTLY).toBe(true);
   const restored = typedPart(readFileSync(note, "utf8"));
   expect(typed.text.startsWith(restored)).toBe(true);
   expect(typed.lostMs(restored.length, killedAt)).toBeLessThanOrEqual(LOSS_BUDGET_MS);
