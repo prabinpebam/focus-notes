@@ -1,0 +1,60 @@
+diff --git a/templates/nsis/include/extractAppPackage.nsh b/templates/nsis/include/extractAppPackage.nsh
+index f5470bf52e923dc47266cea4684c76ef78ced451..b29ec06c7bcf577d3c331c65ebf5e37c795943bd 100644
+--- a/templates/nsis/include/extractAppPackage.nsh
++++ b/templates/nsis/include/extractAppPackage.nsh
+@@ -94,7 +94,11 @@
+   CreateDirectory "$PLUGINSDIR\7z-out"
+   ClearErrors
+   SetOutPath "$PLUGINSDIR\7z-out"
++  !ifmacrodef portableSplashExtract
++    !insertmacro portableSplashExtract "${FILE}"
++  !else
+   Nsis7z::Extract "${FILE}"
++  !endif
+   Pop $R0
+   SetOutPath $R0
+ 
+diff --git a/templates/nsis/portable.nsi b/templates/nsis/portable.nsi
+index e5436bb0f810058b52e15ce65b3d256f86dabc6f..1571772fe3a0661a092b72142bb35caadcff6cac 100644
+--- a/templates/nsis/portable.nsi
++++ b/templates/nsis/portable.nsi
+@@ -1,6 +1,12 @@
+ !include "common.nsh"
+ !include "extractAppPackage.nsh"
+ 
++# Focus Notes: a splash script beside the splash image (portable-splash.nsh) adds live status.
++!ifdef SPLASH_IMAGE
++  !searchreplace SPLASH_SCRIPT "${SPLASH_IMAGE}" ".bmp" ".nsh"
++  !include /NONFATAL "${SPLASH_SCRIPT}"
++!endif
++
+ # https://github.com/electron-userland/electron-builder/issues/3972#issuecomment-505171582
+ CRCCheck off
+ WindowIcon Off
+@@ -22,6 +28,9 @@ Function .onGUIInit
+     File /oname=$PLUGINSDIR\splash.bmp "${SPLASH_IMAGE}"
+     BgImage::SetBg $PLUGINSDIR\splash.bmp
+     BgImage::Redraw
++    !ifmacrodef portableSplashShow
++      !insertmacro portableSplashShow
++    !endif
+   !endif
+ FunctionEnd
+ 
+@@ -79,12 +88,16 @@ Section
+   System::Call 'Kernel32::SetEnvironmentVariable(t, t)i ("PORTABLE_EXECUTABLE_APP_FILENAME", "${APP_FILENAME}").r0'
+   ${StdUtils.GetAllParameters} $R0 0
+ 
++  !ifmacrodef portableSplashLaunch
++    !insertmacro portableSplashLaunch "$INSTDIR\${APP_EXECUTABLE_FILENAME}" $R0
++  !else
+   !ifdef SPLASH_IMAGE
+     BgImage::Destroy
+   !endif
+ 
+ 	ExecWait "$INSTDIR\${APP_EXECUTABLE_FILENAME} $R0" $0
+   SetErrorLevel $0
++  !endif
+ 
+   SetOutPath $EXEDIR
+ 	RMDir /r $INSTDIR
