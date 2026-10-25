@@ -43,6 +43,8 @@ export interface FilesState {
   edit?: { kind: "rename" | "newFolder"; id: string; parent: string; value: string; error: string };
   /** Rows shown in their new place whose write hasn't finished: the saving sign (Files → Row states). */
   pending: readonly string[];
+  /** Notes with text a crash left, not opened yet (QLT-06): their rows say unsaved until they open. */
+  unsaved: readonly string[];
   /**
    * What asks first: deleting (Files → Deleting), and changing who can see notes (DD-FILES-08):
    * Make public or private keeps each item's folder path (`dest` unset); a drop or Move to… has one.
@@ -54,7 +56,7 @@ export interface FilesState {
   recent: { open: boolean; loading: boolean; notes?: readonly DeletedNote[]; focus: number };
 }
 export const FILES_CLOSED: FilesState = {
-  open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", focusRequest: 0, pending: [],
+  open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", focusRequest: 0, pending: [], unsaved: [],
   move: { open: false, query: "", activeId: "", paths: [], focus: 0 },
   recent: { open: false, loading: false, focus: 0 },
 };
@@ -80,6 +82,8 @@ interface Ctx {
   holds?: (path: string) => boolean;
   /** The app moved the open note's file: what's known on disk, and a pending conflict, go with it (DEF-26). */
   moved?: (from: string, to: string) => void;
+  /** The app moved notes or folders (any, open or not): text a crash left for them follows (QLT-06). */
+  notesMoved?: (moves: readonly { from: string; to: string }[]) => void;
   describeItem: (id: string) => Record<string, unknown>;
   itemSchema: Record<string, unknown>;
   /** Runs an editor action: `edit.focus` puts the caret back in the note. */
@@ -378,6 +382,7 @@ export function registerFiles(ctx: Ctx) {
       const writes = await planLinkWrites(before, moves, readForLinks());
       refusedIfOpen(writes);
       await ws!.apply!([...ops, ...writeOps(writes)]);
+      if (moves.length) ctx.notesMoved?.(moves);
       // The open note follows a move; a deleted one is closed after.
       const p = store.state.note.path;
       if (p && moves.length) {
@@ -995,6 +1000,7 @@ export function registerFiles(ctx: Ctx) {
         const own = writes.find((w) => w.from === path)?.text ?? next;
         others = writes.filter((w) => w.from !== path);
         await ws!.apply!([...moves.map((m) => ({ op: "move" as const, ...m })), { op: "write", path: to, text: own, before: text }, ...writeOps(others)]);
+        if (moves.length) ctx.notesMoved?.(moves);
         if (plan?.kind === "renamed") setTree(plan.tree);
         setTree(applyChanges(tree(), [{ path: to, kind: "note", exists: true, title }]));
         setFiles((f) => ({ selection: { selected: [to], anchor: to, focus: to } }));
@@ -1103,11 +1109,13 @@ export function registerFiles(ctx: Ctx) {
       const rows = rowsOf(s);
       const selected = new Set(f.selection.selected);
       const pending = new Set(f.pending);
+      const unsaved = new Set(f.unsaved);
       const writable = canWrite(s);
       const items: Record<string, unknown>[] = rows.map((r) => ({
         id: r.id, kind: r.kind === "root" ? "section" : r.kind, level: r.level,
         label: r.kind === "root" ? rootLabel(r.rootId) : r.label,
-        description: r.readOnly ? catalog.format("files.readOnly") : r.rootId === "public" && r.kind === "note" ? publicDescription(s, r.path) : "",
+        description: r.readOnly ? catalog.format("files.readOnly") : r.kind === "note" && unsaved.has(r.path) ? catalog.format("files.unsaved")
+          : r.rootId === "public" && r.kind === "note" ? publicDescription(s, r.path) : "",
         title: r.kind === "note" ? r.name : "", parent: r.parent ?? "",
         expanded: r.expanded, hasChildren: r.hasChildren, selected: selected.has(r.id), current: r.path === s.note.path && r.kind === "note",
         pending: pending.has(r.id), readOnly: r.readOnly,

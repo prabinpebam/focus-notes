@@ -1,11 +1,12 @@
 /**
- * QLT-03 and PRF-10 in the app core: unsaved text goes to the recovery journal at once, and at most
- * JOURNAL_INTERVAL_MS (0.15 s, DEF-14) after it arrives while typing goes on; without a journal (the browser)
- * the note itself is saved within UNJOURNALED_SAVE_MS (0.25 s); what a crash left is announced calmly at the next launch; and the warm-up
- * after start waits for the caret, pauses while someone types, and is off when the shell says so.
+ * QLT-03 and PRF-10 in the app core: unsaved text goes to the shell's drafts at once, and at most
+ * JOURNAL_INTERVAL_MS (0.15 s, DEF-14) after it arrives while typing goes on; without drafts (the browser)
+ * the note itself is saved within UNJOURNALED_SAVE_MS (0.25 s); and the warm-up after start waits for
+ * the caret, pauses while someone types, and is off when the shell says so. What a crash left is in
+ * drafts-app.test.ts (QLT-06).
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createApp, JOURNAL_INTERVAL_MS, SAVE_DELAY_MS, UNJOURNALED_SAVE_MS, WarmUp, type PlatformBridge, type RestoredNote } from "../src/index.ts";
+import { createApp, JOURNAL_INTERVAL_MS, SAVE_DELAY_MS, UNJOURNALED_SAVE_MS, WarmUp, type PlatformBridge, type RecoveryBridge } from "../src/index.ts";
 
 function fakeBridge(extra: Partial<PlatformBridge> = {}) {
   const files: Record<string, string> = { "/n/Welcome.md": "# Welcome\n" };
@@ -25,18 +26,22 @@ function fakeBridge(extra: Partial<PlatformBridge> = {}) {
   };
   return { bridge, files, writes };
 }
+/** The shell's drafts, keeping each handover's text through `keep`. */
+const drafts = (keep: (path: string, text: string) => void): RecoveryBridge => ({
+  keep: async (_d, _seq, p, t) => keep(p, t), saved: async () => {}, discard: async () => {},
+  found: async () => ({ matched: [], changed: [], recovered: 0 }),
+  recovered: async () => [], text: async () => "", remove: async () => {}, count: async () => 0,
+});
 const messages = {
   "command.note.setContent": "Set", "command.app.ready": "Ready",
-  "toast.restored": "{count, plural, one {Restored what you were writing in “{note}” before Focus Notes closed.} other {Restored what you were writing in # notes before Focus Notes closed.}}",
-  "toast.restoredCopy": "“{note}” changed while Focus Notes was closed, so what you were writing is kept beside it, in “{copy}”.",
 };
 afterEach(() => vi.useRealTimers());
 
-describe("QLT-03: the recovery journal, from the app", () => {
+describe("QLT-03: unsaved text kept for recovery, from the app", () => {
   it("gets unsaved text at once, then every JOURNAL_INTERVAL_MS while typing goes on, and never saved text", async () => {
     vi.useFakeTimers();
     const journaled: [string, string, number][] = [];
-    const f = fakeBridge({ journal: { write: async (p, t) => void journaled.push([p, t, Date.now()]), restored: async () => [] } });
+    const f = fakeBridge({ recovery: drafts((p, t) => void journaled.push([p, t, Date.now()])) });
     const app = createApp(f.bridge, messages);
     await app.start();
     const t0 = Date.now();
@@ -62,7 +67,7 @@ describe("QLT-03: the recovery journal, from the app", () => {
   it("keeps a handover at once, not on a timer, when the journal wasn't just written; one just after a write waits only the rest of JOURNAL_INTERVAL_MS", async () => {
     vi.useFakeTimers();
     const journaled: [string, number][] = [];
-    const f = fakeBridge({ journal: { write: async (_p, t) => void journaled.push([t, Date.now()]), restored: async () => [] } });
+    const f = fakeBridge({ recovery: drafts((_p, t) => void journaled.push([t, Date.now()])) });
     const app = createApp(f.bridge, messages);
     await app.start();
     const t0 = Date.now();
@@ -79,7 +84,7 @@ describe("QLT-03: the recovery journal, from the app", () => {
     expect(JOURNAL_INTERVAL_MS).toBe(150);
   });
 
-  it("without a journal (the browser), typing that never pauses is saved at least every UNJOURNALED_SAVE_MS", async () => {
+  it("without drafts (the browser), typing that never pauses is saved at least every UNJOURNALED_SAVE_MS", async () => {
     vi.useFakeTimers();
     const f = fakeBridge();
     const app = createApp(f.bridge, messages);
@@ -94,32 +99,6 @@ describe("QLT-03: the recovery journal, from the app", () => {
     // A pause still saves after the usual short delay.
     await vi.advanceTimersByTimeAsync(SAVE_DELAY_MS + 10);
     expect(f.writes.at(-1)).toEqual(["/n/Welcome.md", "y".repeat(30)]);
-  });
-
-  it("says calmly what was restored after a crash, once, as an information toast", async () => {
-    const restored: RestoredNote[][] = [[{ path: "/n/Welcome.md", title: "Welcome" }], []];
-    const f = fakeBridge({ journal: { write: async () => {}, restored: async () => restored.shift() ?? [] } });
-    const app = createApp(f.bridge, messages);
-    await app.start();
-    expect(app.store.state.ui.toasts.map((t) => [t.message, t.tone])).toEqual([["Restored what you were writing in “Welcome” before Focus Notes closed.", "info"]]);
-
-    const many = fakeBridge({ journal: { write: async () => {}, restored: async () => [{ path: "/n/a.md", title: "A" }, { path: "/n/b.md", title: "B" }] } });
-    const app2 = createApp(many.bridge, messages);
-    await app2.start();
-    expect(app2.store.state.ui.toasts[0]?.message).toBe("Restored what you were writing in 2 notes before Focus Notes closed.");
-  });
-
-  it("says where the text went when the note had changed since, so it was kept beside it", async () => {
-    const f = fakeBridge({ journal: { write: async () => {}, restored: async () => [{ path: "/n/Welcome.md", title: "Welcome", copy: { path: "/n/Welcome (recovered).md", title: "Welcome (recovered)" } }] } });
-    const app = createApp(f.bridge, messages);
-    await app.start();
-    expect(app.store.state.ui.toasts[0]?.message).toBe("“Welcome” changed while Focus Notes was closed, so what you were writing is kept beside it, in “Welcome (recovered)”.");
-  });
-
-  it("starts with no toast when there was nothing to restore, or the shell has no journal", async () => {
-    const app = createApp(fakeBridge({ journal: { write: async () => {}, restored: async () => [] } }).bridge, messages);
-    await app.start();
-    expect(app.store.state.ui.toasts).toEqual([]);
   });
 });
 

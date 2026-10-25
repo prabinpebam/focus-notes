@@ -3,7 +3,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   applyLink, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
-  focusAtEnd, ghostRange, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
+  focusAtEnd, ghostRange, replaceDocument, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
 import { trackFocusBand } from "./focus-band.ts";
@@ -495,6 +495,14 @@ export function EditorSurface({
         minimapRef.current?.openFromKeyboard();
         return;
       }
+      // Recovered text for this note (QLT-06): it replaces the text as one undo step back to the disk's.
+      if (id === "note.recover") {
+        if (args.key === documentKey && typeof args.markdown === "string") {
+          last.current = args.markdown;
+          replaceDocument(editor, session, args.markdown);
+        }
+        return;
+      }
       syncSelection(editor);
       if (id === "find.prefill") {
         // The selection is find in selection's scope (FND-03), whatever its size.
@@ -633,7 +641,7 @@ export function EditorSurface({
       window.removeEventListener(REFOCUS_EVENT, refocus);
       window.removeEventListener(EDITOR_ACTION_EVENT, runAction);
     };
-  }, [editor, session]);
+  }, [editor, session, documentKey]);
 
   // The caret starts at the note's end, once every tracker above is listening (the reading zone
   // places it). At once rather than through Tiptap's autofocus, which focuses a frame later.
