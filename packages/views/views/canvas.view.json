@@ -4121,7 +4121,7 @@
                 {
                   "type": "Inline",
                   "props": {
-                    "gap": "xs"
+                    "gap": "m"
                   },
                   "children": [
                     {
