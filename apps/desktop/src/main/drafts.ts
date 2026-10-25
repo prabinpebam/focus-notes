@@ -16,6 +16,7 @@ import { mkdir, open, readdir, readFile, rename, rm, stat } from "node:fs/promis
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { performance } from "node:perf_hooks";
 import { parseJournal, replay, textHash } from "@focus-notes/core/journal";
+import { DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
 import type { FoundDraft, RecoveredDraft, RecoveryFound } from "@focus-notes/core";
 
@@ -255,7 +256,7 @@ export class DraftStore {
     this.#now = o.now ?? Date.now;
     this.#fold = o.foldCase ?? process.platform === "win32";
     this.workspace = resolve(o.workspace);
-    this.dir = join(resolve(o.dataDir), "recovery", workspaceKey(this.workspace, this.#fold));
+    this.dir = join(resolve(o.dataDir), DATA_FOLDERS.drafts, workspaceKey(this.workspace, this.#fold));
     this.#loaded = Promise.resolve();
     this.#matched = Promise.resolve();
   }

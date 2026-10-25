@@ -8,7 +8,7 @@
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { CHROMIUM_FOLDERS, DATA_FILES, DESKTOP_DATA, LOCK_FILES, RECENT_STATE_KEYS, WEB_DATA, WEB_DATABASE, WEB_META, WEB_STORES, filesRemovedBy, withoutRecent } from "../src/inventory.ts";
+import { CHROMIUM_FOLDERS, DATA_FILES, DATA_FOLDERS, DESKTOP_DATA, LOCK_FILES, RECENT_STATE_KEYS, WEB_DATA, WEB_DATABASE, WEB_META, WEB_STORES, filesRemovedBy, withoutRecent } from "../src/inventory.ts";
 
 const root = join(import.meta.dirname, "..", "..", "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
@@ -26,15 +26,17 @@ describe("PRV-02: the desktop's data folder", () => {
   it("names every file and folder the app keeps there, each with what removes it", () => {
     expect(Object.values(DATA_FILES).sort()).toEqual(["account.json", "agent-limits.json", "agent-limits.lock", "agents.json", "avatar.json", "first-run.json", "keybindings.json", "recovery-journal.jsonl", "setup.json", "state.json", "tray.json", "window.json", "workspace.json"]);
     const paths = DESKTOP_DATA.map((i) => i.path.split("#")[0]);
-    for (const f of [...Object.values(DATA_FILES), ...Object.values(CHROMIUM_FOLDERS).map((c) => `${c}/`)]) expect(paths).toContain(f);
+    expect(Object.values(DATA_FOLDERS)).toEqual(["recovery"]);
+    for (const f of [...Object.values(DATA_FILES), ...[...Object.values(DATA_FOLDERS), ...Object.values(CHROMIUM_FOLDERS)].map((c) => `${c}/`)]) expect(paths).toContain(f);
     for (const i of DESKTOP_DATA) expect(i.removedBy.length).toBeGreaterThan(0);
     expect(RECENT_STATE_KEYS).toEqual(["lastNotePath"]);
   });
   it("signing out and removing the workspace delete the recent items, setup progress, agent permissions, and the first run's choices; only removing forgets the folder", () => {
-    expect(filesRemovedBy("signOut").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "recovery-journal.jsonl", "setup.json"]);
-    expect(filesRemovedBy("removeWorkspace").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "recovery-journal.jsonl", "setup.json", "workspace.json"]);
-    // QLT-03: unsaved text in the journal is the person's writing, so it goes with the workspace, and on a clean quit.
-    expect(filesRemovedBy("quit")).toEqual(["recovery-journal.jsonl"]);
+    // QLT-06: unsaved text in the drafts is the person's writing, so it goes with the workspace (the folder once it's empty), and an old journal left over with it.
+    expect(filesRemovedBy("signOut").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "recovery", "recovery-journal.jsonl", "setup.json"]);
+    expect(filesRemovedBy("removeWorkspace").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "recovery", "recovery-journal.jsonl", "setup.json", "workspace.json"]);
+    // Quitting deletes nothing: drafts are kept by the draft store itself, which deletes each once its note is saved.
+    expect(filesRemovedBy("quit")).toEqual([]);
     expect(filesRemovedBy("runSetupAgain")).toEqual(["setup.json"]);
     expect(filesRemovedBy("signIn")).toEqual(["account.json"]);
     for (const e of ["signOut", "removeWorkspace"] as const) expect(DESKTOP_DATA.find((i) => i.id === "recentItems")!.removedBy).toContain(e);
@@ -44,7 +46,7 @@ describe("PRV-02: the desktop's data folder", () => {
     const rows = docRows();
     const inDataFolder = rows.filter((r) => /app's data folder/.test(r[1] ?? ""));
     const documented = new Set(inDataFolder.flatMap((r) => ticks(r[1]!).filter((t) => /\.jsonl?$|\.lock$|\/$/.test(t) || (LOCK_FILES as readonly string[]).includes(t))));
-    const code = new Set([...Object.values(DATA_FILES), ...Object.values(CHROMIUM_FOLDERS).map((c) => `${c}/`), ...LOCK_FILES]);
+    const code = new Set([...Object.values(DATA_FILES), ...[...Object.values(DATA_FOLDERS), ...Object.values(CHROMIUM_FOLDERS)].map((c) => `${c}/`), ...LOCK_FILES]);
     expect([...documented].sort()).toEqual([...code].sort());
     // No row is listed twice.
     const names = rows.map((r) => r[0]!.replace(/^\| /, ""));
