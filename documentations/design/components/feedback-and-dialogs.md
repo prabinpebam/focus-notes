@@ -52,7 +52,13 @@ Pressing it backs up now (the retry, on a problem). After *Save to cloud* the la
 
 **By repository (FIL-14, D-191):** each Files section's heading (Private, Public) carries its repository's own `SaveState` icon with these states, and a card like this one: the section, its state, the repository, the last backup, what waits there in counts ("2 folders, 1 note waiting for backup", empty folders included), and *Back up to GitHub* for that repository alone, which runs through the task tracker and announces "Public notes backed up" ([Files → Repository backup](../views/files.html#repository-backup)).
 
-**Restored after a crash (QLT-03, WP-2.6, D-105):** when the app starts after a crash, the text the recovery journal kept is already back in its note, and one information toast says so, with nothing to decide: "Restored what you were writing in “⟨title⟩” before Focus Notes closed." (or "in ⟨n⟩ notes"). If the note changed while the app was closed, nothing is written over it: the text is kept beside it, and the toast says "“⟨title⟩” changed while Focus Notes was closed, so what you were writing is kept beside it, in “⟨name⟩ (recovered)”."
+**Restored after a crash (QLT-03, QLT-06, WP-8.9, D-190, D-220):** when the app starts after a crash, nothing is written to the workspace. The text a draft kept comes back in the editor as unsaved edits, one undo from the text on disk, and the normal save writes it. One information toast says what came back, its parts joined in one message (`toast.recovery.*`):
+
+- **Matched:** "Restored what you were writing in “⟨title⟩”." (or "in ⟨n⟩ notes").
+- **Changed while closed:** "“⟨title⟩” changed while Focus Notes was closed. Compare to keep what you need." (or "⟨n⟩ notes changed…"). Opening the note opens the resolver with *Recovered* and *On disk*; nothing is written until a choice.
+- **Couldn't be placed:** "Kept ⟨n⟩ drafts that couldn't go back in their notes." They wait in Files → Recovered for 30 days. The toast speaks of the app, never as *we*.
+
+The toast has a **Review** action only when there's something to do: a note to compare (it opens the first one, or the resolver if it's open), or drafts kept in Files → Recovered. Otherwise there's nothing to decide.
 
 <h2 id="waits" data-reader-personas="design engineering">Waits</h2>
 
