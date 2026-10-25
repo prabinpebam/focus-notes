@@ -144,7 +144,7 @@ export function frontMatterId(text: string): string | undefined {
 const isStr = (v: unknown): v is string => typeof v === "string";
 const isMarkdown = (p: string) => /\.(md|markdown)$/i.test(p);
 /** A path relative to the workspace, as the store keeps it: never absolute, never up and out. */
-const goodRel = (p: string) => p !== "" && !p.startsWith("/") && !/^[A-Za-z]:/.test(p) && !p.split("/").some((s) => s === ".." || s === "." || s === "");
+const goodRel = (p: string) => p !== "" && !p.includes("\\") && !p.startsWith("/") && !/^[A-Za-z]:/.test(p) && !p.split("/").some((s) => s === ".." || s === "." || s === "");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Renames, retrying while Windows antivirus or a sync client briefly holds a file it just saw. */
@@ -410,6 +410,28 @@ export class DraftStore {
       const disk = await this.#readNote(d.rel);
       if (disk !== undefined && disk === (await this.#textOf(d).catch(() => undefined))) return this.#delete(d);
       Object.assign(d, await this.#facts(d.rel));
+      await this.#write(d);
+    })));
+  }
+
+  /**
+   * The app saved a note: its file was replaced (a temporary file renamed over it), so it has a new
+   * file ID. A draft on it learns that ID before the save is answered, so a crash after the title
+   * renames the file, before the store hears of the rename or the save's end, still finds the note
+   * by its file ID (DEF-36). Its base stays the text it was typed over: the draft may be behind the save.
+   */
+  async written(path: string): Promise<void> {
+    await this.#loaded;
+    const a = this.#rel(path);
+    if (a === undefined) return;
+    const hit = [...this.#drafts.values()].filter((d) => d.state !== "recovered" && this.#same(d.rel, a));
+    if (!hit.length) return;
+    const st = await stat(path, { bigint: true }).catch(() => undefined);
+    if (!st) return;
+    const ino = String(st.ino);
+    await Promise.all(hit.map((d) => this.#enqueue(d.id, async () => {
+      if (this.#drafts.get(d.id) !== d || d.ino === ino) return;
+      d.ino = ino;
       await this.#write(d);
     })));
   }

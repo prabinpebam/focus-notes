@@ -98,6 +98,8 @@ export interface NoteSaveDeps {
   before(path: string): Promise<string>;
   /** A save landed: remembered, and counted toward the next backup. */
   written(path: string, before: string, content: string): void;
+  /** Waited for before the save is answered: crash recovery learns the note's new file (DEF-36). */
+  landed?(path: string): Promise<void>;
 }
 
 /** The main process's `note:write`: the window's text, written only over what it expects there (DEF-26). */
@@ -111,6 +113,8 @@ export function noteSave(d: NoteSaveDeps) {
     const outside = await d.write(path, content, expected);
     if (outside) return outside;
     d.written(path, before, content);
+    // The window renames the file to follow its title only after this answer, so the draft's file ID is right first.
+    await d.landed?.(path).catch(() => {});
     return undefined;
   };
 }

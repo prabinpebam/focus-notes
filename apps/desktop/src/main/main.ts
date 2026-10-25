@@ -1302,6 +1302,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       lastWritten.set(path, content);
       withGit((g) => g.written(path, changedChars(before, content)));
     },
+    landed: async (path) => drafts?.written(path),
   }));
   handle("note:choose", async () => {
     const w = win();

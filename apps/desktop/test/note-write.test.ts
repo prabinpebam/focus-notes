@@ -116,6 +116,20 @@ describe("note:write", () => {
     expect(written).toHaveBeenCalledWith(p, "", "# A\n\nTyped.\n");
     await expect(save(p, "x", 5)).rejects.toThrow("Expected text must be text");
   });
+
+  it("DEF-36: a save resolves only once crash recovery knows the note's new file, so no rename can come first", async () => {
+    const p = join(dir(), "a.md");
+    const order: string[] = [];
+    let release!: () => void;
+    const landed = vi.fn((path: string) => new Promise<void>((r) => { order.push(`landed ${path === p}`); release = r; }));
+    const save = noteSave({ path: (x) => String(x), write: async () => undefined, before: async () => "", written: () => order.push("written"), landed });
+    const done = save(p, "# A\n", undefined).then(() => order.push("resolved"));
+    await vi.waitFor(() => expect(landed).toHaveBeenCalled());
+    expect(order).toEqual(["written", "landed true"]);
+    release();
+    await done;
+    expect(order).toEqual(["written", "landed true", "resolved"]);
+  });
 });
 
 describe("the preload", () => {

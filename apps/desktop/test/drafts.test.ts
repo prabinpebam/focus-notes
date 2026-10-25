@@ -177,6 +177,36 @@ describe("QLT-06: drafts while writing", () => {
     expect(snapshot(ws)).toEqual(before);
   });
 
+  it("DEF-36: a save replaces the note's file (a new file ID) and the draft learns it, so a crash just after the title renames the file still finds the note", async () => {
+    const u = note("untitled.md");
+    put(u, ""); // New note's empty file
+    const s = open();
+    await s.keep(W, ID(1), 1, u, "# s");
+    // The save: a temporary file renamed over the note, so the note's file ID changes.
+    writeFileSync(`${u}.tmp`, "# s\n");
+    renameSync(`${u}.tmp`, u);
+    await s.written(u);
+    expect(header(s, ID(1))).toMatchObject({ ino: String(statSync(u, { bigint: true }).ino), base: textHash("") });
+    await s.keep(W, ID(1), 2, u, "# st");
+    // The title renames the file (FIL-07); the app is killed before the store hears of the rename or the save's end.
+    renameSync(u, note("s.md"));
+    const before = snapshot(ws);
+    const f = await (await relaunch(s)).found(W);
+    expect(f.recovered).toBe(0);
+    // Its base is still the text it was first typed over: the draft might be behind the save, so it's compared.
+    expect(f.changed.map((d) => [relative(ws, d.path).split(sep).join("/"), d.text, d.disk])).toEqual([["notes/s.md", "# st", "# s\n"]]);
+    expect(snapshot(ws)).toEqual(before);
+  });
+
+  it("DEF-36: a save of a note with no draft, or one gone already, changes nothing", async () => {
+    const a = note("a.md");
+    put(a, "# A");
+    const s = open();
+    await s.written(a);
+    await s.written(note("gone.md"));
+    expect(draftFiles(s)).toEqual([]);
+  });
+
   it("DEF-34: a folder's move takes a new draft's late text along; a new note made under an old name keeps its own", async () => {
     const s = open();
     put(note("archive", "a.md"), "# A");
@@ -222,6 +252,19 @@ describe("QLT-06: drafts while writing", () => {
     const again = await relaunch(s);
     expect((await again.found(W)).matched.map((d) => d.text)).toEqual(["B typed"]);
     expect(draftFiles(again).sort()).toEqual([`${ID(1)}.draft`, `${ID(2)}.draft`]);
+  });
+
+  it("a header whose path has a backslash is damage, never a place", async () => {
+    put(note("a.md"), "# A");
+    const s = open();
+    await s.keep(W, ID(1), 1, note("a.md"), "A typed");
+    await s.settled();
+    const file = join(s.dir, `${ID(1)}.draft`);
+    const [h, ...rest] = readFileSync(file, "utf8").split("\n");
+    writeFileSync(file, [JSON.stringify({ ...JSON.parse(h!), path: "notes\\a.md" }), ...rest].join("\n"));
+    const f = await (await relaunch(s)).found(W);
+    expect([f.matched, f.changed, f.recovered]).toEqual([[], [], 0]);
+    expect(draftFiles(s)).toEqual([`${ID(1)}.draft`]);
   });
 });
 
