@@ -1883,7 +1883,7 @@
   "diagnostics.git.helper.other": "Another credential helper, or none",
   "diagnostics.workspace.title": "{count, plural, =0 {No repositories} one {# repository} other {# repositories}}",
   "diagnostics.workspace.detail": "{ahead} ahead · {behind} behind · {conflicts, plural, one {# conflict} other {# conflicts}}",
-  "diagnostics.journal.title": "Recovery journal",
+  "diagnostics.journal.title": "Unsaved drafts",
   "diagnostics.journal.detail": "{count, plural, =0 {Empty} one {# unsaved note} other {# unsaved notes}}",
   "diagnostics.compositing.title": "Compositing",
   "diagnostics.compositing.gpu": "GPU",

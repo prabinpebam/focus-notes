@@ -242,7 +242,7 @@ export function buildReport(f: DiagnosticFacts, o: RedactOptions = {}, use: Repo
       : "- Saving with Git: no (the workspace isn't a Git repository)",
     ...w.repositories.map((r) => `- ${r.role} repository: remote ${r.remote}, ${r.branch ? (r.upstream ? "branch with upstream" : "branch without upstream") : "no branch"}, ahead ${r.ahead}, behind ${r.behind}, ${r.changed} changed, ${r.unmerged} unmerged`),
     "",
-    "### Recovery journal",
+    "### Unsaved drafts",
     f.journal.notes ? `- Unsaved text for ${f.journal.notes} note(s), ${f.journal.bytes} bytes` : "- Empty: everything is saved",
     "",
     "### Settings",

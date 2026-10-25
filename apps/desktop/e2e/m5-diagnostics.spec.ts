@@ -57,7 +57,7 @@ test("QLT-04: Settings → About previews the diagnostic report; Copy and Save (
     await expect(settings).toBeVisible();
     await settings.getByRole("tab", { name: "About" }).click();
     await expect(settings.getByRole("heading", { name: "Diagnostic report" })).toBeVisible();
-    for (const part of ["Recovery journal", "Compositing", "Recent problems", "2 repositories", "Git Credential Manager|Another credential helper, or none"]) {
+    for (const part of ["Unsaved drafts", "Compositing", "Recent problems", "2 repositories", "Git Credential Manager|Another credential helper, or none"]) {
       await expect(settings.getByText(new RegExp(`^(${part})$`))).toBeVisible();
     }
     await expect(settings.getByText(/^Focus Notes \d/)).toBeVisible();
@@ -75,7 +75,7 @@ test("QLT-04: Settings → About previews the diagnostic report; Copy and Save (
     expect(copied).toContain("- notes repository: remote other");
     expect(copied).toContain("- private repository: remote other");
     expect(copied).toMatch(/- Compositing: (GPU|software)/);
-    expect(copied).toContain("### Recovery journal");
+    expect(copied).toContain("### Unsaved drafts");
     expect(copied).toContain("### Recent problems");
     expectPrivate(copied, dirs, [notesRemote, privateRemote]);
 
@@ -146,7 +146,7 @@ test("D-127: Settings → About scores VVS ≥ 70 on the measured criteria, ligh
     await page.keyboard.press(`${mod}+,`);
     const settings = page.getByRole("dialog", { name: "Settings" });
     await settings.getByRole("tab", { name: "About" }).click();
-    await expect(settings.getByText("Recovery journal")).toBeVisible();
+    await expect(settings.getByText("Unsaved drafts")).toBeVisible();
     const scores: string[] = [];
     for (const mode of ["light", "dark"] as const) {
       await page.emulateMedia({ colorScheme: mode });
