@@ -312,8 +312,13 @@ test(`QLT-06: a title typed so every key renames the file survives a crash at an
       expect(expected.filter((n) => !settled.includes(n)).every((n) => n === lastAdded), `${at}: only the last note was renamed`).toBe(true);
       expected = settled;
 
+      // The new note's file is written before it opens, and the note left may be empty too: typing
+      // waits for the new note's own editor, never the one being replaced.
+      await editorOf(l.page).evaluate((el) => el.setAttribute("data-storm-left", ""));
       await l.page.keyboard.press(`${mod}+N`);
+      await expect(l.page.locator("[data-storm-left]")).toHaveCount(0, PROMPTLY);
       await expect(editorOf(l.page)).toHaveText("");
+      await expect(editorOf(l.page)).toBeFocused();
       await expect.poll(() => notes(ws).length, PROMPTLY).toBe(expected.length + 1);
       const title = `# ${WORDS[Math.floor(rnd() * WORDS.length)]} storm ${round} ${WORDS[Math.floor(rnd() * WORDS.length)]}`;
       const killAfter = 1 + Math.floor(rnd() * title.length);
