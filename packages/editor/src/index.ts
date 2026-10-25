@@ -5,6 +5,7 @@
  */
 import { Extension, Node, mergeAttributes, type AnyExtension, type CommandProps, type Editor } from "@tiptap/core";
 import { Selection, TextSelection } from "@tiptap/pm/state";
+import { closeHistory } from "@tiptap/pm/history";
 import StarterKit from "@tiptap/starter-kit";
 import Strike from "@tiptap/extension-strike";
 import HardBreak from "@tiptap/extension-hard-break";
@@ -396,6 +397,8 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
 /** Holds the parsed source of the open note so saving can reuse untouched blocks. */
 export class MarkdownSession {
   #parsed: Parsed;
+  /** The source before `adopt`, with what the editor's text read as then: undo goes back to exactly that. */
+  #before: { parsed: Parsed; markdown: string } | undefined;
   constructor(markdown: string) {
     this.#parsed = parseMarkdown(markdown);
   }
@@ -403,6 +406,29 @@ export class MarkdownSession {
     return this.#parsed.doc;
   }
   serialize(doc: PMNode): string {
+    if (this.#before) {
+      const back = serializeMarkdown(doc, this.#before.parsed);
+      if (back === this.#before.markdown) return back;
+    }
     return serializeMarkdown(doc, this.#parsed);
   }
+  /**
+   * Takes `markdown` as the note's new source (recovered text, QLT-06) while the editor shows `current`;
+   * returns the document to show. Its blocks keep their own formatting, and the old text still reads
+   * back exactly if the person undoes.
+   */
+  adopt(markdown: string, current: PMNode): PMNode {
+    this.#before = { parsed: this.#parsed, markdown: this.serialize(current) };
+    this.#parsed = parseMarkdown(markdown);
+    return this.#parsed.doc;
+  }
+}
+
+/** Replaces the whole document with `markdown` as one undo step (QLT-06: recovered text, one undo from the disk). */
+export function replaceDocument(editor: Editor, session: MarkdownSession, markdown: string): void {
+  const doc = session.adopt(markdown, editor.getJSON() as PMNode);
+  const { state } = editor;
+  const content = state.schema.nodeFromJSON(doc).content;
+  editor.view.dispatch(closeHistory(state.tr).replaceWith(0, state.doc.content.size, content));
+  editor.view.dispatch(closeHistory(editor.state.tr));
 }
