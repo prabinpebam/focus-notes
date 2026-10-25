@@ -29,6 +29,7 @@
     "vm.conflict",
     "vm.held",
     "vm.deleted",
+    "vm.recovered",
     "vm.window",
     "vm.textMenu",
     "vm.spotlight",
@@ -4214,6 +4215,27 @@
                               "run": "files.hideDeleted"
                             }
                           }
+                        },
+                        {
+                          "type": "Heading",
+                          "when": {
+                            "get": "vm.recovered.open"
+                          },
+                          "props": {
+                            "level": "2",
+                            "value": {
+                              "t": "files.heading"
+                            },
+                            "back": true,
+                            "label": {
+                              "t": "files.backToFiles"
+                            }
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.hideRecovered"
+                            }
+                          }
                         }
                       ]
                     },
@@ -4490,6 +4512,26 @@
               "on": {
                 "press": {
                   "run": "files.toggleDeleted"
+                }
+              }
+            },
+            {
+              "type": "Button",
+              "when": {
+                "get": "vm.recovered.available"
+              },
+              "props": {
+                "label": {
+                  "get": "vm.recovered.footer"
+                },
+                "variant": "subtle",
+                "icon": {
+                  "get": "vm.recovered.footerIcon"
+                }
+              },
+              "on": {
+                "press": {
+                  "run": "files.toggleRecovered"
                 }
               }
             }
@@ -5119,6 +5161,290 @@
                       "t": "deleted.empty"
                     },
                     "tone": "muted"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "Stack",
+            "id": "recoveredList",
+            "when": {
+              "get": "vm.recovered.listing"
+            },
+            "props": {
+              "gap": "m"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "xs"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "level": "3",
+                      "value": {
+                        "t": "recovered.title"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.recovered.status"
+                      },
+                      "role": "secondary",
+                      "announce": true
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "t": "recovered.explain"
+                      },
+                      "role": "caption",
+                      "tone": "muted"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Stack",
+                "when": {
+                  "get": "vm.recovered.loading"
+                },
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "type": "Skeleton",
+                    "props": {
+                      "width": "full"
+                    }
+                  },
+                  {
+                    "type": "Skeleton",
+                    "props": {
+                      "width": "long"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "s"
+                },
+                "children": [
+                  {
+                    "each": {
+                      "get": "vm.recovered.drafts"
+                    },
+                    "as": "draft",
+                    "key": "draft.id",
+                    "render": {
+                      "type": "ItemCard",
+                      "props": {
+                        "title": {
+                          "get": "draft.title"
+                        },
+                        "detail": {
+                          "get": "draft.detail"
+                        },
+                        "badge": {
+                          "get": "draft.until"
+                        },
+                        "icon": "document",
+                        "personal": "title",
+                        "autoFocus": {
+                          "get": "draft.focus"
+                        }
+                      },
+                      "on": {
+                        "press": {
+                          "run": "files.openRecovered",
+                          "args": {
+                            "id": {
+                              "get": "draft.id"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "empty": {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "t": "recovered.none"
+                        },
+                        "tone": "muted"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Stack",
+            "id": "recoveredDraft",
+            "when": {
+              "get": "vm.recovered.viewing"
+            },
+            "props": {
+              "gap": "m"
+            },
+            "children": [
+              {
+                "type": "Stack",
+                "props": {
+                  "gap": "xs"
+                },
+                "children": [
+                  {
+                    "type": "Heading",
+                    "props": {
+                      "level": "3",
+                      "value": {
+                        "t": "recovered.title"
+                      },
+                      "back": true,
+                      "label": {
+                        "t": "recovered.back"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "files.closeRecovered"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.recovered.draft.detail"
+                      },
+                      "role": "caption",
+                      "tone": "muted"
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.recovered.draft.until"
+                      },
+                      "role": "caption",
+                      "tone": "muted"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Inline",
+                "props": {
+                  "gap": "xs",
+                  "wrap": true
+                },
+                "children": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "recovered.save"
+                      },
+                      "size": "s",
+                      "icon": "save",
+                      "autoFocus": true
+                    },
+                    "on": {
+                      "press": {
+                        "run": "files.saveRecovered",
+                        "args": {
+                          "id": {
+                            "get": "vm.recovered.draft.id"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "recovered.copy"
+                      },
+                      "variant": "subtle",
+                      "size": "s",
+                      "icon": "copy"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "files.copyRecovered",
+                        "args": {
+                          "id": {
+                            "get": "vm.recovered.draft.id"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "t": "recovered.discard"
+                      },
+                      "variant": "subtle",
+                      "size": "s",
+                      "icon": "delete"
+                    },
+                    "on": {
+                      "press": {
+                        "run": "files.discardRecovered",
+                        "args": {
+                          "id": {
+                            "get": "vm.recovered.draft.id"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Skeleton",
+                "when": {
+                  "get": "vm.recovered.draft.loading"
+                },
+                "props": {
+                  "width": "full"
+                }
+              },
+              {
+                "type": "VersionPane",
+                "when": {
+                  "get": "vm.recovered.draft.ready"
+                },
+                "props": {
+                  "label": {
+                    "get": "vm.recovered.draft.title"
+                  },
+                  "blocks": {
+                    "get": "vm.recovered.draft.blocks"
+                  },
+                  "emptyText": {
+                    "t": "recovered.empty"
+                  },
+                  "changedLabel": {
+                    "t": "conflict.changed"
                   }
                 }
               }

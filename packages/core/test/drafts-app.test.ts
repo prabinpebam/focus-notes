@@ -288,18 +288,13 @@ describe("QLT-06: what the last session left, at launch", () => {
     expect(conflict(app)).toMatchObject({ open: true, mineLabel: "Recovered" });
   });
 
-  it("drafts that couldn't be placed: Review shows them once Files → Recovered is there, and isn't offered before", async () => {
-    const without = await started(setup({ found: { matched: [], changed: [], recovered: 1 } }));
-    expect(toasts(without.app).map((t) => [t.message, t.action])).toEqual([["Kept 1 draft that couldn't go back in its note.", undefined]]);
-
+  it("drafts that couldn't be placed: the toast offers Review, which opens Files → Recovered (D-221)", async () => {
     const f = setup({ found: { matched: [], changed: [], recovered: 3 } });
-    const app = createApp(f.bridge, messages);
-    const ran: string[] = [];
-    app.commands.register({ id: "files.showRecovered", title: "command.recovery.review", run: () => void ran.push("shown") });
-    await app.start();
-    for (let i = 0; i < 5; i++) await settle();
+    const { app } = await started(f);
     expect(toasts(app).at(-1)).toMatchObject({ message: "Kept 3 drafts that couldn't go back in their notes.", action: { command: "recovery.review", label: "Review" } });
-    await app.commands.run("recovery.review");
-    expect(ran).toEqual(["shown"]);
+    expect(app.commands.has("files.showRecovered")).toBe(true);
+    // The browser has no drafts: no Recovered, and nothing to review.
+    const web = createApp(setup({ recovery: false }).bridge, messages);
+    expect(web.commands.has("files.showRecovered")).toBe(false);
   });
 });

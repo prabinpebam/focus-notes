@@ -391,7 +391,8 @@ const INTERNAL_IDS = new Set([
   "conflict.choose", "conflict.later", "files.confirm",
   // The Files panel's own selection and rows; Spotlight acts on a result through its quick actions instead.
   "files.select", "files.activate", "files.undo", "files.drop", "files.clearSelection", "files.hideDeleted", "files.toggleDeleted",
-  "files.restore", "files.restoreTo", "files.editBlur", "files.setFits", "files.setWidth", "outline.setWidth",
+  "files.restore", "files.restoreTo", "files.hideRecovered", "files.toggleRecovered", "files.openRecovered", "files.closeRecovered", "files.saveRecovered", "files.copyRecovered", "files.discardRecovered",
+  "files.editBlur", "files.setFits", "files.setWidth", "outline.setWidth",
   // The theme manager's own steps: previews from its gallery, a theme chosen there, its colors, closing and reverting it.
   "theme.manager.close", "theme.manager.revert", "theme.preview", "theme.previewEnd", "theme.choose", "theme.color.set", "theme.color.fix",
   // Send feedback's own buttons (D-203): Spotlight lists only Send feedback… and Report a problem….

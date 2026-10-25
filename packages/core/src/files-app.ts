@@ -3,14 +3,14 @@
  * names, and every operation shown at once, written after, and put back if refused (PRF-09).
  */
 import type { AppState } from "./app.ts";
-import type { PlatformBridge, AppStateFile, WorkspaceOp, OpErrorCode } from "./bridge.ts";
+import type { PlatformBridge, AppStateFile, WorkspaceOp, OpErrorCode, RecoveredDraft } from "./bridge.ts";
 import { opErrorCode } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { sourceOf } from "./notes.ts";
-import { groupByDay, type DeletedNote } from "./history.ts";
+import { blocksOf, groupByDay, type DeletedNote } from "./history.ts";
 import { planLinkWrites, rewriteLinks, sameRootOf, type LinkWrite, type PathMove } from "./links.ts";
 import {
   actedOn, ancestorsOf, copyTitle, destinations, importedNote, isRootRow, keepShowing, NO_SELECTION, rebase, rootRowId, rowMenu, select, selectAll, targetFolder, titleOfNode,
@@ -49,16 +49,27 @@ export interface FilesState {
    * What asks first: deleting (Files → Deleting), and changing who can see notes (DD-FILES-08):
    * Make public or private keeps each item's folder path (`dest` unset); a drop or Move to… has one.
    */
-  confirm?: { kind: "delete"; paths: string[]; notes: number; name: string } | { kind: "visibility"; to: "public" | "private"; paths: string[]; dest?: string; name: string };
-  /** Move to… (IA-CMP-MOVE). `restore` is a deleted note being restored to a chosen folder (FIL-10). */
-  move: { open: boolean; query: string; activeId: string; paths: string[]; focus: number; restore?: string };
+  confirm?: { kind: "delete"; paths: string[]; notes: number; name: string } | { kind: "visibility"; to: "public" | "private"; paths: string[]; dest?: string; name: string }
+    | { kind: "discard"; id: string; name: string; chars: number };
+  /**
+   * Move to… (IA-CMP-MOVE). `restore` is a deleted note being restored to a chosen folder (FIL-10);
+   * `save` is a Recovered draft being saved as a new note in one (QLT-06, D-221).
+   */
+  move: { open: boolean; query: string; activeId: string; paths: string[]; focus: number; restore?: string; save?: string };
   /** Recently deleted, in place of the tree (FIL-10). `notes` is undefined until it's first listed. */
   recent: { open: boolean; loading: boolean; notes?: readonly DeletedNote[]; focus: number };
+  /**
+   * Recovered, in place of the tree like Recently deleted (QLT-06, D-190, D-221): text a crash left
+   * that couldn't go back in its note. `drafts` is undefined until first listed; `viewing` is the
+   * draft open read-only (its text once read); `back` is the row that takes focus on the way back.
+   */
+  recovered: { open: boolean; loading: boolean; drafts?: readonly RecoveredDraft[]; viewing?: { id: string; text?: string }; back?: string };
 }
 export const FILES_CLOSED: FilesState = {
   open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", focusRequest: 0, pending: [], unsaved: [],
   move: { open: false, query: "", activeId: "", paths: [], focus: 0 },
   recent: { open: false, loading: false, focus: 0 },
+  recovered: { open: false, loading: false },
 };
 
 interface Ctx {
@@ -162,7 +173,7 @@ export function registerFiles(ctx: Ctx) {
     // The current note may be in a folder that only now shows; focus falls back to the first row.
     setFiles((f) => ({ selection: keepShowing(f.selection, rowsOf(store.state)) }));
   };
-  const close = () => setFiles((f) => ({ open: false, edit: undefined, confirm: undefined, move: { ...f.move, open: false }, recent: { ...f.recent, open: false } }));
+  const close = () => setFiles((f) => ({ open: false, edit: undefined, confirm: undefined, move: { ...f.move, open: false }, recent: { ...f.recent, open: false }, recovered: { ...f.recovered, open: false, viewing: undefined } }));
   /** Docked: pinned, with room beside the note (D-187). Undocked for room, it behaves as an unpinned panel. */
   const docked = () => files().pinned && files().fits;
   /** What would close an undocked panel (opening a note, a new note): docked, it stays (D-161, D-187). */
@@ -365,7 +376,7 @@ export function registerFiles(ctx: Ctx) {
     touched: string[]; moves?: { from: string; to: string }[]; deletes?: string[]; select?: string[]; done: string; failed: (why: string) => string; open?: string[];
     /** Puts it back: offered as the toast's Undo once the change is saved (DD-FB-01). */
     undo?: () => Promise<void>;
-  }) {
+  }): Promise<boolean> {
     const before = tree();
     const beforeFiles = files();
     const moves = o.moves ?? [];
@@ -410,6 +421,7 @@ export function registerFiles(ctx: Ctx) {
       announce(withLinks(o.done, writes));
       // Recently deleted is listed again the next time it opens.
       if (o.deletes?.length) setFiles((f) => ({ recent: { ...f.recent, notes: undefined } }));
+      return true;
     } catch (e) {
       // The screen as it is now: anything else that changed meanwhile is read again.
       const untouched = tree() === next;
@@ -421,6 +433,7 @@ export function registerFiles(ctx: Ctx) {
         focusRequest: f.focusRequest + 1,
       }));
       toast(o.failed(reason(opErrorCode(e))), { tone: "error" });
+      return false;
     }
   }
   const refused = (key: string, args: Record<string, unknown>, why: keyof typeof REASONS) => toast(catalog.format(key, { ...args, reason: reason(why) }), { tone: "error" });
@@ -468,13 +481,18 @@ export function registerFiles(ctx: Ctx) {
       doMove(topLevel(actedOn(files().selection, String(source))), row.path);
     },
   });
+  /** A path as the file system compares it (case-blind on Windows): a draft's path comes from the shell, not the tree. */
+  const pathKey = (p: string) => { const s = p.replace(/\\/g, "/").replace(/\/+$/, ""); return bridge.platform === "windows" ? s.toLowerCase() : s; };
+  const sectionOf = (t: WorkspaceTree, path: string) => rootOf(t, path) ?? t.roots.find((r) => pathKey(path).startsWith(pathKey(r.path) + "/"));
   const moveList = (s: AppState) => {
     const m = s.ui.files.move;
     const q = m.query.trim().toLocaleLowerCase();
-    const from = rootOf(s.workspace.tree, m.paths[0] ?? "");
-    return destinations(s.workspace.tree, m.paths)
-      // Restore to… stays in the note's own section: a restore never changes who can see it (FIL-10).
-      .filter((d) => !m.restore || d.root.id === from?.id)
+    const from = sectionOf(s.workspace.tree, m.paths[0] ?? "");
+    const all = destinations(s.workspace.tree, m.paths);
+    // Restore to… stays in the note's own section: a restore never changes who can see it (FIL-10).
+    // So does saving a Recovered draft, when its section can take it (D-221).
+    const own = all.filter((d) => d.root.id === from?.id);
+    return (m.restore || (m.save && own.length) ? own : all)
       .map((d) => {
         const label = d.depth === 0 ? rootLabel(d.root.id) : d.name;
         const where = d.depth === 0 ? "" : rootLabel(d.root.id) + " · " + dirOf(d.path).slice(d.root.path.length).replace(/^[\\/:]+/, "").replace(/\\/g, "/");
@@ -521,14 +539,15 @@ export function registerFiles(ctx: Ctx) {
       const dest = typeof id === "string" && id !== "" ? id : files().move.activeId;
       const item = moveList(store.state).find((d) => d.id === dest);
       if (!item || item.disabled) return;
-      const { paths, restore } = files().move;
-      setFiles((f) => ({ move: { ...f.move, open: false, restore: undefined }, focusRequest: f.focusRequest + 1 }));
+      const { paths, restore, save } = files().move;
+      setFiles((f) => ({ move: { ...f.move, open: false, restore: undefined, save: undefined }, focusRequest: f.focusRequest + 1 }));
       if (restore) return void doRestore([restore], dest);
+      if (save) return void saveRecovered(save, dest);
       doMove(paths, dest);
     },
   });
   commands.register({ id: "move.chooseActive", title: "command.move.choose", shortcut: { default: "Enter", handledBy: "moveField" }, layer: "power", group: "files", run: (_a, c) => c.run("move.choose", { id: "" }) });
-  commands.register<{ open: boolean }>({ id: "move.setOpen", title: "command.files.moveTo", run: ({ open }) => { if (!open) setFiles((f) => ({ move: { ...f.move, open: false, restore: undefined }, focusRequest: f.focusRequest + 1 })); } });
+  commands.register<{ open: boolean }>({ id: "move.setOpen", title: "command.files.moveTo", run: ({ open }) => { if (!open) setFiles((f) => ({ move: { ...f.move, open: false, restore: undefined, save: undefined }, focusRequest: f.focusRequest + 1 })); } });
 
   // ---- deleting (FIL-01, FIL-02) ----
   function doDelete(paths: string[]): void {
@@ -584,6 +603,7 @@ export function registerFiles(ctx: Ctx) {
       setFiles((f) => ({ confirm: undefined, focusRequest: f.focusRequest + 1 }));
       if (c?.kind === "delete") doDelete(c.paths);
       else if (c?.kind === "visibility") doVisibility(c.paths, c.to, c.dest);
+      else if (c?.kind === "discard") void discardRecovered(c.id);
     },
   });
   commands.register<{ open: boolean }>({ id: "files.setConfirmOpen", title: "command.files.confirm", run: ({ open }) => { if (!open) setFiles((f) => ({ confirm: undefined, focusRequest: f.focusRequest + 1 })); } });
@@ -874,7 +894,7 @@ export function registerFiles(ctx: Ctx) {
     enabled: canRestore,
     run: async () => {
       if (!files().open) reveal();
-      setFiles((f) => ({ edit: undefined, recent: { ...f.recent, open: true, focus: f.recent.focus + 1 } }));
+      setFiles((f) => ({ edit: undefined, recent: { ...f.recent, open: true, focus: f.recent.focus + 1 }, recovered: { ...f.recovered, open: false, viewing: undefined } }));
       await listDeleted();
     },
   });
@@ -912,6 +932,134 @@ export function registerFiles(ctx: Ctx) {
       if (!n) return;
       setMove({ open: true, query: "", paths: [n.path], restore: n.id, focus: files().move.focus + 1, activeId: "" });
       setMove({ activeId: firstEnabled(store.state) });
+    },
+  });
+
+  // ---- Recovered (QLT-06, D-190, D-221) ----
+  // Drafts a crash left that couldn't go back in their notes. Shown only when there are some, in place
+  // of the tree like Recently deleted; each opens read-only, to save as a new note, copy, or discard.
+  const rec = bridge.recovery;
+  const recovered = () => files().recovered;
+  const setRecovered = (patch: Partial<FilesState["recovered"]>) => setFiles((f) => ({ recovered: { ...f.recovered, ...patch } }));
+  const draftOf = (id: unknown) => recovered().drafts?.find((d) => d.id === id);
+  const draftName = (d: RecoveredDraft) => catalog.format("files.quoted", { name: d.title || catalog.format("recovered.untitled") });
+  /** Lists the drafts again, keeping what shows until the new list is there. With none left, the tree comes back. */
+  async function listRecovered(): Promise<void> {
+    if (!rec) return;
+    if (!recovered().drafts) setRecovered({ loading: true });
+    const drafts = await rec.recovered().catch(() => recovered().drafts ?? []);
+    setFiles((f) => {
+      const r = f.recovered;
+      const empty = !drafts.length;
+      const viewing = r.viewing && drafts.some((d) => d.id === r.viewing!.id) ? r.viewing : undefined;
+      return { recovered: { ...r, loading: false, drafts, viewing, ...(empty ? { open: false } : {}) }, ...(empty && r.open ? { focusRequest: f.focusRequest + 1 } : {}) };
+    });
+  }
+  /** The draft a row action is for: the one given, else the one open. */
+  const actingOn = (a: { id?: unknown } | undefined) => draftOf(typeof a?.id === "string" && a.id ? a.id : recovered().viewing?.id);
+  async function saveRecovered(id: string, folder: string): Promise<void> {
+    const d = draftOf(id);
+    if (!d || !rec || !canWrite(store.state)) return;
+    const what = draftName(d);
+    const failed = (why: string) => catalog.format("recovered.saveFailed", { what, reason: why });
+    const text = await rec.text(id).catch(() => undefined);
+    if (text === undefined) return void toast(failed(reason("notFound")), { tone: "error" });
+    const title = d.title || catalog.format("recovered.untitled");
+    // A free name beside the folder's notes: a new note never takes another's place (the shell refuses one that's there).
+    const plan = planCreateNote(tree(), folder, title);
+    if (plan.kind === "refused") return void toast(failed(reason(plan.reason)), { tone: "error" });
+    const root = rootOf(tree(), folder);
+    const saved = await perform(applyChanges(plan.tree, [{ path: plan.path, kind: "note", exists: true, title }]), [{ op: "create", path: plan.path, text: withoutNoteId(text) }], {
+      touched: [plan.path], select: [plan.path], open: root && root.path !== folder ? [folder] : [], failed,
+      done: catalog.format("recovered.saved", { what, where: catalog.format("files.quoted", { name: folderLabel(folder) }) }),
+    });
+    if (!saved) return;
+    // The draft goes only once its text is in the new note on disk.
+    await rec.remove(id).catch(() => {});
+    setFiles((f) => ({ recovered: { ...f.recovered, viewing: undefined, drafts: f.recovered.drafts?.filter((x) => x.id !== id) } }));
+    await listRecovered();
+    await ctx.load(plan.path);
+  }
+  async function discardRecovered(id: string): Promise<void> {
+    const d = draftOf(id);
+    if (!d || !rec) return;
+    try {
+      await rec.remove(id);
+    } catch {
+      return void toast(catalog.format("recovered.discardFailed", { what: draftName(d) }), { tone: "error" });
+    }
+    setFiles((f) => ({ recovered: { ...f.recovered, viewing: undefined, back: undefined, drafts: f.recovered.drafts?.filter((x) => x.id !== id) } }));
+    const done = catalog.format("recovered.discarded", { what: draftName(d) });
+    toast(done);
+    announce(done);
+    await listRecovered();
+  }
+  // The browser has no drafts (D-190): Recovered's own steps are there for its views, and do nothing.
+  if (rec) {
+    commands.register({
+      id: "files.showRecovered", title: "command.files.showRecovered", icon: "document",
+      // Before the first list it may have some (the launch toast's Review); after, only when it has.
+      enabled: (s) => s.ui.files.recovered.drafts?.length !== 0,
+      run: async () => {
+        if (!files().open) reveal();
+        setFiles((f) => ({ edit: undefined, recent: { ...f.recent, open: false }, recovered: { ...f.recovered, open: true, viewing: undefined } }));
+        await listRecovered();
+      },
+    });
+  }
+  commands.register({ id: "files.hideRecovered", title: "command.files.hideDeleted", run: () => setFiles((f) => ({ recovered: { ...f.recovered, open: false, viewing: undefined }, focusRequest: f.focusRequest + 1 })) });
+  // The footer's button shows the list and goes back to the tree, as Recently deleted's does.
+  commands.register({ id: "files.toggleRecovered", title: "command.files.showRecovered", run: (_a, c) => c.run(recovered().open ? "files.hideRecovered" : "files.showRecovered") });
+  commands.register<{ id: string }>({
+    id: "files.openRecovered", title: "command.files.openRecovered",
+    run: async ({ id }) => {
+      const d = draftOf(id);
+      if (!d || !rec) return;
+      setRecovered({ viewing: { id: d.id }, back: d.id });
+      const text = await rec.text(d.id).catch(() => undefined);
+      if (recovered().viewing?.id !== d.id) return;
+      if (text !== undefined) return setRecovered({ viewing: { id: d.id, text } });
+      // Gone meanwhile (deleted after 30 days, or by another window): the list says what's left.
+      toast(catalog.format("recovered.gone", { what: draftName(d) }), { tone: "error" });
+      setRecovered({ viewing: undefined });
+      await listRecovered();
+    },
+  });
+  commands.register({ id: "files.closeRecovered", title: "command.files.closeRecovered", run: () => setRecovered({ viewing: undefined }) });
+  commands.register<{ id?: string }>({
+    id: "files.saveRecovered", title: "command.files.saveRecovered", icon: "save", enabled: canWrite,
+    run: (a) => {
+      const d = actingOn(a);
+      if (!d) return;
+      setMove({ open: true, query: "", paths: [d.path], save: d.id, restore: undefined, focus: files().move.focus + 1, activeId: "" });
+      // Where it was, when that folder is still there; else the top of its section (D-221).
+      const list = moveList(store.state);
+      const at = (p: string | undefined) => (p === undefined ? undefined : list.find((i) => pathKey(i.id) === pathKey(p))?.id);
+      setMove({ activeId: at(dirOf(d.path)) ?? at(sectionOf(tree(), d.path)?.path) ?? firstEnabled(store.state) });
+    },
+  });
+  commands.register<{ id?: string }>({
+    id: "files.copyRecovered", title: "command.files.copyRecovered", icon: "copy", enabled: () => Boolean(bridge.copyText),
+    run: async (a) => {
+      const d = actingOn(a);
+      if (!d || !rec || !bridge.copyText) return;
+      const what = draftName(d);
+      try {
+        await bridge.copyText(await rec.text(d.id));
+      } catch {
+        return void toast(catalog.format("recovered.copyFailed", { what }), { tone: "error" });
+      }
+      const done = catalog.format("files.copiedText", { what });
+      toast(done);
+      announce(done);
+    },
+  });
+  commands.register<{ id?: string }>({
+    id: "files.discardRecovered", title: "command.files.discardRecovered", icon: "delete",
+    // Asks first: a discarded draft can't come back.
+    run: (a) => {
+      const d = actingOn(a);
+      if (d) setFiles(() => ({ confirm: { kind: "discard", id: d.id, name: draftName(d), chars: d.chars } }));
     },
   });
 
@@ -1172,9 +1320,10 @@ export function registerFiles(ctx: Ctx) {
       if (!m.open) return { open: false, title: "", query: "", activeId: "", focus: m.focus, summary: "", items: [] };
       const items = moveList(s);
       const restoring = m.restore ? s.ui.files.recent.notes?.find((n) => n.id === m.restore) : undefined;
-      const what = restoring ? catalog.format("files.quoted", { name: restoring.title }) : whatOf(m.paths);
+      const saving = m.save ? s.ui.files.recovered.drafts?.find((d) => d.id === m.save) : undefined;
+      const what = restoring ? catalog.format("files.quoted", { name: restoring.title }) : saving ? draftName(saving) : whatOf(m.paths);
       return {
-        open: true, title: catalog.format(restoring ? "move.restoreTitle" : "move.title", { what }), query: m.query, activeId: m.activeId, focus: m.focus, items,
+        open: true, title: catalog.format(restoring ? "move.restoreTitle" : saving ? "recovered.saveTitle" : "move.title", { what }), query: m.query, activeId: m.activeId, focus: m.focus, items,
         summary: items.length ? catalog.format("move.count", { count: items.length }) : catalog.format("move.none"),
       };
     },
@@ -1186,6 +1335,13 @@ export function registerFiles(ctx: Ctx) {
     select: (s) => {
       const c = s.ui.files.confirm;
       if (!c) return { open: false, title: "", message: "", confirmLabel: "", danger: false };
+      if (c.kind === "discard") {
+        // A discarded draft can't come back: said before it goes (D-221).
+        return {
+          open: true, title: catalog.format("recovered.confirm.title"), danger: true,
+          message: catalog.format("recovered.confirm.message", { what: c.name, chars: c.chars }), confirmLabel: catalog.format("recovered.confirm.action"),
+        };
+      }
       if (c.kind === "visibility") {
         // Making something public says who will read it; making it private says what it can't undo (Files and sharing → Changing visibility).
         const key = c.to === "public" ? "files.confirmPublic" : "files.confirmPrivate";
@@ -1218,13 +1374,15 @@ export function registerFiles(ctx: Ctx) {
         empty: { type: "boolean" }, status: { type: "string" },
       },
     },
-    reads: ["ui.files.recent", "ui.files.open", "sync.git", "workspace.access", "workspace.tree"],
+    reads: ["ui.files.recent", "ui.files.recovered", "ui.files.open", "sync.git", "workspace.access", "workspace.tree"],
     select: (s) => {
       const r = s.ui.files.recent;
       const available = s.ui.files.open && canRestore(s);
       const count = r.notes?.length;
       const footer = available ? catalog.format(count === undefined ? "deleted.footer" : "deleted.footerCount", { count: count ?? 0 }) : "";
-      if (!available || !r.open) return { available, open: false, closed: true, loading: false, footer, footerIcon: "history", focus: r.focus, groups: [], empty: false, status: "" };
+      // `closed`: the tree shows, neither Recently deleted nor Recovered in its place.
+      const tree = !s.ui.files.recovered.open;
+      if (!available || !r.open) return { available, open: false, closed: tree, loading: false, footer, footerIcon: "history", focus: r.focus, groups: [], empty: false, status: "" };
       const now = new Date();
       const groups = groupByDay(r.notes ?? []).map((g) => ({
         id: g.day, label: dayLabel(g.at, now),
@@ -1242,7 +1400,62 @@ export function registerFiles(ctx: Ctx) {
     },
   });
 
+  // Recovered in the Files sheet (QLT-06, D-221): its footer, the list in place of the tree, and a draft open read-only.
+  const draftDetail = (d: RecoveredDraft) => catalog.format("recovered.detail", {
+    where: d.where ? catalog.format("files.quoted", { name: d.where }) : catalog.format("recovered.top"), at: d.at, chars: d.chars,
+  });
+  const NO_DRAFT = { id: "", title: "", detail: "", until: "", blocks: [] as { id: string; text: string; changed: boolean }[], loading: false, ready: false };
+  viewModels.register({
+    id: "vm.recovered",
+    schema: {
+      type: "object",
+      properties: {
+        available: { type: "boolean" }, open: { type: "boolean" }, listing: { type: "boolean" }, viewing: { type: "boolean" }, loading: { type: "boolean" },
+        footer: { type: "string" }, footerIcon: { type: "string", enum: ["document", "folder"] }, status: { type: "string" },
+        drafts: { type: "array", items: { type: "object", properties: { id: { type: "string" }, title: { type: "string" }, detail: { type: "string" }, until: { type: "string" }, focus: { type: "boolean" } } } },
+        draft: {
+          type: "object",
+          properties: {
+            id: { type: "string" }, title: { type: "string" }, detail: { type: "string" }, until: { type: "string" }, loading: { type: "boolean" }, ready: { type: "boolean" },
+            blocks: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
+          },
+        },
+      },
+    },
+    reads: ["ui.files.recovered", "ui.files.open"],
+    select: (s) => {
+      const r = s.ui.files.recovered;
+      const count = r.drafts?.length ?? 0;
+      // Only on the desktop, and only while there are some (D-190): never an empty Recovered.
+      const available = Boolean(rec) && s.ui.files.open && (count > 0 || r.open);
+      const footer = !available ? "" : r.open ? catalog.format("deleted.browseFiles") : catalog.format("recovered.footer", { count });
+      const base = { available, open: available && r.open, footer, footerIcon: r.open ? "folder" : "document", loading: false, status: "", drafts: [] as unknown[], draft: NO_DRAFT };
+      if (!base.open) return { ...base, listing: false, viewing: false };
+      const viewed = r.viewing ? r.drafts?.find((d) => d.id === r.viewing!.id) : undefined;
+      if (viewed) {
+        const text = r.viewing!.text;
+        return {
+          ...base, listing: false, viewing: true,
+          draft: {
+            id: viewed.id, title: viewed.title || catalog.format("recovered.untitled"), detail: draftDetail(viewed), until: catalog.format("recovered.until", { until: viewed.until }),
+            loading: text === undefined, ready: text !== undefined, blocks: text === undefined ? [] : blocksOf(withoutNoteId(text)).map((b, i) => ({ id: String(i), text: b, changed: false })),
+          },
+        };
+      }
+      const back = r.drafts?.some((d) => d.id === r.back) ? r.back : r.drafts?.[0]?.id;
+      return {
+        ...base, listing: true, viewing: false, loading: r.loading,
+        status: r.loading ? catalog.format("deleted.loading") : catalog.format("recovered.count", { count }),
+        drafts: (r.drafts ?? []).map((d) => ({
+          id: d.id, title: d.title || catalog.format("recovered.untitled"), detail: draftDetail(d), until: catalog.format("recovered.until", { until: d.until }), focus: d.id === back,
+        })),
+      };
+    },
+  });
+
   return {
+    /** Lists Recovered again: after launch has sorted the last session's drafts, and after one goes (D-221). */
+    listRecovered,
     /** At launch: the order chosen on this device (D-175). */
     restoreSort(sort: unknown): void {
       if (sort === "changed") setFiles(() => ({ sort: "changed" }));

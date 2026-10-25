@@ -1551,7 +1551,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // the app over. The first run's steps are still there, for Sign in again and Choose your notes.
       const missing = await recover.begin();
       // What the last session left is asked for now, and never delays the first note (PRF-02).
-      const recovering = missing ? undefined : drafts.start().catch(() => {});
+      // Files → Recovered shows once the launch has sorted what the last session left (D-221).
+      const recovering = missing ? undefined : drafts.start().catch(() => {}).then(() => files.listRecovered());
       if (missing) await firstRun.begin({ ...appState, firstRun: "done" });
       // The desktop's first run shows over the blank canvas; the first note opens when it's done (FRE-01).
       else if (!(await firstRun.begin(appState))) {

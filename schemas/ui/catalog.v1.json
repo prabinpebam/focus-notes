@@ -4771,6 +4771,7 @@
         "vm.conflict",
         "vm.held",
         "vm.deleted",
+        "vm.recovered",
         "vm.window",
         "vm.textMenu",
         "vm.spotlight",
