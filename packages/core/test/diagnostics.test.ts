@@ -183,8 +183,8 @@ describe("QLT-04: timings, settings, the preview, and the log", () => {
       const text = readFileSync(join(src, f), "utf8");
       for (const m of text.matchAll(/tracker\.run\(\s*([^,]+),/g)) {
         let arg = m[1]!.trim();
-        // A table of fixed targets (the first run's waits, PRF-13): every value a string literal, each checked below.
-        const table = /^(FIRST_RUN_WAITS)\[\w+\]$/.exec(arg)?.[1];
+        // A table of fixed targets (the first run's and the recovery view's waits, PRF-13): every value a string literal, each checked below.
+        const table = /^(FIRST_RUN_WAITS|RECOVER_WAITS)\[\w+\]$/.exec(arg)?.[1];
         if (table) {
           const body = new RegExp(`export const ${table} = \\{([^}]*)\\}`).exec(text)?.[1] ?? "";
           const values = [...body.matchAll(/\w+:\s*([^,]+)/g)].map((x) => x[1]!.trim());

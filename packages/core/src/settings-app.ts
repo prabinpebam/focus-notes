@@ -99,6 +99,8 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     set({ checking: true });
     const a = await fr.account().catch(() => undefined);
     set({ checking: false, ...(a ? { account: a } : {}) });
+    // The pill says what Settings found, in any folder, not only a Git one (DEF-33, FRE-13).
+    if (a && (a.account || !a.problem)) setLogin(a.account && !a.signedOut ? a.account.login : "");
   };
 
   // ---- the dialog ----

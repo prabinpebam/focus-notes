@@ -54,6 +54,9 @@ import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree, homesFo
 import type { ConflictChoice, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
+import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
+import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
+import { GitHubError } from "@focus-notes/github";
 import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
 import { CrashRecovery, coverBounds } from "./window/crash-cover.ts";
 import { COPY_PATHS_MAX, copyFilesToClipboard, defaultRun } from "./copy-files.ts";
@@ -116,14 +119,20 @@ const defaultHome = () => resolve(process.env.FOCUS_NOTES_DOCS ?? join(app.getPa
 /** The workspace the first run opened (D-98), kept by the main process only: the renderer can't name a folder. */
 const workspaceFile = () => dataFile(DATA_FILES.workspace);
 let chosenHome: string | undefined;
-function readChosenHome(): string | undefined {
+/** The workspace record (FRE-11, D-212): the folder, and what it is. Undefined until a folder is chosen. */
+let record: WorkspaceRecord | undefined;
+function readRecord(): WorkspaceRecord | undefined {
   try {
-    const w = JSON.parse(readFileSync(workspaceFile(), "utf8")) as { version?: number; folder?: unknown };
-    return w.version === 1 && typeof w.folder === "string" && isAbsolute(w.folder) ? resolve(w.folder) : undefined;
+    return parseRecord(readFileSync(workspaceFile(), "utf8"));
   } catch {
     return undefined;
   }
 }
+/**
+ * Whether the notes folder is there (FRE-11). While it's missing, the recovery view shows, and
+ * nothing writes into it, re-makes it, or starts Git or the watcher in it.
+ */
+let folderState: FolderCheck = "ok";
 const notesHome = () => chosenHome ?? defaultHome();
 const stateFile = () => dataFile(DATA_FILES.state);
 
@@ -244,8 +253,16 @@ const withGit = (fn: (g: GitSync) => void) => {
 };
 let startGit: () => void = () => {};
 let gitOpening: Promise<GitSync | undefined>;
+/** Changes waiting in the last sync report: when they reach 0 again, a backup reached GitHub. */
+let lastWaiting = 0;
+/** Records the backup's time (D-212), at most once a minute, for the recovery view's "Backed up yesterday at 2:41 PM". */
+function backedUp(): void {
+  const r = record;
+  const at = r?.kind === "github" ? backupToRecord(r.lastBackup, Date.now()) : undefined;
+  if (r && at && r.folder === notesHome()) void saveRecord({ ...r, lastBackup: at }).catch(() => {});
+}
 /** Opened once the caret is ready, so Git never competes with the first frame (PRF-02, PRF-07). Again after the workspace changes. */
-const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], gitOpening = new Promise<GitSync | undefined>((resolve) => {
+const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], lastWaiting = 0, gitOpening = new Promise<GitSync | undefined>((resolve) => {
   startGit = () => {
     startGit = () => {};
     // The backup policy's thresholds (D-133); FOCUS_NOTES_IDLE_COMMIT_MS stays the 60 s pause.
@@ -264,6 +281,8 @@ const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], g
       checkRemote: (url) => templateGuard.checkRemote(url),
       // After the window closes, the final sync on quit still runs; there's just no one to tell.
       onReport: (r) => {
+        if (r.git && r.state === "idle" && r.waiting === 0 && lastWaiting > 0) backedUp();
+        lastWaiting = r.waiting;
         sendAll("sync:status", r);
       },
       // Counts and problems only: note names are private.
@@ -434,6 +453,7 @@ async function removeLocalWorkspace(): Promise<RemovalCheck> {
     return r;
   }
   chosenHome = undefined;
+  record = undefined;
   await forgetLocal("removeWorkspace");
   process.stdout.write("[focus-notes] workspace-removed\n");
   restartInPlace();
@@ -451,9 +471,9 @@ function restartInPlace(): void {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("workspace:switched");
   }, 0);
 }
-async function chooseFolder(title: string): Promise<string | undefined> {
+async function chooseFolder(title: string, at?: string): Promise<string | undefined> {
   const w = mainWindow;
-  const opts = { title, defaultPath: dirname(defaultHome()), properties: ["openDirectory" as const, "createDirectory" as const, "promptToCreate" as const] };
+  const opts = { title, defaultPath: at ?? dirname(defaultHome()), properties: ["openDirectory" as const, "createDirectory" as const, "promptToCreate" as const] };
   const r = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
   return r.canceled || !r.filePaths[0] ? undefined : resolve(r.filePaths[0]);
 }
@@ -476,27 +496,181 @@ async function repositories(): Promise<RepoChoice[]> {
   const list = repos.map((r, i) => ({ owner: r.owner, name: r.name, private: r.private, instance: checked[i]!, ...(r.pushedAt ? { pushedAt: r.pushedAt } : {}) }));
   return [...list.filter((r) => r.instance), ...list.filter((r) => !r.instance)];
 }
+/** What a folder is, from its own Git files (no Git process, no network), and the service that syncs it. */
+async function folderFacts(folder: string): Promise<FolderFacts> {
+  const read = (f: string) => readFile(join(folder, f), "utf8").catch(() => undefined);
+  const [config, modules] = await Promise.all([read(join(".git", "config")), read(".gitmodules")]);
+  const repoOf = (url: string | undefined) => {
+    const r = url ? remoteRepo(url, localRemotes) : undefined;
+    return r ? `${r.owner}/${r.name}` : undefined;
+  };
+  const repository = config ? repoOf(configUrl(config, 'remote "origin"')) : undefined;
+  const privateRepository = repository && modules ? repoOf(configUrl(modules, 'submodule "private"')) : undefined;
+  const service = syncService(folder, syncRoots());
+  const login = repository ? account.account?.login : undefined;
+  return { ...(repository ? { repository } : {}), ...(privateRepository ? { privateRepository } : {}), ...(service ? { service } : {}), ...(login ? { account: login } : {}) };
+}
+const syncRoots = () => envSyncRoots(process.env, app.getPath("home"));
+/** Written atomically, like every file the app keeps (D-212). */
+const saveRecord = (r: WorkspaceRecord) => {
+  record = r;
+  return atomicWrite(workspaceFile(), serializeRecord(r));
+};
 /**
  * Opens a workspace in this window (D-98): the main process keeps the folder, the watcher and Git
- * move to it, and the renderer starts again in it, in place (D-148).
+ * move to it, and the renderer starts again in it, in place (D-148). The record says what it is
+ * (D-212). From the recovery view, writing opens again here (FRE-11).
  */
-async function switchWorkspace(folder: string): Promise<void> {
+async function switchWorkspace(folder: string, keep?: Pick<WorkspaceRecord, "kind" | "repository">): Promise<void> {
   if (workspaceIdentity) {
     await applyLocalIdentity(setupRunner, folder, workspaceIdentity);
     workspaceIdentity = undefined;
     await saveFirstRun();
   }
-  await atomicWrite(workspaceFile(), JSON.stringify({ version: 1, folder }, null, 2));
+  const missing = folderState !== "ok" ? notesHome() : undefined;
+  await saveRecord(recordFor(folder, await folderFacts(folder), record, keep));
   chosenHome = folder;
+  folderState = "ok";
+  stopFolderWatch();
   pendingWorkspace = undefined;
   watcher?.close();
   const old = gitSync;
   armGit();
   await old?.dispose();
+  // What a crash left unsaved goes back now that its folder is here again (QLT-03); for another folder, it waits in the journal.
+  if (missing && samePath(missing, folder) && journal) restored = [...restored, ...(await restoreUnsaved(journal))];
   watcher = watchWorkspace(() => windows);
   setTimeout(() => startGit(), 3000);
   restartInPlace();
 }
+
+// ---- the notes folder is missing (FRE-11, WP-5.14, D-212) ----
+// The recovery view's shell half: what's missing, what the account can reach, and the ways back.
+// The renderer never names a path: the shell keeps the folder found, the one chosen, and the place.
+let folderWatch: ReturnType<typeof setInterval> | undefined;
+/** A way back is running: a download into the folder isn't the folder coming back by itself. */
+let recovering = false;
+/** The notes Download brings back: the record's, or for a record from before D-212, the account check's. */
+let recoverRepo: string | undefined;
+/** The same notes where Windows moved Documents (R-24), and different notes Find the folder… was given. */
+let foundFolder: string | undefined;
+let chosenFolder: string | undefined;
+/** Where Start with an empty folder makes it. */
+let emptyParent: string | undefined;
+const stopFolderWatch = () => {
+  clearInterval(folderWatch);
+  folderWatch = undefined;
+};
+const sendMain = (channel: string, ...args: unknown[]) => {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, ...args);
+};
+/** While the view shows, the folder is checked every second (2 s for a drive): when it's back, writing opens by itself. */
+function watchForFolder(): void {
+  stopFolderWatch();
+  folderWatch = setInterval(() => void (async () => {
+    if (folderState === "ok" || recovering) return;
+    const now = await checkFolder(notesHome());
+    if (now !== "ok" || recovering) return;
+    stopFolderWatch();
+    sendMain("recover:found");
+    setTimeout(() => void switchWorkspace(notesHome()).catch(() => watchForFolder()), 1000);
+  })(), folderState === "drive" ? 2000 : 1000);
+}
+/** Where Download puts the notes: the folder, or the next free name beside it (D-155); in Documents when its drive isn't connected. */
+async function downloadFolder(): Promise<string> {
+  const folder = folderState === "drive" ? join(documentsDir(), basename(notesHome())) : notesHome();
+  for (let i = 1; i < 100; i++) {
+    const f = i === 1 ? folder : `${folder} ${i}`;
+    if (await folderFree(f)) return f;
+  }
+  return `${folder} ${Date.now()}`;
+}
+const recordedLocal = () => record?.kind === "local" || record?.kind === "synced";
+/** The same notes, where Windows moved Documents (OneDrive's Known Folder Move, R-24). */
+async function findMoved(): Promise<string | undefined> {
+  if (!record) return undefined;
+  const at = movedDocuments(record.folder, documentsDir());
+  if (!at || (await checkFolder(at)) !== "ok") return undefined;
+  const want = record.repository ?? recoverRepo;
+  if (recordedLocal() || (!record.kind && !want)) return at;
+  const facts = await folderFacts(at);
+  return facts.repository && (!want || facts.repository.toLowerCase() === want.toLowerCase()) ? at : undefined;
+}
+async function recoverStatus(): Promise<RecoverStatus | undefined> {
+  if (folderState === "ok" || !record) return undefined;
+  const home = app.getPath("home");
+  const folder = notesHome();
+  foundFolder = await findMoved().catch(() => undefined);
+  const service = syncService(folder, syncRoots());
+  return {
+    missing: folderState === "drive" ? "drive" : "folder", folder, short: shortPath(folder, home),
+    ...(folderState === "drive" ? { drive: driveOf(folder) } : {}),
+    ...(record.kind ? { kind: record.kind } : {}),
+    ...(record.repository ? { repository: record.repository } : {}),
+    ...(record.account ? { account: record.account } : {}),
+    ...(record.lastBackup ? { lastBackup: record.lastBackup } : {}),
+    ...(service ? { service } : {}),
+    downloadTo: shortPath(await downloadFolder(), home),
+    ...(foundFolder ? { found: { folder: foundFolder, short: shortPath(foundFolder, home) } } : {}),
+  };
+}
+/** What the account can reach: the notes the record names, or for a record from before D-212, the ones named like the folder. */
+async function recoverAccount(): Promise<RecoverAccount> {
+  const st = await account.status();
+  if (st.problem === "offline") return { state: "offline" };
+  if (!st.account || st.signedOut) return { state: "signedOut" };
+  const login = st.account.login;
+  const s = await account.api();
+  if (!s) return { state: "signedOut" };
+  if (recordedLocal()) return { state: "ok", login };
+  try {
+    let repo = record?.repository;
+    if (!repo && record && !record.kind) {
+      const name = basename(record.folder);
+      if (isRepoName(name) && (await s.api.hasFile(login, name, ".focus-notes/workspace.json"))) repo = `${login}/${name}`;
+    }
+    if (!repo) return { state: "ok", login };
+    const [owner, name] = repo.split("/") as [string, string];
+    const r = await s.api.findRepo(owner, name);
+    if (!r) return { state: "noAccess", login };
+    recoverRepo = repo;
+    return { state: "ok", login, repository: repo, ...(r.pushedAt ? { pushedAt: r.pushedAt } : {}) };
+  } catch (e) {
+    return e instanceof GitHubError && e.unauthorized ? { state: "signedOut" } : { state: "offline" };
+  }
+}
+const RECOVER_ACCOUNT_MS = 10_000;
+const recoverProblem = (p: WorkspaceResult["problem"]): RecoverResult => ({
+  ok: false,
+  problem: p === "offline" ? "offline" : p === "auth" ? "signedOut" : p === "notGit" || p === "notWorkspace" || p === "template" ? "notNotes" : "failed",
+});
+/** One way back at a time; the folder watch waits for it. */
+async function recoverWith<T>(fn: () => Promise<T>): Promise<T> {
+  recovering = true;
+  try {
+    return await fn();
+  } finally {
+    recovering = false;
+  }
+}
+/** Find the folder…: a clone of the recorded notes, with any name, anywhere; in offline mode, a folder of notes as it is. */
+async function takeFolder(folder: string): Promise<RecoverResult> {
+  const want = record?.repository ?? recoverRepo;
+  if (recordedLocal() || (!record?.kind && !want)) {
+    await switchWorkspace(folder);
+    return { ok: true };
+  }
+  const c = await checkWorkspace(setupRunner, folder, isTemplateRemote);
+  if (!c.ok) return recoverProblem(c.problem);
+  const facts = await folderFacts(folder);
+  if (want && facts.repository?.toLowerCase() !== want.toLowerCase()) {
+    chosenFolder = folder;
+    return { ok: false, problem: "different", ...(facts.repository ? { repository: facts.repository } : {}) };
+  }
+  await switchWorkspace(folder);
+  return { ok: true };
+}
+const placeOf = (place: string): RecoverPlace => ({ place, short: shortPath(place, app.getPath("home")), name: nextFree("Focus Notes", (n) => existsSync(join(place, n))) });
 
 // ---- the workspace (WP-2.3) ----
 // The notes folder is the workspace. With .focus-notes/workspace.json it has the repository's
@@ -530,8 +704,11 @@ const inside = (base: string, p: string) => {
 const readFormat = () => readFile(formatFile(), "utf8").catch((e: NodeJS.ErrnoException) => (e.code === "ENOENT" ? undefined : "unreadable"));
 /** This app never writes into a workspace whose format it mustn't write (DST-05). */
 async function assertWritable(p: string): Promise<void> {
+  if (!inside(notesHome(), p)) return;
+  // A missing notes folder is never made again by a write (FRE-11).
+  if (folderState !== "ok") throw new Error("The notes folder is missing");
   // The format file itself is written only by workspace:writeFormat, which checks what it writes.
-  if (!inside(notesHome(), p) || p === formatFile()) return;
+  if (p === formatFile()) return;
   if (readWorkspaceFormat(await readFormat()).access !== "write") throw new Error("This workspace is read-only for this version of Focus Notes");
 }
 /**
@@ -1101,6 +1278,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return res.canceled ? undefined : res.filePaths[0];
   });
   handle("note:default", async () => {
+    // The welcome note never makes a missing notes folder again (FRE-11).
+    if (folderState !== "ok" || !existsSync(notesHome())) throw new Error("The notes folder is missing");
     const p = isWorkspace() ? join(notesRoot(), "welcome.md") : join(notesHome(), "Welcome.md");
     // Made here in a workspace without a private repository: held like any new public note (D-158).
     if (!existsSync(p) && isWorkspace() && !hasPrivate()) await (await heldNotes())?.hold(p).catch(() => {});
@@ -1493,6 +1672,63 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!fromApp(e) || typeof page !== "string" || !Object.hasOwn(FIRST_RUN_PAGES, page)) return;
     void shell.openExternal(FIRST_RUN_PAGES[page as FirstRunPage]);
   });
+  // The notes folder is missing (FRE-11, WP-5.14): the recovery view's ways back. Each refuses once the folder is open again.
+  const whileMissing = <T>(fn: () => Promise<T>) => async (): Promise<T | RecoverResult> => (folderState === "ok" ? { ok: false, problem: "failed" } : recoverWith(fn));
+  handle("recover:status", () => recoverStatus());
+  handle("recover:account", () => Promise.race([
+    recoverAccount().catch((): RecoverAccount => ({ state: "offline" })),
+    new Promise<RecoverAccount>((r) => setTimeout(() => r({ state: "offline" }), RECOVER_ACCOUNT_MS)),
+  ]));
+  handle("recover:download", whileMissing(async (): Promise<RecoverResult> => {
+    const repo = record?.repository ?? recoverRepo;
+    if (!repo) return { ok: false, problem: "failed" };
+    const [owner, name] = repo.split("/") as [string, string];
+    const to = await downloadFolder();
+    const r = await cloneWorkspace(setupRunner, remoteUrl(owner, name), to, isTemplateRemote, (p) => sendMain("recover:progress", p satisfies RecoverProgress)).catch(() => ({ ok: false as const, problem: "failed" as const }));
+    if (!r.ok) return recoverProblem(r.problem);
+    await switchWorkspace(to);
+    return { ok: true };
+  }));
+  handle("recover:useFound", whileMissing(async (): Promise<RecoverResult> => {
+    if (!foundFolder || (await checkFolder(foundFolder)) !== "ok") return { ok: false, problem: "failed" };
+    await switchWorkspace(foundFolder);
+    return { ok: true };
+  }));
+  handle("recover:find", whileMissing(async (): Promise<RecoverResult | undefined> => {
+    const parent = dirname(notesHome());
+    const folder = await chooseFolder("Find your notes folder", existsSync(parent) ? parent : documentsDir());
+    return folder ? takeFolder(folder) : undefined;
+  }));
+  handle("recover:useChosen", whileMissing(async (): Promise<RecoverResult> => {
+    if (!chosenFolder || (await checkFolder(chosenFolder)) !== "ok") return { ok: false, problem: "failed" };
+    await switchWorkspace(chosenFolder);
+    return { ok: true };
+  }));
+  handle("recover:emptyPlace", async (): Promise<RecoverPlace> => {
+    const parent = dirname(notesHome());
+    emptyParent ??= existsSync(parent) ? parent : documentsDir();
+    return placeOf(emptyParent);
+  });
+  handle("recover:choosePlace", async (): Promise<RecoverPlace | undefined> => {
+    const at = await chooseFolder("Choose where to make the folder", emptyParent);
+    if (!at) return undefined;
+    emptyParent = at;
+    return placeOf(at);
+  });
+  handle("recover:createEmpty", (name) => whileMissing(async (): Promise<RecoverResult> => {
+    if (typeof name !== "string" || !folderNameOk(name)) return { ok: false, problem: "name" };
+    const folder = join(emptyParent ?? documentsDir(), name);
+    if (existsSync(folder)) return { ok: false, problem: "taken" };
+    try {
+      await mkdir(folder);
+      await writeFile(join(folder, "Welcome.md"), WELCOME, { flag: "wx" });
+    } catch {
+      return { ok: false, problem: "failed" };
+    }
+    // Offline mode, keeping the old notes' name, so Connect to GitHub… offers them first (D-212).
+    await switchWorkspace(folder, { kind: syncService(folder, syncRoots()) ? "synced" : "local", ...(record?.repository ? { repository: record.repository } : {}) });
+    return { ok: true };
+  })());
   handle("sync:conflicts", async () => (await gitOpening)?.conflicts() ?? []);
   handle("sync:resolve", async (choices) => {
     const checked = conflictChoices(choices);
@@ -1776,7 +2012,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   // The theme is read again each time, so a page loaded after a crash paints the theme showing now.
   const load = () => {
     const b = bootTheme();
-    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}) } });
+    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
   };
   void load();
   // The theme's canvas now: the window's cover after a renderer crash is painted in it.
@@ -1804,7 +2040,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
       },
     },
     restore: async () => {
-      if (journal) restored = [...restored, ...(await restoreUnsaved(journal))];
+      if (journal && folderState === "ok") restored = [...restored, ...(await restoreUnsaved(journal))];
     },
     load: () => void load().catch(() => {}),
     onFirstFrame: (f) => {
@@ -2044,14 +2280,20 @@ async function resolveDeepLink(l: DeepLink): Promise<ResolvedDeepLink | undefine
   return { kind: "open", path: join(root.path, ...segments), ...(l.heading ? { heading: l.heading } : {}) };
 }
 app.whenReady().then(async () => {
-  chosenHome = readChosenHome();
+  record = readRecord();
+  chosenHome = record?.folder;
   readFirstRun();
   hardenSession();
   windowFrame = new AppWindowFrame(frameKind, join(app.getPath("userData"), DATA_FILES.window), journey);
   registerIpc(() => BrowserWindow.getFocusedWindow() ?? mainWindow);
-  await stat(notesHome()).catch(() => mkdir(notesHome(), { recursive: true }));
+  // The notes folder is checked before Git, the watcher, the journal's restore or any note (FRE-11).
+  // Only a folder never recorded is made here; a recorded one that's gone opens the recovery view.
+  const folderNow = await checkFolder(notesHome());
+  const decision = startDecision(record, folderNow);
+  if (decision === "create") await mkdir(notesHome(), { recursive: true }).catch(() => {});
+  if (decision === "recover") folderState = folderNow;
   // What a crash left unsaved goes back into its notes before the window reads any (QLT-03).
-  // Only the first instance has a journal: it's the one writing it.
+  // Only the first instance has a journal: it's the one writing it. With the folder missing, it waits.
   if (primary) journal = await RecoveryJournal.open(dataFile(DATA_FILES.journal), {
     baseOf: async (p) => {
       await (writeQueues.get(p) ?? Promise.resolve()).catch(() => {});
@@ -2059,16 +2301,25 @@ app.whenReady().then(async () => {
     },
     log: logLine,
   });
-  if (journal) restored = await restoreUnsaved(journal);
+  if (journal && folderState === "ok") restored = await restoreUnsaved(journal);
   if (restored.length) process.stdout.write(`[focus-notes] journal: restored ${restored.length}\n`);
   mainWindow = createWindow(windowFrame);
   // keybindings.json changes (saved in an editor) apply at once, without a restart (D-170).
   // One small file, polled in this process: the window hears only of a real change (PRF-14).
   watchKeybindings(dataFile(DATA_FILES.keybindings), () => sendAll("keybindings:changed"));
-  watcher = watchWorkspace(() => windows);
+  if (folderState === "ok") watcher = watchWorkspace(() => windows);
+  else {
+    logLine(`notes-folder: ${folderState}`);
+    watchForFolder();
+  }
+  // A record from before D-212 learns what its folder is: a clone is GitHub (no Git process, no network).
+  if (record && !record.kind && folderState === "ok") {
+    const was = record;
+    void folderFacts(was.folder).then((f) => (f.repository && record === was ? saveRecord(recordFor(was.folder, f, was)) : undefined)).catch(() => {});
+  }
   // Never on the path of the first frame: Git answers when it answers (PRF-07).
   // Git opens once the caret is ready, or after 3 s if the note never becomes ready.
-  setTimeout(() => (startGit(), windowFrame?.ready()), 3000);
+  setTimeout(() => (folderState === "ok" && startGit(), windowFrame?.ready()), 3000);
   // Fetching when the window becomes active (Desktop and Git → Save and sync, step 5).
   mainWindow.on("focus", () => gitSync?.focused());
   app.on("second-instance", (_e, argv) => {

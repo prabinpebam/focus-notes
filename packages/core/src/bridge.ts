@@ -3,6 +3,7 @@ import { lastWord } from "./scan.ts";
 import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
 import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
+import type { RecoverBridge } from "./recover.ts";
 import type { ConflictChoiceKind, DeletedNote, NoteVersion } from "./history.ts";
 import type { KeybindingsBridge } from "./keybindings-app.ts";
 import type { HeldNotes } from "./held.ts";
@@ -92,6 +93,11 @@ export interface PlatformBridge {
   setup?: SetupBridge;
   /** The desktop's first run: Git, signing in, the identity, and the workspace (FRE-01). Absent in the browser. */
   firstRun?: FirstRunBridge;
+  /**
+   * The notes folder is missing at start (FRE-11, FRE-12, D-212): what the workspace record says
+   * about it, and the ways back. The desktop's only.
+   */
+  recover?: RecoverBridge;
   /** Synced settings in the private repository (PRV-03, D-46). Absent where there can't be one (the browser). */
   settings?: SettingsBridge;
   /** Share audiences in the private repository's access.json (WP-5.3, D-134). Absent in the browser. */

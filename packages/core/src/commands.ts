@@ -145,6 +145,12 @@ export class CommandRegistry<S> {
     this.#hold = hold;
   }
 
+  /** Another hold, asked after those set before it: the recovery view's (D-212). */
+  addHold(hold: (id: string, state: S) => string | undefined): void {
+    const before = this.#hold;
+    this.#hold = before ? (id, s) => before(id, s) ?? hold(id, s) : hold;
+  }
+
   /**
    * The person's own keys, layered over the defaults (D-170): added chords come first and win over a
    * default chord on the same key; removed chords go. Only on this platform: the cheat sheet's other

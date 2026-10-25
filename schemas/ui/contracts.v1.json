@@ -4116,10 +4116,12 @@
           "values": [
             "neutral",
             "accent",
+            "warning",
             "danger",
             "success"
           ],
-          "default": "neutral"
+          "default": "neutral",
+          "description": "Warning: something needs the person's choice, nothing is lost yet (the notes folder is missing, D-212). Danger: something failed."
         },
         "size": {
           "kind": "enum",
@@ -4176,6 +4178,13 @@
           "props": {
             "icon": "github",
             "tone": "accent"
+          }
+        },
+        {
+          "name": "tone warning",
+          "props": {
+            "icon": "folder",
+            "tone": "warning"
           }
         },
         {

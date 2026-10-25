@@ -1966,10 +1966,12 @@
           "values": [
             "neutral",
             "accent",
+            "warning",
             "danger",
             "success"
           ],
-          "default": "neutral"
+          "default": "neutral",
+          "description": "Warning: something needs the person's choice, nothing is lost yet (the notes folder is missing, D-212). Danger: something failed."
         },
         "size": {
           "kind": "enum",
@@ -2004,6 +2006,7 @@
         "size compact",
         "tone neutral",
         "tone accent",
+        "tone warning",
         "tone danger",
         "tone success",
         "busy",
@@ -4772,7 +4775,8 @@
         "vm.textMenu",
         "vm.spotlight",
         "vm.demo",
-        "vm.toolbarCustomize"
+        "vm.toolbarCustomize",
+        "vm.recover"
       ]
     },
     {

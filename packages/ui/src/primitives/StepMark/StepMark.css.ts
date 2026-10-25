@@ -17,6 +17,7 @@ export const tile = style({ position: "absolute", inset: room, display: "flex", 
 export const tone = styleVariants({
   neutral: { backgroundColor: t.neutral.background, color: t.neutral.color },
   accent: { backgroundColor: t.accent.background, color: t.accent.color },
+  warning: { backgroundColor: t.warning.background, color: t.warning.color },
   danger: { backgroundColor: t.danger.background, color: t.danger.color },
   success: { backgroundColor: t.success.background, color: t.success.color },
 });

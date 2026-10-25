@@ -21,6 +21,7 @@ import { registerRepoBackup, repoBackupView, REPO_IDS, type RepoBackupState } fr
 import { registerSync, NO_SYNC, SyncFailed, saveStateOf, syncProblemAction, type SyncState } from "./sync-app.ts";
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
+import { registerRecover, RECOVER_CLOSED, type RecoverState } from "./recover-app.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
 import { registerNoteHistory, HISTORY_CLOSED, type HistoryState } from "./note-history-app.ts";
 import { registerDeepLinks } from "./deep-link-app.ts";
@@ -129,6 +130,8 @@ export interface AppState {
   firstRun: FirstRunState;
   /** The GitHub account Git is signed in to on the desktop, for the account pill (UI-12). */
   account: AccountState;
+  /** The notes folder is missing at start: the recovery view and the way back under way (FRE-11, FRE-12, D-212). */
+  recover: RecoverState;
   /** The app-built window on Windows and Linux, as the shell reports it (DSK-03, D-14). Native elsewhere. */
   window: WindowState;
   /** The right-click menu in text the app draws on Windows and Linux (D-204, EDT-14). */
@@ -314,6 +317,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     setup: NO_SETUP,
     firstRun: FIRST_RUN_INACTIVE,
     account: NO_ACCOUNT,
+    recover: RECOVER_CLOSED,
     window: initialWindow(bridge),
     textMenu: TEXT_MENU_CLOSED,
     tasks: [],
@@ -412,6 +416,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       return true;
     },
   });
+  const recover = registerRecover({ store, bridge, catalog, commands, viewModels, tracker, clock, now: () => Date.now(), again: (scope) => firstRun.again(scope) });
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels });
@@ -1538,8 +1543,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       await formatRead;
       // The person's own keys, before the first key can be pressed (KEY-07, D-170).
       await keybindings.load();
+      // The notes folder is missing (FRE-11, D-212): the recovery view, and nothing that reads or
+      // writes the folder (no note, Files, backup or setup) until the shell has one again and starts
+      // the app over. The first run's steps are still there, for Sign in again and Choose your notes.
+      const missing = await recover.begin();
+      if (missing) await firstRun.begin({ ...appState, firstRun: "done" });
       // The desktop's first run shows over the blank canvas; the first note opens when it's done (FRE-01).
-      if (!(await firstRun.begin(appState))) {
+      else if (!(await firstRun.begin(appState))) {
         // A panel pinned on this device is there from the first frame, so the text never jumps aside (D-161).
         files.restoreSort(appState.filesSort);
         files.restorePinned(appState.filesPinned, appState.filesWidth);
@@ -1553,15 +1563,17 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         // A link the app was opened with goes on from the note it opened (D-165).
         void deepLinks.take();
       }
-      // What a crash left unsaved was put back before anything was read (QLT-03); say so, calmly.
-      const restored = (await bridge.journal?.restored().catch(() => undefined)) ?? [];
-      const copied = restored.find((r) => r.copy);
-      if (copied) toast(catalog.format("toast.restoredCopy", { note: copied.title, copy: copied.copy!.title }));
-      else if (restored.length) toast(catalog.format("toast.restored", { count: restored.length, note: restored[0]!.title }));
-      workspace.start();
-      sync.start();
-      repoBackup.start();
-      setup.start();
+      if (!missing) {
+        // What a crash left unsaved was put back before anything was read (QLT-03); say so, calmly.
+        const restored = (await bridge.journal?.restored().catch(() => undefined)) ?? [];
+        const copied = restored.find((r) => r.copy);
+        if (copied) toast(catalog.format("toast.restoredCopy", { note: copied.title, copy: copied.copy!.title }));
+        else if (restored.length) toast(catalog.format("toast.restored", { count: restored.length, note: restored[0]!.title }));
+        workspace.start();
+        sync.start();
+        repoBackup.start();
+        setup.start();
+      }
       await browser.start();
       // Once every command is registered and the first note is open: the menu bar never delays the caret (PRF-02).
       menuBar.start();

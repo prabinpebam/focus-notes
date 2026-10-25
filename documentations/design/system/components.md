@@ -54,7 +54,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Slider | primitive | `rest`, `hover`, `dragging`, `focusVisible` | 3 | `hover`, `dragging`, `focusVisible` |
 | ColorField | primitive | `rest`, `focused`, `invalid` | 2 | `focused` |
 | AppMark | primitive | `rest` | 3 | None |
-| StepMark | primitive | `rest` | 8 | None |
+| StepMark | primitive | `rest` | 9 | None |
 | ItemCard | primitive | `rest` | 8 | None |
 | SaveState | primitive | `rest`, `hover`, `pressed`, `focusVisible`, `savedLocal`, `pending`, `syncing`, `synced`, `offline`, `error` | 6 | `hover`, `pressed`, `focusVisible` |
 | StepDots | primitive | `rest` | 3 | None |

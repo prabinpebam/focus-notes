@@ -120,13 +120,16 @@ let running: Running;
   const react = mountApp(root, { app, views, overlays: OVERLAYS, signal: abort.signal });
   const r: Running = { app, root: react, abort, revoke: scoped.revoke, offTheme: followTheme(app) };
   running = r;
+  // A missing notes folder (FRE-11): the first frame is the recovery view, never a canvas that can't open a note.
+  const missing = new URLSearchParams(location.search).get("folder") === "missing";
+  const started = app.start();
   // The window shows once this frame is drawn, never an unpainted page (DSK-09, D-148).
-  void afterFirstThemedFrame().then(() => {
+  void (missing ? started.catch(() => {}) : Promise.resolve()).then(() => afterFirstThemedFrame()).then(() => {
     performance.mark(FIRST_FRAME_MARK);
     base.firstFrame();
   });
-  void app.start().then(() => {
-    if (running === r) attachSearch(r);
+  void started.then(() => {
+    if (running === r && !app.store.state.recover.open) attachSearch(r);
   });
 }
 base.onFlushRequest(() => flushApp(running.app));

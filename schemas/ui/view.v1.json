@@ -4759,6 +4759,7 @@
                   "enum": [
                     "neutral",
                     "accent",
+                    "warning",
                     "danger",
                     "success"
                   ]

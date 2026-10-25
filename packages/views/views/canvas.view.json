@@ -33,7 +33,8 @@
     "vm.textMenu",
     "vm.spotlight",
     "vm.demo",
-    "vm.toolbarCustomize"
+    "vm.toolbarCustomize",
+    "vm.recover"
   ],
   "focus": "editor",
   "root": {
@@ -277,9 +278,7 @@
         ],
         "when": {
           "expr": {
-            "!": {
-              "get": "vm.firstRun.open"
-            }
+            "!": { "or": [{ "get": "vm.firstRun.open" }, { "get": "vm.recover.open" }] }
           }
         }
       },
@@ -790,9 +789,7 @@
                 ]
               },
               {
-                "!": {
-                  "get": "vm.firstRun.open"
-                }
+                "!": { "or": [{ "get": "vm.firstRun.open" }, { "get": "vm.recover.open" }] }
               }
             ]
           }
@@ -3697,9 +3694,10 @@
                     ]
                   },
                   {
-                    "!": {
-                      "get": "vm.firstRun.open"
-                    }
+                    "!": { "get": "vm.firstRun.open" }
+                  },
+                  {
+                    "!": { "get": "vm.recover.open" }
                   }
                 ]
               }
@@ -5315,6 +5313,570 @@
                 }
               }
             }
+          }
+        ]
+      },
+      {
+        "type": "Layer",
+        "id": "recover",
+        "when": {
+          "expr": {
+            "and": [
+              {
+                "get": "vm.recover.open"
+              },
+              {
+                "!": {
+                  "get": "vm.firstRun.open"
+                }
+              }
+            ]
+          }
+        },
+        "props": {
+          "layer": "dialog",
+          "position": "window",
+          "landmark": "main",
+          "label": {
+            "t": "recover.region"
+          }
+        },
+        "children": [
+          {
+            "type": "Surface",
+            "props": {
+              "variant": "canvas",
+              "padding": "xl",
+              "scroll": true,
+              "keyScope": "firstRun",
+              "shortPadding": "l"
+            },
+            "children": [
+              {
+                "type": "Center",
+                "props": {
+                  "maxWidth": "onboarding",
+                  "block": "anchored",
+                  "gutter": "none"
+                },
+                "children": [
+                  {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "xl",
+                      "shortGap": "l"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "l",
+                          "shortGap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "StepMark",
+                            "props": {
+                              "icon": {
+                                "get": "vm.recover.markIcon"
+                              },
+                              "tone": {
+                                "get": "vm.recover.markTone"
+                              },
+                              "busy": {
+                                "get": "vm.recover.markBusy"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Heading",
+                            "props": {
+                              "value": {
+                                "get": "vm.recover.title"
+                              },
+                              "level": "display"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.recover.body"
+                              },
+                              "role": "lead"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "ItemCard",
+                        "props": {
+                          "title": {
+                            "get": "vm.recover.folderTitle"
+                          },
+                          "detail": {
+                            "get": "vm.recover.folderDetail"
+                          },
+                          "icon": "folder",
+                          "mark": {
+                            "get": "vm.recover.folderMark"
+                          },
+                          "label": {
+                            "get": "vm.recover.folderLabel"
+                          },
+                          "personal": "title"
+                        }
+                      },
+                      {
+                        "type": "StatusRow",
+                        "when": {
+                          "get": "vm.recover.hasError"
+                        },
+                        "props": {
+                          "message": {
+                            "get": "vm.recover.errorText"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Stack",
+                        "when": {
+                          "get": "vm.recover.hasDifferent"
+                        },
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.recover.differentText"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s",
+                              "justify": "start",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "recover.different.open"
+                                  },
+                                  "variant": "secondary",
+                                  "autoFocus": true,
+                                  "busy": {
+                                    "get": "vm.recover.openBusy"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "recover.useChosen"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "recover.different.notNow"
+                                  },
+                                  "variant": "subtle"
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "recover.notChosen"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "when": {
+                          "expr": {
+                            "!": {
+                              "get": "vm.recover.emptyOpen"
+                            }
+                          }
+                        },
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "ItemCard",
+                            "when": {
+                              "get": "vm.recover.showFound"
+                            },
+                            "props": {
+                              "title": {
+                                "t": "recover.card.found"
+                              },
+                              "detail": {
+                                "get": "vm.recover.foundLine"
+                              },
+                              "icon": "folder",
+                              "autoFocus": {
+                                "get": "vm.recover.foundFocus"
+                              },
+                              "busy": {
+                                "get": "vm.recover.foundBusy"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "recover.useFound"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "when": {
+                              "get": "vm.recover.showDownload"
+                            },
+                            "props": {
+                              "title": {
+                                "t": "recover.card.download"
+                              },
+                              "detail": {
+                                "get": "vm.recover.downloadLine"
+                              },
+                              "icon": "download",
+                              "autoFocus": {
+                                "get": "vm.recover.downloadFocus"
+                              },
+                              "busy": {
+                                "get": "vm.recover.downloadBusy"
+                              },
+                              "disabled": {
+                                "get": "vm.recover.downloadUnavailable"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "recover.download"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Inline",
+                            "when": {
+                              "expr": {
+                                "or": [
+                                  {
+                                    "get": "vm.recover.showTryAgain"
+                                  },
+                                  {
+                                    "get": "vm.recover.showLink"
+                                  }
+                                ]
+                              }
+                            },
+                            "props": {
+                              "gap": "s",
+                              "justify": "start",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "recover.tryAgain"
+                                  },
+                                  "variant": "subtle"
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "recover.tryAgain"
+                                  }
+                                },
+                                "when": {
+                                  "get": "vm.recover.showTryAgain"
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "get": "vm.recover.linkLabel"
+                                  },
+                                  "variant": "subtle",
+                                  "bleed": true
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "recover.choose"
+                                  }
+                                },
+                                "when": {
+                                  "get": "vm.recover.showLink"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "ItemCard",
+                            "when": {
+                              "get": "vm.recover.showChoose"
+                            },
+                            "props": {
+                              "title": {
+                                "t": "recover.card.choose"
+                              },
+                              "detail": {
+                                "t": "recover.card.choose.line"
+                              },
+                              "icon": "github",
+                              "autoFocus": {
+                                "get": "vm.recover.chooseFocus"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "recover.choose"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "when": {
+                              "get": "vm.recover.showSignIn"
+                            },
+                            "props": {
+                              "title": {
+                                "t": "recover.card.signIn"
+                              },
+                              "detail": {
+                                "t": "recover.card.signIn.line"
+                              },
+                              "icon": "github",
+                              "autoFocus": {
+                                "get": "vm.recover.signInFocus"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "recover.signIn"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "t": "recover.card.find"
+                              },
+                              "detail": {
+                                "t": "recover.card.find.line"
+                              },
+                              "icon": "open",
+                              "autoFocus": {
+                                "get": "vm.recover.findFocus"
+                              },
+                              "busy": {
+                                "get": "vm.recover.findBusy"
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "recover.find"
+                              }
+                            }
+                          },
+                          {
+                            "type": "ItemCard",
+                            "props": {
+                              "title": {
+                                "t": "recover.card.empty"
+                              },
+                              "detail": {
+                                "t": "recover.card.empty.line"
+                              },
+                              "icon": "newFolder"
+                            },
+                            "on": {
+                              "press": {
+                                "run": "recover.empty"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "when": {
+                          "get": "vm.recover.emptyOpen"
+                        },
+                        "props": {
+                          "gap": "m"
+                        },
+                        "children": [
+                          {
+                            "type": "TextField",
+                            "props": {
+                              "label": {
+                                "t": "recover.empty.name"
+                              },
+                              "value": {
+                                "bind": "vm.recover.emptyName"
+                              },
+                              "invalid": {
+                                "get": "vm.recover.emptyInvalid"
+                              },
+                              "error": {
+                                "get": "vm.recover.emptyError"
+                              },
+                              "autoFocus": true,
+                              "focusRequest": {
+                                "get": "vm.recover.emptyFocus"
+                              }
+                            },
+                            "on": {
+                              "submit": {
+                                "run": "recover.create"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s",
+                              "align": "center",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "value": {
+                                    "t": "recover.empty.in"
+                                  },
+                                  "tone": "muted"
+                                }
+                              },
+                              {
+                                "type": "Tooltip",
+                                "props": {
+                                  "label": {
+                                    "get": "vm.recover.emptyPlaceFull"
+                                  }
+                                },
+                                "children": [
+                                  {
+                                    "type": "Button",
+                                    "props": {
+                                      "label": {
+                                        "get": "vm.recover.emptyPlace"
+                                      },
+                                      "icon": "folder",
+                                      "busy": {
+                                        "get": "vm.recover.placeBusy"
+                                      }
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "recover.changePlace"
+                                      }
+                                    }
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "s",
+                              "justify": "start",
+                              "wrap": true
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "recover.empty.create"
+                                  },
+                                  "variant": "primary",
+                                  "busy": {
+                                    "get": "vm.recover.createBusy"
+                                  },
+                                  "size": "l"
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "recover.create"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "recover.empty.cancel"
+                                  },
+                                  "variant": "subtle"
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "recover.cancelEmpty"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "when": {
+                          "get": "vm.recover.hasWait"
+                        },
+                        "props": {
+                          "gap": "s"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "get": "vm.recover.waitText"
+                              },
+                              "tone": "muted",
+                              "announce": true
+                            }
+                          },
+                          {
+                            "type": "ProgressBar",
+                            "when": {
+                              "get": "vm.recover.hasPercent"
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.recover.percent"
+                              },
+                              "label": {
+                                "get": "vm.recover.percentLabel"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       },

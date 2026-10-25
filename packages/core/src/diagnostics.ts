@@ -156,6 +156,8 @@ export const MEASURE_NAMES: readonly string[] = [
   ...["note.save", "conflict", "import.confirm", "notes.export", "unlock.remember", "unlock.submit", "account.signOut", "workspace.remove", "files.copyItem", "files.import", "repoBackup.private", "repoBackup.public", "feedback.send"].map((t) => `focus-notes:${t}`),
   // The first run's waits (PRF-13, D-149): FIRST_RUN_WAITS in first-run-app.ts.
   ...["git", "prepare", "account", "signIn", "identity", "findNotes", "folder", "chooseFolder", "clone", "create", "open", "strength"].map((t) => `focus-notes:firstRun.${t}`),
+  // The recovery view's waits (D-212): RECOVER_WAITS in recover-app.ts.
+  ...["account", "download", "open", "find", "place", "create"].map((t) => `focus-notes:recover.${t}`),
 ];
 /** A measure's name is kept only if it's on the allow-list. */
 export const isMeasureName = (name: string) => MEASURE_NAMES.includes(name);

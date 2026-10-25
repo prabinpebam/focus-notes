@@ -291,6 +291,20 @@ contextBridge.exposeInMainWorld("focusNotes", {
     openWorkspace: () => ipcRenderer.invoke("firstRun:openWorkspace"),
     openPage: (page: string) => ipcRenderer.send("firstRun:openPage", page),
   },
+  // The notes folder is missing (WP-5.14, D-212): intent-level only, the main process keeps every path.
+  recover: {
+    status: () => ipcRenderer.invoke("recover:status"),
+    account: () => ipcRenderer.invoke("recover:account"),
+    download: () => ipcRenderer.invoke("recover:download"),
+    useFound: () => ipcRenderer.invoke("recover:useFound"),
+    find: () => ipcRenderer.invoke("recover:find"),
+    useChosen: () => ipcRenderer.invoke("recover:useChosen"),
+    emptyPlace: () => ipcRenderer.invoke("recover:emptyPlace"),
+    choosePlace: () => ipcRenderer.invoke("recover:choosePlace"),
+    createEmpty: (name: string) => ipcRenderer.invoke("recover:createEmpty", name),
+    onFound: listen("recover:found"),
+    onProgress: listen("recover:progress"),
+  },
   setWindowScheme: (s: "light" | "dark", canvas?: string, accent?: string, appearance?: string) => ipcRenderer.send("window:scheme", s, canvas, accent, appearance),
   // DSK-09, D-148: the page's first themed frame is drawn (the window shows then), and the workspace
   // changed, so the app starts again in place, never by reloading the page.
