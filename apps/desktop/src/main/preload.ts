@@ -168,10 +168,17 @@ contextBridge.exposeInMainWorld("focusNotes", {
       return () => ipcRenderer.removeListener("workspace:changed", handler);
     },
   },
-  // The recovery journal (QLT-03): unsaved text, and what this launch restored after a crash.
-  journal: {
-    write: (path: string, text: string) => ipcRenderer.invoke("journal:write", path, text),
-    restored: () => ipcRenderer.invoke("journal:restored"),
+  // Crash recovery (QLT-06): unsaved text kept under its draft, what the last session left, and
+  // Files → Recovered. The shell writes nothing to the workspace for any of it.
+  recovery: {
+    keep: (draft: string, seq: number, path: string, text: string) => ipcRenderer.invoke("recovery:keep", draft, seq, path, text),
+    saved: (draft: string, seq: number) => ipcRenderer.invoke("recovery:saved", draft, seq),
+    discard: (draft: string) => ipcRenderer.invoke("recovery:discard", draft),
+    found: () => ipcRenderer.invoke("recovery:found"),
+    recovered: () => ipcRenderer.invoke("recovery:recovered"),
+    text: (id: string) => ipcRenderer.invoke("recovery:text", id),
+    remove: (id: string) => ipcRenderer.invoke("recovery:remove", id),
+    count: () => ipcRenderer.invoke("recovery:count"),
   },
   // Synced settings in the private repository (PRV-03): the main process checks what it writes.
   settings: {

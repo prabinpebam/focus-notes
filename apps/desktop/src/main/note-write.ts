@@ -96,9 +96,6 @@ export interface NoteSaveDeps {
   write(path: string, content: string, expected?: string): Promise<{ outside: string } | undefined>;
   /** The text last written here, or on disk, to measure how much changed (D-133). */
   before(path: string): Promise<string>;
-  /** The journal's mark: this save supersedes every text it was sent before (QLT-03). */
-  mark?(): unknown;
-  saved?(path: string, content: string, upTo: unknown): void;
   /** A save landed: remembered, and counted toward the next backup. */
   written(path: string, before: string, content: string): void;
 }
@@ -109,12 +106,10 @@ export function noteSave(d: NoteSaveDeps) {
     if (typeof content !== "string") throw new Error("Content must be text");
     if (expected !== undefined && typeof expected !== "string") throw new Error("Expected text must be text");
     const path = d.path(p);
-    const upTo = d.mark?.();
     const before = await d.before(path);
     // Never over another program's change: checked when the write's turn comes (D-92, DEF-26).
     const outside = await d.write(path, content, expected);
     if (outside) return outside;
-    d.saved?.(path, content, upTo);
     d.written(path, before, content);
     return undefined;
   };

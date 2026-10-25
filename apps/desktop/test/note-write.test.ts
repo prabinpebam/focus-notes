@@ -108,14 +108,11 @@ describe("note:write", () => {
     const writer = new NoteWriter();
     const write = vi.fn((path: string, content: string, expected?: string) => writer.write(path, content, expected));
     const written = vi.fn();
-    const saved = vi.fn();
-    const save = noteSave({ path: (x) => String(x), write, before: async () => "", mark: () => 7, saved, written });
+    const save = noteSave({ path: (x) => String(x), write, before: async () => "", written });
     expect(await save(p, "# A\n\nTyped.\n", "# A\n\nFirst.\n")).toEqual({ outside: "# A\n\nChanged by another program.\n" });
     expect(write).toHaveBeenCalledWith(p, "# A\n\nTyped.\n", "# A\n\nFirst.\n");
     expect(written).not.toHaveBeenCalled();
-    expect(saved).not.toHaveBeenCalled();
     expect(await save(p, "# A\n\nTyped.\n", "# A\n\nChanged by another program.\n")).toBeUndefined();
-    expect(saved).toHaveBeenCalledWith(p, "# A\n\nTyped.\n", 7);
     expect(written).toHaveBeenCalledWith(p, "", "# A\n\nTyped.\n");
     await expect(save(p, "x", 5)).rejects.toThrow("Expected text must be text");
   });

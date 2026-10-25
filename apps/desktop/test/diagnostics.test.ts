@@ -1,7 +1,7 @@
 /**
  * QLT-04 (D-140): the main process's diagnostic report, with real Git on a workspace with
- * `private/`, a recovery journal holding unsaved text, and a log line that carries a token. The
- * report has the workspace's health and the journal's size, and never the token, the note text,
+ * `private/`, a recovery draft holding unsaved text, and a log line that carries a token. The
+ * report has the workspace's health and the drafts' count and size, and never the token, the note text,
  * the notes' names, the remote's address, or the workspace's folder.
  */
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { ProblemLog } from "@focus-notes/core/diagnostics";
 import { GitSync } from "../src/main/git/sync.ts";
 import { createRunner } from "../src/main/git/run.ts";
-import { RecoveryJournal } from "../src/main/journal.ts";
+import { DraftStore } from "../src/main/drafts.ts";
 import { diagnostics, knownStrings, reportFileName, reportPathAllowed } from "../src/main/diagnostics.ts";
 import { FakeClock, SETUP_TIMEOUT_MS, git, instance, prepareTemplate, write } from "./git-fixture.ts";
 // One-time setup outside any test's time: a cold runner takes long over its first Git starts (DEF-13).
@@ -25,7 +25,7 @@ afterEach(async () => {
 });
 
 describe("QLT-04: the diagnostic report from the main process", () => {
-  it("has the workspace's health and the journal's size, and nothing of the person's", { timeout: 60_000 }, async () => {
+  it("has the workspace's health and the drafts' size, and nothing of the person's", { timeout: 60_000 }, async () => {
     const { ws, root } = instance();
     write(join(ws, "private", "notes", "party.md"), `# Party\n\n${UNSAVED}\n`);
     git(join(ws, "private"), "add", "-A");
@@ -35,9 +35,9 @@ describe("QLT-04: the diagnostic report from the main process", () => {
     const g = await GitSync.open({ folder: ws, run: createRunner(), clock: new FakeClock() });
     if (!g) throw new Error("not a repository");
     opened.push(g);
-    const journal = await RecoveryJournal.open(join(mkdtempSync(join(tmpdir(), "fn-diag-")), "recovery-journal.jsonl"));
-    await journal.text(join(ws, "private", "notes", "party.md"), UNSAVED);
-    await journal.settled();
+    const drafts = DraftStore.open({ dataDir: mkdtempSync(join(tmpdir(), "fn-diag-")), workspace: ws });
+    await drafts.keep(1, "partydraft01", 1, join(ws, "private", "notes", "party.md"), UNSAVED);
+    await drafts.settled();
     const redaction = () => ({ home: tmpdir(), workspace: ws });
     const log = new ProblemLog(200, redaction);
     log.add(`sync: push https://ada:${TOKEN}@github.com/ada/notes.git failed in ${ws}`);
@@ -47,7 +47,7 @@ describe("QLT-04: the diagnostic report from the main process", () => {
       runtime: { electron: "38.1.0", chrome: "140.0.0.0", node: "22.19.0" },
       git: async () => ({ installed: true, version: "2.47.1", ok: true, gcm: true, gh: false }),
       sync: async () => ({ report: await g.status(), repositories: await g.health(), conflicts: 0 }),
-      journal: () => journal.entries(),
+      recovery: () => drafts.stats(),
       compositing: () => "gpu",
       state: async () => ({ version: 1, appearance: "dark", lastNotePath: join(ws, "private", "notes", "party.md"), lightTheme: "paper" }),
       log, redaction,
@@ -58,11 +58,11 @@ describe("QLT-04: the diagnostic report from the main process", () => {
     const report = await d.report([{ name: "fn:note.open", count: 1, p50: 5, p95: 5 }, { name: UNSAVED, count: 1, p50: 1, p95: 1 }]);
     expect(report).toContain("- notes repository: remote other, branch with upstream, ahead 0, behind 0, 2 changed, 0 unmerged");
     expect(report).toContain("- private repository: remote other, branch with upstream, ahead 1, behind 0, 0 changed, 0 unmerged");
-    expect(report).toContain(`- Unsaved text for 1 note(s), ${Buffer.byteLength(UNSAVED)} bytes`);
+    expect(report).toContain(`- Unsaved text for 1 note(s), ${drafts.stats().bytes} bytes`);
     expect(report).toContain("- lightTheme: paper");
     expect(report).toContain("| fn:note.open | 1 | 5 | 5 |");
     for (const bad of [TOKEN, UNSAVED, "surprise", "party", "hello.md", ws, root, "notes.git", "private.git", "lastNotePath"]) expect(report, bad).not.toContain(bad);
-    await journal.close();
+    await drafts.removeAll();
   });
 
   it("knows the login, names, emails, and every remote's owner and repository name", () => {
@@ -77,7 +77,7 @@ describe("QLT-04: the diagnostic report from the main process", () => {
     log.add("push to ada-secret-journal refused for ADA LOVELACE");
     const d = diagnostics({
       app: { version: "0.5.0", packaged: true }, os: { platform: "linux", release: "6.8", arch: "x64" }, runtime: { electron: "38", chrome: "140", node: "22" },
-      git: async () => ({ installed: true, version: "2.47.1", ok: true, gcm: false, gh: false }), sync: async () => undefined, journal: () => [], compositing: () => "gpu",
+      git: async () => ({ installed: true, version: "2.47.1", ok: true, gcm: false, gh: false }), sync: async () => undefined, recovery: () => ({ drafts: 0, bytes: 0 }), compositing: () => "gpu",
       state: async () => ({}), log, redaction: () => ({ known }),
     });
     const r = await d.report([]);

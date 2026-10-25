@@ -1,6 +1,6 @@
 /**
  * The diagnostic report in the main process (QLT-04, D-55, D-140): facts gathered from the app,
- * Git, the workspace's repositories, the recovery journal, and the app's own log in memory, then
+ * Git, the workspace's repositories, crash recovery's drafts, and the app's own log in memory, then
  * built and redacted by `@focus-notes/core/diagnostics`. Nothing here reads a note, a credential,
  * or `access.json`, and nothing is sent: the person copies or saves the report and decides.
  */
@@ -16,8 +16,8 @@ export interface DiagnosticsDeps {
   git: () => Promise<{ installed: boolean; version?: string; ok: boolean; gcm: boolean; gh: boolean }>;
   /** The workspace's Git, or undefined when it isn't a repository. */
   sync: () => Promise<{ report: SyncReport; repositories: RepoHealth[]; conflicts: number } | undefined>;
-  /** The texts the recovery journal holds now: only their count and size are reported. */
-  journal: () => readonly { text: string }[];
+  /** Crash recovery's drafts (QLT-06): only their count and size are reported, never a text or a name. */
+  recovery: () => { drafts: number; bytes: number };
   compositing: () => "gpu" | "software";
   /** Device settings (`state.json`): only `settingsSummary`'s values are reported. */
   state: () => Promise<Record<string, unknown>>;
@@ -36,14 +36,14 @@ export function diagnostics(d: DiagnosticsDeps) {
       d.sync().catch(() => undefined),
       d.state().catch(() => ({})),
     ]);
-    const texts = d.journal();
+    const drafts = d.recovery();
     return {
       generatedAt: (d.now ?? Date.now)(),
       app: d.app, os: d.os, runtime: d.runtime, git,
       workspace: sync
         ? { git: true, state: sync.report.state, ...(sync.report.problem ? { problem: sync.report.problem } : {}), waiting: sync.report.waiting, conflicts: sync.conflicts, repositories: sync.repositories }
         : { git: false, state: "idle", waiting: 0, conflicts: 0, repositories: [] },
-      journal: { notes: texts.length, bytes: texts.reduce((n, e) => n + Buffer.byteLength(e.text), 0) },
+      journal: { notes: drafts.drafts, bytes: drafts.bytes },
       compositing: d.compositing(),
       settings: settingsSummary(state),
       timings: parseTimings(timings),

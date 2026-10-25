@@ -4,7 +4,7 @@
  * renderer; Git talks to the workspace's remotes (WP-3.3), and its own only requests are setup's
  * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
-import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
 import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
 import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
@@ -70,8 +70,7 @@ import { themeSourceFor, type ThemeSource } from "./window/native-theme.ts";
 import { HELPER_ARGS, MAX_WORD, OsSpellChecker } from "./spelling/os-spellchecker.ts";
 import { SnapshotCache } from "@focus-notes/core/snapshot";
 import { textHash } from "@focus-notes/core/journal";
-import type { RestoredNote } from "@focus-notes/core";
-import { RecoveryJournal, restoreJournal } from "./journal.ts";
+import { DraftStore } from "./drafts.ts";
 import { watchTree, type TreeWatcher } from "./watch-tree.ts";
 import { JOURNEY_WINDOW_OPTIONS, keepOutOfTheWay } from "./window/journey-window.ts";
 import { watchCompositing } from "./window/compositing.ts";
@@ -245,7 +244,7 @@ const WELCOME = `# Welcome to Focus Notes
 Everything you write here is saved as plain Markdown on your computer.
 `;
 
-/** Only the first instance: a second start hands over to it and quits (its journal is the first one's). */
+/** Only the first instance: a second start hands over to it and quits (its drafts are the first one's). */
 const primary = app.requestSingleInstanceLock();
 if (!primary) app.quit();
 
@@ -439,7 +438,8 @@ async function forgetLocal(event: "signOut" | "removeWorkspace"): Promise<void> 
   workspaceIdentity = undefined;
   targetFolder = undefined;
   pendingWorkspace = undefined;
-  await journal?.clear();
+  // Crash recovery's drafts of this workspace go too (QLT-06); the window asked first when there were some.
+  await drafts?.removeAll().catch(() => {});
   await forgetLocalData(app.getPath("userData"), event);
   await session.defaultSession.clearCache().catch(() => {});
   await session.defaultSession.clearStorageData().catch(() => {});
@@ -542,7 +542,6 @@ async function switchWorkspace(folder: string, keep?: Pick<WorkspaceRecord, "kin
     workspaceIdentity = undefined;
     await saveFirstRun();
   }
-  const missing = folderState !== "ok" ? notesHome() : undefined;
   await saveRecord(recordFor(folder, await folderFacts(folder), record, keep));
   chosenHome = folder;
   folderState = "ok";
@@ -552,8 +551,8 @@ async function switchWorkspace(folder: string, keep?: Pick<WorkspaceRecord, "kin
   const old = gitSync;
   armGit();
   await old?.dispose();
-  // What a crash left unsaved goes back now that its folder is here again (QLT-03); for another folder, it waits in the journal.
-  if (missing && samePath(missing, folder) && journal) restored = [...restored, ...(await restoreUnsaved(journal))];
+  // This folder's drafts, matched now (QLT-06): another folder's wait in their own place for it.
+  openDrafts();
   watcher = watchWorkspace(() => windows);
   setTimeout(() => startGit(), 3000);
   restartInPlace();
@@ -794,18 +793,35 @@ async function readParsed(path: string): Promise<ParsedNote> {
   }
 }
 
-// ---- the recovery journal (QLT-03) ----
-let journal: RecoveryJournal | undefined;
-/** What this launch restored from the journal, told to the renderer once. */
-let restored: RestoredNote[] = [];
-/** Puts the journal's unsaved text back into its notes (QLT-03): at launch, and after a renderer crash. */
-const restoreUnsaved = (j: RecoveryJournal) => restoreJournal(j, {
-  read: (p) => readFile(p, "utf8").catch(() => undefined),
-  write: async (p, text) => {
-    await atomicWrite(p, text);
-    withGit((g) => g.written(p));
-  },
-});
+// ---- crash recovery's drafts (QLT-06, D-190, D-219) ----
+// Unsaved text is kept only in the app's data folder, one draft per open note, and matched to notes
+// at launch without writing, creating, renaming or deleting anything in the workspace
+// (Architecture → Crash recovery). The store never sees the note writer, a batch or Git: Git's
+// read-only answers come in through `git`.
+let drafts: DraftStore | undefined;
+/** Opens the open workspace's drafts: the first instance only, with its folder there. Matching runs in the background, off the first frame. */
+function openDrafts(): void {
+  const old = drafts;
+  drafts = undefined;
+  void old?.settled();
+  if (!primary || folderState !== "ok") return;
+  drafts = DraftStore.open({
+    dataDir: app.getPath("userData"),
+    workspace: notesHome(),
+    journal: dataFile(DATA_FILES.journal),
+    git: async (cwd, args) => {
+      const r = await setupRunner({ cwd, args, read: true, timeoutMs: 5000 }).catch(() => undefined);
+      return r?.code === 0 ? r.stdout : undefined;
+    },
+    // Private notes' drafts are encrypted with the operating system's key store (Privacy).
+    crypt: {
+      available: () => safeStorage.isEncryptionAvailable(),
+      encrypt: (text) => safeStorage.encryptString(text),
+      decrypt: (data) => safeStorage.decryptString(data),
+    },
+    log: logLine,
+  });
+}
 
 /** The most notes the search index reads in one call (`notes:read`). */
 const NOTES_PER_READ = 64;
@@ -973,12 +989,12 @@ async function applyOps(raw: unknown): Promise<BatchOp[]> {
     if (op.op === "move") {
       parsed.move(op.path, op.to);
       titles.move(op.path, op.to);
-      void journal?.moved(op.path, op.to);
-    } else if (op.op === "write") void journal?.saved(op.path, op.text);
+      void drafts?.moved(op.path, op.to);
+    } else if (op.op === "write") void drafts?.rewritten(op.path);
     else if (op.op === "delete") {
       parsed.delete(op.path);
       titles.delete(op.path);
-      void journal?.gone(op.path);
+      void drafts?.gone(op.path);
     }
   }
   // What was done, for the batch's one commit.
@@ -1153,10 +1169,14 @@ const THEMES_AT_MOST = 100;
 const THEME_FILE_BYTES = 64 * 1024;
 
 function handle(channel: string, fn: (...args: any[]) => unknown): void {
+  handleFrom(channel, (_e, ...args) => fn(...args));
+}
+/** `handle`, telling the handler which window asked (its web contents' ID). */
+function handleFrom(channel: string, fn: (e: IpcMainInvokeEvent, ...args: any[]) => unknown): void {
   ipcMain.handle(channel, async (e, ...args) => {
     if (!fromApp(e)) throw new Error("Refused: request didn't come from the app");
     await slowSeam(channel);
-    return fn(...args);
+    return fn(e, ...args);
   });
 }
 /**
@@ -1278,9 +1298,6 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     write: atomicWrite,
     // How much changed decides when it's backed up (D-133): against the text last written here, or on disk.
     before: async (path) => lastWritten.get(path) ?? (await readFile(path, "utf8").catch(() => "")),
-    // The app saves its latest text: this supersedes every text the journal was sent before it (QLT-03).
-    mark: () => journal?.mark(),
-    saved: (path, content, upTo) => void journal?.saved(path, content, upTo as ReturnType<NonNullable<typeof journal>["mark"]>),
     written: (path, before, content) => {
       lastWritten.set(path, content);
       withGit((g) => g.written(path, changedChars(before, content)));
@@ -1450,7 +1467,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       throw error;
     }
     parsed.move(a, b);
-    void journal?.moved(a, b);
+    void drafts?.moved(a, b);
     withGit((g) => g.renamed(a, b));
   });
   // Each batch is one commit (FIL-05, D-94): resolved after the commit, so "saved" means saved (PRF-09).
@@ -1531,7 +1548,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       const conflicts = report.problem === "conflict" ? await Promise.race([g.conflicts().then((c) => c.length), new Promise<number>((r) => setTimeout(() => r(-1), 5000))]) : 0;
       return { report, repositories: await g.health(), conflicts };
     },
-    journal: () => journal?.entries() ?? [],
+    recovery: () => drafts?.stats() ?? { drafts: 0, bytes: 0 },
     compositing: () => compositing().current(),
     state: async () => JSON.parse(await readFile(stateFile(), "utf8")) as Record<string, unknown>,
     log: problemLog,
@@ -1774,12 +1791,32 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (windowFrame?.toggleFullScreen(w)) return;
     if (w) w.setFullScreen(!w.isFullScreen());
   });
-  // The recovery journal (QLT-03): unsaved text, appended off the typing path; and what this launch restored.
-  handle("journal:write", async (p, text) => {
+  // Crash recovery (QLT-06): drafts kept off the typing path, keyed by draft and owned by the window
+  // that keeps them; what the last session left, told once; and Files → Recovered. The store checks
+  // each draft ID and path; texts are checked here first.
+  const draftId = (v: unknown) => {
+    if (typeof v !== "string" || v.length > 64) throw new Error("A draft ID is required");
+    return v;
+  };
+  const seqOf = (v: unknown) => {
+    if (typeof v !== "number" || !Number.isSafeInteger(v) || v < 0) throw new Error("A draft's sequence is a whole number");
+    return v;
+  };
+  const NO_DRAFTS = { matched: [], changed: [], recovered: 0 };
+  handleFrom("recovery:keep", async (e, id, seq, p, text) => {
     if (typeof text !== "string") throw new Error("Content must be text");
-    await journal?.text(notePath(p), text);
+    await drafts?.keep(e.sender.id, draftId(id), seqOf(seq), notePath(p), text);
   });
-  handle("journal:restored", async () => restored.splice(0));
+  handleFrom("recovery:saved", async (e, id, seq) => drafts?.saved(e.sender.id, draftId(id), seqOf(seq)));
+  handleFrom("recovery:discard", async (e, id) => drafts?.discard(e.sender.id, draftId(id)));
+  handleFrom("recovery:found", async (e) => (await drafts?.found(e.sender.id)) ?? NO_DRAFTS);
+  handle("recovery:recovered", async () => (await drafts?.recovered()) ?? []);
+  handle("recovery:text", async (id) => {
+    if (!drafts) throw new Error("No such draft");
+    return drafts.text(draftId(id));
+  });
+  handle("recovery:remove", async (id) => drafts?.remove(draftId(id)));
+  handle("recovery:count", async () => (await drafts?.count()) ?? 0);
   handle("state:load", async () => {
     try {
       const s = JSON.parse(await readFile(stateFile(), "utf8"));
@@ -2056,8 +2093,9 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
         cover = undefined;
       },
     },
+    // The new page asks what was left unsaved: its drafts are told to it again, matched now (QLT-06).
     restore: async () => {
-      if (journal && folderState === "ok") restored = [...restored, ...(await restoreUnsaved(journal))];
+      drafts?.release(win.webContents.id);
     },
     load: () => void load().catch(() => {}),
     onFirstFrame: (f) => {
@@ -2115,8 +2153,8 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
       });
       closing = false;
       if (response === 1) {
-        // The person chose to lose those changes: they aren't brought back at the next launch.
-        await journal?.clear();
+        // The person chose to lose those changes: this window's drafts go, so they aren't brought back.
+        await drafts?.discardOwned(win.webContents.id).catch(() => {});
         allowClose = true;
         win.close();
       }
@@ -2218,6 +2256,9 @@ function watchWorkspace(win: () => Iterable<BrowserWindow>): TreeWatcher | undef
       }
     }
     if (!changes.length) return;
+    // A note renamed outside the app while it runs: its draft follows it, by its file ID (QLT-06).
+    const notesGone = changes.filter((c) => c.kind === "note" && !c.exists).map((c) => c.path);
+    if (notesGone.length) void drafts?.seen(notesGone, changes.filter((c) => c.kind === "note" && c.exists).map((c) => c.path)).catch(() => {});
     // Anything that changed on disk changes the Git status cache's key (PRF-07).
     gitSync?.changed();
     // Every window: one with the same note open reloads it, or keeps its edits and asks (D-92, DSK-06).
@@ -2333,23 +2374,15 @@ app.whenReady().then(async () => {
   hardenSession();
   windowFrame = new AppWindowFrame(frameKind, join(app.getPath("userData"), DATA_FILES.window), journey);
   registerIpc(() => BrowserWindow.getFocusedWindow() ?? mainWindow);
-  // The notes folder is checked before Git, the watcher, the journal's restore or any note (FRE-11).
+  // The notes folder is checked before Git, the watcher, the drafts' matching or any note (FRE-11).
   // Only a folder never recorded is made here; a recorded one that's gone opens the recovery view.
   const folderNow = await checkFolder(notesHome());
   const decision = startDecision(record, folderNow);
   if (decision === "create") await mkdir(notesHome(), { recursive: true }).catch(() => {});
   if (decision === "recover") folderState = folderNow;
-  // What a crash left unsaved goes back into its notes before the window reads any (QLT-03).
-  // Only the first instance has a journal: it's the one writing it. With the folder missing, it waits.
-  if (primary) journal = await RecoveryJournal.open(dataFile(DATA_FILES.journal), {
-    baseOf: async (p) => {
-      await (writeQueues.get(p) ?? Promise.resolve()).catch(() => {});
-      return readParsed(p).then((n) => n.hash, () => undefined);
-    },
-    log: logLine,
-  });
-  if (journal && folderState === "ok") restored = await restoreUnsaved(journal);
-  if (restored.length) process.stdout.write(`[focus-notes] journal: restored ${restored.length}\n`);
+  // What a crash left unsaved is matched to notes in the background, writing nothing (QLT-06); the
+  // window asks for it once it's up. Only the first instance keeps drafts. With the folder missing, they wait.
+  openDrafts();
   mainWindow = createWindow(windowFrame);
   // keybindings.json changes (saved in an editor) apply at once, without a restart (D-170).
   // One small file, polled in this process: the window hears only of a real change (PRF-14).
@@ -2393,11 +2426,11 @@ app.on("window-all-closed", () => {
 // Quitting waits for writes already under way, so a preference saved just before closing is kept,
 // then commits and pushes (D-23) and releases the workspace's lock.
 let gitQuit = false;
-let journalClosed = false;
+let draftsSettled = false;
 const QUIT_GIT_LIMIT_MS = 8_000;
 app.on("will-quit", (e) => {
   osSpelling?.dispose();
-  if (writeQueues.size === 0 && (gitQuit || !gitSync) && (journalClosed || !journal)) return;
+  if (writeQueues.size === 0 && (gitQuit || !gitSync) && (draftsSettled || !drafts)) return;
   e.preventDefault();
   void Promise.allSettled([...writeQueues.values()])
     .then(async () => {
@@ -2407,10 +2440,10 @@ app.on("will-quit", (e) => {
       // in time is retried at the next start.
       await Promise.race([gitSync?.quit().catch(() => {}), new Promise((r) => setTimeout(r, QUIT_GIT_LIMIT_MS))]);
     })
-    // Everything is saved: the journal goes (it stays if something isn't).
+    // The drafts' last writes land (a draft whose text was saved is gone already).
     .then(async () => {
-      if (!journalClosed) await journal?.close();
-      journalClosed = true;
+      if (!draftsSettled) await drafts?.settled().catch(() => {});
+      draftsSettled = true;
     })
     .then(() => app.quit());
 });
