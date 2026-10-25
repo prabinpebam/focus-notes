@@ -4,9 +4,10 @@
  * runs only while the pointer is somewhere the page can't see it (Linux: the margin of a window that
  * ignores the mouse; macOS: the system's drag band and the strip under it, on the active window). A
  * watch is started by an event (the page's pointer report, or the window's), and stops as soon as the
- * pointer leaves that place or the window hides (D-104, D-106). The only timer that reschedules
- * itself forever is Git's fetch, every 5 minutes. (The benchmark measures the CPU itself:
- * PRF-04.idleCpuPct.)
+ * pointer leaves that place or the window hides (D-104, D-106). The drag loop runs only while a window
+ * is dragged (D-151), and the missing folder's watch only while the recovery view shows (D-212). The
+ * only timer that reschedules itself forever is Git's fetch, every 5 minutes. (The benchmark measures
+ * the CPU itself: PRF-04.idleCpuPct.)
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -34,6 +35,8 @@ const sources = [
 const WATCHES = ["apps/desktop/src/main/window/custom-window.ts", "apps/desktop/src/main/window/mac-title-bar.ts"];
 /** The drag loop (D-151): the other interval allowed, running only while the window is dragged. */
 const DRAG_LOOP = "apps/desktop/src/main/window/drag-loop.ts";
+/** The missing folder's watch (D-212): running only while the recovery view shows, cleared when it goes. */
+const FOLDER_WATCH = "apps/desktop/src/main/main.ts";
 
 class FakeWin implements WinLike {
   bounds: Rect = { x: 84, y: 84, width: 1032, height: 732 };
@@ -91,7 +94,11 @@ describe("PRF-04: no polling", () => {
   it("has no setInterval in the app's code but the window's pointer watches", () => {
     expect(sources.length).toBeGreaterThan(50);
     const polling = sources.filter((f) => /\bsetInterval\s*\(/.test(readFileSync(f, "utf8"))).map((f) => relative(root, f).split(sep).join("/"));
-    expect(polling.sort()).toEqual([...WATCHES, DRAG_LOOP].sort());
+    expect(polling.sort()).toEqual([...WATCHES, DRAG_LOOP, FOLDER_WATCH].sort());
+    const main = readFileSync(join(root, FOLDER_WATCH), "utf8");
+    expect(main.match(/\bsetInterval\s*\(/g)).toHaveLength(1);
+    expect(main).toMatch(/folderWatch = setInterval\(/);
+    expect(main).toMatch(/clearInterval\(folderWatch\)/);
     // Each has one, started only if none runs, and cleared.
     for (const f of WATCHES) {
       const text = readFileSync(join(root, f), "utf8");
