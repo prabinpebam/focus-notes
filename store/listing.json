@@ -22,7 +22,7 @@
   ],
   "keywords": ["notes", "markdown", "writing", "distraction-free", "github", "journal", "focus"],
   "systemRequirements": "Windows 10 version 1809 or later, or Windows 11, on a 64-bit (x64) PC.",
-  "certificationNotes": "No account is needed to test the app: on the first screen choose \"Just use this computer for now\", then pick any empty folder. Signing in to GitHub is optional and only backs notes up to the tester's own repository. The app declares runFullTrust because it's a desktop (Electron) app, the focus-notes: link scheme to open a note from a link, and the focus-notes command-line alias.",
+  "certificationNotes": "No account is needed to test the app: on the first screen choose \"Just use this computer for now\" and start writing; notes are saved as Markdown files in Documents\\Focus Notes. Signing in to GitHub is optional and only backs notes up to the tester's own repository. Closing the window keeps Focus Notes running in the notification area, so it opens again at once; right-click its icon there and choose \"Quit Focus Notes\" to quit. The app declares runFullTrust because it's a desktop (Electron) app, the focus-notes: link scheme to open a note from a link, and the focus-notes command-line alias.",
   "releaseNotesTemplate": "What's new in Focus Notes {version}:\n{highlights}\n\nEvery change: https://github.com/prabinpebam/focus-notes/releases/tag/v{version}",
   "screenshots": {
     "required": "PNG, 1366 × 768 to 3840 × 2160 pixels, landscape, up to 10, each under 50 MB. At least one.",

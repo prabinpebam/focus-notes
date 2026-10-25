@@ -82,7 +82,10 @@ export const DEMO_NOTES: Record<string, string> = {
 };
 
 async function start(theme: "light" | "dark"): Promise<Launched> {
-  const dirs = tempDirs();
+  const temp = tempDirs();
+  // The folder's name shows in the Files header: the app's own default, not the temporary folder's.
+  const dirs = { ...temp, docs: join(temp.docs, "Focus Notes") };
+  mkdirSync(dirs.docs);
   for (const [path, text] of Object.entries(DEMO_NOTES)) {
     const file = join(dirs.docs, ...path.split("/"));
     mkdirSync(join(file, ".."), { recursive: true });
