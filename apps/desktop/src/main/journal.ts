@@ -23,6 +23,8 @@ export interface JournalOptions {
   now?: () => number;
   /** Counts and problem codes only: note names and text are private. */
   log?: (line: string) => void;
+  /** Whether a note's file is there now (a renamed note's late text follows it only when it isn't). */
+  exists?: (path: string) => boolean;
 }
 
 export const COMPACT_BYTES = 4 * 1024 * 1024;
@@ -43,6 +45,8 @@ export class RecoveryJournal {
   readonly #askedFor = new Map<string, number>();
   /** The last thing queued, when it's a text not yet being written: a newer text of its note replaces it. */
   #waiting: { path: string; text: string; n: number } | undefined;
+  /** This session's renames and moves, oldest first: text sent under a name that's gone follows its note (DEF-34). */
+  readonly #renames: { from: string; to: string }[] = [];
 
   private constructor(file: string, live: Map<string, JournalEntry>, bytes: number, torn: boolean, opts: JournalOptions) {
     this.#torn = torn;
@@ -81,10 +85,14 @@ export class RecoveryJournal {
     const job = { path, text, n };
     const run = this.#run(async () => {
       if (this.#waiting === job) this.#waiting = undefined;
-      this.#askedFor.set(path, job.n);
-      const known = this.#live.get(path);
-      const base = known ? known.base : await this.#opts.baseOf?.(path).catch(() => undefined);
-      return [{ v: 1, op: "text", path, at: this.#now(), hash: textHash(job.text), ...(base !== undefined ? { base } : {}), text: job.text }];
+      // The window learns a title's new file name only once the rename is committed: text it sent
+      // meanwhile, under the old name, belongs to the renamed note, or the next launch would put it
+      // back under the old name as a second copy (DEF-34).
+      const target = this.#current(job.path);
+      this.#askedFor.set(target, job.n);
+      const known = this.#live.get(target);
+      const base = known ? known.base : await this.#opts.baseOf?.(target).catch(() => undefined);
+      return [{ v: 1, op: "text", path: target, at: this.#now(), hash: textHash(job.text), ...(base !== undefined ? { base } : {}), text: job.text }];
     });
     this.#waiting = job;
     return run;
@@ -110,6 +118,8 @@ export class RecoveryJournal {
   /** A note or folder was renamed or moved. */
   moved(from: string, to: string): Promise<void> {
     return this.#run(() => {
+      this.#renames.push({ from, to });
+      if (this.#renames.length > 1000) this.#renames.shift();
       for (const [p, n] of [...this.#askedFor]) {
         if (!atOrUnder(p, from)) continue;
         this.#askedFor.delete(p);
@@ -149,6 +159,14 @@ export class RecoveryJournal {
   /** Resolves once everything asked so far is on disk. */
   settled(): Promise<void> {
     return this.#queue;
+  }
+
+  /** Where a note is now: under the name it was sent with, unless that's gone because it was renamed or moved since. */
+  #current(path: string): string {
+    if (!this.#renames.length || (this.#opts.exists ?? existsSync)(path)) return path;
+    let p = path;
+    for (const r of this.#renames) if (atOrUnder(p, r.from)) p = r.to + p.slice(r.from.length);
+    return p;
   }
 
   get bytes(): number {

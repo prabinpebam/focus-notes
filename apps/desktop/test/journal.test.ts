@@ -154,6 +154,41 @@ describe("QLT-03: the journal file", () => {
     expect((await open()).entries()).toEqual([]);
   });
 
+  it("DEF-34: text sent under a note's old name after a rename follows the note, so a restart brings back no copy under the old name", async () => {
+    const names = ["untitled.md", "what-is.md", "what-is-good.md"].map((n) => join(notes, n)) as [string, string, string];
+    writeFileSync(names[0], "# Untitled");
+    const j = await open();
+    await j.text(names[0], "# What is");
+    // Each title renames the file; the window still sends the next text under the name before it.
+    for (let i = 1; i < names.length; i++) {
+      const [from, to] = [names[i - 1]!, names[i]!];
+      writeFileSync(to, readFileSync(from, "utf8"));
+      rmSync(from);
+      await j.moved(from, to);
+    }
+    await j.text(names[0], "# What is good, typed while the first rename was committed");
+    await j.text(names[1], "# What is good, typed while the second rename was committed");
+    expect(j.entries().map((e) => e.path)).toEqual([names[2]]);
+    // A crash: the text goes back into the renamed note, and nothing is made under an old name.
+    const restored = await restoreJournal(await open(), io);
+    expect(restored.map((r) => r.path)).toEqual([names[2]]);
+    expect(readdirSync(notes)).toEqual(["what-is-good.md"]);
+    expect(readFileSync(names[2], "utf8")).toBe("# What is good, typed while the second rename was committed");
+  });
+
+  it("DEF-34: a folder's move takes its notes' late text along; a new note made under an old name keeps its own", async () => {
+    const j = await open();
+    mkdirSync(join(notes, "archive"));
+    await j.moved(join(notes, "drafts"), join(notes, "archive"));
+    await j.text(join(notes, "drafts", "a.md"), "A, typed during the move");
+    expect(j.entries().map((e) => e.path)).toEqual([join(notes, "archive", "a.md")]);
+    const b = join(notes, "b.md");
+    await j.moved(b, join(notes, "c.md"));
+    writeFileSync(b, "# A new note named b");
+    await j.text(b, "# A new note named b, typed");
+    expect(j.entries().map((e) => e.path)).toEqual([join(notes, "archive", "a.md"), b]);
+  });
+
   it("a clean quit deletes the file when everything is saved, and keeps it when something isn't", async () => {
     const j = await open();
     await j.text(join(notes, "a.md"), "A");
