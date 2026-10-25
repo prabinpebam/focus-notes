@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "dist": "pnpm run build && electron-builder --publish never",
     "dist:store": "pnpm run build && node scripts/dist-store.mjs",
-    "icon": "node scripts/icon.mjs"
+    "icon": "node scripts/icon.mjs",
+    "splash": "node scripts/portable-splash.mjs"
   },
   "devDependencies": {
     "@electron/fuses": "1.8.0",
@@ -77,6 +78,9 @@
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "oneClick": false
+    },
+    "portable": {
+      "splashImage": "build/portable-splash.bmp"
     },
     "appx": {
       "identityName": "Placeholder.FocusNotes",
