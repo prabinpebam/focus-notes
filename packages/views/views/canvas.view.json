@@ -4119,23 +4119,56 @@
                   ]
                 },
                 {
-                  "type": "IconButton",
-                  "when": {
-                    "get": "vm.files.source.revealable"
-                  },
+                  "type": "Inline",
                   "props": {
-                    "icon": "open",
-                    "label": {
-                      "t": "command.files.revealFolder"
-                    },
-                    "tone": "muted",
-                    "bleed": true
+                    "gap": "xs"
                   },
-                  "on": {
-                    "press": {
-                      "run": "files.revealFolder"
+                  "children": [
+                    {
+                      "type": "IconButton",
+                      "when": {
+                        "get": "vm.files.source.revealable"
+                      },
+                      "props": {
+                        "icon": "open",
+                        "label": {
+                          "t": "command.files.revealFolder"
+                        },
+                        "tone": "muted",
+                        "bleed": true
+                      },
+                      "on": {
+                        "press": {
+                          "run": "files.revealFolder"
+                        }
+                      }
+                    },
+                    {
+                      "type": "IconButton",
+                      "props": {
+                        "icon": {
+                          "get": "vm.files.pinIcon"
+                        },
+                        "label": {
+                          "get": "vm.files.pinLabel"
+                        },
+                        "shortcut": {
+                          "get": "vm.files.pinShortcut"
+                        },
+                        "toggle": true,
+                        "pressed": {
+                          "get": "vm.files.pinned"
+                        },
+                        "tone": "muted",
+                        "bleed": true
+                      },
+                      "on": {
+                        "press": {
+                          "run": "files.togglePin"
+                        }
+                      }
                     }
-                  }
+                  ]
                 }
               ]
             }
@@ -4296,6 +4329,13 @@
                         },
                         {
                           "type": "IconButton",
+                          "when": {
+                            "expr": {
+                              "!": {
+                                "get": "vm.files.source.visible"
+                              }
+                            }
+                          },
                           "props": {
                             "icon": {
                               "get": "vm.files.pinIcon"
