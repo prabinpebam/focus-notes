@@ -94,11 +94,10 @@ The loop optimizes validated progress toward the definition of done per hour. Se
 
 ## Validate before committing
 
-Serve the repository and open the docs:
+The docs are always served from this working copy at <http://127.0.0.1:8787/documentations/> (the owner, 25 October: "Keep the slate site running at all times"). The **Focus Notes Docs site** scheduled task runs `python -m http.server 8787 --bind 127.0.0.1` from the repository's root. It starts at logon, and its 5-minute trigger brings it back if it stops. Don't start another server on 8787, and don't stop this one. If it's down:
 
 ```powershell
-python -m http.server 8787 --bind 127.0.0.1
-# open http://127.0.0.1:8787/documentations/
+Start-ScheduledTask -TaskName 'Focus Notes Docs site'
 ```
 
 Check the Slate runtime:
