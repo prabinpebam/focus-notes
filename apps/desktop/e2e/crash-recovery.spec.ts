@@ -9,7 +9,7 @@
 import { test, expect } from "./fixtures.ts";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
 import { launch, PROMPTLY, quit, tempDirs, type Launched } from "./helpers.ts";
@@ -300,13 +300,15 @@ test(`QLT-06: a title typed so every key renames the file survives a crash at an
         await l.readyMs();
         await l.page.waitForTimeout(300);
         expect(counts(l)?.recovered ?? 0, `${at}: no draft lost its note`).toBe(0);
-        for (const d of readDrafts(dirs.userData, ws)) expect(statSync(join(ws, d.header.path)).isFile(), `${at}: ${d.header.path} is a note`).toBe(true);
       }
       await l.page.waitForTimeout(300);
       // The launch writes no file. The note the last crash left open is opened again and its text
       // goes back in: the normal save writes it, and its file follows its title (FIL-07), so that one
       // note may be renamed; nothing else changes, and nothing is added.
       const settled = await stable(ws);
+      // Each draft left follows its note: a rename rewrites the draft's place just after the file moves.
+      const astray = () => readDrafts(dirs.userData, ws).map((d) => d.header.path).filter((p) => !existsSync(join(ws, p)));
+      await expect.poll(astray, { ...PROMPTLY, message: `${at}: every draft's place is a note` }).toEqual([]);
       expect(settled.length, `${at}: the launch added no file: ${JSON.stringify(settled)}`).toBe(expected.length);
       expect(settled.filter((n) => !expected.includes(n)).length, `${at}: only the last note was renamed`).toBeLessThanOrEqual(1);
       expect(expected.filter((n) => !settled.includes(n)).every((n) => n === lastAdded), `${at}: only the last note was renamed`).toBe(true);
