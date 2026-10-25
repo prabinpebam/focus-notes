@@ -115,8 +115,6 @@ export interface PlatformBridge {
    * least every second while typing goes on.
    */
   recovery?: RecoveryBridge;
-  /** @deprecated The path-keyed journal (D-105), replaced by `recovery` (WP-8.9); removed once both sides use it. */
-  journal?: JournalBridge;
   /** Windows of their own, one note each (desktop, DSK-06, D-179). Absent where the shell has one window. */
   windows?: WindowsBridge;
   /** False turns the warm-up after start off, as in end-to-end tests (PRF-10). */
@@ -178,18 +176,6 @@ export interface CompositingBridge {
   initial: Compositing;
   /** Changes, as after the GPU process crashed and came back in software. Values other than the two are ignored. */
   onChange(listener: (c: unknown) => void): () => void;
-}
-
-/** @deprecated The path-keyed journal (D-105), replaced by `RecoveryBridge` (WP-8.9). */
-export interface JournalBridge {
-  write(path: string, text: string): Promise<void>;
-  restored(): Promise<RestoredNote[]>;
-}
-/** @deprecated See `JournalBridge`. */
-export interface RestoredNote {
-  path: string;
-  title: string;
-  copy?: { path: string; title: string };
 }
 
 /**
