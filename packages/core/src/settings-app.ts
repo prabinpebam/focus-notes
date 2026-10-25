@@ -33,9 +33,9 @@ export interface SettingsState {
   account?: AccountStatus;
   checking: boolean;
   /** Sign out of GitHub?, and whether Git's sign-in goes too (FRE-07). */
-  signOut: { open: boolean; git: boolean; busy: boolean };
+  signOut: { open: boolean; git: boolean; busy: boolean; drafts?: number };
   /** Remove this workspace from this computer (FRE-07, PRV-02). */
-  remove: { open: boolean; busy: boolean; check?: RemovalCheck };
+  remove: { open: boolean; busy: boolean; check?: RemovalCheck; drafts?: number };
   /** About's diagnostics: the report's preview (QLT-04). */
   diagnostics: DiagnosticsState;
   /** What takes focus when Settings opens: its categories, or Send feedback when that dialog closes back to it (D-203). */
@@ -87,6 +87,11 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
   const set = (patch: Partial<SettingsState>) => store.update((s) => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, ...patch } } }));
   const setSignOut = (patch: Partial<SettingsState["signOut"]>) => set({ signOut: { ...state().signOut, ...patch } });
   const setRemove = (patch: Partial<SettingsState["remove"]>) => set({ remove: { ...state().remove, ...patch } });
+  /** Signing out and removing the workspace delete the crash drafts on this computer too: the confirm says how many (QLT-06, D-221). */
+  const countDrafts = async (into: (patch: { drafts: number }) => void) => {
+    const n = await bridge.recovery?.count().catch(() => 0);
+    if (n) into({ drafts: n });
+  };
   const setLogin = (login: string) => { if (store.state.account.login !== login) store.update((s) => ({ ...s, account: { login } })); };
   const available = () => Boolean(fr);
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => unknown, enabled?: (s: St) => boolean) =>
@@ -145,7 +150,10 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
   commands.register({
     id: "account.signOut", title: "command.account.signOut", icon: "dismiss",
     enabled: (s) => Boolean(s.account.login),
-    run: () => set({ open: false, signOut: { open: true, git: true, busy: false } }),
+    run: () => {
+      set({ open: false, signOut: { open: true, git: true, busy: false } });
+      void countDrafts(setSignOut);
+    },
   });
   reg<{ open: boolean }>("account.setSignOutOpen", ({ open }) => { if (!open && !state().signOut.busy) setSignOut({ open: false }); });
   reg<{ value: string }>("account.setSignOutGit", (a) => { if (a.value === "remove" || a.value === "keep") setSignOut({ git: a.value === "remove" }); });
@@ -201,6 +209,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
   };
   reg("workspace.remove", async () => {
     set({ open: false, remove: { open: true, busy: true } });
+    void countDrafts(setRemove);
     // What's typed is written first, so it counts as a change not on GitHub yet.
     await flush();
     await check();
@@ -303,11 +312,15 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     const words = catalog.format(t.message);
     return t.elapsed ? catalog.format("task.elapsed", { words, seconds: t.elapsed }) : words;
   };
+  const dropsDrafts = (n: number | undefined, show: boolean) => (n && show ? { drafts: catalog.format("recovery.dropDrafts", { count: n }), hasDrafts: true } : { drafts: "", hasDrafts: false });
   viewModels.register({
     id: "vm.signOut",
     schema: {
       type: "object",
-      properties: { open: { type: "boolean" }, git: { type: "string", enum: ["remove", "keep"] }, gitOptions: { type: "array", items: OPTION }, busy: { type: "boolean" }, gitNote: { type: "string" }, label: { type: "string" } },
+      properties: {
+        open: { type: "boolean" }, git: { type: "string", enum: ["remove", "keep"] }, gitOptions: { type: "array", items: OPTION }, busy: { type: "boolean" }, gitNote: { type: "string" }, label: { type: "string" },
+        drafts: { type: "string" }, hasDrafts: { type: "boolean" },
+      },
     },
     setters: { git: "account.setSignOutGit" },
     reads: ["ui.settings.signOut", "tasks"],
@@ -317,6 +330,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
         open: o.open, git: o.git ? "remove" : "keep", busy: o.busy, label: waitLabel(s, "account.signOut", "command.account.signOutNow"),
         gitOptions: ["remove", "keep"].map((id) => ({ id, label: catalog.format(`signOut.git.${id}`) })),
         gitNote: catalog.format(o.git ? "signOut.git.removeNote" : "signOut.git.keepNote"),
+        ...dropsDrafts(o.drafts, true),
       };
     },
   });
@@ -327,6 +341,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
       properties: {
         open: { type: "boolean" }, busy: { type: "boolean" }, state: { type: "string", enum: ["checking", "ready", "unpushed", "notGit", "notWorkspace", "failed", "removed"] },
         message: { type: "string" }, canRemove: { type: "boolean" }, canSync: { type: "boolean" }, checking: { type: "boolean" }, label: { type: "string" },
+        drafts: { type: "string" }, hasDrafts: { type: "boolean" },
       },
     },
     reads: ["ui.settings.remove", "tasks"],
@@ -339,7 +354,11 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
         : st === "unpushed" ? catalog.format("remove.unpushed", { count: c!.waiting })
           : st === "ready" ? catalog.format("remove.ready", { repos: repos.length > 1 ? catalog.format("remove.repos", { first: repos[0]!, second: repos[1]! }) : repos[0] ?? "", folder: c!.folder })
             : catalog.format(`remove.${st}`);
-      return { open: r.open, busy: r.busy, state: st, message, canRemove: st === "ready", canSync: st === "unpushed", checking: st === "checking", label: waitLabel(s, "workspace.remove", "command.workspace.removeConfirm") };
+      return {
+        open: r.open, busy: r.busy, state: st, message, canRemove: st === "ready", canSync: st === "unpushed", checking: st === "checking", label: waitLabel(s, "workspace.remove", "command.workspace.removeConfirm"),
+        // Said once it can be removed: then it's part of what Remove deletes.
+        ...dropsDrafts(r.drafts, st === "ready"),
+      };
     },
   });
 }

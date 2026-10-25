@@ -16,7 +16,7 @@ const ADA = { login: "ada", id: 583231, name: "Ada Lovelace" };
 const GRACE = { login: "grace", id: 99, name: "Grace Hopper" };
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
-function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: RemovalCheck[]; desktop?: boolean } = {}) {
+function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: RemovalCheck[]; desktop?: boolean; drafts?: number } = {}) {
   const saved: AppStateFile[] = [];
   const calls: string[] = [];
   let account: AccountStatus = opts.account ?? { account: ADA, gcm: true, gh: false, via: "gcm" };
@@ -61,6 +61,12 @@ function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: 
     onSystemSchemeChange: () => () => {},
     ...(opts.desktop === false ? {} : {
       firstRun: fr,
+      ...(opts.drafts === undefined ? {} : {
+        recovery: {
+          keep: async () => {}, saved: async () => {}, discard: async () => {}, found: async () => ({ matched: [], changed: [], recovered: 0 }),
+          recovered: async () => [], text: async () => "", remove: async () => {}, count: async () => opts.drafts!,
+        },
+      }),
       sync: {
         now: async () => (calls.push("sync"), (sync = { git: true, state: "idle", waiting: 0 })),
         status: async () => sync,
@@ -240,6 +246,40 @@ describe("FRE-07: Settings → Account", () => {
 });
 
 describe("PRV-02, FRE-07: Settings → Workspace → Remove this workspace from this computer", () => {
+  it("signing out and removing the workspace say how many unsaved drafts go too, and say nothing when there are none (QLT-06, D-221)", async () => {
+    const t = shell({ drafts: 2 });
+    await t.app.start();
+    await settle();
+    await t.run("account.signOut");
+    await settle();
+    expect(t.vm("vm.signOut")).toMatchObject({ open: true, hasDrafts: true, drafts: "2 unsaved drafts on this computer will be deleted too." });
+    await t.run("account.setSignOutOpen", { open: false });
+    await t.run("workspace.remove");
+    await settle();
+    expect(t.vm("vm.removeWorkspace")).toMatchObject({ state: "ready", hasDrafts: true, drafts: "2 unsaved drafts on this computer will be deleted too." });
+
+    const one = shell({ drafts: 1 });
+    await one.app.start();
+    await one.run("account.signOut");
+    await settle();
+    expect(one.vm("vm.signOut").drafts).toBe("1 unsaved draft on this computer will be deleted too.");
+
+    for (const none of [shell({ drafts: 0 }), shell()]) {
+      await none.app.start();
+      await none.run("account.signOut");
+      await none.run("workspace.remove");
+      await settle();
+      expect(none.vm("vm.signOut")).toMatchObject({ hasDrafts: false, drafts: "" });
+      expect(none.vm("vm.removeWorkspace")).toMatchObject({ hasDrafts: false, drafts: "" });
+    }
+  });
+  it("doesn't say the drafts go while the workspace can't be removed", async () => {
+    const t = shell({ drafts: 3, removal: [{ state: "unpushed", waiting: 1, folder: "/w", repositories: ["ada/notes"] }] });
+    await t.app.start();
+    await t.run("workspace.remove");
+    await settle();
+    expect(t.vm("vm.removeWorkspace")).toMatchObject({ state: "unpushed", hasDrafts: false });
+  });
   it("refuses while changes aren't on GitHub, offers to sync first, then removes once they are", async () => {
     const t = shell({ removal: [
       { state: "unpushed", waiting: 2, folder: "/home/ada/Documents/Focus Notes", repositories: ["ada/notes", "ada/notes-private"] },

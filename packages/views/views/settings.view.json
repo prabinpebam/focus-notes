@@ -1724,6 +1724,17 @@
                 }
               },
               {
+                "type": "Text",
+                "when": {
+                  "get": "vm.signOut.hasDrafts"
+                },
+                "props": {
+                  "value": {
+                    "get": "vm.signOut.drafts"
+                  }
+                }
+              },
+              {
                 "type": "SegmentedControl",
                 "props": {
                   "label": {
@@ -1837,6 +1848,17 @@
                     "get": "vm.removeWorkspace.message"
                   },
                   "announce": true
+                }
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.removeWorkspace.hasDrafts"
+                },
+                "props": {
+                  "value": {
+                    "get": "vm.removeWorkspace.drafts"
+                  }
                 }
               },
               {
