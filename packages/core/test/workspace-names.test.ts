@@ -71,6 +71,16 @@ describe("titles and following them (FIL-07)", () => {
     expect(titleOfMarkdown("Setext title\n===\n")).toBe("Setext title");
     expect(titleOfMarkdown("## Only a section\n")).toBeUndefined();
   });
+  it("DEF-35: a title typed with a trailing space names its file without the writer's character reference", () => {
+    // The Markdown writer keeps a heading's trailing space as `&#x20;`; the title and its file name never show it.
+    expect(titleOfMarkdown("# What is good&#x20;\n\nText")).toBe("What is good");
+    expect(fileNameForTitle(titleOfMarkdown("# What is good&#x20;\n")!)).toBe("what-is-good.md");
+    expect(titleOfMarkdown("# &#32;Spaced&#x20;&#x20;\n")).toBe("Spaced");
+    expect(titleOfMarkdown("# Fish &amp; chips&nbsp;\n")).toBe("Fish & chips");
+    expect(titleOfMarkdown("# Caf&#xE9; &#x1F600;\n")).toBe("Café 😀");
+    // Escaped markup stays text, and what isn't a reference stays as typed.
+    expect(titleOfMarkdown("# 2 &#42; 3 &unknown; & co\n")).toBe("2 * 3 &unknown; & co");
+  });
   it("a name follows its title when it's the title's name, a numbered clash of it, or untitled", () => {
     expect(followsTitle("on-focus.md", "On focus")).toBe(true);
     expect(followsTitle("on-focus-2.md", "On focus")).toBe(true);

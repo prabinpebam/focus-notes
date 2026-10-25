@@ -130,8 +130,20 @@ export function followsTitle(fileName: string, title: string): boolean {
   return s === t || isNumbered(s, t) || /^untitled(-\d+)?$/.test(s);
 }
 
+/**
+ * Character references in a title (DEF-35): the Markdown writer keeps a heading's trailing space as
+ * `&#x20;`, so a title is read as the person sees it, never naming a file "…-x20". Numeric
+ * references and the few named ones a writer uses are decoded; anything else stays as typed.
+ */
+const NAMED_REFS: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0" };
+const decodeRefs = (s: string) =>
+  s.replace(/&(?:#(\d{1,7})|#[xX]([0-9a-fA-F]{1,6})|([a-zA-Z]+));/g, (m, dec: string | undefined, hex: string | undefined, name: string | undefined) => {
+    if (name !== undefined) return NAMED_REFS[name] ?? m;
+    const cp = dec !== undefined ? Number(dec) : parseInt(hex!, 16);
+    return cp > 0 && cp <= 0x10ffff && (cp < 0xd800 || cp > 0xdfff) ? String.fromCodePoint(cp) : "\ufffd";
+  });
 const inline = (s: string) =>
-  stripUnderscores(stripLinks(s).replace(/[*`]|~~/g, "")).replace(/\s+/g, " ").trim();
+  decodeRefs(stripUnderscores(stripLinks(s).replace(/[*`]|~~/g, ""))).replace(/\s+/g, " ").trim();
 
 /** A note's title: its first H1, outside front matter and code (content-model.md → A note file). */
 export function titleOfMarkdown(markdown: string): string | undefined {
