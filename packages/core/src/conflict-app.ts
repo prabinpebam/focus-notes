@@ -1,7 +1,8 @@
 /**
  * The conflict resolver in the app (FIL-12, IA-CMP-CONFLICT, DD-FB-04). Two ways a note can have
  * two versions: sync found it changed on another computer, or another program changed the file
- * while this window had unsaved edits (D-92). Either way both versions show, block by block, and
+ * while this window had unsaved edits (D-92); and text a crash left over a note that changed since
+ * (QLT-06) compares the same way, as Recovered and On disk. Either way both versions show, block by block, and
  * every choice keeps every word: Keep this computer's version, Take the other version (yours is kept
  * in Recently deleted), or Keep both. Decide later keeps your text and changes nothing.
  */
@@ -18,8 +19,11 @@ import { SYNC_PROBLEMS } from "./sync-app.ts";
 
 export interface ConflictState {
   open: boolean;
-  /** `sync`: changed on another computer. `outside`: changed by another program while this window had unsaved edits. */
-  kind: "sync" | "outside";
+  /**
+   * `sync`: changed on another computer. `outside`: changed by another program while this window had
+   * unsaved edits. `recovered`: text a crash left, over a note that changed since (QLT-06, D-220).
+   */
+  kind: "sync" | "outside" | "recovered";
   notes: NoteConflict[];
   /** The note showing: they're settled one after another. */
   index: number;
@@ -51,6 +55,8 @@ interface Ctx {
   sawOnDisk?: (path: string, text: string) => void;
   /** Writes the open note's unsaved text now. */
   flush: () => Promise<boolean>;
+  /** The open note's text was replaced by the other version; what was typed is in a copy now (QLT-06). */
+  dropped?: () => void;
   now?: () => number;
 }
 
@@ -114,6 +120,14 @@ export function registerConflicts(ctx: Ctx) {
     set({ kind: "outside", notes: [n], index: 0, choices: [], held: path, busy: false });
     toast(catalog.format("toast.changedOutside", { note: titleOf(n) }), { action: resolveAction() });
   }
+  /**
+   * Text a crash left over a note that changed since (QLT-06): the resolver opens with Recovered and
+   * On disk, and nothing is written until a choice is made. The launch's toast has said so already.
+   */
+  function recovered(path: string, mine: string, theirs: string): void {
+    const n: NoteConflict = { path, mine, theirs, theirsAt: now() };
+    set({ open: true, kind: "recovered", notes: [n], index: 0, choices: [], held: path, busy: false, focus: conflict().focus + 1 });
+  }
   /** Siblings' names, so a copy's name is free next to the note. */
   const siblings = (path: string) => {
     const dir = dirOf(path);
@@ -132,6 +146,7 @@ export function registerConflicts(ctx: Ctx) {
   async function chooseOutside(choice: ConflictChoiceKind): Promise<void> {
     const n = conflict().notes[0];
     if (!n || n.mine === undefined || n.theirs === undefined) return;
+    const kind = conflict().kind;
     set({ busy: true });
     try {
       await ctx.tracker.run("conflict", "task.resolving", async () => {
@@ -154,9 +169,10 @@ export function registerConflicts(ctx: Ctx) {
         // The other version replaces the text here; what was typed is in the copy.
         ctx.setNote({ key: `${n.path}#conflict-${now()}`, initialMarkdown: n.theirs, markdown: n.theirs, saveState: "saved" });
         ctx.loaded(n.path, n.theirs);
+        ctx.dropped?.();
       }
     }
-    const done = catalog.format(`conflict.settled.${choice}`, { what: quoted(n) });
+    const done = catalog.format(`conflict.${kind === "recovered" ? "settledRecovered" : "settled"}.${choice}`, { what: quoted(n) });
     toast(done);
     announce(done);
   }
@@ -166,7 +182,7 @@ export function registerConflicts(ctx: Ctx) {
     id: "conflict.open", title: "command.conflict.open",
     enabled: (s) => s.sync.problem === "conflict" || Boolean(s.ui.conflict.held),
     run: async () => {
-      if (conflict().held && conflict().kind === "outside") return set({ open: true, focus: conflict().focus + 1 });
+      if (conflict().held && conflict().kind !== "sync") return set({ open: true, focus: conflict().focus + 1 });
       await openSync();
     },
   });
@@ -177,7 +193,7 @@ export function registerConflicts(ctx: Ctx) {
       const kind = (["mine", "theirs", "both"] as const).find((k) => k === choice);
       const n = c.notes[c.index];
       if (!c.open || c.busy || !kind || !n) return;
-      if (c.kind === "outside") return chooseOutside(kind);
+      if (c.kind !== "sync") return chooseOutside(kind);
       const choices = [...c.choices, { path: n.path, choice: kind, ...(kind !== "mine" && n.mine !== undefined ? { copyTitle: copyTitle(n, kind) } : {}) }];
       if (c.index + 1 < c.notes.length) return set({ choices, index: c.index + 1, focus: c.focus + 1 });
       set({ choices });
@@ -208,16 +224,17 @@ export function registerConflicts(ctx: Ctx) {
       if (!c.open || !n) return { ...CLOSED_VM, focus: c.focus };
       const v = compareVersions(n.mine ?? "", n.theirs ?? "");
       const sync = c.kind === "sync";
+      const recovered = c.kind === "recovered";
       return {
         open: true, busy: c.busy, focus: c.focus,
-        title: catalog.format(sync ? "conflict.title" : "conflict.titleOutside", { what: quoted(n) }),
+        title: catalog.format(sync ? "conflict.title" : recovered ? "conflict.titleRecovered" : "conflict.titleOutside", { what: quoted(n) }),
         position: c.notes.length > 1 ? catalog.format("conflict.position", { n: c.index + 1, count: c.notes.length }) : "", multiple: c.notes.length > 1,
-        mineLabel: catalog.format("conflict.mine"),
-        theirsLabel: n.theirsAt !== undefined ? catalog.format(sync ? "conflict.theirsAt" : "conflict.outsideAt", { at: n.theirsAt }) : catalog.format("conflict.theirs"),
+        mineLabel: catalog.format(recovered ? "conflict.recovered" : "conflict.mine"),
+        theirsLabel: recovered ? catalog.format("conflict.onDisk") : n.theirsAt !== undefined ? catalog.format(sync ? "conflict.theirsAt" : "conflict.outsideAt", { at: n.theirsAt }) : catalog.format("conflict.theirs"),
         mine: n.mine === undefined ? [] : v.mine, theirs: n.theirs === undefined ? [] : v.theirs,
         mineEmpty: catalog.format(n.mine === undefined ? "conflict.deletedHere" : "conflict.emptyNote"),
         theirsEmpty: catalog.format(n.theirs === undefined ? "conflict.deletedThere" : "conflict.emptyNote"),
-        keepMine: catalog.format("conflict.keepMine"), takeTheirs: catalog.format(sync ? "conflict.takeTheirs" : "conflict.takeOutside"),
+        keepMine: catalog.format(recovered ? "conflict.keepRecovered" : "conflict.keepMine"), takeTheirs: catalog.format(sync ? "conflict.takeTheirs" : "conflict.takeOutside"),
       };
     },
   });
@@ -240,6 +257,7 @@ export function registerConflicts(ctx: Ctx) {
 
   return {
     outside,
+    recovered,
     /** Whether saves to this note wait for a choice (D-92). */
     holds: (path: string | undefined) => path !== undefined && conflict().held === path,
     /** Opens the resolver for a held note, or for a note sync found in conflict when it's opened. */

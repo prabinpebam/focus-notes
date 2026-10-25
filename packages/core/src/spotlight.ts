@@ -380,6 +380,8 @@ const INTERNAL_IDS = new Set([
   "app.ready", "command.run", "note.setContent", "find.prefill", "find.setResult", "paste.notice", "format.setState",
   "table.setState", "table.action", "table.changed", "table.copied", "table.moveRow", "table.moveColumn", "table.insertRowAt", "table.insertColumnAt",
   "table.openMenu", "table.closeMenu", "toast.dismiss", "toast.action", "window.drag",
+  // The launch toast's Review (QLT-06): it acts on what that launch found.
+  "recovery.review",
   // Steps inside a dialog, a card, or the link editor, which their own controls run.
   "link.openEditor", "link.apply", "link.cancel", "link.dismiss", "account.signOutNow", "workspace.removeSync", "workspace.removeConfirm",
   // A Files row's own Copy public link (D-162): Spotlight has the open note's, note.copyPublicLink.

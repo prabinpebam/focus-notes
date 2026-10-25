@@ -23,6 +23,7 @@ import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 import { registerRecover, RECOVER_CLOSED, type RecoverState } from "./recover-app.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
+import { registerDrafts } from "./drafts-app.ts";
 import { registerNoteHistory, HISTORY_CLOSED, type HistoryState } from "./note-history-app.ts";
 import { registerDeepLinks } from "./deep-link-app.ts";
 import { registerAgents, AGENTS_IDLE, type AgentsState } from "./agents-app.ts";
@@ -356,8 +357,6 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   let saving: Promise<void> = Promise.resolve();
   /** When the text not yet handed to a write first changed: the browser saves no later than a second after (QLT-03). */
   let unsavedSince: number | undefined;
-  let journalTimer: ReturnType<typeof setTimeout> | undefined;
-  let journalAt = -Infinity;
   const warmUp = new WarmUp({ enabled: bridge.warmUp !== false });
   let appState: AppStateFile = { version: 1 };
   /** What this device keeps (`state.json`), and the synced settings file while syncing is on (PRV-03). */
@@ -436,6 +435,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     // The file changed outside while this was unsaved: nothing overwrites it until a choice is made (D-92).
     if (conflicts.holds(path)) return;
     unsavedSince = undefined;
+    // What the save covers of the text kept for recovery: confirmed once it's on disk (QLT-06).
+    const confirm = drafts.snapshot();
     setNote({ saveState: "saving" });
     try {
       // The shell writes only if the file still holds what this window knows is there: another
@@ -453,7 +454,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // A held note asks before its first backup only once it has the writer's words (D-158).
       heldNotes.written(path, store.state.note.path);
       // Only mark saved if nothing changed while writing.
-      if (store.state.note.markdown === markdown) setNote({ saveState: "saved" });
+      const unchanged = store.state.note.markdown === markdown;
+      confirm(unchanged);
+      if (unchanged) setNote({ saveState: "saved" });
       else schedule();
     } catch {
       setNote({ saveState: "error" });
@@ -468,31 +471,19 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   };
   const schedule = () => {
     clearTimeout(saveTimer);
-    // Without a journal, typing that never pauses is still saved every UNJOURNALED_SAVE_MS (QLT-03).
-    const wait = bridge.journal || unsavedSince === undefined ? SAVE_DELAY_MS : Math.min(SAVE_DELAY_MS, Math.max(0, unsavedSince + UNJOURNALED_SAVE_MS - Date.now()));
+    // Without a shell keeping drafts, typing that never pauses is still saved every UNJOURNALED_SAVE_MS (QLT-03).
+    const wait = bridge.recovery || unsavedSince === undefined ? SAVE_DELAY_MS : Math.min(SAVE_DELAY_MS, Math.max(0, unsavedSince + UNJOURNALED_SAVE_MS - Date.now()));
     saveTimer = setTimeout(() => {
       saving = saving.then(writeNow);
     }, wait);
   };
-  /**
-   * The recovery journal (QLT-03): unsaved text goes to it at once, or, when it was just written,
-   * JOURNAL_INTERVAL_MS after that write with the latest text, so a crash loses at most about a
-   * second. At once means now, not on a timer a busy computer runs late. Off the typing path: the
-   * shell writes it.
-   */
-  const journalSoon = () => {
-    const journal = bridge.journal;
-    if (!journal || journalTimer) return;
-    const write = () => {
-      journalTimer = undefined;
-      const { path, markdown, saveState } = store.state.note;
-      if (!path || saveState === "saved") return;
-      journalAt = Date.now();
-      void journal.write(path, markdown).catch(() => {});
-    };
-    const wait = journalAt + JOURNAL_INTERVAL_MS - Date.now();
-    if (wait <= 0) write();
-    else journalTimer = setTimeout(write, wait);
+  /** Text that's the note's now, unsaved: saved soon, and kept for recovery until it is (QLT-03, QLT-06). */
+  const typed = (markdown: string) => {
+    unsavedSince ??= Date.now();
+    setNote({ markdown, saveState: "unsaved" });
+    sync.edited();
+    schedule();
+    drafts.edited();
   };
 
   // Back and forward between notes (Keyboard shortcuts → App and window, KEY-03), as in a browser:
@@ -561,6 +552,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       visited(path);
       // A note sync found changed elsewhere opens the resolver when it's opened (IA-CMP-CONFLICT).
       conflicts.offer(path);
+      // A new draft from its first edit; text a crash left for it comes back now (QLT-06).
+      drafts.opened(path, md);
       // A private note's name is private: it's never written to this browser's storage (D-90).
       if (sourceOf(path) !== "private") await persistAppState({ lastNotePath: path });
       return true;
@@ -642,11 +635,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // mustn't write (DST-05); the editor doesn't change them either.
       if (noteReadOnly(store.state)) return;
       warmUp.typed();
-      unsavedSince ??= Date.now();
-      setNote({ markdown: value, saveState: "unsaved" });
-      sync.edited();
-      schedule();
-      journalSoon();
+      typed(value);
     },
   });
   commands.register({
@@ -1059,6 +1048,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       if (start !== undefined) afterPaint(() => timing.measure(OPEN_MEASURE, start));
       // The caret is ready: the warm-up may begin (PRF-10).
       warmUp.start();
+      drafts.editorReady();
       const jump = pendingJump;
       if (jump && jump.path === store.state.note.path) {
         pendingJump = undefined;
@@ -1105,6 +1095,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       workspace.movedOnDisk(from, to);
       conflicts.moved(from, to);
     },
+    notesMoved: (moves) => drafts.moved(moves),
     describeItem, itemSchema: ITEM_SCHEMA, editorAction: (id) => editorAction(id), tracker, htmlToMarkdown: options.htmlToMarkdown,
   });
   const browser = registerBrowserFeatures({
@@ -1117,7 +1108,19 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store, commands, viewModels, catalog, bridge, tracker, toast, announce, exclusive, setNote, flush,
     loaded: (path, md) => workspace.loaded(path, md),
     sawOnDisk: (path, text) => workspace.sawOnDisk(path, text),
+    dropped: () => drafts.dropped(),
     ...(options.clock ? { now: options.clock.now } : {}),
+  });
+  // Crash recovery (QLT-06, D-190): drafts kept by the shell, and what the last session left.
+  const drafts = registerDrafts({
+    store, commands, catalog, bridge, toast, editorAction, afterPaint, typed, load,
+    flush: () => {
+      editorAction(FLUSH_EDITOR);
+      return flush();
+    },
+    compare: (path, recovered, disk) => conflicts.recovered(path, recovered, disk),
+    comparing: () => store.state.ui.conflict.kind === "recovered" && conflicts.holds(store.state.note.path),
+    interval: JOURNAL_INTERVAL_MS,
   });
   // The demo (WP-10.6, D-177): its banner's actions, and what the desktop app would do instead.
   {
@@ -1547,6 +1550,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // writes the folder (no note, Files, backup or setup) until the shell has one again and starts
       // the app over. The first run's steps are still there, for Sign in again and Choose your notes.
       const missing = await recover.begin();
+      // What the last session left is asked for now, and never delays the first note (PRF-02).
+      const recovering = missing ? undefined : drafts.start().catch(() => {});
       if (missing) await firstRun.begin({ ...appState, firstRun: "done" });
       // The desktop's first run shows over the blank canvas; the first note opens when it's done (FRE-01).
       else if (!(await firstRun.begin(appState))) {
@@ -1564,11 +1569,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         void deepLinks.take();
       }
       if (!missing) {
-        // What a crash left unsaved was put back before anything was read (QLT-03); say so, calmly.
-        const restored = (await bridge.journal?.restored().catch(() => undefined)) ?? [];
-        const copied = restored.find((r) => r.copy);
-        if (copied) toast(catalog.format("toast.restoredCopy", { note: copied.title, copy: copied.copy!.title }));
-        else if (restored.length) toast(catalog.format("toast.restored", { count: restored.length, note: restored[0]!.title }));
+        // What a crash left is back in its notes, or waits for a choice; one toast says so, calmly.
+        await recovering;
         workspace.start();
         sync.start();
         repoBackup.start();
