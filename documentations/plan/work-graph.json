@@ -1,7 +1,7 @@
 {
   "$comment": "The implementation plan in machine-readable form. Agents read this file to choose ready work. Keep it in step with implementation-plan.md; the plan check (WP-0.1) fails CI if they disagree.",
   "version": 1,
-  "updated": "2026-10-16",
+  "updated": "2026-10-24",
   "stages": [
     {
       "id": "M0",
@@ -1556,6 +1556,74 @@
       ],
       "lookahead": false,
       "status": "verifying"
+    },
+    {
+      "id": "WP-5.14",
+      "stage": "M5",
+      "title": "Notes folder recovery and sync status",
+      "summary": "The start check before anything else, with no silent re-creation; the recovery view (download again, sign in again, find the folder, start an empty folder offline); the workspace record's kind, notes on GitHub, account and last backup; the out-of-sync alert and card with Sync now, automatic sync when nothing could be lost, and the mass-deletion pause; offline mode in the corner; Settings showing the account Git signs in with (DEF-33).",
+      "requirements": [
+        "FRE-11",
+        "FRE-12",
+        "FRE-13"
+      ],
+      "dependsOn": [
+        "WP-3.2",
+        "WP-3.3"
+      ],
+      "touches": [
+        "apps/desktop",
+        "packages/core",
+        "packages/ui",
+        "packages/views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "experience/notes-folder.md",
+        "design/components/feedback-and-dialogs.md",
+        "architecture/desktop-and-git.md",
+        "architecture/perceived-performance.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
+    },
+    {
+      "id": "WP-5.15",
+      "stage": "M5",
+      "title": "Choose where notes live",
+      "summary": "Setup's Where should your notes live? step; Settings → Workspace's Move… (a rename, or a counted, verified copy with Cancel until the switch) and Open another folder…; folders that OneDrive, Google Drive, iCloud Drive or Dropbox keep in sync, named in the corner, with Git kept out by default, online-only notes left online and held saves retried.",
+      "requirements": [
+        "FRE-14",
+        "FRE-15"
+      ],
+      "dependsOn": [
+        "WP-5.14"
+      ],
+      "touches": [
+        "apps/desktop",
+        "packages/core",
+        "packages/ui",
+        "packages/views"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "accessibility",
+        "security"
+      ],
+      "specs": [
+        "experience/notes-folder.md",
+        "experience/first-run.md",
+        "architecture/desktop-and-git.md",
+        "architecture/perceived-performance.md"
+      ],
+      "lookahead": false,
+      "status": "planned"
     },
     {
       "id": "WP-6.1",

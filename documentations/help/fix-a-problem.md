@@ -30,5 +30,7 @@ If GitHub says your sign-in can't open issues there (some tokens only cover your
 - That folder already has other files
 - Windows SmartScreen or macOS warns about the download
 - My notes look different on another computer
+- My notes folder is missing
+- My notes say they're out of sync
 
 [Back to Help](index.md)

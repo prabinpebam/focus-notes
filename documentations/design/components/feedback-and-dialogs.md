@@ -21,7 +21,7 @@ The shared components that tell people what happened and ask them before anythin
 
 <h2 id="save-and-sync-status" data-reader-personas="design product">Save and sync status</h2>
 
-**IA-CMP-SAVESTATE.** Serves UC-SAFE-01 and UC-SAFE-03.
+**IA-CMP-SAVESTATE.** Serves UC-SAFE-01, UC-SAFE-03, UC-SAFE-10 and UC-OWN-03.
 
 | State | What shows | Why |
 | --- | --- | --- |
@@ -47,6 +47,8 @@ While there's a problem, opening the toolbar adds a status row at its top: "3 ch
 | Problem | warning, in the danger color | "Couldn't back up · Try again" |
 
 Pressing it backs up now (the retry, on a problem). After *Save to cloud* the label opens beside the icon, "Backing up…" then "Backed up", for about 2 s, and a polite live region says the result; problems are announced by their toast, and nothing else is.
+
+**The notes folder's own states (proposed, D-213, D-215; WP-5.14, WP-5.15):** offline mode ("Offline mode · saved on this computer"), a folder another service syncs ("Saved here · OneDrive keeps it in sync"), and out of sync or a sign-in that stopped working, with an alert icon in `color.warning` on the save state and the Files header whose card says what differs and offers *Sync now* or *Sign in again* ([Where your notes live → What the corner and the Files header say](../../experience/notes-folder.md#what-the-corner-and-the-files-header-say), [Out of sync](../../experience/notes-folder.md#out-of-sync)).
 
 **By repository (FIL-14, D-191):** each Files section's heading (Private, Public) carries its repository's own `SaveState` icon with these states, and a card like this one: the section, its state, the repository, the last backup, what waits there in counts ("2 folders, 1 note waiting for backup", empty folders included), and *Back up to GitHub* for that repository alone, which runs through the task tracker and announces "Public notes backed up" ([Files → Repository backup](../views/files.html#repository-backup)).
 

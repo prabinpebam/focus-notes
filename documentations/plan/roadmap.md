@@ -15,7 +15,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M3: Desktop sign-in and Git** | Your instance on your computer. | The owner, then invited testers | Preview 0.3.x | 21 |
 | **M2: The desktop app** | A dedicated desktop experience. | The owner, then invited testers | Preview 0.3.x | 9 |
 | **M4: Find anything, make it yours** | Everything is one keystroke away. | Invited testers | Preview 0.4.x | 13 |
-| **M5: Publish and share** | Version 1.0. | Anyone | 1.0 stable on GitHub Releases | 19 |
+| **M5: Publish and share** | Version 1.0. | Anyone | 1.0 stable on GitHub Releases | 30 |
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 22 |
 | **Later: Components** | Rich components. | Anyone | Later releases | 2 |
@@ -36,6 +36,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
   - **WP-8.10 backup by repository (D-191):** Private and Public in Files each show their repository's backup icon and card, counting what waits there (empty folders too), with *Back up to GitHub* for that repository. Built on `wp-repo-backup` (18 October); waiting for its Windows CI run and the owner's look.
   - **WP-5.6, WP-5.7, WP-6.2:** loose ends.
 - **Not started:**
+  - WP-5.14 notes folder recovery and sync status, then WP-5.15 choosing where notes live: specified in [Where your notes live](../experience/notes-folder.md) (D-212 to D-215, proposed 24 October), waiting for the owner's approval before building;
   - WP-8.6 signing, updates, channels and stores (needs the owner's certificates);
   - WP-8.7 more interface languages;
   - WP-9.1 image block and WP-9.2 gallery block.
@@ -104,7 +105,7 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M5: Publish and share (Version 1.0)</p>
-<p>The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. Visitors' *Use this app for yourself* dialog links to the downloads, and every release ships with checksums, an SBOM, and attestations. <a href="implementation-plan.md#m5">Details</a>. DSK-09, DST-03, DST-06, DST-08, EDT-14, PKG-02, PKG-12, PRF-05, PRF-06, PRF-12, PRF-13, PRF-14, PRV-04, QLT-02, QLT-04, QLT-07, SEC-05, SHR-03, SHR-05 to SHR-11.</p>
+<p>The first public release. Public notes are published to your own GitHub Pages site. Private notes and folders can be shared with named audiences through magic links and passcodes. Visitors' *Use this app for yourself* dialog links to the downloads, and every release ships with checksums, an SBOM, and attestations. <a href="implementation-plan.md#m5">Details</a>. DSK-09, DST-03, DST-06, DST-08, EDT-14, FRE-11 to FRE-15, PKG-02, PKG-12, PRF-05, PRF-06, PRF-12, PRF-13, PRF-14, PRV-04, QLT-02, QLT-04, QLT-07, SEC-05, SHR-03, SHR-05 to SHR-11.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">M7: Agents (Your agents can help, safely)</p>

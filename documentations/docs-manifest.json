@@ -163,6 +163,15 @@
       "group": "Experience"
     },
     {
+      "path": "experience/notes-folder.md",
+      "title": "Where your notes live",
+      "order": 291,
+      "icon": "folder",
+      "status": "draft",
+      "updated": "2026-10-24",
+      "group": "Experience"
+    },
+    {
       "path": "design/information-architecture.html",
       "title": "Information architecture",
       "order": 300,

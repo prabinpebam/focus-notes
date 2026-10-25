@@ -14,8 +14,8 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | `CP-FLOW-01` | Shaping text and tables feels fluid | Seed: Notion/Loop editing, tables; owner: Loop tables, contextual toolbar | SC-WRITE-03 to SC-WRITE-07, SC-TABLE-01 to SC-TABLE-04 |
 | `CP-REACH-01` | Anything is a few keystrokes away | Owner: Spotlight, find, keyboard | SC-FIND-01 to SC-FIND-06 |
 | `CP-ORDER-01` | Organized your way, safely reorganized | Seed: file and folder CRUD with moves | SC-FILE-01 to SC-FILE-04 |
-| `CP-SAFE-01` | Never lose, never leak | Seed: public/private; derived from Git storage | SC-FILE-05, SC-SAFE-01 to SC-SAFE-05 |
-| `CP-OWN-01` | Yours to keep | Seed: Markdown in a GitHub repo; owner: no hosting, no registration | SC-TABLE-05, SC-OWN-01, SC-SETUP-04 |
+| `CP-SAFE-01` | Never lose, never leak | Seed: public/private; derived from Git storage | SC-FILE-05, SC-SAFE-01 to SC-SAFE-07 |
+| `CP-OWN-01` | Yours to keep | Seed: Markdown in a GitHub repo; owner: no hosting, no registration | SC-TABLE-05, SC-OWN-01, SC-OWN-02, SC-SETUP-04 |
 | `CP-SHARE-01` | Sharing is deliberate | Seed: public links, private content | SC-FILE-06, SC-SHARE-01 to SC-SHARE-03 |
 | `CP-YOURS-01` | Comfortable and yours in a minute | Seed: change theme, colors, fonts; owner: light/dark/system, theme management | SC-THEME-01 to SC-THEME-07 |
 | `CP-READY-01` | Ready in minutes | Owner: device sign-in, first-run, Git works from the terminal | SC-SETUP-01 to SC-SETUP-03, SC-SETUP-05 |
@@ -80,9 +80,9 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | --- | --- |
 | Customer promise | Nothing you write is lost, and nothing private is published by accident. |
 | Why it matters | Trust is the base of a writing tool. A single lost paragraph or leaked note ends it. |
-| Breaks when | Unsaved text can be lost, a delete can't be undone, a conflict silently overwrites, or a private note becomes public without explicit confirmation. |
-| Signals | Restores from Recently deleted. Conflicts resolved without data loss. Zero leaks found by the publish check. |
-| Scenarios | SC-FILE-05, SC-SAFE-01, SC-SAFE-02, SC-SAFE-03, SC-SAFE-04, SC-SAFE-05 |
+| Breaks when | Unsaved text can be lost, a delete can't be undone, a conflict silently overwrites, a private note becomes public without explicit confirmation, or a missing notes folder is silently replaced with an empty one that never syncs. |
+| Signals | Restores from Recently deleted. Conflicts resolved without data loss. Zero leaks found by the publish check. A missing or unconnected folder always leads back to the notes. |
+| Scenarios | SC-FILE-05, SC-SAFE-01, SC-SAFE-02, SC-SAFE-03, SC-SAFE-04, SC-SAFE-05, SC-SAFE-06, SC-SAFE-07 |
 
 ### CP-OWN-01 — Yours to keep
 
@@ -91,8 +91,8 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | Customer promise | Your notes are plain Markdown in your own GitHub repository, running on nothing but your own account; you can leave any time and take everything. |
 | Why it matters | Notes outlive apps. Lock-in is a hidden cost people resent later. |
 | Breaks when | The app writes anything a plain Markdown viewer can't show, rewrites files it didn't need to touch, or depends on any service other than the user's own GitHub account. |
-| Signals | Round-trip test corpus passes. Notes render the same on GitHub. |
-| Scenarios | SC-TABLE-05, SC-OWN-01, SC-SETUP-04 |
+| Signals | Round-trip test corpus passes. Notes render the same on GitHub. The notes folder lives wherever the person chooses. |
+| Scenarios | SC-TABLE-05, SC-OWN-01, SC-OWN-02, SC-SETUP-04 |
 
 ### CP-SHARE-01 — Deliberate sharing
 
