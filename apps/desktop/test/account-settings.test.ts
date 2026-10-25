@@ -10,7 +10,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DATA_FILES, filesRemovedBy } from "@focus-notes/core/inventory";
+import { DATA_FILES, DATA_FOLDERS, filesRemovedBy } from "@focus-notes/core/inventory";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 import { createRunner } from "../src/main/git/run.ts";
 import { Account } from "../src/main/first-run/account.ts";
@@ -139,6 +139,23 @@ describe("PRV-02: what signing out and removing a workspace delete", () => {
       const expected = [...Object.values(DATA_FILES).filter((f) => !filesRemovedBy(event).includes(f)), "Chromium"].sort();
       expect(left, event).toEqual(expected);
     }
+  });
+  it("QLT-06: removes crash recovery's folder once the open workspace's drafts are gone, and never another workspace's drafts", async () => {
+    for (const event of ["signOut", "removeWorkspace"] as const) {
+      const empty = mkdtempSync(join(tmpdir(), "fn-user-"));
+      mkdirSync(join(empty, DATA_FOLDERS.drafts));
+      await forgetLocalData(empty, event);
+      expect(readdirSync(empty), event).toEqual([]);
+      const other = mkdtempSync(join(tmpdir(), "fn-user-"));
+      mkdirSync(join(other, DATA_FOLDERS.drafts, "0123456789abcdef"), { recursive: true });
+      writeFileSync(join(other, DATA_FOLDERS.drafts, "0123456789abcdef", "a.draft"), "{}\nAnother workspace's unsaved text");
+      await forgetLocalData(other, event);
+      expect(readdirSync(join(other, DATA_FOLDERS.drafts, "0123456789abcdef")), event).toEqual(["a.draft"]);
+    }
+    const kept = mkdtempSync(join(tmpdir(), "fn-user-"));
+    mkdirSync(join(kept, DATA_FOLDERS.drafts));
+    await forgetLocalData(kept, "runSetupAgain");
+    expect(readdirSync(kept)).toEqual([DATA_FOLDERS.drafts]);
   });
 });
 

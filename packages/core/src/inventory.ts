@@ -33,7 +33,10 @@ export const DATA_FILES = {
   account: "account.json",
   /** The window's size, position, and maximized or snapped state (DSK-03, D-104). */
   window: "window.json",
-  /** Unsaved note text, while there is some, and after a crash until the next launch restores it (QLT-03). */
+  /**
+   * The old recovery journal (QLT-03, D-105): no longer written. The first launch with the draft
+   * store reads it once, turns its entries into drafts in `recovery/`, and deletes it (D-190, D-219).
+   */
   journal: "recovery-journal.jsonl",
   /** The signed-in account's public GitHub picture, for the first run's profile card (D-126). */
   avatar: "avatar.json",
@@ -49,6 +52,14 @@ export const DATA_FILES = {
   tray: "tray.json",
 } as const;
 export type DataFile = (typeof DATA_FILES)[keyof typeof DATA_FILES];
+
+/**
+ * The app's own folders in its data folder. `drafts` is crash recovery's store (QLT-06, D-190):
+ * `recovery/<workspace key>/<draft>.draft`, one file per note with unsaved text, private notes'
+ * encrypted with the operating system's key store.
+ */
+export const DATA_FOLDERS = { drafts: "recovery" } as const;
+export type DataFolder = (typeof DATA_FOLDERS)[keyof typeof DATA_FOLDERS];
 
 /**
  * Chromium's working files: compiled copies of the app's own code, GPU shader caches, and web
@@ -89,15 +100,23 @@ export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "agentPermissions", path: DATA_FILES.agents, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "agentLimits", path: DATA_FILES.agentLimits, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "agentLimitsLock", path: DATA_FILES.agentLimitsLock, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
-  { id: "recoveryJournal", path: DATA_FILES.journal, removedBy: ["quit", "signOut", "removeWorkspace", "deleteDataFolder"] },
+  // Signing out and removing the workspace delete the open workspace's drafts, then the folder once nothing else is in it: another workspace's drafts stay.
+  { id: "drafts", path: `${DATA_FOLDERS.drafts}/`, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
+  // Migrated once into the drafts, then deleted; only an older version's leftover is ever here.
+  { id: "recoveryJournal", path: DATA_FILES.journal, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "chromium", path: `${CHROMIUM_FOLDERS.session}/`, removedBy: ["deleteDataFolder"] },
   { id: "codeCache", path: `${CHROMIUM_FOLDERS.codeCache}/`, removedBy: ["deleteDataFolder"] },
   ...LOCK_FILES.map((f) => ({ id: `lock.${f}`, path: f, removedBy: ["quit"] as const })),
 ];
 
-/** The data folder's files an event deletes (whole files only; recent items are keys in `state.json`). */
-export const filesRemovedBy = (event: Removal): DataFile[] =>
-  DESKTOP_DATA.filter((i) => i.removedBy.includes(event) && !i.path.includes("#") && !i.path.endsWith("/") && !(LOCK_FILES as readonly string[]).includes(i.path)).map((i) => i.path as DataFile);
+const ownFolders = Object.values(DATA_FOLDERS).map((f) => `${f}/`);
+/**
+ * The data folder's files an event deletes, and the app's own folders it empties of the open
+ * workspace's data (named without the `/`). Recent items are keys in `state.json`; Chromium's
+ * folders are emptied through the session, never deleted.
+ */
+export const filesRemovedBy = (event: Removal): (DataFile | DataFolder)[] =>
+  DESKTOP_DATA.filter((i) => i.removedBy.includes(event) && !i.path.includes("#") && (!i.path.endsWith("/") || ownFolders.includes(i.path)) && !(LOCK_FILES as readonly string[]).includes(i.path)).map((i) => i.path.replace(/\/$/, "") as DataFile | DataFolder);
 
 /** App state without its recent items. */
 export function withoutRecent<T extends object>(state: T): T {

@@ -1,5 +1,5 @@
 // pnpm bench (QLT-05): measures budgets on a throwaway Git copy of a fixture workspace,
-// never real notes. Options: --check, --compare <report.json>, --write-baseline, --runs <n>.
+// never real notes. Options: --check, --compare <report.json>, --write-baseline, --runs <n>, --only <step>.
 import { spawn, spawnSync, execFileSync } from "node:child_process";
 import { cpSync, mkdtempSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -262,17 +262,29 @@ async function publishTimes() {
   return measurePublish(1);
 }
 
-// PRF-04 and PRF-10: memory and idle CPU with 10,000 notes, and reopening an unchanged note.
-const report = { at: new Date().toISOString(), platform: process.platform, measures: {
-  ...(await step("start times (PRF-02)", startTimes)),
-  ...(await step("renderer overhead (DSY-11)", async () => rendererOverhead())),
-  ...(await step("Git status (PRF-07)", gitStatus)),
-  ...(await step("opening and saving notes (PRF-03, PRF-14)", noteTimes)),
-  ...(await step("the 10,000-note workspace (PRF-04, PRF-10)", () => largeWorkspace({ root, mainEntry }))),
-  ...(await step("Spotlight in the app (SPT-07)", spotlightTimes)),
-  ...(await step("the search index (SPT-07, FND-04)", searchTimes)),
-  ...(await step("publishing (PRF-06)", publishTimes)),
-} };
+// QLT-06: matching a crash's drafts at launch, with the real draft store, on 10,000 notes (recovery.ts).
+async function recoveryTimes() {
+  const { measureRecovery } = await import(pathToFileURL(join(import.meta.dirname, "recovery.ts")).href);
+  return measureRecovery(runs);
+}
+
+// Every step, in order (PRF-04 and PRF-10: memory and idle CPU with 10,000 notes, and reopening an unchanged note).
+const STEPS = [
+  ["start times (PRF-02)", startTimes],
+  ["renderer overhead (DSY-11)", async () => rendererOverhead()],
+  ["Git status (PRF-07)", gitStatus],
+  ["opening and saving notes (PRF-03, PRF-14)", noteTimes],
+  ["the 10,000-note workspace (PRF-04, PRF-10)", () => largeWorkspace({ root, mainEntry })],
+  ["Spotlight in the app (SPT-07)", spotlightTimes],
+  ["the search index (SPT-07, FND-04)", searchTimes],
+  ["matching drafts at launch (QLT-06)", recoveryTimes],
+  ["publishing (PRF-06)", publishTimes],
+];
+// --only <words> runs the steps whose name has them, as when one measure changed.
+const only = arg("--only") ? argValue("--only") : undefined;
+const measures = {};
+for (const [name, fn] of STEPS) if (!only || name.includes(only)) Object.assign(measures, await step(name, fn));
+const report = { at: new Date().toISOString(), platform: process.platform, ...(only ? { only } : {}), measures };
 mkdirSync(join(root, "test-results"), { recursive: true });
 writeFileSync(join(root, "test-results", "bench.json"), JSON.stringify(report, null, 2));
 

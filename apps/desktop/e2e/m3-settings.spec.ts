@@ -11,7 +11,7 @@ import { test, expect, type Page } from "./fixtures.ts";
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { CHROMIUM_FOLDERS, DATA_FILES, LOCK_FILES, filesRemovedBy } from "../../../packages/core/src/inventory.ts";
+import { CHROMIUM_FOLDERS, DATA_FILES, DATA_FOLDERS, LOCK_FILES, filesRemovedBy } from "../../../packages/core/src/inventory.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { card, existingInstance, GRACE, heading, noTokenInArgs, press, start, world, type World } from "./github-world.ts";
@@ -22,7 +22,7 @@ const settledAxe = async (page: Page) => {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
   return axeViolations(page);
 };
-const INVENTORY = new Set<string>([...Object.values(DATA_FILES), ...Object.values(CHROMIUM_FOLDERS), ...LOCK_FILES]);
+const INVENTORY = new Set<string>([...Object.values(DATA_FILES), ...Object.values(DATA_FOLDERS), ...Object.values(CHROMIUM_FOLDERS), ...LOCK_FILES]);
 
 /** The app data folder's top-level entries. */
 const top = (dir: string) => readdirSync(dir).sort();

@@ -16,6 +16,7 @@ import { mkdir, open, readdir, readFile, rename, rm, stat } from "node:fs/promis
 import { basename, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { performance } from "node:perf_hooks";
 import { parseJournal, replay, textHash } from "@focus-notes/core/journal";
+import { DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
 import type { FoundDraft, RecoveredDraft, RecoveryFound } from "@focus-notes/core";
 
@@ -174,12 +175,18 @@ export function parseRenames(out: string): Map<string, string> {
   return map;
 }
 
-/** The workspace's notes, read lazily once per matching run: only reads, never a write. */
+/** Files the index reads at once: enough to hide each read's round trip, few enough to leave the disk to the window. */
+const SCAN_AT_ONCE = 32;
+
+/**
+ * The workspace's notes, read lazily once per matching run: only reads, never a write. The first
+ * rung that needs to look through the workspace reads every note once, several at a time, for all
+ * three keys (its front-matter `id`, its file's ID, its text's hash): with 10,000 notes, three
+ * passes one file at a time took about 30 s on Windows (D-222).
+ */
 class WorkspaceIndex {
   #files: Promise<string[]> | undefined;
-  #byIno: Promise<Map<string, string[]>> | undefined;
-  #byHash: Promise<Map<string, string[]>> | undefined;
-  #byId: Promise<Map<string, string[]>> | undefined;
+  #scan: Promise<{ byIno: Map<string, string[]>; byHash: Map<string, string[]>; byId: Map<string, string[]> }> | undefined;
   readonly #root: string;
   constructor(root: string) {
     this.#root = root;
@@ -202,30 +209,46 @@ class WorkspaceIndex {
       return out;
     })());
   }
-  #group(fn: (rel: string) => Promise<string | undefined>): Promise<Map<string, string[]>> {
-    return (async () => {
-      const map = new Map<string, string[]>();
-      for (const rel of await this.files()) {
-        const k = await fn(rel).catch(() => undefined);
-        if (k !== undefined) map.set(k, [...(map.get(k) ?? []), rel]);
-      }
-      return map;
-    })();
-  }
   #abs = (rel: string) => join(this.#root, ...rel.split("/"));
-  byIno = () => (this.#byIno ??= this.#group(async (rel) => String((await stat(this.#abs(rel), { bigint: true })).ino)));
-  byHash = () => (this.#byHash ??= this.#group(async (rel) => textHash(await readFile(this.#abs(rel), "utf8"))));
-  byId = () => (this.#byId ??= this.#group(async (rel) => {
-    // Front matter is at the top: the first 4 KB is enough.
-    const h = await open(this.#abs(rel), "r");
-    try {
-      const buf = Buffer.alloc(4096);
-      const { bytesRead } = await h.read(buf, 0, buf.length, 0);
-      return frontMatterId(buf.subarray(0, bytesRead).toString("utf8"));
-    } finally {
-      await h.close();
-    }
-  }));
+  #all() {
+    return (this.#scan ??= (async () => {
+      const files = await this.files();
+      const keys: ({ ino: string; hash: string; id?: string } | undefined)[] = new Array(files.length);
+      let next = 0;
+      const worker = async () => {
+        for (let i = next++; i < files.length; i = next++) {
+          try {
+            const h = await open(this.#abs(files[i]!), "r");
+            try {
+              const st = await h.stat({ bigint: true });
+              const text = await h.readFile("utf8");
+              keys[i] = { ino: String(st.ino), hash: textHash(text), id: frontMatterId(text) };
+            } finally {
+              await h.close();
+            }
+          } catch {
+            // Gone or unreadable: not a place a draft can go.
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(SCAN_AT_ONCE, files.length) }, worker));
+      const byIno = new Map<string, string[]>(), byHash = new Map<string, string[]>(), byId = new Map<string, string[]>();
+      const add = (map: Map<string, string[]>, k: string | undefined, rel: string) => {
+        if (k !== undefined) map.set(k, [...(map.get(k) ?? []), rel]);
+      };
+      files.forEach((rel, i) => {
+        const k = keys[i];
+        if (!k) return;
+        add(byIno, k.ino, rel);
+        add(byHash, k.hash, rel);
+        add(byId, k.id, rel);
+      });
+      return { byIno, byHash, byId };
+    })());
+  }
+  byIno = async () => (await this.#all()).byIno;
+  byHash = async () => (await this.#all()).byHash;
+  byId = async () => (await this.#all()).byId;
 }
 
 export class DraftStore {
@@ -255,7 +278,7 @@ export class DraftStore {
     this.#now = o.now ?? Date.now;
     this.#fold = o.foldCase ?? process.platform === "win32";
     this.workspace = resolve(o.workspace);
-    this.dir = join(resolve(o.dataDir), "recovery", workspaceKey(this.workspace, this.#fold));
+    this.dir = join(resolve(o.dataDir), DATA_FOLDERS.drafts, workspaceKey(this.workspace, this.#fold));
     this.#loaded = Promise.resolve();
     this.#matched = Promise.resolve();
   }
@@ -770,13 +793,15 @@ export class DraftStore {
     const t0 = performance.now();
     const index = new WorkspaceIndex(this.workspace);
     const counts = { saved: 0, matched: 0, changed: 0, recovered: 0 };
-    for (const d of [...this.#drafts.values()]) {
-      if (d.owner !== undefined || d.state === "recovered") continue;
-      const o = await this.#enqueue(d.id, () => this.#ladder(d, index));
-      if (!o) continue;
+    // Each draft on its own queue, all at once: one draft's reads wait on the disk while another's go on.
+    const waiting = [...this.#drafts.values()].filter((d) => d.owner === undefined && d.state !== "recovered");
+    const outcomes = await Promise.all(waiting.map((d) => this.#enqueue(d.id, () => this.#ladder(d, index))));
+    waiting.forEach((d, i) => {
+      const o = outcomes[i];
+      if (!o) return;
       if (o.kind === "matched" || o.kind === "changed" || o.kind === "recovered" || o.kind === "saved") counts[o.kind]++;
       if (o.kind === "matched" || o.kind === "changed") this.#outcomes.set(d.id, o);
-    }
+    });
     await this.#enforceCap();
     this.#stats = { matched: counts.matched, changed: counts.changed };
     const ms = performance.now() - t0;

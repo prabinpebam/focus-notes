@@ -1,6 +1,6 @@
 # Crash recovery: isolated drafts
 
-How Focus Notes keeps what you were typing when it crashes, without ever touching your files and folders on its own. This page holds the incident that started it, a benchmark of how today's best editors recover unsaved work, the design that replaces the path-keyed recovery journal (D-105), and the plan to build it (WP-8.9, QLT-06, D-190). It's a proposal: the journal described in [Performance and quality → Reliability](performance-and-quality.md#reliability) is what's built today.
+How Focus Notes keeps what you were typing when it crashes, without ever touching your files and folders on its own. This page holds the incident that started it, a benchmark of how today's best editors recover unsaved work, the design that replaces the path-keyed recovery journal (D-105), and how it was built and proven (WP-8.9, QLT-06, D-190). **Status: built (WP-8.9), verifying.** The draft store replaced the journal; [Performance and quality → Reliability](performance-and-quality.md#reliability) describes it as built, and D-219, D-220 and D-222 record the choices beyond this page.
 
 > [!NOTE]
 > **TL;DR.**
@@ -12,7 +12,7 @@ How Focus Notes keeps what you were typing when it crashes, without ever touchin
 >   - matched, and the note is as it was: the note opens with the text as unsaved edits;
 >   - the note changed meanwhile: the person compares and chooses in the resolver;
 >   - not found: it waits in **Files → Recovered**, kept 30 days.
-> - **Plan:** a hotfix today (no restore ever creates a file, and late text follows a rename), then five slices, each with its tests. An **isolation journey** checks that the workspace is byte-for-byte unchanged after any launch.
+> - **Built (WP-8.9):** the v1.0.1 hotfix (late text follows a rename), then the draft store, matching and restore, Files → Recovered, privacy and the proof. An **isolation journey** checks that the workspace is byte-for-byte unchanged after any launch. A rename storm kills the app at random keys while a title renames the file (40 rounds on CI). Matching at launch takes 10.7 ms for 20 drafts in 10,000 notes (budget 30 ms).
 
 <figure class="slate-figure">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 380" role="img" aria-labelledby="fncr-flow__title fncr-flow__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
@@ -181,12 +181,12 @@ The first launch with drafts reads `recovery-journal.jsonl` once. It turns each 
 
 | Slice | What lands | Done when |
 | --- | --- | --- |
-| **S0 Hotfix** (today, desktop only) | (a) `restoreJournal` never creates a file: a missing note's text goes to `<app data>/recovered/⟨name⟩ ⟨date⟩.md`, and the toast offers *Show*. (b) The main process maps a text for a path it renamed this session to the new path, along the rename chain, so the race can't leave an orphan. (c) File names drop entities and trailing spaces (`-x20`). | Unit tests: a late text after a rename lands on the new path; a gone note is never written; a title ending in a space names the file without `x20`. `journal.test.ts`'s "or that's gone" case is changed to the new rule. (b) landed in v1.0.1 after the race recurred on v1.0.0 (DEF-34 in [gate evidence](../plan/gate-evidence.md)); (a) and (c) weren't part of it. |
-| **S1 Drafts** | The draft store, draft IDs and sequences from the window, renames updating drafts, retention, the migration from the journal. Replaces `RecoveryJournal`. | QLT-03's existing fault injection still loses at most a second; unit tests for ordering, renames, saves that clear, damage to one draft. |
-| **S2 Matching and restore** | The matching ladder at launch, restore into the editor as unsaved, the resolver for changed notes; nothing written at launch. | Journeys: matched note restored with one undo back; changed note opens the resolver; renamed outside while closed found by file ID; renamed by a pull found through Git. |
-| **S3 Recovered** | Files → Recovered as view documents (design system, VVS ≥ 70), *Save as a new note…*, *Copy text*, *Discard*, the launch toast with *Review*. | Journeys by pointer and keyboard; no axe violations, light and dark. |
-| **S4 Privacy** | `safeStorage` for private drafts; the data inventory and diagnostic counts. | Unit test round trip; security review. |
-| **S5 Proof** | The isolation journey, rename-storm fault injection, and the launch measure. | Below, green on Windows CI. |
+| **S0 Hotfix** (desktop only) | (a) `restoreJournal` never creates a file: a missing note's text goes to `<app data>/recovered/⟨name⟩ ⟨date⟩.md`, and the toast offers *Show*. (b) The main process maps a text for a path it renamed this session to the new path, along the rename chain, so the race can't leave an orphan. (c) File names drop entities and trailing spaces (`-x20`). | Unit tests: a late text after a rename lands on the new path; a gone note is never written; a title ending in a space names the file without `x20`. `journal.test.ts`'s "or that's gone" case is changed to the new rule. **(b) landed** in v1.0.1 after the race recurred on v1.0.0 (DEF-34 in [gate evidence](../plan/gate-evidence.md)). **(a) superseded:** the draft store never writes a file, so there's no restore to change. **(c) superseded** by DEF-35's fix (a title's character references are decoded before it names the file). |
+| **S1 Drafts** | The draft store, draft IDs and sequences from the window, renames updating drafts, retention, the migration from the journal. Replaces `RecoveryJournal`. | QLT-03's existing fault injection still loses at most a second; unit tests for ordering, renames, saves that clear, damage to one draft. **Built** (slice A, D-219): `drafts.test.ts`; `fault-injection.spec.ts` rewritten for drafts, worst 0.06 to 0.30 s over five runs. |
+| **S2 Matching and restore** | The matching ladder at launch, restore into the editor as unsaved, the resolver for changed notes; nothing written at launch. | Journeys: matched note restored with one undo back; changed note opens the resolver; renamed outside while closed found by file ID; renamed by a pull found through Git. **Built** (slices A and B, D-220): those four journeys in `crash-recovery.spec.ts`, and `m2-recovery.spec.ts`. |
+| **S3 Recovered** | Files → Recovered as view documents (design system, VVS ≥ 70), *Save as a new note…*, *Copy text*, *Discard*, the launch toast with *Review*. | Journeys by pointer and keyboard; no axe violations, light and dark. **Slice C**, merged separately (`recovered.spec.ts`). |
+| **S4 Privacy** | `safeStorage` for private drafts; the data inventory and diagnostic counts. | Unit test round trip; security review. **Built** (slices A and D): the round trip in `drafts.test.ts`; the data inventory lists `recovery/` and the diagnostic report counts drafts (`inventory.test.ts`, `m3-settings.spec.ts`). The security review is still to come. |
+| **S5 Proof** | The isolation journey, rename-storm fault injection, and the launch measure. | Below, green on Windows CI. **Built** (slice D, D-222): passing locally on Windows; the CI run is next. |
 
 ### How it's proven
 
@@ -195,9 +195,11 @@ The first launch with drafts reads `recovery-journal.jsonl` once. It turns each 
 - **Outside the app.** Rename, move and delete notes, and pull a commit that renames them, while the app is closed: each draft is matched where it went, or kept in Recovered.
 - **Measures.** `fn:recovery.match` for matching at launch: under 30 ms with 20 drafts in a 10,000-note workspace, off the first-frame path. The handover-to-disk pace stays as QLT-03 measures it today.
 
+As built, all of these pass locally on Windows (`crash-recovery.spec.ts`, `fault-injection.spec.ts`). The rename storm loses 0.39 to 0.49 s at worst over 12 rounds, and 0.29 s over 40 rounds (2.7 minutes, as CI runs it). The bench's `QLT-06.recoveryMatchMs` (`node tools/bench/run.mjs --only "QLT-06"`) measures 10.7 ms. Its first run found 116 ms, and 29.8 s when a note had moved outside the app; the ladder now reads the workspace once, 32 files at a time. A moved or deleted note still makes every rung read the workspace: about 3.4 s with 10,000 notes, off the first frame, reported as `QLT-06.recoveryMatchMovedMs` (D-222).
+
 ### Related
 
-- [Performance and quality → Reliability](performance-and-quality.md#reliability): the journal as built, until S1 replaces it.
-- [Feedback and dialogs → Save and sync status](../design/components/feedback-and-dialogs.md#save-and-sync-status): today's restore toast.
-- [Security and privacy → Data inventory](security-and-privacy.md#data-inventory): the journal's row, which S4 replaces.
-- [Decisions](../plan/decisions.md): D-105 (the journal as built), D-92 (never save over a change on disk), D-190 (this design).
+- [Performance and quality → Reliability](performance-and-quality.md#reliability): the draft store as built.
+- [Feedback and dialogs → Save and sync status](../design/components/feedback-and-dialogs.md#save-and-sync-status): the launch toast's words.
+- [Security and privacy → Data inventory](security-and-privacy.md#data-inventory): the recovery store's row.
+- [Decisions](../plan/decisions.md): D-105 (the journal, replaced), D-92 (never save over a change on disk), D-190 (this design), D-219, D-220 and D-222 (choices made building it).
