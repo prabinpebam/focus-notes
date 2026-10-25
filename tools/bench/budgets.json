@@ -70,6 +70,10 @@
       "budget": 300,
       "unit": "ms"
     },
+    "QLT-06.recoveryMatchMs": {
+      "budget": 30,
+      "unit": "ms"
+    },
     "PRF-06.publishMs": {
       "budget": 300000,
       "unit": "ms"
