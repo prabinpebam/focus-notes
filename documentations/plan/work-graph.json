@@ -1626,6 +1626,33 @@
       "status": "planned"
     },
     {
+      "id": "WP-5.16",
+      "stage": "M5",
+      "title": "Start and close on Windows",
+      "summary": "The portable's splash while it unpacks; pnpm bench:launch, timing any build from outside through the app's launch log; closing the main window to the tray with Open, Keep running when closed and Quit, a one-time notice, a backup after hiding, and a second start showing the hidden window (D-216, D-217).",
+      "requirements": [
+        "DSK-10",
+        "DSK-11"
+      ],
+      "dependsOn": [
+        "WP-2.1"
+      ],
+      "touches": [
+        "apps/desktop",
+        "packages/core"
+      ],
+      "reviews": [
+        "code",
+        "security"
+      ],
+      "specs": [
+        "experience/desktop-app.html",
+        "architecture/security-and-privacy.md"
+      ],
+      "lookahead": false,
+      "status": "in-progress"
+    },
+    {
       "id": "WP-6.1",
       "stage": "MW",
       "title": "Web app on your own Pages, local first",

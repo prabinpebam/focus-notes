@@ -45,6 +45,8 @@ export const DATA_FILES = {
   agentLimits: "agent-limits.json",
   /** Held for a moment while one process takes from the rate limit. */
   agentLimitsLock: "agent-limits.lock",
+  /** Windows' close to the tray (DSK-11, D-217): the switch, and whether its one-time notice was shown. */
+  tray: "tray.json",
 } as const;
 export type DataFile = (typeof DATA_FILES)[keyof typeof DATA_FILES];
 
@@ -81,6 +83,7 @@ export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "setupProgress", path: DATA_FILES.setup, removedBy: ["runSetupAgain", "signOut", "removeWorkspace", "deleteDataFolder"] },
   { id: "signedOut", path: DATA_FILES.account, removedBy: ["signIn", "deleteDataFolder"] },
   { id: "windowPlace", path: DATA_FILES.window, removedBy: ["deleteDataFolder"] },
+  { id: "trayChoice", path: DATA_FILES.tray, removedBy: ["deleteDataFolder"] },
   { id: "accountPicture", path: DATA_FILES.avatar, removedBy: ["deleteDataFolder"] },
   { id: "keybindings", path: DATA_FILES.keybindings, removedBy: ["deleteDataFolder"] },
   { id: "agentPermissions", path: DATA_FILES.agents, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },

@@ -15,7 +15,7 @@ import { readAgentPermissions, writeAgentPermissions } from "@focus-notes/core/a
 import type { AgentPermissions } from "@focus-notes/core/agents";
 import { cliInstallState, installCli, type InstallHost } from "./agents/install-cli.ts";
 import { cliArgv, isStoreBuild, storeAliasPath } from "./store-build.ts";
-import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
@@ -75,6 +75,7 @@ import { RecoveryJournal, restoreJournal } from "./journal.ts";
 import { watchTree, type TreeWatcher } from "./watch-tree.ts";
 import { JOURNEY_WINDOW_OPTIONS, keepOutOfTheWay } from "./window/journey-window.ts";
 import { watchCompositing } from "./window/compositing.ts";
+import { AppTray, trayMode } from "./window/tray.ts";
 import { allowedRequest, HARDENED_WEB_PREFERENCES, isAppPage, isWebLink } from "./hardening.ts";
 
 const platform = process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : "linux";
@@ -175,6 +176,20 @@ for (const out of [process.stdout, process.stderr]) out.on("error", () => {});
 const logLine = (line: string) => {
   process.stdout.write(`[focus-notes] ${line}\n`);
   problemLog.add(line);
+};
+/**
+ * Launch timings for `pnpm bench:launch` (D-216): when `FOCUS_NOTES_LAUNCH_LOG` names a file, the
+ * moments the window showed and the caret was ready are appended to it as JSON lines, with the
+ * clock time, so an installed or portable build can be timed from outside. Timings only.
+ */
+const launchLog = (event: "shown" | "ready") => {
+  const file = process.env.FOCUS_NOTES_LAUNCH_LOG;
+  if (!file || !isAbsolute(file)) return;
+  try {
+    appendFileSync(file, `${JSON.stringify({ event, at: Date.now(), uptimeMs: Math.round(process.uptime() * 1000) })}\n`);
+  } catch {
+    // Timing is never worth an error.
+  }
 };
 /** What the app set `nativeTheme.themeSource` to (D-204): only macOS sets it, from Appearance. */
 let appThemeSource: ThemeSource = "system";
@@ -1799,6 +1814,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     // From process start (PRF-02: "desktop start to an editable caret"), including Electron's own startup.
     const ms = Math.round(process.uptime() * 1000);
     process.stdout.write(`[focus-notes] ready-ms=${ms}\n`);
+    if (BrowserWindow.fromWebContents(e.sender) === mainWindow) launchLog("ready");
     startGit();
     windowFrame?.ready(BrowserWindow.fromWebContents(e.sender) ?? undefined);
   });
@@ -1873,6 +1889,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
     clearTimeout(fallback);
     ipcMain.removeListener("window:firstFrame", onFirstFrame);
     process.stdout.write(`[focus-notes] window-shown on=${on}\n`);
+    if (win === mainWindow) launchLog("shown");
     if (journey) win.showInactive();
     else win.show();
   };
@@ -2062,17 +2079,31 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   // the person decides; text is never discarded silently.
   let closing = false;
   let allowClose = false;
+  win.on("session-end", () => (quitting = true));
   win.on("close", (e) => {
     if (allowClose) return;
     e.preventDefault();
     if (closing) return;
     closing = true;
+    // Windows' close to the tray (DSK-11, D-217): the main window goes at once and the app keeps
+    // running; its changes are saved and backed up behind it. Quitting closes it for real.
+    const toTray = win === mainWindow && !quitting && !!appTray?.closeToTray;
+    if (toTray) {
+      win.hide();
+      appTray?.hidden();
+    }
     const decide = async (ok: boolean) => {
+      if (ok && toTray && !quitting) {
+        closing = false;
+        void gitSync?.request("save").catch(() => {});
+        return;
+      }
       if (ok) {
         allowClose = true;
         win.close();
         return;
       }
+      if (toTray) win.show();
       const { response } = await dialog.showMessageBox(win, {
         type: "warning",
         message: "Couldn't save your latest changes",
@@ -2210,6 +2241,22 @@ function watchWorkspace(win: () => Iterable<BrowserWindow>): TreeWatcher | undef
 
 /** The first window: the one setup, the first run, and links speak to, and whose note the app reopens at launch. */
 let mainWindow: BrowserWindow | undefined;
+/** The notification-area icon on Windows (DSK-11, D-217), and whether the app is quitting for real. */
+let appTray: AppTray | undefined;
+let quitting = false;
+app.on("before-quit", () => (quitting = true));
+/** Brings the main window back from the tray, or from being minimized, in front. */
+function showMain(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  // Journeys never take the owner's focus (D-141).
+  if (journey) {
+    if (!mainWindow.isVisible()) mainWindow.showInactive();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  if (!mainWindow.isVisible()) mainWindow.show();
+  mainWindow.focus();
+}
 /** Every window, the first included (DSK-06, D-179). */
 const windows = new Set<BrowserWindow>();
 /** The pages of windows opened for a note: they never change which note the app reopens (D-179). */
@@ -2322,14 +2369,25 @@ app.whenReady().then(async () => {
   setTimeout(() => (folderState === "ok" && startGit(), windowFrame?.ready()), 3000);
   // Fetching when the window becomes active (Desktop and Git → Save and sync, step 5).
   mainWindow.on("focus", () => gitSync?.focused());
+  const tray = trayMode(process.platform, process.env);
+  if (primary && tray !== "off") {
+    appTray = new AppTray({
+      mode: tray,
+      file: dataFile(DATA_FILES.tray),
+      icon: join(import.meta.dirname, "icon.png"),
+      open: showMain,
+      quit: () => app.quit(),
+      log: logLine,
+    });
+  }
   app.on("second-instance", (_e, argv) => {
     linkArrived(argv.map(parseDeepLink).find((l): l is DeepLink => l !== undefined));
-    if (mainWindow?.isMinimized()) mainWindow.restore();
-    mainWindow?.focus();
+    showMain();
   });
 });
 app.on("window-all-closed", () => {
   watcher?.close();
+  appTray?.dispose();
   app.quit();
 });
 // Quitting waits for writes already under way, so a preference saved just before closing is kept,
