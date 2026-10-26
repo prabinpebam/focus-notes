@@ -2,8 +2,8 @@
 /**
  * Downloads a branch's latest review captures from CI (D-146): the artifact the Review captures
  * workflow uploads (every window size, light and dark), into
- * E:\Projects\side-projects\fre-review\<label>\ (beside the repository; FOCUS_NOTES_REVIEW_ROOT
- * overrides the folder).
+ * E:\Projects\side-projects\focus-notes-work\review\<label>\ (the work folder beside the repository,
+ * D-227; FOCUS_NOTES_REVIEW_ROOT overrides the folder).
  *
  *   node tools/review/fetch-captures.mjs [--branch vq-fre-polish] [--catalog fre-catalog] [--label polish-2] [--run 123]
  *
@@ -13,15 +13,22 @@
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { artifactName, catalog } from "./catalogs.mjs";
 
 export const WORKFLOW = "review-captures.yml";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-/** The review folder: FOCUS_NOTES_REVIEW_ROOT, or fre-review beside the repository (or worktree). */
-export const reviewRoot = (env = process.env, repo = root) => env.FOCUS_NOTES_REVIEW_ROOT || resolve(repo, "..", "fre-review");
+/** The work folder (D-227): focus-notes-work beside the repository, or the one a worktree sits in. */
+export function workRoot(repo = root) {
+  const parts = resolve(repo).split(sep);
+  const at = parts.lastIndexOf("focus-notes-work");
+  return at > 0 ? parts.slice(0, at + 1).join(sep) : resolve(repo, "..", "focus-notes-work");
+}
+
+/** The review folder: FOCUS_NOTES_REVIEW_ROOT, or review in the work folder. */
+export const reviewRoot = (env = process.env, repo = root) => env.FOCUS_NOTES_REVIEW_ROOT || join(workRoot(repo), "review");
 
 /** A folder name from a branch and commit: letters, digits, dots, dashes and underscores. */
 export const labelFor = (branch, sha) => `${branch}-${sha.slice(0, 7)}`.replace(/[^\w.-]+/g, "-");

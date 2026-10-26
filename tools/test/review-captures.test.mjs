@@ -9,7 +9,7 @@ import { join, resolve } from "node:path";
 import yaml from "js-yaml";
 import { artifactName, CATALOGS, catalog, outDir } from "../review/catalogs.mjs";
 import { plan } from "../review/capture.mjs";
-import { artifactsArgs, downloadArgs, finishedRuns, labelFor, listArgs, reviewRoot, WORKFLOW } from "../review/fetch-captures.mjs";
+import { artifactsArgs, downloadArgs, finishedRuns, labelFor, listArgs, reviewRoot, workRoot, WORKFLOW } from "../review/fetch-captures.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
 const text = readFileSync(join(root, ".github", "workflows", WORKFLOW), "utf8");
@@ -94,7 +94,7 @@ describe("the capture runner", () => {
 });
 
 describe("fetch-captures", () => {
-  it("downloads the branch's latest finished run's artifact into fre-review beside the repository", () => {
+  it("downloads the branch's latest finished run's artifact into the work folder's review", () => {
     expect(listArgs("vq-x")).toEqual(["run", "list", "--workflow", "review-captures.yml", "--branch", "vq-x", "--limit", "20", "--json", "databaseId,headSha,status,conclusion,createdAt"]);
     expect(downloadArgs(42, "fre-catalog", "D:\\r\\l")).toEqual(["run", "download", "42", "--name", "review-fre-catalog", "--dir", "D:\\r\\l"]);
     const runs = [
@@ -106,7 +106,9 @@ describe("fetch-captures", () => {
     expect(() => finishedRuns([])).toThrow(/gh workflow run review-captures.yml/);
     expect(artifactsArgs(7)).toEqual(["api", "repos/{owner}/{repo}/actions/runs/7/artifacts", "--jq", ".artifacts[].name"]);
     expect(labelFor("vq/fre polish", "0123456789abcdef")).toBe("vq-fre-polish-0123456");
-    expect(reviewRoot({}, resolve("/", "side-projects", "focus-notes"))).toBe(resolve("/", "side-projects", "fre-review"));
+    expect(reviewRoot({}, resolve("/", "side-projects", "focus-notes"))).toBe(resolve("/", "side-projects", "focus-notes-work", "review"));
+    expect(reviewRoot({}, resolve("/", "side-projects", "focus-notes-work", "worktrees", "fix-x"))).toBe(resolve("/", "side-projects", "focus-notes-work", "review"));
+    expect(workRoot(resolve("/", "side-projects", "focus-notes"))).toBe(resolve("/", "side-projects", "focus-notes-work"));
     expect(reviewRoot({ FOCUS_NOTES_REVIEW_ROOT: "D:\\elsewhere" })).toBe("D:\\elsewhere");
   });
 });

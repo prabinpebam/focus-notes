@@ -1,15 +1,18 @@
 # Closes the Focus Notes instances that local work left open: Electron apps started by journeys,
-# benches or `pnpm dev` from this repository and its worktrees, and candidate previews.
-# Never touches the owner's Preview (focus-notes-preview\builds) or any other project's Electron.
+# benches or `pnpm dev` from this repository and its worktrees (focus-notes-work\worktrees, D-227),
+# and candidate previews (focus-notes-work\preview\candidates).
+# Never touches the owner's Preview (focus-notes-work\preview\builds) or any other project's Electron.
 # Run after every local run that starts the app, and before opening a candidate preview (AGENTS.md).
 param(
   # Keep this candidate preview open (the one the owner is testing), by its commit.
   [string]$KeepCandidate,
   [switch]$WhatIf
 )
-$sideProjects = Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent
-$ours = '^' + [regex]::Escape($sideProjects) + '\\(focus-notes|fn-[^\\]+)\\.*\\electron\\dist\\electron\.exe$'
-$candidates = '^' + [regex]::Escape($sideProjects) + '\\focus-notes-preview\\candidates\\([^\\]+)\\focus-notes\.exe$'
+$repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$sideProjects = if ($repo -match '^(.*)\\focus-notes-work\\') { $Matches[1] } else { Split-Path $repo -Parent }
+$side = [regex]::Escape($sideProjects)
+$ours = '^' + $side + '\\(focus-notes|focus-notes-work\\worktrees\\[^\\]+)\\.*\\electron\\dist\\electron\.exe$'
+$candidates = '^' + $side + '\\focus-notes-work\\preview\\candidates\\([^\\]+)\\focus-notes\.exe$'
 $closed = 0
 foreach ($p in Get-CimInstance Win32_Process -Filter "Name='electron.exe' OR Name='focus-notes.exe'") {
   # Only main processes: their helpers exit with them.
