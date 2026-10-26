@@ -32,7 +32,10 @@ jobs:
           else base="$(git merge-base origin/main HEAD)"; fi
           files="$(git diff --name-only "$base" HEAD)"
           echo "$files"
-          if [ -z "$files" ] || echo "$files" | grep -Eq '^(apps/desktop/|packages/|templates/|schemas/|tools/(release|bench|dev)/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|\.npmrc$|\.github/workflows/ci\.yml$)'; then
+          # Capture-only files (screenshot catalogues, their helpers, Store images) never ship in the
+          # app and run on review-captures instead, so they don't turn the journeys on (D-224).
+          app="$(echo "$files" | grep -Ev '^(apps/desktop/e2e/([a-z0-9-]+-catalog\.spec\.ts|scene-capture\.ts|fre-fakes\.ts)|tools/release/store-(screenshots\.py|listing\.mjs))$' || true)"
+          if [ -z "$files" ] || echo "$app" | grep -Eq '^(apps/desktop/|packages/|templates/|schemas/|tools/(release|bench|dev)/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|\.npmrc$|\.github/workflows/ci\.yml$)'; then
             echo "desktop=true" >> "$GITHUB_OUTPUT"
           else
             echo "desktop=false" >> "$GITHUB_OUTPUT"
