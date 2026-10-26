@@ -26,8 +26,20 @@
   "releaseNotesTemplate": "What's new in Focus Notes {version}:\n{highlights}\n\nEvery change: https://github.com/prabinpebam/focus-notes/releases/tag/v{version}",
   "screenshots": {
     "required": "PNG, 1366 × 768 to 3840 × 2160 pixels, landscape, up to 10, each under 50 MB. At least one.",
-    "scenes": ["note-light", "spotlight-light", "files-light", "themes-light", "theme-ink"],
-    "source": "Upload store/screenshots/ in its numbered order: 2560 × 1440 PNGs, the app's window at 1920 × 1080 on a plain backdrop. They're generated, never taken by hand: `gh workflow run review-captures.yml -f catalog=store` captures the scenes on CI, then `python tools/release/store-screenshots.py --captures <the fetched folder>` makes the PNGs (D-202 (11))."
+    "scenes": ["note-light", "cascade", "spotlight-light", "files-light", "themes-light", "setup-welcome", "setup-connect", "setup-create", "setup-creating", "setup-backup"],
+    "captions": {
+      "note-light": "A quiet page for one note at a time, in plain Markdown.",
+      "cascade": "Make it yours: ten themes, light and dark, and six fonts, including ones made for easier reading.",
+      "spotlight-light": "Find any note in a few keystrokes.",
+      "files-light": "Your notes are files in folders you choose.",
+      "themes-light": "Pick a theme and see the whole page change at once.",
+      "setup-welcome": "Start with your own GitHub account, or keep your notes on this computer only.",
+      "setup-connect": "Sign in once with the GitHub account you already use.",
+      "setup-create": "Focus Notes makes two repositories of your own: one for public notes, one for private ones.",
+      "setup-creating": "Every step of the setup shows as it happens.",
+      "setup-backup": "Notes back up to your own GitHub repository in the background, and you can see when."
+    },
+    "source": "The files in store/screenshots/: 2560 × 1440 PNGs of the app's window at 1120 × 720, drawn at twice the scale, on a plain backdrop; the cascade lays four windows over each other. They're generated, never taken by hand: `gh workflow run review-captures.yml -f catalog=store` captures the scenes on CI, then `python tools/release/store-screenshots.py --captures <the fetched folder>` makes the PNGs (D-223)."
   },
   "ageRating": {
     "$comment": "A draft of the answers for the IARC questionnaire in Partner Center (Age ratings). The owner answers it; Partner Center then shows each region's rating.",

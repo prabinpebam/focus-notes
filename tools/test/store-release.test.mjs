@@ -14,7 +14,7 @@ import { deflateRawSync } from "node:zlib";
 import yaml from "js-yaml";
 import { checkManifest, readManifest, readZipEntry } from "../release/store-manifest.mjs";
 import { identityArgs, storeVersionProblem } from "../../apps/desktop/scripts/dist-store.mjs";
-import { LIMITS, buildListing, overLimits, renderListing } from "../release/store-listing.mjs";
+import { LIMITS, buildListing, overLimits, renderListing, screenshotProblems } from "../release/store-listing.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
 const read = (p) => readFileSync(join(root, p), "utf8");
@@ -280,5 +280,13 @@ describe("the Store listing comes from the product site", () => {
   it("reports each limit it breaks", () => {
     const long = { description: "x".repeat(LIMITS.description + 1), shortDescription: "s", features: ["y".repeat(LIMITS.feature + 1)], keywords: ["a", "b", "c", "d", "e", "f", "g", "h"] };
     expect(overLimits(long, "")).toHaveLength(3);
+  });
+
+  it("names at most 10 screenshots, each with a caption inside the Store's limit (D-223)", () => {
+    expect(screenshotProblems(store.screenshots)).toEqual([]);
+    expect(store.screenshots.scenes).toContain("cascade");
+    expect(store.screenshots.scenes.filter((s) => s.startsWith("setup-")).length).toBeGreaterThan(0);
+    const bad = { scenes: [...Array(11).keys()].map((i) => `s${i}`), captions: { s0: "x".repeat(LIMITS.caption + 1), s1: "ok" } };
+    expect(screenshotProblems(bad)).toHaveLength(1 + 1 + 9);
   });
 });

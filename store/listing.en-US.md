@@ -70,7 +70,20 @@
 
 ## Screenshots
 
-PNG, 1366 × 768 to 3840 × 2160 pixels, landscape, up to 10, each under 50 MB. At least one. Scenes: `note-light`, `spotlight-light`, `files-light`, `themes-light`, `theme-ink`. Upload store/screenshots/ in its numbered order: 2560 × 1440 PNGs, the app's window at 1920 × 1080 on a plain backdrop. They're generated, never taken by hand: `gh workflow run review-captures.yml -f catalog=store` captures the scenes on CI, then `python tools/release/store-screenshots.py --captures <the fetched folder>` makes the PNGs (D-202 (11)).
+PNG, 1366 × 768 to 3840 × 2160 pixels, landscape, up to 10, each under 50 MB. At least one. The files in store/screenshots/: 2560 × 1440 PNGs of the app's window at 1120 × 720, drawn at twice the scale, on a plain backdrop; the cascade lays four windows over each other. They're generated, never taken by hand: `gh workflow run review-captures.yml -f catalog=store` captures the scenes on CI, then `python tools/release/store-screenshots.py --captures <the fetched folder>` makes the PNGs (D-223).
+
+Upload them in this order, each with its caption:
+
+1. `01-note-light.png`: A quiet page for one note at a time, in plain Markdown.
+2. `02-cascade.png`: Make it yours: ten themes, light and dark, and six fonts, including ones made for easier reading.
+3. `03-spotlight-light.png`: Find any note in a few keystrokes.
+4. `04-files-light.png`: Your notes are files in folders you choose.
+5. `05-themes-light.png`: Pick a theme and see the whole page change at once.
+6. `06-setup-welcome.png`: Start with your own GitHub account, or keep your notes on this computer only.
+7. `07-setup-connect.png`: Sign in once with the GitHub account you already use.
+8. `08-setup-create.png`: Focus Notes makes two repositories of your own: one for public notes, one for private ones.
+9. `09-setup-creating.png`: Every step of the setup shows as it happens.
+10. `10-setup-backup.png`: Notes back up to your own GitHub repository in the background, and you can see when.
 
 ## Age rating (draft answers)
 

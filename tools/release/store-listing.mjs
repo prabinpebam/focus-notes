@@ -13,7 +13,7 @@ const root = join(import.meta.dirname, "..", "..");
 const OUT = join(root, "store", "listing.en-US.md");
 
 /** Partner Center's limits for an MSIX app's listing. */
-export const LIMITS = { description: 10_000, shortDescription: 1_000, features: 20, feature: 200, keywords: 7, keyword: 40, keywordWords: 21, releaseNotes: 1_500 };
+export const LIMITS = { description: 10_000, shortDescription: 1_000, features: 20, feature: 200, keywords: 7, keyword: 40, keywordWords: 21, releaseNotes: 1_500, screenshots: 10, caption: 200 };
 
 /** The privacy page's words without its front matter, heading or links' Markdown. */
 function privacyText(md) {
@@ -46,6 +46,18 @@ export function overLimits(l, releaseNotesTemplate) {
   const words = l.keywords.flatMap((k) => k.split(/\s+/)).length;
   if (words > LIMITS.keywordWords) p.push(`The keywords have ${words} words.`);
   if (releaseNotesTemplate.length > LIMITS.releaseNotes) p.push("The release notes template is too long.");
+  return p;
+}
+
+/** Each way the screenshots break a Partner Center limit: too many, or a scene without a caption or with a long one. */
+export function screenshotProblems(shots) {
+  const p = [];
+  if (shots.scenes.length > LIMITS.screenshots) p.push(`${shots.scenes.length} screenshots.`);
+  for (const s of shots.scenes) {
+    const c = shots.captions?.[s];
+    if (!c) p.push(`The screenshot ${s} has no caption.`);
+    else if (c.length > LIMITS.caption) p.push(`The screenshot ${s}'s caption has ${c.length} characters.`);
+  }
   return p;
 }
 
@@ -99,7 +111,11 @@ ${quote(store.certificationNotes)}
 
 ## Screenshots
 
-${store.screenshots.required} Scenes: ${store.screenshots.scenes.map((s) => `\`${s}\``).join(", ")}. ${store.screenshots.source}
+${store.screenshots.required} ${store.screenshots.source}
+
+Upload them in this order, each with its caption:
+
+${store.screenshots.scenes.map((s, i) => `${i + 1}. \`${String(i + 1).padStart(2, "0")}-${s}.png\`: ${store.screenshots.captions?.[s] ?? ""}`).join("\n")}
 
 ## Age rating (draft answers)
 
@@ -121,7 +137,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const json = (p) => JSON.parse(readFileSync(join(root, p), "utf8"));
   const landing = json("site/landing.json"), store = json("store/listing.json");
   const privacy = readFileSync(join(root, "site", "privacy.md"), "utf8").replace(/\r\n/g, "\n");
-  const problems = overLimits(buildListing(landing, privacy, store), store.releaseNotesTemplate);
+  const problems = [...overLimits(buildListing(landing, privacy, store), store.releaseNotesTemplate), ...screenshotProblems(store.screenshots)];
   for (const p of problems) console.error(p);
   const text = renderListing(landing, privacy, store);
   if (process.argv.includes("--check")) {
