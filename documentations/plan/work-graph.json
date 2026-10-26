@@ -2324,7 +2324,7 @@
         "architecture/crash-recovery.md"
       ],
       "lookahead": false,
-      "status": "verifying"
+      "status": "done"
     },
     {
       "id": "WP-8.10",
