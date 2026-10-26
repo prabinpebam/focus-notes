@@ -7,12 +7,20 @@
  * user's dictionary ("Add to dictionary" writes to it through the session).
  *
  * One small helper process: Windows PowerShell, by its absolute path, reading its script from its
- * input (never a file, so no execution policy applies), then one request a line. Words travel as
+ * input (never a file, so no execution policy applies), then one request a line. It's started from a
+ * worker thread, never the main process's (DEF-39). Words travel as
  * base64 of UTF-8, so no console code page can change them. It starts in the background and answers
  * in a few milliseconds; until it's ready, a right-click shows the edit actions alone (no wait).
  * If it can't start or it stops, the menu keeps working without suggestions, and it isn't restarted.
  */
-import type { ChildProcessWithoutNullStreams } from "node:child_process";
+/** What the checker uses of its helper: a child process, or one started from a worker thread (DEF-39). */
+export interface HelperProcess {
+  stdout: { setEncoding(encoding: "utf8"): unknown; on(event: "data", listener: (d: string) => void): unknown };
+  stderr: { resume(): unknown };
+  stdin: { write(d: string): unknown; end(): unknown; on(event: "error", listener: () => void): unknown };
+  on(event: "error" | "exit", listener: () => void): unknown;
+  kill(): unknown;
+}
 
 export interface SpellCheck {
   misspelled: boolean;
@@ -126,7 +134,7 @@ export const askable = (word: string): boolean => word.length <= MAX_WORD && /^[
 const TAG = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 
 export class OsSpellChecker {
-  #proc: ChildProcessWithoutNullStreams | undefined;
+  #proc: HelperProcess | undefined;
   #state: "idle" | "starting" | "ready" | "gone" = "idle";
   #next = 1;
   #buffer = "";
@@ -134,12 +142,12 @@ export class OsSpellChecker {
   /** Each request's cache key, so an answer that comes too late for its menu is ready for the next one. */
   readonly #keys = new Map<number, string>();
   readonly #cache = new Map<string, SpellCheck>();
-  readonly #start: () => ChildProcessWithoutNullStreams;
+  readonly #start: () => HelperProcess;
   readonly #defer: (start: () => void) => void;
   #prime: string[] = [];
 
   /** `defer` holds the start until it's safe: main passes `whenGitIdle`, so the helper never inherits a Git command's pipes. */
-  constructor(start: () => ChildProcessWithoutNullStreams, defer: (start: () => void) => void = (s) => s()) {
+  constructor(start: () => HelperProcess, defer: (start: () => void) => void = (s) => s()) {
     this.#start = start;
     this.#defer = defer;
   }
@@ -161,7 +169,7 @@ export class OsSpellChecker {
 
   #launch(): void {
     if (this.#state !== "starting") return;
-    let p: ChildProcessWithoutNullStreams;
+    let p: HelperProcess;
     try {
       p = this.#start();
     } catch {

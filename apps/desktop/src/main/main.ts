@@ -68,6 +68,7 @@ import { DrawnTextMenu } from "./spelling/drawn-menu.ts";
 import { textMenuEntries } from "@focus-notes/core/text-menu";
 import { themeSourceFor, type ThemeSource } from "./window/native-theme.ts";
 import { HELPER_ARGS, MAX_WORD, OsSpellChecker } from "./spelling/os-spellchecker.ts";
+import { spawnOffThread } from "./spelling/off-thread.ts";
 import { SnapshotCache } from "@focus-notes/core/snapshot";
 import { textHash } from "@focus-notes/core/journal";
 import { DraftStore } from "./drafts.ts";
@@ -212,7 +213,7 @@ const osSpelling = platform === "windows"
   ? new OsSpellChecker(() => {
     const exe = join(process.env.SystemRoot ?? "C:\\Windows", "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
     onSpawn?.(exe, HELPER_ARGS);
-    return spawn(exe, HELPER_ARGS, { windowsHide: true, stdio: "pipe" });
+    return spawnOffThread(exe, HELPER_ARGS);
   }, whenGitIdle)
   : undefined;
 const SPELLING_TARGET_MS = 250;

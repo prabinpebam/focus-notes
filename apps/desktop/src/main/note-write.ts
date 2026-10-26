@@ -8,8 +8,25 @@
  * is written and the text found is returned, so another program's change, a pull, or a write queued
  * before this one is never written over. A missing file is written: nothing is lost by making it.
  */
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
+
+/**
+ * A note's temporary file: hidden beside it and named for it, so a crash between writing and the
+ * rename leaves no file that looks like a note (DEF-38); the note's next save clears it.
+ */
+const tempName = (path: string, n: number) => join(dirname(path), `.${basename(path)}.${process.pid}.${n}.focus-notes.tmp`);
+const TEMP_TAIL = /^\.(\d+)\.\d+\.focus-notes\.tmp$/;
+
+/** Removes the temporary files a crashed instance left beside a note; never this instance's. */
+async function clearLeftTemps(path: string): Promise<void> {
+  const head = `.${basename(path)}`;
+  const names = await readdir(dirname(path)).catch(() => [] as string[]);
+  for (const name of names) {
+    const m = name.startsWith(head) ? TEMP_TAIL.exec(name.slice(head.length)) : null;
+    if (m && Number(m[1]) !== process.pid) await rm(join(dirname(path), name), { force: true }).catch(() => {});
+  }
+}
 
 /** Locks Windows sync clients and antivirus take briefly on a file they just saw. */
 const BRIEF_LOCKS = new Set(["EPERM", "EBUSY", "EACCES"]);
@@ -50,6 +67,8 @@ export class NoteWriter {
   /** The write running or waiting per path. */
   readonly queues = new Map<string, Promise<unknown>>();
   #tmp = 0;
+  /** The notes written this session: a note's left temporary files are cleared at its first save. */
+  readonly #cleared = new Set<string>();
   readonly #hooks: NoteWriterHooks;
 
   constructor(hooks: NoteWriterHooks = {}) {
@@ -71,7 +90,7 @@ export class NoteWriter {
     // Checked now that it's this write's turn: what a pull or an earlier write left is what counts.
     const found = await changedOutside(path, content, expected);
     if (found !== undefined) return { outside: found };
-    const tmp = `${path}.${process.pid}.${Date.now()}.${this.#tmp++}.tmp`;
+    const tmp = tempName(path, this.#tmp++);
     await writeFile(tmp, content, "utf8");
     try {
       // And again right before the rename: a change while the temporary file was written.
@@ -86,6 +105,10 @@ export class NoteWriter {
       throw error;
     }
     await this.#hooks.written?.(path, content);
+    if (!this.#cleared.has(path)) {
+      this.#cleared.add(path);
+      void clearLeftTemps(path);
+    }
     return undefined;
   }
 }

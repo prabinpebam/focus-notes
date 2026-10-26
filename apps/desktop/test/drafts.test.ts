@@ -72,6 +72,23 @@ describe("QLT-06: drafts while writing", () => {
     expect(snapshot(ws)).toEqual(before);
   });
 
+  it("R5: a new draft's first text doesn't wait for Git; HEAD joins its header when Git answers", async () => {
+    const a = note("a.md");
+    put(a, "# A");
+    mkdirSync(join(ws, ".git"));
+    const head = "b".repeat(40);
+    let answer!: (out: string) => void;
+    const git = (_cwd: string, args: string[]) => (args[0] === "rev-parse" ? new Promise<string>((r) => (answer = r)) : Promise.resolve(undefined));
+    const s = open({ git });
+    await s.keep(W, ID(1), 1, a, "# A\n\ntyped");
+    expect(readFileSync(join(s.dir, `${ID(1)}.draft`), "utf8").split("\n").slice(1).join("\n")).toBe("# A\n\ntyped");
+    expect(header(s, ID(1)).head).toBeUndefined();
+    answer(`${head}\n`);
+    await s.settled();
+    expect(header(s, ID(1))).toMatchObject({ seq: 1, head });
+    expect(readFileSync(join(s.dir, `${ID(1)}.draft`), "utf8").split("\n").slice(1).join("\n")).toBe("# A\n\ntyped");
+  });
+
   it("the workspace key is the first 16 hex of the folder's real path's SHA-256, lowercased on Windows", () => {
     const real = realpathSync.native(ws);
     const p = real.split(sep).join("/");

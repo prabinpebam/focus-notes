@@ -5,7 +5,7 @@
  * over, and the window gets the text found. The preload and `note:write` pass the expectation on.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { NoteWriter, noteSave, retrying, writeBack } from "../src/main/note-write.ts";
@@ -18,6 +18,19 @@ describe("NoteWriter", () => {
     writeFileSync(p, "# A\n\nFirst.\n");
     expect(await new NoteWriter().write(p, "# A\n\nFirst. Typed.\n", "# A\n\nFirst.\n")).toBeUndefined();
     expect(readFileSync(p, "utf8")).toBe("# A\n\nFirst. Typed.\n");
+  });
+
+  it("DEF-38: its temporary file is hidden and named for the note, and one a crashed instance left is cleared at the note's first save", async () => {
+    const d = dir();
+    const p = join(d, "a.md");
+    writeFileSync(p, "# A\n");
+    const left = `.a.md.${process.pid + 1}.0.focus-notes.tmp`;
+    writeFileSync(join(d, left), "# A\n\nHalf a save.\n");
+    writeFileSync(join(d, ".ab.md.1.0.focus-notes.tmp"), "another note's");
+    writeFileSync(join(d, ".a.md.notes.tmp"), "not ours");
+    expect(await new NoteWriter().write(p, "# A\n\nTyped.\n")).toBeUndefined();
+    await vi.waitFor(() => expect(readdirSync(d).sort()).toEqual([".a.md.notes.tmp", ".ab.md.1.0.focus-notes.tmp", "a.md"]));
+    expect(readFileSync(p, "utf8")).toBe("# A\n\nTyped.\n");
   });
 
   it("writes nothing over another program's change, and returns what it found", async () => {

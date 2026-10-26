@@ -266,6 +266,8 @@ export class DraftStore {
   readonly #renames: { from: string; to: string }[] = [];
   readonly #outcomes = new Map<string, Outcome>();
   readonly #heads = new Map<string, { at: number; head: string | undefined }>();
+  /** Git asked for a new draft's `HEAD`, after its first text (R5). */
+  readonly #asking = new Set<Promise<unknown>>();
   /** Who `found()` is told to next: the first window to ask after a launch, or the one whose renderer was replaced. */
   #offer: "any" | number | undefined = "any";
   #stats = { matched: 0, changed: 0 };
@@ -327,16 +329,31 @@ export class DraftStore {
       let d = this.#drafts.get(draft);
       if (d && d.owner !== owner) return;
       if (d && p.seq <= d.seq) return;
+      let asksGit = false;
       if (!d) {
         d = { id: draft, rel: this.#place(this.#noteRel(p.path)), seq: p.seq, at: this.#now(), bytes: 0, owner };
         this.#drafts.set(draft, d);
-        Object.assign(d, await this.#facts(d.rel, p.text));
+        // The first text doesn't wait for Git (R5): `HEAD` joins the header after it, when Git answers.
+        asksGit = this.#headKnown(d.rel) === null;
+        Object.assign(d, await this.#facts(d.rel, p.text, true));
       }
       d.seq = p.seq;
       d.at = this.#now();
       await this.#write(d, p.text);
       this.#lastWrite.set(draft, this.#now());
       await this.#enforceCap();
+      if (asksGit) {
+        const placed = d;
+        const ask: Promise<unknown> = this.#head(placed.rel).then((head) => {
+          if (head === undefined) return;
+          return this.#enqueue(draft, async () => {
+            if (this.#drafts.get(draft) !== placed || placed.head !== undefined) return;
+            placed.head = head;
+            await this.#write(placed);
+          });
+        }).finally(() => this.#asking.delete(ask));
+        this.#asking.add(ask);
+      }
     });
     return p.done;
   }
@@ -548,7 +565,7 @@ export class DraftStore {
   /** Resolves once everything asked so far is on disk. */
   async settled(): Promise<void> {
     await this.#loaded;
-    while (this.#queues.size) await Promise.allSettled([...this.#queues.values()]);
+    while (this.#queues.size || this.#asking.size) await Promise.allSettled([...this.#queues.values(), ...this.#asking]);
   }
 
   /** Counts only, for logs and the diagnostic report. */
@@ -629,12 +646,15 @@ export class DraftStore {
     return (rel === "private" || this.#key(rel).startsWith("private/")) && !!this.#o.crypt?.available();
   }
 
-  /** What's on disk under a draft, read only: the hash, the file's ID, the front-matter `id`, Git's `HEAD`. */
-  async #facts(rel: string, text?: string): Promise<Pick<Draft, "base" | "ino" | "noteId" | "head">> {
+  /**
+   * What's on disk under a draft, read only: the hash, the file's ID, the front-matter `id`, Git's `HEAD`.
+   * `quick` doesn't wait for Git (a new draft's first text, R5): `HEAD` is left out when it isn't known yet.
+   */
+  async #facts(rel: string, text?: string, quick = false): Promise<Pick<Draft, "base" | "ino" | "noteId" | "head">> {
     const disk = await this.#readNote(rel);
     const st = await stat(this.#abs(rel), { bigint: true }).catch(() => undefined);
     const noteId = (disk !== undefined ? frontMatterId(disk) : undefined) ?? (text !== undefined ? frontMatterId(text) : undefined);
-    const head = await this.#head(rel);
+    const head = quick ? (this.#headKnown(rel) ?? undefined) : await this.#head(rel);
     return { base: disk !== undefined ? textHash(disk) : undefined, ino: st ? String(st.ino) : undefined, noteId, head };
   }
 
@@ -646,6 +666,14 @@ export class DraftStore {
   #repo(rel: string): { cwd: string; rel: string } | undefined {
     if (this.#key(rel).startsWith("private/") && existsSync(join(this.workspace, "private", ".git"))) return { cwd: join(this.workspace, "private"), rel: rel.slice("private/".length) };
     return existsSync(join(this.workspace, ".git")) ? { cwd: this.workspace, rel } : undefined;
+  }
+
+  /** Git's `HEAD` for a note when it's known without running Git; `null` when Git has to be asked. */
+  #headKnown(rel: string): string | undefined | null {
+    const repo = this.#repo(rel);
+    if (!repo || !this.#o.git) return undefined;
+    const known = this.#heads.get(repo.cwd);
+    return known && this.#now() - known.at < HEAD_FRESH_MS ? known.head : null;
   }
 
   async #head(rel: string): Promise<string | undefined> {
