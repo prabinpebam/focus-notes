@@ -30,6 +30,10 @@ MARGIN = (120, 90)
 # The cascade's windows, as a share of a single window's size, and the steps between them.
 CASCADE = 4
 CASCADE_SCALE = 0.5625
+# The Super hero art (D-226): 3840 x 2160, the same cascade with wider margins and larger windows.
+HERO = (3840, 2160)
+HERO_MARGIN = (360, 240)
+HERO_SHARE = 0.6
 # Calm, neutral backdrops, top to bottom, for a light window and for a dark one.
 BACKDROPS = {"light": ((236, 238, 242), (214, 219, 228)), "dark": ((44, 47, 56), (24, 26, 32))}
 
@@ -41,11 +45,11 @@ def drawn_box(rgba: np.ndarray) -> tuple:
     return int(cols.min()), int(rows.min()), int(cols.max()) + 1, int(rows.max()) + 1
 
 
-def backdrop(mode: str) -> Image.Image:
+def backdrop(mode: str, size: tuple = CANVAS) -> Image.Image:
     top, bottom = (np.array(c, dtype=np.float64) for c in BACKDROPS[mode])
-    t = np.linspace(0.0, 1.0, CANVAS[1])[:, None, None]
+    t = np.linspace(0.0, 1.0, size[1])[:, None, None]
     rows = (top * (1 - t) + bottom * t).round().astype(np.uint8)
-    return Image.fromarray(np.repeat(rows, CANVAS[0], axis=1)).convert("RGBA")
+    return Image.fromarray(np.repeat(rows, size[0], axis=1)).convert("RGBA")
 
 
 class Window:
@@ -76,7 +80,7 @@ def fit(size: tuple, room: tuple) -> float:
 def place(canvas: Image.Image, win: Window, scale: float, at: tuple) -> Image.Image:
     """`win` at `scale` with its drawn window's top left at `at`; its shadow is clipped by the canvas."""
     img, (bx, by) = win.scaled(scale)
-    layer = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
+    layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     layer.paste(img, (at[0] - bx, at[1] - by))
     return Image.alpha_composite(canvas, layer)
 
@@ -88,16 +92,16 @@ def compose(win: Window) -> Image.Image:
     return place(backdrop(win.mode), win, scale, ((CANVAS[0] - w) // 2, (CANVAS[1] - h) // 2)).convert("RGB")
 
 
-def cascade(wins: list) -> Image.Image:
-    room = (CANVAS[0] - 2 * MARGIN[0], CANVAS[1] - 2 * MARGIN[1])
-    scale = fit(wins[-1].size, room) * CASCADE_SCALE
+def cascade(wins: list, size: tuple = CANVAS, margin: tuple = MARGIN, share: float = CASCADE_SCALE) -> Image.Image:
+    room = (size[0] - 2 * margin[0], size[1] - 2 * margin[1])
+    scale = fit(wins[-1].size, room) * share
     w, h = round(wins[-1].size[0] * scale), round(wins[-1].size[1] * scale)
     steps = len(wins) - 1
     dx, dy = (room[0] - w) // steps, (room[1] - h) // steps
     # The whole stack centred.
-    x = (CANVAS[0] - (w + steps * dx)) // 2
-    y = (CANVAS[1] - (h + steps * dy)) // 2
-    canvas = backdrop(wins[-1].mode)
+    x = (size[0] - (w + steps * dx)) // 2
+    y = (size[1] - (h + steps * dy)) // 2
+    canvas = backdrop(wins[-1].mode, size)
     for i, win in enumerate(wins):
         canvas = place(canvas, win, scale * wins[-1].size[0] / win.size[0], (x + i * dx, y + i * dy))
     return canvas.convert("RGB")
@@ -107,6 +111,7 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--captures", default=str(ROOT / "test-results" / "review" / "store"))
     p.add_argument("--out", default=str(ROOT / "store" / "screenshots"))
+    p.add_argument("--hero", default=str(ROOT / "store" / "hero" / "super-hero-3840x2160.png"))
     p.add_argument("--preview", action="store_true", help="take captures of any size (a local run's)")
     a = p.parse_args()
     scenes = json.loads((ROOT / "store" / "listing.json").read_text(encoding="utf-8-sig"))["screenshots"]["scenes"]
@@ -126,6 +131,11 @@ def main() -> None:
         image = cascade([load(f"cascade-{n}") for n in range(1, CASCADE + 1)]) if name == "cascade" else compose(load(name))
         image.save(file, "PNG", optimize=True)
         report[file.name] = file.stat().st_size
+    # The 16:9 Super hero art: the cascade with no title, kept to the middle, where no Store layout crops it.
+    hero = Path(a.hero)
+    hero.parent.mkdir(parents=True, exist_ok=True)
+    cascade([load(f"cascade-{n}") for n in range(1, CASCADE + 1)], HERO, HERO_MARGIN, HERO_SHARE).save(hero, "PNG", optimize=True)
+    report[hero.name] = hero.stat().st_size
     print(json.dumps(report, indent=1))
 
 
