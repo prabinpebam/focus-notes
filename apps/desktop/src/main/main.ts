@@ -35,6 +35,7 @@ import { remoteRepo, TemplateGuard } from "./git/template-guard.ts";
 import { HeldFile, excludeFileOf } from "./git/held.ts";
 import { changedChars, type BackupPolicy } from "./git/cadence.ts";
 import { createRunner, whenGitIdle, type GitRunner } from "./git/run.ts";
+import { bundleEnv, gitBundle } from "./git/bundle.ts";
 import { passphraseStrength } from "@focus-notes/seal";
 import { accessStore, siteFromGitConfig } from "./share/access.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
@@ -42,7 +43,7 @@ import { ProblemLog, type RedactOptions } from "@focus-notes/core/diagnostics";
 import { feedbackMain } from "./feedback.ts";
 import { diagnostics, knownStrings, reportFileName, reportPathAllowed } from "./diagnostics.ts";
 import { DEFAULT_SETUP, isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
-import { FIRST_RUN_PAGES, identityProblem, type FirstRunPage, type FirstRunProgress, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
+import { FIRST_RUN_PAGES, identityProblem, pageAllowed, type FirstRunProgress, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
 import { checkOptions, notesRepos, SetupEngine } from "./setup/engine.ts";
 import { githubFetch } from "./setup/credential.ts";
 import { readTemplate, TEMPLATE_RESOURCE } from "./setup/bundled-template.ts";
@@ -357,7 +358,9 @@ const account = new Account({
   tools: createToolRunner(onSpawn ? { onSpawn } : {}),
   fetch: apiFetch,
   home: app.getPath("home"),
-  env: process.env,
+  // The Store package's own Git and its sign-in helper first on PATH (PKG-13, D-228).
+  env: bundleEnv(process.env),
+  bundled: Boolean(gitBundle()),
   onProgress: (p) => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("firstRun:signIn", p);
   },
@@ -1703,8 +1706,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return r;
   });
   ipcMain.on("firstRun:openPage", (e, page: unknown) => {
-    if (!fromApp(e) || typeof page !== "string" || !Object.hasOwn(FIRST_RUN_PAGES, page)) return;
-    void shell.openExternal(FIRST_RUN_PAGES[page as FirstRunPage]);
+    // No page that offers other software when Git came with the app (PKG-13, D-228), whatever asks.
+    if (!fromApp(e) || typeof page !== "string" || !pageAllowed(page, Boolean(gitBundle()))) return;
+    void shell.openExternal(FIRST_RUN_PAGES[page]);
   });
   // The notes folder is missing (FRE-11, WP-5.14): the recovery view's ways back. Each refuses once the folder is open again.
   const whileMissing = <T>(fn: () => Promise<T>) => async (): Promise<T | RecoverResult> => (folderState === "ok" ? { ok: false, problem: "failed" } : recoverWith(fn));

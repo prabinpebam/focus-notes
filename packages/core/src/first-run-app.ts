@@ -18,7 +18,7 @@ import type { TaskTracker, TaskView } from "./tasks.ts";
 import { isRepoName, DEFAULT_SETUP, setupFailureActions, type SetupFailureAction, type SetupReport } from "./setup.ts";
 import type { SetupState } from "./setup-app.ts";
 import {
-  canContinue, FIRST_RUN_STEPS, looksLikeToken, nextStep, notesIdentity, prevStep, resumeStep,
+  canContinue, FIRST_RUN_STEPS, looksLikeToken, nextStep, notesIdentity, pageAllowed, prevStep, resumeStep,
   type AccountStatus, type FirstRunPage, type FirstRunStep, type GitCheck, type RepoChoice, type WorkspaceResult,
 } from "./first-run.ts";
 
@@ -358,10 +358,11 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   reg("firstRun.signIn", signIn(true));
   reg("firstRun.signInDevice", signIn(true));
   reg("firstRun.signInBrowser", signIn(false));
+  // The install command, never when Git came with the app (PKG-13, D-228).
   reg("firstRun.copyCommand", async () => {
     const g = state().git;
-    if (g && !g.ok) await bridge.copyText?.(catalog.format(`firstRun.git.command.${platformOf()}`));
-  });
+    if (g && !g.ok && !g.bundled) await bridge.copyText?.(catalog.format(`firstRun.git.command.${platformOf()}`));
+  }, (s) => !s.firstRun.git?.bundled);
   reg("firstRun.cancelSignIn", async () => {
     setSignIn({ phase: "idle", code: "" });
     set({ busy: false, focus: state().focus + 1 });
@@ -402,7 +403,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     // Rejected: the form stays, its field says why and takes focus.
     set({ focus: state().focus + 1 });
   });
-  reg<{ page: FirstRunPage }>("firstRun.openPage", ({ page }) => fr?.openPage(page));
+  reg<{ page: FirstRunPage }>("firstRun.openPage", ({ page }) => {
+    if (pageAllowed(page, state().git?.bundled === true)) fr?.openPage(page);
+  });
 
   // ---- Your notes ----
   reg<{ value: string }>("firstRun.setMode", async (a) => {
@@ -572,6 +575,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         connect: { type: "string", enum: ["checking", "git", "found", "cli", "choose", "code", "window", "waiting", "token"] }, trouble: { type: "boolean" },
         isGit: { type: "boolean" }, isChoose: { type: "boolean" }, showTrouble: { type: "boolean" },
         gitState: { type: "string", enum: ["checking", "ok", "old", "missing"] }, gitText: { type: "string" }, installText: { type: "string" }, installCommand: { type: "string" },
+        // PKG-13, D-228: Git came with the app, so nothing is offered to install; a Git that won't start is repaired with the app.
+        canInstall: { type: "boolean" }, gitCardTitle: { type: "string" }, gitCardDetail: { type: "string" }, gitCardIcon: { type: "string" }, noHelperText: { type: "string" },
         login: { type: "string" }, handle: { type: "string" }, accountName: { type: "string" }, avatar: { type: "string" }, initials: { type: "string" }, foundText: { type: "string" }, continueAs: { type: "string" }, code: { type: "string" },
         canHelper: { type: "boolean" }, noHelper: { type: "boolean" }, problem: { type: "string" }, hasProblem: { type: "boolean" }, offline: { type: "boolean" }, canOther: { type: "boolean" },
         token: { type: "string" }, tokenError: { type: "boolean" },
@@ -658,13 +663,16 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const a = f.account;
       const g = f.git;
       const gitState = !g ? "checking" : g.ok ? "ok" : g.installed ? "old" : "missing";
+      // The Store package's own Git (PKG-13, D-228): never an install route, and its problems are its own.
+      const bundled = g?.bundled === true;
       // git: Git is missing or too old; found: Git is signed in (Continue as @login); cli: the GitHub CLI is;
       // choose: neither, or a different account. An account Git kept when Focus Notes alone signed out is offered like any found one (FRE-07).
       const connect = f.signIn.phase !== "idle" ? f.signIn.phase
         : !g ? "checking" : !g.ok ? "git"
         : !a ? "checking" : a.account && !f.other ? "found" : a.cliAccount && !f.other ? "cli" : "choose";
       const shown = connect === "cli" ? a?.cliAccount : a?.account;
-      const problem = a?.problem && connect === "choose" ? catalog.format(`firstRun.signIn.problem.${a.problem}`) : "";
+      const problemKey = (prefix: string, p: string) => (bundled && p === "noHelper" ? `${prefix}.helperOff` : `${prefix}.${p}`);
+      const problem = a?.problem && connect === "choose" ? catalog.format(problemKey("firstRun.signIn.problem", a.problem)) : "";
       const platform = bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows";
       const focusChord = shortcutFor(commands.shortcut("focus.toggle"), bridge.platform);
       const w = f.workspace;
@@ -680,7 +688,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const err = panel === "progress" && w.error.startsWith("firstRun.notes.") ? "" : w.error;
       // The token form says what GitHub (or the helper) said about the token it just cleared.
       const tokenKey = f.tokenError ? "firstRun.signIn.tokenInvalid"
-        : connect === "token" && a?.problem ? (catalog.has(`firstRun.signIn.tokenProblem.${a.problem}`) ? `firstRun.signIn.tokenProblem.${a.problem}` : "firstRun.signIn.tokenProblem.failed") : "";
+        : connect === "token" && a?.problem ? (catalog.has(problemKey("firstRun.signIn.tokenProblem", a.problem)) ? problemKey("firstRun.signIn.tokenProblem", a.problem) : "firstRun.signIn.tokenProblem.failed") : "";
       // No helper to keep a sign-in: the step's action is installing one (D-142).
       const needHelper = connect === "choose" && Boolean(a && ((!a.gcm && !a.gh) || a.problem === "noHelper"));
       // The step's hero mark (D-135): one anchor, the same size and place in every state of a step,
@@ -688,7 +696,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
       const mark: [string, "neutral" | "accent" | "danger" | "success", boolean] | undefined =
         f.step === "connect"
           ? connect === "checking" ? ["github", "neutral", true]
-          : connect === "git" || needHelper ? ["download", "neutral", false]
+          : connect === "git" ? (bundled ? ["warning", "danger", false] : ["download", "neutral", false])
+          : needHelper ? (bundled ? ["lock", "neutral", false] : ["download", "neutral", false])
           : connect === "waiting" || connect === "window" || connect === "code" ? ["github", "accent", true]
           : connect === "token" ? ["lock", tokenKey ? "danger" : "neutral", false]
           : connect === "found" ? ["github", "success", false]
@@ -703,8 +712,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         : undefined;
       // The title names the state, not just the step (D-142).
       const titleKey = f.step === "connect"
-        ? connect === "git" ? (gitState === "old" ? "firstRun.connect.title.old" : "firstRun.connect.title.missing")
-        : needHelper ? "firstRun.connect.title.helper"
+        ? connect === "git" ? (bundled ? "firstRun.connect.title.broken" : gitState === "old" ? "firstRun.connect.title.old" : "firstRun.connect.title.missing")
+        : needHelper ? (bundled ? "firstRun.connect.title.helperOff" : "firstRun.connect.title.helper")
         : `firstRun.connect.title.${connect}`
         : f.step === "notes" ? (panel === "progress" && made ? "firstRun.notes.title.made" : `firstRun.notes.title.${panel}`)
         : `firstRun.${f.step}.title`;
@@ -721,7 +730,11 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         progress: catalog.format("firstRun.progress", { n: i + 1, total: FIRST_RUN_STEPS.length }), showProgress: f.scope === "install" || f.scope === "setup",
         stepNumber: i + 1, stepTotal: FIRST_RUN_STEPS.length,
         needHelper, helperText: needHelper && !problem, problemIcon, notesIcon: lookupFailed ? "cloudOff" : "error",
-        installLabel: catalog.format(gitState === "old" ? "firstRun.connect.update" : "firstRun.connect.install"), gitFound: g?.version ?? "", gitNeeded: GIT_NEEDED, isGitOld: gitState === "old",
+        installLabel: catalog.format(gitState === "old" ? "firstRun.connect.update" : "firstRun.connect.install"), gitFound: g?.version ?? "", gitNeeded: GIT_NEEDED, isGitOld: gitState === "old" && !bundled,
+        canInstall: !bundled,
+        gitCardTitle: catalog.format(bundled ? "firstRun.connect.bundledTitle" : "firstRun.connect.helperTitle"),
+        gitCardDetail: catalog.format(bundled ? "firstRun.connect.repair" : "firstRun.connect.helperWhy"), gitCardIcon: bundled ? "warning" : "download",
+        noHelperText: catalog.format(bundled ? "firstRun.connect.helperOff" : "firstRun.connect.noHelper"),
         instanceInvalid: invalid("instance"), privateInvalid: invalid("private"), passphraseInvalid: invalid("passphrase"), confirmInvalid: invalid("confirm"),
         instanceError: fieldError("instance"), privateError: fieldError("private"), passphraseError: fieldError("passphrase"), confirmError: fieldError("confirm"),
         hasStrength: Boolean(w.passphrase), strength: w.strength,
@@ -731,8 +744,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         busy: f.busy, focus: f.focus, canContinue: canContinue(f.step, { ...(g ? { git: g } : {}), ...(a ? { account: a } : {}), workspaceReady: made }),
         connect, trouble: f.trouble,
         isGit: connect === "git", isChoose: connect === "choose", showTrouble: ["git", "found", "cli", "choose"].includes(connect),
-        gitState, gitText: g?.version ? catalog.format(g.ok ? "firstRun.git.ok" : "firstRun.git.old", { version: g.version }) : catalog.format("firstRun.git.missing"),
-        installText: catalog.format(`firstRun.git.install.${platform}`), installCommand: catalog.format(`firstRun.git.command.${platform}`),
+        gitState, gitText: bundled && !g?.ok ? catalog.format("firstRun.git.broken") : g?.version ? catalog.format(g.ok ? "firstRun.git.ok" : "firstRun.git.old", { version: g.version }) : catalog.format("firstRun.git.missing"),
+        installText: bundled ? "" : catalog.format(`firstRun.git.install.${platform}`), installCommand: bundled ? "" : catalog.format(`firstRun.git.command.${platform}`),
         login, handle: login ? `@${login}` : "", accountName: shown?.name || login,
         // The account's picture, fetched by the shell and handed over as a data URL (no request from here), or its initials.
         avatar: shown?.avatar && AVATAR.test(shown.avatar) ? shown.avatar : "", initials: initials(shown?.name || login),

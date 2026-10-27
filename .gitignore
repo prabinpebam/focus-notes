@@ -19,3 +19,6 @@ dist-site/
 dist-app/
 dist-demo/
 dist-publish/
+
+# The Microsoft Store package's Git (D-228), fetched by tools/release/git-bundle.mjs.
+apps/desktop/vendor/

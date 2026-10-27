@@ -60,6 +60,9 @@ SOFTWARE.`,
   },
 ];
 
+// Programs the Microsoft Store package carries and the app starts, never links (PKG-13, D-228).
+const gitBundle = JSON.parse(readFileSync(join(root, "apps", "desktop", "build", "git-bundle.json"), "utf8"));
+
 const body = [
   "# Third-party notices",
   "",
@@ -78,6 +81,13 @@ const body = [
   "# Copied into the app",
   "",
   ...VENDORED.flatMap((e) => [`## ${e.name} ${e.version}`, "", `License: ${e.license}  \nHomepage: ${e.homepage}`, "", e.what, "", "```text", e.text, "```", ""]),
+  "# Programs in the Microsoft Store package",
+  "",
+  `The Microsoft Store package also carries Git, from GitHub Desktop's dugite-native ${gitBundle.tag} (\`${gitBundle.asset}\`, SHA-256 \`${gitBundle.sha256}\`), unmodified, at \`resources\\git\`. These are separate programs that Focus Notes starts; none is linked into it. The installer and the portable download don't include them.`,
+  "",
+  "Each license's full text ships in the package beside the program it covers. The complete source of each program is at the link given. On request, by an issue at https://github.com/prabinpebam/focus-notes/issues, for three years after each Store release, the owner will also provide a copy of the complete corresponding source of the GPL programs that release carries.",
+  "",
+  ...gitBundle.components.flatMap((c) => [`## ${c.name} ${c.version}`, "", `License: ${c.license}  \nHomepage: ${c.homepage}  \nSource: ${c.source}`, "", c.what, ""]),
 ].join("\n");
 
 if (process.argv.includes("--check")) {

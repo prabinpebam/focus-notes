@@ -5,6 +5,7 @@
  */
 import { execFile } from "node:child_process";
 import { Worker } from "node:worker_threads";
+import { bundleEnv, gitBundle, type GitBundle } from "./bundle.ts";
 
 export interface GitCall {
   /** The repository's folder, passed as `-C`. */
@@ -56,11 +57,17 @@ const WORKER_SOURCE = `
 const { parentPort } = require("node:worker_threads");
 const { execFile } = require("node:child_process");
 parentPort.on("message", ({ id, git, args, env, timeout, input }) => {
-  const child = execFile(git, args, { env, timeout, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
+  let child;
+  try {
+    child = execFile(git, args, { env, timeout, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
     if (!error) return parentPort.postMessage({ id, code: 0, stdout, stderr });
     const code = typeof error.code === "number" && !error.killed ? error.code : -1;
     parentPort.postMessage({ id, code, stdout: stdout || "", stderr: (stderr || "") + (error.killed ? "\\n(timed out)" : typeof error.code === "string" ? "\\n" + error.code : "") });
-  });
+    });
+  } catch (error) {
+    // A program that isn't one (a damaged git.exe: EFTYPE) throws here rather than failing.
+    return parentPort.postMessage({ id, code: -1, stdout: "", stderr: "\\n" + (error && error.code || "spawn failed") });
+  }
   child.on("exit", () => setTimeout(() => { child.stdout && child.stdout.destroy(); child.stderr && child.stderr.destroy(); }, ${EXITED_PIPE_GRACE_MS}).unref());
   if (child.stdin) {
     child.stdin.on("error", () => {});
@@ -73,11 +80,17 @@ interface Spawn { git: string; args: string[]; env: NodeJS.ProcessEnv; timeout: 
 /** Runs Git on this thread: where a worker isn't available. */
 function runHere(s: Spawn): Promise<GitResult> {
   return new Promise((resolve) => {
-    const child = execFile(s.git, s.args, { env: s.env, timeout: s.timeout, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
-      if (!error) return resolve({ code: 0, stdout, stderr });
-      const e = error as NodeJS.ErrnoException & { code?: number | string; killed?: boolean };
-      resolve({ code: typeof e.code === "number" && !e.killed ? e.code : -1, stdout: stdout ?? "", stderr: `${stderr ?? ""}${e.killed ? "\n(timed out)" : typeof e.code === "string" ? `\n${e.code}` : ""}` });
-    });
+    let child: ReturnType<typeof execFile>;
+    try {
+      child = execFile(s.git, s.args, { env: s.env, timeout: s.timeout, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
+        if (!error) return resolve({ code: 0, stdout, stderr });
+        const e = error as NodeJS.ErrnoException & { code?: number | string; killed?: boolean };
+        resolve({ code: typeof e.code === "number" && !e.killed ? e.code : -1, stdout: stdout ?? "", stderr: `${stderr ?? ""}${e.killed ? "\n(timed out)" : typeof e.code === "string" ? `\n${e.code}` : ""}` });
+      });
+    } catch (error) {
+      // A program that isn't one (a damaged git.exe: EFTYPE) throws here rather than failing.
+      return resolve({ code: -1, stdout: "", stderr: `\n${(error as NodeJS.ErrnoException).code ?? "spawn failed"}` });
+    }
     if (s.onStderr) child.stderr?.on("data", (d: string | Buffer) => s.onStderr!(String(d)));
     child.on("exit", () => setTimeout(() => { child.stdout?.destroy(); child.stderr?.destroy(); }, EXITED_PIPE_GRACE_MS).unref());
     child.stdin?.on("error", () => {});
@@ -143,12 +156,18 @@ function gitSpawner(): { post(s: Spawn): Promise<GitResult> } | undefined {
   return spawner ?? undefined;
 }
 
-/** A runner for the `git` on PATH. `onSpawn` sees every argument list and environment (tests check them). */
-export function createRunner(options: { git?: string; env?: NodeJS.ProcessEnv; onSpawn?: (args: string[], env: NodeJS.ProcessEnv) => void; here?: boolean } = {}): GitRunner {
-  const git = options.git ?? "git";
+/**
+ * A runner for the Git the Store package carries when it's there (PKG-13, D-228), else the `git` on
+ * PATH. `onSpawn` sees every argument list and environment (tests check them). A `git` given here
+ * (a test's fake) runs as given, with the environment as given.
+ */
+export function createRunner(options: { git?: string; env?: NodeJS.ProcessEnv; onSpawn?: (args: string[], env: NodeJS.ProcessEnv) => void; here?: boolean; bundle?: GitBundle | null } = {}): GitRunner {
+  const bundle = options.git ? undefined : options.bundle === undefined ? gitBundle() : options.bundle ?? undefined;
+  const git = options.git ?? bundle?.git ?? "git";
+  const base = bundle ? bundleEnv(options.env ?? process.env, bundle) : options.env ?? process.env;
   return (call) => {
     const args = ["-C", call.cwd, ...call.args];
-    const env = { ...gitEnv(options.env ?? process.env, call.read === true), ...call.env };
+    const env = { ...gitEnv(base, call.read === true), ...call.env };
     options.onSpawn?.(args, env);
     const s: Spawn = { git, args, env, timeout: call.timeoutMs ?? DEFAULT_TIMEOUT_MS, ...(call.input !== undefined ? { input: call.input } : {}), ...(call.onStderr ? { onStderr: call.onStderr } : {}) };
     // A call that streams Git's progress (a clone's percentage) runs here: a function can't be posted to the worker.

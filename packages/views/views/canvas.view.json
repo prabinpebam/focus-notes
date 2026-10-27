@@ -6509,12 +6509,14 @@
                                         "type": "ItemCard",
                                         "props": {
                                           "title": {
-                                            "t": "firstRun.connect.helperTitle"
+                                            "get": "vm.firstRun.gitCardTitle"
                                           },
                                           "detail": {
-                                            "t": "firstRun.connect.helperWhy"
+                                            "get": "vm.firstRun.gitCardDetail"
                                           },
-                                          "icon": "download"
+                                          "icon": {
+                                            "get": "vm.firstRun.gitCardIcon"
+                                          }
                                         },
                                         "children": [
                                           {
@@ -6551,34 +6553,67 @@
                                         },
                                         "children": [
                                           {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "get": "vm.firstRun.installLabel"
+                                            "switch": {
+                                              "get": "vm.firstRun.canInstall"
+                                            },
+                                            "cases": {
+                                              "true": {
+                                                "type": "Inline",
+                                                "props": {
+                                                  "gap": "s",
+                                                  "justify": "start",
+                                                  "wrap": true
+                                                },
+                                                "children": [
+                                                  {
+                                                    "type": "Button",
+                                                    "props": {
+                                                      "label": {
+                                                        "get": "vm.firstRun.installLabel"
+                                                      },
+                                                      "variant": "primary",
+                                                      "autoFocus": true,
+                                                      "size": "l"
+                                                    },
+                                                    "on": {
+                                                      "press": {
+                                                        "run": "firstRun.openPage",
+                                                        "args": {
+                                                          "page": "git"
+                                                        }
+                                                      }
+                                                    }
+                                                  },
+                                                  {
+                                                    "type": "Button",
+                                                    "props": {
+                                                      "label": {
+                                                        "t": "firstRun.checkAgain"
+                                                      }
+                                                    },
+                                                    "on": {
+                                                      "press": {
+                                                        "run": "firstRun.checkGit"
+                                                      }
+                                                    }
+                                                  }
+                                                ]
                                               },
-                                              "variant": "primary",
-                                              "autoFocus": true,
-                                              "size": "l"
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.openPage",
-                                                "args": {
-                                                  "page": "git"
+                                              "false": {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.checkAgain"
+                                                  },
+                                                  "variant": "primary",
+                                                  "autoFocus": true,
+                                                  "size": "l"
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.checkGit"
+                                                  }
                                                 }
-                                              }
-                                            }
-                                          },
-                                          {
-                                            "type": "Button",
-                                            "props": {
-                                              "label": {
-                                                "t": "firstRun.checkAgain"
-                                              }
-                                            },
-                                            "on": {
-                                              "press": {
-                                                "run": "firstRun.checkGit"
                                               }
                                             }
                                           },
@@ -6730,7 +6765,7 @@
                                         "type": "Text",
                                         "props": {
                                           "value": {
-                                            "t": "firstRun.connect.noHelper"
+                                            "get": "vm.firstRun.noHelperText"
                                           }
                                         },
                                         "when": {
@@ -6751,34 +6786,67 @@
                                             },
                                             "children": [
                                               {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.connect.installHelper"
+                                                "switch": {
+                                                  "get": "vm.firstRun.canInstall"
+                                                },
+                                                "cases": {
+                                                  "true": {
+                                                    "type": "Inline",
+                                                    "props": {
+                                                      "gap": "s",
+                                                      "justify": "start",
+                                                      "wrap": true
+                                                    },
+                                                    "children": [
+                                                      {
+                                                        "type": "Button",
+                                                        "props": {
+                                                          "label": {
+                                                            "t": "firstRun.connect.installHelper"
+                                                          },
+                                                          "variant": "primary",
+                                                          "autoFocus": true,
+                                                          "size": "l"
+                                                        },
+                                                        "on": {
+                                                          "press": {
+                                                            "run": "firstRun.openPage",
+                                                            "args": {
+                                                              "page": "gcm"
+                                                            }
+                                                          }
+                                                        }
+                                                      },
+                                                      {
+                                                        "type": "Button",
+                                                        "props": {
+                                                          "label": {
+                                                            "t": "firstRun.checkAgain"
+                                                          }
+                                                        },
+                                                        "on": {
+                                                          "press": {
+                                                            "run": "firstRun.checkAccount"
+                                                          }
+                                                        }
+                                                      }
+                                                    ]
                                                   },
-                                                  "variant": "primary",
-                                                  "autoFocus": true,
-                                                  "size": "l"
-                                                },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "firstRun.openPage",
-                                                    "args": {
-                                                      "page": "gcm"
+                                                  "false": {
+                                                    "type": "Button",
+                                                    "props": {
+                                                      "label": {
+                                                        "t": "firstRun.checkAgain"
+                                                      },
+                                                      "variant": "primary",
+                                                      "autoFocus": true,
+                                                      "size": "l"
+                                                    },
+                                                    "on": {
+                                                      "press": {
+                                                        "run": "firstRun.checkAccount"
+                                                      }
                                                     }
-                                                  }
-                                                }
-                                              },
-                                              {
-                                                "type": "Button",
-                                                "props": {
-                                                  "label": {
-                                                    "t": "firstRun.checkAgain"
-                                                  }
-                                                },
-                                                "on": {
-                                                  "press": {
-                                                    "run": "firstRun.checkAccount"
                                                   }
                                                 }
                                               },
@@ -7305,6 +7373,9 @@
                                           },
                                           {
                                             "type": "CodeBlock",
+                                            "when": {
+                                              "get": "vm.firstRun.canInstall"
+                                            },
                                             "props": {
                                               "value": {
                                                 "get": "vm.firstRun.installCommand"
@@ -7413,6 +7484,9 @@
                                               },
                                               {
                                                 "type": "Button",
+                                                "when": {
+                                                  "get": "vm.firstRun.canInstall"
+                                                },
                                                 "props": {
                                                   "label": {
                                                     "t": "firstRun.signIn.installGh"

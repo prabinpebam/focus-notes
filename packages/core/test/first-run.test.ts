@@ -10,7 +10,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  canContinue, createApp, deviceCode, FIRST_RUN_STEPS, gitIsNewEnough, identityProblem, looksLikeToken, nextStep, noreplyEmail, notesIdentity, parseGitVersion, prevStep,
+  canContinue, createApp, deviceCode, FIRST_RUN_PAGES, FIRST_RUN_STEPS, gitIsNewEnough, identityProblem, INSTALL_PAGES, looksLikeToken, pageAllowed, nextStep, noreplyEmail, notesIdentity, parseGitVersion, prevStep,
   resumeStep, signInProblem, suggestIdentity, SETUP_PROBLEMS, SETUP_STEPS, TOKEN_PAGE,
   type AccountStatus, type AppStateFile, type FirstRunBridge, type FirstRunProgress, type GitCheck, type PlatformBridge, type RepoChoice, type SetupReport, type SignInProgress, type SyncReport, type WorkspaceResult,
 } from "../src/index.ts";
@@ -805,5 +805,87 @@ describe("PRF-13, D-149: no step waits in silence", () => {
     t.app.store.update((s) => ({ ...s, setup: { available: true, report: { ...report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "running" }, true), steps: report({ account: "done", instance: "done", private: "done", deployKey: "done", clone: "running" }, true).steps.map((x) => (x.id === "clone" ? { ...x, percent: 45 } : x)) } } }));
     expect(t.vm()).toMatchObject({ partText: "Downloading to this computer · 5 of 9 · 45%", hasSetupPercent: true, setupPercent: 45 });
     expect(parts.map((p) => p.label).join(" ")).not.toMatch(/\b(repositor(y|ies)|Git|commits?|tokens?|credentials?|CLI|instances?|Pages)\b/);
+  });
+});
+
+describe("PKG-13, D-228: Git that comes with Focus Notes (the Microsoft Store package)", () => {
+  const BUNDLED_OK: GitCheck = { installed: true, version: "2.56.0", ok: true, gcm: true, gh: false, bundled: true };
+  const BUNDLED_BROKEN: GitCheck = { installed: false, ok: false, gcm: false, gh: false, bundled: true };
+  const install = /\binstall\b|download|winget|xcode-select|apt |helper app|git-scm|cli\.github/i;
+
+  it("never opens a page that offers other software, and still opens every other page", () => {
+    expect(INSTALL_PAGES).toEqual(["git", "gcm", "gh"]);
+    for (const page of Object.keys(FIRST_RUN_PAGES)) {
+      expect(pageAllowed(page, false), page).toBe(true);
+      expect(pageAllowed(page, true), page).toBe(!INSTALL_PAGES.includes(page as never));
+    }
+    expect(pageAllowed("constructor", false)).toBe(false);
+    expect(pageAllowed("https://example.com", false)).toBe(false);
+  });
+
+  it("with Git ready, nothing about Git shows and connecting goes on as usual", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, git: BUNDLED_OK, account: { account: ADA, gcm: true, gh: false } });
+    await t.app.start();
+    await settle();
+    expect(t.vm()).toMatchObject({ connect: "found", canInstall: false, installCommand: "", installText: "" });
+  });
+
+  it("when it doesn't start, says so, offers Check again as the only way forward, and no install route", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, git: BUNDLED_BROKEN });
+    await t.app.start();
+    await settle();
+    const vm = t.vm();
+    expect(vm).toMatchObject({
+      connect: "git", isGit: true, canInstall: false, isGitOld: false, canContinue: false,
+      title: en["firstRun.connect.title.broken"], gitCardTitle: en["firstRun.connect.bundledTitle"], gitCardDetail: en["firstRun.connect.repair"], gitCardIcon: "warning",
+      gitText: en["firstRun.git.broken"], installCommand: "", installText: "", mark: "warning",
+    });
+    for (const k of ["title", "gitCardTitle", "gitCardDetail", "gitText"] as const) expect(vm[k], k).not.toMatch(install);
+    // Check again looks again; Copy and every install page do nothing.
+    await t.run("firstRun.checkGit");
+    expect(t.calls.filter((c) => c === "git")).toHaveLength(2);
+    expect(t.app.commands.describe("firstRun.copyCommand").enabled).toBe(false);
+    await t.run("firstRun.copyCommand");
+    for (const page of INSTALL_PAGES) await t.run("firstRun.openPage", { page });
+    expect(t.calls.filter((c) => c.startsWith("copy:") || c.startsWith("page:"))).toEqual([]);
+    // A page that isn't an install route still opens.
+    await t.run("firstRun.openPage", { page: "token" });
+    expect(t.calls).toContain("page:token");
+  });
+
+  it("an old Git is never the bundled one's problem: no version compare, no Update", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, git: { ...BUNDLED_BROKEN, installed: true, version: "2.20.1" } });
+    await t.app.start();
+    await settle();
+    expect(t.vm()).toMatchObject({ connect: "git", isGitOld: false, canInstall: false, title: en["firstRun.connect.title.broken"], gitText: en["firstRun.git.broken"] });
+  });
+
+  it("with the sign-in helper turned off, asks to turn it back on rather than install it", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, git: { ...BUNDLED_OK, gcm: false }, account: { gcm: false, gh: false } });
+    await t.app.start();
+    await settle();
+    const vm = t.vm();
+    expect(vm).toMatchObject({ connect: "choose", noHelper: true, canInstall: false, title: en["firstRun.connect.title.helperOff"], noHelperText: en["firstRun.connect.helperOff"], mark: "lock" });
+    expect(vm.noHelperText).not.toMatch(install);
+    await t.run("firstRun.openPage", { page: "gcm" });
+    expect(t.calls).not.toContain("page:gcm");
+  });
+
+  it("a sign-in that has nowhere to keep the credential names the setting, not an install", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, git: BUNDLED_OK, account: { gcm: true, gh: false }, signIn: async () => ({ gcm: false, gh: false, problem: "noHelper" }) });
+    await t.app.start();
+    await settle();
+    await t.run("firstRun.signIn");
+    expect(t.vm().problem).toBe(en["firstRun.signIn.problem.helperOff"]);
+    expect(t.vm().problem).not.toMatch(install);
+  });
+
+  it("without the bundle, the installer and portable keep their install routes", async () => {
+    const t = shell({ state: { version: 1, firstRun: "connect" }, git: { installed: false, ok: false, gcm: false, gh: false } });
+    await t.app.start();
+    await settle();
+    expect(t.vm()).toMatchObject({ canInstall: true, gitCardTitle: en["firstRun.connect.helperTitle"], gitCardIcon: "download", installCommand: "winget install --id Git.Git -e" });
+    await t.run("firstRun.openPage", { page: "git" });
+    expect(t.calls).toContain("page:git");
   });
 });

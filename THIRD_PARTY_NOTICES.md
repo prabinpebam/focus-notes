@@ -7626,3 +7626,49 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+# Programs in the Microsoft Store package
+
+The Microsoft Store package also carries Git, from GitHub Desktop's dugite-native v2.56.0-2 (`dugite-native-v2.56.0-a44aeca-windows-x64.tar.gz`, SHA-256 `f1e17876337d7be143e5d51976da36643d65528125cfbc14d57f171de0fd5f14`), unmodified, at `resources\git`. These are separate programs that Focus Notes starts; none is linked into it. The installer and the portable download don't include them.
+
+Each license's full text ships in the package beside the program it covers. The complete source of each program is at the link given. On request, by an issue at https://github.com/prabinpebam/focus-notes/issues, for three years after each Store release, the owner will also provide a copy of the complete corresponding source of the GPL programs that release carries.
+
+## Git for Windows 2.56.0.windows.4
+
+License: GPL-2.0-only  
+Homepage: https://gitforwindows.org/  
+Source: https://github.com/git-for-windows/git/tree/v2.56.0.windows.4
+
+`git.exe` and the programs it runs, in `resources\git\cmd`, `resources\git\ucrt64\bin` and `resources\git\ucrt64\libexec\git-core`. Its license is `resources\git\LICENSE.txt`.
+
+## Git for Windows' runtime 2.56.0.windows.4
+
+License: GPL-2.0-only and others  
+Homepage: https://gitforwindows.org/  
+Source: https://github.com/git-for-windows/MINGW-packages and https://github.com/git-for-windows/MSYS2-packages
+
+The MSYS2 runtime and the libraries Git uses (OpenSSL, curl, zlib, SQLite, OpenSSH and others), in `resources\git\usr` and `resources\git\ucrt64`. Each one's license is in `resources\git\usr\share\licenses` or beside it.
+
+## Git Credential Manager 2.9.1
+
+License: MIT  
+Homepage: https://github.com/git-ecosystem/git-credential-manager  
+Source: https://github.com/git-ecosystem/git-credential-manager/tree/v2.9.1
+
+Git's sign-in helper, which keeps the GitHub sign-in in Windows Credential Manager, in `resources\git\ucrt64\bin`. Its license and notices are in `resources\git\ucrt64\doc\git-credential-manager`.
+
+## Git LFS 3.8.1
+
+License: MIT  
+Homepage: https://git-lfs.com/  
+Source: https://github.com/git-lfs/git-lfs/tree/v3.8.1
+
+Git's large-file extension, in `resources\git\ucrt64\bin`.
+
+## dugite-native v2.56.0-2
+
+License: MIT  
+Homepage: https://github.com/desktop/dugite-native  
+Source: https://github.com/desktop/dugite-native/tree/v2.56.0-2
+
+GitHub Desktop's build of the programs above, unmodified, as one archive.

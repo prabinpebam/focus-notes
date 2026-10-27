@@ -30,6 +30,8 @@ export interface AccountDeps {
   home: string;
   /** The environment programs are found in (PATH). */
   env: NodeJS.ProcessEnv;
+  /** Git came with the app (PKG-13, D-228): the Git check says so. */
+  bundled?: boolean;
   onProgress?: (p: SignInProgress) => void;
   /** Problems and steps only, never a token. */
   log?: (line: string) => void;
@@ -101,9 +103,10 @@ export class Account {
   async gitCheck(): Promise<GitCheck> {
     const r = await this.#git(["--version"]);
     const v = r.code === 0 ? parseGitVersion(r.stdout) : undefined;
-    if (!v) return { installed: false, ok: false, gcm: false, gh: false };
+    const bundled = this.#d.bundled ? { bundled: true } : {};
+    if (!v) return { installed: false, ok: false, gcm: false, gh: false, ...bundled };
     const helpers = await this.#helpers();
-    return { installed: true, version: v.join("."), ok: gitIsNewEnough(v), gcm: helpers.some(isGcmHelper), gh: Boolean(await this.#ghProgram()) };
+    return { installed: true, version: v.join("."), ok: gitIsNewEnough(v), gcm: helpers.some(isGcmHelper), gh: Boolean(await this.#ghProgram()), ...bundled };
   }
 
   /** Checks a token with the API: its account, or why not. The token stays in memory. */

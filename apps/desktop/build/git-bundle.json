@@ -1,0 +1,56 @@
+{
+  "$comment": "The Git the Microsoft Store package carries (PKG-13, D-228): GitHub Desktop's dugite-native build, pinned by SHA-256. tools/release/git-bundle.mjs fetches, verifies and unpacks it into apps/desktop/vendor/git; dist-store.mjs puts it in the package at resources/git. To update: node tools/release/git-bundle.mjs --latest, then change every field here and run node tools/notices.mjs.",
+  "repository": "desktop/dugite-native",
+  "tag": "v2.56.0-2",
+  "asset": "dugite-native-v2.56.0-a44aeca-windows-x64.tar.gz",
+  "url": "https://github.com/desktop/dugite-native/releases/download/v2.56.0-2/dugite-native-v2.56.0-a44aeca-windows-x64.tar.gz",
+  "sha256": "f1e17876337d7be143e5d51976da36643d65528125cfbc14d57f171de0fd5f14",
+  "size": 47023615,
+  "versions": {
+    "git": "2.56.0.windows.4",
+    "gcm": "2.9.1",
+    "lfs": "3.8.1"
+  },
+  "components": [
+    {
+      "name": "Git for Windows",
+      "version": "2.56.0.windows.4",
+      "license": "GPL-2.0-only",
+      "homepage": "https://gitforwindows.org/",
+      "source": "https://github.com/git-for-windows/git/tree/v2.56.0.windows.4",
+      "what": "`git.exe` and the programs it runs, in `resources\\git\\cmd`, `resources\\git\\ucrt64\\bin` and `resources\\git\\ucrt64\\libexec\\git-core`. Its license is `resources\\git\\LICENSE.txt`."
+    },
+    {
+      "name": "Git for Windows' runtime",
+      "version": "2.56.0.windows.4",
+      "license": "GPL-2.0-only and others",
+      "homepage": "https://gitforwindows.org/",
+      "source": "https://github.com/git-for-windows/MINGW-packages and https://github.com/git-for-windows/MSYS2-packages",
+      "what": "The MSYS2 runtime and the libraries Git uses (OpenSSL, curl, zlib, SQLite, OpenSSH and others), in `resources\\git\\usr` and `resources\\git\\ucrt64`. Each one's license is in `resources\\git\\usr\\share\\licenses` or beside it."
+    },
+    {
+      "name": "Git Credential Manager",
+      "version": "2.9.1",
+      "license": "MIT",
+      "homepage": "https://github.com/git-ecosystem/git-credential-manager",
+      "source": "https://github.com/git-ecosystem/git-credential-manager/tree/v2.9.1",
+      "what": "Git's sign-in helper, which keeps the GitHub sign-in in Windows Credential Manager, in `resources\\git\\ucrt64\\bin`. Its license and notices are in `resources\\git\\ucrt64\\doc\\git-credential-manager`."
+    },
+    {
+      "name": "Git LFS",
+      "version": "3.8.1",
+      "license": "MIT",
+      "homepage": "https://git-lfs.com/",
+      "source": "https://github.com/git-lfs/git-lfs/tree/v3.8.1",
+      "what": "Git's large-file extension, in `resources\\git\\ucrt64\\bin`."
+    },
+    {
+      "name": "dugite-native",
+      "version": "v2.56.0-2",
+      "license": "MIT",
+      "homepage": "https://github.com/desktop/dugite-native",
+      "source": "https://github.com/desktop/dugite-native/tree/v2.56.0-2",
+      "what": "GitHub Desktop's build of the programs above, unmodified, as one archive."
+    }
+  ]
+}

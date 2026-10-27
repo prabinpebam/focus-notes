@@ -1,6 +1,7 @@
 // The Microsoft Store package's manifest, read back from the built .msix (PKG-12, D-202): the
 // focus-notes: scheme, the focus-notes command's alias, full trust, the executable and the identity
-// Partner Center gave. Release and CI run it on every package they build.
+// Partner Center gave; and the Git it carries, with its license (PKG-13, D-228). Release and CI run
+// it on every package they build.
 //
 //   node tools/release/store-manifest.mjs <file.msix | folder with one>
 //
@@ -104,6 +105,14 @@ export function checkManifest(xml, expected = {}) {
   return problems;
 }
 
+/** The bundled Git's files the package can't do without: Git, its sign-in helper, and Git's license. */
+export const BUNDLED_GIT_FILES = ["app/resources/git/cmd/git.exe", "app/resources/git/ucrt64/bin/git-credential-manager.exe", "app/resources/git/LICENSE.txt"];
+
+/** Every bundled Git file the package lacks (PKG-13, D-228); empty when it carries them all. */
+export function bundledGitProblems(has) {
+  return BUNDLED_GIT_FILES.filter((name) => !has(name)).map((name) => `The package has no ${name}: the Store package carries Git (PKG-13).`);
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const arg = process.argv[2];
   if (!arg) {
@@ -125,7 +134,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exit(1);
   }
   const env = process.env;
-  const problems = checkManifest(xml, { identityName: env.MSSTORE_IDENTITY_NAME || undefined, publisher: env.MSSTORE_PUBLISHER || undefined });
+  const problems = [
+    ...checkManifest(xml, { identityName: env.MSSTORE_IDENTITY_NAME || undefined, publisher: env.MSSTORE_PUBLISHER || undefined }),
+    ...bundledGitProblems((name) => readZipEntry(file, name) !== undefined),
+  ];
   const m = readManifest(xml);
   console.log(`${file}: ${m.identityName} ${m.version} ${m.architecture}, ${m.publisher}; protocol ${m.protocols.join(", ")}; alias ${m.aliases.join(", ")}; ${m.capabilities.join(", ")}.`);
   for (const p of problems) console.error(p);

@@ -12,11 +12,17 @@
 //
 // Unsigned unless WIN_CSC_LINK names a certificate: the Store signs what it publishes, so the
 // package uploaded to Partner Center needs none (a local test may sign with a throwaway one).
+//
+// The package carries Git (PKG-13, D-228): GitHub Desktop's dugite-native build, pinned by
+// build/git-bundle.json, fetched and checked against its SHA-256 into vendor/git, and packed at
+// resources\git. The installer and portable don't carry it and keep using the system's Git.
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
+import { ensureGitBundle, VENDOR_DIR } from "../../../tools/release/git-bundle.mjs";
 
 const root = join(import.meta.dirname, "..");
 const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
@@ -32,6 +38,11 @@ export function storeVersionProblem(version) {
   if (Number(m[1]) === 0) return `The Microsoft Store refuses version ${version}: a package's version can't start with 0. Store releases start at 1.0.0.`;
   if (m.slice(1).some((n) => Number(n) > 65535)) return `${version} has a section over 65535.`;
   return undefined;
+}
+
+/** The build configuration for the Store package: package.json's, with the bundled Git as a resource at `git`. */
+export function storeConfig(build = pkg.build, gitDir = VENDOR_DIR) {
+  return { ...build, extraResources: [...(build.extraResources ?? []), { from: relative(root, gitDir).replaceAll("\\", "/"), to: "git" }] };
 }
 
 /** The `-c.appx.*` overrides the environment asks for, and whether the identity is still a placeholder. */
@@ -60,7 +71,16 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     process.exit(2);
   }
   console.log(`Store package identity: ${identity.identityName}, ${identity.publisher}${placeholder ? " (placeholder: only for checking the build)" : ""}.`);
-  const cli = createRequire(join(root, "package.json")).resolve("electron-builder/cli.js");
-  const r = spawnSync(process.execPath, [cli, "--win", "appx", "--publish", "never", ...args, ...argv.filter((a) => a !== "--require-identity")], { cwd: root, stdio: "inherit" });
-  process.exit(r.status ?? 1);
+  const gitDir = await ensureGitBundle();
+  const configDir = mkdtempSync(join(tmpdir(), "fn-store-config-"));
+  const config = join(configDir, "electron-builder.json");
+  let status = 1;
+  try {
+    writeFileSync(config, JSON.stringify(storeConfig(pkg.build, gitDir), null, 2));
+    const cli = createRequire(join(root, "package.json")).resolve("electron-builder/cli.js");
+    status = spawnSync(process.execPath, [cli, "--win", "appx", "--publish", "never", "--config", config, ...args, ...argv.filter((a) => a !== "--require-identity")], { cwd: root, stdio: "inherit" }).status ?? 1;
+  } finally {
+    rmSync(configDir, { recursive: true, force: true });
+  }
+  process.exit(status);
 }

@@ -80,6 +80,13 @@ jobs:
         run: pnpm audit:deps
       - name: Typecheck
         run: pnpm typecheck
+      # The Git the Store package carries (PKG-13, D-228), pinned by apps/desktop/build/git-bundle.json
+      # and checked against its SHA-256, so the unit tests run it end to end and the Store package
+      # check below packs it.
+      - name: Fetch the bundled Git (Windows)
+        if: runner.os == 'Windows'
+        timeout-minutes: 10
+        run: node tools/release/git-bundle.mjs
       - name: Unit tests
         run: pnpm test
       # The build, budgets and journeys run even after a failed check or unit test, so one failure

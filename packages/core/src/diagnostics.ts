@@ -47,7 +47,7 @@ export interface DiagnosticFacts {
   app: { version: string; packaged: boolean };
   os: { platform: string; release: string; arch: string };
   runtime: { electron: string; chrome: string; node: string };
-  git: { installed: boolean; version?: string; ok: boolean; gcm: boolean; gh: boolean };
+  git: { installed: boolean; version?: string; ok: boolean; gcm: boolean; gh: boolean; bundled?: boolean };
   workspace: {
     git: boolean;
     state: "idle" | "syncing" | "problem";
@@ -232,7 +232,7 @@ export function buildReport(f: DiagnosticFacts, o: RedactOptions = {}, use: Repo
     `- Compositing: ${f.compositing === "gpu" ? "GPU" : "software"}`,
     "",
     "### Git",
-    f.git.installed ? `- Git ${v(f.git.version ?? "unknown")} (${f.git.ok ? "new enough" : "too old"})` : "- Git: not found",
+    f.git.installed ? `- Git ${v(f.git.version ?? "unknown")} (${f.git.ok ? "new enough" : "too old"})${f.git.bundled ? ", the one that comes with Focus Notes" : ""}` : `- Git: not found${f.git.bundled ? " (the one that comes with Focus Notes doesn't start)" : ""}`,
     `- Git Credential Manager is the credential helper: ${yes(f.git.gcm)}`,
     `- GitHub CLI installed: ${yes(f.git.gh)}`,
     "",

@@ -12,8 +12,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deflateRawSync } from "node:zlib";
 import yaml from "js-yaml";
-import { checkManifest, readManifest, readZipEntry } from "../release/store-manifest.mjs";
-import { identityArgs, storeVersionProblem } from "../../apps/desktop/scripts/dist-store.mjs";
+import { BUNDLED_GIT_FILES, bundledGitProblems, checkManifest, readManifest, readZipEntry } from "../release/store-manifest.mjs";
+import { identityArgs, storeConfig, storeVersionProblem } from "../../apps/desktop/scripts/dist-store.mjs";
 import { LIMITS, buildListing, overLimits, renderListing, screenshotProblems } from "../release/store-listing.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
@@ -105,6 +105,18 @@ describe("the package's manifest, read back (store-manifest.mjs)", () => {
     expect(checkManifest(MANIFEST, { identityName: "Placeholder.FocusNotes" })).toEqual(["The identity is Owner.FocusNotes, not Placeholder.FocusNotes."]);
     expect(checkManifest(MANIFEST, { publisher: "CN=ms" })).toHaveLength(1);
   });
+
+  it("PKG-13: finds the Git the package carries, its sign-in helper and its license, and names any missing", () => {
+    const dir = mkdtempSync(join(tmpdir(), "fn-store-git-"));
+    const all = join(dir, "all.msix"), without = join(dir, "without.msix");
+    writeFileSync(all, zip([["AppxManifest.xml", MANIFEST, 8], ...BUNDLED_GIT_FILES.map((n) => [n, "x", 0])], { zip64: true }));
+    writeFileSync(without, zip([["AppxManifest.xml", MANIFEST, 8], ["app/resources/git/LICENSE.txt", "GPL", 0]]));
+    expect(bundledGitProblems((n) => readZipEntry(all, n) !== undefined)).toEqual([]);
+    expect(bundledGitProblems((n) => readZipEntry(without, n) !== undefined)).toEqual([
+      "The package has no app/resources/git/cmd/git.exe: the Store package carries Git (PKG-13).",
+      "The package has no app/resources/git/ucrt64/bin/git-credential-manager.exe: the Store package carries Git (PKG-13).",
+    ]);
+  });
 });
 
 describe("the Store target in the build configuration", () => {
@@ -141,6 +153,15 @@ describe("the Store target in the build configuration", () => {
     expect(storeVersionProblem("2.10.3-rc.1")).toBeUndefined();
     expect(storeVersionProblem("1.70000.0")).toMatch(/65535/);
     expect(storeVersionProblem("one")).toMatch(/isn't a version/);
+  });
+
+  it("PKG-13: packs the bundled Git at resources\\git, in the Store package only", () => {
+    const config = storeConfig(desktop.build, join(root, "apps", "desktop", "vendor", "git"));
+    expect(config.extraResources).toEqual([...desktop.build.extraResources, { from: "vendor/git", to: "git" }]);
+    expect(config.appx).toEqual(desktop.build.appx);
+    // The installer and the portable keep using the system's Git.
+    expect(JSON.stringify(desktop.build)).not.toMatch(/vendor\/git/);
+    expect(read(".gitignore")).toMatch(/^apps\/desktop\/vendor\/$/m);
   });
 
   it("refuses, before building, a release build with the placeholders or a 0.x version", () => {
@@ -247,6 +268,11 @@ describe("ci.yml packs the Store package on Windows", () => {
     expect(s[store].run).toMatch(/dist-store\.mjs/);
     expect(s[store].run).toMatch(/store-manifest\.mjs/);
     expect(text).not.toMatch(/secrets\./);
+    // PKG-13: the bundled Git is fetched (and checked against its pin) before the unit tests run it.
+    const fetch = s.findIndex((x) => /bundled Git/.test(x.name ?? ""));
+    expect(fetch).toBeGreaterThan(-1);
+    expect(fetch).toBeLessThan(s.findIndex((x) => x.name === "Unit tests"));
+    expect(s[fetch].run).toBe("node tools/release/git-bundle.mjs");
   });
 });
 

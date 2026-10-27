@@ -91,7 +91,12 @@ export function createToolRunner(options: { onSpawn?: (program: string, args: st
       }
       options.onSpawn?.(program, call.args);
       let stdout = "", stderr = "";
-      child = spawn(cmd.file, cmd.args, { cwd: call.cwd, env, windowsHide: true, windowsVerbatimArguments: cmd.verbatim, stdio: ["pipe", "pipe", "pipe"] });
+      try {
+        child = spawn(cmd.file, cmd.args, { cwd: call.cwd, env, windowsHide: true, windowsVerbatimArguments: cmd.verbatim, stdio: ["pipe", "pipe", "pipe"] });
+      } catch (e) {
+        // A program that isn't one (a damaged helper: EFTYPE) throws here rather than failing.
+        return resolve({ code: -1, stdout: "", stderr: String(e), killed: false });
+      }
       const timer = call.timeoutMs ? setTimeout(() => { killed = true; child?.kill(); }, call.timeoutMs) : undefined;
       child.stdout?.setEncoding("utf8").on("data", (d: string) => { stdout += d; call.onOutput?.(d); });
       child.stderr?.setEncoding("utf8").on("data", (d: string) => { stderr += d; call.onOutput?.(d); });

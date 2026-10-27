@@ -43,6 +43,11 @@ export interface GitCheck {
   gcm: boolean;
   /** The GitHub CLI is installed. */
   gh: boolean;
+  /**
+   * Git came with Focus Notes (the Microsoft Store package, PKG-13, D-228): nothing is offered to
+   * install, and a Git that won't start is repaired with the app.
+   */
+  bundled?: boolean;
 }
 
 /** A GitHub account, as the API describes it: only what the screens and the identity need. */
@@ -169,6 +174,12 @@ export const FIRST_RUN_PAGES = {
   tokens: "https://github.com/settings/personal-access-tokens",
 } as const;
 export type FirstRunPage = keyof typeof FIRST_RUN_PAGES;
+
+/** The pages that offer other software to install: never opened when Git is bundled (PKG-13, D-228). */
+export const INSTALL_PAGES: readonly FirstRunPage[] = ["git", "gcm", "gh"];
+/** Whether the first run may open this page: a known one, and no install page when Git came with the app. */
+export const pageAllowed = (page: string, bundled: boolean): page is FirstRunPage =>
+  Object.hasOwn(FIRST_RUN_PAGES, page) && !(bundled && INSTALL_PAGES.includes(page as FirstRunPage));
 
 /** A repository the person could open as their workspace. */
 export interface RepoChoice {

@@ -13,7 +13,7 @@ export interface DiagnosticsDeps {
   os: { platform: string; release: string; arch: string };
   runtime: { electron: string; chrome: string; node: string };
   /** Git's version and helpers, from `git` alone (no network). */
-  git: () => Promise<{ installed: boolean; version?: string; ok: boolean; gcm: boolean; gh: boolean }>;
+  git: () => Promise<{ installed: boolean; version?: string; ok: boolean; gcm: boolean; gh: boolean; bundled?: boolean }>;
   /** The workspace's Git, or undefined when it isn't a repository. */
   sync: () => Promise<{ report: SyncReport; repositories: RepoHealth[]; conflicts: number } | undefined>;
   /** Crash recovery's drafts (QLT-06): only their count and size are reported, never a text or a name. */
