@@ -1653,6 +1653,37 @@
       "status": "in-progress"
     },
     {
+      "id": "WP-5.17",
+      "stage": "M5",
+      "title": "Git in the Store package",
+      "summary": "The Store package carries GitHub Desktop's Git build (dugite-native, pinned by SHA-256), the app always runs it when it's there, the sign-in helpers find it, and nothing in the Store build offers to install other software (D-228).",
+      "requirements": [
+        "PKG-13"
+      ],
+      "dependsOn": [
+        "WP-5.11"
+      ],
+      "touches": [
+        "apps/desktop",
+        "packages/core",
+        "packages/views",
+        "tools",
+        ".github/workflows"
+      ],
+      "reviews": [
+        "code",
+        "design-system",
+        "security"
+      ],
+      "specs": [
+        "plan/microsoft-store.md",
+        "experience/first-run.md",
+        "plan/distribution.md"
+      ],
+      "lookahead": false,
+      "status": "in-progress"
+    },
+    {
       "id": "WP-6.1",
       "stage": "MW",
       "title": "Web app on your own Pages, local first",

@@ -295,6 +295,26 @@ The Store refuses versions that start with 0, so its first release is v1.0.0 ([D
 
 **After v1.0.** These parts of the full bar have no evidence yet and apply from the next minor release on: the 1,000-round fault-injection run and the 72-hour soak; the screen-reader journeys with NVDA, Narrator, VoiceOver and Orca, and a full WCAG 2.2 AA audit record; the IME, dead-key, AltGr and right-to-left suites, and pseudo-localized screenshots; the install-matrix report and app updates outside the Store (DSK-07); the moderated test with five people new to Focus Notes; a rehearsal of the release runbook and a security-report drill; approved visual baselines for every view (A03 waits on the owner's reference images); the OWASP ASVS Level 2 checklist and a human review of sealing.
 
+<h3 id="wp-5-17-git-in-the-store-package">WP-5.17: Git in the Store package</h3>
+
+Certification of 1.0.2 failed under policy 10.1.5 at *Install the helper app*, so the Store package now carries its own Git (PKG-13, [D-228](decisions.md)). This is its definition of done: each row is observable, and each names the evidence that proves it.
+
+| # | Done means | Evidence | Status |
+| --- | --- | --- | --- |
+| 1 | The bundle is exactly the pinned file: a different SHA-256 is refused before anything is unpacked, and the unpacked Git and its sign-in helper both run | `tools/test/git-bundle.test.mjs`; `node tools/release/git-bundle.mjs` output | Open |
+| 2 | The app picks the bundle when it's packaged beside it, the folder `FOCUS_NOTES_GIT_BUNDLE` names in a development run only (an absolute path, never a network share; a packaged app ignores it), and `git` from `PATH` otherwise, so the installer and the portable are unchanged | `apps/desktop/test/git-bundle.test.ts` | Open |
+| 3 | Every Git call uses it: saving and sync, setup, sign-in, the command-line tool and MCP, with no `createRunner` left on the default | `git-bundle.test.ts` (the runner's program and `PATH`), the source check in the same file | Open |
+| 4 | On a PC with no other Git, the bundle does everything the app needs: the Git check finds Git Credential Manager as the helper, a commit runs its hook, a rebase, a submodule and a push to a remote work, and the sign-in helper's own run finds Git | `apps/desktop/test/git-bundle.integration.test.ts`, with every other Git taken off `PATH` (runs wherever the bundle is fetched, including Windows CI) | Open |
+| 5 | With Git bundled, nothing offers other software: no install button, winget command, *Get the GitHub CLI* or copy command; a Git that won't start says to repair Focus Notes; a helper turned off says so | `packages/core/test/first-run.test.ts` (PKG-13 tests), `packages/views/test/install-routes.test.ts` (every view node that opens `git`, `gcm` or `gh`, or copies the command, is held to `canInstall`) | Open |
+| 6 | The shell refuses the `git`, `gcm` and `gh` pages when Git is bundled, whatever asks | `packages/core/test/first-run.test.ts` (`pageAllowed`), `main.ts`'s `firstRun:openPage` | Open |
+| 7 | The unpacked Store build, with no other Git on `PATH`, finds its own Git, and its first run shows no install route; a damaged Git says to repair the app; the first-run, Git and conflict journeys still pass on the build | `pkg13-bundled-git.spec.ts` and `packaged.spec.ts` with `FOCUS_NOTES_E2E_EXE` set to `win-unpacked` with `resources\git`; `m3-first-run`, `m3-git` and `m3-conflicts` on the build. (The `m3-*` journeys can't run on a package: it ignores their fake GitHub, and with the bundle they'd reach the real sign-in helper.) | Open |
+| 8 | The Store package has the Git in it, and a package without it fails the check | `store-manifest.mjs` (and its test); the 1.0.3 `.msix` listing `resources\git\cmd\git.exe` | Open |
+| 9 | Its licenses are honoured: notices for Git, the MSYS2 runtime, Git Credential Manager, Git LFS and dugite-native, with the exact source of each, and `LICENSE.txt` in the package | `THIRD_PARTY_NOTICES.md` (*Programs in the Microsoft Store package*), `node tools/notices.mjs --check` in `pnpm check` | Open |
+| 10 | The spec says what was built: D-228, PKG-13, the first run's *Git in the Store package*, the Store page, R-26, and the work graph | `pnpm check` (chain and plan) | Open |
+| 11 | A security review of the change (a new program in the package, the shell's page list, the build's download) has no critical or high finding open | The security reviewer's record | Open |
+| 12 | Windows CI is green on the commit that lands, and the 1.0.3 package is built from it with the real identity, ready to upload | CI run; `focus-notes-work\release\v1.0.3\` | Open |
+| 13 | Certification passes | Partner Center's report | Owner |
+
 ## Open gaps across stages
 
 | Gap | Stage | Size | Next step |

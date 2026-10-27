@@ -204,8 +204,27 @@ Notes are never inside the package, so neither a bad release nor uninstalling to
 | `focus-notes:` links | Registered by the app on its first start | Declared in the package's manifest; the app doesn't register itself |
 | App data (settings, caches) | The user's AppData folder | The same path to the app, which Windows redirects to the package's private copy; the alias and `git` started by the app see the same copy, and uninstalling removes it |
 | Notes | The folder the user picks | The same: outside the package, so uninstalling keeps them |
+| Git | The system's own Git; the first run helps install it (D-22) | Its own, at `resources\git`, always used; nothing offers to install other software ([below](#git-in-the-store-package), D-228) |
 | Updates | None yet (DSK-07) | The Store's |
 | Signing | Unsigned until DSK-07 | Signed by the Store |
+
+<h3 id="git-in-the-store-package">Git in the Store package</h3>
+
+Certification of 1.0.2 failed under policy **10.1.5, Software Distribution**: "The product promotes acquiring software outside the Store", found at the first run's *Install the helper app*. So the Store package brings its own Git and never mentions installing anything (PKG-13, [D-228](decisions.md)).
+
+| Part | What it is |
+| --- | --- |
+| The Git | GitHub Desktop's build, [dugite-native](https://github.com/desktop/dugite-native) `v2.56.0-2`: Git 2.56.0.windows.4, Git Credential Manager 2.9.1 and Git LFS 3.8.1, unchanged. About 105 MB unpacked, at `resources\git` |
+| The pin | `apps/desktop/build/git-bundle.json`: the release, its file, its URL, its SHA-256 and the versions inside |
+| Fetching it | `node tools/release/git-bundle.mjs` downloads the file, refuses any other hash, unpacks it to `apps/desktop/vendor/git/` (ignored by Git) and runs `git --version` and `git credential-manager --version` as a check. `--latest` names a newer dugite-native release. `dist-store.mjs` runs it before every Store build and adds the folder to the package |
+| The check | `node tools/release/store-manifest.mjs <folder>` also fails a package without `resources\git\cmd\git.exe`, `resources\git\ucrt64\bin\git-credential-manager.exe` or `resources\git\LICENSE.txt` |
+| The package | About 200 MB, up from 155 MB; the bundle's 376 files go in byte for byte, so Git's own signatures stay intact |
+| The journey | `apps/desktop/e2e/pkg13-bundled-git.spec.ts`, with `FOCUS_NOTES_E2E_EXE` set to an unpacked Store build and no other Git on `PATH`: the app finds its own Git, the first run shows no install route, the shell opens none of the `git`, `gcm` or `gh` pages, and a damaged Git says to repair the app |
+| Which Git runs | `apps/desktop/src/main/git/bundle.ts`: a packaged app with `resources\git\cmd\git.exe` always runs it; otherwise `git` from `PATH`. `FOCUS_NOTES_GIT_BUNDLE=<folder>` uses a bundle in a development run only (`electron .`), as an absolute path on this computer, never a network share; a packaged app ignores it |
+
+**Updating the Git.** Before each Store release, run `node tools/release/git-bundle.mjs --latest`. When it names a newer release, put its tag, file name, SHA-256 (from the release's own `.sha256` file) and versions in the pin file, and run `node tools/release/git-bundle.mjs` to fetch and check it (R-26).
+
+**Certification notes** for Partner Center: "Focus Notes saves notes with Git. The package includes Git for Windows and Git Credential Manager (GitHub Desktop's build), so nothing else is installed; the app doesn't link to or recommend other software."
 
 `isStoreBuild()` in `apps/desktop/src/main/store-build.ts` is the one test for the Store build (`process.windowsStore`). Started through the alias, the app runs a command when its first argument isn't a switch (`focus-notes help`, `focus-notes mcp`), and opens the window when there's no argument.
 

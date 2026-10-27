@@ -69,7 +69,7 @@ CI installs from lockfiles with frozen versions.
 | Output | Format | Where it goes |
 | --- | --- | --- |
 | Windows installer | NSIS `.exe` (x64, arm64) | GitHub Releases, winget (P1) |
-| Microsoft Store package | MSIX `.msix` (x64), unsigned: the Store signs it. The command-line tool is an app execution alias, `focus-notes`, and `focus-notes:` links are in its manifest (D-202) | GitHub Releases (for the Store only), then the Microsoft Store: `store.yml` submits each published release once the owner has set the Store credentials (PKG-12, [Microsoft Store](microsoft-store.md)) |
+| Microsoft Store package | MSIX `.msix` (x64), unsigned: the Store signs it. The command-line tool is an app execution alias, `focus-notes`, and `focus-notes:` links are in its manifest (D-202). It carries its own Git and sign-in helper, GitHub Desktop's build pinned by SHA-256, at `resources\git` (PKG-13, D-228); the installer and the portable use the system's Git (D-22) | GitHub Releases (for the Store only), then the Microsoft Store: `store.yml` submits each published release once the owner has set the Store credentials (PKG-12, [Microsoft Store](microsoft-store.md)) |
 | macOS app | Universal `.dmg` and `.zip` (for updates), notarized | GitHub Releases, Homebrew cask (P1) |
 | Linux app | AppImage and `.deb` (x64, arm64) | GitHub Releases, Flathub (later) |
 | Update metadata | `latest*.yml` files | GitHub Releases (read by electron-updater) |

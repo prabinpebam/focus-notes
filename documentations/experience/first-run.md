@@ -57,7 +57,7 @@ The first run shows on a new install of the desktop app: when the app's state ha
 
 <h2 id="getting-git">Getting Git</h2>
 
-Git is required, not bundled ([D-22](../plan/decisions.md)), so the app and the terminal share the same setup. *Connect* runs `git --version` on arrival. When Git is ready, nothing about it shows. When it's missing or older than 2.31, the screen shows the helper app's card ("One free helper app", "Focus Notes needs it to save your notes.") with [Install the helper app] and [Check again]; *Having trouble?* names it (Git), the version found, and the command to copy (D-135):
+The installer and the portable use the system's Git ([D-22](../plan/decisions.md)), so the app and the terminal share the same setup. The Microsoft Store package brings its own Git and sign-in helper and always uses them, so there's nothing to install (PKG-13, [D-228](../plan/decisions.md)); [below](#git-in-the-store-package) is how its screens differ. *Connect* runs `git --version` on arrival. When Git is ready, nothing about it shows. When it's missing or older than 2.31, the screen shows the helper app's card ("One free helper app", "Focus Notes needs it to save your notes.") with [Install the helper app] and [Check again]; *Having trouble?* names it (Git), the version found, and the command to copy (D-135):
 
 | Platform | If Git is missing | Sign-in helper |
 | --- | --- | --- |
@@ -66,6 +66,18 @@ Git is required, not bundled ([D-22](../plan/decisions.md)), so the app and the 
 | Linux | The package command for the detected distribution (for example `sudo apt install git`) | Git Credential Manager or the GitHub CLI if installed. Otherwise as on macOS |
 
 The app never sets up the plaintext `store` helper.
+
+<h3 id="git-in-the-store-package">Git in the Store package</h3>
+
+The Store package's Git is GitHub Desktop's build of Git for Windows, with Git Credential Manager, at `resources\git` in the package. Its screens never offer other software, because the Store doesn't allow an app to promote software from outside it (policy 10.1.5, D-228):
+
+| Situation | Installer and portable | Store package |
+| --- | --- | --- |
+| Git missing or too old | The helper app's card, [Install the helper app] or [Update the helper app], [Check again], and the winget command under *Having trouble?* | Can't happen while the package is whole. If its Git won't start: "Focus Notes can't start Git", a card saying "Git comes with Focus Notes." and "Repair Focus Notes in Windows Settings → Apps → Installed apps, then check again.", with [Check again] and [Back]. No install button, no command |
+| No sign-in helper | "To connect, Focus Notes needs GitHub's free sign-in helper." [Install the sign-in helper] | The helper comes with the package, so this shows only when the person's own Git settings turn it off: "Git's sign-in helper is turned off in your Git settings. Turn it back on, then check again." with [Check again] and [Back]. The app never changes those settings |
+| *Having trouble?* | … *Get the GitHub CLI* … | The same rows without *Get the GitHub CLI*. A GitHub CLI that's already installed is still offered and used |
+
+The shell refuses to open the `git`, `gcm` and `gh` pages in the Store package, whatever asks.
 
 <h2 id="connecting">Connecting</h2>
 
