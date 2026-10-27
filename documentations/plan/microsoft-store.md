@@ -224,7 +224,7 @@ Certification of 1.0.2 failed under policy **10.1.5, Software Distribution**: "T
 
 **Updating the Git.** Before each Store release, run `node tools/release/git-bundle.mjs --latest`. When it names a newer release, put its tag, file name, SHA-256 (from the release's own `.sha256` file) and versions in the pin file, and run `node tools/release/git-bundle.mjs` to fetch and check it (R-26).
 
-**Certification notes** for Partner Center: "Focus Notes saves notes with Git. The package includes Git for Windows and Git Credential Manager (GitHub Desktop's build), so nothing else is installed; the app doesn't link to or recommend other software."
+**Certification notes:** the listing's *Notes for certification* (`store/listing.json`) end with "Focus Notes saves notes with Git: the package includes Git and Git Credential Manager (GitHub Desktop's build of Git for Windows), so it needs no other software, and the app doesn't link to or recommend any."
 
 `isStoreBuild()` in `apps/desktop/src/main/store-build.ts` is the one test for the Store build (`process.windowsStore`). Started through the alias, the app runs a command when its first argument isn't a switch (`focus-notes help`, `focus-notes mcp`), and opens the window when there's no argument.
 

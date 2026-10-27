@@ -66,7 +66,7 @@
 
 ## Notes for certification
 
-> No account is needed to test the app: on the first screen choose "Just use this computer for now" and start writing; notes are saved as Markdown files in Documents\Focus Notes. Signing in to GitHub is optional and only backs notes up to the tester's own repository. Closing the window keeps Focus Notes running in the notification area, so it opens again at once; right-click its icon there and choose "Quit Focus Notes" to quit. The app declares runFullTrust because it's a desktop (Electron) app, the focus-notes: link scheme to open a note from a link, and the focus-notes command-line alias.
+> No account is needed to test the app: on the first screen choose "Just use this computer for now" and start writing; notes are saved as Markdown files in Documents\Focus Notes. Signing in to GitHub is optional and only backs notes up to the tester's own repository. Closing the window keeps Focus Notes running in the notification area, so it opens again at once; right-click its icon there and choose "Quit Focus Notes" to quit. The app declares runFullTrust because it's a desktop (Electron) app, the focus-notes: link scheme to open a note from a link, and the focus-notes command-line alias. Focus Notes saves notes with Git: the package includes Git and Git Credential Manager (GitHub Desktop's build of Git for Windows), so it needs no other software, and the app doesn't link to or recommend any.
 
 ## Screenshots
 
