@@ -778,7 +778,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   commands.register({
     id: "window.fullScreen", title: "command.window.fullScreen", icon: "fullScreen",
-    shortcut: { macos: "Ctrl+Mod+F", default: "F11", web: null }, layer: "writer", group: "app",
+    // Alt+Enter as in Windows games, media players and terminals; macOS keeps its own key.
+    shortcut: { macos: "Ctrl+Mod+F", default: "F11", web: null, alternates: { windows: ["Alt+Enter"], linux: ["Alt+Enter"] } }, layer: "writer", group: "app",
     enabled: () => Boolean(bridge.toggleFullScreen),
     run: () => bridge.toggleFullScreen?.(),
   });

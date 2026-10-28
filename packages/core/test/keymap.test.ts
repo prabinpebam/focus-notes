@@ -56,6 +56,14 @@ describe("matching keys (KEY-06)", () => {
     expect(mac.match(key({ key: "f", code: "KeyF", ctrlKey: true, metaKey: true }))).toBe("window.fullScreen");
     expect(mac.match(key({ key: "f", code: "KeyF", metaKey: true }))).toBe("find.open");
   });
+  it("Alt+Enter is full screen on Windows and Linux, never on macOS or the web", () => {
+    const enter = key({ key: "Enter", code: "Enter", altKey: true });
+    expect(win.match(enter)).toBe("window.fullScreen");
+    expect(appFor("linux").commands.match(enter)).toBe("window.fullScreen");
+    expect(mac.match(enter)).toBeUndefined();
+    expect(appFor("web").commands.match(enter)).toBeUndefined();
+    expect(win.match(key({ key: "Enter", code: "Enter", altKey: true, ctrlKey: true }))).not.toBe("window.fullScreen");
+  });
   it("leaves editor keys to the editor", () => {
     expect(win.match(key({ key: "b", code: "KeyB", ctrlKey: true }))).toBeUndefined();
   });

@@ -79,7 +79,7 @@ Everything the app shows (tooltips, Spotlight, the cheat sheet, the macOS menu b
 | Toggle focus mode | <kbd>⇧⌘D</kbd> or <kbd>F8</kbd> | <kbd>Ctrl+Shift+D</kbd> or <kbd>F8</kbd> |  | Writer | Typora (F8) |
 | Toggle light / dark | <kbd>⇧⌘L</kbd> | <kbd>Ctrl+Shift+L</kbd> | Spotlight if the browser keeps it | Writer | No common standard |
 | Larger / smaller / reset font size | <kbd>⌘=</kbd> / <kbd>⌘-</kbd> / <kbd>⌘0</kbd>, or pinch | <kbd>Ctrl+=</kbd> / <kbd>Ctrl+-</kbd> / <kbd>Ctrl+0</kbd>, or <kbd>Ctrl</kbd>+wheel or pinch |  | Writer | Browsers, VS Code ([D-130](../plan/decisions.md)) |
-| Full screen | <kbd>⌃⌘F</kbd> | <kbd>F11</kbd> | Toolbar ⋯ (Fullscreen API) | Writer | macOS, Windows |
+| Full screen | <kbd>⌃⌘F</kbd> | <kbd>F11</kbd> or <kbd>Alt+Enter</kbd> | Toolbar ⋯ (Fullscreen API) | Writer | macOS, Windows; <kbd>Alt+Enter</kbd> from games, media players and Windows Terminal ([D-229](../plan/decisions.md)) |
 | Minimize | <kbd>⌘M</kbd> | <kbd>Win+↓</kbd> (system) |  | Basic | OS |
 | Window menu: Restore, Move, Size, Minimize, Maximize, Snap left and right, Close |  | <kbd>Alt+Space</kbd> (the app's own, D-104) |  | Basic | Windows |
 | Hide app | <kbd>⌘H</kbd> |  |  | Basic | macOS |

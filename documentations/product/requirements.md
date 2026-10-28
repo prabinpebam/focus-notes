@@ -186,7 +186,7 @@ Owner: *"Our electron app will have 20px rounded corners with custom title bar."
 | DSK-01 | On Windows and Linux the window has 20 px rounded corners, or square corners when maximized, snapped, or full screen. On macOS the window is native, with the system's own corners (D-14). | P0 |
 | DSK-02 | A custom title bar: the top 44 px are a drag region with the trigger centered. Window controls (macOS traffic lights, app-drawn buttons on Windows and Linux) appear on hover or keyboard focus. | P0 |
 | DSK-03 | Full window behavior: native on macOS. On Windows and Linux rebuilt by the app: moving, resizing from every edge and corner, double-click and drag-to-top maximize, restore by dragging, minimize, close, and remembered size and position. | P0 |
-| DSK-04 | Full-screen mode (<kbd>⌃⌘F</kbd> / <kbd>F11</kbd>, and in ⋯). The title bar reappears when the pointer reaches the top edge. | P0 |
+| DSK-04 | Full-screen mode (<kbd>⌃⌘F</kbd> / <kbd>F11</kbd> or <kbd>Alt</kbd>+<kbd>Enter</kbd> on Windows and Linux (D-229), and in ⋯). The title bar reappears when the pointer reaches the top edge. | P0 |
 | DSK-05 | A full native menu bar on macOS that lists every command with its shortcut. | P0 |
 | DSK-06 | Multiple windows, one note per window. | P1 |
 | DSK-07 | Signed builds and automatic updates from GitHub Releases. | P1 |

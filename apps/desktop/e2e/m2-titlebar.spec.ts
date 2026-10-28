@@ -87,7 +87,7 @@ test.describe("Windows and Linux: the app-drawn window controls", () => {
     await quit(l);
   });
 
-  test("DSK-04: F11 and ⋯ go full screen; the band hides there until the pointer reaches the top edge", async () => {
+  test("DSK-04: F11, Alt+Enter and ⋯ go full screen; the band hides there until the pointer reaches the top edge", async () => {
     test.skip(!screenAllowed(), SCREEN_SKIP);
     const l = await start();
     const { app, page } = l;
@@ -136,6 +136,11 @@ test.describe("Windows and Linux: the app-drawn window controls", () => {
     await page.getByRole("menuitem", { name: /Full screen/ }).click();
     await expect.poll(() => bounds(app)).toEqual(await placed(app, await displayBounds(app)));
     await page.keyboard.press("F11");
+    await expect.poll(() => bounds(app)).toEqual(rest);
+    // Alt+Enter is the same full screen, in and out (D-229).
+    await page.keyboard.press("Alt+Enter");
+    await expect.poll(() => bounds(app)).toEqual(await placed(app, await displayBounds(app)));
+    await page.keyboard.press("Alt+Enter");
     await expect.poll(() => bounds(app)).toEqual(rest);
     await quit(l);
   });
