@@ -136,6 +136,7 @@ Seed: *"Sharing of public links… content can be made public or private… Priv
 | SHR-09 | A copyable invite built from an editable template (`{name}`, `{title}`, `{link}`, `{passcode}`, `{expires}`, `{site}`), stored in the private repository. | P0 |
 | SHR-10 | The share reader opens with a magic link (the fragment is removed at once), or with name plus passcode. The session is per tab by default, remembered on the device on request, and Sign out reaches every tab. Errors are generic. | P0 |
 | SHR-11 | Sealing per build: fresh keys every build, keyrings only for active grants, name lookup by salted hash, a nightly deploy for expiry, and a warning before GitHub's 60-day schedule shutoff. | P0 |
+| SHR-12 | **Print** the open note from ⋯ → Note, the command list, Spotlight and the macOS File menu, through the system's own print dialog, which keeps the printer, paper, orientation, copies, pages and *Save as PDF*. On paper the note is in Paper's colors whatever the theme on screen, at 12 pt, with the note's title as the job's name, no front matter, and from page 2 the page number and count at the foot. A heading stays with what follows it, and a code line, a table row and a task don't split across pages; a line with only a page break (`<!-- pagebreak -->`, or an empty `<div style="page-break-after: always"></div>` as other Markdown editors write it) starts a new page (D-230). See [Print](../experience/print.md). | P1 |
 
 ## Theming (THM)
 

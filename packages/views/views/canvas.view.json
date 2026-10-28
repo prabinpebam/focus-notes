@@ -35,7 +35,8 @@
     "vm.spotlight",
     "vm.demo",
     "vm.toolbarCustomize",
-    "vm.recover"
+    "vm.recover",
+    "vm.print"
   ],
   "focus": "editor",
   "root": {
@@ -9217,6 +9218,23 @@
             "get": "vm.feedback.announcementKey"
           }
         }
+      },
+      {
+        "type": "PrintPage",
+        "id": "printPage",
+        "when": {
+          "get": "vm.print.open"
+        },
+        "children": [
+          {
+            "type": "NoteContent",
+            "props": {
+              "blocks": {
+                "get": "vm.print.blocks"
+              }
+            }
+          }
+        ]
       }
     ]
   }

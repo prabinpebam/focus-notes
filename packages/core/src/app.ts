@@ -30,6 +30,7 @@ import { registerAgents, AGENTS_IDLE, type AgentsState } from "./agents-app.ts";
 import { registerKeybindings, KEYBINDINGS_NONE, type KeybindingsState } from "./keybindings-app.ts";
 import { registerToolbarCustomize, TOOLBAR_CUSTOMIZE_CLOSED, validPinned, type ToolbarCustomizeState } from "./toolbar-customize.ts";
 import { registerHeld, HELD_CLOSED, type HeldUiState } from "./held-app.ts";
+import { registerPrint, PRINT_CLOSED, type PrintUiState } from "./print-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { FEEDBACK_CLOSED, registerFeedback, type FeedbackState } from "./feedback-app.ts";
 import { registerShareManage, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
@@ -114,6 +115,8 @@ export interface AppState {
     spotlight: SpotlightState;
     /** The theme manager (IA-VIEW-THEME, THM-07). */
     theme: ThemeManagerState;
+    /** The note laid out for paper while the system's print dialog is open (SHR-12, D-230). */
+    print: PrintUiState;
   };
   /** Synced settings (PRV-03): no private repository to sync through, or syncing off or on. */
   settingsSync: "unavailable" | "off" | "on";
@@ -247,7 +250,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
     ],
   },
   { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
-  { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink", "history.open"] },
+  { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink", "history.open", "note.print"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "feedback.open", "toolbar.customize", "shortcuts.open", "help.open"] },
 ];
@@ -309,7 +312,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     toolbarPinned: [...DEFAULT_TOOLBAR],
     keybindings: KEYBINDINGS_NONE,
     compositing: bridge.compositing?.initial === "software" ? "software" : "gpu",
-    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, toolbarCustomize: TOOLBAR_CUSTOMIZE_CLOSED, history: HISTORY_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, feedback: FEEDBACK_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED },
+    ui: { toolbarOpen: false, shortcuts: { open: false, query: "", layer: "all", platform: bridge.platform === "macos" ? "mac" : "pc" }, find: FIND_CLOSED, findAll: FIND_ALL_CLOSED, toasts: [], toastFocus: 0, picker: PICKER_CLOSED, unlock: UNLOCK_CLOSED, aboutOpen: false, format: FORMAT_CLOSED, files: FILES_CLOSED, importNotes: IMPORT_CLOSED, conflict: CONFLICT_CLOSED, toolbarCustomize: TOOLBAR_CUSTOMIZE_CLOSED, history: HISTORY_CLOSED, held: HELD_CLOSED, agents: AGENTS_IDLE, settings: SETTINGS_CLOSED, feedback: FEEDBACK_CLOSED, share: SHARE_MANAGE_CLOSED, spotlight: SPOTLIGHT_CLOSED, theme: THEME_MANAGER_CLOSED, print: PRINT_CLOSED },
     settingsSync: "unavailable",
     instance: NO_INSTANCE,
     workspace: NO_WORKSPACE,
@@ -1105,6 +1108,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   registerImport({ store, commands, viewModels, catalog, bridge, tracker, toast, menu: extraMenu });
   registerPublicLink({ store, commands, catalog, bridge, toast });
+  registerPrint({ store, commands, viewModels, catalog, bridge, tracker, toast, handOver: () => editorAction(FLUSH_EDITOR), afterPaint });
   const conflicts = registerConflicts({
     store, commands, viewModels, catalog, bridge, tracker, toast, announce, exclusive, setNote, flush,
     loaded: (path, md) => workspace.loaded(path, md),

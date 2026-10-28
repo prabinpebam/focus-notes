@@ -368,6 +368,9 @@
           "$ref": "#/$defs/c_ReaderPage"
         },
         {
+          "$ref": "#/$defs/c_PrintPage"
+        },
+        {
           "$ref": "#/$defs/c_SitePage"
         },
         {
@@ -917,7 +920,8 @@
                     "pin",
                     "pinOff",
                     "feedback",
-                    "sent"
+                    "sent",
+                    "print"
                   ]
                 },
                 {
@@ -1129,7 +1133,8 @@
                     "pin",
                     "pinOff",
                     "feedback",
-                    "sent"
+                    "sent",
+                    "print"
                   ]
                 },
                 {
@@ -1394,7 +1399,8 @@
                     "pin",
                     "pinOff",
                     "feedback",
-                    "sent"
+                    "sent",
+                    "print"
                   ]
                 },
                 {
@@ -2113,7 +2119,8 @@
                     "pin",
                     "pinOff",
                     "feedback",
-                    "sent"
+                    "sent",
+                    "print"
                   ]
                 },
                 {
@@ -2519,7 +2526,8 @@
                     "pin",
                     "pinOff",
                     "feedback",
-                    "sent"
+                    "sent",
+                    "print"
                   ]
                 },
                 {
@@ -4745,7 +4753,8 @@
                     "pin",
                     "pinOff",
                     "feedback",
-                    "sent"
+                    "sent",
+                    "print"
                   ]
                 },
                 {
@@ -4979,7 +4988,8 @@
                     "pin",
                     "pinOff",
                     "feedback",
-                    "sent"
+                    "sent",
+                    "print"
                   ]
                 },
                 {
@@ -5463,7 +5473,8 @@
                     "pin",
                     "pinOff",
                     "feedback",
-                    "sent"
+                    "sent",
+                    "print"
                   ]
                 },
                 {
@@ -8073,6 +8084,53 @@
         }
       }
     },
+    "c_PrintPage": {
+      "type": "object",
+      "description": "A note laid out for paper (SHR-12): hidden on screen; while printing, the only thing on the page, in Paper's colors at the print text size, with the print margin and, from page 2, the page number and count at the foot.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "PrintPage"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        }
+      }
+    },
     "c_SitePage": {
       "type": "object",
       "description": "A page of the product site (IA-VIEW-SITE, IA-VIEW-HELP, WP-10.1): a skip link, a header with the site's navigation, the content as the page's main landmark, and a footer. It follows the visitor's light or dark preference and reads from 320 px wide.",
@@ -9666,7 +9724,7 @@
     },
     "c_NoteContent": {
       "type": "object",
-      "description": "A note's content through the block components (paragraphs, headings, lists, task lists, quotes, code, tables, rules, inline marks, and unknown syntax), read-only: the published reader page's note (IA-VIEW-PUBLIC).",
+      "description": "A note's content through the block components (paragraphs, headings, lists, task lists, quotes, code, tables, rules, page breaks, inline marks, and unknown syntax), read-only: the published reader page's note (IA-VIEW-PUBLIC) and a printed note (SHR-12).",
       "required": [
         "type",
         "props"

@@ -793,6 +793,25 @@
       "$value": "{ref.duration.200}"
     }
   },
+  "print": {
+    "$description": "A printed note (SHR-12, D-230): the page's margin (three quarters of an inch), the text size on paper (16 px is 12 pt, whatever the zoom on screen), the page number's size, and the fewest lines a paragraph leaves at the foot or the head of a page.",
+    "margin": {
+      "$type": "dimension",
+      "$value": "{ref.size.72}"
+    },
+    "fontSize": {
+      "$type": "dimension",
+      "$value": "{ref.size.16}"
+    },
+    "folioSize": {
+      "$type": "dimension",
+      "$value": "{ref.size.12}"
+    },
+    "lines": {
+      "$type": "number",
+      "$value": 2
+    }
+  },
   "readingZone": {
     "$type": "number",
     "top": {

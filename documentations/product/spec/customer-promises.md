@@ -16,7 +16,7 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | `CP-ORDER-01` | Organized your way, safely reorganized | Seed: file and folder CRUD with moves | SC-FILE-01 to SC-FILE-04 |
 | `CP-SAFE-01` | Never lose, never leak | Seed: public/private; derived from Git storage | SC-FILE-05, SC-SAFE-01 to SC-SAFE-07 |
 | `CP-OWN-01` | Yours to keep | Seed: Markdown in a GitHub repo; owner: no hosting, no registration | SC-TABLE-05, SC-OWN-01, SC-OWN-02, SC-SETUP-04 |
-| `CP-SHARE-01` | Sharing is deliberate | Seed: public links, private content | SC-FILE-06, SC-SHARE-01 to SC-SHARE-03 |
+| `CP-SHARE-01` | Sharing is deliberate | Seed: public links, private content | SC-FILE-06, SC-SHARE-01 to SC-SHARE-04 |
 | `CP-YOURS-01` | Comfortable and yours in a minute | Seed: change theme, colors, fonts; owner: light/dark/system, theme management | SC-THEME-01 to SC-THEME-07 |
 | `CP-READY-01` | Ready in minutes | Owner: device sign-in, first-run, Git works from the terminal | SC-SETUP-01 to SC-SETUP-03, SC-SETUP-05 |
 | `CP-AGENT-01` | Agents on your terms | Owner: agent-friendly, MCP | SC-AGENT-01 to SC-AGENT-03 |
@@ -102,7 +102,7 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | Why it matters | A note is written for its audience. Accidental audiences change what people dare to write. |
 | Breaks when | Visibility is unclear, a share happens as a side effect, or a link can't be withdrawn. |
 | Signals | Visibility visible at a glance. Private links revoked when no longer needed. |
-| Scenarios | SC-FILE-06, SC-SHARE-01, SC-SHARE-02, SC-SHARE-03 |
+| Scenarios | SC-FILE-06, SC-SHARE-01, SC-SHARE-02, SC-SHARE-03, SC-SHARE-04 |
 
 ### CP-YOURS-01 — Made comfortable
 

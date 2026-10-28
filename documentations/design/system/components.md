@@ -3,7 +3,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **69 registered contracts**: **45 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **15 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages), and **3 compound components** (Trigger, Toolbar, Dialog). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **70 registered contracts**: **45 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **16 layouts** (AppRoot, Stack, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **3 compound components** (Trigger, Toolbar, Dialog). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Switch, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="inventory" data-reader-personas="design engineering">Implemented inventory</h2>
 
@@ -19,7 +19,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**69 registered contracts:** 45 primitives, 5 host components, 15 layouts, 1 block component, 3 compound components.
+**70 registered contracts:** 45 primitives, 5 host components, 16 layouts, 1 block component, 3 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -85,6 +85,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Positioner | layout | `above`, `below`, `offscreen` | 5 | `offscreen` |
 | Sheet | layout | `rest`, `entering`, `pinned`, `docked` | 4 | `entering` |
 | ReaderPage | layout | `rest` | 1 | None |
+| PrintPage | layout | `rest` | 1 | None |
 | SitePage | layout | `rest` | 3 | None |
 | SiteSection | layout | `rest` | 5 | None |
 | SiteGrid | layout | `rest` | 1 | None |
@@ -226,6 +227,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | **Show** | Planned | Shows children only in some size classes, platforms, or pointer types | `sizeClass`, `platform`, `pointer` |
 | **AppRoot** | Implemented | The root of every view. Applies the theme (`data-theme`) and the token modes (platform, reduced motion, reduced transparency, coarse pointer) to the document, and holds the global token stylesheet. With `frame` rounded or square (Windows and Linux) the page is transparent and the window is drawn inside it: 20 px corners, the shadow in a 16 px margin, and the container for fixed layers and every menu, tooltip, and dialog (D-104). The reading settings override their tokens on the root (`lineHeight`, `measure` in characters, `focusDim`; `paragraphSpacing` is a token mode), and `themeColors` lays an edited copy's colors over the theme (color tokens and `#rrggbb` values only, D-108) | `scheme`, `platform`, `frame` (native, rounded, square), `lineHeight`, `measure`, `paragraphSpacing`, `focusDim`, `themeColors` |
 | **ReaderPage** | Implemented | A published page (IA-VIEW-PUBLIC, WP-5.1, D-114): a skip link, the reading column as the `main` landmark, and a quiet footer; follows the reader's light or dark preference and reads from 320 px wide. Tokens `cmp.readerPage.*` | `skipLabel`, a `footer` slot |
+| **PrintPage** | Implemented | A note laid out for paper (SHR-12, WP-8.12, D-230): hidden on screen; while printing, the only thing on the page, in Paper's colors at the print text size (12 pt), with the print margin and, from page 2, the page number and count at the foot (the named page `fn-print`, written by the tokens build). Tokens `cmp.printPage.*` | A default slot (the canvas puts NoteContent in it) |
 
 Field and Sheet are layouts too; they're described with the compounds they were first planned as, below. The product site's layouts (SitePage, SiteSection, SiteGrid) are under SitePage there.
 

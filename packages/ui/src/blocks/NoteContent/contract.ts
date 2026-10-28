@@ -3,7 +3,7 @@ import { defineContract } from "../../contract.ts";
 export const contract = defineContract({
   type: "NoteContent",
   tier: "block",
-  description: "A note's content through the block components (paragraphs, headings, lists, task lists, quotes, code, tables, rules, inline marks, and unknown syntax), read-only: the published reader page's note (IA-VIEW-PUBLIC).",
+  description: "A note's content through the block components (paragraphs, headings, lists, task lists, quotes, code, tables, rules, page breaks, inline marks, and unknown syntax), read-only: the published reader page's note (IA-VIEW-PUBLIC) and a printed note (SHR-12).",
   props: {
     blocks: { kind: "list", of: "noteBlocks", required: true, description: "The note as the Markdown bridge parses it." },
   },

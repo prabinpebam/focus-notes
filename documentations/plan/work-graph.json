@@ -2415,6 +2415,35 @@
       "status": "building"
     },
     {
+      "id": "WP-8.12",
+      "stage": "M8",
+      "title": "Print",
+      "summary": "Print… in the Note menu, the command list, Spotlight and the macOS File menu: the note laid out for paper (Paper's colors, 12 pt, page numbers from page 2, page breaks, no splits after headings or inside code lines, rows and tasks), then the system's print dialog (D-230).",
+      "requirements": [
+        "SHR-12"
+      ],
+      "dependsOn": [
+        "WP-5.1"
+      ],
+      "touches": [
+        "core",
+        "desktop",
+        "tokens",
+        "ui",
+        "views",
+        "web"
+      ],
+      "reviews": [
+        "code",
+        "design-system"
+      ],
+      "specs": [
+        "experience/print.md"
+      ],
+      "lookahead": false,
+      "status": "building"
+    },
+    {
       "id": "WP-9.1",
       "stage": "Later",
       "title": "Image block",

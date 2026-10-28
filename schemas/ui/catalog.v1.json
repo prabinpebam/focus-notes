@@ -3605,6 +3605,29 @@
       ]
     },
     {
+      "type": "PrintPage",
+      "tier": "layout",
+      "description": "A note laid out for paper (SHR-12): hidden on screen; while printing, the only thing on the page, in Paper's colors at the print text size, with the print margin and, from page 2, the page number and count at the foot.",
+      "props": {},
+      "events": {},
+      "slots": {
+        "default": {
+          "accepts": "any"
+        }
+      },
+      "states": [
+        "rest"
+      ],
+      "tokens": "cmp.printPage.*",
+      "a11y": {
+        "pattern": "none",
+        "name": "Never on screen, so never in the accessibility tree; the note itself is the editor's."
+      },
+      "fixtures": [
+        "page"
+      ]
+    },
+    {
       "type": "SitePage",
       "tier": "layout",
       "description": "A page of the product site (IA-VIEW-SITE, IA-VIEW-HELP, WP-10.1): a skip link, a header with the site's navigation, the content as the page's main landmark, and a footer. It follows the visitor's light or dark preference and reads from 320 px wide.",
@@ -4501,7 +4524,7 @@
     {
       "type": "NoteContent",
       "tier": "block",
-      "description": "A note's content through the block components (paragraphs, headings, lists, task lists, quotes, code, tables, rules, inline marks, and unknown syntax), read-only: the published reader page's note (IA-VIEW-PUBLIC).",
+      "description": "A note's content through the block components (paragraphs, headings, lists, task lists, quotes, code, tables, rules, page breaks, inline marks, and unknown syntax), read-only: the published reader page's note (IA-VIEW-PUBLIC) and a printed note (SHR-12).",
       "props": {
         "blocks": {
           "kind": "list",
@@ -4738,7 +4761,8 @@
     "pin",
     "pinOff",
     "feedback",
-    "sent"
+    "sent",
+    "print"
   ],
   "views": [
     {
@@ -4777,7 +4801,8 @@
         "vm.spotlight",
         "vm.demo",
         "vm.toolbarCustomize",
-        "vm.recover"
+        "vm.recover",
+        "vm.print"
       ]
     },
     {

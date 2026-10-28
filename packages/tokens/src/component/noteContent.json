@@ -38,5 +38,6 @@
   "tableHeader": { "$type": "color", "$value": "{color.surface}" },
   "tableHeaderWeight": { "$type": "fontWeight", "$value": "{font.weightSemibold}" },
   "tableCellBlock": { "$type": "dimension", "$value": "{space.s}" },
-  "tableCellInline": { "$type": "dimension", "$value": "{space.m}" }
+  "tableCellInline": { "$type": "dimension", "$value": "{space.m}" },
+  "printLines": { "$type": "number", "$value": "{print.lines}" }
 } } }

@@ -1,0 +1,8 @@
+{ "cmp": { "printPage": {
+  "$description": "A printed note (SHR-12, D-230): the page's margin, the text size on paper, and the page number in the footer. The tokens build writes them into @page, which a component's styles can't reach.",
+  "margin": { "$type": "dimension", "$value": "{print.margin}" },
+  "fontSize": { "$type": "dimension", "$value": "{print.fontSize}" },
+  "folioSize": { "$type": "dimension", "$value": "{print.folioSize}" },
+  "folio": { "$type": "color", "$value": "{color.textMuted}" },
+  "folioFont": { "$type": "fontFamily", "$value": "{font.ui}" }
+} } }

@@ -159,6 +159,32 @@ for (const [sel, file] of Object.entries(MODES)) {
   if (sel.startsWith("@media")) blocks.push(`${sel} {\n${await css([...BASE, file], ":root:root:root", file)}}\n`);
   else blocks.push(await css([...BASE, file], `:root${sel}`, file));
 }
+// Printing (SHR-12, D-230): dark ink on white paper whatever theme is showing, so a note prints in
+// Paper's colors, at the print text size rather than the zoom on screen. !important because the app
+// sets a custom theme's colors and the zoom inline on :root. The print layout's pages are the named
+// page fn-print: its margin, and from page 2 the page number and the count at the foot (@page is
+// beyond a component's styles, so it's written here).
+const v = (name) => `var(${cssName(name)})`;
+const printColors = THEMED.filter((k) => all.get(k).type === "color").map((k) => `    ${cssName(k)}: ${themeValues.paper[k]} !important;`);
+blocks.push(`@media print {
+  :root:root:root {
+${printColors.join("\n")}
+    ${cssName("font.size")}: ${v("cmp.printPage.fontSize")} !important;
+  }
+}
+@page fn-print {
+  margin: ${v("cmp.printPage.margin")};
+  @bottom-center {
+    content: counter(page) " / " counter(pages);
+    font-family: ${v("cmp.printPage.folioFont")};
+    font-size: ${v("cmp.printPage.folioSize")};
+    color: ${v("cmp.printPage.folio")};
+  }
+}
+@page fn-print:first {
+  @bottom-center { content: none; }
+}
+`);
 // UI scale (DSY-03): interface sizes, spacing, and type are multiplied by --fn-ui-scale. Note text
 // (font.size and the content ramp) is unaffected.
 const SCALED = /^(\s*)(--fn-(?:space|size)-[a-z0-9-]+|--fn-font-ui-(?:caption|secondary|body|emphasis|title)):\s*(.+);$/;

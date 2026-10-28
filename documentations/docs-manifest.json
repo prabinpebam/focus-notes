@@ -136,6 +136,15 @@
       "group": "Experience"
     },
     {
+      "path": "experience/print.md",
+      "title": "Print",
+      "order": 265,
+      "icon": "print",
+      "status": "draft",
+      "updated": "2026-10-28",
+      "group": "Experience"
+    },
+    {
       "path": "experience/theming.md",
       "title": "Theming",
       "order": 270,

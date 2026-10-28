@@ -56,6 +56,8 @@ function Block({ node, path }: { node: BlockNode; path: string }): ReactNode {
     case "blockquote": return <blockquote>{kids(node, path)}</blockquote>;
     case "codeBlock": return <pre tabIndex={0}><code>{(node.content ?? []).map((c) => c.text ?? "").join("")}</code></pre>;
     case "horizontalRule": return <hr />;
+    // A page break the note asks for (<!-- pagebreak -->, SHR-12): nothing on screen, a new page on paper.
+    case "pageBreak": return <div data-page-break="" aria-hidden="true" />;
     case "table": return <div data-table="" tabIndex={0}><table><tbody>{kids(node, path)}</tbody></table></div>;
     case "tableRow": return <tr>{kids(node, path)}</tr>;
     case "tableHeader": return <th scope="col" {...align(node)}>{kids(node, path)}</th>;

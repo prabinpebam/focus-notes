@@ -146,6 +146,8 @@ const localRemotes = devEnv("FOCUS_NOTES_GIT_REMOTES");
 const logSpawns = devEnv("FOCUS_NOTES_LOG_SPAWNS") === "1";
 /** Journeys and the bench: windows never take the computer's focus (D-104 (7)). */
 const journey = devEnv("FOCUS_NOTES_E2E") === "1";
+/** Journeys print to this PDF instead of showing the system's print dialog (SHR-12, D-230). */
+const printToPdf = devEnv("FOCUS_NOTES_E2E_PRINT_PDF");
 // Software rendering, as on a CI runner with no GPU, to reproduce it on any computer (D-121).
 if (devEnv("FOCUS_NOTES_DISABLE_GPU") === "1") app.disableHardwareAcceleration();
 // Chromium switches for journeys on CI, to reach a compositing path the runner has no hardware for:
@@ -1792,6 +1794,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       if (fromApp(e)) menuBar.set(model);
     });
   }
+  // Print (SHR-12, D-230): the system's print dialog for the window that asked, the page laid out as it is
+  // now; the printer, paper, pages, copies and Save as PDF are the dialog's. Asynchronous: nothing waits on it here.
+  handleFrom("window:print", (e) => new Promise<void>((resolve, reject) => {
+    if (printToPdf) return void e.sender.printToPDF({ printBackground: true, preferCSSPageSize: true }).then((pdf) => writeFile(printToPdf, pdf)).then(resolve, reject);
+    e.sender.print({ silent: false, printBackground: true }, (ok, reason) => (ok || /cancel/i.test(reason) ? resolve() : reject(new Error(reason))));
+  }));
   handle("window:fullScreen", async () => {
     const w = win();
     if (windowFrame?.toggleFullScreen(w)) return;

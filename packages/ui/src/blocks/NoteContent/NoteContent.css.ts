@@ -69,3 +69,15 @@ globalStyle(p("tr:first-child > th:last-child"), { borderStartEndRadius: t.table
 globalStyle(p('[data-align="center"]'), { textAlign: "center" });
 globalStyle(p('[data-align="right"]'), { textAlign: "end" });
 globalStyle(p("th p, td p"), { margin: 0 });
+
+// On paper (SHR-12, D-230): a page break the note asks for starts a new page, and the next block sits
+// at the page's head. A heading stays with what follows it; a code line, a table row and a task don't
+// split across pages; a paragraph leaves at least two lines at a page's foot and head. Code wraps and
+// tables lay out in full, as paper can't scroll.
+globalStyle(p("[data-page-break]"), { "@media": { print: { breakAfter: "page" } } });
+globalStyle(p("[data-page-break] + *"), { "@media": { print: { marginTop: 0 } } });
+globalStyle(p("h1, h2, h3, h4, h5, h6"), { "@media": { print: { breakAfter: "avoid", breakInside: "avoid" } } });
+globalStyle(p("tr, li, blockquote > p"), { "@media": { print: { breakInside: "avoid" } } });
+globalStyle(p("p, li"), { "@media": { print: { orphans: t.printLines, widows: t.printLines } } });
+globalStyle(p("pre"), { "@media": { print: { whiteSpace: "pre-wrap", overflowX: "visible" } } });
+globalStyle(p("[data-table]"), { "@media": { print: { overflowX: "visible" } } });

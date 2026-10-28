@@ -267,7 +267,7 @@ These are the deliberate trade-offs. Each one is the choice the most popular pre
 | <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> | Find in all notes | Focus mode on this key | VS Code convention. Focus moved to <kbd>Mod</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> / <kbd>F8</kbd> ([D-17](../plan/decisions.md)). |
 | <kbd>⌘E</kbd> (macOS) | Inline code | macOS "use selection for find" | Notion and Tiptap. The find bar fills in the selected text anyway. |
 | <kbd>Mod</kbd>+<kbd>D</kbd> | Duplicate block | The browser's bookmark key (web) | Notion. |
-| <kbd>Mod</kbd>+<kbd>P</kbd> | Quick open | The browser's print key | VS Code, Notion. Printing is in ⋯ and Spotlight. |
+| <kbd>Mod</kbd>+<kbd>P</kbd> | Quick open | The browser's print key | VS Code, Notion. [Printing](print.md) is in ⋯, the File menu and Spotlight. |
 | <kbd>⇧⌘↑</kbd> / <kbd>⇧⌘↓</kbd> (macOS) | Move block | Select to start or end of the note | Notion. <kbd>⌘A</kbd> still selects the whole note. |
 | <kbd>Mod</kbd>+<kbd>=</kbd> / <kbd>-</kbd> / <kbd>0</kbd> | Content font size | Whole-page zoom | VS Code. UI scale is a separate setting. |
 | <kbd>Ctrl</kbd>+wheel, trackpad pinch | Content font size, one step a notch | Whole-page zoom | Browsers. The page never zooms; the text size is the only zoom. <kbd>⌘</kbd>+wheel on macOS scrolls, as it does everywhere there ([D-130](../plan/decisions.md)). |

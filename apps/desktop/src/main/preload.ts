@@ -115,6 +115,16 @@ contextBridge.exposeInMainWorld("focusNotes", {
   chooseNote: () => ipcRenderer.invoke("note:choose"),
   newNotePath: (near?: string) => ipcRenderer.invoke("note:newPath", near),
   toggleFullScreen: () => void ipcRenderer.invoke("window:fullScreen"),
+  // The page's title is the print job's name, and Save as PDF's file name (D-230).
+  print: async ({ title }: { title: string }) => {
+    const before = document.title;
+    if (title) document.title = title;
+    try {
+      await ipcRenderer.invoke("window:print");
+    } finally {
+      document.title = before;
+    }
+  },
   // Notes in windows of their own (DSK-06, D-179): this window's note, if it was opened for one.
   windows: {
     open: (path: string) => ipcRenderer.invoke("window:open", path),

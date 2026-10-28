@@ -256,6 +256,20 @@ export async function createWebBridge(options: WebBridgeOptions = {}): Promise<W
       if (document.fullscreenElement) void document.exitFullscreen();
       else void document.documentElement.requestFullscreen?.();
     },
+    // The browser's own print dialog (SHR-12, D-230); the page's title names the PDF it saves. Some
+    // browsers return from print() at once, so the print layout stays until afterprint.
+    async print({ title }) {
+      const before = document.title;
+      if (title) document.title = title;
+      try {
+        await new Promise<void>((done) => {
+          window.addEventListener("afterprint", () => done(), { once: true });
+          window.print();
+        });
+      } finally {
+        document.title = before;
+      }
+    },
     openExternal(url) {
       // Only GitHub's own pages are ever opened.
       if (/^https:\/\/github\.com\//.test(url)) window.open(url, "_blank", "noopener,noreferrer");

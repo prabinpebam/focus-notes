@@ -40,6 +40,11 @@ export interface PlatformBridge {
   newNotePath(near?: string): Promise<string>;
   /** Enters or leaves full screen (DSK-04). Absent where the shell can't. */
   toggleFullScreen?(): void;
+  /**
+   * Prints the page as it's laid out now through the system's print dialog (SHR-12, D-230), with
+   * `title` as the job's name. Resolves when the dialog closes, printed or cancelled. Absent where the shell can't.
+   */
+  print?(o: { title: string }): Promise<void>;
   /** The default note for a first launch, created if missing. */
   /** The workspace's custom theme files (THM-04, D-173): `private/.focus-notes/themes/*.json`, or `.focus-notes/themes/` without a private repository. */
   themes?: {
