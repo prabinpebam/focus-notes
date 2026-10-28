@@ -7,19 +7,28 @@ Print the open note on paper, or to a PDF, through the system's own print dialog
 
 ## What people expect
 
-Printing a note is occasional: a page to read away from the screen, something to hand over or file, or a PDF to send. People expect it to look like a clean document, not like the app's window, and they expect the system's dialog they already know. A Markdown editor is benchmarked against the editors around it and against Word and Google Docs.
+Printing a note is occasional: a page to read away from the screen, something to hand over or file, or a PDF to send. People expect it to look like a clean document, not like the app's window, and they expect the system's dialog they already know. The benchmark (October 2026) covers 22 apps, from the vendors' help and their issue trackers and forums, with Word and Google Docs as the baseline.
 
-| Expectation | Markdown editors (Typora, Obsidian, iA Writer, Bear, VS Code) | Documents (Word, Google Docs) | Focus Notes |
-| --- | --- | --- | --- |
-| **Where to start** | File → Print or Export → PDF; Obsidian has only *Export to PDF* | File → Print, <kbd>Mod</kbd>+<kbd>P</kbd> | ⋯, File, Spotlight; no shortcut |
-| **Printer, paper, copies, ranges** | The system's dialog; export dialogs add paper and margins | The system's dialog | The system's dialog |
-| **Looks like a document** | A print style: no interface, often a theme's own | WYSIWYG | Paper palette, document type, no interface |
-| **Page breaks where the writer wants** | An HTML `page-break-after` `div` (Typora, Obsidian, Markdown PDF); some offer a break before each top-level heading | <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | `<!-- pagebreak -->` or the same `div` |
-| **Pages that break well** | Mostly the browser's defaults | Keep with next, widow and orphan control | No break after a heading or inside a row or list item; two lines each side |
-| **Page numbers** | In some exports' header and footer settings (Typora, iA Writer templates, Markdown PDF); none in Obsidian's | Header and footer, often skipping the first page | `n / N` at the bottom, from page 2 |
-| **Headers and footers** | Templates or export settings, where they exist | Full control | Not yet |
+| App | Print or only PDF | Dark theme on paper | Page breaks | Page numbers |
+| --- | --- | --- | --- | --- |
+| **Typora** | Both; <kbd>Mod</kbd>+<kbd>P</kbd> is Quick open | Light (Windows, Linux) | The `page-break-after` `div`; optional break before top headings | Header and footer fields (`${pageNo}`, `${pageCount}`), off by default |
+| **Obsidian** | *Export to PDF* only | Always light | None of its own; the `div` works | None |
+| **iA Writer** | Both | Not documented | `+++` | Through a template's footer |
+| **Ulysses** | Both, through export | Separate export styles | In its export styles | Off by default; no total |
+| **Bear**, **Apple Notes**, **Simplenote** | Both (Simplenote: print only) | Apple Notes prints light | None | The system's only |
+| **MarkText**, **Joplin** | Both | Light | The `div` | None; MarkText's most-voted open request for 6 years |
+| **Notion**, **Craft** | Export only | Light (Craft: a toggle) | Craft: `===`; Notion: none | Craft: a toggle, off by default |
+| **Marked 2** | Both, paginated | — | `<!--BREAK-->`, optionally every rule | `%page`, `%total`, `%title`, `%date` in four places |
+| **VS Code's Markdown PDF** | Export only | Its own style | CSS only | On by default: `n / N` in the footer |
+| **OneNote**, **Notepad** | Both | OneNote prints light, "to save ink" | None | OneNote: yes; Notepad: header and footer codes, on |
+| **Word**, **Google Docs** | Print, through the system | — | <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | Header and footer, "Page X of Y", often skipping the first page |
 
-**What this says.** People expect to control *where* a break goes only now and then, for a section that should start on its own page; mostly they expect the pages to break well without asking. Page numbers matter once a note runs past one page, and they're expected without setting anything up. Everything about the paper and the printer belongs to the system, which already does it well.
+**What this says.**
+
+- **Table stakes:** the note prints as it reads, not as Markdown; a dark theme prints light (almost every app forces it, several citing wasted ink); and paper, margins, copies and ranges are the system's.
+- **Wanted and often missing:** choosing where a page breaks, and page numbers. They're the two requests that come up most and stay open longest (MarkText, Obsidian, StackEdit). The portable way to mark a break is the HTML `page-break-after` `div` that Obsidian, Joplin, Bear and MarkText users already write, so Focus Notes reads it, and `<!-- pagebreak -->` as a shorter form that other apps hide.
+- **Page numbers' default:** apps with a setting leave it off; Markdown PDF and Notepad have them on. Focus Notes has no setting: `n / N` shows from page 2, so a one-page note prints clean and a longer one can be put back in order.
+- **For writers who want more:** headers and footers with the title or date (Marked 2, Craft, iA Writer's templates), a break before every top heading (Typora), and widow and orphan control (Ulysses). Focus Notes keeps two lines on each side of a break without a setting; the rest is under [Not yet](#not-yet).
 
 ## How it works
 
@@ -66,3 +75,5 @@ To start a new page at a place, put one of these on a line of its own:
 - Images, which notes don't show yet.
 - PDF export with its own paper and margin settings (the system's *Save as PDF* covers most of it).
 - Printing several notes or a folder at once.
+- A setting for page numbers, and a break before every top heading (Typora's option).
+- Page numbers on the web in Firefox and Safari, which don't draw page margin boxes; Chromium does from version 131.
