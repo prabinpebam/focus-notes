@@ -2,14 +2,14 @@
  * Print (SHR-12, D-230): the open note on paper, through the system's own print dialog, which keeps
  * the printer, paper, orientation, copies, pages and Save as PDF. The app lays the note out for paper
  * first: its blocks read-only on the Paper palette whatever the theme on screen, its title as the
- * job's name, page numbers from page 2 (`n / N`, bottom center), and pages that never break after
+ * job's name, page numbers (`n / N`, bottom center) only when turned on (D-231), and pages that never break after
  * a heading or inside a table row, a list item or a quote's paragraph. A line with only a page
  * break (`<!-- pagebreak -->`, or `<div style="page-break-after: always"></div>` as Typora and
  * Obsidian write it) starts a new page.
  */
 import { parseMarkdown, type PMNode } from "@focus-notes/markdown";
 import type { AppState, ToastState } from "./app.ts";
-import type { PlatformBridge } from "./bridge.ts";
+import type { AppStateFile, PlatformBridge } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
@@ -19,6 +19,7 @@ import { BLOCK_LIST_SCHEMA } from "./public-page.ts";
 import { titleOrName } from "./history.ts";
 
 export const PRINT_NOTE = "note.print";
+export const PRINT_PAGE_NUMBERS = "print.pageNumbers";
 /** The block a page break becomes on paper (NoteContent's PageBreak). */
 export const PAGE_BREAK = "pageBreak";
 
@@ -60,6 +61,7 @@ interface Ctx {
   /** Hands over text the editor hasn't sent yet, so what prints is what's on screen. */
   handOver: () => void;
   afterPaint: (fn: () => void) => void;
+  persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
 }
 
 export function registerPrint(ctx: Ctx): void {
@@ -93,6 +95,19 @@ export function registerPrint(ctx: Ctx): void {
     },
   });
 
+  // Page numbers are off until asked for (D-231), as in Typora, Craft and Ulysses; kept on this device.
+  commands.register({
+    id: PRINT_PAGE_NUMBERS, title: "command.print.pageNumbers", icon: "numberedList", group: "app",
+    enabled: () => Boolean(bridge.print),
+    disabledReason: "command.note.print.unavailable",
+    checked: (s) => s.printPageNumbers,
+    run: async (_a, c) => {
+      const on = !c.state.printPageNumbers;
+      c.update((s) => ({ ...s, printPageNumbers: on }));
+      await ctx.persistAppState({ printPageNumbers: on ? true : undefined });
+    },
+  });
+
   viewModels.register({
     id: "vm.print",
     schema: {
@@ -100,9 +115,10 @@ export function registerPrint(ctx: Ctx): void {
       properties: {
         open: { type: "boolean", description: "The note is laid out for paper (the system's print dialog is open)." },
         blocks: { ...BLOCK_LIST_SCHEMA, description: "The note's blocks for paper: no front matter, page breaks as pageBreak blocks." },
+        pageNumbers: { type: "boolean", description: "Each page carries its number and the count (D-231)." },
       },
     },
-    reads: ["ui.print"],
-    select: (s) => ({ open: s.ui.print.open, blocks: s.ui.print.blocks }),
+    reads: ["ui.print", "printPageNumbers"],
+    select: (s) => ({ open: s.ui.print.open, blocks: s.ui.print.blocks, pageNumbers: s.printPageNumbers }),
   });
 }

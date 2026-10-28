@@ -274,6 +274,7 @@
   "command.note.print": "Print…",
   "command.note.print.unavailable": "Printing isn't available here",
   "command.note.print.notReady": "Open a note to print it",
+  "command.print.pageNumbers": "Page numbers when printing",
   "task.printPreparing": "Preparing to print…",
   "toast.printFailed": "Couldn't print the note. Check the printer and try again.",
   "command.settings.open.reason": "Settings manage your GitHub account, so they're in the desktop app",

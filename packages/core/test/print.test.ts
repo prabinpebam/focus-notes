@@ -3,6 +3,7 @@
  * its blocks without front matter, page breaks as their own blocks, and the note's title as the job's
  * name. It's in the ⋯ menu's Note group, the command list and the macOS File menu; without a print
  * bridge, or before a note is open, it's disabled with a plain reason. A failed print says so.
+ * Page numbers are off until turned on beside Print…, and the choice is kept on the device (D-231).
  */
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
@@ -14,8 +15,10 @@ import { checkingDisk } from "./checking-disk.ts";
 const messages = JSON.parse(readFileSync(join(import.meta.dirname, "../../views/messages/en.json"), "utf8")) as Record<string, string>;
 const NOTE = "C:\\notes\\Trip.md";
 
-function desktop(print?: PlatformBridge["print"]) {
-  let state: AppStateFile = { version: 1, lastNotePath: NOTE };
+const saved: { state?: AppStateFile } = {};
+
+function desktop(print?: PlatformBridge["print"], initial: Partial<AppStateFile> = {}) {
+  let state: AppStateFile = { version: 1, lastNotePath: NOTE, ...initial };
   const files: Record<string, string> = { [NOTE]: "---\nid: 7\n---\n# Trip to Lisbon\n\nDay one.\n\n<!-- pagebreak -->\n\nDay two.\n" };
   const bridge: PlatformBridge = {
     platform: "windows",
@@ -23,15 +26,15 @@ function desktop(print?: PlatformBridge["print"]) {
     writeNote: checkingDisk(files).writeNote,
     chooseNote: async () => undefined, newNotePath: async () => "C:\\notes\\untitled.md",
     defaultNotePath: async () => NOTE,
-    loadAppState: async () => state, saveAppState: async (s) => { state = s; },
+    loadAppState: async () => state, saveAppState: async (s) => { state = s; saved.state = s; },
     systemScheme: () => "light", onSystemSchemeChange: () => () => {},
     ...(print ? { print } : {}),
   };
   return bridge;
 }
 
-async function started(print?: PlatformBridge["print"]) {
-  const app = createApp(desktop(print), messages);
+async function started(print?: PlatformBridge["print"], initial: Partial<AppStateFile> = {}) {
+  const app = createApp(desktop(print, initial), messages);
   await app.start();
   await vi.waitFor(() => expect(app.store.state.note.status).toBe("ready"));
   return app;
@@ -61,10 +64,10 @@ describe("printBlocks", () => {
 });
 
 describe("Print (SHR-12)", () => {
-  it("is in the ⋯ menu's Note group, after the note's history, and in the macOS File menu", () => {
-    expect(MORE_MENU.find((g) => g.id === "note")!.items.at(-1)).toBe("note.print");
-    const file = MENU_BAR.find((m) => m.id === "file");
-    expect(file?.items).toContain("note.print");
+  it("is in the ⋯ menu's Note group, after the note's history, and in the macOS File menu, with page numbers beside it", () => {
+    expect(MORE_MENU.find((g) => g.id === "note")!.items.slice(-2)).toEqual(["note.print", "print.pageNumbers"]);
+    const items = MENU_BAR.find((m) => m.id === "file")!.items;
+    expect(items.indexOf("print.pageNumbers")).toBe(items.indexOf("note.print") + 1);
   });
 
   it("lays the note out for paper, prints it under its title, then puts the layout away", async () => {
@@ -78,7 +81,7 @@ describe("Print (SHR-12)", () => {
     expect(print).toHaveBeenCalledWith({ title: "Trip to Lisbon" });
     expect(seen).toEqual({ open: true, types: ["heading", "paragraph", PAGE_BREAK, "paragraph"] });
     expect(app.store.state.ui.print.open).toBe(false);
-    expect(app.viewModels.select("vm.print", app.store.state)).toEqual({ open: false, blocks: [] });
+    expect(app.viewModels.select("vm.print", app.store.state)).toEqual({ open: false, blocks: [], pageNumbers: false });
   });
 
   it("says when printing failed, and puts the layout away", async () => {
@@ -88,10 +91,29 @@ describe("Print (SHR-12)", () => {
     expect(app.store.state.ui.print.open).toBe(false);
   });
 
+  it("prints without page numbers until they're turned on, and keeps the choice on this device (D-231)", async () => {
+    const app = await started(vi.fn(async () => {}));
+    expect(app.commands.describe("print.pageNumbers")).toMatchObject({ enabled: true, checked: false, title: "command.print.pageNumbers" });
+    expect(messages["command.print.pageNumbers"]).toBe("Page numbers when printing");
+    await app.commands.run("print.pageNumbers");
+    expect(app.commands.describe("print.pageNumbers").checked).toBe(true);
+    expect(app.viewModels.select("vm.print", app.store.state)).toMatchObject({ pageNumbers: true });
+    await vi.waitFor(() => expect(saved.state?.printPageNumbers).toBe(true));
+    await app.commands.run("print.pageNumbers");
+    expect(app.viewModels.select("vm.print", app.store.state)).toMatchObject({ pageNumbers: false });
+    await vi.waitFor(() => expect(saved.state?.printPageNumbers).toBeUndefined());
+  });
+
+  it("starts with page numbers on when they were left on", async () => {
+    const app = await started(vi.fn(async () => {}), { printPageNumbers: true });
+    expect(app.commands.describe("print.pageNumbers").checked).toBe(true);
+  });
+
   it("is disabled where there's no printing, saying why in plain words", async () => {
     const app = await started();
     const d = app.commands.describe("note.print");
     expect(d.enabled).toBe(false);
     expect(messages[d.disabledReason!]).toBe("Printing isn't available here");
+    expect(app.commands.describe("print.pageNumbers").enabled).toBe(false);
   });
 });

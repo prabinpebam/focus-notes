@@ -9225,6 +9225,11 @@
         "when": {
           "get": "vm.print.open"
         },
+        "props": {
+          "pageNumbers": {
+            "get": "vm.print.pageNumbers"
+          }
+        },
         "children": [
           {
             "type": "NoteContent",

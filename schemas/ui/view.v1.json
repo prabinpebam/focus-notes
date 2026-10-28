@@ -8086,7 +8086,7 @@
     },
     "c_PrintPage": {
       "type": "object",
-      "description": "A note laid out for paper (SHR-12): hidden on screen; while printing, the only thing on the page, in Paper's colors at the print text size, with the print margin and, from page 2, the page number and count at the foot.",
+      "description": "A note laid out for paper (SHR-12): hidden on screen; while printing, the only thing on the page, in Paper's colors at the print text size, with the print margin and, when asked, the page number and count at the foot of every page.",
       "required": [
         "type"
       ],
@@ -8115,7 +8115,21 @@
         "props": {
           "type": "object",
           "additionalProperties": false,
-          "properties": {},
+          "properties": {
+            "pageNumbers": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
           "required": []
         },
         "on": {

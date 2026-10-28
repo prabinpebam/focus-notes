@@ -2418,7 +2418,7 @@
       "id": "WP-8.12",
       "stage": "M8",
       "title": "Print",
-      "summary": "Print… in the Note menu, the command list, Spotlight and the macOS File menu: the note laid out for paper (Paper's colors, 12 pt, page numbers from page 2, page breaks, no splits after headings or inside code lines, rows and tasks), then the system's print dialog (D-230).",
+      "summary": "Print… in the Note menu, the command list, Spotlight and the macOS File menu: the note laid out for paper (Paper's colors, 12 pt, page numbers when turned on (D-231), page breaks, no splits after headings or inside code lines, rows and tasks), then the system's print dialog (D-230).",
       "requirements": [
         "SHR-12"
       ],

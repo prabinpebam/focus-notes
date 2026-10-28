@@ -74,7 +74,7 @@ describe("publicLinkOf", () => {
 describe("Copy public link (SHR-03)", () => {
   it("is in the ⋯ menu's Note group, after Share", () => {
     // Note history (FIL-13, D-175) follows them, then Print (SHR-12, D-230).
-    expect(MORE_MENU.find((g) => g.id === "note")!.items).toEqual(["note.share", "note.copyPublicLink", "history.open", "note.print"]);
+    expect(MORE_MENU.find((g) => g.id === "note")!.items).toEqual(["note.share", "note.copyPublicLink", "history.open", "note.print", "print.pageNumbers"]);
   });
 
   it("copies a public note's page address and says so", async () => {

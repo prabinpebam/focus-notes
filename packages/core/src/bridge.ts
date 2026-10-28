@@ -528,6 +528,8 @@ export interface AppStateFile {
   /** The document minimap's card is docked on this device (D-186, D-187), and its docked width. */
   outlinePinned?: boolean;
   outlineWidth?: number;
+  /** Printed pages carry their number and the count (D-231); absent: they don't. */
+  printPageNumbers?: boolean;
   /** The docked Files panel's width (D-187). */
   filesWidth?: number;
   /** The Files tree sorted by last change (FIL-11, D-175); absent: by name. */

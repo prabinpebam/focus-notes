@@ -63,6 +63,8 @@ export interface AppState {
   focusMode: boolean;
   /** The document minimap's card docked on the right, on this device (D-186, D-187). */
   outlinePinned: boolean;
+  /** Printed pages carry their number and the count, on this device (D-231). */
+  printPageNumbers: boolean;
   /** Its docked width in px, as resized; undefined: the token's default (D-187). */
   outlineWidth?: number;
   /** The toolbar's actions, in order: at most six (UI-08, D-170). */
@@ -250,7 +252,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
     ],
   },
   { id: "edit", label: "menu.edit", items: ["find.open", "find.replace", "find.allNotes"] },
-  { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink", "history.open", "note.print"] },
+  { id: "note", label: "menu.note", items: ["note.share", "note.copyPublicLink", "history.open", "note.print", "print.pageNumbers"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "feedback.open", "toolbar.customize", "shortcuts.open", "help.open"] },
 ];
@@ -309,6 +311,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
     focusMode: false,
     outlinePinned: false,
+    printPageNumbers: false,
     toolbarPinned: [...DEFAULT_TOOLBAR],
     keybindings: KEYBINDINGS_NONE,
     compositing: bridge.compositing?.initial === "software" ? "software" : "gpu",
@@ -1108,7 +1111,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   registerImport({ store, commands, viewModels, catalog, bridge, tracker, toast, menu: extraMenu });
   registerPublicLink({ store, commands, catalog, bridge, toast });
-  registerPrint({ store, commands, viewModels, catalog, bridge, tracker, toast, handOver: () => editorAction(FLUSH_EDITOR), afterPaint });
+  registerPrint({ store, commands, viewModels, catalog, bridge, tracker, toast, handOver: () => editorAction(FLUSH_EDITOR), afterPaint, persistAppState });
   const conflicts = registerConflicts({
     store, commands, viewModels, catalog, bridge, tracker, toast, announce, exclusive, setNote, flush,
     loaded: (path, md) => workspace.loaded(path, md),
@@ -1543,6 +1546,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         // Focus mode is on for new installs: it's a signature feature (D-04).
         focusMode: appState.focusMode ?? true,
         outlinePinned: appState.outlinePinned === true,
+        printPageNumbers: appState.printPageNumbers === true,
         ...(typeof appState.outlineWidth === "number" && appState.outlineWidth > 0 ? { outlineWidth: Math.round(appState.outlineWidth) } : {}),
         // The toolbar's six, as pinned on this device (UI-08, D-170).
         toolbarPinned: validPinned(appState.toolbarPinned, pinnable(), DEFAULT_TOOLBAR),

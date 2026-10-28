@@ -9,6 +9,8 @@ export const root = style({
   display: "none",
   "@media": { print: { display: "block", page: "fn-print" } },
 });
+// Page numbers on (D-231): the named page with the number and the count at the foot.
+export const numbered = style({ "@media": { print: { page: "fn-print-numbered" } } });
 
 globalStyle(`${printing}, ${printing} > body`, {
   "@media": { print: { height: "auto", minHeight: 0, overflow: "visible", backgroundColor: "transparent", backgroundImage: "none" } },

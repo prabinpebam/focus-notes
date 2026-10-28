@@ -85,7 +85,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | Positioner | layout | `above`, `below`, `offscreen` | 5 | `offscreen` |
 | Sheet | layout | `rest`, `entering`, `pinned`, `docked` | 4 | `entering` |
 | ReaderPage | layout | `rest` | 1 | None |
-| PrintPage | layout | `rest` | 1 | None |
+| PrintPage | layout | `rest` | 2 | None |
 | SitePage | layout | `rest` | 3 | None |
 | SiteSection | layout | `rest` | 5 | None |
 | SiteGrid | layout | `rest` | 1 | None |
@@ -227,7 +227,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | **Show** | Planned | Shows children only in some size classes, platforms, or pointer types | `sizeClass`, `platform`, `pointer` |
 | **AppRoot** | Implemented | The root of every view. Applies the theme (`data-theme`) and the token modes (platform, reduced motion, reduced transparency, coarse pointer) to the document, and holds the global token stylesheet. With `frame` rounded or square (Windows and Linux) the page is transparent and the window is drawn inside it: 20 px corners, the shadow in a 16 px margin, and the container for fixed layers and every menu, tooltip, and dialog (D-104). The reading settings override their tokens on the root (`lineHeight`, `measure` in characters, `focusDim`; `paragraphSpacing` is a token mode), and `themeColors` lays an edited copy's colors over the theme (color tokens and `#rrggbb` values only, D-108) | `scheme`, `platform`, `frame` (native, rounded, square), `lineHeight`, `measure`, `paragraphSpacing`, `focusDim`, `themeColors` |
 | **ReaderPage** | Implemented | A published page (IA-VIEW-PUBLIC, WP-5.1, D-114): a skip link, the reading column as the `main` landmark, and a quiet footer; follows the reader's light or dark preference and reads from 320 px wide. Tokens `cmp.readerPage.*` | `skipLabel`, a `footer` slot |
-| **PrintPage** | Implemented | A note laid out for paper (SHR-12, WP-8.12, D-230): hidden on screen; while printing, the only thing on the page, in Paper's colors at the print text size (12 pt), with the print margin and, from page 2, the page number and count at the foot (the named page `fn-print`, written by the tokens build). Tokens `cmp.printPage.*` | A default slot (the canvas puts NoteContent in it) |
+| **PrintPage** | Implemented | A note laid out for paper (SHR-12, WP-8.12, D-230): hidden on screen; while printing, the only thing on the page, in Paper's colors at the print text size (12 pt), with the print margin and, with `pageNumbers` on (D-231), the page number and count at the foot of every page (the named pages `fn-print` and `fn-print-numbered`, written by the tokens build). Tokens `cmp.printPage.*` | `pageNumbers`, a default slot (the canvas puts NoteContent in it) |
 
 Field and Sheet are layouts too; they're described with the compounds they were first planned as, below. The product site's layouts (SitePage, SiteSection, SiteGrid) are under SitePage there.
 
