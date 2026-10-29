@@ -31,7 +31,7 @@ Find and replace text in the open note, or across every note in the workspace. I
 - Every match gets a highlight from the `color.findMatch` token. The current match gets a stronger color (`color.findMatchActive`) and an outline. Text in a match takes the text color, so a link or code in it keeps AA contrast on the highlight (D-100).
 - While the find bar is open, the top of the note moves down below the bar, and matches scroll into view below it, so the bar never covers the current match.
 - *Planned (P1):* thin tick marks along the right edge of the canvas showing where matches are in the note (D-76).
-- With [focus mode](focus-mode.md) on, the bright row follows the **current match**. Other matches stay dimmed with the rest of their rows, but their highlight color still shows through, so you can see where they are.
+- With [focus mode](focus-mode.md) on, the bright paragraph follows the **current match**. Matches outside its band stay dimmed, but their highlight color still shows through, so you can see where they are.
 
 ## Replace in the note
 

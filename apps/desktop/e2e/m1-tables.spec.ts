@@ -439,7 +439,7 @@ test("TBL-05, TBL-11: formatting in a cell and across a range; the toolbar has m
   await quit(l);
 });
 
-test("FOC-01, FND-01: focus mode brightens the caret's line inside a cell, and find highlights matches in cells", async () => {
+test("FOC-01, FND-01: focus mode brightens the caret's paragraph inside a cell, and find highlights matches in cells", async () => {
   const l = await start(SAMPLE);
   const { page } = l;
   await expect.poll(() => page.evaluate(() => document.querySelector("[data-focus-mode]") !== null)).toBe(true);

@@ -370,8 +370,8 @@ test("D-156: a held ArrowDown in a 360 px window keeps the caret's row on screen
   await quit(l);
 });
 /**
- * The band against the caret's visual row, as it will be drawn: its computed (possibly gliding) edges
- * against the row's line box, and whether the masked column covers the canvas from top to bottom.
+ * The band's computed (possibly gliding) edges against the whole caret paragraph,
+ * and whether the masked column covers the canvas from top to bottom.
  */
 function probeBand(): { off: number; covers: boolean; rowTop: number; bandTop: number; w: number; h: number } {
   const column = document.querySelector<HTMLElement>("[data-focus-mode]")!;
@@ -382,16 +382,14 @@ function probeBand(): { off: number; covers: boolean; rowTop: number; bandTop: n
   const col = column.getBoundingClientRect();
   const view = scroller.getBoundingClientRect();
   const range = window.getSelection()!.getRangeAt(0);
-  const r = range.getClientRects()[0] ?? range.getBoundingClientRect();
   const node = range.startContainer;
   const block = (node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement)!.closest("p, h1, h2, h3, li")!;
-  const lh = parseFloat(getComputedStyle(block).lineHeight);
-  const mid = (r.top + r.bottom) / 2 - col.top;
+  const r = block.getBoundingClientRect();
   const bandTop = Math.min(...values);
   return {
-    off: Math.max(Math.abs(bandTop - (mid - lh / 2)), Math.abs(Math.max(...values) - (mid + lh / 2))),
+    off: Math.max(Math.abs(bandTop - (r.top - col.top)), Math.abs(Math.max(...values) - (r.bottom - col.top))),
     covers: col.top <= view.top + 0.5 && col.bottom >= view.top + scroller.clientHeight - 0.5,
-    rowTop: Math.round(mid - lh / 2), bandTop: Math.round(bandTop), w: innerWidth, h: innerHeight,
+    rowTop: Math.round(r.top - col.top), bandTop: Math.round(bandTop), w: innerWidth, h: innerHeight,
   };
 }
 
@@ -411,7 +409,7 @@ function recordEveryResize(probe: string) {
 
 type Box = { x: number; y: number; width: number; height: number };
 
-test("D-156, FOC-02: the focus band stays on the caret's row through every kind of window resize", async () => {
+test("D-156, FOC-02: the focus band covers the caret's paragraph through every kind of window resize", async () => {
   test.setTimeout(120_000);
   const dirs = tempDirs();
   const para = "Words that wrap across the row as the window narrows and widens again, ".repeat(6).trim();

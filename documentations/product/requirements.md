@@ -86,16 +86,16 @@ Seed: *"entire UI is blank except for a red 10px circle enclosed by a frosted ci
 
 ## Focus mode (FOC)
 
-Seed: *"Only the row where the text-cursor/caret-position is is highlighted and the rest are subdued."* Detailed in [Focus mode](../experience/focus-mode.md).
+Seed: *"Only the row where the text-cursor/caret-position is is highlighted and the rest are subdued."* The owner changed the unit to the entire current paragraph on 29 October (D-232); the seed remains unchanged. Detailed in [Focus mode](../experience/focus-mode.md).
 
 | ID | Requirement | Priority |
 | --- | --- | --- |
-| FOC-01 | With focus mode on, the visual row that holds the caret is at full strength and all other content is subdued. | P0 |
-| FOC-02 | The highlighted row follows the caret after typing, clicks, arrow keys, selection changes, paste, scrolling, and resize. | P0 |
+| FOC-01 | With focus mode on, the entire paragraph that holds the caret is at full strength, including wrapped lines and hard breaks; content outside its full-width band is subdued. | P0 |
+| FOC-02 | The highlighted paragraph follows the caret after typing, clicks, arrow keys, selection changes, paste, scrolling, and resize. Moving within a paragraph keeps its whole band bright. | P0 |
 | FOC-03 | Focus mode can be toggled from the toolbar and with a keyboard shortcut. The setting persists. | P0 |
-| FOC-04 | Respects `prefers-reduced-motion`. Row changes aren't animated when it is set. | P0 |
+| FOC-04 | Respects `prefers-reduced-motion`. Band changes aren't animated when it is set. | P0 |
 | FOC-05 | Updates are batched to one per animation frame, and typing doesn't drop frames on long documents. | P0 |
-| FOC-06 | Defined behavior for multi-row selections, empty documents, tables, IME composition, and editor blur. | P0 |
+| FOC-06 | Defined behavior for multi-paragraph selections, empty documents, tables, IME composition, and editor blur. | P0 |
 
 ## Files and folders (FIL)
 

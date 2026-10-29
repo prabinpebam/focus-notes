@@ -403,11 +403,11 @@ test("the main path: Welcome, Connect (no account, waiting, signed in), Create m
     await heading(page, "Ready");
     await expect(button(page, "Start writing")).toBeFocused({ timeout: 15_000 });
     // D-144: focus mode is featured with its toggle's keys, in this platform's keys, read aloud in words.
-    await expect(text(page, "Focus mode keeps only your current line bright.")).toBeVisible();
+    await expect(text(page, "Focus mode keeps your current paragraph bright.")).toBeVisible();
     const spoken = card(page).getByText(process.platform === "darwin" ? "Shift Command D" : "Control Shift D", { exact: true });
     await expect(spoken).toBeAttached();
     // The keys sit on the hint's line at the default window, not wrapped below it.
-    const [hintBox, capsBox] = [await text(page, "Focus mode keeps only your current line bright.").boundingBox(), await spoken.locator("..").boundingBox()];
+    const [hintBox, capsBox] = [await text(page, "Focus mode keeps your current paragraph bright.").boundingBox(), await spoken.locator("..").boundingBox()];
     expect(Math.abs(hintBox!.y + hintBox!.height / 2 - (capsBox!.y + capsBox!.height / 2)), "the focus keys on the hint's line").toBeLessThan(8);
     await shot(l, "ready-ready");
     await button(page, "Start writing").click();

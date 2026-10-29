@@ -60,7 +60,7 @@ The full allow-list and deny-list are in [Decisions → Licensing policy](../pla
 3. **Block registry:** every block, built-in or future, registers the same contract (below). The schema, slash menu, input rules, Spotlight commands, and Markdown bridge are all built from the registry when the app starts.
 4. **UI is ours:** formatting bubble, slash menu, block handle, table controls, and find bar are app components styled by theme tokens. No stock editor UI ships.
 5. **Command layer:** Tiptap's default keyboard shortcuts are turned off and replaced by the app's command and keybinding service, so every key follows the [keymap](../experience/keyboard-shortcuts.md) and its contexts. Editor commands are registered as app commands, which puts them in Spotlight automatically.
-6. **Focus mode integration:** focus mode subscribes to editor transactions and selection updates, finds the caret's block through the editor model, and measures only that block's line boxes (see [Focus mode](../experience/focus-mode.md#how-the-active-row-is-found)). While the find bar is open it follows the current match instead.
+6. **Focus mode integration:** focus mode subscribes to editor transactions and selection updates, resolves the selection's endpoint blocks through the editor model, and measures their whole paragraph bounds (see [Focus mode](../experience/focus-mode.md#how-the-active-paragraph-is-found), D-232). While the find bar is open it follows the current match instead.
 
 ## Block registry contract
 

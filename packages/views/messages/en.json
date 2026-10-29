@@ -1192,7 +1192,7 @@
   "firstRun.ready.title": "Ready",
   "firstRun.ready.dot": "Click the red dot for everything.",
   "command.firstRun.held": "Finish setting up first.",
-  "firstRun.ready.focus": "Focus mode keeps only your current line bright.",
+  "firstRun.ready.focus": "Focus mode keeps your current paragraph bright.",
   "firstRun.ready.import": "Bring notes from a browser…",
   "firstRun.ready.start": "Start writing",
   "account.login": "@{login}",

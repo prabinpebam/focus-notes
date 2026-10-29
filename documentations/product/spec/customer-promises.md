@@ -10,7 +10,7 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | ID | Promise (short) | Main source | Scenarios |
 | --- | --- | --- | --- |
 | `CP-CALM-01` | Nothing competes with your words | Seed: blank UI with one trigger | SC-WRITE-01 |
-| `CP-FOCUS-01` | Your eye stays on the line you're writing | Seed: focus mode | SC-WRITE-02 |
+| `CP-FOCUS-01` | Your eye stays on the paragraph you're writing | Seed: focus mode; paragraph unit amended by the owner (D-232) | SC-WRITE-02 |
 | `CP-FLOW-01` | Shaping text and tables feels fluid | Seed: Notion/Loop editing, tables; owner: Loop tables, contextual toolbar | SC-WRITE-03 to SC-WRITE-07, SC-TABLE-01 to SC-TABLE-04 |
 | `CP-REACH-01` | Anything is a few keystrokes away | Owner: Spotlight, find, keyboard | SC-FIND-01 to SC-FIND-06 |
 | `CP-ORDER-01` | Organized your way, safely reorganized | Seed: file and folder CRUD with moves | SC-FILE-01 to SC-FILE-04 |

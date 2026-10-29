@@ -31,7 +31,7 @@ export interface EditorSurfaceProps {
   /** What an empty table header cell shows and is called, with "{index}" for its column's number. */
   emptyHeader?: string;
   readOnly?: boolean;
-  /** Focus mode: only the caret's visual row at full strength (FOC-01). */
+  /** Focus mode: the caret's whole paragraph at full strength (FOC-01). */
   focusMode?: boolean;
   /** Editor key bindings from the command registry (KEY-02). Read when a note opens. */
   keymap?: KeyBinding[];

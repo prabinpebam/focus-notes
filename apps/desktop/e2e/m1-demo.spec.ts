@@ -122,8 +122,8 @@ const bandAndCaret = (page: Page) => page.evaluate(() => {
   const origin = column.getBoundingClientRect().top;
   const sel = window.getSelection()!;
   const r = sel.getRangeAt(0).getClientRects()[0] ?? sel.getRangeAt(0).getBoundingClientRect();
-  const line = parseFloat(getComputedStyle(sel.anchorNode!.parentElement!).lineHeight);
-  return { top: Math.min(...values), bottom: Math.max(...values), caret: (r.top + r.bottom) / 2 - origin, line };
+  const block = sel.anchorNode!.parentElement!.closest("p, h1, h2, h3, li")!.getBoundingClientRect();
+  return { top: Math.min(...values), bottom: Math.max(...values), caret: (r.top + r.bottom) / 2 - origin, blockTop: block.top - origin, blockBottom: block.bottom - origin };
 });
 
 async function demo(l: Launched, dirs: { docs: string }, keyboardOnly: boolean) {
@@ -258,7 +258,7 @@ async function demo(l: Launched, dirs: { docs: string }, keyboardOnly: boolean) 
   await expect(editor).toBeFocused();
   expect(await settledAxe(page)).toEqual([]);
 
-  // 4. Focus mode from the trigger toolbar: only the caret's row is bright (FOC-01, UI-03, UI-07).
+  // 4. Focus mode from the trigger toolbar: the caret's paragraph is bright (FOC-01, UI-03, UI-07).
   const toolbarButton = async (name: string) => {
     await page.keyboard.press(`${mod}+.`);
     const button = page.getByRole("toolbar", { name: "Toolbar" }).getByRole("button", { name });
@@ -284,7 +284,7 @@ async function demo(l: Launched, dirs: { docs: string }, keyboardOnly: boolean) 
   await expect.poll(focusMode).toBe("on");
   await page.keyboard.press(caret.docStart);
   await page.keyboard.press("ArrowDown");
-  await expect.poll(async () => { const b = await bandAndCaret(page); return b.caret > b.top && b.caret < b.bottom && b.bottom - b.top < 2 * b.line; }).toBe(true);
+  await expect.poll(async () => { const b = await bandAndCaret(page); return b.caret > b.top && b.caret < b.bottom && Math.abs(b.top - b.blockTop) <= 1 && Math.abs(b.bottom - b.blockBottom) <= 1; }).toBe(true);
   // In the 50,000-word fixture, typing stays inside the keystroke budget (PRF-01).
   await openFromFiles(page, "Fifty thousand words", keyboardOnly);
   await page.evaluate(() => {

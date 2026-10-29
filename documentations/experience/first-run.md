@@ -51,7 +51,7 @@ The first run shows on a new install of the desktop app: when the app's state ha
 </li>
 <li class="slate-step">
 <p class="slate-step__title">4. Ready</p>
-<p>The app's icon, and two hints with pictures, nothing more. First the app's signature, focus mode (D-144): the focus icon, "Focus mode keeps only your current line bright.", and its toggle's keys as key caps, read from the keymap (<kbd>⇧⌘D</kbd> on macOS, <kbd>Ctrl+Shift+D</kbd> on Windows and Linux). Then the red dot, "Click the red dot for everything". The look (System, Light, Dark) applies at once, so the setup screen is the preview; fonts, text size, and focus mode are in the ⋯ menu. A quiet <em>Bring notes from a browser…</em> imports an exported bundle (FRE-10); it shows once the desktop can import (WP-3.4). [Start writing] opens a new private note (<a href="../plan/decisions.md">D-05</a>), or a public one in a workspace whose private notes this account can't reach.</p>
+<p>The app's icon, and two hints with pictures, nothing more. First the app's signature, focus mode (D-144, D-232): the focus icon, "Focus mode keeps your current paragraph bright.", and its toggle's keys as key caps, read from the keymap (<kbd>⇧⌘D</kbd> on macOS, <kbd>Ctrl+Shift+D</kbd> on Windows and Linux). Then the red dot, "Click the red dot for everything". The look (System, Light, Dark) applies at once, so the setup screen is the preview; fonts, text size, and focus mode are in the ⋯ menu. A quiet <em>Bring notes from a browser…</em> imports an exported bundle (FRE-10); it shows once the desktop can import (WP-3.4). [Start writing] opens a new private note (<a href="../plan/decisions.md">D-05</a>), or a public one in a workspace whose private notes this account can't reach.</p>
 </li>
 </ol>
 

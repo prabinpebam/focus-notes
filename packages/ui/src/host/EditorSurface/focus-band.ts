@@ -1,5 +1,5 @@
 /**
- * Focus mode's band tracking (FOC-01 to FOC-06, Focus mode → How the active row is found):
+ * Focus mode's band tracking (FOC-01 to FOC-06, Focus mode → How the active paragraph is found):
  * every trigger marks the band stale, and one animation frame measures and writes it.
  */
 import type { Editor } from "@tiptap/react";
@@ -7,16 +7,14 @@ import type { Editor } from "@tiptap/react";
 const BLOCKS = "p, h1, h2, h3, h4, h5, h6, li, pre, td, th, blockquote";
 const varName = (v: string) => v.replace(/^var\(/, "").replace(/\)$/, "");
 
-/** The line box around a document position, in viewport coordinates, and the block it's in. */
-function lineBoxAt(editor: Editor, pos: number): { top: number; bottom: number; block: Element } {
+/** The containing paragraph or text block, in viewport coordinates (D-232). */
+function blockBoxAt(editor: Editor, pos: number): { top: number; bottom: number; block: Element } {
   const view = editor.view;
-  const c = view.coordsAtPos(pos);
   const at = view.domAtPos(pos).node;
   const el = (at.nodeType === Node.ELEMENT_NODE ? (at as Element) : at.parentElement) ?? view.dom;
   const block = el.closest(BLOCKS) ?? el;
-  const lineHeight = parseFloat(getComputedStyle(block).lineHeight) || c.bottom - c.top;
-  const mid = (c.top + c.bottom) / 2;
-  return { top: mid - lineHeight / 2, bottom: mid + lineHeight / 2, block };
+  const { top, bottom } = block.getBoundingClientRect();
+  return { top, bottom, block };
 }
 
 export interface BandVars { top: string; bottom: string }
@@ -27,7 +25,7 @@ export interface ColumnBox { width: number; height: number; top: number }
 /**
  * Whether a change to the column is a resize (D-156): its width (lines rewrap) or its top padding (the
  * reading zone's 25vh, which follows the window's height) moved. Then the band is written without a
- * glide, every frame, so it never trails the caret's row. Only the height changing is the note growing
+ * glide, every frame, so it never trails the caret's paragraph. Only the height changing is the note growing
  * or shrinking as it's typed: the band glides as usual.
  */
 export function isResize(prev: ColumnBox | undefined, next: ColumnBox): boolean {
@@ -56,11 +54,11 @@ export function trackFocusBand(editor: Editor, column: HTMLElement, vars: BandVa
   const measure = () => {
     frame = 0;
     if (editor.isDestroyed) return;
-    // Reads only, all in one frame: the column, the caret, and the block's line height.
+    // Reads only, all in one frame: the column and the selection's endpoint blocks.
     const origin = column.getBoundingClientRect().top;
     const { from, to } = editor.state.selection;
-    const a = lineBoxAt(editor, from);
-    const b = to === from ? a : lineBoxAt(editor, to);
+    const a = blockBoxAt(editor, from);
+    const b = to === from ? a : blockBoxAt(editor, to);
     column.toggleAttribute("data-band-live", live);
     column.style.setProperty(top, `${Math.round(Math.min(a.top, b.top) - origin)}px`);
     column.style.setProperty(bottom, `${Math.round(Math.max(a.bottom, b.bottom) - origin)}px`);

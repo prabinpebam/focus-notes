@@ -531,7 +531,7 @@
       "id": "WP-1.7",
       "stage": "M1",
       "title": "Focus mode",
-      "summary": "The row mask with every edge case, inside the typing budget.",
+      "summary": "The paragraph mask with every edge case, inside the typing budget (D-232).",
       "requirements": [
         "FOC-01",
         "FOC-02",

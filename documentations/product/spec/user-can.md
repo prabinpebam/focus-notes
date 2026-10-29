@@ -15,7 +15,7 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 | UC-CANVAS-04 | open notes in separate windows side by side | SC-FILE-02 | P1 | IA-VIEW-CANVAS | DSK-06 | <kbd>Mod</kbd>+<kbd>Enter</kbd> in Spotlight opens a note in a new window. Each window remembers its note. |
 | UC-CANVAS-05 | choose which six actions sit on the toolbar | SC-FIND-05 | P1 | IA-CMP-TOOLBAR, IA-CMP-OVERFLOW | UI-08 | Unpinned actions appear in ⋯ automatically, and the toolbar never shows more than six. |
 | UC-FOCUS-01 | turn focus mode on or off from the toolbar, a shortcut, or Spotlight | SC-WRITE-02 | P0 | IA-VIEW-CANVAS, IA-CMP-TOOLBAR | FOC-03 | All three ways toggle it, and the setting survives a restart. |
-| UC-FOCUS-02 | keep writing while the bright row follows the caret through typing, wrapping, tables, and IME input | SC-WRITE-02 | P0 | IA-VIEW-CANVAS | FOC-01, FOC-02, FOC-04, FOC-05, FOC-06 | The band never trails the caret by a visible frame. Edge cases behave as specified on [Focus mode](../../experience/focus-mode.md). |
+| UC-FOCUS-02 | keep the whole current paragraph bright through typing, wrapping, tables, and IME input | SC-WRITE-02 | P0 | IA-VIEW-CANVAS | FOC-01, FOC-02, FOC-04, FOC-05, FOC-06 | Moving between lines in one paragraph leaves the whole paragraph bright; moving to another moves the band. Selections cover complete endpoint paragraphs. Edge cases behave as specified on [Focus mode](../../experience/focus-mode.md). |
 
 <h2 data-reader-personas="product design">Formatting and blocks</h2>
 

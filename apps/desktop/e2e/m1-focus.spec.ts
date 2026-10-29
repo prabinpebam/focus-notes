@@ -24,10 +24,10 @@ async function bandAndRows(page: Page) {
   });
 }
 
-test("FOC-01, FOC-02: only the caret's visual row is bright, and the band follows the caret", async () => {
+test("FOC-01, FOC-02: the whole current paragraph stays bright, including wraps and hard breaks", async () => {
   const dirs = tempDirs();
   const long = "word ".repeat(120).trim();
-  writeFileSync(join(dirs.docs, "Welcome.md"), `# Heading\n\n${long}\n\nAfter.\n`);
+  writeFileSync(join(dirs.docs, "Welcome.md"), `# Heading\n\n${long}  \nHard break in the same paragraph.\n\nAfter.\n`);
   const l = await launch(dirs);
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
@@ -39,41 +39,50 @@ test("FOC-01, FOC-02: only the caret's visual row is bright, and the band follow
   await page.waitForTimeout(250);
   const a = await bandAndRows(page);
   const lineHeight = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector("[data-editor] p")!).lineHeight));
-  expect(a.band.bottom - a.band.top).toBeCloseTo(lineHeight, 0);
+  expect(a.band.bottom - a.band.top).toBeGreaterThan(3 * lineHeight);
+  expect((await bandOffParagraph(page)).off).toBeLessThanOrEqual(1);
   expect(a.caretMid).toBeGreaterThan(a.band.top);
   expect(a.caretMid).toBeLessThan(a.band.bottom);
 
-  // Down one row: the band moves down by one line, not to the next paragraph.
+  // Down one row inside the same paragraph: its whole band stays put.
   await page.keyboard.press("ArrowDown");
   await page.waitForTimeout(250);
   const b = await bandAndRows(page);
-  expect(b.band.top - a.band.top).toBeCloseTo(lineHeight, 0);
+  expect(b.caretMid).toBeGreaterThan(a.caretMid);
+  expect(b.band).toEqual(a.band);
 
   // Typing that wraps, and End, keep the band on the caret.
   await page.keyboard.press(caret.lineEnd);
   await page.keyboard.type(" more words that keep going");
   await page.waitForTimeout(250);
   const c = await bandAndRows(page);
+  expect((await bandOffParagraph(page)).off).toBeLessThanOrEqual(1);
   expect(c.caretMid).toBeGreaterThan(c.band.top);
   expect(c.caretMid).toBeLessThan(c.band.bottom);
+  for (const theme of ["light", "dark"] as const) {
+    if (theme === "dark") await page.keyboard.press(`${mod}+Shift+L`);
+    await page.screenshot({ path: `../../test-results/screens/focus-paragraph-${theme}.png` });
+  }
+  await editor.locator("p").last().click();
+  await expect.poll(async () => (await bandOffParagraph(page)).off).toBeLessThanOrEqual(1);
+  const next = await bandAndRows(page);
+  expect(next.band.top).toBeGreaterThan(c.band.bottom);
   await quit(l);
 });
 
-/** How far the band is from the caret's visual row (its line box), in px, and the row's font size. */
-async function bandOffRow(page: Page) {
+/** How far the band is from the whole caret paragraph, in px, and its font size. */
+async function bandOffParagraph(page: Page) {
   return page.evaluate(() => {
     const column = document.querySelector<HTMLElement>("[data-focus-mode]")!;
     const props = [...Array(column.style.length)].map((_, i) => column.style[i]!).filter((p) => p.startsWith("--"));
     const values = props.map((p) => parseFloat(column.style.getPropertyValue(p)));
     const origin = column.getBoundingClientRect().top;
     const range = window.getSelection()!.getRangeAt(0);
-    const r = range.getClientRects()[0] ?? range.getBoundingClientRect();
     const node = range.startContainer;
     const block = (node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement)!.closest("p, h1, h2, h3, li")!;
+    const r = block.getBoundingClientRect();
     const cs = getComputedStyle(block);
-    const mid = (r.top + r.bottom) / 2 - origin;
-    const lh = parseFloat(cs.lineHeight);
-    return { off: Math.max(Math.abs(Math.min(...values) - (mid - lh / 2)), Math.abs(Math.max(...values) - (mid + lh / 2))), fontSize: parseFloat(cs.fontSize) };
+    return { off: Math.max(Math.abs(Math.min(...values) - (r.top - origin)), Math.abs(Math.max(...values) - (r.bottom - origin))), fontSize: parseFloat(cs.fontSize) };
   });
 }
 
@@ -88,8 +97,8 @@ test("FOC-01, FOC-05: the band follows the text size, from keys, the wheel, and 
   await expect.poll(() => page.evaluate(() => document.querySelector("[data-focus-mode]") !== null)).toBe(true);
   await editor.locator("p").first().click();
   const settled = async (size: number) => {
-    await expect.poll(async () => (await bandOffRow(page)).fontSize).toBe(size);
-    await expect.poll(async () => (await bandOffRow(page)).off).toBeLessThanOrEqual(1);
+    await expect.poll(async () => (await bandOffParagraph(page)).fontSize).toBe(size);
+    await expect.poll(async () => (await bandOffParagraph(page)).off).toBeLessThanOrEqual(1);
   };
   await settled(16);
 
@@ -147,9 +156,9 @@ test("FOC-04: with reduced motion the band moves instantly", async () => {
   await quit(l);
 });
 
-test("FOC-06: a selection across rows widens the band, and an empty note still has one", async () => {
+test("FOC-06: a selection covers whole paragraphs, and an empty note still has a band", async () => {
   const dirs = tempDirs();
-  writeFileSync(join(dirs.docs, "Welcome.md"), "First line.\n\nSecond line.\n\nThird line.\n");
+  writeFileSync(join(dirs.docs, "Welcome.md"), `${"First paragraph. ".repeat(20)}\n\nMiddle paragraph.\n\n${"Third paragraph. ".repeat(20)}\n`);
   const l = await launch(dirs);
   const { page } = l;
   const editor = page.getByRole("textbox", { name: "Note" });
@@ -158,9 +167,20 @@ test("FOC-06: a selection across rows widens the band, and an empty note still h
   await page.keyboard.press(caret.docStart);
   await page.waitForTimeout(200);
   const one = await bandAndRows(page);
-  await page.keyboard.press("Shift+ArrowDown");
-  await page.keyboard.press("Shift+ArrowDown");
-  await page.waitForTimeout(250);
+  await page.evaluate(() => {
+    const paragraphs = document.querySelectorAll("[data-editor] p");
+    const selection = window.getSelection()!;
+    selection.setBaseAndExtent(paragraphs[0]!.firstChild!, 5, paragraphs[2]!.firstChild!, 10);
+  });
+  await expect.poll(async () => {
+    const { band } = await bandAndRows(page);
+    const bounds = await page.evaluate(() => {
+      const origin = document.querySelector("[data-focus-mode]")!.getBoundingClientRect().top;
+      const paragraphs = document.querySelectorAll("[data-editor] p");
+      return { top: paragraphs[0]!.getBoundingClientRect().top - origin, bottom: paragraphs[2]!.getBoundingClientRect().bottom - origin };
+    });
+    return Math.max(Math.abs(band.top - bounds.top), Math.abs(band.bottom - bounds.bottom));
+  }).toBeLessThanOrEqual(1);
   const many = await bandAndRows(page);
   expect(many.band.bottom - many.band.top).toBeGreaterThan(2 * (one.band.bottom - one.band.top));
 

@@ -679,7 +679,7 @@ describe("FRE-01: Ready", () => {
       await settle();
       const chord = t.app.commands.describe("focus.toggle").shortcut;
       expect(chord).toBeTruthy();
-      expect(t.vm()).toMatchObject({ focusHint: "Focus mode keeps only your current line bright.", focusKeys: keys, focusSpoken: spoken });
+      expect(t.vm()).toMatchObject({ focusHint: "Focus mode keeps your current paragraph bright.", focusKeys: keys, focusSpoken: spoken });
     }
   });
 });
