@@ -40,7 +40,13 @@ test("normal launch: trusted current note, in-app connection, durable preview an
     await expect(panel).not.toContainText("Disposable file workspace");
     expect(requests).toBe(0);
     await panel.getByRole("button", { name: "Discard", exact: true }).click();
-    await editor.click({ button: "right" });
+    await editor.press(caret.docStart);
+    await editor.press("Control+Shift+End");
+    const selected = await page.evaluate(() => {
+      const box = getSelection()!.getRangeAt(0).getBoundingClientRect();
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    });
+    await page.mouse.click(selected.x, selected.y, { button: "right" });
     await page.getByRole("menuitem", { name: /Rewrite with AI/ }).click();
     await expect(panel).toBeVisible();
     expect(await page.evaluate(async (source) => {
