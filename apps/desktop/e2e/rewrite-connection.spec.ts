@@ -156,6 +156,51 @@ test("configured loopback connection: inert incremental proposal, cancel, error,
     await page.screenshot({ path: join(captures, "07-saved-original.png") });
     await reopenedPanel.getByRole("button", { name: "Discard", exact: true }).click();
     expect(git("for-each-ref", "--format=%(refname)", "refs/focus-notes/rewrite/v1/")).toBe(originals);
+    await reopenedEditor.press(caret.docStart); await reopenedEditor.press("Control+Shift+r");
+    await reopenedPanel.getByRole("button", { name: "Browse saved variations" }).click();
+    await reopenedPanel.getByRole("button", { name: "Restore variation", exact: true }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: join(captures, "10-explicit-restore.png") });
+    await reopenedPanel.getByRole("button", { name: "Restore variation", exact: true }).click();
+    await expect.poll(() => readFileSync(file, "utf8")).toBe(original.replace("We are planning a community garden.", "Plan a garden."));
+    await page.screenshot({ path: join(captures, "08-restored.png") });
+    await reopenedEditor.press("Control+z");
+    await expect.poll(() => readFileSync(file, "utf8")).toBe(original);
+    await reopenedEditor.press(caret.docStart); await reopenedEditor.press("Control+Shift+r");
+    await reopenedPanel.getByRole("button", { name: "Browse saved variations" }).click();
+    await reopenedPanel.getByRole("button", { name: "Restore variation", exact: true }).click();
+    const savedDocument = original.replace("We are planning a community garden.", "Plan a garden.");
+    await expect.poll(() => readFileSync(file, "utf8")).toBe(savedDocument);
+    await reopenedEditor.press(caret.docStart); await reopenedEditor.press("Control+Shift+r");
+    await reopenedPanel.getByRole("button", { name: "Browse saved variations" }).click();
+    await expect(reopenedPanel.getByText("Variation 1 of 3", { exact: true })).toBeVisible();
+    await reopenedPanel.getByRole("button", { name: "Show original" }).click();
+    await expect(reopenedPanel.getByText(original, { exact: true })).toBeVisible();
+    await page.screenshot({ path: join(captures, "09-restore-original.png") });
+    await reopenedPanel.getByRole("button", { name: "Restore original", exact: true }).click();
+    await expect.poll(() => readFileSync(file, "utf8")).toBe(original);
+    await reopenedEditor.press("Control+z");
+    await expect.poll(() => readFileSync(file, "utf8")).toBe(savedDocument);
+    await reopenedEditor.press("Control+z");
+    await expect.poll(() => readFileSync(file, "utf8")).toBe(original);
+    // Refusals use the very same persisted encrypted history after reopen.
+    const revision = await page.evaluate(async (path) => (window as any).focusNotes.rewriteAuthority("activate", { path }), file);
+    const refuse = async (p: typeof page, revision: string, source = original) => p.evaluate(async ({ revision, source }) => {
+      try { await (window as any).focusNotes.rewriteAuthority("restore", { revision, source, index: 0, original: false }); return "unsafe"; }
+      catch { return "refused"; }
+    }, { revision, source });
+    expect(await refuse(page, "stale")).toBe("refused");
+    const other = join(dirs.docs, "public", "other.md"); writeFileSync(other, original);
+    await page.evaluate(async (path) => (window as any).focusNotes.windows.open(path), other);
+    await expect.poll(() => app.windows().length).toBe(2);
+    const second = app.windows()[1]!;
+    await expect(second.getByRole("textbox", { name: "Note", exact: true })).toContainText("We are planning");
+    expect(await refuse(second, revision)).toBe("refused");
+    const foreignRevision = await second.evaluate(async (path) => (window as any).focusNotes.rewriteAuthority("activate", { path }), other);
+    expect(await refuse(second, foreignRevision)).toBe("refused");
+    writeFileSync(file, "Synthetic outside edit.\n");
+    expect(await refuse(page, revision)).toBe("refused");
+    expect(readFileSync(file, "utf8")).toBe("Synthetic outside edit.\n");
+    expect(readFileSync(other, "utf8")).toBe(original);
     expect(requests).toBe(6);
     expect(bodies.every((body) => JSON.parse(body).stream === true)).toBe(true);
   } finally {

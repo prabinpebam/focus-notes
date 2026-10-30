@@ -26,19 +26,20 @@ export class RewriteDemo {
   connectionStatus = "";
   provider: RewriteProvider | undefined;
   token: string | undefined;
-  history: { source: string }[] = [];
+  history: { source: string; original?: string }[] = [];
   historyIndex = 0;
   historyOpen = false;
   showOriginal = false;
   historyLoading = false;
   historyStatus = "";
   historyRequest = 0;
-  get savedPreview(): string { return this.showOriginal ? this.source : this.history[this.historyIndex]?.source ?? ""; }
+  get savedPreview(): string { return this.showOriginal ? this.history[this.historyIndex]?.original ?? this.source : this.history[this.historyIndex]?.source ?? ""; }
   navigate(step: number): void {
+    if (this.historyLoading) return;
     this.historyIndex = Math.max(0, Math.min(this.history.length - 1, this.historyIndex + step));
     this.showOriginal = false; this.changed();
   }
-  authority: { prepare(source: string, target: RewriteTarget): Promise<string>; complete(token: string, replacement: string): Promise<string>; accept(token: string): Promise<void>; cancel(): void; history?(source: string): Promise<{ source: string }[]> } | undefined;
+  authority: { prepare(source: string, target: RewriteTarget): Promise<string>; complete(token: string, replacement: string): Promise<string>; accept(token: string): Promise<void>; cancel(): void; history?(source: string): Promise<{ source: string; original?: string }[]>; restore?(source: string, index: number, original: boolean): Promise<{ token: string; source: string }> } | undefined;
   readonly changed: () => void;
   constructor(changed = () => {}) { this.changed = changed; }
   open(input: { source: string; target: Pick<RewriteTarget, "from" | "to" | "original"> }): void {
@@ -170,6 +171,24 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   command("previous", () => demo.navigate(-1));
   command("next", () => demo.navigate(1));
   command("original", () => { demo.showOriginal = !demo.showOriginal; demo.changed(); });
+  command("restore", async () => {
+    if (!demo.enabled || !demo.historyOpen || demo.historyLoading || !authority?.restore) return;
+    const request = ++demo.historyRequest;
+    const source = demo.source, key = demo.noteKey;
+    const began = performance.now();
+    demo.historyLoading = true; demo.historyStatus = text("restoring"); demo.changed();
+    try {
+      const expected = demo.savedPreview;
+      const restored = await authority.restore(source, demo.historyIndex, demo.showOriginal);
+      if (restored.source !== expected) throw new Error("saved-preview-changed");
+      if (request !== demo.historyRequest || key !== app.store.state.note.key || source !== app.store.state.note.markdown) { authority.cancel(); return; }
+      await authority.accept(restored.token);
+      if (request !== demo.historyRequest || key !== app.store.state.note.key || source !== app.store.state.note.markdown) return;
+      editorAction("rewrite.restore", { key, source, replacement: restored.source });
+      demo.discard();
+    } catch { authority.cancel(); if (request === demo.historyRequest) demo.historyStatus = text("restoreRefused"); }
+    finally { performance.measure("rewrite-demo:restore", { start: began }); if (request === demo.historyRequest) { demo.historyLoading = false; demo.changed(); } }
+  });
   command("accept", async () => {
     if (!demo.enabled) { demo.accept(); return; }
     if (demo.historyOpen || demo.showOriginal) return;
@@ -216,14 +235,16 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   app.viewModels.register({
     id: "vm.rewriteDemo",
     schema: { type: "object", properties: Object.fromEntries([
-      ...["historyStatus", "savedPreview", "historyCounter", "originalLabel", "address", "model", "key", "providerLabel", "connectionStatus", "source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
-      ...["historyOpen", "historyLoading", "previousDisabled", "nextDisabled", "isFake", "enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
+      ...["restoreLabel", "historyStatus", "savedPreview", "historyCounter", "originalLabel", "address", "model", "key", "providerLabel", "connectionStatus", "source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
+      ...["restoreDisabled", "historyOpen", "historyLoading", "previousDisabled", "nextDisabled", "isFake", "enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
     ]) },
     setters: { instruction: "demo.instruction", address: "demo.address", model: "demo.model", key: "demo.key" },
     select: () => {
       const state = demo.session?.state;
       return {
         historyOpen: demo.historyOpen, historyLoading: demo.historyLoading, historyStatus: demo.historyStatus,
+        restoreLabel: text(demo.showOriginal ? "restoreOriginal" : "restoreVariation"),
+        restoreDisabled: demo.historyLoading || !demo.history.length || demo.savedPreview === demo.source,
         savedPreview: demo.savedPreview, historyCounter: demo.history.length ? app.messages.format("rewrite.historyCounter", { current: demo.historyIndex + 1, total: demo.history.length }) : "",
         previousDisabled: demo.historyIndex <= 0, nextDisabled: demo.historyIndex >= demo.history.length - 1,
         originalLabel: text(demo.showOriginal ? "showVariation" : "showOriginal"),

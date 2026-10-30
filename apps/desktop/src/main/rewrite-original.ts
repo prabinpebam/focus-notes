@@ -215,7 +215,7 @@ export class RewriteOriginalStore {
     } catch { throw unavailable(); }
   }
   /** Reconstruct completed history from durable refs; never includes partial stream tokens. */
-  async variations(identity: Pick<OriginalInput, "domain" | "noteKey">): Promise<{ checkpointId: string; replacement: string; source: string }[]> {
+  async variations(identity: Pick<OriginalInput, "domain" | "noteKey">): Promise<{ checkpointId: string; replacement: string; source: string; original: string }[]> {
     try {
       return await this.#store(identity.domain, false, async (repo) => {
         const ids = (await this.#git(repo, ["for-each-ref", "--count=100", "--format=%(objectname)", "refs/focus-notes/variations/v1/"])).trim().split("\n").filter(Boolean);
@@ -226,7 +226,14 @@ export class RewriteOriginalStore {
           const source = this.#decode(identity.domain, await this.#git(repo, ["cat-file", "blob", `${id}:content`]));
           if (record.version !== 1 || record.kind !== "complete" || record.domain !== identity.domain
             || record.workspaceKey !== this.#key || record.contentHash !== hash(source)) throw unavailable();
-          results.push({ checkpointId: record.checkpointId as string, replacement: record.replacement as string, source });
+          const refs = (await this.#git(repo, ["for-each-ref", "--format=%(objectname) %(refname)", "refs/focus-notes/rewrite/v1/"]))
+            .trim().split("\n").filter((line) => line.endsWith(`/${record.sessionId}`));
+          if (refs.length !== 1) throw unavailable();
+          const [checkpointId, ref] = refs[0]!.split(" ");
+          if (checkpointId !== record.checkpointId) throw unavailable();
+          const original = await this.#read(repo, { workspaceKey: this.#key, domain: identity.domain, commitId: checkpointId!, ref: ref! }, identity);
+          if (original.source.slice(0, original.target.from) + record.replacement + original.source.slice(original.target.to) !== source) throw unavailable();
+          results.push({ checkpointId: record.checkpointId as string, replacement: record.replacement as string, source, original: original.source });
           if (results.length === 20) break;
         }
         return results;

@@ -42,9 +42,10 @@
               { "type": "Button", "props": { "label": { "t": "rewrite.previousVariation" }, "disabled": { "get": "vm.rewriteDemo.previousDisabled" }, "disabledReason": { "t": "rewrite.historyStart" } }, "on": { "press": { "run": "demo.previous" } } },
               { "type": "Button", "props": { "label": { "t": "rewrite.nextVariation" }, "disabled": { "get": "vm.rewriteDemo.nextDisabled" }, "disabledReason": { "t": "rewrite.historyEnd" } }, "on": { "press": { "run": "demo.next" } } }
             ] },
-            { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.savedPreview" } } }
+            { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.savedPreview" } } },
+            { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.restoreLabel" }, "disabled": { "get": "vm.rewriteDemo.restoreDisabled" }, "disabledReason": { "t": "rewrite.restoreReason" } }, "on": { "press": { "run": "demo.restore" } } }
           ] },
-          { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.originalLabel" } }, "on": { "press": { "run": "demo.original" } } },
+          { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.originalLabel" }, "disabled": { "get": "vm.rewriteDemo.historyLoading" }, "disabledReason": { "t": "rewrite.waitReason" } }, "on": { "press": { "run": "demo.original" } } },
           { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
             { "type": "Button", "props": { "label": { "t": "rewrite.concise" } }, "on": { "press": { "run": "demo.preset", "args": { "value": "Make it concise" } } } },
             { "type": "Button", "props": { "label": { "t": "rewrite.friendly" } }, "on": { "press": { "run": "demo.preset", "args": { "value": "Make it friendly" } } } },

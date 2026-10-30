@@ -24,7 +24,7 @@ interface Options {
   resolve(path: string): Promise<CurrentRewriteNote>;
   original(input: OriginalInput, note: CurrentRewriteNote): Promise<string>;
   variation?(input: OriginalInput, checkpointId: string, replacement: string, note: CurrentRewriteNote): Promise<string>;
-  history?(note: CurrentRewriteNote): Promise<{ source: string }[]>;
+  history?(note: CurrentRewriteNote): Promise<{ source: string; original?: string }[]>;
 }
 
 /** Explicit navigation, not reads, establishes authority. No renderer domain/key is accepted. */
@@ -75,11 +75,11 @@ export class RewriteAuthority {
     return current;
   }
   /** Read-only candidate preview. Identity and unchanged baseline are main-owned. */
-  async history(owner: number, revision: string, source: string): Promise<{ source: string }[]> {
+  async history(owner: number, revision: string, source: string): Promise<{ source: string; original?: string }[]> {
     const current = this.#live(owner, revision);
     const check = async () => {
       const note = await this.#options.resolve(current.note.path);
-      if (this.#live(owner, revision) !== current || note.conflict || note.workspace !== current.note.workspace
+      if (this.#live(owner, revision) !== current || note.path !== current.note.path || note.conflict || note.workspace !== current.note.workspace
         || note.noteKey !== current.note.noteKey || note.domain !== current.note.domain
         || hash(source) !== current.diskExpectedHash
         || hash(await readFile(note.path, "utf8")) !== current.diskExpectedHash) throw refused();
@@ -88,8 +88,25 @@ export class RewriteAuthority {
     await check();
     const results = await this.#options.history?.(current.note);
     await check();
-    if (!results || results.length > 20 || results.reduce((bytes, item) => bytes + Buffer.byteLength(item.source), 0) > 2 * 1024 * 1024) throw refused();
+    if (!results || results.length > 20 || results.reduce((bytes, item) => bytes + Buffer.byteLength(item.source) + Buffer.byteLength(item.original ?? ""), 0) > 2 * 1024 * 1024) throw refused();
     return results;
+  }
+  /** Full-document reconciliation only: never reuse historical target offsets. */
+  async restore(owner: number, revision: string, source: string, index: number, original: boolean): Promise<{ token: string; source: string }> {
+    if (!Number.isSafeInteger(index) || index < 0 || typeof original !== "boolean") throw refused();
+    const saved = (await this.history(owner, revision, source))[index];
+    if (!saved || typeof saved.original !== "string"
+      || (source !== saved.original && source !== saved.source)) throw refused();
+    const replacement = original ? saved.original : saved.source;
+    if (replacement === source || !source.length) throw refused();
+    const token = await this.prepare(owner, revision, source, {
+      from: 0, to: source.length, startByte: 0, endByte: Buffer.byteLength(source), original: source, expanded: false,
+    });
+    try {
+      await this.history(owner, revision, source);
+      this.#operation(owner, token).operation.variationId = "persisted-history";
+      return { token, source: replacement };
+    } catch (error) { this.release(owner, token); throw error; }
   }
   async prepare(owner: number, revision: string, source: string, target: OriginalInput["target"]): Promise<string> {
     const current = this.#live(owner, revision);
@@ -151,7 +168,7 @@ export class RewriteAuthority {
     const { current, operation } = this.#operation(owner, token);
     if (this.#options.variation && !operation.variationId) throw refused();
     const note = await this.#options.resolve(current.note.path);
-    if (note.workspace !== current.note.workspace || note.noteKey !== current.note.noteKey || note.domain !== current.note.domain
+    if (note.path !== current.note.path || note.workspace !== current.note.workspace || note.noteKey !== current.note.noteKey || note.domain !== current.note.domain
       || note.conflict || hash(await readFile(note.path, "utf8")) !== operation.lease.baselineHash) throw refused();
     this.#operation(owner, token);
     this.release(owner, token);

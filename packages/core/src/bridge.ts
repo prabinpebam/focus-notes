@@ -24,7 +24,8 @@ export interface PlatformBridge {
     (action: "prepare", input: { revision: string; source: string; target: import("@focus-notes/markdown").RewriteTarget }): Promise<string>;
     (action: "cancel", input: { revision: string }): Promise<void>;
     (action: "complete", input: { token: string; replacement: string }): Promise<string>;
-    (action: "history", input: { revision: string; source: string }): Promise<{ source: string }[]>;
+    (action: "history", input: { revision: string; source: string }): Promise<{ source: string; original?: string }[]>;
+    (action: "restore", input: { revision: string; source: string; index: number; original: boolean }): Promise<{ token: string; source: string }>;
     (action: "accept" | "release", input: { token: string }): Promise<void>;
   };
   /** Isolated Rewrite candidate only. Keys cross once; never returned or put in app state. */

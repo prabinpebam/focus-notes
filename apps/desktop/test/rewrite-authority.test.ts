@@ -7,6 +7,57 @@ import { NoteWriter } from "../src/main/note-write.ts";
 import { RewriteAuthority } from "../src/main/rewrite-authority.ts";
 
 describe("main current-note authority", () => {
+  it("restores only a reconciled saved document under current authority, never stale offsets", async () => {
+    const dir = await realpath(await mkdtemp(join(tmpdir(), "rewrite-restore-")));
+    const path = join(dir, "a.md"); await writeFile(path, "original");
+    let foreign = false;
+    const identity = async () => ({ path, workspace: dir, domain: "local" as const, noteKey: foreign ? "foreign" : "note", conflict: false });
+    const authority = new RewriteAuthority({ writer: new NoteWriter({ rewriteIdentity: identity }), resolve: identity,
+      original: async () => "checkpoint", history: async () => [{ source: "saved", original: "original" }] });
+    try {
+      const revision = (await authority.activate(1, path))!;
+      await expect(authority.restore(2, revision, "original", 0, false)).rejects.toThrow();
+      await expect(authority.restore(1, "stale", "original", 0, false)).rejects.toThrow();
+      foreign = true;
+      await expect(authority.restore(1, revision, "original", 0, false)).rejects.toThrow();
+      foreign = false;
+      const restored = await authority.restore(1, revision, "original", 0, false);
+      expect(restored.source).toBe("saved");
+      await authority.accept(1, restored.token);
+      expect(await readFile(path, "utf8")).toBe("original");
+      await writeFile(path, "saved");
+      const savedRevision = (await authority.activate(1, path))!;
+      const originalRestore = await authority.restore(1, savedRevision, "saved", 0, true);
+      expect(originalRestore.source).toBe("original");
+      await writeFile(path, "outside");
+      await expect(authority.accept(1, originalRestore.token)).rejects.toThrow();
+      authority.cancel(1, savedRevision);
+      await writeFile(path, "changed original");
+      await expect(authority.restore(1, revision, "original", 0, false)).rejects.toThrow();
+      const next = (await authority.activate(1, path))!;
+      await expect(authority.restore(1, next, "changed original", 0, false)).rejects.toThrow();
+      expect(await readFile(path, "utf8")).toBe("changed original");
+    } finally { authority.closeAll(); await rm(dir, { recursive: true, force: true }); }
+  });
+  it("refuses navigation and outside edits occurring during the history read", async () => {
+    const dir = await realpath(await mkdtemp(join(tmpdir(), "rewrite-late-restore-")));
+    const path = join(dir, "a.md"); await writeFile(path, "original");
+    const identity = async () => ({ path, workspace: dir, domain: "local" as const, noteKey: "note", conflict: false });
+    let during: () => Promise<void> = async () => {};
+    const authority = new RewriteAuthority({ writer: new NoteWriter({ rewriteIdentity: identity }), resolve: identity,
+      original: async () => "checkpoint", history: async () => { await during(); return [{ source: "saved", original: "original" }]; } });
+    try {
+      const revision = (await authority.activate(1, path))!;
+      during = async () => { await writeFile(path, "outside"); };
+      await expect(authority.restore(1, revision, "original", 0, false)).rejects.toThrow();
+      expect(await readFile(path, "utf8")).toBe("outside");
+      await writeFile(path, "original");
+      const next = (await authority.activate(1, path))!;
+      during = async () => { authority.close(1); };
+      await expect(authority.restore(1, next, "original", 0, false)).rejects.toThrow();
+      expect(await readFile(path, "utf8")).toBe("original");
+    } finally { authority.closeAll(); await rm(dir, { recursive: true, force: true }); }
+  });
   it("binds saved previews to current window/revision and refuses external edits", async () => {
     const dir = await realpath(await mkdtemp(join(tmpdir(), "rewrite-preview-")));
     const path = join(dir, "a.md"); await writeFile(path, "original");

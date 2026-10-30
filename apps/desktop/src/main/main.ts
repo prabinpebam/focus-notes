@@ -892,7 +892,7 @@ const rewriteAuthority = new RewriteAuthority({
   variation: (input, checkpointId, replacement, note) => rewriteStore(note).variation(input, checkpointId, replacement),
   history: async (note) => (await rewriteStore(note).variations({
     domain: note.domain === "public" ? "public" : "private", noteKey: note.noteKey,
-  })).map(({ source }) => ({ source })),
+  })).map(({ source, original }) => ({ source, original })),
 });
 const writeQueues = writer.queues;
 const atomicWrite = (path: string, content: string, expected?: string) => writer.write(path, content, expected);
@@ -1240,6 +1240,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!process.argv.includes("--rewrite-editor-demo") || !process.env.FOCUS_NOTES_USER_DATA || !process.env.FOCUS_NOTES_DOCS) throw new Error("candidate-only");
     if (action === "prepare") return rewriteAuthority.prepare(owner, input.revision, input.source, input.target);
     if (action === "history") return rewriteAuthority.history(owner, input.revision, input.source);
+    if (action === "restore") return rewriteAuthority.restore(owner, input.revision, input.source, input.index, input.original);
     if (action === "cancel") return rewriteAuthority.cancel(owner, input.revision);
     if (action === "accept") return rewriteAuthority.accept(owner, input.token);
     if (action === "complete") return rewriteAuthority.complete(owner, input.token, input.replacement);

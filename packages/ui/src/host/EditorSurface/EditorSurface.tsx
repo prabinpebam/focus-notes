@@ -565,6 +565,14 @@ export function EditorSurface({
         editor.view.dom.dispatchEvent(new Event("focus-notes:rewrite-request", { bubbles: true }));
         return;
       }
+      if (id === "rewrite.restore") {
+        const capture = rewriteCapture.current;
+        if (args.key !== documentKey || !capture || args.source !== capture.captured.source || typeof args.replacement !== "string"
+          || !editor.state.doc.eq(capture.doc) || session.serialize(editor.getJSON()) !== args.source) return;
+        replaceDocument(editor, session, args.replacement);
+        rewriteCapture.current = undefined;
+        return;
+      }
       if (id === "rewrite.accept") {
         const capture = rewriteCapture.current;
         if (args.key !== documentKey || !capture || args.source !== capture.captured.source || typeof args.replacement !== "string") return;
