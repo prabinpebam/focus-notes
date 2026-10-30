@@ -69,4 +69,12 @@ describe("RWR-24: paired canonical/projection transaction mapping", () => {
     expect(accepted.steps).toHaveLength(1);
     expect(accepted.doc.textContent).toBe("BeforeNew wordsAfter");
   });
+  it("protects ancestor attributes even when the step has an empty StepMap", () => {
+    const heading = schema.nodeFromJSON(parseMarkdown("# Original\n\nAfter").doc);
+    const range = new RewriteRange(heading, 1, 9);
+    range.show(text("New"));
+    const tr = new Transform(range.projection).setNodeAttribute(0, "level", 2);
+    expect(() => range.applyOutside(tr)).toThrow("protected-target");
+    expect(range.canonical.eq(heading)).toBe(true);
+  });
 });

@@ -38,11 +38,18 @@ export class RewriteRange {
     let canonical = new Transform(this.#canonical);
     let bridge = this.#bridge;
     let from = this.#from, to = this.#to, projectedFrom = from, projectedTo = this.#projectionTo;
-    for (const step of transaction.steps) {
-      let touches = false;
-      step.getMap().forEach((a, b) => { if (a <= projectedTo && b >= projectedFrom) touches = true; });
+    for (const [index, step] of transaction.steps.entries()) {
+      let touches = false, hasMappedRange = false;
+      step.getMap().forEach((a, b) => {
+        hasMappedRange = true;
+        if (a <= projectedTo && b >= projectedFrom) touches = true;
+      });
       if (step instanceof AddMarkStep || step instanceof RemoveMarkStep) {
         touches ||= step.from < projectedTo && step.to > projectedFrom;
+      } else if (!hasMappedRange) {
+        if (!("pos" in step) || typeof step.pos !== "number") throw new Error("protected-target");
+        const node = transaction.docs[index]!.nodeAt(step.pos);
+        if (!node || step.pos < projectedTo && step.pos + node.nodeSize > projectedFrom) touches = true;
       }
       if (touches) throw new Error("protected-target");
       const mapped = step.map(bridge);
