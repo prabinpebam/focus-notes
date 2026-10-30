@@ -82,8 +82,10 @@ This is the **single canonical planned copy register** for future `packages/view
 | `rewrite.hint.linkMoved`, `.linkUnbound`, `.editLink`, `.dismiss` | Link editing moved to {shortcut}.; Link editing is available from the formatting toolbar.; Edit link; Dismiss |
 | `rewrite.setup.title`, `.empty`, `.external`, `.addProfile`, `.notChecked` | Rewrite provider; Connect an external app or API to rewrite text.; Focus Notes does not run models. Start and manage your local service separately, then enter its address here.; Add profile; Not checked |
 | `rewrite.profile.label`, `.endpoint`, `.model`, `.key`, `.replaceKey`, `.removeKey` | Profile name; Service address; Model; API key; Replace key; Remove key |
+| `rewrite.profile.keyEntry`, `.localAddress` | The key input clears after saving. Stored keys can’t be shown.; Use an exact numeric loopback address. LAN services aren’t supported yet. |
 | `rewrite.profile.local`, `.remote`, `.fixture`, `.attestation` | Local; Remote; Demo provider · No text leaves this device; Local · You confirmed this service keeps text on this device. |
 | `rewrite.consent.public`, `.privateTitle`, `.privateSend`, `.privateLocal`, `.cancel`, `.chargeWarning` | This text and instruction will be sent to {destination}. Its own data policy applies.; Send private text to {destination}?; Send private text; Private note · Local service; Cancel; Stopping may not stop provider charges. |
+| `rewrite.consent.confirmEstimate`, `.pricingBlocked` | Review the input, sections and maximum estimated charge before sending.; Add pricing and a bounded maximum output before sending text to this cloud service. |
 | `rewrite.settings.privatePolicy`, `.effect`, `.presets`, `.history`, `.revoke` | Ask before sending private notes; Fresh-text effect; Presets; Rewrite history; Revoke consent |
 | `rewrite.preset.save`, `.rename`, `.delete`, `.export`, `.name`, `.duplicate`, `.full` | Save preset; Rename; Delete preset; Export presets; Preset name; A preset with this name already exists. Choose another name.; You have 20 presets. Delete one before adding another. |
 | `rewrite.preset.deleteTitle`, `.deleteWarning`, `.exportWarning` | Delete “{name}”?; This preset can’t be restored.; Exported presets include your instructions. They may contain private information. |
@@ -112,6 +114,8 @@ Error keys match the engine's exact code suffixes. Values below are canonical; s
 | `cancelled` | Rewrite stopped. Your original text is unchanged. | Status only, not alert |
 
 Repair buttons use `rewrite.action.setup/review/settings/retry/estimate/choose/resolve` with exact values Set up / Review / Settings / Retry / Review estimate / Choose text / Resolve changes. Shared Close/Cancel reuse registered shared messages where wording matches. Add plural forms for sections, seconds and input/output estimates rather than concatenating fragments. Unknown price is **Unknown**, never **Free**; estimate rows use `rewrite.estimate.input/output/upperCharge/unknown` = Input / Maximum output / Maximum estimated charge / Unknown, with locale-formatted amounts/units. No source path, provider response body or API key interpolates into errors.
+
+Settings and consent render the provider contract's proposed caps, confirmation thresholds and six deadlines from one data source; the [experience](../experience/rewrite-with-ai.md#setup-and-consent) records the current proposal, not independent UI constants. Unknown pricing/unbounded billable output keeps cloud Send disabled with `rewrite.consent.pricingBlocked`; no acknowledgement bypass. Key replacement uses transient input cleared on acknowledgement, never a reveal action or assumed native dialog. Timeout uses the canonical `timeout` error after the applicable deadline, never a fabricated percentage or automatic retry.
 
 ## Fresh text
 

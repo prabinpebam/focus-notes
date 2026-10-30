@@ -104,6 +104,8 @@ Saved presets: **20 maximum**, name 1–60 code points, instruction 1–4,000; d
 
 The target is protected during sending/streaming/review, including paste/drop/format/undo that intersects it. Outside typing remains responsive and maps through the range; even outside edits to this note remain unsaved until the hold releases. Show **“Review or discard the rewrite before saving this note.”** on explicit Save. Ordinary app editing, title-bar drag and other-note reading remain available.
 
+D-245 requires exact-source mapping with visible top-level-block expansion when a partial splice cannot be proved safe; an ambiguous or unsupported block explains why Send is unavailable. D-246 keeps canonical source separate from the generated projection: holding saves alone is insufficient. Editor flush, normal draft recovery and automatic persistence must never serialize that projection. Recovery keeps the original target plus every authorized independent outside edit, never a generated fragment or a rollback of newer writing.
+
 Switch note / close: sending or streaming first cancels, restores and awaits release; review first discards, preserving the completed variation in local history. No leave action implies Accept. The engine's [lifecycle deadlines](../architecture/rewrite-engine.md#lifecycle) are authoritative; each expiration restores original and exposes the timeout copy, never silently retries. Late tokens from aborted attempts cannot revive a surface.
 
 If checkpoint/history persistence fails, no Send/Review success is shown: **“Couldn’t save rewrite history on this device. Free space and try again.”** with Retry and Discard. If guarded note saving fails after Accept, retain ordinary unsaved text/recovery and the existing save-problem UI; never claim Saved. Crash recovery restores original plus independent edits, not fragments. A complete previous variation is offered for explicit review, never auto-applied.
@@ -119,6 +121,8 @@ Review text remains protected in v1, so there is no “edited preview” destruc
 **Rewrite history** opens a device-local list grouped by note/session, dated in the person's locale, with variation counter and Accepted/Discarded status. No prompt text is retained. After restart, choose a variation → read-only comparison → explicit Accept against a freshly proven target. Stale history offers Reselect text or Create note in the same privacy root, not overwrite. Empty copy: **“No rewrite variations on this device yet.”**
 
 Completed variations survive 30 days, up to 20/session and 100 MiB/store as [history](../architecture/rewrite-history.md) defines; unresolved originals are never evicted. Settings exposes Clear rewrite history with confirmation, explains that deletion is not secure erasure and never deletes notes. Undo/redo after Accept use exact text without a model call and record new states, never rewrite published Git history. Without Git, durable device-local recovery still works; the feature never initializes the workspace as a repository.
+
+D-247 stores this history in separate public/private no-remote bare repositories under app userData, never workspace Git objects, alternates or a shared store. Private content blobs and the private index/record metadata are OS-encrypted; unavailable secure storage blocks private rewriting rather than saving plaintext. This is the history contract, not a promise that ordinary workspace side refs prevent publication.
 
 ## File rewrite
 
@@ -137,6 +141,8 @@ Setup is an external-service connection form, never a model launcher. Heading **
 
 Settings → Rewrite contains profile list (maximum 10), active profile, label, endpoint, model, masked key replacement/removal, private-note policy, token/cost caps and dated pricing, presets, history controls and **Fresh-text effect** (on by default). Endpoint/model/credential-reference policy follows [profiles](../architecture/rewrite-providers.md#profiles-and-credentials). Status starts **Not checked**; saving settings is not proof of connection or approval. A future explicitly invoked non-inference connection check is gated with transport; no setup probe occurs now.
 
+D-249 key entry is transient renderer input, cleared on acknowledgement; stored keys are never revealed. No native credential-dialog dependency is assumed. The proposed local v1 route accepts exact numeric loopback only; localhost aliases and LAN addresses do not qualify. LAN support is deferred, and an address alone never proves that an external service keeps text on this device.
+
 | Profile / note | Before Send | Exact disclosure |
 | --- | --- | --- |
 | Fixture | Development-only, no socket or key | **Demo provider · No text leaves this device** |
@@ -148,6 +154,8 @@ Settings → Rewrite contains profile list (maximum 10), active profile, label, 
 | Read-only | Always blocked | **This note is read only.** |
 
 Consent displays destination origin/path, profile/model, actual expanded target, input bytes/sections, instruction inclusion, output reservation and estimated upper charge or blocked unknown price. No neighboring notes, title, path or front matter is sent. Show **“Stopping may not stop provider charges.”** Cost thresholds, reservations and timeouts are the provider contract's single authority; no UI-specific numbers override them. Profile/model/policy/target changes invalidate the relevant consent/estimate. There is no cloud fallback, telemetry or automatic send after reconnection.
+
+The relayed D-249 caps remain **Proposed (owner)**: USD 0.10 per operation and USD 1 daily; confirm when input exceeds 4,000 estimated tokens **or** the plan has more than one section **or** estimated charge exceeds USD 0.02. Unknown pricing or unbounded billable output blocks cloud Send, not merely a warning. Each call reserves at most 4,096 output tokens and 32 KiB. Deadlines are connect 5 s, headers 15 s, first text 60 s, idle 20 s, request 180 s and operation 600 s; timeout copy always preserves the original and permits only an explicit retry. Settings, estimates and countdowns must project the final provider contract rather than maintain competing constants.
 
 ## Errors
 
