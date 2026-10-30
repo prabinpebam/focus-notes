@@ -78,11 +78,24 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   const command = (id: string, run: (args: Record<string, unknown>) => void | Promise<void>) =>
     app.commands.register({ id: `demo.${id}`, title: "rewrite.demoTitle", run });
   command("enableEditor", () => { demo.enabled = true; demo.changed(); });
-  command("unsupported", () => { demo.feedback = "This selection can’t be rewritten. Select plain text within one paragraph."; demo.changed(); });
+  app.commands.register({
+    id: "rewrite.open", title: "rewrite.title",
+    shortcut: { default: "Mod+Shift+R" }, layer: "writer", group: "editing",
+    enabled: () => demo.enabled,
+    disabledReason: "rewrite.candidateOnly",
+    run: () => editorAction("rewrite.open"),
+  });
+  app.commands.register({
+    id: "rewrite.context", title: "rewrite.title",
+    enabled: () => demo.enabled && demo.menu,
+    run: () => { demo.menu = false; editorAction("rewrite.open"); },
+  });
+  command("unsupported", () => { demo.feedback = text("unsupported"); demo.changed(); });
   app.store.subscribe(() => {
     if (demo.enabled && demo.openPanel && (demo.noteKey !== app.store.state.note.key || demo.source !== app.store.state.note.markdown)) demo.discard();
   });
   command("target", (a) => {
+    if (demo.enabled && a.menu) { demo.menu = Number(a.from) >= 0; return; }
     if (demo.enabled) demo.noteKey = app.store.state.note.key;
     demo.feedback = "";
     demo.open({ source: String(a.source), target: { from: Number(a.from), to: Number(a.to), original: String(a.original) } });
@@ -124,7 +137,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
         generateLabel: text(state === "review" || state === "error" ? "generate" : "start"),
         discardLabel: text(state === "sending" || state === "streaming" ? "cancel" : "discard"),
         busy: state === "sending" || state === "streaming", review: state === "review", undo: demo.previous !== undefined,
-        status: text(state === "error" ? "error" : state === "streaming" || state === "sending" ? "streaming" : state === "review" ? "ready" : "compose"),
+        status: text(state === "error" ? (demo.enabled ? "editorError" : "error") : state === "streaming" || state === "sending" ? "streaming" : state === "review" ? "ready" : "compose"),
       };
     },
   });

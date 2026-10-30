@@ -93,6 +93,12 @@ export function registerTextMenu({ store, commands, viewModels, catalog, bridge,
       const t = store.state.textMenu;
       const model = t.model;
       if (!model || !t.open || typeof id !== "string") return;
+      if (id === "rewrite.context" && commands.has(id) && commands.describe(id).enabled) {
+        set({ ...t, open: false });
+        bridge.textMenu?.closed?.(model.id);
+        void commands.run(id);
+        return;
+      }
       // Only what the menu offers; the shell checks again.
       if (!model.entries.some((_e, i) => textMenuItemId(model.entries, i) === id)) return;
       set({ ...t, open: false });
@@ -130,7 +136,12 @@ export function registerTextMenu({ store, commands, viewModels, catalog, bridge,
       const undo = s.ui.format.canUndo;
       const redo = s.ui.format.canRedo;
       if (memo?.key === t && memo.undo === undo && memo.redo === redo) return memo.value;
-      const value = { available: Boolean(bridge.textMenu?.drawn), sections: textMenuSections(t.model, catalog, bridge.platform, commands, { undo, redo }), request: t.request, x: t.model?.x ?? 0, y: t.model?.y ?? 0 };
+      const sections = textMenuSections(t.model, catalog, bridge.platform, commands, { undo, redo });
+      if (commands.has("rewrite.context") && commands.describe("rewrite.context").enabled) {
+        const chord = commands.describe("rewrite.open").shortcut;
+        sections.push({ id: "rewrite", items: [{ id: "rewrite.context", label: catalog.format("rewrite.title"), ...(chord ? { shortcut: formatChord(chord, bridge.platform) } : {}) }] });
+      }
+      const value = { available: Boolean(bridge.textMenu?.drawn), sections, request: t.request, x: t.model?.x ?? 0, y: t.model?.y ?? 0 };
       memo = { key: t, undo, redo, value };
       return value;
     },

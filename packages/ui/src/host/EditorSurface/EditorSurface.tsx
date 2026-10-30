@@ -204,13 +204,21 @@ export function EditorSurface({
     if (!onRewrite || rewriteEnabled === false) return;
     const invoke = (event: Event) => {
       const key = event as KeyboardEvent;
-      if (event.type === "keydown" && !((key.ctrlKey || key.metaKey) && key.key.toLowerCase() === "k")) return;
+      if (event.type === "keydown" && (rewriteEnabled || !((key.ctrlKey || key.metaKey) && key.key.toLowerCase() === "k"))) return;
       const ed = editorRef.current;
+      if (event.type === "contextmenu" && rewriteEnabled) {
+        // Only arm the native menu item here. Capture after the menu restores its real selection;
+        // publishing a target now would reflow the note underneath the opening menu.
+        onRewrite({ source: "", from: ed?.view.dom.contains(event.target as Node) ? 0 : -1, to: 0, original: "", menu: true });
+        return;
+      }
       if (!ed || !ed.view.dom.contains(event.target as Node)) return;
-      event.preventDefault(); event.stopImmediatePropagation();
+      // The ordinary editor keeps the shell's real text menu (spellcheck/edit actions).
+      // Capture the target before its focus moves; only the chosen command opens review.
+      if (event.type !== "contextmenu" || !rewriteEnabled) { event.preventDefault(); event.stopImmediatePropagation(); }
       try {
         const selection = ed.state.selection;
-        if (selection.$from.parent.type.name !== "paragraph" || !selection.$from.sameParent(selection.$to)) throw new Error("unsupported-target");
+        if (selection.$from.parent.type.name !== "paragraph" || !selection.$from.sameParent(selection.$to) || ed.isActive("table")) throw new Error("unsupported-target");
         const { source, target } = session.rewriteTarget(ed.getJSON() as PMNode, ed.state.selection.from, ed.state.selection.to);
         rewriteCapture.current = { doc: ed.state.doc, selection: ed.state.selection, captured: { source, target } };
         // Hand over existing ordinary typing before taking a baseline; never generated text.
@@ -553,6 +561,10 @@ export function EditorSurface({
       const id = String(detail?.id);
       const args = detail?.args ?? {};
       if (!editor || editor.isDestroyed) return;
+      if (id === "rewrite.open" && rewriteEnabled) {
+        editor.view.dom.dispatchEvent(new Event("focus-notes:rewrite-request", { bubbles: true }));
+        return;
+      }
       if (id === "rewrite.accept") {
         const capture = rewriteCapture.current;
         if (args.key !== documentKey || !capture || args.source !== capture.captured.source || typeof args.replacement !== "string") return;
@@ -713,7 +725,7 @@ export function EditorSurface({
       window.removeEventListener(REFOCUS_EVENT, refocus);
       window.removeEventListener(EDITOR_ACTION_EVENT, runAction);
     };
-  }, [editor, session, documentKey]);
+  }, [editor, session, documentKey, rewriteEnabled]);
 
   // The caret starts at the note's end, once every tracker above is listening (the reading zone
   // places it). At once rather than through Tiptap's autofocus, which focuses a frame later.

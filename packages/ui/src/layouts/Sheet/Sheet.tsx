@@ -79,13 +79,13 @@ export function Sheet({ label, side = "start", width = "files", keyScope = "none
     if (side === "start") {
       dockLeft.set(dockedWidth);
       if (el) pinnedSheet.set(Math.round(fixedBox(el).left + dockedWidth));
-    }
+    } else pinnedRight.set(dockedWidth);
   }, [docked, dockedWidth, side]);
   useEffect(() => {
-    if (!docked || side !== "start") return;
+    if (!docked) return;
     return () => {
-      dockLeft.set(0);
-      pinnedSheet.set(undefined);
+      if (side === "start") { dockLeft.set(0); pinnedSheet.set(undefined); }
+      else pinnedRight.set(0);
     };
   }, [docked, side]);
   const handle = useResizeHandle({
