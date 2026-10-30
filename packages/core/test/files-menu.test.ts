@@ -178,6 +178,18 @@ function setup(notesIn: Record<string, string>, state: Partial<AppStateFile> = {
   return { bridge, notes, batches, saved, live };
 }
 const settle = () => new Promise((r) => setTimeout(r, 0));
+it("opening Rewrite dismisses floating Files without changing its pin preference or source", async () => {
+  const source = "# Original\n\nKeep this source.";
+  const app = await started(setup({ "private:welcome.md": source }));
+  await app.commands.run("demo.enablePreview");
+  await app.commands.run("files.reveal", { path: "private:welcome.md" });
+  const pinned = app.store.state.ui.files.pinned;
+  expect(app.store.state.ui.files.open).toBe(true);
+  await app.commands.run("demo.target", { source, from: 0, to: source.length, original: source, wholeFile: true });
+  expect(app.store.state.ui.files.open).toBe(false);
+  expect(app.store.state.ui.files.pinned).toBe(pinned);
+  expect(app.store.state.note.markdown).toBe(source);
+});
 async function started(f: ReturnType<typeof setup>, options: Parameters<typeof createApp>[3] = {}) {
   const app = createApp(f.bridge, messages, "en", options);
   await app.start();

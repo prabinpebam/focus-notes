@@ -9,10 +9,23 @@
     "type": "Stack", "props": { "gap": "s" }, "children": [
       { "type": "Sheet", "when": { "expr": { "or": [{ "get": "vm.rewriteDemo.open" }, { "get": "vm.rewriteDemo.hasFeedback" }] } }, "props": {
         "label": { "t": "rewrite.title" }, "side": "end", "width": "find", "pinned": true, "docked": true
-      }, "on": { "close": { "run": "demo.discard" } }, "children": [
+      }, "on": { "close": { "run": "demo.discard" } }, "slots": { "footer": [
+        { "type": "Stack", "props": { "gap": "s", "grow": true }, "children": [
+          { "type": "Button", "when": { "get": "vm.rewriteDemo.hasFeedback" }, "props": { "label": { "t": "rewrite.close" } }, "on": { "press": { "run": "demo.discard" } } },
+          { "type": "Stack", "when": { "get": "vm.rewriteDemo.open" }, "props": { "gap": "s" }, "children": [
+            { "type": "TextField", "when": { "get": "vm.rewriteDemo.wholeFile" }, "props": { "label": { "t": "rewrite.newFilename" }, "value": { "bind": "vm.rewriteDemo.filename" } } },
+            { "type": "Button", "when": { "get": "vm.rewriteDemo.wholeFile" }, "props": { "label": { "t": "rewrite.newFile" } }, "on": { "press": { "run": "demo.newFile" } } },
+            { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.status" } } },
+            { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+              { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.generateLabel" }, "disabled": { "get": "vm.rewriteDemo.busy" }, "disabledReason": { "t": "rewrite.waitReason" } }, "on": { "press": { "run": "demo.send" } } },
+              { "type": "Button", "props": { "label": { "t": "rewrite.accept" }, "disabled": { "expr": { "!": { "get": "vm.rewriteDemo.review" } } }, "disabledReason": { "t": "rewrite.acceptReason" } }, "on": { "press": { "run": "demo.accept" } } },
+              { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.discardLabel" } }, "on": { "press": { "run": "demo.discard" } } }
+            ] }
+          ] }
+        ] }
+      ] }, "children": [
         { "type": "LiveRegion", "when": { "get": "vm.rewriteDemo.hasFeedback" }, "props": { "message": { "get": "vm.rewriteDemo.feedback" } } },
         { "type": "Text", "when": { "get": "vm.rewriteDemo.hasFeedback" }, "props": { "value": { "get": "vm.rewriteDemo.feedback" } } },
-        { "type": "Button", "when": { "get": "vm.rewriteDemo.hasFeedback" }, "props": { "label": { "t": "rewrite.close" } }, "on": { "press": { "run": "demo.discard" } } },
         { "type": "Stack", "when": { "get": "vm.rewriteDemo.open" }, "props": { "gap": "m" }, "children": [
           { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.editorNotice" } } },
           { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.providerLabel" } } },
@@ -54,15 +67,7 @@
           { "type": "Text", "when": { "get": "vm.rewriteDemo.isFake" }, "props": { "value": { "get": "vm.rewriteDemo.failureStatus" } } },
           { "type": "TextField", "id": "rewriteInstruction", "props": { "label": { "t": "rewrite.instruction" }, "value": { "bind": "vm.rewriteDemo.instruction" }, "readOnly": { "get": "vm.rewriteDemo.busy" } } },
           { "type": "LiveRegion", "props": { "message": { "get": "vm.rewriteDemo.status" } } },
-          { "type": "Text", "when": { "get": "vm.rewriteDemo.wholeFile" }, "props": { "value": { "get": "vm.rewriteDemo.preview" } } },
-          { "type": "TextField", "when": { "get": "vm.rewriteDemo.wholeFile" }, "props": { "label": { "t": "rewrite.newFilename" }, "value": { "bind": "vm.rewriteDemo.filename" } } },
-          { "type": "Button", "when": { "get": "vm.rewriteDemo.wholeFile" }, "props": { "label": { "t": "rewrite.newFile" } }, "on": { "press": { "run": "demo.newFile" } } },
-          { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.status" } } },
-          { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
-            { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.generateLabel" }, "disabled": { "get": "vm.rewriteDemo.busy" }, "disabledReason": { "t": "rewrite.waitReason" } }, "on": { "press": { "run": "demo.send" } } },
-            { "type": "Button", "props": { "label": { "t": "rewrite.accept" }, "disabled": { "expr": { "!": { "get": "vm.rewriteDemo.review" } } }, "disabledReason": { "t": "rewrite.acceptReason" } }, "on": { "press": { "run": "demo.accept" } } },
-            { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.discardLabel" } }, "on": { "press": { "run": "demo.discard" } } }
-          ] }
+          { "type": "Text", "when": { "get": "vm.rewriteDemo.wholeFile" }, "props": { "value": { "get": "vm.rewriteDemo.preview" } } }
         ] }
       ] }
     ]

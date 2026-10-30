@@ -161,6 +161,9 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
     demo.wholeFile = a.wholeFile === true;
     if (demo.enabled && a.menu) { demo.menu = Number(a.from) >= 0; return; }
     if (demo.enabled) demo.noteKey = app.store.state.note.key;
+    // Floating Files must not mask the source beside Rewrite. Docked Files keeps
+    // its existing reserved note area and pin preference.
+    if (demo.enabled && app.store.state.ui.files.open) void app.commands.run("files.close");
     demo.feedback = "";
     demo.open({ source: String(a.source), target: { from: Number(a.from), to: Number(a.to), original: String(a.original) } });
     demo.menu = Boolean(a.menu); demo.changed();
