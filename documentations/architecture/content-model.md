@@ -120,6 +120,10 @@ Notes are often edited elsewhere too: on GitHub, in VS Code, or on a phone. The 
 5. **Unsupported constructs survive.** HTML blocks, footnotes, reference-style link definitions, and unknown directives are kept as opaque raw blocks and shown read-only.
 6. **Test corpus.** A fixture set of real-world Markdown files must survive open, save, and compare unchanged, and that check runs in CI.
 
+### Planned rewrite splice
+
+[Rewrite source mapping](rewrite-engine.md#selection-mapping) requires a stronger operation-specific guarantee than edited-block canonical style: only the confirmed target byte span changes. Preserve current prefix/suffix UTF-8 bytes, BOM/EOL/front matter and raw excluded blocks; translate UTF-16 parser/editor offsets explicitly rather than treating them as byte positions. Exact partial plain-text mappings are planned work; ambiguous syntax expands visibly to complete top-level source blocks or refuses. Apply validates source hashes and adopts the assembled source into the session without whole-document reserialization. [File rewriting](rewrite-engine.md#file-targets) preserves metadata/visibility and creates a new ULID only for a new file.
+
 ## Public URLs
 
 | Note | URL on GitHub Pages |

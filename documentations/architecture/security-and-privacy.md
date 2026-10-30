@@ -94,6 +94,10 @@ Everything Focus Notes keeps, where, and what removes it. On the desktop the lis
 5. **What a public notes repository and its site reveal,** listed so users can decide: the names of their two repositories (including the private one, in `.gitmodules`), the full history of public notes (including deleted ones), the time of each publishing commit and deploy, that the site has a vault, and the existence and size of sealed files. The private repository can be given any name.
 6. **Commits use the noreply address** by default (first run, identity step).
 
+### Proposed rewrite integration
+
+The [rewrite provider contract](rewrite-providers.md#policy-first) is a draft exception proposal, **not an enabled capability or amendment to the shipped commitments above**. Focus Notes would be a client of an explicitly approved external app/API only, never a model installer or host. Its main-process [egress/credential boundary](rewrite-providers.md#routing-and-egress), [private-note consent matrix](rewrite-providers.md#consent-and-private-notes) and [OS-encrypted isolated history](rewrite-history.md#private-isolation) must pass the owner gate before any real send. That gate includes updating privacy claims and this data inventory together; fake-first specification work authorizes neither calls nor credentials. No telemetry remains unconditional.
+
 ## Supply chain and releases
 
 - Dependencies are pinned by lockfile and updated by Dependabot pull requests that must pass CI. The license check (D-20) runs on every change.

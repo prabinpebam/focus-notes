@@ -390,6 +390,19 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 Every package is **planned**. AI.1 through AI.7 use lookahead to avoid an unrelated prior-stage gate blocking offline evidence. AI.8 through AI.10 retain the ordinary stage dependency. No package that talks to a real provider can bypass AI.7. `touches`, `reviews` and `specs` are explicit in [the graph](work-graph.json).
 
+### Slice evidence versus full requirement closure
+
+Requirement ownership remains unique. Completing an early package proves its delivered slice, not later integrated surfaces covered by a cross-cutting requirement. Record each deferred subcase as **pending**, with its trigger below; fixtures of a future surface are not evidence that the actual surface exists.
+
+| Owning slice | Evidence that can close this slice | Deferred integration evidence and trigger |
+| --- | --- | --- |
+| WP-AI.2 / UI-14, I18N-04 | Actual prompt/review, reusable view/message contracts, keyboard and entry fixtures | File chooser after AI.5; actual setup/consent/settings after AI.6; combined closure in AI.9 |
+| WP-AI.3 / A11Y-03, DSY-14 | Selection/review accessibility, decoration, theme/motion/forced-color gallery | Full file/setup journeys after AI.5/AI.6; combined closure in AI.9 |
+| WP-AI.6 / SEC-09, PRV-05 | Offline policy, credential, sender/IPC and egress-denial fixtures | Actual isolated private history proofs after AI.4, file path proofs after AI.5 and approved transport after AI.8; combined closure in AI.9 |
+| WP-AI.9 | Re-run all preceding actual surfaces together, complete every pending cross-cutting subcase and Help/release review | No full requirement row closes until all its integrated subcases pass; no live calls in CI |
+
+This evidence split adds no dependency cycle, duplicate requirement owner or provider-choice gate to AI.1 through AI.6. Source mapping and bounded step/progress tracker updates are explicitly planned engine work (AI.1); whole-file progress uses them in AI.5 and consent/setup status in AI.6.
+
 **GATE-MAI:** all [MAI done rows](definition-of-done.md#mai-rewrite-definition-of-done) and [acceptance rows](rewrite-acceptance.md) have evidence; owner approval is recorded separately from fixture validation. Shipping claims stay unchanged until that approval. A provider-declined outcome leaves offline fixture work demonstrable, not a secretly enabled service.
 
 <h2 id="later" data-reader-personas="product design engineering">Later: Components</h2>

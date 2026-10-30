@@ -197,6 +197,10 @@ The first launch with drafts reads `recovery-journal.jsonl` once. It turns each 
 
 As built, all of these pass locally on Windows (`crash-recovery.spec.ts`, `fault-injection.spec.ts`). The rename storm loses 0.39 to 0.49 s at worst over 12 rounds, and 0.29 s over 40 rounds (2.7 minutes, as CI runs it). The bench's `QLT-06.recoveryMatchMs` (`node tools/bench/run.mjs --only "QLT-06"`) measures 10.7 ms. Its first run found 116 ms, and 29.8 s when a note had moved outside the app; the ladder now reads the workspace once, 32 files at a time. A moved or deleted note still makes every rung read the workspace: about 3.4 s with 10,000 notes, off the first frame, reported as `QLT-06.recoveryMatchMovedMs` (D-222).
 
+### Planned rewrite recovery
+
+[Rewrite checkpoints](rewrite-engine.md#save-and-checkpoints) must keep canonical original plus independent edits separate from the in-place suggestion projection. Target autosave/ordinary commits are held through review; complete variations live in [isolated history](rewrite-history.md#restart-and-recovery), never ordinary draft fragments. Leave/switch/quit defaults to Discard, retains outside edits and observes the five-second flush handshake; failure keeps the window open rather than accepting silently. After a crash, reopen canonical/recovered writing and offer the complete variation for explicit review. No replay writes or note recreation at launch; the isolation rule above remains unchanged. Private rewrite records require OS encryption without plaintext fallback. These are planned extensions, not new recovery-test results.
+
 ### Related
 
 - [Performance and quality → Reliability](performance-and-quality.md#reliability): the draft store as built.

@@ -17,6 +17,10 @@ Security settings: `contextIsolation: true`, `sandbox: true`, `nodeIntegration: 
 
 IPC sender checks compare the decoded file path of the renderer with the app's exact entry file, case-insensitively on Windows, not the spelling of its URL. Windows portable builds extract under a temporary path that can contain an 8.3 user-folder name: Chromium leaves its `~` literal while Node's file-URL encoder writes `%7E`. Comparing raw URL strings rejected the app's own requests, leaving setup at *Checking this computer* and making window commands do nothing. Other files, remote hosts, non-file protocols and malformed URLs remain refused. The packaged regression journey starts from a path containing `~` and checks setup persistence and the window's Move and Size commands (SEC-01, FRE-04, DSK-03).
 
+### Planned rewrite boundary
+
+The draft [rewrite engine IPC](rewrite-engine.md#ipc-contract) adds narrow main-owned operations, not a generic network/exec bridge or renderer CSP exception. [Provider setup](rewrite-providers.md#policy-first) remains default-off and client-only: external services are separately supplied/running, never installed or launched by Focus Notes. [Variation Git history](rewrite-history.md#refs-and-commits) uses isolated no-remote userData stores, not workspace refs/objects, so an external workspace mirror push cannot publish suggestions. Accepted text alone returns through the existing guarded save and private-first sync lane; current ordinary Git sync behavior remains unchanged. This is planned work, not a claim that providers are presently enabled.
+
 ## Nothing hosted by the project
 
 The owner's constraint (D-21) is that each user's Focus Notes must work entirely from things that user owns, with no registration and no service run by the project. That rules out an OAuth app (it needs the developer to register it) and any token-exchange server.

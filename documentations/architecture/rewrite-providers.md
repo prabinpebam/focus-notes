@@ -16,18 +16,18 @@ The planned, policy-first boundary between note rewriting and a person-chosen mo
 
 ## Policy first
 
-RWR-41, RWR-42, RWR-46. Recommended default: **no enabled profile**. Setup offers an attested local endpoint or a named remote endpoint, using the same single text-only OpenAI-compatible chat-completions shape. These are interoperability targets, not claims that any named runner/provider has been live-tested.
+RWR-41, RWR-42, RWR-46. Recommended default: **no enabled profile**. Focus Notes is an integration client of separately managed external apps or APIs only. It never installs, downloads, embeds, launches, hosts or executes models, model processes or provider runtimes. Optional local endpoints must already be running independently; no discovery, setup assistant or lifecycle management is implied. Setup offers an attested local endpoint or a named remote endpoint, using the same single text-only OpenAI-compatible chat-completions shape. These are interoperability targets, not claims that any named runner/provider has been live-tested.
 
 | Option | V1 position | Owner gate |
 | --- | --- | --- |
 | Scripted fixture | Built-in development/journey adapter, no socket and no key | None; cannot be mistaken for a real model |
-| Ollama, LM Studio, llama.cpp compatible server | Candidate local integrations; explicit endpoint/model and attestation, no automatic discovery/install/download | Approve destination policy and package/model licensing separately |
+| Independently running Ollama, LM Studio, llama.cpp compatible server | Candidate external APIs only; explicit endpoint/model and attestation, no install/download/launch/model management | Approve destination policy and independently supplied service capability |
 | Cloud compatible endpoint | Person supplies URL, model, key if required, pricing and retention-policy acknowledgement | Approve privacy/consent/cost contract and public product claims |
-| Native on-device runtime | Later adapter, not an HTTP compatibility claim | Separate feasibility/license decision |
+| Embedded/native model runtime | Out of scope; no in-process inference or app-managed model process, including later stages in this plan | Not a planned adapter |
 | Network-local/LAN | Deferred: a private-network host is not this device; later exact authenticated HTTPS route needs remote-style per-use private consent | Separate operator/location/auth/consent approval |
 | Hybrid routing | Not v1: there is no fallback, model selection by note sensitivity or route changing on a failure | Separate explicit routing decision |
 
-Setup does not probe `/models`, send a test prompt, download a model or call a provider until the person explicitly chooses a connection check after the live gate. A connection check is a named operation with the same destination/credential rules, no note text and no billable inference. An endpoint without a non-inference check can only be verified during the first explicitly consented rewrite; show "Not checked", not "Connected".
+Setup never downloads a model or runtime. It does not probe `/models`, send a test prompt or call a provider implicitly. After the live gate, the person may explicitly choose a non-inference connection check: a named operation with the same destination/credential rules, no note text and no billable inference. An endpoint without such a check can only be verified during the first explicitly consented rewrite; show "Not checked", not "Connected".
 
 ## Profiles and credentials
 
@@ -127,7 +127,7 @@ Never persist custom prompt text, partial output, provider response body, raw to
 
 ## Limits and errors
 
-RWR-26, RWR-44, RWR-47. These are proposed product safeguards, not guarantees about a provider's billing. The [engine limits](rewrite-engine.md#long-files-and-limits) are authoritative for input/output/chunks.
+RWR-26, RWR-44, RWR-47. These are proposed product safeguards, not guarantees about a provider's billing. The [engine limits](rewrite-engine.md#long-files-and-limits) are authoritative for input/output/chunks. D-249 refines and supersedes D-239's initial 64 KiB/8,192-token/20-per-profile defaults: smaller per-call envelopes plus aggregate chunk reservations and device-wide accounting avoid profile/session bypasses.
 
 | Guard | Proposed numeric default |
 | --- | --- |
@@ -188,7 +188,7 @@ RWR-45. Apply the **ai-integration method**, not an inference runtime or mandato
 
 ### Offline provenance
 
-The following exact commands ran in the separate scratch clone of that revision (AIR-R3 research), not the app. Paths to the synthetic profile refer to that scratch research artifact; they are not shipped settings. A later builder recreates a nonsecret planning profile from these contracts, runs the same validators, and keeps runtime deployment readiness false until capability gaps are resolved.
+The following exact commands ran in the separate scratch clone of that revision (AIR-R3 research), not the app. Paths to the synthetic profile refer to that scratch research artifact; they are not shipped settings. These are recorded offline research results, not installation/scaffolding instructions. Future external-API implementation must resolve capability gaps without adding model/runtime installation or execution to the app.
 
 | Command from kit root | Recorded result and what it proves |
 | --- | --- |
@@ -201,7 +201,7 @@ The following exact commands ran in the separate scratch clone of that revision 
 | `node --test` | 34 kit tests passed, zero failed/skipped; proves kit tooling only |
 | `node tools/install.mjs "E:\Projects\side-projects\focus-notes" --target github --dry-run` | 17 managed payload files proposed, no repository writes; no agents/hooks/runtime installed |
 
-Upstream method sources at that revision: `references/workflow.md` (policy/selection), `provider-notes.md` and `providers.json` (dated options), `security.md` (references/egress/injection), `modalities.md` (operation/stream), `ux.md` (consent/waits/cost), `maintenance.md` (evaluation/rollback). Applying these contracts is mandatory; installing a fourth pinned kit is optional later work, separate from this spec.
+Upstream method sources at that revision: `references/workflow.md` (policy/selection), `provider-notes.md` and `providers.json` (dated options), `security.md` (references/egress/injection), `modalities.md` (operation/stream), `ux.md` (consent/waits/cost), `maintenance.md` (evaluation/rollback). Apply the method as planning guidance only. No fourth kit, scaffolding or runtime is installed or proposed by this spec; the historical installer dry-run above wrote nothing.
 
 Fixture scripts: `success`, `slow-first-token`, `slow-stream`, `stall-connect`, `stall-idle`, `timeout-total`, every error code, `cancel-race`, `late-completion`, `duplicate-sequence`, `wrong-window`, `truncated-utf8`, `malformed-sse`, `missing-finish`, `refusal`, `unsafe-html`, `unsafe-link`, `prompt-injection`, `oversize-input`, `oversize-output`, `chunk-failure`, `unknown-usage`, `history-full`, `key-store-locked`, `dns-rebind` and `redirect-key-leak`. Fake deltas use a deterministic fake clock. Test strings are synthetic, never the owner's notes.
 

@@ -91,7 +91,7 @@ Atomic index updates follow durable Git objects/ref updates; after a crash, disc
 
 ## Retention
 
-RWR-64. Retain at most **30 days**, **20 complete variations per note** and **200 MiB per workspace** (both domains together). Never evict an active session's original checkpoint or the only recovery copy of unsaved accepted/user text. If protected data alone reaches the budget, stop new generation with `too-large` and offer explicit local-history cleanup; do not discard unsaved work to meet a quota.
+RWR-64. Retain at most **30 days**, **20 complete variations per note**, **100 MiB per domain store** and **200 MiB per workspace** (both domains together). The per-note limit refines D-244's initial per-session proposal so opening another session cannot bypass the cap; its per-store byte limit remains. Never evict an active session's original checkpoint or the only recovery copy of unsaved accepted/user text. If protected data alone reaches the budget, stop new generation with `too-large` and offer explicit local-history cleanup; do not discard unsaved work to meet a quota.
 
 | Cleanup | Rule |
 | --- | --- |

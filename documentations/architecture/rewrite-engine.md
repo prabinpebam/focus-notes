@@ -26,7 +26,7 @@ RWR-21, RWR-22. Add a source-aware selection map in `packages/markdown` and `pac
 
 | Selection or construct | Exact v1 target rule |
 | --- | --- |
-| Collapsed caret | No implicit sentence/file selection. Open the composing UI with Send disabled until text is selected. |
+| Collapsed caret | Resolve the complete current supported top-level source block, visibly highlight it and label the target chip before Send. Never silently target a sentence or whole note; unsupported/raw/ambiguous blocks explain why Send is unavailable. |
 | Partial paragraph or heading | Exact plain-text span when source-mapped and structurally safe; otherwise the whole top-level paragraph/heading, including marks but not its following inter-block gap. |
 | Several blocks | First intersected top-level block's source start through last intersected block's source end, including gaps between them. A selection ending exactly at the next block's start excludes that block. |
 | List item, nested list, task item | Expand to the entire enclosing top-level list. Preserve list kind, ordered start, task markers and checked states unless explicitly requested otherwise. |
@@ -69,6 +69,8 @@ The editor plugin retains paired canonical/projection `Mapping`/`StepMap` histor
 
 Every attempt has a new random `requestId`; each session has a random `sessionId`, neither derived from note text. Events require matching sender, session, attempt and strictly increasing `seq`. Ignore late events after abort; an old completion cannot restore a cancelled result. Deliver at most once per 50 ms, at most 4 KiB per IPC delta (split at Unicode boundaries), with a 64 KiB pending-output queue. Pause reads while backpressured; a consumer blocked for 5 s aborts as `provider-error`. Never block the main thread.
 
+**Planned tracker extension (WP-AI.1, WP-AI.5, WP-AI.6; RWR-25, RWR-26, PRF-15):** the current `TaskTracker`/`TaskView` (`packages/core/src/tasks.ts:16`) has no step-list, progress percentage or public update API. Add a typed main-to-core progress projection `{requestId,seq,stage:"checkpoint"|"sending"|"streaming"|"validating"|"saving",completedChunks,totalChunks?,elapsedMs,cancellable}` and a bounded tracker update operation; these fields/API do not exist yet. UI derives one named status from this projection, not a second `busy`. Only completed whole chunks contribute determinate fraction; token arrival is indeterminate. Fixtures must prove stage transitions, terminal task removal and no stale/backpressured update after cancellation.
+
 ## Save and checkpoints
 
 RWR-23, RWR-24, RWR-28. **Safety refinement of the starting hypothesis:** hold target-note autosave and ordinary commits from `sending` through `review`. Otherwise the idle backup could publish an unaccepted answer. Other notes remain unaffected. D-246 also keeps generated projection separate from canonical recovery, so a crash cannot mistake a fragment for ordinary typing.
@@ -102,7 +104,7 @@ RWR-25. Extend the existing typed `PlatformBridge` with `rewrite.*`; preload nev
 | `rewrite:finish` renderer → main | `{sessionId,leaseId,outcome:"accepted"|"discarded"}` → `{released:true}`; accepted status follows guarded-save acknowledgement, never starts a write itself |
 | `rewrite:history` renderer → main | `{operation:"list"|"read"|"remove",noteIdentity,sessionId?,variationId?}` → bounded metadata/content; owner/workspace/privacy checks apply |
 
-`rewrite:prepare` accepts at most 1 MiB canonical UTF-8 plus bounded metadata. `instruction` is at most 2 KiB UTF-8 and 512 verified estimated tokens. IDs are fixed-format random UUIDs; hashes exactly 64 lowercase hex characters; indices nonnegative integers within the encoded source. Main recomputes all hashes, UTF-8 boundaries and supported-block classification. Renderer cannot choose a credential, URL, shell command, ref name, repository path or arbitrary header on a request.
+`rewrite:prepare` accepts at most 1 MiB canonical UTF-8 plus bounded metadata. `instruction` is at most 4,000 Unicode code points and 16 KiB UTF-8, matching RWR-03/RWR-04 rather than imposing a second, smaller hidden prompt limit. Its verified token upper bound counts fully toward context, reservation and confirmation, in addition to the target and framing. IDs are fixed-format random UUIDs; hashes exactly 64 lowercase hex characters; indices nonnegative integers within the encoded source. Main recomputes all hashes, UTF-8 boundaries and supported-block classification. Renderer cannot choose a credential, URL, shell command, ref name, repository path or arbitrary header on a request.
 
 Paths resolve through the existing authorized Markdown workspace-path helper, refusing symlinks/escape and deriving privacy from the resolved workspace root, never an IPC boolean. Main binds `expectedDisk` to its own last-read/written baseline for the requesting window and re-reads on preparation/Accept; a renderer-supplied expected string is not authority to replace another window's newer save. Checkpoint identity and lease are revoked on workspace change or renderer death.
 

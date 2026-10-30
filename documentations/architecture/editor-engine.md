@@ -62,6 +62,10 @@ The full allow-list and deny-list are in [Decisions → Licensing policy](../pla
 5. **Command layer:** Tiptap's default keyboard shortcuts are turned off and replaced by the app's command and keybinding service, so every key follows the [keymap](../experience/keyboard-shortcuts.md) and its contexts. Editor commands are registered as app commands, which puts them in Spotlight automatically.
 6. **Focus mode integration:** focus mode subscribes to editor transactions and selection updates, resolves the selection's endpoint blocks through the editor model, and measures their whole paragraph bounds (see [Focus mode](../experience/focus-mode.md#how-the-active-paragraph-is-found), D-232). While the find bar is open it follows the current match instead.
 
+### Planned rewrite projection
+
+The [rewrite mapping contract](rewrite-engine.md#selection-mapping) adds source-aware inline spans to the existing top-level source map; where exact partial mapping cannot be proven, show the complete top-level expansion before Send. Streaming/review use a protected projection and paired canonical/projection StepMaps so outside typing survives. [Accept alone](rewrite-engine.md#save-and-checkpoints) creates one ordinary undo event; no preview navigation/token enters canonical Markdown, ordinary recovery or saves. The splice is re-adopted into the Markdown session without reserializing unchanged source bytes (RWR-21 through RWR-24, EDT-15). All are planned additions, not existing editor behavior.
+
 ## Block registry contract
 
 | Field | Purpose |
