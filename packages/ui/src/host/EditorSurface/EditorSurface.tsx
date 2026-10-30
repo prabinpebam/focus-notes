@@ -23,6 +23,8 @@ import { useFadingEdges } from "../../behaviors/fading-edges.ts";
 import * as s from "./EditorSurface.css.ts";
 
 export interface EditorSurfaceProps {
+  /** Opt-in disposable rewrite fixture; absent on every workspace canvas. */
+  onRewrite?: (payload: { source: string; from: number; to: number; original: string; menu: boolean }) => void;
   /** Changes when a different note is loaded. The editor resets only then. */
   documentKey: string;
   initialValue: string;
@@ -154,7 +156,7 @@ export function EditorSurface({
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
   outlineWidth = 0, outlineResizeLabel, filesDock = false, filesWidth = 0, onOutlineResize, onFilesFit,
   id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
-  onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect,
+  onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect, onRewrite,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
@@ -188,6 +190,23 @@ export function EditorSurface({
   const pendingSince = useRef<number | undefined>(undefined);
   const last = useRef(initialValue);
   const editorRef = useRef<Editor | null>(null);
+  useEffect(() => {
+    if (!onRewrite) return;
+    const invoke = (event: Event) => {
+      const key = event as KeyboardEvent;
+      if (event.type === "keydown" && !((key.ctrlKey || key.metaKey) && key.key.toLowerCase() === "k")) return;
+      const ed = editorRef.current;
+      if (!ed || !ed.view.dom.contains(event.target as Node)) return;
+      event.preventDefault(); event.stopImmediatePropagation();
+      try {
+        const { source, target } = session.rewriteTarget(ed.getJSON() as PMNode, ed.state.selection.from, ed.state.selection.to);
+        onRewrite({ source, from: target.from, to: target.to, original: target.original, menu: event.type === "contextmenu" });
+      } catch { /* Unsupported blocks stay unchanged; fixture only offers paragraphs. */ }
+    };
+    window.addEventListener("keydown", invoke, true);
+    window.addEventListener("contextmenu", invoke, true);
+    return () => { window.removeEventListener("keydown", invoke, true); window.removeEventListener("contextmenu", invoke, true); };
+  }, [onRewrite, session]);
   const emptyHeaderRef = useRef(emptyHeader);
   emptyHeaderRef.current = emptyHeader;
 

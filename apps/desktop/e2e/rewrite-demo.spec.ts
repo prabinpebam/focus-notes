@@ -1,0 +1,58 @@
+import { test, expect } from "./fixtures.ts";
+import { launch, tempDirs, caret } from "./helpers.ts";
+import { mkdirSync } from "node:fs";
+import { resolve } from "node:path";
+
+test("disposable rewrite: current block, stream, retry, accept, undo, selection, cancel and provider error", async () => {
+  const dirs = tempDirs();
+  const { app, page } = await launch(dirs, {}, { args: ["--rewrite-demo"] });
+  const captures = resolve("../../test-results/rewrite-demo");
+  mkdirSync(captures, { recursive: true });
+  try {
+    const editor = page.getByRole("textbox", { name: "Disposable sample note", exact: true });
+    await expect(editor).toContainText("community garden");
+    await page.screenshot({ path: `${captures}/01-playground.png` });
+    await editor.press(caret.docStart);
+    await editor.press("Control+k");
+    const rewrite = page.getByRole("dialog", { name: "Rewrite with AI", exact: true });
+    await expect(rewrite).toBeVisible();
+    await rewrite.getByRole("button", { name: "Rewrite", exact: true }).click();
+    await expect(rewrite.getByRole("status")).toHaveText("Rewriting with the fake provider…");
+    await expect(rewrite.getByRole("textbox", { name: "Proposed note" })).toHaveValue(/^Plan/);
+    await page.screenshot({ path: `${captures}/02-streaming.png` });
+    await expect(rewrite.getByRole("status")).toContainText("Ready to review");
+    await expect(rewrite.getByRole("button", { name: "Accept", exact: true })).toBeEnabled();
+    await page.screenshot({ path: `${captures}/03-review.png` });
+    await rewrite.getByRole("button", { name: "Try again", exact: true }).click();
+    await expect(rewrite.getByRole("button", { name: "Accept", exact: true })).toBeEnabled();
+    await rewrite.getByRole("button", { name: "Accept", exact: true }).click();
+    await expect(editor).toContainText("Plan a community garden");
+    await expect(page.getByRole("button", { name: "Undo rewrite", exact: true })).toBeEnabled();
+    await editor.press("Control+z");
+    await expect(editor).toContainText("We are planning");
+    await editor.press(caret.docStart);
+    await editor.press("Control+Shift+ArrowRight");
+    await editor.click({ button: "right" });
+    await page.getByRole("button", { name: "Rewrite with AI", exact: true }).click();
+    await rewrite.getByRole("textbox", { name: "Rewrite instruction" }).fill("Make it friendly");
+    await rewrite.getByRole("button", { name: "Rewrite", exact: true }).click();
+    await rewrite.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(editor).toContainText("We are planning");
+    await editor.press(caret.docStart); await editor.press("Control+k");
+    await rewrite.getByRole("button", { name: "Provider settings", exact: true }).click();
+    const settings = page.getByRole("dialog", { name: "Provider settings", exact: true });
+    await settings.getByRole("button", { name: "Toggle simulated error" }).click();
+    await page.screenshot({ path: `${captures}/04-provider-settings.png` });
+    await settings.getByRole("button", { name: "Close", exact: true }).click();
+    await rewrite.getByRole("button", { name: "Rewrite", exact: true }).click();
+    await expect(rewrite.getByRole("status")).toContainText("The demo provider couldn’t finish");
+    await page.screenshot({ path: `${captures}/05-error.png` });
+    await rewrite.getByRole("button", { name: "Provider settings", exact: true }).click();
+    await settings.getByRole("button", { name: "Toggle simulated error" }).click();
+    await settings.getByRole("button", { name: "Close", exact: true }).click();
+    await rewrite.getByRole("button", { name: "Try again", exact: true }).click();
+    await expect(rewrite.getByRole("button", { name: "Accept", exact: true })).toBeEnabled();
+    await rewrite.getByRole("button", { name: "Discard", exact: true }).click();
+    await expect(editor).toContainText("We are planning");
+  } finally { await app.close(); }
+});

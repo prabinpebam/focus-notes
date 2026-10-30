@@ -117,19 +117,27 @@ let running: Running;
   const app = createApp(scoped.bridge, messages.en!, "en", { htmlToMarkdown });
   const abort = new AbortController();
   // Settings and the theme manager are view documents of their own, hosted beside the canvas (IA-VIEW-SETTINGS, IA-VIEW-THEME).
-  const react = mountApp(root, { app, views, overlays: OVERLAYS, signal: abort.signal });
+  const demo = new URLSearchParams(location.search).get("rewriteDemo") === "1";
+  if (demo) window.addEventListener("keydown", (event) => {
+    const state = app.viewModels.select("vm.rewriteDemo", app.store.state);
+    if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z" && state.undo && !state.open) {
+      event.preventDefault(); event.stopImmediatePropagation();
+      void app.commands.run("demo.undo");
+    }
+  }, { capture: true, signal: abort.signal });
+  const react = mountApp(root, { app, views, ...(demo ? { view: "rewriteDemo" } : { overlays: OVERLAYS }), signal: abort.signal });
   const r: Running = { app, root: react, abort, revoke: scoped.revoke, offTheme: followTheme(app) };
   running = r;
   // A missing notes folder (FRE-11): the first frame is the recovery view, never a canvas that can't open a note.
   const missing = new URLSearchParams(location.search).get("folder") === "missing";
-  const started = app.start();
+  const started = demo ? Promise.resolve() : app.start();
   // The window shows once this frame is drawn, never an unpainted page (DSK-09, D-148).
   void (missing ? started.catch(() => {}) : Promise.resolve()).then(() => afterFirstThemedFrame()).then(() => {
     performance.mark(FIRST_FRAME_MARK);
     base.firstFrame();
   });
   void started.then(() => {
-    if (running === r && !app.store.state.recover.open) attachSearch(r);
+    if (!demo && running === r && !app.store.state.recover.open) attachSearch(r);
   });
 }
 base.onFlushRequest(() => flushApp(running.app));

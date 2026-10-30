@@ -35,6 +35,7 @@ export const contract = defineContract({
     filesWidth: { kind: "number", default: 0, description: "Docked Files' width in px, as resized; 0: its default." },
   },
   events: {
+    rewrite: { payload: { source: "text", from: "number", to: "number", original: "text", menu: "boolean" } },
     change: { payload: { value: "text" } },
     ready: {},
     findResult: { payload: { count: "number", current: "number", invalid: "boolean", wrapped: "boolean", replaced: "number" } },

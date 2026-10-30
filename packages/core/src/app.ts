@@ -1,4 +1,5 @@
 import { Store } from "./store.ts";
+import { registerRewriteDemo } from "./rewrite-demo.ts";
 import { CommandRegistry, chordsFor, formatChord, KEY_LAYERS, type Binding } from "./commands.ts";
 import { BUILT_IN_THEMES, CONTENT_FONTS, DEFAULT_THEMES, FOCUS_DIM, LINE_HEIGHT, MEASURE, PARAGRAPH_SPACINGS, UI_SCALES, onSteps, themeById, type ContentFont, type ParagraphSpacing } from "./themes.ts";
 import { cheatSheet, displayPlatform, EDITOR_COMMANDS, NATIVE_KEYS, type CheatSheetLayer, type CheatSheetPlatform } from "./keymap.ts";
@@ -1500,6 +1501,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     }),
   });
 
+  registerRewriteDemo({ store, commands, viewModels, messages: catalog });
   return {
     store, commands, viewModels, messages: catalog, bridge, flush,
     idle: () => tracker.idle(),

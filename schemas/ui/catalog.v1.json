@@ -3879,6 +3879,15 @@
         }
       },
       "events": {
+        "rewrite": {
+          "payload": {
+            "source": "text",
+            "from": "number",
+            "to": "number",
+            "original": "text",
+            "menu": "boolean"
+          }
+        },
         "change": {
           "payload": {
             "value": "text"
@@ -4839,6 +4848,14 @@
       "ia": "IA-VIEW-PUBLIC",
       "viewModels": [
         "vm.reader"
+      ]
+    },
+    {
+      "id": "rewriteDemo",
+      "ia": "IA-VIEW-CANVAS",
+      "viewModels": [
+        "vm.rewriteDemo",
+        "vm.app"
       ]
     },
     {

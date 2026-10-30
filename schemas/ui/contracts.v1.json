@@ -9732,6 +9732,15 @@
         }
       },
       "events": {
+        "rewrite": {
+          "payload": {
+            "source": "text",
+            "from": "number",
+            "to": "number",
+            "original": "text",
+            "menu": "boolean"
+          }
+        },
         "change": {
           "payload": {
             "value": "text"

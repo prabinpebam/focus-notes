@@ -8732,6 +8732,9 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "rewrite": {
+              "$ref": "#/$defs/actions"
+            },
             "change": {
               "$ref": "#/$defs/actions"
             },

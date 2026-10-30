@@ -1,0 +1,61 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "rewriteDemo",
+  "ia": "IA-VIEW-CANVAS",
+  "viewModels": ["vm.rewriteDemo", "vm.app"],
+  "focus": "demoEditor",
+  "root": {
+    "type": "AppRoot",
+    "props": { "scheme": { "get": "vm.app.scheme" }, "platform": { "get": "vm.app.platform" }, "theme": { "get": "vm.app.theme" } },
+    "children": [
+      { "type": "Surface", "props": { "variant": "canvas", "padding": "l" }, "children": [
+      { "type": "Stack", "props": { "gap": "m" }, "children": [
+      { "type": "Heading", "props": { "value": { "t": "rewrite.demoTitle" } } },
+      { "type": "Text", "props": { "value": { "t": "rewrite.demoNotice" } } },
+      { "type": "Inline", "props": { "gap": "s" }, "children": [
+        { "type": "Button", "props": { "label": { "t": "rewrite.settings" } }, "on": { "press": { "run": "demo.settings" } } },
+        { "type": "Button", "props": { "label": { "t": "rewrite.undo" }, "disabled": { "expr": { "!": { "get": "vm.rewriteDemo.undo" } } }, "disabledReason": { "t": "rewrite.undoReason" } }, "on": { "press": { "run": "demo.undo" } } }
+      ] },
+      { "type": "EditorSurface", "id": "demoEditor", "props": {
+        "documentKey": { "get": "vm.rewriteDemo.documentKey" },
+        "initialValue": { "get": "vm.rewriteDemo.source" },
+        "label": { "t": "rewrite.sample" },
+        "readOnly": { "get": "vm.rewriteDemo.open" }
+      }, "on": {
+        "change": { "run": "demo.change", "args": { "value": { "get": "event.value" } } },
+        "rewrite": { "run": "demo.target", "args": { "source": { "get": "event.source" }, "from": { "get": "event.from" }, "to": { "get": "event.to" }, "original": { "get": "event.original" }, "menu": { "get": "event.menu" } } }
+      } },
+      { "type": "Button", "when": { "get": "vm.rewriteDemo.menu" }, "props": { "label": { "t": "rewrite.title" } }, "on": { "press": { "run": "demo.open" } } },
+      { "type": "Dialog", "when": { "get": "vm.rewriteDemo.open" }, "props": {
+        "open": { "get": "vm.rewriteDemo.open" }, "title": { "t": "rewrite.title" }, "closeLabel": { "t": "dialog.close" }, "size": "m", "height": "content"
+      }, "on": { "openChange": { "run": "demo.discard" } }, "children": [
+        { "type": "Stack", "props": { "gap": "m" }, "children": [
+          { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.original" } } },
+          { "type": "Inline", "props": { "gap": "s" }, "children": [
+            { "type": "Button", "props": { "label": { "t": "rewrite.concise" } }, "on": { "press": { "run": "demo.preset", "args": { "value": "Make it concise" } } } },
+            { "type": "Button", "props": { "label": { "t": "rewrite.friendly" } }, "on": { "press": { "run": "demo.preset", "args": { "value": "Make it friendly" } } } },
+            { "type": "Button", "props": { "label": { "t": "rewrite.settings" } }, "on": { "press": { "run": "demo.settings" } } }
+          ] },
+          { "type": "TextField", "props": { "label": { "t": "rewrite.instruction" }, "value": { "bind": "vm.rewriteDemo.instruction" }, "readOnly": { "get": "vm.rewriteDemo.busy" } } },
+          { "type": "LiveRegion", "props": { "message": { "get": "vm.rewriteDemo.status" } } },
+          { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.status" } } },
+          { "type": "TextField", "props": { "label": { "t": "rewrite.result" }, "value": { "get": "vm.rewriteDemo.result" }, "multiline": true, "scrolls": true, "readOnly": true } },
+          { "type": "Inline", "props": { "gap": "s" }, "children": [
+            { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.generateLabel" }, "disabled": { "get": "vm.rewriteDemo.busy" }, "disabledReason": { "t": "rewrite.waitReason" } }, "on": { "press": { "run": "demo.send" } } },
+            { "type": "Button", "props": { "label": { "t": "rewrite.accept" }, "disabled": { "expr": { "!": { "get": "vm.rewriteDemo.review" } } }, "disabledReason": { "t": "rewrite.acceptReason" } }, "on": { "press": { "run": "demo.accept" } } },
+            { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.discardLabel" } }, "on": { "press": { "run": "demo.discard" } } }
+          ] }
+          ] }
+          ] }
+        ] }
+      ] },
+      { "type": "Dialog", "when": { "get": "vm.rewriteDemo.settings" }, "props": { "open": { "get": "vm.rewriteDemo.settings" }, "title": { "t": "rewrite.settings" }, "closeLabel": { "t": "dialog.close" }, "size": "m", "height": "content" }, "on": { "openChange": { "run": "demo.settings" } }, "children": [
+        { "type": "Stack", "props": { "gap": "m" }, "children": [
+          { "type": "Text", "props": { "value": { "t": "rewrite.providerNotice" } } },
+          { "type": "Button", "props": { "label": { "t": "rewrite.failure" } }, "on": { "press": { "run": "demo.failure" } } },
+          { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.failureStatus" } } }
+        ] }
+      ] }
+    ]
+  }
+}
