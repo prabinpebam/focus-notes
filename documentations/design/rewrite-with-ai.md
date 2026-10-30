@@ -90,6 +90,7 @@ This is the **single canonical planned copy register** for future `packages/view
 | `rewrite.preset.save`, `.rename`, `.delete`, `.export`, `.name`, `.duplicate`, `.full` | Save preset; Rename; Delete preset; Export presets; Preset name; A preset with this name already exists. Choose another name.; You have 20 presets. Delete one before adding another. |
 | `rewrite.preset.deleteTitle`, `.deleteWarning`, `.exportWarning` | Delete “{name}”?; This preset can’t be restored.; Exported presets include your instructions. They may contain private information. |
 | `rewrite.history.empty`, `.clear`, `.clearTitle`, `.clearWarning`, `.reselect`, `.accepted`, `.discarded` | No rewrite variations on this device yet.; Clear rewrite history; Clear rewrite history on this device?; Notes are kept. Deleted history may remain in device backups.; Reselect text; Accepted; Discarded |
+| `rewrite.history.limit` | Keep or discard this rewrite before starting another. |
 | `rewrite.announce.open`, `.complete`, `.accepted`, `.discarded` | Rewrite instruction opened for {target}.; Rewrite ready. Variation {index} of {total}. Review before accepting.; Rewrite accepted.; Rewrite discarded. Original text restored. |
 
 Error keys match the engine's exact code suffixes. Values below are canonical; straight apostrophes in architecture quotations normalize to product typography without changing meaning.

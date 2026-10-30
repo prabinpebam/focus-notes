@@ -92,7 +92,7 @@
   "workPackages": [
     {
       "id": "WP-AI.1", "stage": "MAI", "title": "Fake rewrite engine and safe target",
-      "summary": "One fake-provider selection-to-review path: source mapping, checkpoint acknowledgement, protected range, typed events, timeouts and untrusted output. No network.",
+      "summary": "One fake-provider selection-to-review path: source mapping, checkpoint acknowledgement, protected canonical/projection range, planned bounded TaskTracker step/progress update API, typed events, timeouts and untrusted output. No network.",
       "requirements": ["RWR-21", "RWR-22", "RWR-23", "RWR-24", "RWR-25", "RWR-26", "RWR-27", "EDT-15"],
       "dependsOn": ["WP-1.1", "WP-8.9"], "touches": ["core", "editor", "markdown", "desktop"],
       "reviews": ["code", "security"], "specs": ["architecture/rewrite-engine.md", "plan/rewrite-acceptance.md"],
@@ -100,7 +100,7 @@
     },
     {
       "id": "WP-AI.2", "stage": "MAI", "title": "Inline prompt and review against fixtures",
-      "summary": "Selection menu, shortcut migration, Spotlight, presets and protected review with a fake provider; visible gallery/candidate preview, no provider choice needed.",
+      "summary": "Selection menu, shortcut migration, Spotlight, presets and protected review with fake provider. Close prompt/review and reusable view/message subchecks only; file/setup/consent/settings integrated UI-14/I18N-04 subcases remain pending AI.5/AI.6 then AI.9, never certified from mocks.",
       "requirements": ["RWR-01", "RWR-02", "RWR-03", "RWR-04", "RWR-05", "RWR-06", "KEY-08", "SPT-09", "UI-14", "I18N-04"],
       "dependsOn": ["WP-AI.1"], "touches": ["core", "ui", "views", "desktop"],
       "reviews": ["code", "design-system", "accessibility"], "specs": ["experience/rewrite-with-ai.md", "design/rewrite-with-ai.md", "plan/rewrite-acceptance.md"],
@@ -108,7 +108,7 @@
     },
     {
       "id": "WP-AI.3", "stage": "MAI", "title": "Fresh text and accessible gallery",
-      "summary": "Ephemeral fresh-text decoration, contrast/motion fallbacks and paragraph-band interaction, proved with fixture output in every theme.",
+      "summary": "Fresh-text decoration, contrast/motion and paragraph-band fixtures; close actual selection/review accessibility/gallery subchecks only. Full file/setup A11Y-03/DSY-14 subcases remain pending AI.5/AI.6 then combined AI.9 evidence.",
       "requirements": ["RWR-08", "FOC-07", "A11Y-03", "DSY-14"],
       "dependsOn": ["WP-AI.2"], "touches": ["editor", "tokens", "ui", "views"],
       "reviews": ["code", "design-system", "accessibility"], "specs": ["design/rewrite-with-ai.md", "plan/rewrite-acceptance.md"],
@@ -132,7 +132,7 @@
     },
     {
       "id": "WP-AI.6", "stage": "MAI", "title": "Offline setup, policy and fixture profiles",
-      "summary": "Implement profile/consent/cap policy and settings against fake transport only, safeStorage references, kit fixture provenance and error recovery. Requirements involving egress are fixture contracts here, not permission to enable real transport.",
+      "summary": "Profile/consent/cap settings against fake transport, safeStorage references, method provenance and repair. Close offline policy/IPC/egress subchecks only; actual private-history SEC-09/PRV-05 proofs await AI.4 and combined AI.9, real transport awaits AI.7/AI.8. No kit/scaffold/runtime install.",
       "requirements": ["RWR-09", "RWR-41", "RWR-42", "RWR-43", "RWR-44", "RWR-45", "RWR-47", "PRV-05", "SEC-09", "LIC-03"],
       "dependsOn": ["WP-AI.2"], "touches": ["core", "desktop", "ui", "views"],
       "reviews": ["code", "security", "design-system", "accessibility"], "specs": ["architecture/rewrite-providers.md", "design/rewrite-with-ai.md", "plan/rewrite-acceptance.md"],
@@ -156,7 +156,7 @@
     },
     {
       "id": "WP-AI.9", "stage": "MAI", "title": "Rewrite gate evidence and Help",
-      "summary": "Run the scripted offline matrix, round-trip/crash/conflict/private-isolation proofs and Windows journeys; feature-gate Help and record release/security/accessibility evidence, with no live calls in CI.",
+      "summary": "Run combined actual prompt/review/file/setup/history/approved-transport surfaces, close every pending UI-14/I18N-04/A11Y-03/DSY-14/SEC-09/PRV-05 integration subcase without duplicate ownership. Run corpus/crash/conflict/private Windows fixtures, Help and final reviews; no live calls in CI.",
       "requirements": ["QLT-08", "HLP-10", "DOC-03"],
       "dependsOn": ["WP-AI.4", "WP-AI.5", "WP-AI.8"], "touches": ["tests", "help", "spec"],
       "reviews": ["code", "security", "design-system", "accessibility"], "specs": ["plan/rewrite-acceptance.md", "experience/rewrite-with-ai.md"],
