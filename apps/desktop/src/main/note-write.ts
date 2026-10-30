@@ -8,8 +8,9 @@
  * is written and the text found is returned, so another program's change, a pull, or a write queued
  * before this one is never written over. A missing file is written: nothing is lost by making it.
  */
-import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { basename, dirname, join, resolve } from "node:path";
 
 /**
  * A note's temporary file: hidden beside it and named for it, so a crash between writing and the
@@ -61,6 +62,33 @@ export interface NoteWriterHooks {
   ready?(path: string): Promise<void>;
   /** After a write landed (the parsed-note snapshot, PRF-10). */
   written?(path: string, content: string): Promise<void> | void;
+  /**
+   * Main-owned identity/conflict authority, never a renderer-supplied resolver. Absent until the
+   * desktop lifecycle owns these facts: preparation then fails closed, not a guessed identity.
+   */
+  rewriteIdentity?(path: string): Promise<{ domain: RewriteDomain; noteKey: string; conflict: boolean }>;
+}
+
+type RewriteDomain = "public" | "private" | "local";
+const REWRITE_REFUSALS = new Set(["rewrite-identity", "rewrite-unavailable", "rewrite-busy", "rewrite-cancelled", "rewrite-conflict", "rewrite-stale", "read-only"]);
+export interface RewritePreparation {
+  domain: RewriteDomain;
+  noteKey: string;
+  baselineHash: string;
+  signal?: AbortSignal;
+}
+export interface RewriteSaveLease {
+  readonly leaseId: string;
+  readonly identity: Readonly<{ path: string; domain: RewriteDomain; noteKey: string; fileId: string }>;
+  readonly baselineHash: string;
+  /** This is a save hold, NOT an original checkpoint acknowledgement or permission to generate. */
+  readonly generation: "blocked-durable-history-unavailable";
+  release(): void;
+}
+interface RewriteHold {
+  gate: Promise<void>;
+  baseline?: string;
+  fileId?: string;
 }
 
 export class NoteWriter {
@@ -70,6 +98,7 @@ export class NoteWriter {
   /** The notes written this session: a note's left temporary files are cleared at its first save. */
   readonly #cleared = new Set<string>();
   readonly #hooks: NoteWriterHooks;
+  readonly #rewriteHolds = new Map<string, RewriteHold>();
 
   constructor(hooks: NoteWriterHooks = {}) {
     this.#hooks = hooks;
@@ -77,15 +106,99 @@ export class NoteWriter {
 
   /** Writes after the writes to the path before it; with `expected`, never over a change. */
   write(path: string, content: string, expected?: string): Promise<{ outside: string } | undefined> {
+    const hold = this.#rewriteHolds.get(path);
+    return this.#enqueue(path, async () => {
+      await hold?.gate;
+      // Even an otherwise unguarded writer cannot overwrite an outside edit across a rewrite hold.
+      const result = await this.#now(path, content, expected ?? hold?.baseline, hold);
+      if (hold?.baseline !== undefined && !result) {
+        const now = await stat(path, { bigint: true });
+        hold.fileId = `${now.dev}:${now.ino}:${now.birthtimeNs}`;
+        hold.baseline = content;
+      }
+      return result;
+    });
+  }
+
+  /** The same per-path lane used by every ordinary save; no second rewrite write queue. */
+  #enqueue<T>(path: string, run: () => Promise<T>): Promise<T> {
     const previous = this.queues.get(path) ?? Promise.resolve();
-    const next = previous.catch(() => {}).then(() => this.#now(path, content, expected));
+    const next = previous.catch(() => {}).then(run);
     this.queues.set(path, next);
     void next.finally(() => { if (this.queues.get(path) === next) this.queues.delete(path); }).catch(() => {});
     return next;
   }
 
-  async #now(path: string, content: string, expected: string | undefined): Promise<{ outside: string } | undefined> {
+  /**
+   * Reserve synchronously, inspect only after earlier writes/Git work, and hold subsequent saves.
+   * No history storage is installed here. In particular this lease must never be passed as the
+   * storage.original acknowledgement to RewriteSession. IPC/generation stay unavailable.
+   */
+  async prepareRewrite(path: string, request: RewritePreparation): Promise<RewriteSaveLease> {
+    const { domain, noteKey, baselineHash, signal } = request;
+    if (path !== resolve(path) || !/^[a-f0-9]{64}$/.test(baselineHash) || !noteKey) throw new Error("rewrite-identity");
+    if (!this.#hooks.rewriteIdentity) throw new Error("rewrite-unavailable");
+    if (this.#rewriteHolds.has(path)) throw new Error("rewrite-busy");
+    if (signal?.aborted) throw new Error("rewrite-cancelled");
+    let resume!: () => void;
+    const gate = new Promise<void>((r) => { resume = r; });
+    const release = () => {
+      signal?.removeEventListener("abort", release);
+      if (this.#rewriteHolds.get(path) === hold) this.#rewriteHolds.delete(path);
+      resume();
+    };
+    const hold: RewriteHold = { gate };
+    this.#rewriteHolds.set(path, hold);
+    signal?.addEventListener("abort", release, { once: true });
+    try {
+      const preparing = this.#enqueue(path, async () => {
+        await this.#hooks.ready?.(path);
+        if (signal?.aborted) throw new Error("rewrite-cancelled");
+        // Do not let a symlink/alias acquire a separate lease for the same note.
+        if (await realpath(path) !== path) throw new Error("rewrite-identity");
+        const identity = await this.#hooks.rewriteIdentity!(path);
+        if (identity.domain !== domain || identity.noteKey !== noteKey) throw new Error("rewrite-identity");
+        if (identity.conflict) throw new Error("rewrite-conflict");
+        const before = await stat(path, { bigint: true });
+        const bytes = await readFile(path);
+        const after = await stat(path, { bigint: true });
+        const foundHash = createHash("sha256").update(bytes).digest("hex");
+        const source = bytes.toString("utf8");
+        if (!before.isFile() || before.nlink !== 1n || before.dev !== after.dev || before.ino !== after.ino ||
+            before.birthtimeNs !== after.birthtimeNs || before.mtimeNs !== after.mtimeNs || before.size !== after.size ||
+            foundHash !== baselineHash || !Buffer.from(source, "utf8").equals(bytes)) throw new Error("rewrite-stale");
+        if (signal?.aborted) throw new Error("rewrite-cancelled");
+        hold.baseline = source;
+        hold.fileId = `${after.dev}:${after.ino}:${after.birthtimeNs}`;
+        return Object.freeze({
+          leaseId: randomUUID(),
+          identity: Object.freeze({ path, domain, noteKey, fileId: hold.fileId }),
+          baselineHash: foundHash,
+          generation: "blocked-durable-history-unavailable" as const,
+          release,
+        });
+      });
+      // Existing main file operations also await writeQueues, even if no save followed the hold.
+      // Publish that barrier immediately; resolving preparation itself must not open the lane.
+      void this.#enqueue(path, () => gate);
+      return await preparing;
+    } catch (error) {
+      release();
+      // No source/path-bearing filesystem errors cross the future preparation boundary.
+      if (error instanceof Error && REWRITE_REFUSALS.has(error.message)) throw new Error(error.message);
+      throw new Error("rewrite-unavailable");
+    }
+  }
+
+  async #heldIdentity(path: string, hold: RewriteHold | undefined): Promise<void> {
+    if (!hold?.fileId) return;
+    const now = await stat(path, { bigint: true }).catch(() => undefined);
+    if (!now || `${now.dev}:${now.ino}:${now.birthtimeNs}` !== hold.fileId) throw new Error("rewrite-stale");
+  }
+
+  async #now(path: string, content: string, expected: string | undefined, hold?: RewriteHold): Promise<{ outside: string } | undefined> {
     await this.#hooks.ready?.(path);
+    await this.#heldIdentity(path, hold);
     await mkdir(dirname(path), { recursive: true });
     // Checked now that it's this write's turn: what a pull or an earlier write left is what counts.
     const found = await changedOutside(path, content, expected);
@@ -99,6 +212,7 @@ export class NoteWriter {
         await rm(tmp, { force: true });
         return { outside: late };
       }
+      await this.#heldIdentity(path, hold);
       await retrying(() => rename(tmp, path));
     } catch (error) {
       await rm(tmp, { force: true });
