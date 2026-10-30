@@ -6,6 +6,7 @@
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { RewriteConnection } from "./rewrite-connection.ts";
+import { RewriteConnectionTransaction } from "./rewrite-connection-transaction.ts";
 import { checkpointEncryptionKey } from "./rewrite-key-checkpoint.ts";
 import { RewriteAuthority } from "./rewrite-authority.ts";
 import { RewriteOriginalStore } from "./rewrite-original.ts";
@@ -1264,13 +1265,27 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (action === "release") return rewriteAuthority.release(owner, input.token);
     throw new Error("rewrite-unavailable");
   });
-  const connection = new RewriteConnection({
+  const profile = () => dataFile(DATA_FILES.rewriteConnection);
+  const connection = new RewriteConnectionTransaction({
     available: () => safeStorage.isEncryptionAvailable(),
     encrypt: (text) => safeStorage.encryptString(text),
     decrypt: (data) => safeStorage.decryptString(data),
+  }, {
+    load: async () => {
+      try { return JSON.parse(await readFile(profile(), "utf8")); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined; throw error; }
+    },
+    checkpoint: () => checkpointEncryptionKey(app.getPath("sessionData")),
+    persist: async (value) => {
+      const temporary = `${profile()}.${randomUUID()}.tmp`;
+      try {
+        await writeFile(temporary, JSON.stringify(value), { mode: 0o600, flag: "wx", flush: true });
+        await rename(temporary, profile());
+      } finally { await rm(temporary, { force: true }).catch(() => {}); }
+    },
+    remove: () => rm(profile(), { force: true }),
   });
   const requests = new Map<number, { id: string; token: string; abort: AbortController; stream: ReturnType<RewriteConnection["stream"]> }>();
-  const profile = () => dataFile(DATA_FILES.rewriteConnection);
   const previewDestination = (address: string) => {
     if (!rewriteWriteCandidate()) {
       const url = new URL(address);
@@ -1283,17 +1298,13 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     try {
         if (action === "configure" || action === "remove") {
           requests.get(owner)?.abort.abort(); requests.delete(owner);
-        if (action === "remove") { connection.remove(); await rm(profile(), { force: true }); return connection.settings(); }
+        if (action === "remove") return await connection.remove();
         if (typeof a.address !== "string" || typeof a.model !== "string" || typeof a.key !== "string") throw new Error();
         previewDestination(a.address);
-        await connection.configure({ address: a.address, model: a.model, key: a.key });
-        await checkpointEncryptionKey(app.getPath("sessionData"));
-        await writeFile(profile(), JSON.stringify(connection.envelope()), { mode: 0o600 });
-        return connection.settings();
+        return await connection.configure({ address: a.address, model: a.model, key: a.key });
       }
       if (action === "settings") {
-        if (!connection.settings().configured && existsSync(profile())) connection.restore(JSON.parse(await readFile(profile(), "utf8")));
-        return connection.settings();
+        return await connection.settings();
       }
       if (action === "cancel") {
         if (requests.get(owner)?.id === a.id) { requests.get(owner)?.abort.abort(); requests.delete(owner); }
@@ -1301,7 +1312,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       }
       if (action === "start") {
         requests.get(owner)?.abort.abort();
-        previewDestination(connection.settings().address);
+        previewDestination((await connection.settings()).address);
         if (typeof a.target !== "string" || a.target.length > 32768 || typeof a.instruction !== "string" || a.instruction.length > 4000) throw new Error();
         const abort = new AbortController();
         const id = randomUUID();
@@ -1325,7 +1336,6 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       }
       throw new Error();
     } catch {
-      if (action === "configure") connection.remove();
       if (action !== "next" || requests.get(owner)?.id === a.id) {
         requests.get(owner)?.abort.abort(); requests.delete(owner);
       }
