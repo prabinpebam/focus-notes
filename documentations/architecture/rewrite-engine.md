@@ -65,6 +65,8 @@ RWR-23, RWR-24, RWR-26. Exactly six lifecycle states. Checkpointing, validation 
 
 Only one generation per workspace, one rewrite session per target note and one lease per note across windows. Another window may read the original but cannot acquire a competing rewrite lease. Ordinary edits there are not forbidden: if saved, they invalidate this target and enter conflict handling. Do not silently drop either window's text.
 
+The editor plugin retains paired canonical/projection `Mapping`/`StepMap` histories, not character-count arithmetic. For each independent transaction, first prove every changed interval is disjoint from the protected interval, map its steps to canonical coordinates, apply there, then rebuild the projection from the mapped canonical target and current candidate. A step that deletes an ancestor, joins across the boundary, moves blocks through it, or cannot map without loss is refused while the preview is protected, with the Discard action available. Selections map separately; IME composition wholly outside the target remains one uninterrupted composition. Do not serialize the projection during editor flush, copy-as-Markdown or recovery handover. Copying an explicitly selected preview is allowed as inert text only and never marks it accepted.
+
 Every attempt has a new random `requestId`; each session has a random `sessionId`, neither derived from note text. Events require matching sender, session, attempt and strictly increasing `seq`. Ignore late events after abort; an old completion cannot restore a cancelled result. Deliver at most once per 50 ms, at most 4 KiB per IPC delta (split at Unicode boundaries), with a 64 KiB pending-output queue. Pause reads while backpressured; a consumer blocked for 5 s aborts as `provider-error`. Never block the main thread.
 
 ## Save and checkpoints
@@ -128,8 +130,8 @@ RWR-28, RWR-29. A file-browser action resolves the **current file identity**, no
 | Same file, open and dirty here | Hand over editor text, checkpoint the complete dirty canonical source, retain original diskExpected separately. No forced save merely to send. |
 | Same file, open elsewhere | Obtain main's note lease and current disk baseline; notify other windows of preview ownership. A later external/window write causes `stale-target`/existing resolver, never last-writer-wins. |
 | Same file, closed | Read main's exact bytes, existence and identity inside `afterWrites`/workspace operation lane, then open the same review surface. Accept uses the guarded save. |
-| New file | Default sibling `<stem> - rewritten.md`; collisions use ` - rewritten 2.md` up to `999`, then explicit rename. Validate Windows names, case-insensitive collisions, reserved names, symlinks and workspace boundary. Use exclusive create (`wx`), retry name after collision, never overwrite. |
-| New identity | Preserve original non-`id` front-matter keys, replace `id` with a new ULID via the existing note-ID mechanism. With no front matter, create only the `id` field. Source file, its ID and incoming links stay unchanged. |
+| New file | Default sibling `<stem>-rewritten.md`; collisions use `<stem>-rewritten-2.md` through `999`, then explicit rename. Reuse `planCreateNote`/title-stem and uniqueness helpers (D-92), reserve suffix space within 80-character/240-UTF-8-byte stem limits, and validate Windows reserved names, case-insensitive collisions, symlinks and workspace boundary. Use exclusive create (`wx`), retry name after collision, never overwrite. |
+| New identity | Preserve original non-`id` front-matter keys, remove old ID with the existing `withoutNoteId` behavior and insert a fresh 26-character ULID matching `front-matter.schema.json`. Reuse/extract the draft ULID generator rather than inventing another format. With no front matter, create only `id`. Source file, its ID and incoming links stay unchanged. |
 | Links | Default sibling preserves relative destinations. If person chooses another folder within the same privacy root, rebase relative outgoing links using existing link-update helpers before preview; never add backlinks or rewrite incoming links to the original. |
 | Privacy | Private source can create only in the same private repository's notes root; no Public choice, drag bypass or output export. Public source stays in its current visibility root. A visibility change is a separate existing explicit workflow. |
 
@@ -149,6 +151,8 @@ RWR-28, RWR-29. A file-browser action resolves the **current file identity**, no
 | Partial completion | Progress `Completed {done} of {total} sections`; chunks stay provisional. Cancel/error discards all partial candidate output and restores canonical original. No partial Accept or save. Completed older variations remain. |
 
 No background request is started after the overall budget, rate limit or cost reservation is exhausted. A completed whole-file variation is one history commit and one accepted editor undo event, not one per chunk.
+
+"Same file" means the same note identity. If rewriting its first H1 triggers the existing title-following filename rule, that normal guarded rename happens only after Accept/save acknowledgement, with the usual link updates; never rename during generation/review. A manually named or published note retains its normal filename behavior.
 
 ## Failure and recovery
 
