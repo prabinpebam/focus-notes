@@ -315,6 +315,18 @@ export function registerFiles(ctx: Ctx) {
     const n = store.state.note;
     return n.saveState === "saved" ? undefined : new Error(n.path && ctx.holds?.(n.path) ? "changed" : "failed");
   };
+  commands.register({
+    id: "files.rewrite", title: "rewrite.title",
+    enabled: () => Boolean(bridge.rewriteAuthority && rowById(files().selection.focus)?.kind === "note"),
+    run: async (_args, command) => {
+      if (unsavedOpen()) return;
+      const row = rowById(files().selection.focus);
+      if (!row || row.kind !== "note" || row.readOnly) return;
+      if (store.state.note.path !== row.path) await ctx.load(row.path);
+      const source = store.state.note.markdown;
+      await command.run("demo.target", { source, from: 0, to: source.length, original: source, wholeFile: true });
+    },
+  });
   const openText = (): Promise<string> => {
     const no = unsavedOpen();
     return no ? Promise.reject(no) : Promise.resolve(store.state.note.markdown);

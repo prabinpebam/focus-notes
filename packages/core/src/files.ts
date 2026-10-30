@@ -212,7 +212,7 @@ export function rowMenu(focus: FileRow, acted: readonly FileRow[], o: { both: bo
   }
   const r = acted[0]!;
   if (r.kind === "folder") return out([create, openFolder, copy(acted), ["files.rename", "files.moveTo"], vis(acted), ["files.delete"]]);
-  return out([["files.openItem", ...reveal], copy(acted), ["files.rename", "files.duplicate", "files.moveTo"], [...vis(acted), ...(r.rootId === "public" ? ["files.copyPublicLink"] : [])], ["files.delete"]]);
+  return out([["files.openItem", "files.rewrite", ...reveal], copy(acted), ["files.rename", "files.duplicate", "files.moveTo"], [...vis(acted), ...(r.rootId === "public" ? ["files.copyPublicLink"] : [])], ["files.delete"]]);
 }
 
 /**

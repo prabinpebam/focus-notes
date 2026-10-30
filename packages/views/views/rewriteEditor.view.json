@@ -54,6 +54,9 @@
           { "type": "Text", "when": { "get": "vm.rewriteDemo.isFake" }, "props": { "value": { "get": "vm.rewriteDemo.failureStatus" } } },
           { "type": "TextField", "id": "rewriteInstruction", "props": { "label": { "t": "rewrite.instruction" }, "value": { "bind": "vm.rewriteDemo.instruction" }, "readOnly": { "get": "vm.rewriteDemo.busy" } } },
           { "type": "LiveRegion", "props": { "message": { "get": "vm.rewriteDemo.status" } } },
+          { "type": "Text", "when": { "get": "vm.rewriteDemo.wholeFile" }, "props": { "value": { "get": "vm.rewriteDemo.preview" } } },
+          { "type": "TextField", "when": { "get": "vm.rewriteDemo.wholeFile" }, "props": { "label": { "t": "rewrite.newFilename" }, "value": { "bind": "vm.rewriteDemo.filename" } } },
+          { "type": "Button", "when": { "get": "vm.rewriteDemo.wholeFile" }, "props": { "label": { "t": "rewrite.newFile" } }, "on": { "press": { "run": "demo.newFile" } } },
           { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.status" } } },
           { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
             { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.generateLabel" }, "disabled": { "get": "vm.rewriteDemo.busy" }, "disabledReason": { "t": "rewrite.waitReason" } }, "on": { "press": { "run": "demo.send" } } },

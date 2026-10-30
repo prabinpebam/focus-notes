@@ -2,6 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { NoteWriter, RewriteSaveLease } from "./note-write.ts";
 import type { OriginalInput } from "./rewrite-original.ts";
+import { basename, dirname, join } from "node:path";
+import { createRewriteFile } from "./rewrite-new-file.ts";
 
 export interface CurrentRewriteNote {
   path: string;
@@ -172,6 +174,26 @@ export class RewriteAuthority {
       || note.conflict || hash(await readFile(note.path, "utf8")) !== operation.lease.baselineHash) throw refused();
     this.#operation(owner, token);
     this.release(owner, token);
+  }
+  async newFile(owner: number, token: string, name: string): Promise<string> {
+    const { current, operation } = this.#operation(owner, token);
+    if (typeof name !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9 _-]{0,79}\.md$/.test(name)
+      || basename(name) !== name || !operation.complete || !operation.variationId || !operation.output
+      || operation.input.target.startByte !== 0 || operation.input.target.endByte !== Buffer.byteLength(operation.input.source)
+      || hash(operation.input.source) !== operation.lease.baselineHash) throw refused();
+    const validate = async () => {
+      if (this.#operation(owner, token).operation !== operation) throw refused();
+      if ([...this.#windows.entries()].some(([id, other]) => id !== owner && other.note?.path === current.note.path)) throw refused();
+      const note = await this.#options.resolve(current.note.path);
+      if (note.path !== current.note.path || note.domain !== current.note.domain || note.noteKey !== current.note.noteKey
+        || note.workspace !== current.note.workspace || note.conflict
+        || hash(await readFile(note.path, "utf8")) !== operation.lease.baselineHash) throw refused();
+      this.#operation(owner, token);
+    };
+    const path = join(dirname(current.note.path), name);
+    await createRewriteFile(path, operation.output, validate);
+    this.release(owner, token);
+    return path;
   }
   release(owner: number, token: string): void {
     const { current, operation } = this.#operation(owner, token);

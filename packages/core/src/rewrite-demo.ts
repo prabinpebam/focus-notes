@@ -6,6 +6,9 @@ import type { App } from "./app.ts";
 export class RewriteDemo {
   source = "We are planning a small community garden. There are several things that we need to think about before we can begin.";
   instruction = "Make it concise";
+  filename = "rewrite.md";
+  creating = false;
+  wholeFile = false;
   session: RewriteSession | undefined;
   target: RewriteTarget | undefined;
   original = "";
@@ -40,7 +43,7 @@ export class RewriteDemo {
     this.historyIndex = Math.max(0, Math.min(this.history.length - 1, this.historyIndex + step));
     this.showOriginal = false; this.changed();
   }
-  authority: { prepare(source: string, target: RewriteTarget): Promise<string>; complete(token: string, replacement: string): Promise<string>; accept(token: string): Promise<void>; cancel(): void; history?(source: string): Promise<{ source: string; original?: string }[]>; restore?(source: string, index: number, original: boolean): Promise<{ token: string; source: string }> } | undefined;
+  authority: { newFile?(token: string, name: string): Promise<string>; prepare(source: string, target: RewriteTarget): Promise<string>; complete(token: string, replacement: string): Promise<string>; accept(token: string): Promise<void>; cancel(): void; history?(source: string): Promise<{ source: string; original?: string }[]>; restore?(source: string, index: number, original: boolean): Promise<{ token: string; source: string }> } | undefined;
   readonly changed: () => void;
   constructor(changed = () => {}) { this.changed = changed; }
   open(input: { source: string; target: Pick<RewriteTarget, "from" | "to" | "original"> }): void {
@@ -154,6 +157,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
     if (demo.enabled && demo.openPanel && (demo.noteKey !== app.store.state.note.key || demo.source !== app.store.state.note.markdown)) demo.discard();
   });
   command("target", (a) => {
+    demo.wholeFile = a.wholeFile === true;
     if (demo.enabled && a.menu) { demo.menu = Number(a.from) >= 0; return; }
     if (demo.enabled) demo.noteKey = app.store.state.note.key;
     demo.feedback = "";
@@ -165,6 +169,15 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   command("instruction", (a) => { demo.instruction = String(a.value); demo.changed(); });
   command("preset", (a) => { demo.instruction = String(a.value); demo.changed(); });
   command("send", () => demo.send());
+  command("filename", (a) => { demo.filename = String(a.value); demo.changed(); });
+  command("newFile", async () => {
+    if (demo.creating || demo.session?.state !== "review" || !demo.token || !authority?.newFile
+      || demo.noteKey !== app.store.state.note.key || demo.source !== app.store.state.note.markdown) return;
+    demo.creating = true; demo.feedback = text("creatingFile"); demo.changed();
+    try { await authority.newFile(demo.token, demo.filename); demo.discard(); demo.feedback = text("fileCreated"); }
+    catch { demo.feedback = text("fileRefused"); }
+    finally { demo.creating = false; demo.changed(); }
+  });
   command("history", async () => {
     if (!demo.enabled || demo.historyLoading) return;
     demo.session?.stop(); authority?.cancel(); demo.session = undefined; demo.token = undefined;
@@ -252,13 +265,15 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
     // Re-select on store notifications, retaining structurally equal projections.
     reads: "*",
     schema: { type: "object", properties: Object.fromEntries([
-      ...["editorNotice", "restoreLabel", "historyStatus", "savedPreview", "historyCounter", "originalLabel", "address", "model", "key", "providerLabel", "connectionStatus", "source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
-      ...["canSwitchProvider", "restoreDisabled", "historyOpen", "historyLoading", "previousDisabled", "nextDisabled", "isFake", "enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
+      ...["filename", "editorNotice", "restoreLabel", "historyStatus", "savedPreview", "historyCounter", "originalLabel", "address", "model", "key", "providerLabel", "connectionStatus", "source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
+      ...["wholeFile", "canSwitchProvider", "restoreDisabled", "historyOpen", "historyLoading", "previousDisabled", "nextDisabled", "isFake", "enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
     ]) },
-    setters: { instruction: "demo.instruction", address: "demo.address", model: "demo.model", key: "demo.key" },
+    setters: { filename: "demo.filename", instruction: "demo.instruction", address: "demo.address", model: "demo.model", key: "demo.key" },
     select: () => {
       const state = demo.session?.state;
       return {
+        filename: demo.filename,
+        wholeFile: demo.wholeFile,
         editorNotice: text(demo.previewOnly ? "previewNotice" : "editorNotice"), canSwitchProvider: !demo.previewOnly,
         historyOpen: demo.historyOpen, historyLoading: demo.historyLoading, historyStatus: demo.historyStatus,
         restoreLabel: text(demo.showOriginal ? "restoreOriginal" : "restoreVariation"),

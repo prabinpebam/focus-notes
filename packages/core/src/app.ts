@@ -1514,6 +1514,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         return bridge.rewriteAuthority!("prepare", { revision: rewriteRevision, source, target });
       }),
       accept: (token) => bridge.rewriteAuthority!("accept", { token }),
+      newFile: (token, name) => bridge.rewriteAuthority!("newFile", { token, name }),
       complete: (token, replacement) => bridge.rewriteAuthority!("complete", { token, replacement }),
       history: (source) => afterWrites(async () => {
         if (!rewriteRevision) throw new Error("rewrite-unavailable");

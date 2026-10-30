@@ -20,6 +20,7 @@ import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.t
  */
 export interface PlatformBridge {
   rewriteAuthority?: {
+    (action: "newFile", input: { token: string; name: string }): Promise<string>;
     (action: "activate", input: { path: string | null; expected?: string }): Promise<string | undefined>;
     (action: "prepare", input: { revision: string; source: string; target: import("@focus-notes/markdown").RewriteTarget }): Promise<string>;
     (action: "cancel", input: { revision: string }): Promise<void>;

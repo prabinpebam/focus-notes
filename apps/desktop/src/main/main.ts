@@ -1247,6 +1247,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (action === "restore") return rewriteAuthority.restore(owner, input.revision, input.source, input.index, input.original);
     if (action === "cancel") return rewriteAuthority.cancel(owner, input.revision);
     if (action === "accept") return rewriteAuthority.accept(owner, input.token);
+    if (action === "newFile") return rewriteAuthority.newFile(owner, input.token, input.name);
     if (action === "complete") return rewriteAuthority.complete(owner, input.token, input.replacement);
     if (action === "release") return rewriteAuthority.release(owner, input.token);
     throw new Error("rewrite-unavailable");
