@@ -52,6 +52,18 @@ export class RewriteRange {
         if (!node || step.pos < projectedTo && step.pos + node.nodeSize > projectedFrom) touches = true;
       }
       if (touches) throw new Error("protected-target");
+      // ReplaceAroundStep can retain the protected text while replacing its ancestor's
+      // boundary tokens. Nonempty StepMaps therefore do not prove markup safety.
+      const before = transaction.docs[index]!;
+      const after = transaction.docs[index + 1] ?? transaction.doc;
+      for (const position of [projectedFrom, projectedTo]) {
+        const resolved = before.resolve(position);
+        const mappedPosition = after.resolve(step.getMap().map(position, 1));
+        if (mappedPosition.depth !== resolved.depth) throw new Error("protected-target");
+        for (let depth = 1; depth <= resolved.depth; depth++) {
+          if (!mappedPosition.node(depth).sameMarkup(resolved.node(depth))) throw new Error("protected-target");
+        }
+      }
       const mapped = step.map(bridge);
       if (!mapped) throw new Error("protected-target");
       const next = new Transform(canonical.doc);

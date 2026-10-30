@@ -77,4 +77,39 @@ describe("RWR-24: paired canonical/projection transaction mapping", () => {
     expect(() => range.applyOutside(tr)).toThrow("protected-target");
     expect(range.canonical.eq(heading)).toBe(true);
   });
+  it.each(["attrs", "type"] as const)("atomically refuses partial-target ancestor %s changes with nonempty maps", (change) => {
+    const heading = schema.nodeFromJSON(parseMarkdown("# Original\n\nAfter").doc);
+    const range = new RewriteRange(heading, 3, 5);
+    range.show(text("X"));
+    const projection = range.projection;
+    const tr = new Transform(projection).insert(projection.content.size - 1, schema.text("!"));
+    tr.setNodeMarkup(0, change === "type" ? schema.nodes.paragraph : undefined, change === "attrs" ? { level: 2 } : undefined);
+    let mappedRanges = 0;
+    tr.steps.at(-1)!.getMap().forEach(() => mappedRanges++);
+    expect(mappedRanges).toBeGreaterThan(0);
+    expect(() => range.applyOutside(tr)).toThrow("protected-target");
+    expect(range.canonical.eq(heading)).toBe(true);
+    expect(range.projection.eq(projection)).toBe(true);
+    expect([range.from, range.to]).toEqual([3, 5]);
+  });
+  it("still permits nonempty-map markup edits to an unrelated ancestor", () => {
+    const heading = schema.nodeFromJSON(parseMarkdown("# Original\n\n## After").doc);
+    const range = new RewriteRange(heading, 3, 5);
+    range.show(text("X"));
+    const outside = range.projection.child(0).nodeSize;
+    range.applyOutside(new Transform(range.projection).setNodeMarkup(outside, undefined, { level: 3 }));
+    expect(range.canonical.child(0).eq(heading.child(0))).toBe(true);
+    expect(range.canonical.child(1).attrs.level).toBe(3);
+    expect(range.projection.child(1).attrs.level).toBe(3);
+  });
+  it("maps protected ancestors past an outside sibling inserted at their opening position", () => {
+    const heading = schema.nodeFromJSON(parseMarkdown("# Original\n\nAfter").doc);
+    const range = new RewriteRange(heading, 3, 5);
+    range.show(text("X"));
+    range.applyOutside(new Transform(range.projection).insert(0, schema.nodes.paragraph!.create(null, schema.text("New"))));
+    expect(range.canonical.child(1).eq(heading.child(0))).toBe(true);
+    expect(range.canonical.textContent).toBe("NewOriginalAfter");
+    expect(range.projection.textContent).toBe("NewOrXinalAfter");
+    expect([range.from, range.to]).toEqual([8, 10]);
+  });
 });

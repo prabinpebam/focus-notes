@@ -73,6 +73,25 @@ describe("RWR-22/RWR-27: outside-byte identity and untrusted output", () => {
     const s = "hello\n\nworld";
     expect(() => spliceRewriteTarget(s, resolve(s, 1, 6), "hello\n\n---")).toThrow("invalid-output");
   });
+  it.each(["====", "----"])("rejects partial Setext reinterpretation from %s without expanding the target", (replacement) => {
+    const s = "Keep\nword\nlast";
+    const t = resolve(s, 6, 10);
+    expect(t).toMatchObject({ original: "word", expanded: false, from: 5, to: 9 });
+    expect(() => spliceRewriteTarget(s, t, replacement)).toThrow("invalid-output");
+    expect(t.original).toBe("word");
+  });
+  it.each([
+    ["Keep *word end", 7, 11, "new*"],
+    ["Keep [word end", 7, 11, "new](https://example.test)"],
+  ] as const)("rejects partial delimiter interaction in %s", (s, from, to, replacement) => {
+    const t = resolve(s, from, to);
+    expect(t.expanded).toBe(false);
+    expect(() => spliceRewriteTarget(s, t, replacement, { allowLinkChanges: true })).toThrow("invalid-output");
+  });
+  it("allows inline formatting confined to a partial target and preserves its neighbors", () => {
+    const s = "Keep word last";
+    expect(spliceRewriteTarget(s, resolve(s, 6, 10), "**new**")).toBe("Keep **new** last");
+  });
   it("rejects changed target bytes", () => {
     expect(() => spliceRewriteTarget(source.replace("Original", "Modified"), target(), "new")).toThrow("stale-target");
   });

@@ -109,6 +109,51 @@ function links(nodes: PMNode[], allowChanges: boolean): string[] {
   return result;
 }
 
+/** Inline PM slice, preserving marks and atom identity on the unselected sides. */
+function inlineSlice(nodes: PMNode[], from: number, to: number): PMNode[] {
+  let position = 0;
+  return nodes.flatMap((node) => {
+    const start = position;
+    position += size(node);
+    if (position <= from || start >= to) return [];
+    return node.type === "text"
+      ? [{ ...node, text: node.text!.slice(Math.max(0, from - start), Math.min(position, to) - start) }]
+      : [node];
+  });
+}
+
+function validatePartialBlocks(before: Parsed, after: Parsed, target: RewriteTarget, output: Parsed, delta: number): void {
+  const bom = before.bom ? 1 : 0;
+  for (const [index, block] of before.blocks.entries()) {
+    const start = block.start + bom, end = block.end + bom;
+    if (end <= target.from || start >= target.to || target.from <= start && target.to >= end) continue;
+    // An exact leaf must stay in the same containing block. Parse the proposed
+    // inline content independently, then prove assembly changed nothing else.
+    const span = block.plainText?.find((s) => target.from >= s.start + bom && target.to <= s.end + bom);
+    const replacement = output.doc.content;
+    if (!span || replacement?.length !== 1 || replacement[0]!.type !== "paragraph") return fail("invalid-output");
+    const original = before.doc.content![index]!;
+    const from = span.from + target.from - span.start - bom;
+    const to = span.from + target.to - span.start - bom;
+    const content = original.content ?? [];
+    const assembled = [
+      ...inlineSlice(content, 0, from),
+      ...(replacement[0]!.content ?? []),
+      ...inlineSlice(content, to, Infinity),
+    ];
+    const merged: PMNode[] = [];
+    for (const node of assembled) {
+      const previous = merged.at(-1);
+      if (previous?.type === "text" && node.type === "text" && JSON.stringify(previous.marks ?? []) === JSON.stringify(node.marks ?? [])) {
+        merged[merged.length - 1] = { ...previous, text: previous.text! + node.text! };
+      } else merged.push(node);
+    }
+    const expected = { ...original, content: merged };
+    const mapped = after.blocks.findIndex((b) => b.start === block.start && b.end === block.end + delta);
+    if (mapped < 0 || fingerprint(after.doc.content![mapped]!) !== fingerprint(expected)) fail("invalid-output");
+  }
+}
+
 /** Validates replacement-only bytes, then proves a splice cannot consume neighboring source blocks. */
 export function spliceRewriteTarget(source: string, target: RewriteTarget, replacement: string, policy: { allowLinkChanges: boolean } = { allowLinkChanges: false }): string {
   if (!Number.isInteger(target.from) || !Number.isInteger(target.to) || target.from < 0 || target.to <= target.from || target.to > source.length
@@ -130,6 +175,7 @@ export function spliceRewriteTarget(source: string, target: RewriteTarget, repla
   const result = source.slice(0, target.from) + normalized + source.slice(target.to);
   const after = parseMarkdown(result);
   const delta = normalized.length - target.original.length;
+  validatePartialBlocks(before, after, target, output, delta);
   for (let i = 0; i < after.blocks.length; i++) {
     const block = after.blocks[i]!;
     if (block.start + bom < target.from + normalized.length && block.end + bom > target.from) {
