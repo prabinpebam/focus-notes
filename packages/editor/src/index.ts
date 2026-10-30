@@ -11,7 +11,9 @@ import Strike from "@tiptap/extension-strike";
 import HardBreak from "@tiptap/extension-hard-break";
 import Link from "@tiptap/extension-link";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
-import { parseMarkdown, resolveRewriteTarget, serializeMarkdown, type Parsed, type PMNode, type RewriteTarget } from "@focus-notes/markdown";
+import { parseMarkdown, resolveRewriteTarget, serializeMarkdown, spliceRewriteTarget, type Parsed, type PMNode, type RewriteTarget } from "@focus-notes/markdown";
+import { Fragment, Slice, type Node as DocumentNode } from "@tiptap/pm/model";
+import { RewriteRange } from "./rewrite.ts";
 
 export { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
 export * from "./find.ts";
@@ -21,6 +23,8 @@ export * from "./paste.ts";
 export * from "./sanitize.ts";
 export * from "./table.ts";
 export * from "./rewrite.ts";
+export { Plugin, PluginKey } from "@tiptap/pm/state";
+export { Decoration, DecorationSet } from "@tiptap/pm/view";
 export { COLUMN_MIN_CH, COLUMN_OPTIMAL_CH, COLUMN_STEP_CH } from "./table-schema.ts";
 export * from "./blocks.ts";
 export * from "./expand.ts";
@@ -436,5 +440,20 @@ export function replaceDocument(editor: Editor, session: MarkdownSession, markdo
   const { state } = editor;
   const content = state.schema.nodeFromJSON(doc).content;
   editor.view.dispatch(closeHistory(state.tr).replaceWith(0, state.doc.content.size, content));
+  editor.view.dispatch(closeHistory(editor.state.tr));
+}
+
+/** Candidate-only explicit Accept: no preview transaction or generated autosave before this call. */
+export function acceptEditorRewrite(editor: Editor, session: MarkdownSession, baseline: DocumentNode, selection: Selection, captured: { source: string; target: RewriteTarget }, replacement: string): void {
+  if (!editor.state.doc.eq(baseline) || session.serialize(editor.getJSON()) !== captured.source) throw new Error("stale-target");
+  const from = selection.empty ? selection.$from.start() : selection.from;
+  const to = selection.empty ? selection.$from.end() : selection.to;
+  const range = new RewriteRange(baseline, from, to);
+  range.show(new Slice(Fragment.from(editor.state.schema.text(replacement)), 0, 0));
+  const source = spliceRewriteTarget(captured.source, captured.target, replacement);
+  session.adopt(source, editor.getJSON());
+  const tr = closeHistory(editor.state.tr.setSelection(selection));
+  for (const step of range.accept().steps) tr.step(step);
+  editor.view.dispatch(tr);
   editor.view.dispatch(closeHistory(editor.state.tr));
 }

@@ -8478,6 +8478,26 @@
                 }
               ]
             },
+            "rewriteEnabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "rewritePreview": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            },
             "focusMode": {
               "anyOf": [
                 {
@@ -8732,6 +8752,9 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "rewriteUnsupported": {
+              "$ref": "#/$defs/actions"
+            },
             "rewrite": {
               "$ref": "#/$defs/actions"
             },

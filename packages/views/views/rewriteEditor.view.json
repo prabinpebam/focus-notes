@@ -1,0 +1,37 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "rewriteEditor",
+  "ia": "IA-VIEW-CANVAS",
+  "viewModels": ["vm.rewriteDemo"],
+  "overlay": true,
+  "focus": "rewriteInstruction",
+  "root": {
+    "type": "Stack", "props": { "gap": "s" }, "children": [
+      { "type": "Sheet", "when": { "expr": { "or": [{ "get": "vm.rewriteDemo.open" }, { "get": "vm.rewriteDemo.menu" }, { "get": "vm.rewriteDemo.hasFeedback" }] } }, "props": {
+        "label": { "t": "rewrite.title" }, "side": "end", "width": "find", "pinned": true
+      }, "on": { "close": { "run": "demo.discard" } }, "children": [
+        { "type": "LiveRegion", "when": { "get": "vm.rewriteDemo.hasFeedback" }, "props": { "message": { "get": "vm.rewriteDemo.feedback" } } },
+        { "type": "Text", "when": { "get": "vm.rewriteDemo.hasFeedback" }, "props": { "value": { "get": "vm.rewriteDemo.feedback" } } },
+        { "type": "Button", "when": { "get": "vm.rewriteDemo.menu" }, "props": { "label": { "t": "rewrite.title" } }, "on": { "press": { "run": "demo.open" } } },
+        { "type": "Stack", "when": { "get": "vm.rewriteDemo.open" }, "props": { "gap": "m" }, "children": [
+          { "type": "Text", "props": { "value": { "t": "rewrite.editorNotice" } } },
+          { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.original" } } },
+          { "type": "Inline", "props": { "gap": "s" }, "children": [
+            { "type": "Button", "props": { "label": { "t": "rewrite.concise" } }, "on": { "press": { "run": "demo.preset", "args": { "value": "Make it concise" } } } },
+            { "type": "Button", "props": { "label": { "t": "rewrite.friendly" } }, "on": { "press": { "run": "demo.preset", "args": { "value": "Make it friendly" } } } },
+            { "type": "Button", "props": { "label": { "t": "rewrite.failure" } }, "on": { "press": { "run": "demo.failure" } } }
+          ] },
+          { "type": "TextField", "id": "rewriteInstruction", "props": { "label": { "t": "rewrite.instruction" }, "value": { "bind": "vm.rewriteDemo.instruction" }, "readOnly": { "get": "vm.rewriteDemo.busy" } } },
+          { "type": "LiveRegion", "props": { "message": { "get": "vm.rewriteDemo.status" } } },
+          { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.status" } } },
+          { "type": "TextField", "props": { "label": { "t": "rewrite.result" }, "value": { "get": "vm.rewriteDemo.result" }, "multiline": true, "scrolls": true, "readOnly": true } },
+          { "type": "Inline", "props": { "gap": "s" }, "children": [
+            { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.generateLabel" }, "disabled": { "get": "vm.rewriteDemo.busy" }, "disabledReason": { "t": "rewrite.waitReason" } }, "on": { "press": { "run": "demo.send" } } },
+            { "type": "Button", "props": { "label": { "t": "rewrite.accept" }, "disabled": { "expr": { "!": { "get": "vm.rewriteDemo.review" } } }, "disabledReason": { "t": "rewrite.acceptReason" } }, "on": { "press": { "run": "demo.accept" } } },
+            { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.discardLabel" } }, "on": { "press": { "run": "demo.discard" } } }
+          ] }
+        ] }
+      ] }
+    ]
+  }
+}

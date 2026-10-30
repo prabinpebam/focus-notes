@@ -1501,7 +1501,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     }),
   });
 
-  registerRewriteDemo({ store, commands, viewModels, messages: catalog });
+  registerRewriteDemo({ store, commands, viewModels, messages: catalog }, editorAction);
   return {
     store, commands, viewModels, messages: catalog, bridge, flush,
     idle: () => tracker.idle(),

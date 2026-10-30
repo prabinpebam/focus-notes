@@ -3783,6 +3783,14 @@
           "kind": "boolean",
           "default": false
         },
+        "rewriteEnabled": {
+          "kind": "boolean",
+          "description": "Explicit disposable normal-editor rewrite candidate; false leaves normal shortcuts unchanged."
+        },
+        "rewritePreview": {
+          "kind": "text",
+          "description": "Inert inline proposed text decoration; never serialized."
+        },
         "focusMode": {
           "kind": "boolean",
           "default": false
@@ -3879,6 +3887,7 @@
         }
       },
       "events": {
+        "rewriteUnsupported": {},
         "rewrite": {
           "payload": {
             "source": "text",
@@ -4785,6 +4794,7 @@
       "id": "canvas",
       "ia": "IA-VIEW-CANVAS",
       "viewModels": [
+        "vm.rewriteDemo",
         "vm.app",
         "vm.canvas",
         "vm.toolbar",
@@ -4856,6 +4866,13 @@
       "viewModels": [
         "vm.rewriteDemo",
         "vm.app"
+      ]
+    },
+    {
+      "id": "rewriteEditor",
+      "ia": "IA-VIEW-CANVAS",
+      "viewModels": [
+        "vm.rewriteDemo"
       ]
     },
     {

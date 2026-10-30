@@ -15,6 +15,9 @@ export class RewriteDemo {
   menu = false;
   settings = false;
   fail = false;
+  enabled = false;
+  noteKey = "";
+  feedback = "";
   readonly changed: () => void;
   constructor(changed = () => {}) { this.changed = changed; }
   open(input: { source: string; target: Pick<RewriteTarget, "from" | "to" | "original"> }): void {
@@ -69,12 +72,19 @@ export class RewriteDemo {
   }
 }
 
-export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewModels" | "messages">): void {
+export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewModels" | "messages">, editorAction: (id: string, args?: Record<string, unknown>) => void): void {
   const text = (key: string) => app.messages.format(`rewrite.${key}`);
   const demo = new RewriteDemo(() => app.store.update((s) => ({ ...s })));
   const command = (id: string, run: (args: Record<string, unknown>) => void | Promise<void>) =>
     app.commands.register({ id: `demo.${id}`, title: "rewrite.demoTitle", run });
+  command("enableEditor", () => { demo.enabled = true; demo.changed(); });
+  command("unsupported", () => { demo.feedback = "This selection can’t be rewritten. Select plain text within one paragraph."; demo.changed(); });
+  app.store.subscribe(() => {
+    if (demo.enabled && demo.openPanel && (demo.noteKey !== app.store.state.note.key || demo.source !== app.store.state.note.markdown)) demo.discard();
+  });
   command("target", (a) => {
+    if (demo.enabled) demo.noteKey = app.store.state.note.key;
+    demo.feedback = "";
     demo.open({ source: String(a.source), target: { from: Number(a.from), to: Number(a.to), original: String(a.original) } });
     demo.menu = Boolean(a.menu); demo.changed();
   });
@@ -83,21 +93,30 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   command("instruction", (a) => { demo.instruction = String(a.value); demo.changed(); });
   command("preset", (a) => { demo.instruction = String(a.value); demo.changed(); });
   command("send", () => demo.send());
-  command("accept", () => demo.accept());
-  command("discard", () => demo.discard());
+  command("accept", () => {
+    if (!demo.enabled) { demo.accept(); return; }
+    if (demo.session?.state !== "review" || demo.noteKey !== app.store.state.note.key || demo.source !== app.store.state.note.markdown) { demo.discard(); return; }
+    const replacement = demo.session.projection.slice(demo.target!.from, demo.session.projection.length - (demo.source.length - demo.target!.to));
+    editorAction("rewrite.accept", { key: demo.noteKey, source: demo.source, replacement });
+    demo.discard();
+  });
+  command("discard", () => { demo.feedback = ""; demo.discard(); });
   command("undo", () => demo.undo());
   command("settings", () => { demo.settings = !demo.settings; demo.changed(); });
   command("failure", () => { demo.fail = !demo.fail; demo.changed(); });
   app.viewModels.register({
     id: "vm.rewriteDemo",
     schema: { type: "object", properties: Object.fromEntries([
-      ...["source", "documentKey", "instruction", "original", "result", "status", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
-      ...["open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
+      ...["source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
+      ...["enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
     ]) },
     setters: { instruction: "demo.instruction" },
     select: () => {
       const state = demo.session?.state;
       return {
+        enabled: demo.enabled, feedback: demo.feedback, hasFeedback: Boolean(demo.feedback),
+        preview: demo.openPanel && (state === "streaming" || state === "review") && demo.target
+          ? demo.session!.projection.slice(demo.target.from, demo.session!.projection.length - (demo.source.length - demo.target.to)) : "",
         source: demo.source, documentKey: `demo-${demo.revision}`, instruction: demo.instruction,
         original: demo.original, result: demo.session?.projection ?? demo.source,
         open: demo.openPanel && !demo.menu, menu: demo.menu, settings: demo.settings, fail: demo.fail,

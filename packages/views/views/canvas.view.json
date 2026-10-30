@@ -3,6 +3,7 @@
   "id": "canvas",
   "ia": "IA-VIEW-CANVAS",
   "viewModels": [
+    "vm.rewriteDemo",
     "vm.app",
     "vm.canvas",
     "vm.toolbar",
@@ -800,6 +801,8 @@
           "documentKey": {
             "get": "vm.canvas.noteKey"
           },
+          "rewriteEnabled": { "get": "vm.rewriteDemo.enabled" },
+          "rewritePreview": { "get": "vm.rewriteDemo.preview" },
           "initialValue": {
             "get": "vm.canvas.initialMarkdown"
           },
@@ -884,6 +887,11 @@
           "slashList": "slashList"
         },
         "on": {
+          "rewriteUnsupported": { "run": "demo.unsupported" },
+          "rewrite": { "run": "demo.target", "args": {
+            "source": { "get": "event.source" }, "from": { "get": "event.from" }, "to": { "get": "event.to" },
+            "original": { "get": "event.original" }, "menu": { "get": "event.menu" }
+          } },
           "change": {
             "run": "note.setContent",
             "args": {

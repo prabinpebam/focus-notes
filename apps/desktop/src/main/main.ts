@@ -2088,7 +2088,8 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; placement?:
   const load = () => {
     const b = bootTheme();
     const rewriteDemo = process.argv.includes("--rewrite-demo") && Boolean(process.env.FOCUS_NOTES_USER_DATA && process.env.FOCUS_NOTES_DOCS);
-    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, ...(rewriteDemo ? { rewriteDemo: "1" } : {}), compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
+    const rewriteEditor = process.argv.includes("--rewrite-editor-demo") && Boolean(process.env.FOCUS_NOTES_USER_DATA && process.env.FOCUS_NOTES_DOCS);
+    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, ...(rewriteDemo ? { rewriteDemo: "1" } : {}), ...(rewriteEditor ? { rewriteEditor: "1" } : {}), compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(extra.note ? { note: extra.note } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
   };
   void load();
   // The theme's canvas now: the window's cover after a renderer crash is painted in it.

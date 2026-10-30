@@ -11,6 +11,8 @@ export const contract = defineContract({
     placeholder: { kind: "message" },
     emptyHeader: { kind: "message", description: "What an empty table header cell shows and is called, with {index} for its column's number." },
     readOnly: { kind: "boolean", default: false },
+    rewriteEnabled: { kind: "boolean", description: "Explicit disposable normal-editor rewrite candidate; false leaves normal shortcuts unchanged." },
+    rewritePreview: { kind: "text", description: "Inert inline proposed text decoration; never serialized." },
     focusMode: { kind: "boolean", default: false },
     keymap: { kind: "list", of: "keyBindings", description: "Editor key bindings from the command registry." },
     findOpen: { kind: "boolean", default: false },
@@ -35,6 +37,7 @@ export const contract = defineContract({
     filesWidth: { kind: "number", default: 0, description: "Docked Files' width in px, as resized; 0: its default." },
   },
   events: {
+    rewriteUnsupported: {},
     rewrite: { payload: { source: "text", from: "number", to: "number", original: "text", menu: "boolean" } },
     change: { payload: { value: "text" } },
     ready: {},

@@ -10,9 +10,10 @@ import siteLanding from "../views/siteLanding.view.json" with { type: "json" };
 import sitePage from "../views/sitePage.view.json" with { type: "json" };
 import en from "../messages/en.json" with { type: "json" };
 import rewriteDemo from "../views/rewriteDemo.view.json" with { type: "json" };
+import rewriteEditor from "../views/rewriteEditor.view.json" with { type: "json" };
 
 /** Every view document in the app. Fragments join this when they exist. */
-export const views: Record<string, unknown> = { canvas, settings, theme, history, feedback, rewriteDemo };
+export const views: Record<string, unknown> = { canvas, settings, theme, history, feedback, rewriteDemo, rewriteEditor };
 /**
  * Published pages' view documents (IA-VIEW-PUBLIC): the reader and the index of public notes (D-139),
  * rendered by the publisher at build time, and the share reader, rendered in the browser at s/ (WP-5.4).

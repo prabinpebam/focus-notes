@@ -1,4 +1,5 @@
 {
+  "rewrite.editorNotice": "Fake provider · disposable file workspace. Your note changes only when you accept. Undo restores the original selection.",
   "rewrite.demoTitle": "Rewrite playground",
   "rewrite.demoNotice": "Fake provider · Disposable sample only · Nothing is saved. Select text or place the caret in a paragraph, then press Ctrl+K or open the context menu.",
   "rewrite.title": "Rewrite with AI",

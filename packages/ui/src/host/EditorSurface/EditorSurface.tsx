@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
-  applyLink, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
+  Plugin, PluginKey, Decoration, DecorationSet, acceptEditorRewrite, applyLink, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertSlashEntry,
   focusAtEnd, ghostRange, replaceDocument, selectFindTarget, setFind, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { KeyBinding } from "../../data.ts";
@@ -25,6 +25,11 @@ import * as s from "./EditorSurface.css.ts";
 export interface EditorSurfaceProps {
   /** Opt-in disposable rewrite fixture; absent on every workspace canvas. */
   onRewrite?: (payload: { source: string; from: number; to: number; original: string; menu: boolean }) => void;
+  /** Explicit disposable candidate opt-in; production canvas shortcuts remain unchanged. */
+  rewriteEnabled?: boolean;
+  /** Generated candidate preview is a decoration, never document content or an autosave. */
+  rewritePreview?: string;
+  onRewriteUnsupported?: () => void;
   /** Changes when a different note is loaded. The editor resets only then. */
   documentKey: string;
   initialValue: string;
@@ -156,7 +161,7 @@ export function EditorSurface({
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
   outlineWidth = 0, outlineResizeLabel, filesDock = false, filesWidth = 0, onOutlineResize, onFilesFit,
   id, onChange, onReady, onFindResult, onFindPrefill, onFindScope, onFormat, onLinkEdit, onLinkDismiss, onOpenLink, onSlash, onSlashMove, onPasteNotice,
-  onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect, onRewrite,
+  onTable, onTableChange, onTableCopy, onTableMenu, onBlock, onBlockMenu, onBlockSelect, onRewrite, rewriteEnabled, rewritePreview = "", onRewriteUnsupported,
 }: EditorSurfaceProps) {
   const columnRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLElement | null>(null);
@@ -190,8 +195,13 @@ export function EditorSurface({
   const pendingSince = useRef<number | undefined>(undefined);
   const last = useRef(initialValue);
   const editorRef = useRef<Editor | null>(null);
+  const rewriteCapture = useRef<{
+    doc: NonNullable<Editor["state"]>["doc"]; selection: NonNullable<Editor["state"]>["selection"];
+    captured: ReturnType<MarkdownSession["rewriteTarget"]>;
+  } | undefined>(undefined);
+  const previewKey = useMemo(() => new PluginKey<DecorationSet>("rewrite-preview"), []);
   useEffect(() => {
-    if (!onRewrite) return;
+    if (!onRewrite || rewriteEnabled === false) return;
     const invoke = (event: Event) => {
       const key = event as KeyboardEvent;
       if (event.type === "keydown" && !((key.ctrlKey || key.metaKey) && key.key.toLowerCase() === "k")) return;
@@ -199,14 +209,20 @@ export function EditorSurface({
       if (!ed || !ed.view.dom.contains(event.target as Node)) return;
       event.preventDefault(); event.stopImmediatePropagation();
       try {
+        const selection = ed.state.selection;
+        if (selection.$from.parent.type.name !== "paragraph" || !selection.$from.sameParent(selection.$to)) throw new Error("unsupported-target");
         const { source, target } = session.rewriteTarget(ed.getJSON() as PMNode, ed.state.selection.from, ed.state.selection.to);
+        rewriteCapture.current = { doc: ed.state.doc, selection: ed.state.selection, captured: { source, target } };
+        // Hand over existing ordinary typing before taking a baseline; never generated text.
+        onChangeRef.current?.({ value: source });
         onRewrite({ source, from: target.from, to: target.to, original: target.original, menu: event.type === "contextmenu" });
-      } catch { /* Unsupported blocks stay unchanged; fixture only offers paragraphs. */ }
+      } catch { onRewriteUnsupported?.(); }
     };
     window.addEventListener("keydown", invoke, true);
     window.addEventListener("contextmenu", invoke, true);
-    return () => { window.removeEventListener("keydown", invoke, true); window.removeEventListener("contextmenu", invoke, true); };
-  }, [onRewrite, session]);
+    window.addEventListener("focus-notes:rewrite-request", invoke, true);
+    return () => { window.removeEventListener("keydown", invoke, true); window.removeEventListener("contextmenu", invoke, true); window.removeEventListener("focus-notes:rewrite-request", invoke, true); };
+  }, [onRewrite, session, rewriteEnabled, onRewriteUnsupported]);
   const emptyHeaderRef = useRef(emptyHeader);
   emptyHeaderRef.current = emptyHeader;
 
@@ -325,6 +341,33 @@ export function EditorSurface({
   );
 
   editorRef.current = editor;
+  useEffect(() => {
+    if (editor) editor.view.dom.dataset.rewriteEnabled = String(rewriteEnabled);
+    if (!editor || !rewriteEnabled) return;
+    editor.registerPlugin(new Plugin({
+      key: previewKey,
+      state: {
+        init: () => DecorationSet.empty,
+        apply: (tr, previous) => tr.getMeta(previewKey) ?? previous.map(tr.mapping, tr.doc),
+      },
+      props: { decorations: (state) => previewKey.getState(state) },
+    }));
+    return () => { if (!editor.isDestroyed) editor.unregisterPlugin(previewKey); };
+  }, [editor, rewriteEnabled, previewKey]);
+  useEffect(() => {
+    if (!editor || !rewriteEnabled || editor.isDestroyed) return;
+    const capture = rewriteCapture.current;
+    const decorations = rewritePreview && capture && capture.doc.eq(editor.state.doc)
+      ? DecorationSet.create(editor.state.doc, [Decoration.widget(capture.selection.empty ? capture.selection.$from.end() : capture.selection.to, () => {
+        const proposal = document.createElement("span");
+        proposal.className = s.ghost;
+        proposal.dataset.rewriteProposal = "";
+        proposal.textContent = ` → ${rewritePreview}`;
+        proposal.contentEditable = "false";
+        return proposal;
+      })]) : DecorationSet.empty;
+    editor.view.dispatch(editor.state.tr.setMeta(previewKey, decorations).setMeta("addToHistory", false));
+  }, [editor, rewriteEnabled, rewritePreview, previewKey]);
 
   useEffect(() => {
     last.current = initialValue;
@@ -510,6 +553,16 @@ export function EditorSurface({
       const id = String(detail?.id);
       const args = detail?.args ?? {};
       if (!editor || editor.isDestroyed) return;
+      if (id === "rewrite.accept") {
+        const capture = rewriteCapture.current;
+        if (args.key !== documentKey || !capture || args.source !== capture.captured.source || typeof args.replacement !== "string") return;
+        try {
+          acceptEditorRewrite(editor, session, capture.doc, capture.selection, capture.captured, args.replacement);
+          editor.commands.focus();
+        } catch { onRewriteUnsupported?.(); }
+        rewriteCapture.current = undefined;
+        return;
+      }
       if (id === "outline.show") {
         minimapRef.current?.openFromKeyboard();
         return;

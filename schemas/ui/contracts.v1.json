@@ -9636,6 +9636,14 @@
           "kind": "boolean",
           "default": false
         },
+        "rewriteEnabled": {
+          "kind": "boolean",
+          "description": "Explicit disposable normal-editor rewrite candidate; false leaves normal shortcuts unchanged."
+        },
+        "rewritePreview": {
+          "kind": "text",
+          "description": "Inert inline proposed text decoration; never serialized."
+        },
         "focusMode": {
           "kind": "boolean",
           "default": false
@@ -9732,6 +9740,7 @@
         }
       },
       "events": {
+        "rewriteUnsupported": {},
         "rewrite": {
           "payload": {
             "source": "text",
