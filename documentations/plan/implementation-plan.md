@@ -369,6 +369,29 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 - The [project definition of done](definition-of-done.md#project-definition-of-done) is met.
 
+<h2 id="mai" data-reader-personas="product design engineering">MAI: Rewrite with AI (planned)</h2>
+
+**You can:** request a rewrite of a selection or whole file, review it in place, compare local variations and recover the original, with explicit control of destination and private content. Delivers UC-RWR-01 to UC-RWR-06 and CP-RWR-01. Nothing in this stage is built yet.
+
+**Try it first:** a gallery or candidate preview with the built-in fake provider, no keys and no egress. Select a paragraph, open Rewrite with AI, choose Shorten, watch the protected stream, compare two variations, Discard and undo. Repeat from a file's keyboard context menu with New file, then restart and recover a variation. The fake-only slices are lookahead and need no provider decision.
+
+| ID | Work package | Requirements | Depends on | Reviews |
+| --- | --- | --- | --- | --- |
+| WP-AI.1 | **Fake engine and safe target.** Source-aware mapping, checkpoint, guarded protected stream, validated events/output and timeouts. First observable fixture rewrite; no real transport. | RWR-21, RWR-22, RWR-23, RWR-24, RWR-25, RWR-26, RWR-27, EDT-15 | WP-1.1, WP-8.9 | code, security |
+| WP-AI.2 | **Prompt and review.** Inline prompt/presets, entry menus, shortcut migration, Spotlight and copy with fake streams; visible in gallery/candidate preview. | RWR-01 to RWR-06, KEY-08, SPT-09, UI-14, I18N-04 | WP-AI.1 | code, design-system, accessibility |
+| WP-AI.3 | **Fresh text.** Token/decorations, motion/contrast fallbacks, paragraph band and accessible gallery. | RWR-08, FOC-07, A11Y-03, DSY-14 | WP-AI.2 | code, design-system, accessibility |
+| WP-AI.4 | **Variations and recovery.** Local-only version-control storage, undo/redo, restart, retention, private isolation and non-Git fallback. | RWR-61 to RWR-66 | WP-AI.1 | code, security |
+| WP-AI.5 | **Whole-file targets.** Same/New, dirty-buffer ownership, guarded save, collisions, IDs and privacy boundaries with fixtures. | RWR-07, RWR-28, RWR-29, FIL-16 | WP-AI.2, WP-AI.4 | code, security, design-system, accessibility |
+| WP-AI.6 | **Offline setup and policy.** Profile/settings, consent, cap logic, error handling, credentials and kit fixtures. Fake transport only: egress requirements are contracts, not real provider enablement. | RWR-09, RWR-41 to RWR-45, RWR-47, PRV-05, SEC-09, LIC-03 | WP-AI.2 | code, security, design-system, accessibility |
+| WP-AI.7 | **Owner decision gate.** Record named destination/auth/privacy/consent/cost/retention/Store-claim approvals after fake UX review. No approval is implied by a merged spec. | RWR-46 | WP-AI.3, WP-AI.5, WP-AI.6 | security |
+| WP-AI.8 | **Approved adapter rollout.** Real transport and measured waits, approved Store/privacy updates and rollback. Recheck AI.6's contracts against the approved adapter; requirement ownership remains unique. | PRF-15 | WP-AI.7 | code, security |
+| WP-AI.9 | **Gate evidence and Help.** Windows fixture matrix, corpus/crash/conflict/private proofs, Help and final reviews. | QLT-08, HLP-10, DOC-03 | WP-AI.4, WP-AI.5, WP-AI.8 | code, security, design-system, accessibility |
+| WP-AI.10 | **Browser boundary and feasibility.** Verify browser commands are absent and document secure-adapter prerequisites; no browser implementation. | RWR-48 | WP-AI.7 | code, security |
+
+Every package is **planned**. AI.1 through AI.7 use lookahead to avoid an unrelated prior-stage gate blocking offline evidence. AI.8 through AI.10 retain the ordinary stage dependency. No package that talks to a real provider can bypass AI.7. `touches`, `reviews` and `specs` are explicit in [the graph](work-graph.json).
+
+**GATE-MAI:** all [MAI done rows](definition-of-done.md#mai-rewrite-definition-of-done) and [acceptance rows](rewrite-acceptance.md) have evidence; owner approval is recorded separately from fixture validation. Shipping claims stay unchanged until that approval. A provider-declined outcome leaves offline fixture work demonstrable, not a secretly enabled service.
+
 <h2 id="later" data-reader-personas="product design engineering">Later: Components</h2>
 
 **You can:** Image, then gallery, each added as one block registration with directive syntax.

@@ -5,6 +5,25 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 > [!NOTE]
 > **TL;DR.** Five nested levels. A **work package** is *ready* when its spec, requirements, dependencies, and tests are clear, and *done* when every acceptance check is automated and passing, every gate in CI is green, the required reviews approve, and the docs match what was built. A **stage** is done when all its work packages are done, its demo script passes on clean machines, no S1 or S2 defect is open, every earlier journey still passes, and the owner accepts it. A **release** is done when the product-wide quality bar holds for everything released: complete, calm, fast, reliable, secure, private, accessible, international, installable, usable, documented, and licensed, each with a number and a way to check it. The **project** is done when M0 to M8 have passed, the final release meets the release bar in full, and every decision and risk is closed. Nothing ships that wouldn't pass the bar today. Quality is never deferred to a later stage.
 
+## MAI rewrite definition of done
+
+**Planned, no execution evidence yet.** This adds CP-RWR-01 to the project Definition of Done and UC-RWR-01 to UC-RWR-06 to the MAI stage. All existing release safety, accessibility and design-system bars still apply. The spec does not pass the implementation gate.
+
+**Try it:** in the future fixture gallery/candidate preview, select a paragraph, open Rewrite with AI, Shorten, stop once, regenerate, compare two variations, Discard, undo and restart. From Files, use Shift+F10 to rewrite to a new file. No account or real provider is needed for this first demonstration.
+
+| Row | Done when | Planned evidence |
+| --- | --- | --- |
+| MAI.1 | UC-RWR-01: every entry point and disabled reason is observable, the key move is taught, and a prompt/preset is editable without sending. | `rewrite-entry.spec.ts` and `rewrite-prompt.spec.ts`; KEY-08 migration inventory |
+| MAI.2 | UC-RWR-02: complete target mapping corpus preserves outside bytes and IDs; unaccepted streams/review never enter note disk, normal commits or sync; original survives crash at every state. | `rewrite-mapping.test.ts`, `rewrite-save-lane.test.ts`, `rewrite-crash.spec.ts` |
+| MAI.3 | UC-RWR-03: Same/New paths cannot overwrite another window, stale disk or colliding path, or cross Private to Public. | `rewrite-files.spec.ts`, atomic-create and changed-baseline fixtures |
+| MAI.4 | UC-RWR-04: compare, undo/redo and restart retrieval work without rewriting history or exposing variations even through workspace mirror push. | `rewrite-history.test.ts`, `rewrite-restart.spec.ts`, mirror-push sentinel fixture |
+| MAI.5 | UC-RWR-05: offline fixture profiles demonstrate consent, caps, error repairs and zero unauthorized egress. Real sends remain blocked until the owner records D-236, D-238 and D-239 approval and Store/privacy scope. | `rewrite-policy.test.ts`, `rewrite-egress.test.ts`; WP-AI.7 signed-off decision record, then security review |
+| MAI.6 | UC-RWR-06: fresh text is ephemeral, every frame is at least 4.5:1, and keyboard/screen-reader/reduced-motion/forced-colors paths convey the same state. | `rewrite-fresh-text.test.ts`, `rewrite-a11y.spec.ts`; theme and 480 x 360 review |
+| MAI.7 | Every requirement in the [acceptance matrix](rewrite-acceptance.md) has recorded evidence; fixture p95 first token under 1 s, acknowledgement and Stop within 100 ms; no claim that fixtures prove live latency. | `rewrite-performance.test.ts`, named `fn:rewrite.*` measures, acceptance evidence links |
+| MAI.8 | GATE-MAI: required reviews approve, Windows app CI is green, Help and approved claims match what ships, rollback disables only sends, and owner accepts the feature. | WP-AI.9 gate record, release/version-specific Help review and owner acceptance |
+
+**Against the promise:** all rewrite capability is still absent. The draft registers define it; engine/UX authors fill the five planned pages, builders implement fake-first slices, and the owner alone resolves provider/privacy/consent/cost approval. Browser support is a named gap, not implied parity.
+
 ## The levels
 
 | Level | Applies to | Decided by | Evidence lives in |

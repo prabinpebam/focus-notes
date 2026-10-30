@@ -2,6 +2,60 @@
   "version": 2,
   "entries": [
     {
+      "path": "experience/rewrite-with-ai.md",
+      "title": "Rewrite with AI",
+      "order": 289,
+      "icon": "edit_note",
+      "status": "draft",
+      "updated": "2026-10-30",
+      "group": "Experience"
+    },
+    {
+      "path": "design/rewrite-with-ai.md",
+      "title": "Rewrite with AI design",
+      "order": 309,
+      "icon": "edit_note",
+      "status": "draft",
+      "updated": "2026-10-30",
+      "group": "Design"
+    },
+    {
+      "path": "architecture/rewrite-engine.md",
+      "title": "Rewrite engine",
+      "order": 451,
+      "icon": "account_tree",
+      "status": "draft",
+      "updated": "2026-10-30",
+      "group": "Architecture"
+    },
+    {
+      "path": "architecture/rewrite-providers.md",
+      "title": "Rewrite providers",
+      "order": 452,
+      "icon": "account_tree",
+      "status": "draft",
+      "updated": "2026-10-30",
+      "group": "Architecture"
+    },
+    {
+      "path": "architecture/rewrite-history.md",
+      "title": "Rewrite history",
+      "order": 453,
+      "icon": "history",
+      "status": "draft",
+      "updated": "2026-10-30",
+      "group": "Architecture"
+    },
+    {
+      "path": "plan/rewrite-acceptance.md",
+      "title": "Rewrite acceptance",
+      "order": 535,
+      "icon": "checklist",
+      "status": "draft",
+      "updated": "2026-10-30",
+      "group": "Plan"
+    },
+    {
       "path": "landing.html",
       "title": "Overview",
       "order": 0,

@@ -18,6 +18,16 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### MAI: Rewrite with AI (planned)
+
+This later stage is not part of the six historical gates below. **GATE-MAI is open, not passed:** 48 new requirements, ten planned packages, no implementation/test results. The [acceptance matrix](rewrite-acceptance.md) supplies planned checks and the [MAI done rows](definition-of-done.md#mai-rewrite-definition-of-done) define required evidence.
+
+| Gate part | Status | What must supply evidence |
+| --- | --- | --- |
+| Offline UX and safety | Planned | WP-AI.1 to WP-AI.6: fake provider, checkpoint/save hold, variations, file targets, private isolation and accessible fresh text |
+| Provider/privacy/consent/cost approval | Owner | WP-AI.7: explicit recorded scope for D-236, D-238, D-239, retention and Store/privacy claims; no real egress before approval |
+| Approved rollout and final acceptance | Planned | WP-AI.8 to WP-AI.10: security/Windows checks, actual approved adapter, feature-gated Help, browser boundary and owner acceptance |
+
 | Stage | Requirements traced | Untraced | Work packages | Demo automated | Blocking the gate |
 | --- | ---: | ---: | --- | --- | --- |
 | [M0](implementation-plan.md#m0) | 29 of 29 | None | 9 of 9 done | `m0-walking-skeleton.spec.ts` | Launching the packaged app in CI; owner |

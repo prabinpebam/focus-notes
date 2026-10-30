@@ -21,8 +21,19 @@ The twelve promises Focus Notes makes. Every scenario, capability, screen, and d
 | `CP-READY-01` | Ready in minutes | Owner: device sign-in, first-run, Git works from the terminal | SC-SETUP-01 to SC-SETUP-03, SC-SETUP-05 |
 | `CP-AGENT-01` | Agents on your terms | Owner: agent-friendly, MCP | SC-AGENT-01 to SC-AGENT-03 |
 | `CP-KNOW-01` | Know what you're getting, and get help when you need it | Owner: product site, support articles, demo (2026-10-16) | SC-HELP-01 to SC-HELP-04 |
+| `CP-RWR-01` | Rewrite my words without giving up control | Owner: Rewrite with AI spec request (2026-10-30) | SC-RWR-01 to SC-RWR-04 |
 
 <h2 data-reader-personas="product">The promises</h2>
+
+### CP-RWR-01 — Rewriting on my terms
+
+| Field | Value |
+| --- | --- |
+| Customer promise | I can ask for another way to say something, compare it with my original, and keep only what I choose, without sending my words anywhere I did not approve. |
+| Why it matters | A rewrite is a suggestion, not permission to lose a draft or disclose it. Optional assistance must leave ordinary offline writing unchanged. |
+| Breaks when | A rewrite loses the original, changes unrelated text, silently sends text elsewhere, or makes unaccepted partial text the only durable copy. |
+| Signals | Fixture checks preserve the original and untouched bytes; every non-fixture destination is approved before egress. No telemetry is collected to measure use. |
+| Scenarios | SC-RWR-01, SC-RWR-02, SC-RWR-03, SC-RWR-04 |
 
 ### CP-CALM-01 — Calm canvas
 

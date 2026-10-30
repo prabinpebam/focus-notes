@@ -18,6 +18,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 | **M5: Publish and share** | Version 1.0. | Anyone | 1.0 stable on GitHub Releases | 30 |
 | **M7: Agents** | Your agents can help, safely. | Anyone | 1.2 | 8 |
 | **M8: Polish and pro features** | Make it yours, fully. | Anyone | 1.x | 23 |
+| **MAI: Rewrite with AI** (before Later) | Optional rewriting under the writer's control; fixture UX first, real provider owner-gated. | Owner, then desktop writers | Planned desktop 1.x | 48 |
 | **Later: Components** | Rich components. | Anyone | Later releases | 2 |
 
 ## Where we are
@@ -118,6 +119,10 @@ The short, current list for anyone picking up the work; the stage-by-stage histo
 <li class="slate-step">
 <p class="slate-step__title">M8: Polish and pro features (Make it yours, fully)</p>
 <p>Block handle, column alignment and sorting, the Pro shortcut layer, custom keybindings, find in selection, replace across notes, Spotlight filters and preview, note history, custom and generated themes, synced appearance, multiple windows, a document minimap, printing, signed builds with automatic updates and channels, store listings, more interface languages, and isolated crash recovery. <a href="implementation-plan.md#m8">Details</a>. DSK-06, DSK-07, DST-04, DST-07, EDT-07, FIL-11, FIL-13, FIL-14, FIL-15, FND-03, FND-05, I18N-03, KEY-04, KEY-07, QLT-06, SHR-12, SPT-06, TBL-04, TBL-09, THM-04, THM-05, THM-09 to THM-12, UI-08, UI-13.</p>
+</li>
+<li class="slate-step">
+<p class="slate-step__title">MAI: Rewrite with AI (planned)</p>
+<p>Optional desktop rewriting with a protected inline preview, explicit Accept/Discard, safe Same/New file targets, recoverable local variations and no unapproved egress. First slices run against an offline fake provider; real transport waits for WP-AI.7 owner approval. Browser rewriting is not included. <a href="implementation-plan.md#mai">Details</a>; <a href="rewrite-acceptance.md#stage-gate">GATE-MAI</a>. RWR-01 to RWR-09, RWR-21 to RWR-29, RWR-41 to RWR-48, RWR-61 to RWR-66, KEY-08, SPT-09, FIL-16, EDT-15, UI-14, FOC-07, HLP-10, PRV-05, SEC-09, PRF-15, QLT-08, A11Y-03, I18N-04, DSY-14, DOC-03, LIC-03.</p>
 </li>
 <li class="slate-step">
 <p class="slate-step__title">Later: Components (Rich components)</p>

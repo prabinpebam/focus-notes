@@ -5,6 +5,17 @@ The situations in which each [customer promise](customer-promises.md) matters, w
 > [!NOTE]
 > **TL;DR.** 55 scenarios in eleven areas (writing, tables, files, sharing, find, theme, agents, setup, safety, ownership, discovering and getting help), plus 13 **unsupported boundaries** where we deliberately say no and offer something else instead. Each row reads *When ⟨situation⟩, I want to ⟨motivation⟩, so I can ⟨outcome⟩*. The column order (ID, promise, situation, persona, expected behavior, user can, views) follows the Slate spec convention. Personas are the working personas in [The articulation chain](chain.md#personas-used-in-scenarios).
 
+## Optional rewriting
+
+Planned desktop capability, not available today. See [Rewrite with AI](../../experience/rewrite-with-ai.md).
+
+| ID | Promise | Situation | Persona | Expected behavior | User can | Views |
+| --- | --- | --- | --- | --- | --- | --- |
+| SC-RWR-01 | CP-RWR-01 | When a passage is hard to express, I want to ask for a different version, so I can improve it without losing my train of thought. | Writer | Select, instruct, stream in place, review; untouched text stays identical. | UC-RWR-01, UC-RWR-02, UC-RWR-06 | IA-CMP-REWRITEPROMPT, IA-CMP-REWRITEREVIEW |
+| SC-RWR-02 | CP-RWR-01 | When a whole note needs another tone or length, I want to rewrite it to the same or a new file, so I control what survives. | Writer, Power user | The file action uses the same prompt and a safe target choice; privacy never changes as a side effect. | UC-RWR-03 | IA-CMP-REWRITETARGET |
+| SC-RWR-03 | CP-RWR-01 | When a suggestion is wrong or interrupted, I want my original and previous versions back, so experimenting is safe. | Writer | Original checkpoint, local variations, undo and restart recovery never rewrite published history. | UC-RWR-02, UC-RWR-04 | IA-CMP-REWRITEREVIEW, IA-CMP-REWRITEVARIATIONS |
+| SC-RWR-04 | CP-RWR-01 | When I choose optional rewriting, I want to know its destination and limits, so I can decide whether my words may leave this device. | Writer, Comfort | Disabled until setup; named consent, private-note policy, no silent fallback. | UC-RWR-05 | IA-VIEW-REWRITESETUP, IA-VIEW-REWRITECONSENT, IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS |
+
 <h2 data-reader-personas="product design">Writing</h2>
 
 | ID | Promise | Situation | Persona | Expected behavior | User can | Views |

@@ -74,6 +74,13 @@
       "gate": "GATE-M8"
     },
     {
+      "id": "MAI",
+      "title": "Rewrite with AI",
+      "outcome": "Optional desktop rewriting with protected inline review, safe file targets, recoverable local variations and explicit provider approval. Fake-provider UX first; no live egress before the owner gate.",
+      "channel": "Planned optional desktop 1.x",
+      "gate": "GATE-MAI"
+    },
+    {
       "id": "Later",
       "title": "Components",
       "outcome": "Image, then gallery, each added as one block registration with directive syntax.",
@@ -83,6 +90,86 @@
   ],
   "implicitDependency": "Every work package depends on the gate of the previous stage, unless lookahead is true.",
   "workPackages": [
+    {
+      "id": "WP-AI.1", "stage": "MAI", "title": "Fake rewrite engine and safe target",
+      "summary": "One fake-provider selection-to-review path: source mapping, checkpoint acknowledgement, protected range, typed events, timeouts and untrusted output. No network.",
+      "requirements": ["RWR-21", "RWR-22", "RWR-23", "RWR-24", "RWR-25", "RWR-26", "RWR-27", "EDT-15"],
+      "dependsOn": ["WP-1.1", "WP-8.9"], "touches": ["core", "editor", "markdown", "desktop"],
+      "reviews": ["code", "security"], "specs": ["architecture/rewrite-engine.md", "plan/rewrite-acceptance.md"],
+      "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-AI.2", "stage": "MAI", "title": "Inline prompt and review against fixtures",
+      "summary": "Selection menu, shortcut migration, Spotlight, presets and protected review with a fake provider; visible gallery/candidate preview, no provider choice needed.",
+      "requirements": ["RWR-01", "RWR-02", "RWR-03", "RWR-04", "RWR-05", "RWR-06", "KEY-08", "SPT-09", "UI-14", "I18N-04"],
+      "dependsOn": ["WP-AI.1"], "touches": ["core", "ui", "views", "desktop"],
+      "reviews": ["code", "design-system", "accessibility"], "specs": ["experience/rewrite-with-ai.md", "design/rewrite-with-ai.md", "plan/rewrite-acceptance.md"],
+      "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-AI.3", "stage": "MAI", "title": "Fresh text and accessible gallery",
+      "summary": "Ephemeral fresh-text decoration, contrast/motion fallbacks and paragraph-band interaction, proved with fixture output in every theme.",
+      "requirements": ["RWR-08", "FOC-07", "A11Y-03", "DSY-14"],
+      "dependsOn": ["WP-AI.2"], "touches": ["editor", "tokens", "ui", "views"],
+      "reviews": ["code", "design-system", "accessibility"], "specs": ["design/rewrite-with-ai.md", "plan/rewrite-acceptance.md"],
+      "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-AI.4", "stage": "MAI", "title": "Local variations and restart recovery",
+      "summary": "Isolated local-only version-control history, original checkpoint, previous/next, undo/redo, bounded retention and non-Git fallback; prove no mirror-push exposure.",
+      "requirements": ["RWR-61", "RWR-62", "RWR-63", "RWR-64", "RWR-65", "RWR-66"],
+      "dependsOn": ["WP-AI.1"], "touches": ["core", "desktop", "views"],
+      "reviews": ["code", "security"], "specs": ["architecture/rewrite-history.md", "plan/rewrite-acceptance.md"],
+      "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-AI.5", "stage": "MAI", "title": "Whole-file fixture rewrite",
+      "summary": "Same/New chooser, source dirty-buffer ownership, guarded save, collisions, fresh IDs and privacy-safe destinations against fake streams.",
+      "requirements": ["RWR-07", "RWR-28", "RWR-29", "FIL-16"],
+      "dependsOn": ["WP-AI.2", "WP-AI.4"], "touches": ["core", "desktop", "ui", "views"],
+      "reviews": ["code", "security", "design-system", "accessibility"], "specs": ["architecture/rewrite-engine.md", "experience/rewrite-with-ai.md", "plan/rewrite-acceptance.md"],
+      "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-AI.6", "stage": "MAI", "title": "Offline setup, policy and fixture profiles",
+      "summary": "Implement profile/consent/cap policy and settings against fake transport only, safeStorage references, kit fixture provenance and error recovery. Requirements involving egress are fixture contracts here, not permission to enable real transport.",
+      "requirements": ["RWR-09", "RWR-41", "RWR-42", "RWR-43", "RWR-44", "RWR-45", "RWR-47", "PRV-05", "SEC-09", "LIC-03"],
+      "dependsOn": ["WP-AI.2"], "touches": ["core", "desktop", "ui", "views"],
+      "reviews": ["code", "security", "design-system", "accessibility"], "specs": ["architecture/rewrite-providers.md", "design/rewrite-with-ai.md", "plan/rewrite-acceptance.md"],
+      "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-AI.7", "stage": "MAI", "title": "Owner provider and disclosure gate",
+      "summary": "Record owner approval of destination, credentials, consent/private policy, retention/costs, Store capabilities and privacy claims after the offline UX is reviewable. Absence of approval blocks real egress, not fixture work.",
+      "requirements": ["RWR-46"],
+      "dependsOn": ["WP-AI.3", "WP-AI.5", "WP-AI.6"], "touches": ["spec", "policy"],
+      "reviews": ["security"], "specs": ["architecture/rewrite-providers.md", "plan/decisions.md", "plan/rewrite-acceptance.md"],
+      "lookahead": true, "status": "planned"
+    },
+    {
+      "id": "WP-AI.8", "stage": "MAI", "title": "Approved real adapter and controlled rollout",
+      "summary": "Only after WP-AI.7: wire the approved real transport to the already-fixtured profile/consent/cap contracts; revalidate RWR-41 through RWR-47 against approved destination without duplicate requirement ownership. Update approved Store/privacy claims and provide a disable-new-sends rollback.",
+      "requirements": ["PRF-15"],
+      "dependsOn": ["WP-AI.7"], "touches": ["desktop", "core", "store", "site", "spec"],
+      "reviews": ["code", "security"], "specs": ["architecture/rewrite-providers.md", "architecture/perceived-performance.md", "plan/rewrite-acceptance.md"],
+      "lookahead": false, "status": "planned"
+    },
+    {
+      "id": "WP-AI.9", "stage": "MAI", "title": "Rewrite gate evidence and Help",
+      "summary": "Run the scripted offline matrix, round-trip/crash/conflict/private-isolation proofs and Windows journeys; feature-gate Help and record release/security/accessibility evidence, with no live calls in CI.",
+      "requirements": ["QLT-08", "HLP-10", "DOC-03"],
+      "dependsOn": ["WP-AI.4", "WP-AI.5", "WP-AI.8"], "touches": ["tests", "help", "spec"],
+      "reviews": ["code", "security", "design-system", "accessibility"], "specs": ["plan/rewrite-acceptance.md", "experience/rewrite-with-ai.md"],
+      "lookahead": false, "status": "planned"
+    },
+    {
+      "id": "WP-AI.10", "stage": "MAI", "title": "Browser rewrite boundary and feasibility",
+      "summary": "Keep browser rewrite unavailable; document its secure-credential and consent prerequisites, test the absence of misleading commands. This is a feasibility/boundary slice, not a browser provider implementation.",
+      "requirements": ["RWR-48"],
+      "dependsOn": ["WP-AI.7"], "touches": ["spec", "web"],
+      "reviews": ["code", "security"], "specs": ["architecture/rewrite-providers.md", "plan/rewrite-acceptance.md"],
+      "lookahead": false, "status": "planned"
+    },
     {
       "id": "WP-0.1",
       "stage": "M0",

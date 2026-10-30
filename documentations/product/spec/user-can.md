@@ -5,6 +5,19 @@ Every capability Focus Notes provides, written as what a person can do. Each one
 > [!NOTE]
 > **TL;DR.** 96 user-can capabilities: 69 are P0 (the first release), 26 are P1, and 1 comes later. Every row traces up to at least one [scenario](scenarios.md) and down to the [views and components](../../design/information-architecture.html) that deliver it and the [requirements](../requirements.md) that make it testable. The column order (ID, user can, scenarios, priority, views, requirements, acceptance) follows the Slate spec convention. The acceptance column is the observable check: what a person sees, not how it's built.
 
+## Optional rewriting
+
+All rows below are planned P1 desktop capabilities. [Acceptance](../../plan/rewrite-acceptance.md) records the observable checks.
+
+| ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| UC-RWR-01 | ask for another version of selected words with a preset or my own instruction | SC-RWR-01 | P1 | IA-CMP-REWRITEPROMPT | RWR-01, RWR-02, RWR-03, RWR-04, KEY-08, SPT-09, UI-14 | Keyboard and pointer open the same prompt; no selection explains why; presets and custom instructions can be edited before sending. |
+| UC-RWR-02 | review a rewrite without losing my original or changing unrelated text | SC-RWR-01, SC-RWR-03 | P1 | IA-CMP-REWRITEREVIEW | RWR-05, RWR-06, RWR-21, RWR-22, RWR-23, RWR-24, RWR-25, RWR-26, RWR-27, EDT-15 | Original is durable before streaming; Discard restores the target, outside edits survive, stale baselines refuse writes and partial output never becomes the sole copy. |
+| UC-RWR-03 | rewrite a whole Markdown file to itself or to a separate private-safe file | SC-RWR-02 | P1 | IA-CMP-REWRITETARGET | RWR-07, RWR-28, RWR-29, FIL-16 | Dirty buffers, changed files and collisions cannot overwrite work; new files get a fresh ID in the same visibility section. |
+| UC-RWR-04 | compare variations and recover earlier wording after undo or a restart | SC-RWR-03 | P1 | IA-CMP-REWRITEVARIATIONS | RWR-61, RWR-62, RWR-63, RWR-64, RWR-65, RWR-66 | Previous and next work after restart; accepted content follows normal save; no local variation ref or private content is pushed publicly. |
+| UC-RWR-05 | choose and revoke a rewrite destination and understand consent, costs and failures | SC-RWR-04 | P1 | IA-VIEW-REWRITESETUP, IA-VIEW-REWRITECONSENT, IA-VIEW-REWRITESETTINGS, IA-CMP-REWRITESTATUS | RWR-09, RWR-41, RWR-42, RWR-43, RWR-44, RWR-45, RWR-46, RWR-47, RWR-48, HLP-10 | No provider is enabled by default; named destination and caps are shown before sending; offline leaves writing and the prompt usable; web clearly excludes the desktop feature. |
+| UC-RWR-06 | identify fresh suggestions comfortably without depending on color or animation | SC-RWR-01 | P1 | IA-CMP-REWRITEREVIEW | RWR-08, FOC-07 | Effect can be disabled; reduced motion and forced colors stay readable; the review bar provides the non-color signal and focus mode keeps its paragraph band. |
+
 <h2 data-reader-personas="product design">Canvas and focus</h2>
 
 | ID | User can… | Scenarios | Priority | Views and components | Requirements | Acceptance |

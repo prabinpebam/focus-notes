@@ -133,8 +133,36 @@
   </tbody>
 </table>
 
-<h2 data-reader-personas="product design">Surface rules</h2>
+<h2 id="rewrite-with-ai">Rewrite with AI (planned)</h2>
+<p>Optional desktop rewriting serves CP-RWR-01. These surfaces are specified, not built; see <a href="rewrite-with-ai.md">Rewrite design</a> and <a href="../experience/rewrite-with-ai.md">Rewrite experience</a>.</p>
+<table>
+  <thead><tr><th>IA ID</th><th>Surface</th><th>Opens from</th><th>Serves</th></tr></thead>
+  <tbody>
+    <tr><td>IA-VIEW-REWRITESETUP</td><td>Setup dialog, provider profile and policy</td><td>First rewrite without a profile; Settings</td><td>UC-RWR-05</td></tr>
+    <tr><td>IA-VIEW-REWRITECONSENT</td><td>Named-destination confirmation dialog</td><td>Before an unapproved send</td><td>UC-RWR-05</td></tr>
+    <tr><td>IA-VIEW-REWRITESETTINGS</td><td>Rewrite category in Settings</td><td>Settings or provider status</td><td>UC-RWR-05</td></tr>
+    <tr><td>IA-CMP-REWRITEPROMPT</td><td>Anchored prompt, presets and primary action</td><td>rewrite.selection or rewrite.file</td><td>UC-RWR-01</td></tr>
+    <tr><td>IA-CMP-REWRITEREVIEW</td><td>Inline review bar, status and fresh-text signal</td><td>Generation lifecycle</td><td>UC-RWR-02, UC-RWR-06</td></tr>
+    <tr><td>IA-CMP-REWRITEVARIATIONS</td><td>Previous/next and earlier-session picker</td><td>Review bar and note history</td><td>UC-RWR-04</td></tr>
+    <tr><td>IA-CMP-REWRITETARGET</td><td>Same/New file target chooser</td><td>rewrite.file before sending</td><td>UC-RWR-03</td></tr>
+    <tr><td>IA-CMP-REWRITESTATUS</td><td>Provider, limits and repair status</td><td>Prompt and Settings</td><td>UC-RWR-05</td></tr>
+  </tbody>
+</table>
+<table>
+  <thead><tr><th>ID</th><th>Decision</th><th>Serves</th><th>Reason</th></tr></thead>
+  <tbody>
+    <tr><td>DD-RWR-01</td><td>Prompt stays next to the target, fitting the minimum window.</td><td>UC-RWR-01</td><td>Instructions should not lose the selection's context.</td></tr>
+    <tr><td>DD-RWR-02</td><td>In-place protected stream, durable original and explicit Accept/Discard.</td><td>UC-RWR-02</td><td>A suggestion cannot silently replace the person's durable note.</td></tr>
+    <tr><td>DD-RWR-03</td><td>Completed variations remain in isolated local-only history.</td><td>UC-RWR-04</td><td>Experimenting must survive restart without publishing drafts.</td></tr>
+    <tr><td>DD-RWR-04</td><td>File targets default to New file and keep the source visibility.</td><td>UC-RWR-03</td><td>Whole-file operations need a safe default and no privacy side effect.</td></tr>
+    <tr><td>DD-RWR-05</td><td>Setup enables no provider until the person chooses one.</td><td>UC-RWR-05</td><td>Optional assistance is not permission for new egress.</td></tr>
+    <tr><td>DD-RWR-06</td><td>Consent names destination, model, scope and private policy.</td><td>UC-RWR-05</td><td>A generic consent switch cannot communicate where words go.</td></tr>
+    <tr><td>DD-RWR-07</td><td>Rare provider and preset choices live in Settings.</td><td>UC-RWR-05</td><td>The prompt keeps only the choices needed for the current rewrite.</td></tr>
+    <tr><td>DD-RWR-08</td><td>Ephemeral fresh-text decorations have a non-color review signal.</td><td>UC-RWR-06</td><td>Suggestions stay readable and are not encoded in Markdown.</td></tr>
+  </tbody>
+</table>
 
+<h2 data-reader-personas="product design">Surface rules</h2>
 <table>
   <thead><tr><th>Surface</th><th>Use it when</th><th>Behavior</th><th>Used by</th></tr></thead>
   <tbody>
