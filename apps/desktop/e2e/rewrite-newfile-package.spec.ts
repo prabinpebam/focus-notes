@@ -2,7 +2,7 @@ import { test, expect } from "./fixtures.ts";
 import { packagedNewFile } from "./rewrite-newfile-package-fixture.ts";
 
 for (const domain of ["public", "private"] as const) {
-  test(`exact51d ${domain}: existing frontmatter ID retains raw source and creates fresh destination ID`, async () => {
+  test(`exact package ${domain}: existing frontmatter ID retains raw source and creates fresh destination ID`, async () => {
     test.setTimeout(60_000);
     const result = await packagedNewFile(domain, true);
     console.log("AIR-NEWFILE-MATRIX", JSON.stringify(result));
@@ -18,7 +18,7 @@ for (const domain of ["public", "private"] as const) {
     expect(result.sourceUnchangedAfterCreation).toBe(true);
   });
 
-  test(`exact51d ${domain}: supported-body collision, same-note window and dirty-source refuse without overwriting bytes`, async () => {
+  test(`exact package ${domain}: supported-body collision, same-note window and dirty-source refuse without overwriting bytes`, async () => {
     test.setTimeout(60_000);
     const result = await packagedNewFile(domain, false);
     console.log("AIR-NEWFILE-MATRIX", JSON.stringify(result));

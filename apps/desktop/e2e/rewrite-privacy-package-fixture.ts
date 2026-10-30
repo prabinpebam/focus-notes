@@ -6,11 +6,20 @@ import { createServer } from "node:http";
 import { mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { createHash } from "node:crypto";
+import { captureWindow } from "./scene-capture.ts";
+import { scheme } from "./surfaces.ts";
 
 /** Actual frozen packaged main, normal entry only. No imports of runtime stores or crypt doubles. */
 export async function packagedPrivacy() {
-  if (!process.env.FOCUS_NOTES_E2E_EXE?.includes("51d38bda760eb03334782c0e13403f20067bd44b"))
-    throw Error("exact51d-package-required");
+  const sourceSHA = process.env.AIR_PRIVACY_PACKAGE_SHA ?? "";
+  const expectedHash = process.env.AIR_PRIVACY_PACKAGE_HASH ?? "";
+  const exe = process.env.FOCUS_NOTES_E2E_EXE;
+  if (!/^[a-f0-9]{40}$/.test(sourceSHA) || !/^[A-F0-9]{64}$/.test(expectedHash)
+    || !exe?.includes(sourceSHA) || process.env.FOCUS_NOTES_E2E !== "1"
+    || process.env.FOCUS_NOTES_E2E_OFFLINE !== "1") throw Error("exact-e2e-package-required");
+  const asar = join(dirname(exe), "resources", "app.asar");
+  const digest = async () => createHash("sha256").update(await readFile(asar)).digest("hex").toUpperCase();
+  expect(await digest()).toBe(expectedHash);
   const dirs = tempDirs(), privateRepo = join(dirs.docs, "private");
   const logs: string[] = [], domains: string[] = [], normalWriteGates: string[] = [];
   const unexpectedAttempts: string[] = [], historyHits: { sentinel: string }[] = [];
@@ -68,6 +77,11 @@ export async function packagedPrivacy() {
       JSON.stringify({ formatVersion: 1, templateVersion: "0.0.0" }));
     await mkdir(receiverRoot);
     const gh = join(dirs.userData, "empty-gh"); await mkdir(gh);
+    const cleared = Object.fromEntries(Object.keys(process.env)
+      .filter((name) => /^(GIT_|GH_|GITHUB_)/i.test(name)).map((name) => [name, ""]));
+    const isolated = { ...cleared, FOCUS_NOTES_E2E: "1", FOCUS_NOTES_E2E_OFFLINE: "1",
+      GH_CONFIG_DIR: gh, GH_TOKEN: "", GITHUB_TOKEN: "", GH_ENTERPRISE_TOKEN: "", GITHUB_ENTERPRISE_TOKEN: "",
+      GIT_CONFIG_SYSTEM: "", GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_COUNT: "0", GIT_ALLOW_PROTOCOL: "file" };
     for (const repo of [dirs.docs, privateRepo]) {
       await localGit(repo, ["init", "--quiet", "--template="]);
       await localGit(repo, ["symbolic-ref", "HEAD", "refs/heads/main"]);
@@ -85,10 +99,14 @@ export async function packagedPrivacy() {
       domain = d; domains.push(d);
       const file = join(noteDir(d), "source.md"), bytes = await readFile(file);
       await writeFile(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: file }));
-      run = await launch(dirs, { FOCUS_NOTES_E2E_OFFLINE: "1", GH_CONFIG_DIR: gh,
-        GH_TOKEN: "", GITHUB_TOKEN: "", GH_ENTERPRISE_TOKEN: "", GITHUB_ENTERPRISE_TOKEN: "" });
+      run = await launch(dirs, isolated);
       const { app, page } = run;
       observeLogs(run);
+      await scheme(page, d === "public" ? "light" : "dark");
+      const capture = async (name: string) => {
+        if (process.env.AIR_CANDIDATE_CAPTURES)
+          await captureWindow(run!, process.env.AIR_CANDIDATE_CAPTURES, `${d === "public" ? "light" : "dark"}-${name}`);
+      };
       const attempts = await observeEgress(app);
       safeStorage = await app.evaluate(({ safeStorage }) => safeStorage.isEncryptionAvailable());
       expect(safeStorage).toBe(true);
@@ -100,16 +118,21 @@ export async function packagedPrivacy() {
       await page.getByRole("menuitem", { name: "Rewrite with AI", exact: true }).click();
       const panel = page.getByRole("complementary", { name: "Rewrite with AI", exact: true });
       await expect(panel).toBeVisible();
+      await page.keyboard.press("Control+Shift+e");
+      await capture("compose");
       await panel.getByRole("button", { name: "Open connection settings" }).click();
       await panel.getByRole("textbox", { name: "API base address" }).fill(endpoint);
       await panel.getByRole("textbox", { name: "Model", exact: true }).fill("synthetic-C2");
       await panel.getByRole("textbox", { name: "API key", exact: true }).fill("SYNTH_KEY_C");
       await panel.getByRole("button", { name: "Save connection", exact: true }).click();
-      await expect(panel).toContainText("Connection saved locally.");
+      await expect(panel).toContainText("Connection saved locally.", { timeout: 20_000 });
       expect(await readFile(join(dirs.userData, "rewrite-connection.json"), "utf8")).not.toContain("SYNTH_KEY_C");
       await panel.getByRole("button", { name: "Open connection settings" }).click();
       const instruction = panel.getByRole("textbox", { name: "Rewrite instruction", exact: true });
-      await instruction.fill(d === "private" ? "SYNTH_PRIVATE_PROMPT_C" : "SYNTH_PUBLIC_PROMPT_C");
+      const preset = panel.getByRole("button", { name: "Make concise", exact: true });
+      await preset.focus(); await page.keyboard.press("Enter");
+      await instruction.focus(); await page.keyboard.press("Control+a");
+      await page.keyboard.type(d === "private" ? "SYNTH_PRIVATE_PROMPT_C" : "SYNTH_PUBLIC_PROMPT_C");
       instructionEntered = true;
       const startCount = requestCount;
       for (let i = 0; i < 2; i++) {
@@ -127,19 +150,24 @@ export async function packagedPrivacy() {
       await panel.getByRole("button", { name: "Try again", exact: true }).click();
       await expect(panel.getByRole("button", { name: "Cancel", exact: true })).toBeVisible();
       await expect.poll(() => requestCount).toBe(startCount + 3);
+      await capture("stream-cancel");
       await panel.getByRole("button", { name: "Cancel", exact: true }).click();
       // Cancel ends this panel; reopen through the same normal command.
+      await page.keyboard.press("Control+Shift+e");
       await row.press("Shift+F10");
       await page.getByRole("menuitem", { name: "Rewrite with AI", exact: true }).click();
+      await page.keyboard.press("Control+Shift+e");
       await instruction.fill(d === "private" ? "SYNTH_PRIVATE_PROMPT_C" : "SYNTH_PUBLIC_PROMPT_C");
       mode = "error";
       await panel.getByRole("button", { name: "Rewrite", exact: true }).click();
       await expect(panel).toContainText("The connection could not finish this rewrite");
+      await capture("error-retry");
       mode = "success";
       await panel.getByRole("button", { name: "Try again", exact: true }).click();
       await expect(panel).toContainText(d === "private" ? "SYNTH_PRIVATE_COMPLETE_C" : "SYNTH_PUBLIC_COMPLETE_C");
       await expect(panel.getByRole("button", { name: "Try again", exact: true })).toBeVisible();
       await expect(panel.getByRole("button", { name: "Create new file", exact: true })).toBeEnabled();
+      await capture("review-newfile");
       // Main's ordinary activation still prohibits Accept and restore. Do not waive these gates.
       for (const action of ["accept", "restore"]) {
         const error = await page.evaluate(async (action) => {
@@ -155,14 +183,14 @@ export async function packagedPrivacy() {
       const created = await readFile(fresh, "utf8"), id = /^id: ([a-f0-9-]{36})$/m.exec(created)?.[1];
       freshIds &&= Boolean(id) && !bytes.toString().includes(id!);
       sourceBytesUnchanged &&= bytes.equals(await readFile(file));
+      await capture("created");
       const observed = await attempts();
       unexpectedAttempts.push(...observed.filter((s) => s !== `${endpoint}/chat/completions`));
       expect(observed).toHaveLength(5);
       await app.close(); closed++; logs.push(run.log.join("")); logSources.app += run.log.length; run = undefined;
     }
     // Decrypt actual safeStorage history in the same profile via an owned normal app.
-    run = await launch(dirs, { FOCUS_NOTES_E2E_OFFLINE: "1", GH_CONFIG_DIR: gh,
-      GH_TOKEN: "", GITHUB_TOKEN: "", GH_ENTERPRISE_TOKEN: "", GITHUB_ENTERPRISE_TOKEN: "" });
+    run = await launch(dirs, isolated);
     observeLogs(run);
     const attempts = await observeEgress(run.app);
     const historyRoot = join(dirs.userData, "rewrite-history");
@@ -226,6 +254,7 @@ export async function packagedPrivacy() {
     await readLogs(dirs.userData);
     logs.push(...stderrStreams.map((chunks) => chunks.join("")));
     expect(requestUrls.every((url) => url === "/v1/chat/completions")).toBe(true);
+    expect(await digest()).toBe(expectedHash);
     return { domains, safeStorage, sourceBytesUnchanged, freshIds, normalWriteGates, unexpectedAttempts,
       logHits: sentinelHits(logs, forbidden), historyHits, receivers, requests: requestCount,
       decryptedHistoryEntries: decrypted.length, logChunks: logs.length, historyDomains: historyDomains.sort(),
