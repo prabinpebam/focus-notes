@@ -101,10 +101,14 @@ function links(nodes: PMNode[], allowChanges: boolean): string[] {
 
 /** Validates replacement-only bytes, then proves a splice cannot consume neighboring source blocks. */
 export function spliceRewriteTarget(source: string, target: RewriteTarget, replacement: string, policy: { allowLinkChanges: boolean } = { allowLinkChanges: false }): string {
-  if (source.slice(target.from, target.to) !== target.original || !boundary(source, target.from) || !boundary(source, target.to)) return fail("stale-target");
+  if (!Number.isInteger(target.from) || !Number.isInteger(target.to) || target.from < 0 || target.to <= target.from || target.to > source.length
+    || source.slice(target.from, target.to) !== target.original || !boundary(source, target.from) || !boundary(source, target.to)
+    || target.startByte !== bytes(source.slice(0, target.from)) || target.endByte !== bytes(source.slice(0, target.to))) return fail("stale-target");
   if (!replacement.trim() || !wellFormed(replacement) || /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(replacement)) return fail("invalid-output");
   if (bytes(replacement) > 32 * 1024) return fail("too-large");
   const before = parseMarkdown(source);
+  const bom = before.bom ? 1 : 0;
+  if (before.blocks.some((b, i) => b.start + bom < target.to && b.end + bom > target.from && before.doc.content?.[i]?.type === "rawMarkdown")) return fail("unsupported-target");
   const eol = target.original.includes("\n") ? target.original.includes("\r\n") ? "\r\n" : "\n" : before.eol;
   const normalized = replacement.replace(/\r\n?|\n/g, eol);
   if (bytes(normalized) > 32 * 1024) return fail("too-large");
@@ -115,7 +119,6 @@ export function spliceRewriteTarget(source: string, target: RewriteTarget, repla
     || JSON.stringify(links(old.doc.content ?? [], policy.allowLinkChanges)) !== JSON.stringify(links(output.doc.content ?? [], policy.allowLinkChanges))) return fail("invalid-output");
   const result = source.slice(0, target.from) + normalized + source.slice(target.to);
   const after = parseMarkdown(result);
-  const bom = before.bom ? 1 : 0;
   const delta = normalized.length - target.original.length;
   for (let i = 0; i < after.blocks.length; i++) {
     const block = after.blocks[i]!;

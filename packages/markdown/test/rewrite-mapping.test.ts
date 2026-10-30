@@ -76,6 +76,17 @@ describe("RWR-22/RWR-27: outside-byte identity and untrusted output", () => {
   it("rejects changed target bytes", () => {
     expect(() => spliceRewriteTarget(source.replace("Original", "Modified"), target(), "new")).toThrow("stale-target");
   });
+  it("does not accept forged source or byte coordinates", () => {
+    const t = target();
+    expect(() => spliceRewriteTarget(source, { ...t, startByte: t.startByte + 1 }, "new")).toThrow("stale-target");
+    expect(() => spliceRewriteTarget(source, { ...t, from: -1 }, "new")).toThrow("stale-target");
+  });
+  it("cannot splice a forged raw/front-matter target", () => {
+    const s = "---\nid: keep\n---\n\nwords";
+    const original = "---\nid: keep\n---";
+    const t = { from: 0, to: original.length, startByte: 0, endByte: original.length, original, expanded: true };
+    expect(() => spliceRewriteTarget(s, t, "replacement")).toThrow("unsupported-target");
+  });
   it("rejects an unsafe link assembled from an otherwise plain-text partial replacement", () => {
     const s = "[text](java script:bad)";
     const from = s.indexOf("java") + 1;
