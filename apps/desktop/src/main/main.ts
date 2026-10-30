@@ -5,6 +5,7 @@
  * calls to api.github.com, made when the person sets up their instance (FRE-08, WP-3.1).
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
+import { RewriteConnection } from "./rewrite-connection.ts";
 import { lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
 import { parseDeepLink, type DeepLink } from "@focus-notes/core/deep-link";
 import { rootOf as agentRootOf, rootDir as agentRootDir } from "@focus-notes/core/agents";
@@ -1197,6 +1198,63 @@ async function slowSeam(channel: string): Promise<void> {
 }
 
 function registerIpc(win: () => BrowserWindow | undefined): void {
+  const connection = new RewriteConnection({
+    available: () => safeStorage.isEncryptionAvailable(),
+    encrypt: (text) => safeStorage.encryptString(text),
+    decrypt: (data) => safeStorage.decryptString(data),
+  });
+  const requests = new Map<number, { id: string; abort: AbortController; stream: ReturnType<RewriteConnection["stream"]> }>();
+  const profile = () => join(app.getPath("userData"), "rewrite-connection.json");
+  handleFrom("rewrite:connection", async (e, action: unknown, input: unknown = {}) => {
+    // Not production activation: same explicit disposable-profile/file-workspace gate as the editor.
+    if (!process.argv.includes("--rewrite-editor-demo") || !process.env.FOCUS_NOTES_USER_DATA || !process.env.FOCUS_NOTES_DOCS) throw new Error("candidate-only");
+    const a = input as Record<string, unknown>;
+    const owner = e.sender.id;
+    try {
+        if (action === "configure" || action === "remove") {
+          requests.get(owner)?.abort.abort(); requests.delete(owner);
+        if (action === "remove") { connection.remove(); await rm(profile(), { force: true }); return connection.settings(); }
+        if (typeof a.address !== "string" || typeof a.model !== "string" || typeof a.key !== "string") throw new Error();
+        await connection.configure({ address: a.address, model: a.model, key: a.key });
+        await writeFile(profile(), JSON.stringify(connection.envelope()), { mode: 0o600 });
+        return connection.settings();
+      }
+      if (action === "settings") {
+        if (!connection.settings().configured && existsSync(profile())) connection.restore(JSON.parse(await readFile(profile(), "utf8")));
+        return connection.settings();
+      }
+      if (action === "cancel") {
+        if (requests.get(owner)?.id === a.id) { requests.get(owner)?.abort.abort(); requests.delete(owner); }
+        return;
+      }
+      if (action === "start") {
+        requests.get(owner)?.abort.abort();
+        if (typeof a.target !== "string" || a.target.length > 32768 || typeof a.instruction !== "string" || a.instruction.length > 4000) throw new Error();
+        const abort = new AbortController();
+        const id = randomUUID();
+        const stream = connection.stream({ sessionId: id, requestId: id, instruction: a.instruction, target: a.target, signal: abort.signal });
+        requests.set(owner, { id, abort, stream });
+        e.sender.once("destroyed", () => { requests.get(owner)?.abort.abort(); requests.delete(owner); });
+        return id;
+      }
+      if (action === "next") {
+        const request = requests.get(owner);
+        if (!request || request.id !== a.id) throw new Error();
+        const next = await request.stream.next();
+        if (request.abort.signal.aborted) throw new Error();
+        if (next.done || next.value.type === "complete") { await request.stream.return(undefined); requests.delete(owner); }
+        return next;
+      }
+      throw new Error();
+    } catch {
+      if (action === "configure") connection.remove();
+      if (action !== "next" || requests.get(owner)?.id === a.id) {
+        requests.get(owner)?.abort.abort(); requests.delete(owner);
+      }
+      // No response body, endpoint, note text, key or exception detail crosses this boundary.
+      throw new Error(safeStorage.isEncryptionAvailable() ? "rewrite-connection-failed" : "secure-storage-unavailable");
+    }
+  });
   handle("note:read", async (p) => {
     try {
       return (await readParsed(notePath(p))).text;

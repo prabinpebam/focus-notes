@@ -19,6 +19,14 @@ import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.t
  * tests implement it in memory. The app never talks to Node or the network directly.
  */
 export interface PlatformBridge {
+  /** Isolated Rewrite candidate only. Keys cross once; never returned or put in app state. */
+  rewriteConnection?: {
+    (action: "configure", input: { address: string; model: string; key: string }): Promise<{ address: string; model: string; configured: boolean }>;
+    (action: "settings" | "remove"): Promise<{ address: string; model: string; configured: boolean }>;
+    (action: "start", input: { target: string; instruction: string }): Promise<string>;
+    (action: "next", input: { id: string }): Promise<IteratorResult<import("./rewrite.ts").RewriteEvent>>;
+    (action: "cancel", input: { id: string }): Promise<void>;
+  };
   platform: Platform;
   readNote(path: string): Promise<string>;
   /** As readNote, but only a missing file is null; permission and other read failures still reject. */

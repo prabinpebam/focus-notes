@@ -98,6 +98,7 @@ ipcRenderer.on("spelling:replace", (_e, word: unknown, replacement: unknown) => 
 });
 
 contextBridge.exposeInMainWorld("focusNotes", {
+  rewriteConnection: (action: string, input?: Record<string, unknown>) => ipcRenderer.invoke("rewrite:connection", action, input),
   platform,
   // GPU or software compositing (D-121): the main process reads it, and tells of changes after a GPU crash.
   compositing: {

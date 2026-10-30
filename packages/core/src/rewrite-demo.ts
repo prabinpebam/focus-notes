@@ -18,6 +18,13 @@ export class RewriteDemo {
   enabled = false;
   noteKey = "";
   feedback = "";
+  address = "";
+  model = "";
+  key = "";
+  connected = false;
+  useConnection = false;
+  connectionStatus = "";
+  provider: RewriteProvider | undefined;
   readonly changed: () => void;
   constructor(changed = () => {}) { this.changed = changed; }
   open(input: { source: string; target: Pick<RewriteTarget, "from" | "to" | "original"> }): void {
@@ -48,7 +55,7 @@ export class RewriteDemo {
       yield { seq: ++seq, type: "complete" };
     };
     this.session = new RewriteSession({
-      sessionId: "disposable-demo", source: this.source, target: this.target, provider,
+      sessionId: "disposable-demo", source: this.source, target: this.target, provider: this.useConnection ? this.provider ?? (async function* () { throw new Error("connection-unavailable"); }) : provider,
       // Honest demo-only acknowledgements, NOT durable real-note checkpoints.
       checkpoints: { original: async () => "demo-original", variation: async () => "demo-variation" },
     });
@@ -65,16 +72,30 @@ export class RewriteDemo {
     this.openPanel = false;
     this.changed();
   }
-  discard(): void { this.session?.stop(); this.session = undefined; this.openPanel = false; this.menu = false; this.changed(); }
+  discard(): void { this.session?.stop(); this.session = undefined; this.key = ""; this.openPanel = false; this.menu = false; this.changed(); }
   undo(): void {
     if (this.previous === undefined) return;
     this.discard(); this.source = this.previous; this.previous = undefined; this.revision++; this.changed();
   }
 }
 
-export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewModels" | "messages">, editorAction: (id: string, args?: Record<string, unknown>) => void): void {
+export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewModels" | "messages">, editorAction: (id: string, args?: Record<string, unknown>) => void, connection?: import("./bridge.ts").PlatformBridge["rewriteConnection"]): void {
   const text = (key: string) => app.messages.format(`rewrite.${key}`);
   const demo = new RewriteDemo(() => app.store.update((s) => ({ ...s })));
+  if (connection) demo.provider = async function* (request) {
+    let id: string | undefined;
+    const cancel = () => { if (id) void connection("cancel", { id }).catch(() => {}); };
+    request.signal.addEventListener("abort", cancel, { once: true });
+    try {
+      id = await connection("start", { target: request.target, instruction: request.instruction });
+      while (!request.signal.aborted) {
+        const next = await connection("next", { id });
+        if (request.signal.aborted || next.done) return;
+        yield next.value;
+        if (next.value.type === "complete") return;
+      }
+    } finally { request.signal.removeEventListener("abort", cancel); cancel(); }
+  };
   const command = (id: string, run: (args: Record<string, unknown>) => void | Promise<void>) =>
     app.commands.register({ id: `demo.${id}`, title: "rewrite.demoTitle", run });
   command("enableEditor", () => { demo.enabled = true; demo.changed(); });
@@ -115,18 +136,46 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   });
   command("discard", () => { demo.feedback = ""; demo.discard(); });
   command("undo", () => demo.undo());
-  command("settings", () => { demo.settings = !demo.settings; demo.changed(); });
+  command("settings", async () => {
+    demo.settings = !demo.settings; demo.changed();
+    if (!demo.settings) { demo.key = ""; demo.changed(); return; }
+    if (!connection) return;
+    try {
+      const saved = await connection("settings");
+      if (saved.configured) { demo.address = saved.address; demo.model = saved.model; demo.connected = true; }
+    } catch { demo.connectionStatus = text("connectionError"); }
+    demo.changed();
+  });
+  for (const field of ["address", "model", "key"] as const) command(field, (a) => { demo[field] = String(a.value); });
+  command("provider", () => { demo.session?.stop(); demo.session = undefined; demo.useConnection = !demo.useConnection; demo.changed(); });
+  command("saveConnection", async () => {
+    demo.session?.stop(); demo.session = undefined; demo.connectionStatus = text("connectionSaving"); demo.changed();
+    try {
+      if (!connection) throw new Error();
+      const saved = await connection("configure", { address: demo.address, model: demo.model, key: demo.key });
+      demo.connected = saved.configured; demo.useConnection = true; demo.connectionStatus = text("connectionSaved");
+    } catch { demo.connected = false; demo.connectionStatus = text("connectionError"); }
+    finally { demo.key = ""; demo.changed(); }
+  });
+  command("removeConnection", async () => {
+    demo.session?.stop(); demo.session = undefined;
+    try { await connection?.("remove"); demo.connected = false; demo.useConnection = false; demo.key = ""; demo.connectionStatus = text("connectionRemoved"); }
+    catch { demo.connectionStatus = text("connectionError"); }
+    demo.changed();
+  });
   command("failure", () => { demo.fail = !demo.fail; demo.changed(); });
   app.viewModels.register({
     id: "vm.rewriteDemo",
     schema: { type: "object", properties: Object.fromEntries([
-      ...["source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
-      ...["enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
+      ...["address", "model", "key", "providerLabel", "connectionStatus", "source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
+      ...["isFake", "enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
     ]) },
-    setters: { instruction: "demo.instruction" },
+    setters: { instruction: "demo.instruction", address: "demo.address", model: "demo.model", key: "demo.key" },
     select: () => {
       const state = demo.session?.state;
       return {
+        address: demo.address, model: demo.model, key: demo.key, connectionStatus: demo.connectionStatus,
+        providerLabel: text(demo.useConnection ? "providerCompatible" : "providerFake"), isFake: !demo.useConnection,
         enabled: demo.enabled, feedback: demo.feedback, hasFeedback: Boolean(demo.feedback),
         preview: demo.openPanel && (state === "streaming" || state === "review") && demo.target
           ? demo.session!.projection.slice(demo.target.from, demo.session!.projection.length - (demo.source.length - demo.target.to)) : "",
@@ -137,7 +186,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
         generateLabel: text(state === "review" || state === "error" ? "generate" : "start"),
         discardLabel: text(state === "sending" || state === "streaming" ? "cancel" : "discard"),
         busy: state === "sending" || state === "streaming", review: state === "review", undo: demo.previous !== undefined,
-        status: text(state === "error" ? (demo.enabled ? "editorError" : "error") : state === "streaming" || state === "sending" ? "streaming" : state === "review" ? "ready" : "compose"),
+        status: text(state === "error" ? (demo.useConnection ? "connectionGenerationError" : demo.enabled ? "editorError" : "error") : state === "streaming" || state === "sending" ? (demo.useConnection ? "connectionStreaming" : "streaming") : state === "review" ? "ready" : "compose"),
       };
     },
   });

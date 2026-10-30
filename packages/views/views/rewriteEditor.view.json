@@ -15,13 +15,30 @@
         { "type": "Button", "when": { "get": "vm.rewriteDemo.hasFeedback" }, "props": { "label": { "t": "rewrite.close" } }, "on": { "press": { "run": "demo.discard" } } },
         { "type": "Stack", "when": { "get": "vm.rewriteDemo.open" }, "props": { "gap": "m" }, "children": [
           { "type": "Text", "props": { "value": { "t": "rewrite.editorNotice" } } },
+          { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.providerLabel" } } },
+          { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+            { "type": "Button", "props": { "label": { "t": "rewrite.connectionSettings" } }, "on": { "press": { "run": "demo.settings" } } },
+            { "type": "Button", "props": { "label": { "t": "rewrite.switchProvider" } }, "on": { "press": { "run": "demo.provider" } } }
+          ] },
+          { "type": "Stack", "when": { "get": "vm.rewriteDemo.settings" }, "props": { "gap": "s" }, "children": [
+            { "type": "Text", "props": { "value": { "t": "rewrite.connectionHint" } } },
+            { "type": "TextField", "props": { "label": { "t": "rewrite.address" }, "value": { "bind": "vm.rewriteDemo.address" } } },
+            { "type": "TextField", "props": { "label": { "t": "rewrite.model" }, "value": { "bind": "vm.rewriteDemo.model" } } },
+            { "type": "TextField", "props": { "label": { "t": "rewrite.key" }, "type": "password", "value": { "bind": "vm.rewriteDemo.key" } } },
+            { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+              { "type": "Button", "props": { "label": { "t": "rewrite.saveConnection" } }, "on": { "press": { "run": "demo.saveConnection" } } },
+              { "type": "Button", "props": { "label": { "t": "rewrite.removeConnection" } }, "on": { "press": { "run": "demo.removeConnection" } } }
+            ] },
+            { "type": "LiveRegion", "props": { "message": { "get": "vm.rewriteDemo.connectionStatus" } } },
+            { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.connectionStatus" } } }
+          ] },
           { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.original" } } },
           { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
             { "type": "Button", "props": { "label": { "t": "rewrite.concise" } }, "on": { "press": { "run": "demo.preset", "args": { "value": "Make it concise" } } } },
             { "type": "Button", "props": { "label": { "t": "rewrite.friendly" } }, "on": { "press": { "run": "demo.preset", "args": { "value": "Make it friendly" } } } },
-            { "type": "Button", "props": { "label": { "t": "rewrite.failure" } }, "on": { "press": { "run": "demo.failure" } } }
+            { "type": "Button", "when": { "get": "vm.rewriteDemo.isFake" }, "props": { "label": { "t": "rewrite.failure" } }, "on": { "press": { "run": "demo.failure" } } }
           ] },
-          { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.failureStatus" } } },
+          { "type": "Text", "when": { "get": "vm.rewriteDemo.isFake" }, "props": { "value": { "get": "vm.rewriteDemo.failureStatus" } } },
           { "type": "TextField", "id": "rewriteInstruction", "props": { "label": { "t": "rewrite.instruction" }, "value": { "bind": "vm.rewriteDemo.instruction" }, "readOnly": { "get": "vm.rewriteDemo.busy" } } },
           { "type": "LiveRegion", "props": { "message": { "get": "vm.rewriteDemo.status" } } },
           { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.status" } } },
