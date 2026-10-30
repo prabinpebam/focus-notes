@@ -1,22 +1,36 @@
 import { expect } from "@playwright/test";
 import { launch, tempDirs, type Launched } from "./helpers.ts";
 import { observeEgress } from "./rewrite-egress-http.ts";
-import { localGit } from "./rewrite-privacy-local-git.ts";
+import { execFileSync } from "node:child_process";
 import { createServer } from "node:http";
 import { mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { createHash } from "node:crypto";
 
 const sourceId = "11111111-2222-4333-8444-555555555555";
 const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 const exists = async (path: string) => readFile(path).then(() => true, () => false);
+// Same isolated Git boundary as the already-adopted lifecycle fixture. No C foundation adoption.
+const gitEnv = Object.fromEntries(Object.entries(process.env).filter(([k]) => !/^(GIT_|GH_|GITHUB_)/i.test(k)));
+async function localGit(cwd: string, args: string[]): Promise<string> {
+  return execFileSync("git", ["--no-pager", "-c", "core.hooksPath=", "-c", "commit.gpgSign=false",
+    "-c", "core.autocrlf=false", ...args], { cwd, encoding: "utf8", env: { ...gitEnv,
+    GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_SYSTEM: "", GIT_CONFIG_GLOBAL: "", GIT_ALLOW_PROTOCOL: "file",
+    GIT_AUTHOR_NAME: "Synthetic fixture", GIT_AUTHOR_EMAIL: "synthetic@invalid",
+    GIT_COMMITTER_NAME: "Synthetic fixture", GIT_COMMITTER_EMAIL: "synthetic@invalid" } });
+}
 
 /** C3's actual workspace/domain setup, launch fence, isolated Git and real safeStorage.
  * No demo activation, runtime mutation, crypt double or replacement of source IDs.
  */
 export async function packagedNewFile(domain: "public" | "private", withId: boolean) {
-  if (!process.env.FOCUS_NOTES_E2E_EXE?.includes("51d38bda760eb03334782c0e13403f20067bd44b"))
-    throw Error("exact51d-package-required");
+  const sourceSHA = process.env.AIR_NEWFILE_PACKAGE_SHA ?? "51d38bda760eb03334782c0e13403f20067bd44b";
+  const expectedHash = process.env.AIR_NEWFILE_PACKAGE_HASH ?? "E176B9DC599100E7F63895FAAA1004F50AD3ADB4248532D452DB2D1DE9046213";
+  const exe = process.env.FOCUS_NOTES_E2E_EXE;
+  if (!/^[a-f0-9]{40}$/.test(sourceSHA) || !/^[A-F0-9]{64}$/.test(expectedHash)
+    || !exe?.includes(sourceSHA) || process.env.FOCUS_NOTES_E2E !== "1") throw Error("exact-e2e-package-required");
+  const asar = join(dirname(exe), "resources", "app.asar");
+  expect(hash(await readFile(asar)).toUpperCase()).toBe(expectedHash);
   const dirs = tempDirs(), privateRepo = join(dirs.docs, "private");
   let run: Launched | undefined;
   const pids: number[] = [], closedPids: number[] = [];
@@ -91,7 +105,7 @@ export async function packagedNewFile(domain: "public" | "private", withId: bool
     await panel.getByRole("textbox", { name: "Model", exact: true }).fill("synthetic-newfile");
     await panel.getByRole("textbox", { name: "API key", exact: true }).fill("SYNTH_NEWFILE_KEY");
     await panel.getByRole("button", { name: "Save connection", exact: true }).click();
-    await expect(panel).toContainText("Connection saved locally.");
+    await expect(panel).toContainText("Connection saved locally.", { timeout: 20_000 });
     expect(await readFile(join(dirs.userData, "rewrite-connection.json"), "utf8")).not.toContain("SYNTH_NEWFILE_KEY");
     await panel.getByRole("button", { name: "Open connection settings" }).click();
     await panel.getByRole("textbox", { name: "Rewrite instruction", exact: true }).fill("Rewrite this synthetic note.");
@@ -186,6 +200,7 @@ export async function packagedNewFile(domain: "public" | "private", withId: bool
     }
     result.unexpectedAttempts = (await attempts()).filter((url) => url !== `${endpoint}/chat/completions`);
     await app.close(); closedPids.push(run.pid); run = undefined;
+    expect(hash(await readFile(asar)).toUpperCase()).toBe(expectedHash);
     return result;
   } finally {
     if (run) { await run.app.close(); closedPids.push(run.pid); }

@@ -80,6 +80,7 @@ export class RewriteDemo {
     const changed = this.changed;
     this.session = new RewriteSession({
       sessionId: "disposable-demo", source: this.source, target: this.target,
+      resultMode: this.wholeFile ? "new-file" : undefined,
       provider: async function* (request) {
         for await (const event of selectedProvider(request)) {
           yield event;

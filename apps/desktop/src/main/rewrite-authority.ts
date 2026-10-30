@@ -179,6 +179,8 @@ export class RewriteAuthority {
     const { current, operation } = this.#operation(owner, token);
     if (typeof name !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9 _-]{0,79}\.md$/.test(name)
       || basename(name) !== name || !operation.complete || !operation.variationId || !operation.output
+      || operation.input.target.from !== 0 || operation.input.target.to !== operation.input.source.length
+      || operation.input.target.original !== operation.input.source
       || operation.input.target.startByte !== 0 || operation.input.target.endByte !== Buffer.byteLength(operation.input.source)
       || hash(operation.input.source) !== operation.lease.baselineHash) throw refused();
     const validate = async () => {

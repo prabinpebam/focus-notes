@@ -7,6 +7,26 @@ import { NoteWriter } from "../src/main/note-write.ts";
 import { RewriteAuthority } from "../src/main/rewrite-authority.ts";
 
 describe("main current-note authority", () => {
+  it("New file requires whole UTF-16 AND byte coordinates, not renderer whole-file claims", async () => {
+    const dir = await realpath(await mkdtemp(join(tmpdir(), "rewrite-whole-authority-")));
+    const path = join(dir, "a.md"), source = "---\nid: original\ncustom: retained\n---\n# Café\n";
+    await writeFile(path, source);
+    const identity = async () => ({ path, workspace: dir, domain: "private" as const, noteKey: "note", conflict: false });
+    const authority = new RewriteAuthority({ writer: new NoteWriter({ rewriteIdentity: identity }), resolve: identity,
+      original: async () => "checkpoint", variation: async () => "variation" });
+    try {
+      const revision = (await authority.activate(1, path))!;
+      const token = await authority.prepare(1, revision, source, {
+        from: 1, to: source.length, original: source.slice(1), startByte: 0, endByte: Buffer.byteLength(source), expanded: false,
+      });
+      authority.streamStart(1, token);
+      authority.streamEvent(1, token, { type: "delta", text: "# Result\n" });
+      authority.streamEvent(1, token, { type: "complete" });
+      await authority.complete(1, token, "# Result\n");
+      await expect(authority.newFile(1, token, "forged.md")).rejects.toThrow();
+      expect(await readFile(path, "utf8")).toBe(source);
+    } finally { authority.closeAll(); await rm(dir, { recursive: true, force: true }); }
+  });
   it("restores only a reconciled saved document under current authority, never stale offsets", async () => {
     const dir = await realpath(await mkdtemp(join(tmpdir(), "rewrite-restore-")));
     const path = join(dir, "a.md"); await writeFile(path, "original");

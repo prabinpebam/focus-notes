@@ -25,10 +25,17 @@ export const REWRITE_LIMITS = Object.freeze({
 const bytes = (s: string) => new TextEncoder().encode(s).length;
 const interrupted = Symbol("rewrite-interrupted");
 const timeout = Symbol("rewrite-timeout");
+/** Reuse the strict output validator; no raw-block permission or source reserialization. */
+function validateRewriteNewFileResult(output: string): string {
+  spliceRewriteTarget(output, { from: 0, to: output.length, startByte: 0, endByte: bytes(output), original: output, expanded: false }, output);
+  return output;
+}
 export interface RewriteSessionOptions {
   sessionId: string;
   source: string;
   target: RewriteTarget;
+  /** Explicit Files → New file review; never permission to replace a source range. */
+  resultMode?: "new-file";
   checkpoints: RewriteCheckpoints;
   provider: RewriteProvider;
 }
@@ -53,6 +60,8 @@ export class RewriteSession {
     this.#canonical = options.source;
     this.#target = this.#options.target;
     if (options.source.slice(options.target.from, options.target.to) !== options.target.original) throw new Error("stale-target");
+    if (options.resultMode === "new-file" && (options.target.from !== 0 || options.target.to !== options.source.length
+      || options.target.startByte !== 0 || options.target.endByte !== bytes(options.source))) throw new Error("whole-file-required");
   }
 
   get state(): RewriteState { return this.#state; }
@@ -117,8 +126,12 @@ export class RewriteSession {
         this.#state = "streaming";
       }
       if (!complete) throw new Error("missing-completion");
-      const historical = spliceRewriteTarget(source, target, this.#replacement);
-      const current = spliceRewriteTarget(this.#canonical, this.#target, this.#replacement);
+      // A new document is not a selection replacement. Validate its own supported
+      // Markdown without treating source metadata as an editable raw block.
+      const historical = this.#options.resultMode === "new-file"
+        ? validateRewriteNewFileResult(this.#replacement) : spliceRewriteTarget(source, target, this.#replacement);
+      const current = this.#options.resultMode === "new-file"
+        ? historical : spliceRewriteTarget(this.#canonical, this.#target, this.#replacement);
       this.#replacement = current.slice(this.#target.from, current.length - (this.#canonical.length - this.#target.to));
       phase = "variation";
       const variationId = await this.#wait(checkpoints.variation({ sessionId, checkpointId, source: historical, replacement: this.#replacement }), controller.signal);
@@ -148,6 +161,7 @@ export class RewriteSession {
 
   /** Returns a validated canonical handover; does not write or claim a saved/undoable note. */
   accept(): string {
+    if (this.#options.resultMode === "new-file") throw new Error("new-file-only");
     if (this.#state !== "review" || !this.#reviewId) throw new Error("not-reviewing");
     const accepted = spliceRewriteTarget(this.#canonical, this.#target, this.#replacement);
     this.stop();
@@ -170,4 +184,5 @@ export class RewriteSession {
       if (timer !== undefined) clearTimeout(timer);
     }
   }
+
 }
