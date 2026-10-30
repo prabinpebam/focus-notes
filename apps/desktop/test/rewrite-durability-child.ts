@@ -17,6 +17,7 @@ async function boundary(name: string) {
   await new Promise<void>((resolve) => process.once("message", () => resolve()));
 }
 const originalWrite = fs.writeFile, originalRename = fs.rename;
+let renameAttempt = 0;
 fs.writeFile = (async (...args: Parameters<typeof fs.writeFile>) => {
   const tmp = String(args[0]).endsWith(".focus-notes.tmp");
   if (tmp) await boundary("save-before-write");
@@ -25,6 +26,10 @@ fs.writeFile = (async (...args: Parameters<typeof fs.writeFile>) => {
   return result;
 }) as typeof fs.writeFile;
 fs.rename = async (...args: Parameters<typeof fs.rename>) => {
+  if (phase.startsWith("save-retry") && renameAttempt++ === 0) {
+    await boundary(phase);
+    throw Object.assign(new Error("synthetic Windows busy"), { code: "EPERM" });
+  }
   await boundary("save-before-rename");
   const result = await originalRename(...args);
   await boundary("save-after-rename");
@@ -71,7 +76,19 @@ try {
       if (phase === "review") await boundary("review");
       else {
         await authority.accept(1, next);
-        const result = await writer.write(path, output, source);
+        const lease = phase === "save-retry-identity" ? await writer.prepareRewrite(path, {
+          domain: "public", noteKey: "air-safe-a2-note",
+          baselineHash: createHash("sha256").update(source).digest("hex"),
+        }) : undefined;
+        const saving = writer.write(path, output, source);
+        lease?.release();
+        let stale = false;
+        const result = await saving.catch((error) => {
+          if (phase !== "save-retry-identity" || error.message !== "rewrite-stale") throw error;
+          stale = true;
+          return undefined;
+        });
+        if (phase === "save-retry-identity" && !stale) throw new Error("replacement inode was not refused");
         if (result && (!outside || result.outside !== source.replace("Original", "External rename-boundary winner")))
           throw new Error("unexpected outside winner");
         await boundary("saved");

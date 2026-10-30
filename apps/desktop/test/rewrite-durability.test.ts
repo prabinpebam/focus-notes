@@ -26,6 +26,19 @@ describe("rewrite offline durability on frozen runtime", () => {
       expect(result.id).toBe("air-safe-a2-note");
     });
   }
+  it("same-byte external inode replacement during rename retry invalidates a held writer", async () => {
+    const result = await durabilityCase("save-retry-identity", "orderly", "replace-same");
+    expect(result.exit).toBe(0);
+    expect(result.bytes).toEqual(Buffer.from(result.source));
+    expect(result.original).toEqual(Buffer.from(result.source));
+    expect(result.variations).toEqual([result.output]);
+  }, 30_000);
+  it("external winner during a Windows rename retry survives", async () => {
+    const result = await durabilityCase("save-retry", "orderly", true);
+    expect(result.bytes).toEqual(Buffer.from(result.expected));
+    expect(result.original).toEqual(Buffer.from(result.source));
+    expect(result.variations).toEqual([result.output]);
+  }, 30_000);
   it("external winner between real temporary write and guarded rename survives", async () => {
     const result = await durabilityCase("save-before-rename", "orderly", true);
     expect(result.bytes, "AIR-WRITER-RENAME-TOCTOU: outside winner must survive the rename boundary")

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { fork } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, realpath, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,7 +30,7 @@ async function git(repo: string, args: string[]) {
   assert.equal(r.code, 0, r.stderr);
   return r.stdout;
 }
-export async function durabilityCase(phase: string, ending: "orderly" | "crash", outside = false) {
+export async function durabilityCase(phase: string, ending: "orderly" | "crash", outside: boolean | "replace-same" = false) {
   const root = await setup();
   // No Electron, accounts, provider, shell or inherited inspector arguments.
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
@@ -52,7 +52,18 @@ export async function durabilityCase(phase: string, ending: "orderly" | "crash",
     });
     assert.equal(reached.pid, child.pid); // Only this recorded child can be killed.
     assert.equal(reached.boundary, phase);
-    if (outside) await writeFile(join(root, "note.md"), external);
+    if (phase.startsWith("checkpoint")) {
+      const lockPath = join(root, "profile", "rewrite-history", workspaceKey(root), "public.lock");
+      const before = await readFile(lockPath);
+      assert.equal(JSON.parse(before.toString()).pid, child.pid);
+      await assert.rejects(new RewriteOriginalStore({ dataDir: join(root, "profile"), workspace: root })
+        .variations(identity), /rewrite-history-unavailable/);
+      assert.deepEqual(await readFile(lockPath), before); // Live child exclusion, no lock stealing.
+    }
+    if (outside === "replace-same") {
+      await writeFile(join(root, "replacement"), source);
+      await rename(join(root, "replacement"), join(root, "note.md"));
+    } else if (outside) await writeFile(join(root, "note.md"), external);
     if (ending === "crash") child.kill("SIGKILL"); else child.send("finish");
     const [exit] = await exited;
     const bytes = await readFile(join(root, "note.md"));
@@ -84,15 +95,21 @@ export async function durabilityCase(phase: string, ending: "orderly" | "crash",
         assert.deepEqual(Buffer.from((await store.recoverSession({ ...identity, sessionId: record.sessionId })).source), Buffer.from(source));
       }
     } else {
-      // Explicit known recovery gap, not an asserted successful API restart.
-      assert.equal((await readFile(join(root, "profile", "rewrite-history", workspaceKey(root), "public.lock"))).length, 0);
+      // The fixed lock publishes a complete owner record, bound to the exact killed child.
+      const owner = JSON.parse(await readFile(join(root, "profile", "rewrite-history", workspaceKey(root), "public.lock"), "utf8"));
+      assert.equal(owner.version, 1);
+      assert.equal(owner.pid, child.pid);
       try { await store.variations(identity); }
       catch (error) {
         assert.match(String(error), /rewrite-history-unavailable/);
         recoveryBlocked = true;
       }
+      if (!recoveryBlocked && refs.length) {
+        const record = JSON.parse(await git(repo, ["cat-file", "blob", `${refs[0]}:record.json`]));
+        assert.deepEqual(Buffer.from((await store.recoverSession({ ...identity, sessionId: record.sessionId })).source), Buffer.from(source));
+      }
     }
-    return { bytes, expected: outside ? external : saved ? output : source, source, output, original, complete,
+    return { bytes, expected: outside === "replace-same" ? source : outside ? external : saved ? output : source, source, output, original, complete,
       variations, id: /^id: (.+)\r?$/m.exec(bytes.toString())?.[1]?.trim(),
       partialCanonical: bytes.includes(Buffer.from("PARTIAL_NEVER_CANONICAL")), exit, recoveryBlocked };
   } finally {

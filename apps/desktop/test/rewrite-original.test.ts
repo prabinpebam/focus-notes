@@ -35,6 +35,36 @@ async function fixture() {
   return { options, input, store: new RewriteOriginalStore(options) };
 }
 describe("D-247 original prerequisite (no generation integration)", () => {
+  it("finds a note after more than 100 unrelated refs, preserving the per-note cap", async () => {
+    const { options, input, store } = await fixture();
+    const ack = await store.original(input);
+    const wanted = await store.variation(input, ack.commitId, "Wanted");
+    const other = { ...input, noteKey: "unrelated", sessionId: randomUUID() };
+    const otherAck = await store.original(other);
+    const unrelated = await store.variation(other, otherAck.commitId, "Other");
+    const repo = join(options.dataDir, "rewrite-history", ack.workspaceKey, "public.git");
+    const run = createRunner({ here: true });
+    const refs = await run({ cwd: repo, args: ["--git-dir=" + repo, "for-each-ref", "--format=%(refname)", "refs/focus-notes/variations/v1/"] });
+    const commands = refs.stdout.trim().split("\n").map((ref) => `delete ${ref}`);
+    for (let i = 0; i < 101; i++) commands.push(`create refs/focus-notes/variations/v1/a${i.toString().padStart(3, "0")} ${unrelated}`);
+    for (let i = 0; i < 21; i++) commands.push(`create refs/focus-notes/variations/v1/z${i} ${wanted}`);
+    const update = await run({ cwd: repo, args: ["--git-dir=" + repo, "update-ref", "--stdin"], input: commands.join("\n") + "\n" });
+    expect(update.code, update.stderr).toBe(0);
+    const found = await new RewriteOriginalStore(options).variations(input);
+    expect(found).toHaveLength(20);
+    expect(found.every((r) => r.replacement === "Wanted" && r.original === input.source)).toBe(true);
+    expect(await store.recoverSession(input)).toEqual(input);
+  }, 30_000);
+  it("refuses legacy, malformed and live/PID-reused locks without removing them", async () => {
+    const { options, input, store } = await fixture();
+    const ack = await store.original(input);
+    const path = join(options.dataDir, "rewrite-history", ack.workspaceKey, "public.lock");
+    for (const text of ["", "broken", JSON.stringify({ version: 1, pid: process.pid, token: randomUUID() })]) {
+      await writeFile(path, text);
+      await expect(store.recoverSession(input)).rejects.toThrow("rewrite-history-unavailable");
+      expect(await readFile(path, "utf8")).toBe(text);
+    }
+  });
   it("persists distinct complete variations bound to the original and recovers after reconstruction", async () => {
     const { options, input, store } = await fixture();
     input.domain = "private";

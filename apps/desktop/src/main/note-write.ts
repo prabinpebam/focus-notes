@@ -6,7 +6,10 @@
  * any Git pull has finished (inside the queue, right before the temporary file), and once more right
  * before the rename; if it holds anything else (not that text, nor the text being written), nothing
  * is written and the text found is returned, so another program's change, a pull, or a write queued
- * before this one is never written over. A missing file is written: nothing is lost by making it.
+ * before this one is refused. These comparisons are NOT an atomic external-editor CAS: an edit
+ * inside the final OS rename call can still win the comparison and then be overwritten. Normal
+ * rewrite replacement must remain gated until that separate activation hazard is resolved.
+ * A missing file is written: nothing is lost by making it.
  */
 import { mkdir, open, readdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
@@ -213,14 +216,18 @@ export class NoteWriter {
       await writeFile(tmp, content, "utf8");
     }
     try {
-      // And again right before the rename: a change while the temporary file was written.
-      const late = await changedOutside(path, content, expected);
-      if (late !== undefined) {
+      // Revalidate after EVERY Windows backoff, not just before entering the retry loop.
+      const late = await retrying(async () => {
+        const outside = await changedOutside(path, content, expected);
+        if (outside !== undefined) return { outside };
+        await this.#heldIdentity(path, hold);
+        await rename(tmp, path);
+        return undefined;
+      });
+      if (late) {
         await rm(tmp, { force: true });
-        return { outside: late };
+        return late;
       }
-      await this.#heldIdentity(path, hold);
-      await retrying(() => rename(tmp, path));
       // The rename landed even if notification fails or another program replaces the path.
       if (hold && writtenFileId) {
         hold.fileId = writtenFileId;

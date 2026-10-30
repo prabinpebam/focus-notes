@@ -3,7 +3,7 @@
  * The Git tree IS the index: no draft, plaintext private index or second storage format.
  */
 import { createHash, randomUUID } from "node:crypto";
-import { lstat, mkdir, open, readFile, readdir, realpath, unlink } from "node:fs/promises";
+import { link, lstat, mkdir, open, readFile, readdir, realpath, unlink } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { workspaceKey, type DraftCrypt } from "./drafts.ts";
 import { createRunner, type GitRunner } from "./git/run.ts";
@@ -39,6 +39,42 @@ const oid = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 const unavailable = () => new Error("rewrite-history-unavailable");
 const config = "[core]\nrepositoryformatversion = 0\nbare = true\nlogAllRefUpdates = false\n";
 const encoder = new TextEncoder();
+/**
+ * Publish a fully written owner record exclusively: a crash can never publish an empty lock.
+ * PID reuse is conservative: ANY live process at that PID prevents reclamation. Legacy/unknown
+ * owners and permission errors fail closed, never an age/lease timeout.
+ */
+async function historyLock(path: string): Promise<() => Promise<void>> {
+  const token = randomUUID();
+  const prepared = `${path}.${token}.owner`;
+  const text = JSON.stringify({ version: 1, pid: process.pid, token });
+  const file = await open(prepared, "wx");
+  try { await file.writeFile(text); await file.sync(); } finally { await file.close(); }
+  try {
+    try { await link(prepared, path); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      if (!(await lstat(path)).isFile() || (await lstat(path)).isSymbolicLink()) throw unavailable();
+      const previous = await readFile(path, "utf8");
+      const owner = JSON.parse(previous);
+      if (owner.version !== 1 || !Number.isSafeInteger(owner.pid) || owner.pid <= 0
+        || !uuid.test(owner.token)) throw unavailable();
+      try { process.kill(owner.pid, 0); throw unavailable(); }
+      catch (e) { if ((e as NodeJS.ErrnoException).code !== "ESRCH") throw unavailable(); }
+      // One permanent claim per dead owner prevents two reclaimers unlinking a successor's lock.
+      // If a reclaimer itself dies here, fail closed for manual recovery; never steal its claim.
+      const claim = await open(`${path}.${owner.token}.reclaimed`, "wx");
+      await claim.close();
+      if (await readFile(path, "utf8") !== previous) throw unavailable();
+      await unlink(path);
+      await link(prepared, path); // A concurrent new owner may win; exclusive link must still succeed.
+    }
+    return async () => {
+      if (await readFile(path, "utf8") !== text) throw unavailable();
+      await unlink(path);
+    };
+  } finally { await unlink(prepared); }
+}
 function valid(input: OriginalInput): void {
   const { source, target: t } = input;
   if (!["public", "private"].includes(input.domain) || !uuid.test(input.sessionId)
@@ -102,7 +138,7 @@ export class RewriteOriginalStore {
       }
     } else if (await realpath(root) !== root) throw unavailable();
     const lockPath = join(root, `${domain}.lock`);
-    const lock = await open(lockPath, "wx");
+    const release = await historyLock(lockPath);
     try {
       const repo = join(root, `${domain}.git`);
       let exists = true;
@@ -125,8 +161,7 @@ export class RewriteOriginalStore {
       }
       return await fn(repo);
     } finally {
-      await lock.close();
-      await unlink(lockPath);
+      await release();
     }
   }
   #encode(domain: Domain, value: string): string {
@@ -218,7 +253,7 @@ export class RewriteOriginalStore {
   async variations(identity: Pick<OriginalInput, "domain" | "noteKey">): Promise<{ checkpointId: string; replacement: string; source: string; original: string }[]> {
     try {
       return await this.#store(identity.domain, false, async (repo) => {
-        const ids = (await this.#git(repo, ["for-each-ref", "--count=100", "--format=%(objectname)", "refs/focus-notes/variations/v1/"])).trim().split("\n").filter(Boolean);
+        const ids = (await this.#git(repo, ["for-each-ref", "--format=%(objectname)", "refs/focus-notes/variations/v1/"])).trim().split("\n").filter(Boolean);
         const results = [];
         for (const id of ids) {
           const record = JSON.parse(this.#decode(identity.domain, await this.#git(repo, ["cat-file", "blob", `${id}:record.json`])));
