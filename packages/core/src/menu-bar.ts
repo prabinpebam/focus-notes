@@ -96,7 +96,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
  * bar's tests check it.
  */
 export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
-  { why: "disposable rewrite panel's own actions, provider fields and editor target reports", ids: /^(rewrite\.context|demo\.(enableEditor|unsupported|target|open|change|instruction|preset|send|history|previous|next|original|restore|accept|discard|undo|settings|address|model|key|provider|saveConnection|removeConnection|failure))$/ },
+  { why: "rewrite panel's own activation, actions, provider fields and editor target reports", ids: /^(rewrite\.context|demo\.(enableEditor|enablePreview|unsupported|target|open|change|instruction|preset|send|history|previous|next|original|restore|accept|discard|undo|settings|address|model|key|provider|saveConnection|removeConnection|failure))$/ },
   // What views, the editor, and the shell send as things change: values, events, and their own steps.
   { why: "state", ids: /^(command\.run|app\.ready|note\.setContent|paste\.notice|toolbar\.setOpen|format\.setState|table\.(setState|changed|copied|action)|slash\..+|find\.(setQuery|setReplace|prefill|setResult)|toast\.setPaused|files\.(drop|editBlur|setEditValue|setExpanded|setFilter)|window\.(drag|key)|theme\.color\.set|.+\.set[A-Z]\w*)$/ },
   // Keys of one focused control, listed in the cheat sheet: the find bar, a picker's field, the Files tree, a table, a toolbar.

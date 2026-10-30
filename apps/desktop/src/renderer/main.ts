@@ -128,7 +128,7 @@ let running: Running;
       void app.commands.run("demo.undo");
     }
   }, { capture: true, signal: abort.signal });
-  const react = mountApp(root, { app, views, ...(demo ? { view: "rewriteDemo" } : { overlays: editorDemo ? [...OVERLAYS, "rewriteEditor"] : OVERLAYS }), signal: abort.signal });
+  const react = mountApp(root, { app, views, ...(demo ? { view: "rewriteDemo" } : { overlays: [...OVERLAYS, "rewriteEditor"] }), signal: abort.signal });
   const r: Running = { app, root: react, abort, revoke: scoped.revoke, offTheme: followTheme(app) };
   running = r;
   // A missing notes folder (FRE-11): the first frame is the recovery view, never a canvas that can't open a note.
@@ -141,6 +141,7 @@ let running: Running;
   });
   void started.then(() => {
     if (editorDemo && running === r) void app.commands.run("demo.enableEditor");
+    if (!demo && !editorDemo && running === r) void app.commands.run("demo.enablePreview");
     if (!demo && running === r && !app.store.state.recover.open) attachSearch(r);
   });
 }
@@ -164,8 +165,9 @@ base.onWorkspaceSwitched(() => {
     const scoped = scopedBridge(base, windowState);
     const app = createApp(scoped.bridge, messages.en!, "en", { htmlToMarkdown });
     await app.start().catch((e: unknown) => console.error(e));
+    void app.commands.run("demo.enablePreview");
     const abort = new AbortController();
-    const react = swapApp(root, old, { app, views, overlays: OVERLAYS, signal: abort.signal });
+    const react = swapApp(root, old, { app, views, overlays: [...OVERLAYS, "rewriteEditor"], signal: abort.signal });
     const r: Running = { app, root: react, abort, revoke: scoped.revoke, offTheme: followTheme(app) };
     running = r;
     performance.measure(SWITCH_MARK, { start: began });

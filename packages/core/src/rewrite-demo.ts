@@ -16,6 +16,7 @@ export class RewriteDemo {
   settings = false;
   fail = false;
   enabled = false;
+  previewOnly = false;
   noteKey = "";
   feedback = "";
   address = "";
@@ -133,6 +134,9 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   const command = (id: string, run: (args: Record<string, unknown>) => void | Promise<void>) =>
     app.commands.register({ id: `demo.${id}`, title: "rewrite.demoTitle", run });
   command("enableEditor", () => { demo.enabled = true; demo.changed(); });
+  // Normal desktop entry uses the real connection seam, never the demo provider.
+  // Applying/restoring stays gated until the full owner-note safety matrix passes.
+  command("enablePreview", () => { demo.enabled = true; demo.previewOnly = true; demo.useConnection = true; demo.changed(); });
   app.commands.register({
     id: "rewrite.open", title: "rewrite.title",
     shortcut: { default: "Mod+Shift+R" }, layer: "writer", group: "editing",
@@ -172,7 +176,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
       if (request !== demo.historyRequest) return;
       if (!results) throw new Error();
       demo.history = results; demo.historyIndex = 0; demo.showOriginal = false;
-      demo.historyStatus = text(results.length ? "historyPreviewOnly" : "historyEmpty");
+      demo.historyStatus = text(results.length ? demo.previewOnly ? "previewOnly" : "historyPreviewOnly" : "historyEmpty");
     } catch { if (request === demo.historyRequest) demo.historyStatus = text("historyReadError"); }
     finally { performance.measure("rewrite-demo:history", { start: began }); if (request === demo.historyRequest) { demo.historyLoading = false; demo.changed(); } }
   });
@@ -180,6 +184,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   command("next", () => demo.navigate(1));
   command("original", () => { demo.showOriginal = !demo.showOriginal; demo.changed(); });
   command("restore", async () => {
+    if (demo.previewOnly) return;
     if (!demo.enabled || !demo.historyOpen || demo.historyLoading || !authority?.restore) return;
     const request = ++demo.historyRequest;
     const source = demo.source, key = demo.noteKey;
@@ -198,6 +203,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
     finally { performance.measure("rewrite-demo:restore", { start: began }); if (request === demo.historyRequest) { demo.historyLoading = false; demo.changed(); } }
   });
   command("accept", async () => {
+    if (demo.previewOnly) return;
     if (!demo.enabled) { demo.accept(); return; }
     if (demo.historyOpen || demo.showOriginal) return;
     if (demo.session?.state !== "review" || demo.noteKey !== app.store.state.note.key || demo.source !== app.store.state.note.markdown) { demo.discard(); return; }
@@ -223,7 +229,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
     demo.changed();
   });
   for (const field of ["address", "model", "key"] as const) command(field, (a) => { demo[field] = String(a.value); });
-  command("provider", () => { demo.session?.stop(); authority?.cancel(); demo.token = undefined; demo.session = undefined; demo.useConnection = !demo.useConnection; demo.changed(); });
+  command("provider", () => { if (demo.previewOnly) return; demo.session?.stop(); authority?.cancel(); demo.token = undefined; demo.session = undefined; demo.useConnection = !demo.useConnection; demo.changed(); });
   command("saveConnection", async () => {
     demo.session?.stop(); authority?.cancel(); demo.token = undefined; demo.session = undefined; demo.connectionStatus = text("connectionSaving"); demo.changed();
     try {
@@ -235,7 +241,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   });
   command("removeConnection", async () => {
     demo.session?.stop(); authority?.cancel(); demo.token = undefined; demo.session = undefined;
-    try { await connection?.("remove"); demo.connected = false; demo.useConnection = false; demo.key = ""; demo.connectionStatus = text("connectionRemoved"); }
+    try { await connection?.("remove"); demo.connected = false; demo.useConnection = demo.previewOnly; demo.key = ""; demo.connectionStatus = text(demo.previewOnly ? "previewConnectionRemoved" : "connectionRemoved"); }
     catch { demo.connectionStatus = text("connectionError"); }
     demo.changed();
   });
@@ -246,21 +252,22 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
     // Re-select on store notifications, retaining structurally equal projections.
     reads: "*",
     schema: { type: "object", properties: Object.fromEntries([
-      ...["restoreLabel", "historyStatus", "savedPreview", "historyCounter", "originalLabel", "address", "model", "key", "providerLabel", "connectionStatus", "source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
-      ...["restoreDisabled", "historyOpen", "historyLoading", "previousDisabled", "nextDisabled", "isFake", "enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
+      ...["editorNotice", "restoreLabel", "historyStatus", "savedPreview", "historyCounter", "originalLabel", "address", "model", "key", "providerLabel", "connectionStatus", "source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
+      ...["canSwitchProvider", "restoreDisabled", "historyOpen", "historyLoading", "previousDisabled", "nextDisabled", "isFake", "enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
     ]) },
     setters: { instruction: "demo.instruction", address: "demo.address", model: "demo.model", key: "demo.key" },
     select: () => {
       const state = demo.session?.state;
       return {
+        editorNotice: text(demo.previewOnly ? "previewNotice" : "editorNotice"), canSwitchProvider: !demo.previewOnly,
         historyOpen: demo.historyOpen, historyLoading: demo.historyLoading, historyStatus: demo.historyStatus,
         restoreLabel: text(demo.showOriginal ? "restoreOriginal" : "restoreVariation"),
-        restoreDisabled: demo.historyLoading || !demo.history.length || demo.savedPreview === demo.source,
+        restoreDisabled: demo.previewOnly || demo.historyLoading || !demo.history.length || demo.savedPreview === demo.source,
         savedPreview: demo.savedPreview, historyCounter: demo.history.length ? app.messages.format("rewrite.historyCounter", { current: demo.historyIndex + 1, total: demo.history.length }) : "",
         previousDisabled: demo.historyIndex <= 0, nextDisabled: demo.historyIndex >= demo.history.length - 1,
         originalLabel: text(demo.showOriginal ? "showVariation" : "showOriginal"),
         address: demo.address, model: demo.model, key: demo.key, connectionStatus: demo.connectionStatus,
-        providerLabel: text(demo.useConnection ? "providerCompatible" : "providerFake"), isFake: !demo.useConnection,
+        providerLabel: text(demo.previewOnly ? "previewOnly" : demo.useConnection ? "providerCompatible" : "providerFake"), isFake: !demo.useConnection,
         enabled: demo.enabled, feedback: demo.feedback, hasFeedback: Boolean(demo.feedback),
         preview: !demo.showOriginal && !demo.historyOpen && demo.openPanel && (state === "streaming" || state === "review") && demo.target
           ? demo.session!.projection.slice(demo.target.from, demo.session!.projection.length - (demo.source.length - demo.target.to)) : "",
@@ -270,7 +277,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
         failureStatus: text(demo.fail ? "failureOn" : "failureOff"),
         generateLabel: text(state === "review" || state === "error" ? "generate" : "start"),
         discardLabel: text(state === "sending" || state === "streaming" ? "cancel" : "discard"),
-        busy: demo.historyLoading || state === "sending" || state === "streaming", review: state === "review" && !demo.showOriginal && !demo.historyOpen, undo: demo.previous !== undefined,
+        busy: demo.historyLoading || state === "sending" || state === "streaming", review: !demo.previewOnly && state === "review" && !demo.showOriginal && !demo.historyOpen, undo: demo.previous !== undefined,
         status: text(state === "error" ? (demo.session?.error === "checkpoint-failed" ? "historyError" : demo.useConnection ? "connectionGenerationError" : demo.enabled ? "editorError" : "error") : state === "streaming" || state === "sending" ? (demo.useConnection ? "connectionStreaming" : "streaming") : state === "review" ? "ready" : "compose"),
       };
     },

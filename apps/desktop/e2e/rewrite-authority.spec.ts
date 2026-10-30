@@ -13,7 +13,7 @@ test("ordinary launch stays gated across explicit note and window switches", asy
   try {
     const editor = page.getByRole("textbox", { name: "Note", exact: true });
     await expect(editor).toContainText("First ordinary");
-    await expect(editor).not.toHaveAttribute("data-rewrite-enabled", "true");
+    await expect(editor).toHaveAttribute("data-rewrite-enabled", "true");
     const revision = await page.evaluate(async (path) => (window as any).focusNotes.rewriteAuthority("activate", { path }), a);
     await page.evaluate(async (path) => (window as any).focusNotes.windows.open(path), b);
     await expect.poll(() => app.windows().length).toBe(2);
@@ -27,7 +27,9 @@ test("ordinary launch stays gated across explicit note and window switches", asy
     }
     await page.evaluate(async (path) => (window as any).focusNotes.rewriteAuthority("activate", { path }), b);
     await editor.press("Control+Shift+r");
-    await expect(page.getByRole("complementary", { name: "Rewrite with AI", exact: true })).toHaveCount(0);
+    const panel = page.getByRole("complementary", { name: "Rewrite with AI", exact: true });
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole("button", { name: "Accept", exact: true })).toBeDisabled();
     expect(readFileSync(a, "utf8")).toBe("First ordinary note.");
     expect(readFileSync(b, "utf8")).toBe("Second ordinary note.");
   } finally { await app.close(); }

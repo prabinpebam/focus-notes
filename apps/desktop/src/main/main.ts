@@ -1229,6 +1229,9 @@ async function slowSeam(channel: string): Promise<void> {
   if (typeof ms === "number" && ms > 0) await new Promise((r) => setTimeout(r, Math.min(ms, 60_000)));
 }
 
+function rewriteWriteCandidate(): boolean {
+  return process.argv.includes("--rewrite-editor-demo") && Boolean(process.env.FOCUS_NOTES_USER_DATA && process.env.FOCUS_NOTES_DOCS);
+}
 function registerIpc(win: () => BrowserWindow | undefined): void {
   handleFrom("rewrite:authority", async (e, action, input = {}) => {
     const owner = e.sender.id;
@@ -1236,8 +1239,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       e.sender.once("destroyed", () => rewriteAuthority.close(owner));
       return rewriteAuthority.activate(owner, input.path === null ? null : notePath(input.path), input.expected);
     }
-    // Narrow candidate only. Ordinary launches can navigate but cannot generate or Accept.
-    if (!process.argv.includes("--rewrite-editor-demo") || !process.env.FOCUS_NOTES_USER_DATA || !process.env.FOCUS_NOTES_DOCS) throw new Error("candidate-only");
+    // Normal entry is preview-only until the full owner-note safety matrix passes.
+    // Main enforces this too; a renderer cannot activate writes by enabling a view.
+    if ((action === "accept" || action === "restore") && !rewriteWriteCandidate()) throw new Error("preview-only");
     if (action === "prepare") return rewriteAuthority.prepare(owner, input.revision, input.source, input.target);
     if (action === "history") return rewriteAuthority.history(owner, input.revision, input.source);
     if (action === "restore") return rewriteAuthority.restore(owner, input.revision, input.source, input.index, input.original);
@@ -1254,9 +1258,13 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   const requests = new Map<number, { id: string; token: string; abort: AbortController; stream: ReturnType<RewriteConnection["stream"]> }>();
   const profile = () => dataFile(DATA_FILES.rewriteConnection);
+  const previewDestination = (address: string) => {
+    if (!rewriteWriteCandidate()) {
+      const url = new URL(address);
+      if (url.protocol !== "http:" || url.hostname !== "127.0.0.1") throw new Error("preview-loopback-only");
+    }
+  };
   handleFrom("rewrite:connection", async (e, action: unknown, input: unknown = {}) => {
-    // Not production activation: same explicit disposable-profile/file-workspace gate as the editor.
-    if (!process.argv.includes("--rewrite-editor-demo") || !process.env.FOCUS_NOTES_USER_DATA || !process.env.FOCUS_NOTES_DOCS) throw new Error("candidate-only");
     const a = input as Record<string, unknown>;
     const owner = e.sender.id;
     try {
@@ -1264,6 +1272,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
           requests.get(owner)?.abort.abort(); requests.delete(owner);
         if (action === "remove") { connection.remove(); await rm(profile(), { force: true }); return connection.settings(); }
         if (typeof a.address !== "string" || typeof a.model !== "string" || typeof a.key !== "string") throw new Error();
+        previewDestination(a.address);
         await connection.configure({ address: a.address, model: a.model, key: a.key });
         await writeFile(profile(), JSON.stringify(connection.envelope()), { mode: 0o600 });
         return connection.settings();
@@ -1278,6 +1287,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       }
       if (action === "start") {
         requests.get(owner)?.abort.abort();
+        previewDestination(connection.settings().address);
         if (typeof a.target !== "string" || a.target.length > 32768 || typeof a.instruction !== "string" || a.instruction.length > 4000) throw new Error();
         const abort = new AbortController();
         const id = randomUUID();

@@ -14,11 +14,11 @@
         { "type": "Text", "when": { "get": "vm.rewriteDemo.hasFeedback" }, "props": { "value": { "get": "vm.rewriteDemo.feedback" } } },
         { "type": "Button", "when": { "get": "vm.rewriteDemo.hasFeedback" }, "props": { "label": { "t": "rewrite.close" } }, "on": { "press": { "run": "demo.discard" } } },
         { "type": "Stack", "when": { "get": "vm.rewriteDemo.open" }, "props": { "gap": "m" }, "children": [
-          { "type": "Text", "props": { "value": { "t": "rewrite.editorNotice" } } },
+          { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.editorNotice" } } },
           { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.providerLabel" } } },
           { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
             { "type": "Button", "props": { "label": { "t": "rewrite.connectionSettings" } }, "on": { "press": { "run": "demo.settings" } } },
-            { "type": "Button", "props": { "label": { "t": "rewrite.switchProvider" } }, "on": { "press": { "run": "demo.provider" } } }
+            { "type": "Button", "when": { "get": "vm.rewriteDemo.canSwitchProvider" }, "props": { "label": { "t": "rewrite.switchProvider" } }, "on": { "press": { "run": "demo.provider" } } }
           ] },
           { "type": "Stack", "when": { "get": "vm.rewriteDemo.settings" }, "props": { "gap": "s" }, "children": [
             { "type": "Text", "props": { "value": { "t": "rewrite.connectionHint" } } },
