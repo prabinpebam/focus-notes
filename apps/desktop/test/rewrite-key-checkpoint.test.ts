@@ -35,9 +35,18 @@ describe("Windows native encryption key checkpoint", () => {
   });
   it("retries a transient malformed native file until valid publication", async () => {
     const root = await mkdtemp(join(tmpdir(), "fn-key-checkpoint-"));
+    let sawMalformed!: () => void;
+    const observed = new Promise<void>((resolve) => { sawMalformed = resolve; });
+    const realOpen = (await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises")).open;
+    vi.mocked(fs.open).mockImplementationOnce(async (...args) => {
+      const handle = await realOpen(...args), close = handle.close.bind(handle);
+      vi.spyOn(handle, "close").mockImplementation(async () => { await close(); sawMalformed(); });
+      return handle;
+    });
     try {
       await writeFile(join(root, "Local State"), '{"os_crypt":');
       const pending = checkpointEncryptionKey(root, "win32", 1000);
+      await observed; // First parse and close completed while the native file was malformed.
       await writeFile(join(root, "Local State"), JSON.stringify({ os_crypt: { encrypted_key: "synthetic" } }));
       await expect(pending).resolves.toBeUndefined();
     } finally { await rm(root, { recursive: true, force: true }); }

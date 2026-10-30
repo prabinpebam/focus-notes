@@ -114,3 +114,16 @@ test.each([false, true])("remove failure=%s followed by configure commits exactl
   expect(f.disk()).toEqual(envelope("new"));
   expect(await f.tx.settings()).toMatchObject({ model: "new", configured: true });
 });
+
+test.each(["configure", "remove"] as const)("an unreadable prior envelope still permits explicit %s recovery", async (action) => {
+  const tx = new RewriteConnectionTransaction({
+    available: () => true, encrypt: (s) => Buffer.from(s), decrypt: (b) => b.toString(),
+  }, {
+    load: async () => { throw Error("unreadable"); }, checkpoint: async () => {},
+    persist: async () => {}, remove: async () => {},
+  });
+  await expect(tx.settings()).rejects.toThrow("unreadable");
+  if (action === "configure") await expect(tx.configure(profile("recovered"))).resolves.toMatchObject({ configured: true });
+  else await expect(tx.remove()).resolves.toMatchObject({ configured: false });
+  expect((await tx.settings()).configured).toBe(action === "configure");
+});
