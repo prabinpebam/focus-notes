@@ -4,15 +4,11 @@
  * sanitizes any HTML a library hands to the DOM. DOMPurify (Apache-2.0 or MPL-2.0) does the work.
  */
 import DOMPurify, { type Config, type UponSanitizeAttributeHookEvent } from "dompurify";
+import { isSafeHref } from "@focus-notes/markdown";
+export { isSafeHref } from "@focus-notes/markdown";
 
 /** Relative addresses, and http, https, and mailto (Security and privacy → Threats and controls). */
 const SAFE_URI = /^(?:(?:https?|mailto):|[^a-z]|[a-z0-9+.-]+(?:[^a-z0-9+.\-:]|$))/i;
-/** Characters browsers ignore inside a URL scheme, which `java\tscript:` hides behind. */
-const URI_NOISE = /[\u0000-\u0020\u00a0\u1680\u180e\u2000-\u2029\u205f\u3000]/g;
-
-/** A link address the app may render and keep from a paste: relative, http, https, or mailto. */
-export const isSafeHref = (href: string): boolean => SAFE_URI.test(href.replace(URI_NOISE, ""));
-
 /** The tags a paste can carry. Everything else is dropped, keeping its text. */
 const PASTE_TAGS = [
   "p", "div", "span", "br", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "blockquote", "pre", "code",

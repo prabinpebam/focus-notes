@@ -13,6 +13,16 @@ export interface WaitTimings {
 
 export type TaskPhase = "ack" | "on" | "done";
 
+export interface TaskProgress {
+  requestId: string;
+  seq: number;
+  stage: "checkpoint" | "sending" | "streaming" | "validating" | "saving";
+  completedChunks: number;
+  totalChunks?: number;
+  elapsedMs: number;
+  cancellable: boolean;
+}
+
 export interface TaskView {
   id: number;
   /** What the wait affects: a command ID or a node ID. Its component shows the sign. */
@@ -23,6 +33,7 @@ export interface TaskView {
   phase: TaskPhase;
   /** Whole seconds since it started, once past wait.elapsedDelay; otherwise 0. */
   elapsed: number;
+  progress?: TaskProgress;
 }
 
 export interface Clock {
@@ -41,6 +52,7 @@ interface Running extends TaskView {
   shownAt?: number;
   announced: boolean;
   timers: unknown[];
+  acceptingProgress: boolean;
 }
 
 export interface TrackerEvents {
@@ -65,9 +77,9 @@ export class TaskTracker {
   }
 
   /** Runs `work` as a tracked wait. Failures end the sign at once and are rethrown to the caller. */
-  async run<T>(target: string, message: string, work: () => Promise<T>, doneMessage?: string): Promise<T> {
+  async run<T>(target: string, message: string, work: (update: (progress: TaskProgress) => boolean) => Promise<T>, doneMessage?: string): Promise<T> {
     const c = this.#clock;
-    const task: Running = { id: this.#next++, target, message, ...(doneMessage ? { doneMessage } : {}), phase: "ack", elapsed: 0, started: c.now(), announced: false, timers: [] };
+    const task: Running = { id: this.#next++, target, message, ...(doneMessage ? { doneMessage } : {}), phase: "ack", elapsed: 0, started: c.now(), announced: false, timers: [], acceptingProgress: true };
     this.#tasks.set(task.id, task);
     task.timers.push(c.setTimeout(() => this.#update(task, { phase: "on", shownAt: c.now() }), this.#t.signDelay));
     task.timers.push(c.setTimeout(() => {
@@ -82,7 +94,7 @@ export class TaskTracker {
     this.#emit();
     const mark = `focus-notes:${target}`;
     try {
-      const result = await work();
+      const result = await work((progress) => this.#progress(task, progress));
       this.#finish(task, true);
       return result;
     } catch (error) {
@@ -98,6 +110,7 @@ export class TaskTracker {
   }
 
   #finish(task: Running, ok: boolean): void {
+    task.acceptingProgress = false;
     const c = this.#clock;
     for (const h of task.timers) c.clearTimeout(h);
     task.timers = [];
@@ -109,6 +122,22 @@ export class TaskTracker {
       this.#update(task, { phase: "done" });
       task.timers.push(c.setTimeout(() => this.#remove(task), this.#t.doneDuration));
     }, remaining));
+  }
+
+  #progress(task: Running, progress: TaskProgress): boolean {
+    if (!task.acceptingProgress || !this.#tasks.has(task.id)) return false;
+    const previous = task.progress;
+    if (previous && (progress.requestId !== previous.requestId || progress.seq <= previous.seq)) return false;
+    if (typeof progress.requestId !== "string" || !progress.requestId || progress.requestId.length > 128
+      || !Number.isSafeInteger(progress.seq) || progress.seq < 1
+      || !["checkpoint", "sending", "streaming", "validating", "saving"].includes(progress.stage)
+      || !Number.isInteger(progress.completedChunks) || progress.completedChunks < 0 || progress.completedChunks > 4
+      || progress.totalChunks !== undefined && (!Number.isInteger(progress.totalChunks) || progress.totalChunks < 1 || progress.totalChunks > 4 || progress.completedChunks > progress.totalChunks)
+      || !Number.isFinite(progress.elapsedMs) || progress.elapsedMs < 0 || progress.elapsedMs > 600_000
+      || typeof progress.cancellable !== "boolean") throw new Error("invalid-task-progress");
+    task.progress = { ...progress };
+    this.#emit();
+    return true;
   }
 
   #update(task: Running, patch: Partial<Running>): void {
@@ -129,7 +158,7 @@ export class TaskTracker {
   }
 
   snapshot(): TaskView[] {
-    return [...this.#tasks.values()].map(({ id, target, message, doneMessage, phase, elapsed }) => ({ id, target, message, ...(doneMessage ? { doneMessage } : {}), phase, elapsed }));
+    return [...this.#tasks.values()].map(({ id, target, message, doneMessage, phase, elapsed, progress }) => ({ id, target, message, ...(doneMessage ? { doneMessage } : {}), phase, elapsed, ...(progress ? { progress: { ...progress } } : {}) }));
   }
 
   /** Resolves when no task is running or showing, for tests and shutdown. */

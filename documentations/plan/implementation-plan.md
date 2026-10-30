@@ -371,7 +371,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 
 <h2 id="mai" data-reader-personas="product design engineering">MAI: Rewrite with AI (planned)</h2>
 
-**You can:** request a rewrite of a selection or whole file, review it in place, compare local variations and recover the original, with explicit control of destination and private content. Delivers UC-RWR-01 to UC-RWR-06 and CP-RWR-01. Nothing in this stage is built yet.
+**You can, when complete:** request a rewrite of a selection or whole file, review it in place, compare local variations and recover the original, with explicit control of destination and private content. Delivers UC-RWR-01 to UC-RWR-06 and CP-RWR-01. Initial unwired engine helpers have unit evidence; no rewrite surface is enabled yet.
 
 **Try it first:** a gallery or candidate preview with the built-in fake provider, no keys and no egress. Select a paragraph, open Rewrite with AI, choose Shorten, watch the protected stream, compare two variations, Discard and undo. Repeat from a file's keyboard context menu with New file, then restart and recover a variation. The fake-only slices are lookahead and need no provider decision.
 
@@ -388,7 +388,7 @@ Work packages off this path run in parallel when their dependencies are Done and
 | WP-AI.9 | **Gate evidence and Help.** Windows fixture matrix, corpus/crash/conflict/private proofs, Help and final reviews. | QLT-08, HLP-10, DOC-03 | WP-AI.4, WP-AI.5, WP-AI.8 | code, security, design-system, accessibility |
 | WP-AI.10 | **Browser boundary and feasibility.** Verify browser commands are absent and document secure-adapter prerequisites; no browser implementation. | RWR-48 | WP-AI.7 | code, security |
 
-Every package is **planned**. AI.1 through AI.7 use lookahead to avoid an unrelated prior-stage gate blocking offline evidence. AI.8 through AI.10 retain the ordinary stage dependency. No package that talks to a real provider can bypass AI.7. `touches`, `reviews` and `specs` are explicit in [the graph](work-graph.json).
+WP-AI.1 is **building** with [partial engine evidence](gate-evidence.md#mai-initial-engine-slice); every other package is **planned**. AI.1 through AI.7 use lookahead to avoid an unrelated prior-stage gate blocking offline evidence. AI.8 through AI.10 retain the ordinary stage dependency. No package that talks to a real provider can bypass AI.7. `touches`, `reviews` and `specs` are explicit in [the graph](work-graph.json).
 
 ### Slice evidence versus full requirement closure
 

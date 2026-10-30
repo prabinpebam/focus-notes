@@ -7,7 +7,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 ## MAI rewrite definition of done
 
-**Planned, no execution evidence yet.** This adds CP-RWR-01 to the project Definition of Done and UC-RWR-01 to UC-RWR-06 to the MAI stage. All existing release safety, accessibility and design-system bars still apply. The spec does not pass the implementation gate.
+**Implementation started; every MAI row remains open.** [Initial engine unit evidence](gate-evidence.md#mai-initial-engine-slice) proves only an unwired WP-AI.1 helper slice, not actual-note durability or the visible rewrite journey. This adds CP-RWR-01 to the project Definition of Done and UC-RWR-01 to UC-RWR-06 to the MAI stage. All existing release safety, accessibility and design-system bars still apply. The spec does not pass the implementation gate.
 
 **Try it:** in the future fixture gallery/candidate preview, select a paragraph, open Rewrite with AI, Shorten, stop once, regenerate, compare two variations, Discard, undo and restart. From Files, use Shift+F10 to rewrite to a new file. No account or real provider is needed for this first demonstration.
 

@@ -11,7 +11,7 @@ import Strike from "@tiptap/extension-strike";
 import HardBreak from "@tiptap/extension-hard-break";
 import Link from "@tiptap/extension-link";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
-import { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
+import { parseMarkdown, resolveRewriteTarget, serializeMarkdown, type Parsed, type PMNode, type RewriteTarget } from "@focus-notes/markdown";
 
 export { parseMarkdown, serializeMarkdown, type Parsed, type PMNode } from "@focus-notes/markdown";
 export * from "./find.ts";
@@ -20,6 +20,7 @@ export * from "./slash.ts";
 export * from "./paste.ts";
 export * from "./sanitize.ts";
 export * from "./table.ts";
+export * from "./rewrite.ts";
 export { COLUMN_MIN_CH, COLUMN_OPTIMAL_CH, COLUMN_STEP_CH } from "./table-schema.ts";
 export * from "./blocks.ts";
 export * from "./expand.ts";
@@ -411,6 +412,11 @@ export class MarkdownSession {
       if (back === this.#before.markdown) return back;
     }
     return serializeMarkdown(doc, this.#parsed);
+  }
+  /** Capture current ordinary edits before a rewrite baseline; never serialize a preview document. */
+  rewriteTarget(doc: PMNode, from: number, to: number): { source: string; target: RewriteTarget } {
+    const source = this.serialize(doc);
+    return { source, target: resolveRewriteTarget(source, doc, from, to) };
   }
   /**
    * Takes `markdown` as the note's new source (recovered text, QLT-06) while the editor shows `current`;

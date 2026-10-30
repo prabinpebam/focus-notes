@@ -1,9 +1,17 @@
 # Rewrite engine
 
-The planned selection, streaming and apply contract for desktop rewriting. This page specifies new work; no rewrite engine exists yet.
+The selection, streaming and apply contract for desktop rewriting. Initial engine helpers have unit evidence; desktop integration remains planned.
 
 > [!NOTE]
 > **TL;DR.** Send only the explicitly highlighted Markdown target. Make the original durable before sending; display generated text in place without handing partial output to autosave or recovery. A validated variation becomes the note's text only on Accept, through the existing guarded save lane. Outside-target bytes, front matter and genuine external edits survive unchanged. Covers RWR-21 through RWR-29; [history](rewrite-history.md) and [providers](rewrite-providers.md) complete the contract. The [experience](../experience/rewrite-with-ai.md) owns controls and copy.
+
+## As built: initial offline engine slice
+
+WP-AI.1 is **building**, not complete. `packages/markdown/src/rewrite.ts` resolves positional plain-text spans or expanded supported top-level blocks, preserves exact outside source bytes and rejects unsafe replacements. The editor's `MarkdownSession.rewriteTarget` captures ordinary edits first; `RewriteRange` keeps canonical/projection documents separate and maps disjoint multi-step transactions with ProseMirror `Mapping`/`StepMap`. Preview navigation and Discard do not create canonical transactions; Accept supplies one replacement step, not a saved note or an installed undo integration.
+
+`packages/core/src/rewrite.ts` supplies an **unwired**, checkpoint-acknowledged session tested with scripted async generators. It checks instruction codepoints/UTF-8 bytes, event sequence/size, aggregate replacement size, terminal completion, cancellation races and first-text/idle/total deadlines. Complete variations require a second storage acknowledgement before review. The storage interface deliberately has no app implementation: an in-memory test callback is not durable history. `TaskTracker.run` now provides a bounded progress updater; completed tasks reject late updates.
+
+**Still pending:** actual editor plugin/IME/undo wiring, main-owned hashes/identity/lease/IPC, save holds and `afterWrites`, real original/variation durability and encrypted private history, complete mapping/output corpus and instruction-authorized structural changes, full timeout/backpressure policy, task/UI wiring, performance evidence and the visible selection-to-review journey. No rewrite command, shortcut migration, provider/profile, network generation or real-note rewrite is enabled. WP-1.1 remains verifying; WP-8.9 is done. No MAI or complete requirement row closes on these fixtures. See [the partial evidence record](../plan/gate-evidence.md#mai-initial-engine-slice).
 
 ## What people expect
 

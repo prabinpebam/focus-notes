@@ -96,7 +96,7 @@
       "requirements": ["RWR-21", "RWR-22", "RWR-23", "RWR-24", "RWR-25", "RWR-26", "RWR-27", "EDT-15"],
       "dependsOn": ["WP-1.1", "WP-8.9"], "touches": ["core", "editor", "markdown", "desktop"],
       "reviews": ["code", "security"], "specs": ["architecture/rewrite-engine.md", "plan/rewrite-acceptance.md"],
-      "lookahead": true, "status": "planned"
+      "lookahead": true, "status": "building"
     },
     {
       "id": "WP-AI.2", "stage": "MAI", "title": "Inline prompt and review against fixtures",

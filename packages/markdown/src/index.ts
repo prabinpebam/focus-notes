@@ -16,6 +16,9 @@ import { toMarkdown, type Options as ToMarkdownOptions } from "mdast-util-to-mar
 import { gfmToMarkdown } from "mdast-util-gfm";
 import type * as Md from "mdast";
 
+export * from "./rewrite.ts";
+export { isSafeHref } from "./href.ts";
+
 export interface PMMark {
   type: string;
   attrs?: Record<string, unknown>;
@@ -31,6 +34,8 @@ export interface SourceBlock {
   fingerprint: string;
   start: number;
   end: number;
+  /** One-to-one unmarked text, in block-content PM positions and source UTF-16 offsets. */
+  plainText?: { from: number; to: number; start: number; end: number }[];
 }
 export interface Parsed {
   doc: PMNode;
@@ -129,10 +134,35 @@ export function parseMarkdown(input: string): Parsed {
     }
     node ??= blockFromMdast(child, source.slice(start, end));
     content.push(node);
-    blocks.push({ fingerprint: fingerprint(node), start, end });
+    const plainText = (child.type === "paragraph" || child.type === "heading") && node.type !== "rawMarkdown"
+      ? plainTextSpans(child.children, source) : [];
+    blocks.push({ fingerprint: fingerprint(node), start, end, ...(plainText.length ? { plainText } : {}) });
   }
   if (content.length === 0) content.push({ type: "paragraph" });
   return { doc: { type: "doc", content }, blocks, source, bom, eol };
+}
+
+function plainTextSpans(children: Md.PhrasingContent[], source: string): NonNullable<SourceBlock["plainText"]> {
+  const spans: NonNullable<SourceBlock["plainText"]> = [];
+  let position = 0;
+  const visit = (nodes: Md.PhrasingContent[], marked: boolean) => {
+    for (const n of nodes) {
+      if (n.type === "strong" || n.type === "emphasis" || n.type === "delete" || n.type === "link") {
+        visit(n.children, true);
+      } else {
+        const start = n.position?.start.offset;
+        const end = n.position?.end.offset;
+        const text = n.type === "text" || n.type === "inlineCode" ? n.value
+          : n.type === "textDirective" && start !== undefined && end !== undefined ? source.slice(start, end) : "";
+        if (!marked && n.type === "text" && start !== undefined && end !== undefined && source.slice(start, end) === text) {
+          spans.push({ from: position, to: position + text.length, start, end });
+        }
+        position += n.type === "break" ? 1 : text.length;
+      }
+    }
+  };
+  visit(children, false);
+  return spans;
 }
 
 const raw = (src: string): PMNode => ({ type: "rawMarkdown", attrs: { source: src } });

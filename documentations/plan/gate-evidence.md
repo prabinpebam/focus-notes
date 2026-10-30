@@ -20,13 +20,26 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ### MAI: Rewrite with AI (planned)
 
-This later stage is not part of the six historical gates below. **GATE-MAI is open, not passed:** 48 new requirements, ten planned packages, no implementation/test results. The [acceptance matrix](rewrite-acceptance.md) supplies planned checks and the [MAI done rows](definition-of-done.md#mai-rewrite-definition-of-done) define required evidence.
+This later stage is not part of the six historical gates below. **GATE-MAI is open, not passed:** 48 new requirements, WP-AI.1 building with partial unit evidence below, nine planned packages. No complete implementation requirement or MAI row has passed. The [acceptance matrix](rewrite-acceptance.md) supplies planned checks and the [MAI done rows](definition-of-done.md#mai-rewrite-definition-of-done) define required evidence.
 
 | Gate part | Status | What must supply evidence |
 | --- | --- | --- |
 | Offline UX and safety | Planned | WP-AI.1 to WP-AI.6: fake provider, checkpoint/save hold, variations, file targets, private isolation and accessible fresh text |
 | Provider/privacy/consent/cost approval | Owner | WP-AI.7: explicit recorded scope for D-236, D-238, D-239, retention and Store/privacy claims; no real egress before approval |
 | Approved rollout and final acceptance | Planned | WP-AI.8 to WP-AI.10: security/Windows checks, actual approved adapter, feature-gated Help, browser boundary and owner acceptance |
+
+<h3 id="mai-initial-engine-slice">MAI initial engine slice, 30 October 2026</h3>
+
+**Partial, not a feature demonstration.** Tests were written and run red before each new engine module. There is no app command, UI, real provider or history-store implementation; all checkpoint acknowledgements in these tests come from explicit test fixtures. Preview remains unchanged.
+
+| Delivered helper | Evidence / requirement subcases | Still required for closure |
+| --- | --- | --- |
+| Positional Markdown targets and byte-preserving validated splices | `packages/markdown/test/rewrite-mapping.test.ts`: RWR-21/RWR-22/RWR-27 partial source-shape, duplicate blocks, Unicode/BOM/CRLF, front matter/raw exclusions, immutable marker and safe-link fixtures | Complete editor selection corpus, main hash/identity checks, permission and frozen output-policy integration |
+| Paired canonical/projection mappings | `packages/editor/test/rewrite-range.test.ts`: RWR-24/EDT-15 partial pending-edit capture, disjoint multi-step mapping, crossing/formatting refusal and single-step Accept; navigation/Discard change no canonical text | Actual editor plugin, undo/redo/IME, protected copy/flush/recovery and save-lane journeys |
+| Checkpoint-gated fixture session | `packages/core/test/rewrite-session.test.ts`: RWR-23/RWR-25/RWR-26 partial storage failures, cancellation races, narrow exact-target request, sequence/terminal/byte validation and timeout | Durable/private history, main IPC/sender/lease checks, target save hold/external edits, remaining deadlines/backpressure and task-backed UI |
+| Bounded task progress | `packages/core/test/tasks.test.ts`: update copying, sequence/owner/size bounds, post-terminal refusal; existing timing behavior retained | Rewrite task wiring and measured visible progress |
+
+Validation commands and exact final counts are in the AIR-B1 delivery record. Local affected tests, affected/desktop typechecks and `pnpm check` pass before commit. No desktop journey is claimed: these helpers are deliberately not installed in the app. Windows branch CI and independent code/security reviews remain required before any main landing. RWR-62's requirement and acceptance rows remain verbatim from `360d36da`. MAI.1 through MAI.8 remain open.
 
 | Stage | Requirements traced | Untraced | Work packages | Demo automated | Blocking the gate |
 | --- | ---: | ---: | --- | --- | --- |
