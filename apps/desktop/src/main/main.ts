@@ -1411,7 +1411,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // A save: written only over the text the window expects on disk (D-92, DEF-26).
   const saveNote = noteSave({
     path: notePath,
-    write: atomicWrite,
+    // Rewrite authority holds the canonical path. Windows short-path aliases must use
+    // that same save lane; a new note still uses its validated, not-yet-existing path.
+    write: async (path, content, expected) => atomicWrite(await realpath(path).catch((e: NodeJS.ErrnoException) => {
+      if (e.code === "ENOENT") return path;
+      throw e;
+    }), content, expected),
     // How much changed decides when it's backed up (D-133): against the text last written here, or on disk.
     before: async (path) => lastWritten.get(path) ?? (await readFile(path, "utf8").catch(() => "")),
     written: (path, before, content) => {
