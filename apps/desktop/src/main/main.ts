@@ -6,6 +6,7 @@
  */
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeTheme, safeStorage, session, shell, View, type IpcMainEvent, type IpcMainInvokeEvent } from "electron";
 import { RewriteConnection } from "./rewrite-connection.ts";
+import { checkpointEncryptionKey } from "./rewrite-key-checkpoint.ts";
 import { RewriteAuthority } from "./rewrite-authority.ts";
 import { RewriteOriginalStore } from "./rewrite-original.ts";
 import { lstat, mkdir, open, readdir, readFile, realpath, rename, rm, writeFile, stat } from "node:fs/promises";
@@ -1286,6 +1287,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
         if (typeof a.address !== "string" || typeof a.model !== "string" || typeof a.key !== "string") throw new Error();
         previewDestination(a.address);
         await connection.configure({ address: a.address, model: a.model, key: a.key });
+        await checkpointEncryptionKey(app.getPath("sessionData"));
         await writeFile(profile(), JSON.stringify(connection.envelope()), { mode: 0o600 });
         return connection.settings();
       }
