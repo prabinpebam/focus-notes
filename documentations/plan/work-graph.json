@@ -92,7 +92,7 @@
   "workPackages": [
     {
       "id": "WP-AI.1", "stage": "MAI", "title": "Fake rewrite engine and safe target",
-      "summary": "One fake-provider selection-to-review path: source mapping, checkpoint acknowledgement, protected canonical/projection range, planned bounded TaskTracker step/progress update API, typed events, timeouts and untrusted output. No network.",
+      "summary": "One fake-provider selection-to-review path: source mapping, checkpoint acknowledgement, protected canonical/projection range, planned bounded TaskTracker step/progress update API, typed events, timeouts and untrusted output. The minimal D-247 durable original store is an internal prerequisite before actual-note preparation/generation, not a dependency on full downstream AI.4. No network.",
       "requirements": ["RWR-21", "RWR-22", "RWR-23", "RWR-24", "RWR-25", "RWR-26", "RWR-27", "EDT-15"],
       "dependsOn": ["WP-1.1", "WP-8.9"], "touches": ["core", "editor", "markdown", "desktop"],
       "reviews": ["code", "security"], "specs": ["architecture/rewrite-engine.md", "plan/rewrite-acceptance.md"],
@@ -116,7 +116,7 @@
     },
     {
       "id": "WP-AI.4", "stage": "MAI", "title": "Local variations and restart recovery",
-      "summary": "Isolated local-only version-control history, original checkpoint, previous/next, undo/redo, bounded retention and non-Git fallback; prove no mirror-push exposure.",
+      "summary": "Extend AI.1's minimal D-247 durable original prerequisite into complete variations/restart recovery, previous/next, undo/redo and bounded retention; prove no mirror-push exposure. Git unavailable fails closed, with no second history format. RWR-61 to RWR-66 ownership remains here; the prerequisite does not close AI.1, AI.4 or any MAI row.",
       "requirements": ["RWR-61", "RWR-62", "RWR-63", "RWR-64", "RWR-65", "RWR-66"],
       "dependsOn": ["WP-AI.1"], "touches": ["core", "desktop", "views"],
       "reviews": ["code", "security"], "specs": ["architecture/rewrite-history.md", "plan/rewrite-acceptance.md"],

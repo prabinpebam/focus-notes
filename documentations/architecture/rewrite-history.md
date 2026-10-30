@@ -16,6 +16,18 @@ The planned local Git record of original text, complete variations and explicit 
 
 ## How it works
 
+### Original-only prerequisite: checked, not installed
+
+The minimum D-247 original checkpoint belongs **inside AI.1 before actual-note preparation/generation**; the complete AI.4 variation/retention/history-browser work remains downstream. This split changes no requirement ownership or completion status. All MAI rows remain open.
+
+| Boundary | Current original-only implementation |
+| --- | --- |
+| API | Main-only `RewriteOriginalStore.original` returns an immutable `{workspaceKey,domain,ref,commitId}` only after Git persistence and verified readback; `recover` verifies that acknowledgement and `recoverSession` reconstructs it from durable refs without an in-memory receipt |
+| Identity and bytes | Caller supplies trusted main domain/note/session identity, exact canonical UTF-8 source, resolved target and a separate main-computed `diskExpectedHash`; recovery verifies identity, coordinates and canonical SHA-256 while preserving that distinct disk baseline. This is not renderer authority or a disk/dirty-source resolver. |
+| Storage | Separate `public.git`/`private.git` under the specified app-data root; root commits with fixed `content`/`record.json` names and opaque refs. Private content and the entire identity/target index use the existing `DraftCrypt` safeStorage boundary, wrapped as base64 encrypted envelopes because the existing Git runner transports strings. No plaintext private index or ordinary draft. |
+| Durability and refusal | Git 2.43+ with `core.fsync=all`/`fsync`, exclusive per-domain lock, create-only refs and readback. Missing Git/encryption/store, changed config, alternates, aliases, corrupt/missing state and stale locks fail closed with one content-free code. Interrupted creation may require repair; no automatic deletion or fallback. |
+| Evidence and limits | `apps/desktop/test/rewrite-original.test.ts` uses disposable stores and a cryptographic boundary double, not the owner's notes or proof of OS key-store availability. No variations, retention, browsing, state events, IPC, generation or UI are installed. Production remains unavailable until trusted identity/owner-bound IPC, `afterWrites`, dirty canonical source distinct from `diskExpected`, navigation/close/window lifecycle and durable complete variations are integrated. |
+
 | Record | Durable before | What it contains |
 | --- | --- | --- |
 | Pre-rewrite checkpoint | Any provider send or projected token | Exact full canonical original source, mapped target and baseline identity |
