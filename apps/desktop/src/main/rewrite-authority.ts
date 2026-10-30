@@ -24,6 +24,7 @@ interface Options {
   resolve(path: string): Promise<CurrentRewriteNote>;
   original(input: OriginalInput, note: CurrentRewriteNote): Promise<string>;
   variation?(input: OriginalInput, checkpointId: string, replacement: string, note: CurrentRewriteNote): Promise<string>;
+  history?(note: CurrentRewriteNote): Promise<{ source: string }[]>;
 }
 
 /** Explicit navigation, not reads, establishes authority. No renderer domain/key is accepted. */
@@ -72,6 +73,23 @@ export class RewriteAuthority {
     const current = this.#windows.get(owner);
     if (!current || current.revision !== revision || current.abort.signal.aborted) throw refused();
     return current;
+  }
+  /** Read-only candidate preview. Identity and unchanged baseline are main-owned. */
+  async history(owner: number, revision: string, source: string): Promise<{ source: string }[]> {
+    const current = this.#live(owner, revision);
+    const check = async () => {
+      const note = await this.#options.resolve(current.note.path);
+      if (this.#live(owner, revision) !== current || note.conflict || note.workspace !== current.note.workspace
+        || note.noteKey !== current.note.noteKey || note.domain !== current.note.domain
+        || hash(source) !== current.diskExpectedHash
+        || hash(await readFile(note.path, "utf8")) !== current.diskExpectedHash) throw refused();
+      if (this.#live(owner, revision) !== current) throw refused();
+    };
+    await check();
+    const results = await this.#options.history?.(current.note);
+    await check();
+    if (!results || results.length > 20 || results.reduce((bytes, item) => bytes + Buffer.byteLength(item.source), 0) > 2 * 1024 * 1024) throw refused();
+    return results;
   }
   async prepare(owner: number, revision: string, source: string, target: OriginalInput["target"]): Promise<string> {
     const current = this.#live(owner, revision);

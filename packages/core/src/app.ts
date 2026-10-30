@@ -1515,6 +1515,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       }),
       accept: (token) => bridge.rewriteAuthority!("accept", { token }),
       complete: (token, replacement) => bridge.rewriteAuthority!("complete", { token, replacement }),
+      history: (source) => afterWrites(async () => {
+        if (!rewriteRevision) throw new Error("rewrite-unavailable");
+        return bridge.rewriteAuthority!("history", { revision: rewriteRevision, source });
+      }),
       cancel: () => { if (rewriteRevision) void bridge.rewriteAuthority!("cancel", { revision: rewriteRevision }).catch(() => {}); },
     } : undefined);
   return {

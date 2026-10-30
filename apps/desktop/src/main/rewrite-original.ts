@@ -218,7 +218,7 @@ export class RewriteOriginalStore {
   async variations(identity: Pick<OriginalInput, "domain" | "noteKey">): Promise<{ checkpointId: string; replacement: string; source: string }[]> {
     try {
       return await this.#store(identity.domain, false, async (repo) => {
-        const ids = (await this.#git(repo, ["for-each-ref", "--format=%(objectname)", "refs/focus-notes/variations/v1/"])).trim().split("\n").filter(Boolean);
+        const ids = (await this.#git(repo, ["for-each-ref", "--count=100", "--format=%(objectname)", "refs/focus-notes/variations/v1/"])).trim().split("\n").filter(Boolean);
         const results = [];
         for (const id of ids) {
           const record = JSON.parse(this.#decode(identity.domain, await this.#git(repo, ["cat-file", "blob", `${id}:record.json`])));
@@ -227,6 +227,7 @@ export class RewriteOriginalStore {
           if (record.version !== 1 || record.kind !== "complete" || record.domain !== identity.domain
             || record.workspaceKey !== this.#key || record.contentHash !== hash(source)) throw unavailable();
           results.push({ checkpointId: record.checkpointId as string, replacement: record.replacement as string, source });
+          if (results.length === 20) break;
         }
         return results;
       });

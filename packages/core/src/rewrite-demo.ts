@@ -26,7 +26,19 @@ export class RewriteDemo {
   connectionStatus = "";
   provider: RewriteProvider | undefined;
   token: string | undefined;
-  authority: { prepare(source: string, target: RewriteTarget): Promise<string>; complete(token: string, replacement: string): Promise<string>; accept(token: string): Promise<void>; cancel(): void } | undefined;
+  history: { source: string }[] = [];
+  historyIndex = 0;
+  historyOpen = false;
+  showOriginal = false;
+  historyLoading = false;
+  historyStatus = "";
+  historyRequest = 0;
+  get savedPreview(): string { return this.showOriginal ? this.source : this.history[this.historyIndex]?.source ?? ""; }
+  navigate(step: number): void {
+    this.historyIndex = Math.max(0, Math.min(this.history.length - 1, this.historyIndex + step));
+    this.showOriginal = false; this.changed();
+  }
+  authority: { prepare(source: string, target: RewriteTarget): Promise<string>; complete(token: string, replacement: string): Promise<string>; accept(token: string): Promise<void>; cancel(): void; history?(source: string): Promise<{ source: string }[]> } | undefined;
   readonly changed: () => void;
   constructor(changed = () => {}) { this.changed = changed; }
   open(input: { source: string; target: Pick<RewriteTarget, "from" | "to" | "original"> }): void {
@@ -40,6 +52,7 @@ export class RewriteDemo {
   }
   async send(): Promise<void> {
     if (!this.target || !this.instruction.trim()) return;
+    this.historyRequest++; this.history = []; this.historyOpen = false; this.showOriginal = false; this.historyLoading = false;
     this.session?.stop();
     this.authority?.cancel();
     this.token = undefined;
@@ -76,14 +89,14 @@ export class RewriteDemo {
     finally { if (this.session === active && active.state !== "review") this.authority?.cancel(); clearInterval(timer); performance.measure("rewrite-demo:generation", { start: began }); this.changed(); }
   }
   accept(): void {
-    if (this.session?.state !== "review") return;
+    if (this.session?.state !== "review" || this.historyOpen || this.showOriginal) return;
     this.previous = this.source;
     this.source = this.session.accept();
     this.revision++;
     this.openPanel = false;
     this.changed();
   }
-  discard(): void { this.session?.stop(); this.authority?.cancel(); this.token = undefined; this.session = undefined; this.key = ""; this.openPanel = false; this.menu = false; this.changed(); }
+  discard(): void { this.historyRequest++; this.history = []; this.historyOpen = false; this.showOriginal = false; this.historyLoading = false; this.historyStatus = ""; this.session?.stop(); this.authority?.cancel(); this.token = undefined; this.session = undefined; this.key = ""; this.openPanel = false; this.menu = false; this.changed(); }
   undo(): void {
     if (this.previous === undefined) return;
     this.discard(); this.source = this.previous; this.previous = undefined; this.revision++; this.changed();
@@ -139,8 +152,27 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   command("instruction", (a) => { demo.instruction = String(a.value); demo.changed(); });
   command("preset", (a) => { demo.instruction = String(a.value); demo.changed(); });
   command("send", () => demo.send());
+  command("history", async () => {
+    if (!demo.enabled || demo.historyLoading) return;
+    demo.session?.stop(); authority?.cancel(); demo.session = undefined; demo.token = undefined;
+    const request = ++demo.historyRequest;
+    const began = performance.now();
+    demo.historyOpen = true; demo.historyLoading = true; demo.historyStatus = text("historyLoading"); demo.changed();
+    try {
+      const results = await authority?.history?.(demo.source);
+      if (request !== demo.historyRequest) return;
+      if (!results) throw new Error();
+      demo.history = results; demo.historyIndex = 0; demo.showOriginal = false;
+      demo.historyStatus = text(results.length ? "historyPreviewOnly" : "historyEmpty");
+    } catch { if (request === demo.historyRequest) demo.historyStatus = text("historyReadError"); }
+    finally { performance.measure("rewrite-demo:history", { start: began }); if (request === demo.historyRequest) { demo.historyLoading = false; demo.changed(); } }
+  });
+  command("previous", () => demo.navigate(-1));
+  command("next", () => demo.navigate(1));
+  command("original", () => { demo.showOriginal = !demo.showOriginal; demo.changed(); });
   command("accept", async () => {
     if (!demo.enabled) { demo.accept(); return; }
+    if (demo.historyOpen || demo.showOriginal) return;
     if (demo.session?.state !== "review" || demo.noteKey !== app.store.state.note.key || demo.source !== app.store.state.note.markdown) { demo.discard(); return; }
     if (authority) {
       try { if (!demo.token) throw new Error(); await authority.accept(demo.token); }
@@ -184,17 +216,21 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   app.viewModels.register({
     id: "vm.rewriteDemo",
     schema: { type: "object", properties: Object.fromEntries([
-      ...["address", "model", "key", "providerLabel", "connectionStatus", "source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
-      ...["isFake", "enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
+      ...["historyStatus", "savedPreview", "historyCounter", "originalLabel", "address", "model", "key", "providerLabel", "connectionStatus", "source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
+      ...["historyOpen", "historyLoading", "previousDisabled", "nextDisabled", "isFake", "enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),
     ]) },
     setters: { instruction: "demo.instruction", address: "demo.address", model: "demo.model", key: "demo.key" },
     select: () => {
       const state = demo.session?.state;
       return {
+        historyOpen: demo.historyOpen, historyLoading: demo.historyLoading, historyStatus: demo.historyStatus,
+        savedPreview: demo.savedPreview, historyCounter: demo.history.length ? app.messages.format("rewrite.historyCounter", { current: demo.historyIndex + 1, total: demo.history.length }) : "",
+        previousDisabled: demo.historyIndex <= 0, nextDisabled: demo.historyIndex >= demo.history.length - 1,
+        originalLabel: text(demo.showOriginal ? "showVariation" : "showOriginal"),
         address: demo.address, model: demo.model, key: demo.key, connectionStatus: demo.connectionStatus,
         providerLabel: text(demo.useConnection ? "providerCompatible" : "providerFake"), isFake: !demo.useConnection,
         enabled: demo.enabled, feedback: demo.feedback, hasFeedback: Boolean(demo.feedback),
-        preview: demo.openPanel && (state === "streaming" || state === "review") && demo.target
+        preview: !demo.showOriginal && !demo.historyOpen && demo.openPanel && (state === "streaming" || state === "review") && demo.target
           ? demo.session!.projection.slice(demo.target.from, demo.session!.projection.length - (demo.source.length - demo.target.to)) : "",
         source: demo.source, documentKey: `demo-${demo.revision}`, instruction: demo.instruction,
         original: demo.original, result: demo.session?.projection ?? demo.source,
@@ -202,7 +238,7 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
         failureStatus: text(demo.fail ? "failureOn" : "failureOff"),
         generateLabel: text(state === "review" || state === "error" ? "generate" : "start"),
         discardLabel: text(state === "sending" || state === "streaming" ? "cancel" : "discard"),
-        busy: state === "sending" || state === "streaming", review: state === "review", undo: demo.previous !== undefined,
+        busy: demo.historyLoading || state === "sending" || state === "streaming", review: state === "review" && !demo.showOriginal && !demo.historyOpen, undo: demo.previous !== undefined,
         status: text(state === "error" ? (demo.session?.error === "checkpoint-failed" ? "historyError" : demo.useConnection ? "connectionGenerationError" : demo.enabled ? "editorError" : "error") : state === "streaming" || state === "sending" ? (demo.useConnection ? "connectionStreaming" : "streaming") : state === "review" ? "ready" : "compose"),
       };
     },

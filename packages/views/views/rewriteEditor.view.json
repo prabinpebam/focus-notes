@@ -33,6 +33,18 @@
             { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.connectionStatus" } } }
           ] },
           { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.original" } } },
+          { "type": "Button", "props": { "label": { "t": "rewrite.browseHistory" }, "disabled": { "get": "vm.rewriteDemo.busy" }, "disabledReason": { "t": "rewrite.waitReason" } }, "on": { "press": { "run": "demo.history" } } },
+          { "type": "Stack", "when": { "get": "vm.rewriteDemo.historyOpen" }, "props": { "gap": "s" }, "children": [
+            { "type": "LiveRegion", "props": { "message": { "get": "vm.rewriteDemo.historyStatus" } } },
+            { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.historyStatus" } } },
+            { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.historyCounter" } } },
+            { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
+              { "type": "Button", "props": { "label": { "t": "rewrite.previousVariation" }, "disabled": { "get": "vm.rewriteDemo.previousDisabled" }, "disabledReason": { "t": "rewrite.historyStart" } }, "on": { "press": { "run": "demo.previous" } } },
+              { "type": "Button", "props": { "label": { "t": "rewrite.nextVariation" }, "disabled": { "get": "vm.rewriteDemo.nextDisabled" }, "disabledReason": { "t": "rewrite.historyEnd" } }, "on": { "press": { "run": "demo.next" } } }
+            ] },
+            { "type": "Text", "props": { "value": { "get": "vm.rewriteDemo.savedPreview" } } }
+          ] },
+          { "type": "Button", "props": { "label": { "get": "vm.rewriteDemo.originalLabel" } }, "on": { "press": { "run": "demo.original" } } },
           { "type": "Inline", "props": { "gap": "s", "wrap": true }, "children": [
             { "type": "Button", "props": { "label": { "t": "rewrite.concise" } }, "on": { "press": { "run": "demo.preset", "args": { "value": "Make it concise" } } } },
             { "type": "Button", "props": { "label": { "t": "rewrite.friendly" } }, "on": { "press": { "run": "demo.preset", "args": { "value": "Make it friendly" } } } },

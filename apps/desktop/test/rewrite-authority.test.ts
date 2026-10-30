@@ -7,6 +7,24 @@ import { NoteWriter } from "../src/main/note-write.ts";
 import { RewriteAuthority } from "../src/main/rewrite-authority.ts";
 
 describe("main current-note authority", () => {
+  it("binds saved previews to current window/revision and refuses external edits", async () => {
+    const dir = await realpath(await mkdtemp(join(tmpdir(), "rewrite-preview-")));
+    const path = join(dir, "a.md"); await writeFile(path, "original");
+    const identity = async () => ({ path, workspace: dir, domain: "local" as const, noteKey: "note", conflict: false });
+    const authority = new RewriteAuthority({ writer: new NoteWriter({ rewriteIdentity: identity }), resolve: identity,
+      original: async () => "checkpoint", history: async (note) => {
+        expect(note.noteKey).toBe("note"); return [{ source: "saved complete" }];
+      } });
+    try {
+      const revision = (await authority.activate(1, path))!;
+      await expect(authority.history(2, revision, "original")).rejects.toThrow();
+      await expect(authority.history(1, "stale", "original")).rejects.toThrow();
+      expect(await authority.history(1, revision, "original")).toEqual([{ source: "saved complete" }]);
+      expect(await readFile(path, "utf8")).toBe("original");
+      await writeFile(path, "external");
+      await expect(authority.history(1, revision, "original")).rejects.toThrow();
+    } finally { authority.closeAll(); await rm(dir, { recursive: true, force: true }); }
+  });
   it("refuses incomplete, mismatched and foreign completions and Accept until durable completion", async () => {
     const dir = await realpath(await mkdtemp(join(tmpdir(), "rewrite-authority-")));
     const path = join(dir, "a.md"); await writeFile(path, "original");
