@@ -8,7 +8,7 @@
  * is written and the text found is returned, so another program's change, a pull, or a write queued
  * before this one is never written over. A missing file is written: nothing is lost by making it.
  */
-import { mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, open, readdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import { basename, dirname, join, resolve } from "node:path";
 
@@ -110,13 +110,7 @@ export class NoteWriter {
     return this.#enqueue(path, async () => {
       await hold?.gate;
       // Even an otherwise unguarded writer cannot overwrite an outside edit across a rewrite hold.
-      const result = await this.#now(path, content, expected ?? hold?.baseline, hold);
-      if (hold?.baseline !== undefined && !result) {
-        const now = await stat(path, { bigint: true });
-        hold.fileId = `${now.dev}:${now.ino}:${now.birthtimeNs}`;
-        hold.baseline = content;
-      }
-      return result;
+      return this.#now(path, content, expected ?? hold?.baseline, hold);
     });
   }
 
@@ -204,7 +198,20 @@ export class NoteWriter {
     const found = await changedOutside(path, content, expected);
     if (found !== undefined) return { outside: found };
     const tmp = tempName(path, this.#tmp++);
-    await writeFile(tmp, content, "utf8");
+    let writtenFileId: string | undefined;
+    if (hold?.fileId) {
+      // Bind lineage to the file we created, never a later lookup of the destination pathname.
+      const file = await open(tmp, "wx");
+      try {
+        await file.writeFile(content, "utf8");
+        const created = await file.stat({ bigint: true });
+        writtenFileId = `${created.dev}:${created.ino}:${created.birthtimeNs}`;
+      } finally {
+        await file.close();
+      }
+    } else {
+      await writeFile(tmp, content, "utf8");
+    }
     try {
       // And again right before the rename: a change while the temporary file was written.
       const late = await changedOutside(path, content, expected);
@@ -214,6 +221,11 @@ export class NoteWriter {
       }
       await this.#heldIdentity(path, hold);
       await retrying(() => rename(tmp, path));
+      // The rename landed even if notification fails or another program replaces the path.
+      if (hold && writtenFileId) {
+        hold.fileId = writtenFileId;
+        hold.baseline = content;
+      }
     } catch (error) {
       await rm(tmp, { force: true });
       throw error;

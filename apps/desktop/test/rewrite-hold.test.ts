@@ -134,6 +134,47 @@ describe("actual-note rewrite preparation (RWR-23/RWR-28)", () => {
     expect(readFileSync(path, "utf8")).toBe("Typing two");
   });
 
+  it("refuses a same-content replacement made while the first held save's written hook is pending", async () => {
+    const path = fixture();
+    let entered!: () => void;
+    let resume!: () => void;
+    const started = new Promise<void>((r) => { entered = r; });
+    const pending = new Promise<void>((r) => { resume = r; });
+    const writer = new NoteWriter({
+      rewriteIdentity: identity,
+      written: async () => { entered(); await pending; },
+    });
+    const lease = await writer.prepareRewrite(path, request);
+    const first = writer.write(path, "Typing one");
+    const second = writer.write(path, "Typing two");
+    lease.release();
+    await started;
+    renameSync(path, `${path}.saved`);
+    writeFileSync(path, "Typing one"); // retain the saved file so its identity cannot be reused
+    const refused = expect(second).rejects.toThrow("rewrite-stale");
+    resume();
+    await first;
+    await refused;
+    expect(readFileSync(path, "utf8")).toBe("Typing one");
+    expect(readFileSync(`${path}.saved`, "utf8")).toBe("Typing one");
+  });
+
+  it("keeps successful rename lineage when a written hook throws so the latest held save lands", async () => {
+    const path = fixture();
+    const written = vi.fn().mockRejectedValueOnce(new Error("fixture-hook-failed")).mockResolvedValue(undefined);
+    const writer = new NoteWriter({ rewriteIdentity: identity, written });
+    const lease = await writer.prepareRewrite(path, request);
+    const first = writer.write(path, "Typing one");
+    const second = writer.write(path, "Typing two");
+    const failed = expect(first).rejects.toThrow("fixture-hook-failed");
+    const saved = expect(second).resolves.toBeUndefined();
+    lease.release();
+    await failed;
+    await saved;
+    expect(readFileSync(path, "utf8")).toBe("Typing two");
+    expect(written).toHaveBeenCalledTimes(2);
+  });
+
   it("does not hold unrelated notes and exposes only frozen content-free lease metadata", async () => {
     const path = fixture();
     const other = fixture();
