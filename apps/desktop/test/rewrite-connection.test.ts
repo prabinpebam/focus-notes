@@ -79,3 +79,30 @@ test("split UTF-8 and SSE lines decode without losing characters; encrypted rest
   expect(() => blocked.restore(c.envelope()!)).toThrow();
   expect(blocked.settings().configured).toBe(false);
 });
+
+test("revoked, unavailable and corrupt credentials cannot send even with an explicit stream request", async () => {
+  let sends = 0, available = true;
+  const address = await endpoint((_req, res) => { sends++; res.writeHead(503); res.end(); });
+  const crypt = {
+    available: () => available,
+    encrypt: (s: string) => Buffer.from(`synthetic-envelope:${s}`),
+    decrypt: (b: Buffer) => {
+      if (!b.toString().startsWith("synthetic-envelope:")) throw Error("corrupt");
+      return b.toString().slice("synthetic-envelope:".length);
+    },
+  };
+  const consume = async (c: RewriteConnection) => { for await (const _ of c.stream(request())) { /* consume */ } };
+  const c = new RewriteConnection(crypt);
+  await c.configure({ address, model: "synthetic", key: "not-a-real-key" });
+  const envelope = c.envelope()!;
+  available = false;
+  await expect(consume(c)).rejects.toThrow("connection-unavailable");
+  expect(sends).toBe(0);
+  available = true; c.remove();
+  await expect(consume(c)).rejects.toThrow("connection-unavailable");
+  expect(c.envelope()).toBeUndefined();
+  const reopened = new RewriteConnection(crypt);
+  expect(() => reopened.restore({ ...envelope, encrypted: Buffer.from("corrupt").toString("base64") })).toThrow("corrupt");
+  await expect(consume(reopened)).rejects.toThrow("connection-unavailable");
+  expect(sends).toBe(0);
+});
