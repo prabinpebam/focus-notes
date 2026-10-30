@@ -114,6 +114,14 @@ describe("DSK-05: the macOS menu bar lists every command", () => {
     }
   });
 
+  it("lists rewrite's candidate entry without activating ordinary desktop notes", async () => {
+    const app = createApp(desktop(), en);
+    await app.start();
+    expect(find(menuBarModel(app.commands, app.messages, "macos"), "rewrite.open"))
+      .toMatchObject({ enabled: false, chord: "Mod+Shift+R" });
+    expect(NOT_IN_MENU_BAR.find((r) => r.ids.test("demo.futureUnclassifiedAction"))).toBeUndefined();
+  });
+
   it("follows the registry's checked and enabled states", async () => {
     const app = createApp(desktop(), en);
     const before = menuBarModel(app.commands, app.messages, "macos");

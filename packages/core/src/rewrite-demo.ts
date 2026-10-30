@@ -72,8 +72,17 @@ export class RewriteDemo {
       }
       yield { seq: ++seq, type: "complete" };
     };
+    const selectedProvider = this.useConnection ? this.provider ?? (async function* () { throw new Error("connection-unavailable"); }) : provider;
+    const changed = this.changed;
     this.session = new RewriteSession({
-      sessionId: "disposable-demo", source: this.source, target: this.target, provider: this.useConnection ? this.provider ?? (async function* () { throw new Error("connection-unavailable"); }) : provider,
+      sessionId: "disposable-demo", source: this.source, target: this.target,
+      provider: async function* (request) {
+        for await (const event of selectedProvider(request)) {
+          yield event;
+          // The session has consumed the event before asking for the next one.
+          changed();
+        }
+      },
       // Only the standalone in-memory demo uses acknowledgements without storage.
       checkpoints: { original: async () => {
         if (!this.authority) return "demo-original";
@@ -85,9 +94,8 @@ export class RewriteDemo {
     });
     const active = this.session;
     const began = performance.now();
-    const timer = setInterval(this.changed, 40);
     try { const work = this.session.send(crypto.randomUUID(), this.instruction); this.changed(); await work; }
-    finally { if (this.session === active && active.state !== "review") this.authority?.cancel(); clearInterval(timer); performance.measure("rewrite-demo:generation", { start: began }); this.changed(); }
+    finally { if (this.session === active && active.state !== "review") this.authority?.cancel(); performance.measure("rewrite-demo:generation", { start: began }); this.changed(); }
   }
   accept(): void {
     if (this.session?.state !== "review" || this.historyOpen || this.showOriginal) return;
@@ -234,6 +242,9 @@ export function registerRewriteDemo(app: Pick<App, "store" | "commands" | "viewM
   command("failure", () => { demo.fail = !demo.fail; demo.changed(); });
   app.viewModels.register({
     id: "vm.rewriteDemo",
+    // Mutable panel/session state lives outside AppState and invalidates via changed().
+    // Re-select on store notifications, retaining structurally equal projections.
+    reads: "*",
     schema: { type: "object", properties: Object.fromEntries([
       ...["restoreLabel", "historyStatus", "savedPreview", "historyCounter", "originalLabel", "address", "model", "key", "providerLabel", "connectionStatus", "source", "documentKey", "instruction", "original", "result", "preview", "status", "feedback", "failureStatus", "generateLabel", "discardLabel"].map((k) => [k, { type: "string" as const }]),
       ...["restoreDisabled", "historyOpen", "historyLoading", "previousDisabled", "nextDisabled", "isFake", "enabled", "hasFeedback", "open", "menu", "settings", "fail", "busy", "review", "undo"].map((k) => [k, { type: "boolean" as const }]),

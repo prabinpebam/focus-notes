@@ -50,6 +50,8 @@ export const DATA_FILES = {
   agentLimitsLock: "agent-limits.lock",
   /** Windows' close to the tray (DSK-11, D-217): the switch, and whether its one-time notice was shown. */
   tray: "tray.json",
+  /** Disposable rewrite candidate's encrypted provider connection; removed in Provider settings. */
+  rewriteConnection: "rewrite-connection.json",
 } as const;
 export type DataFile = (typeof DATA_FILES)[keyof typeof DATA_FILES];
 
@@ -95,6 +97,7 @@ export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "signedOut", path: DATA_FILES.account, removedBy: ["signIn", "deleteDataFolder"] },
   { id: "windowPlace", path: DATA_FILES.window, removedBy: ["deleteDataFolder"] },
   { id: "trayChoice", path: DATA_FILES.tray, removedBy: ["deleteDataFolder"] },
+  { id: "rewriteConnection", path: DATA_FILES.rewriteConnection, removedBy: ["deleteDataFolder"] },
   { id: "accountPicture", path: DATA_FILES.avatar, removedBy: ["deleteDataFolder"] },
   { id: "keybindings", path: DATA_FILES.keybindings, removedBy: ["deleteDataFolder"] },
   { id: "agentPermissions", path: DATA_FILES.agents, removedBy: ["signOut", "removeWorkspace", "deleteDataFolder"] },

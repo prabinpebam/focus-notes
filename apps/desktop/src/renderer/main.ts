@@ -114,10 +114,12 @@ function attachSearch(r: Running): void {
 let running: Running;
 {
   const scoped = scopedBridge(base);
-  const app = createApp(scoped.bridge, messages.en!, "en", { htmlToMarkdown });
+  const demo = new URLSearchParams(location.search).get("rewriteDemo") === "1";
+  // The standalone sample never starts a workspace note. Do not bind it to the
+  // trusted-note authority or provider IPC; editor candidates keep both unchanged.
+  const app = createApp(demo ? { ...scoped.bridge, rewriteAuthority: undefined, rewriteConnection: undefined } : scoped.bridge, messages.en!, "en", { htmlToMarkdown });
   const abort = new AbortController();
   // Settings and the theme manager are view documents of their own, hosted beside the canvas (IA-VIEW-SETTINGS, IA-VIEW-THEME).
-  const demo = new URLSearchParams(location.search).get("rewriteDemo") === "1";
   const editorDemo = new URLSearchParams(location.search).get("rewriteEditor") === "1";
   if (demo) window.addEventListener("keydown", (event) => {
     const state = app.viewModels.select("vm.rewriteDemo", app.store.state);

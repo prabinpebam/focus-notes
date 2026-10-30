@@ -54,6 +54,7 @@ Everything Focus Notes keeps, where, and what removes it. On the desktop the lis
 
 | Data | Location | Who can read it | Removed by |
 | --- | --- | --- | --- |
+| Rewrite connection (disposable desktop candidate only) | `rewrite-connection.json` in the app's data folder: provider address and model in plain text, API key encrypted by the operating system; no note text | The local user can read the address and model; the key requires the operating system's key store | *Remove connection* in Provider settings, or deleting the app's data folder; signing out or removing a workspace does not remove this device-level connection |
 | Public notes | `notes/` in the instance repository, and the instance's Pages site | Anyone | Deleting the note (it stays in public Git history) |
 | Private notes | `private/notes/`, the private repository | The user and anyone they gave repository access | Deleting the note (it stays in private history) |
 | Shared notes | As private, plus sealed copies on Pages | Audiences with a link or passcode | Withdrawing, then the next deploy |

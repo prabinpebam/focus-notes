@@ -1253,7 +1253,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     decrypt: (data) => safeStorage.decryptString(data),
   });
   const requests = new Map<number, { id: string; token: string; abort: AbortController; stream: ReturnType<RewriteConnection["stream"]> }>();
-  const profile = () => join(app.getPath("userData"), "rewrite-connection.json");
+  const profile = () => dataFile(DATA_FILES.rewriteConnection);
   handleFrom("rewrite:connection", async (e, action: unknown, input: unknown = {}) => {
     // Not production activation: same explicit disposable-profile/file-workspace gate as the editor.
     if (!process.argv.includes("--rewrite-editor-demo") || !process.env.FOCUS_NOTES_USER_DATA || !process.env.FOCUS_NOTES_DOCS) throw new Error("candidate-only");

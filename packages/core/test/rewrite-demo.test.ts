@@ -1,7 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { RewriteDemo } from "../src/rewrite-demo.ts";
 
 describe("disposable rewrite journey", () => {
+  it("notifies streaming changes from provider events without polling", async () => {
+    const interval = vi.spyOn(globalThis, "setInterval");
+    const projections: string[] = [];
+    const demo = new RewriteDemo(() => {
+      if (demo.session?.state === "streaming") projections.push(demo.session.projection);
+    });
+    const source = demo.source;
+    demo.open({ source, target: { from: 0, to: source.length, original: source } });
+    try {
+      await demo.send();
+      expect(projections.length).toBeGreaterThan(1);
+      expect(projections[0]).toMatch(/^Plan/);
+      expect(demo.session?.state).toBe("review");
+      expect(interval).not.toHaveBeenCalled();
+    } finally { interval.mockRestore(); }
+  });
   it("navigates saved previews without wrapping or accepting, and shows original", () => {
     const demo = new RewriteDemo();
     const source = demo.source;
